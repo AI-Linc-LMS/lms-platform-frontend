@@ -1,5 +1,7 @@
 // import ArrowIcon from '../Icons/ArrowIcon';
 
+import ArrowIcon from "../../icons/sidebarIcons/ArrowIcon";
+
 interface SidebarLogoPartProps {
   isExpanded: boolean;
   onClickArrow: () => void;
@@ -10,18 +12,20 @@ const SidebarLogoPart = ({
   onClickArrow,
 }: SidebarLogoPartProps) => {
   return (
-    <div className="relative overflow-visible w-full text-center items-center h-14 border-b-[0.5px] border-[#D3D3D318]">
+    <div className="relative text-neutral-900 overflow-visible w-full text-center items-center h-14 border-b-[0.5px] border-[#D3D3D318] font-bold">
       <h2 className={`font-bruno ${isExpanded ? 'text-base' : 'text-sm'}`}>
-        X- ACK
+        Ai Linc
+        
       </h2>
       <h2 className={`text-[#9F55FF] ${isExpanded ? 'text-base' : 'text-xs'}`}>
-        βeta
+
       </h2>
       <div
-        className={`${isExpanded ? '' : 'rotate-180'} absolute w-[24px] h-[24px] grid place-items-center rounded-full transition-transform duration-300 right-[-12px] bottom-[-12px] bg-black border-[0.5px] border-[#B86E9F5A] cursor-pointer pr-[3px]`}
+        className={`${isExpanded ? '' : 'rotate-180'} absolute w-[52px] h-[52px] grid place-items-center rounded-[12px] transition-transform duration-300 right-[-37px] bottom-[-12px] bg-[#E9ECEF]  cursor-pointer pr-[3px]`}
         onClick={onClickArrow}
       >
-        {/* <ArrowIcon /> */}
+
+        <ArrowIcon />
       </div>
     </div>
   );
