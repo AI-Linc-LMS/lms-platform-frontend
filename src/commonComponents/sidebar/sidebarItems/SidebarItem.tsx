@@ -21,7 +21,7 @@ const SidebarItem = ({
           >
             <div className="flex flex-row items-center px-3 gap-4">
               <div className="w-[18px] h-[18px] mt-[-6px]">{linkInfo.icon}</div>
-              <span className={`ml-2 text-sm ${isActive ? "text-white" : "text-black"}`}>{linkInfo.title}</span>
+              <span className={`ml-2 text-xl ${isActive ? "text-white" : "text-black"}`}>{linkInfo.title}</span>
             </div>
           </div>
         ) : (
