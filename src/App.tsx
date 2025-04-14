@@ -1,6 +1,8 @@
 import "./App.css";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import routes from "./routes";
+import Container from "./constants/Container";
+import { Navigate, Outlet } from 'react-router-dom';
 function App() {
   return (
     <>
@@ -19,6 +21,11 @@ function App() {
                   //     isAuthenticated={Boolean(isAuthenticated)}
                   //   />
                   // }
+                  element={
+                    <Container>
+                      <Outlet/>
+                      </Container>
+                  }
                 >
                   <Route index element={<route.component />} />
                 </Route>
