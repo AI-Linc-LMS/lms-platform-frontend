@@ -5,7 +5,7 @@ import { useState } from "react";
 
 function Container({ children }: { children: React.ReactNode }) {
   //   const location = useLocation();
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true); // Default expanded
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false); // Default expanded
 
   //   useEffect(() => {
   // Collapse sidebar only on MachinePreview page (/machines/:machineId)

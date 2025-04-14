@@ -1,5 +1,3 @@
-import React from "react";
-
 export const VideoIcon = () => (
   <svg
     width="16"
@@ -72,4 +70,4 @@ export const FAQIcon = () => (
       fill="#495057"
     />
   </svg>
-); 
+);

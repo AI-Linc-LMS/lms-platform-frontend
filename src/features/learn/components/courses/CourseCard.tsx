@@ -1,5 +1,6 @@
 import React from "react";
-import { Course } from "../types/course.types";
+import { Course } from "../../types/course.types";
+import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 
 interface CourseCardProps {
   course: Course;
@@ -8,7 +9,9 @@ interface CourseCardProps {
 
 const CourseCard: React.FC<CourseCardProps> = ({ course, className = "" }) => {
   return (
-    <div className={`w-full border border-gray-300 p-3 rounded-3xl my-4 ${className}`}>
+    <div
+      className={`w-full border border-[#80C9E0] p-3 rounded-3xl my-4 ${className}`}
+    >
       <div className="flex flex-row gap-6 items-center justify-between">
         <div>
           <h1 className="font-bold font-sans text-2xl">{course.title}</h1>
@@ -16,10 +19,13 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "" }) => {
         </div>
         <div className="flex flex-row gap-3 items-center">
           {course.stats.map((stat, index) => (
-            <div key={index} className="w-16 h-16 rounded-lg p-1 bg-gray-200 flex flex-col items-center justify-center gap-3">
+            <div
+              key={index}
+              className="w-16 h-16 rounded-lg p-1 bg-gray-200 flex flex-col items-center justify-center gap-3"
+            >
               {stat.icon}
               <p className="font-semibold text-xs font-sans text-gray-600">
-                {stat.value}/{stat.total}
+                {stat.total}
               </p>
             </div>
           ))}
@@ -37,14 +43,17 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "" }) => {
         </div>
       )}
 
-      <button 
+      {/* <button
         className="w-full h-14 rounded-xl bg-[#255C79] text-white"
         onClick={course.onExplore}
       >
         Explore More
-      </button>
+      </button> */}
+      <PrimaryButton onClick={() => console.log("Primary Button Clicked")}>
+        Explore More
+      </PrimaryButton>
     </div>
   );
 };
 
-export default CourseCard; 
+export default CourseCard;
