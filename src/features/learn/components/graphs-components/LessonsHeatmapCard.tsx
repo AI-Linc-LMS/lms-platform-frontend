@@ -1,121 +1,137 @@
-import { setYear } from "date-fns/fp/setYear";
-// import { useState } from "react";
+import React, { useMemo, useState } from "react";
+import leftArrow from "../../../../assets/dashboard_assets/leftArrow.png";
+import rightArrow from "../../../../assets/dashboard_assets/rightArrow.png";
+import MonthHeatmap from "./MonthHeatmap";
+import {
+  endOfToday,
+  subMonths,
+  getDate,
+  getMonth,
+  getYear,
+  format,
+} from "date-fns";
+
+interface ActivityData {
+  date: string;
+  level: number;
+  value: number;
+}
 
 interface LessonsHeatmapCardProps {
-  months: string[];
-  days: string[];
-  activityData: { day: number; month: number; level: number; value: number }[];
-  hoveredCell: { day: number; month: number } | null;
-  setHoveredCell: (cell: { day: number; month: number } | null) => void;
-  year: string;
+  hoveredCell: string | null;
+  setHoveredCell: (cell: string | null) => void;
+  activityData: ActivityData[];
 }
 
 const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
-  months,
-  days,
-  activityData,
   hoveredCell,
   setHoveredCell,
-  year,
+  activityData,
 }) => {
-  const getActivityColor = (level: number) => {
-    const colors = [
-      "bg-gray-200",
-      "bg-gray-300",
-      "bg-gray-400",
-      "bg-gray-600",
-      "bg-gray-800",
-    ];
-    return colors[level];
+  const [monthOffset, setMonthOffset] = useState(0);
+  const [year, setYear] = useState(2025);
+
+  const getLast6MonthsData = () => {
+    const monthsData = [];
+    const today = subMonths(endOfToday(), monthOffset);
+
+    for (let i = 5; i >= 0; i--) {
+      const date = subMonths(today, i);
+      const monthName = format(date, "MMM");
+      const monthIndex = getMonth(date);
+      const year = getYear(date);
+      const totalDays = new Date(year, monthIndex + 1, 0).getDate();
+      const lastDay =
+        i === 0 && monthOffset === 0 ? getDate(endOfToday()) : totalDays;
+
+      monthsData.push({
+        monthName,
+        month: monthIndex,
+        year,
+        daysCount: lastDay,
+      });
+    }
+
+    return monthsData;
   };
 
-  const getActivityForCell = (day: number, month: number) => {
-    return activityData.find(
-      (item) => item.day === day && item.month === month
-    );
+  const monthsData = useMemo(() => getLast6MonthsData(), [monthOffset]);
+  const activityMap = useMemo(() => {
+    return new Map(activityData.map((item) => [item.date, item]));
+  }, [activityData]);
+
+  const handlePrev = () => setMonthOffset((prev) => prev + 1);
+  const handleNext = () => {
+    if (monthOffset > 0) setMonthOffset((prev) => prev - 1);
   };
 
   return (
-    <div className="w-full bg-white rounded-xl p-6 shadow-sm border border-[#DEE2E6]">
+    <div className="w-full rounded-xl p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-medium text-gray-700">Lessons</h2>
-        <div className="relative">
-          <select
-            value={year}
-            onChange={(e) => setYear(parseInt(e.target.value, 10))}
-            className="appearance-none bg-white border border-gray-200 rounded-full px-4 py-2 pr-8 text-gray-700 focus:outline-none"
-          >
-            <option>2023</option>
-            <option>2024</option>
-            <option>2025</option>
-          </select>
-        </div>
+        <select
+          value={year}
+          onChange={(e) => setYear(Number(e.target.value))}
+          className="appearance-none bg-white border border-gray-200 rounded-full px-4 py-2 text-gray-700"
+          disabled // You may later support per-year filtering
+        >
+          <option value="2023">2023</option>
+          <option value="2024">2024</option>
+          <option value="2025">2025</option>
+        </select>
       </div>
 
-      <div className="flex text-sm text-gray-500 mb-2 pl-12">
-        {months.map((month) => (
-          <div key={month} className="flex-1 text-center">
-            {month}
-          </div>
-        ))}
-      </div>
-
-      <div className="space-y-1">
-        {days.map((day, dayIndex) => (
-          <div key={day} className="flex items-center">
-            <div className="w-12 text-right pr-2 text-gray-500">{day}</div>
-            <div className="flex flex-1">
-              {months.map((month, monthIndex) => {
-                const activity = getActivityForCell(dayIndex, monthIndex);
-                const isHovered =
-                  hoveredCell?.day === dayIndex &&
-                  hoveredCell?.month === monthIndex;
-
-                return (
-                  <div
-                    key={`${month}-${day}`}
-                    className="flex-1 flex justify-center relative"
-                    onMouseEnter={() =>
-                      setHoveredCell({ day: dayIndex, month: monthIndex })
-                    }
-                    onMouseLeave={() => setHoveredCell(null)}
-                  >
-                    <div
-                      className={`w-6 h-6 rounded-sm ${
-                        activity
-                          ? getActivityColor(activity.level)
-                          : "bg-gray-200"
-                      } transition-transform ${
-                        isHovered ? "transform scale-110 shadow-md" : ""
-                      }`}
-                    />
-                    {isHovered && activity && (
-                      <div className="absolute top-full mt-1 z-10 bg-white p-2 rounded shadow-md text-xs border border-gray-200 whitespace-nowrap">
-                        <p className="font-medium">{`${months[monthIndex]} ${
-                          dayIndex + 1
-                        }`}</p>
-                        <p className="text-gray-700">{`Activity: ${activity.value} hours`}</p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+      {/* Month Heatmap View */}
+      <div className="flex justify-evenly items-start space-x-5">
+        {monthsData.map((monthData, monthIndex) => (
+          <div key={monthIndex} className="flex flex-col items-center">
+            <MonthHeatmap
+              monthName={monthData.monthName}
+              month={monthData.month}
+              year={monthData.year}
+              daysCount={monthData.daysCount}
+              activityMap={activityMap}
+              hoveredCell={hoveredCell}
+              setHoveredCell={setHoveredCell}
+            />
           </div>
         ))}
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-end mt-4 text-sm text-gray-500">
+      <div className="flex items-center justify-end m-4 text-sm text-gray-500">
         <span>Less</span>
         <div className="flex mx-2">
-          <div className="w-5 h-5 rounded-sm bg-gray-200 mx-0.5"></div>
-          <div className="w-5 h-5 rounded-sm bg-gray-300 mx-0.5"></div>
-          <div className="w-5 h-5 rounded-sm bg-gray-400 mx-0.5"></div>
-          <div className="w-5 h-5 rounded-sm bg-gray-600 mx-0.5"></div>
-          <div className="w-5 h-5 rounded-sm bg-gray-800 mx-0.5"></div>
+          <div className="w-5 h-5 rounded-sm bg-gray-200 mx-0.5" />
+          <div className="w-5 h-5 rounded-sm bg-green-200 mx-0.5" />
+          <div className="w-5 h-5 rounded-sm bg-green-400 mx-0.5" />
+          <div className="w-5 h-5 rounded-sm bg-green-600 mx-0.5" />
+          <div className="w-5 h-5 rounded-sm bg-green-800 mx-0.5" />
         </div>
         <span>More</span>
+      </div>
+
+      {/* Navigation Arrows */}
+      <div className="bottom-3 right-4 flex justify-end space-x-3">
+        <button
+          onClick={handlePrev}
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-950 shadow"
+        >
+          <span className="text-lg">
+            <img src={leftArrow} />
+          </span>
+        </button>
+        <button
+          onClick={handleNext}
+          disabled={monthOffset === 0}
+          className={`w-10 h-10 flex items-center justify-center rounded-full ${
+            monthOffset === 0 ? "bg-gray-200 cursor-not-allowed" : "bg-blue-950"
+          } shadow`}
+        >
+          <span className="text-lg text-">
+            <img src={rightArrow} />
+          </span>
+        </button>
       </div>
     </div>
   );
