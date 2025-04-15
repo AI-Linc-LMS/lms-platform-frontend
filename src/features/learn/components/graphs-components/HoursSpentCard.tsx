@@ -16,9 +16,14 @@ interface HoursSpentCardProps {
   totalHours: number;
 }
 
-const HoursSpentCard = ({ timeRange, setTimeRange, hourData, totalHours }: HoursSpentCardProps) => {
+const HoursSpentCard = ({
+  timeRange,
+  setTimeRange,
+  hourData,
+  totalHours,
+}: HoursSpentCardProps) => {
   return (
-    <div className="w-full bg-white rounded-xl p-6 shadow-sm border border-[#DEE2E6]">
+    <div className="w-full">
       <div className="flex justify-between items-center mb-4">
         <div>
           <h2 className="text-4xl font-bold text-gray-800">{totalHours}</h2>
@@ -54,16 +59,19 @@ const HoursSpentCard = ({ timeRange, setTimeRange, hourData, totalHours }: Hours
           >
             <defs>
               <linearGradient id="hoursFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#6B7280" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0.1} />
+                <stop offset="20%" stopColor="#417845" stopOpacity={3.0} />
+                <stop offset="95%" stopColor="#F4F9F5" stopOpacity={0.1} />
               </linearGradient>
             </defs>
+
             <XAxis
               dataKey="day"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#6B7280" }}
-              padding={{ left: 10, right: 10 }}
+              tick={{ fill: "#6B7280", fontSize: 12 }}
+              angle={0}
+              textAnchor="end"
+              interval={Math.ceil(hourData.length / 7)} // Spread out labels if too many
             />
             <YAxis
               domain={[0, 24]}
@@ -74,14 +82,14 @@ const HoursSpentCard = ({ timeRange, setTimeRange, hourData, totalHours }: Hours
             />
             <Tooltip content={<CustomTooltip />} />
             <Area
-              type="monotone"
+              type="linear"
               dataKey="hours"
-              stroke="#6B7280"
+              stroke="#417845"
               strokeWidth={3}
               fill="url(#hoursFill)"
               activeDot={{
                 r: 6,
-                fill: "#6B7280",
+                fill: "#417845",
                 strokeWidth: 2,
                 stroke: "#fff",
               }}
@@ -90,13 +98,13 @@ const HoursSpentCard = ({ timeRange, setTimeRange, hourData, totalHours }: Hours
         </ResponsiveContainer>
       </div>
 
-      <div className="flex justify-between mt-2 text-gray-500">
+      {/*<div className="flex justify-between mt-2 text-gray-500">
         <span>Sun</span>
         <span>Wed</span>
         <span>Sat</span>
-      </div>
+      </div>*/}
     </div>
   );
 };
 
-export default HoursSpentCard; 
+export default HoursSpentCard;
