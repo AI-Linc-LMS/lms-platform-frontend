@@ -53,23 +53,23 @@ const CourseCard = ({
     };
 
     return (
-        <div className="rounded-3xl border border-[#80C9E0] p-6 flex flex-col w-full">
+        <div className="rounded-3xl border border-[#80C9E0] p-6 flex flex-col w-full bg-white">
             <h2 className="text-2xl font-bold text-gray-800 mb-2">{title}</h2>
             <p className="text-gray-600 mb-6">{description}</p>
 
             <div className="flex flex-wrap gap-4 mb-8">
-                <div className="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
+                <div className="flex items-center gap-2 border border-[#DEE2E6] rounded-xl px-4 py-2">
                     <ZapIcon />
                     <span className="text-sm">{level}</span>
                 </div>
 
-                <div className="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
+                <div className="flex items-center gap-2 border border-[#DEE2E6] rounded-xl  px-4 py-2">
                     <ClockIcon />
                     <span className="text-sm">{duration}</span>
                 </div>
 
                 {certification && (
-                    <div className="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
+                    <div className="flex items-center gap-2 border border-[#DEE2E6] rounded-xl  px-4 py-2">
                         <AwardIcon />
                         <span className="text-sm">Certification Available</span>
                     </div>
