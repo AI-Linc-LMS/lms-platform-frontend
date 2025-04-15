@@ -1,7 +1,11 @@
+import BasedLearning from "../components/based-learning/BasedLearning";
+import BasedLearningCourses from "../components/based-learning/BasedLearningCourses";
+
 import ContinueCourses from "../components/continue-learning/ContinueCourses";
 import ContinueCoursesDetails from "../components/continue-learning/ContinueCoursesDetails";
 import CourseDetails from "../components/courses/CoursesDetails";
 import EnrolledCourse from "../components/courses/EnrolledCourse";
+import Referrals from "../components/referrals/Referrals";
 
 // import TimeTrackingDashboard from "../components/graphs-components/TimeTrackingDashboard";
 
@@ -17,10 +21,19 @@ const Learn = () => {
       <CourseDetails />
       <ContinueCourses />
       <ContinueCoursesDetails />
+      <BasedLearning />
+      <div className="flex flex-row items-center justify-between w-full gap-4 ">
 
-    
+        <BasedLearningCourses />
+        <Referrals />
+      </div>
 
-    
+
+
+
+
+
+
     </div>
   );
 };
