@@ -13,7 +13,7 @@ interface LeaderboardProps {
 
 const Leaderboard: React.FC<LeaderboardProps> = ({ data }) => {
   return (
-    <div className="p-6">
+    <div className="w-full">
       <h2 className="text-lg font-semibold text-gray-700 mb-2">
         Track Your Progress
       </h2>

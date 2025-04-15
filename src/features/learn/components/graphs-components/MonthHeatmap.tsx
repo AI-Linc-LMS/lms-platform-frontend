@@ -60,7 +60,7 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
                   onMouseLeave={() => setHoveredCell(null)}
                 >
                   <div
-                    className={`w-[10px] h-[10px] rounded-sm ${
+                    className={`w-[13px] h-[13px] rounded-sm ${
                       activity ? getActivityColor(activity.level) : "bg-gray-200"
                     } ${isHovered ? "transform scale-110 shadow-md" : ""}`}
                   />
