@@ -35,7 +35,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
     const monthsData = [];
     const today = subMonths(endOfToday(), monthOffset);
 
-    for (let i = 5; i >= 0; i--) {
+    for (let i = 4; i >= 0; i--) {
       const date = subMonths(today, i);
       const monthName = format(date, "MMM");
       const monthIndex = getMonth(date);
@@ -66,7 +66,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
   };
 
   return (
-    <div className="w-full rounded-xl p-6">
+    <div className="w-full">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-medium text-gray-700">Lessons</h2>
         <select
@@ -82,7 +82,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
       </div>
 
       {/* Month Heatmap View */}
-      <div className="flex justify-evenly items-start space-x-5">
+      <div className="flex justify-evenly items-start">
         {monthsData.map((monthData, monthIndex) => (
           <div key={monthIndex} className="flex flex-col items-center">
             <MonthHeatmap

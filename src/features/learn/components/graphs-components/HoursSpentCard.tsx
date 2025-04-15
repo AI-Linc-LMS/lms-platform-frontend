@@ -24,10 +24,10 @@ const HoursSpentCard = ({
 }: HoursSpentCardProps) => {
   return (
     <div className="w-full">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-2">
         <div>
-          <h2 className="text-4xl font-bold text-gray-800">{totalHours}</h2>
-          <p className="text-gray-500 text-lg">Total hours spent</p>
+          <h2 className="text-2xl font-bold text-gray-800">{totalHours}</h2>
+          <p className="text-gray-500 text-md">Total hours spent</p>
         </div>
         <div className="relative">
           <select
@@ -51,7 +51,7 @@ const HoursSpentCard = ({
         </div>
       </div>
 
-      <div className="h-[200px] mt-8">
+      <div className="h-[200px] mt-4">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={hourData}
@@ -78,7 +78,7 @@ const HoursSpentCard = ({
               axisLine={false}
               tickLine={false}
               tick={{ fill: "#6B7280" }}
-              ticks={[0, 12, 24]}
+              ticks={[0, 6, 12, 18, 24]}
             />
             <Tooltip content={<CustomTooltip />} />
             <Area
