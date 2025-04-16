@@ -13,7 +13,8 @@ interface LeaderboardProps {
 
 const Leaderboard: React.FC<LeaderboardProps> = ({ data }) => {
   return (
-    <div className="w-full">
+  <div className="flex flex-col w-full max-w-[350px] transition-all duration-300">
+
       <h2 className="text-lg font-semibold text-gray-700 mb-2">
         Track Your Progress
       </h2>
@@ -22,7 +23,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ data }) => {
       </h3>
 
       <div className="overflow-x-auto rounded-xl border border-gray-300">
-        <table className="w-full border-separate border-spacing-0 text-center">
+        <table className="w-full border-separate border-spacing-0 text-center min-h-[350px]">
           <thead className="bg-gray-100">
             <tr>
               <th className="border border-gray-300 px-2 py-2 text-xs text-gray-600">
@@ -46,7 +47,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ data }) => {
                 <tr
                   key={index}
                   className={`transition duration-200 ${
-                    isLast ? "bg-blue-900 text-white" : "hover:bg-gray-50"
+                    isLast ? "bg-[#B4E0ED] text-[#264D64" : "hover:bg-gray-50"
                   }`}
                 >
                   <td className="border border-gray-300 px-2 py-2 text-xs">

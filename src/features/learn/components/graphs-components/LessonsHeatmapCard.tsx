@@ -66,7 +66,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
   };
 
   return (
-    <div className="w-full">
+    <div className="flex flex-col w-full max-w-[470px]">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-medium text-gray-700">Lessons</h2>
         <select
@@ -102,11 +102,11 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
       <div className="flex items-center justify-end m-4 text-sm text-gray-500">
         <span>Less</span>
         <div className="flex mx-2">
-          <div className="w-5 h-5 rounded-sm bg-gray-200 mx-0.5" />
-          <div className="w-5 h-5 rounded-sm bg-green-200 mx-0.5" />
-          <div className="w-5 h-5 rounded-sm bg-green-400 mx-0.5" />
-          <div className="w-5 h-5 rounded-sm bg-green-600 mx-0.5" />
-          <div className="w-5 h-5 rounded-sm bg-green-800 mx-0.5" />
+          <div className="w-5 h-5 rounded-sm bg-[#CDE5CE] mx-0.5" />
+          <div className="w-5 h-5 rounded-sm bg-[#A6CFA9] mx-0.5" />
+          <div className="w-5 h-5 rounded-sm bg-[#77B17B] mx-0.5" />
+          <div className="w-5 h-5 rounded-sm bg-[#417845] mx-0.5" />
+          <div className="w-5 h-5 rounded-sm bg-[#2E4D31] mx-0.5" />
         </div>
         <span>More</span>
       </div>
