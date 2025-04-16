@@ -6,6 +6,13 @@ export interface CourseStat {
   total: string;
 }
 
+export interface CourseProgress {
+  currentModule?: number;
+  totalModules?: number;
+  moduleTitle?: string;
+  percentComplete?: number;
+}
+
 export interface Course {
   id: number;
   title: string;
@@ -13,5 +20,7 @@ export interface Course {
   description: string;
   stats: CourseStat[];
   trustedBy?: string[];
+  level?: string;
+  progress?: CourseProgress;
   onExplore: () => void;
 } 
