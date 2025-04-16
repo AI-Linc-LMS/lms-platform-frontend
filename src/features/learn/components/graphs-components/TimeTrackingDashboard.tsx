@@ -64,7 +64,7 @@ export default function TimeTrackingDashboard() {
   console.log(activityData);
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 my-4">
+    <div className="flex flex-row w-full gap-4">
       <HoursSpentCard
         timeRange={timeRange}
         setTimeRange={setTimeRange}

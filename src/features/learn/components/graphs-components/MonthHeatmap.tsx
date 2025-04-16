@@ -43,7 +43,7 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
   });
 
   return (
-    <div className="w-full flex flex-col space-y-1">
+    <div className="flex flex-col space-y-1 w-full">
       <div className="flex space-x-1">
         {weeks.map((week, weekIndex) => (
           <div key={weekIndex} className="flex flex-col space-y-1">
@@ -85,14 +85,15 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
 };
 
 const getActivityColor = (level: number) => {
-  const colors = [
+  const customColors = [
     "bg-gray-200",
-    "bg-green-200",
-    "bg-green-400",
-    "bg-green-600",
-    "bg-green-800",
+    "bg-[#CDE5CE]",
+    "bg-[#A6CFA9]",
+    "bg-[#77B17B]",
+    "bg-[#417845]",
+    "bg-[#2E4D31]",
   ];
-  return colors[level];
+  return customColors[level] || "bg-gray-200";
 };
 
 export default MonthHeatmap;
