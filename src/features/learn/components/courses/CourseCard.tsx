@@ -10,7 +10,7 @@ interface CourseCardProps {
 const CourseCard: React.FC<CourseCardProps> = ({ course, className = "" }) => {
   return (
     <div
-      className={`w-full border border-[#80C9E0] p-3 rounded-3xl my-4 ${className}`}
+      className={`w-full border border-[#80C9E0] p-3 rounded-3xl my-4 bg-white ${className}`}
     >
       <div className="flex flex-row gap-6 items-center justify-between">
         <div>
