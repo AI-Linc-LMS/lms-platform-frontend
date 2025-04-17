@@ -46,9 +46,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ data }) => {
                 <tr
                   key={index}
                   className={`transition duration-200 ${
-                    isLast
-                      ? "bg-[#B4E0ED] text-[#264D64]"
-                      : "hover:bg-gray-50"
+                    isLast ? "bg-[#B4E0ED] text-[#264D64]" : "hover:bg-gray-50"
                   }`}
                 >
                   <td className="border-b border-r border-gray-300 px-2 py-2 text-xs">
@@ -68,6 +66,28 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ data }) => {
             })}
           </tbody>
         </table>
+      </div>
+      <div className="bg-[#DEE2E6] rounded-xl px-4 py-4 flex items-center gap-2 max-w-md mt-5">
+        <div className="mt-0.5 text-gray-500">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-4.5 h-4.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z"
+            />
+          </svg>
+        </div>
+        <p className="text-[13px] text-[#6C757D]">
+          As you complete modules you will move top of the leaderboard and earn
+          exciting rewards.
+        </p>
       </div>
     </div>
   );
