@@ -1,5 +1,5 @@
 import React from "react";
-import light  from "../../../assets/dashboard_assets/light.png";
+import light from "../../../assets/dashboard_assets/light.png";
 
 interface DailyProgressItem {
   standing: string;
@@ -100,6 +100,28 @@ const DailyProgress: React.FC<DailyProgressProps> = ({
       <div className="flex justify-between text-xs mt-1 text-gray-500">
         <span>0 mins</span>
         <span>{goalMinutes} mins</span>
+      </div>
+      <div className="bg-[#DEE2E6] rounded-xl px-5 py-4 flex items-center gap-2 max-w-md mt-5">
+        <div className="mt-0.5 text-gray-500">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-4.5 h-4.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z"
+            />
+          </svg>
+        </div>
+        <p className="text-[13px] text-[#6C757D]">
+          Log in every day and snag yourself a shiny +1 Streak point! Don’t miss
+          out on the fun—keep those streaks rolling!
+        </p>
       </div>
     </div>
   );
