@@ -82,7 +82,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
       </div>
 
       {/* Month Heatmap View */}
-      <div className="flex justify-evenly items-start">
+      <div className="flex justify-between items-start">
         {monthsData.map((monthData, monthIndex) => (
           <div key={monthIndex} className="flex flex-col items-center">
             <MonthHeatmap
@@ -125,7 +125,9 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
           onClick={handleNext}
           disabled={monthOffset === 0}
           className={`w-10 h-10 flex items-center justify-center rounded-full ${
-            monthOffset === 0 ? "bg-gray-200 cursor-not-allowed" : "bg-[#12293A]"
+            monthOffset === 0
+              ? "bg-gray-200 cursor-not-allowed"
+              : "bg-[#12293A]"
           } shadow`}
         >
           <span className="text-lg text-">
