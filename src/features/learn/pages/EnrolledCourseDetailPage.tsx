@@ -6,6 +6,7 @@ import PrimaryButton from "../../../commonComponents/common-buttons/primary-butt
 import DashboardPieChart from "../components/enrolled-courses/DashboardPieChart";
 import BackToHomeButton from "../components/enrolled-courses/BackToHomeButton";
 import CourseContent from "../components/enrolled-courses/CourseContent";
+import EnrolledLeaderBoard from "../components/enrolled-courses/EnrolledLeader";
 
 const EnrolledCourseDetailPage: React.FC = () => {
   const { courseName } = useParams<{ courseName: string }>();
@@ -58,7 +59,11 @@ const EnrolledCourseDetailPage: React.FC = () => {
         <div className="w-full">
           <CourseContent course={course} />
         </div>
+        <div className="flex flex-col gap-4 ">
+
         <DashboardPieChart />
+        <EnrolledLeaderBoard />
+        </div>
       </div>
     </>
   );
