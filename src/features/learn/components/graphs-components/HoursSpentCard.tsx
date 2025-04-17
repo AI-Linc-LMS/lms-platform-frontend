@@ -1,4 +1,3 @@
-// import { useState } from "react";
 import {
   XAxis,
   YAxis,
@@ -22,6 +21,17 @@ const HoursSpentCard = ({
   hourData,
   totalHours,
 }: HoursSpentCardProps) => {
+  // Utility to format day label based on time range
+  const formatDay = (day: string | number, range: string) => {
+    const num = Number(day);
+
+    if (range === "Last Week" && typeof day === "string") return day;
+    if (range === "Last 15 Days") return [1, 3, 6, 9, 12, 15].includes(num) ? `${num}` : ' ';
+    if (range === "Last 30 Days") return [1, 5, 10, 15, 20, 25, 30].includes(num) ? `${num}` : ' ';
+
+    return ' ';
+  };
+
   return (
     <div className="flex flex-col w-full">
       <div className="flex justify-between items-center mb-2">
@@ -35,9 +45,9 @@ const HoursSpentCard = ({
             onChange={(e) => setTimeRange(e.target.value)}
             className="appearance-none bg-white border border-gray-200 rounded-full px-4 py-2 pr-8 text-gray-700 focus:outline-none"
           >
-            <option>Last 7 Days</option>
-            <option>Last 30 Days</option>
-            <option>Last 3 Months</option>
+            <option value="Last Week">Last Week</option>
+            <option value="Last 15 Days">Last 15 Days</option>
+            <option value="Last 30 Days">Last 30 Days</option>
           </select>
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
             <svg
@@ -68,18 +78,19 @@ const HoursSpentCard = ({
               dataKey="day"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#6B7280", fontSize: 12 }}
-              angle={0}
-              textAnchor="end"
-              interval={Math.ceil(hourData.length / 7)} // Spread out labels if too many
+              tick={{ fill: "#6B7280"}}
+              interval={0} 
+              tickFormatter={(day) => formatDay(day, timeRange)}
             />
+
             <YAxis
               domain={[0, 24]}
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#6B7280" }}
+              tick={{ fill: "#6B7280"}}
               ticks={[0, 6, 12, 18, 24]}
             />
+
             <Tooltip content={<CustomTooltip />} />
             <Area
               type="linear"
@@ -97,12 +108,6 @@ const HoursSpentCard = ({
           </AreaChart>
         </ResponsiveContainer>
       </div>
-
-      {/*<div className="flex justify-between mt-2 text-gray-500">
-        <span>Sun</span>
-        <span>Wed</span>
-        <span>Sat</span>
-      </div>*/}
     </div>
   );
 };
