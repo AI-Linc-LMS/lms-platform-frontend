@@ -17,7 +17,7 @@ const Learn = () => {
   return (
     <div>
       <WelcomeSection />
-      <div className="flex flex-row justify-between mt-5 gap-8">
+      <div className="flex flex-row justify-between mt-10 gap-8">
         <div className="flex flex-col justify-between w-full gap-4 mt-4">
           <TimeTrackingDashboard />
 
@@ -26,6 +26,9 @@ const Learn = () => {
 
           <ContinueCourses />
           <ContinueCoursesDetails />
+ 
+          <BasedLearning />
+          <BasedLearningCourses />
         </div>
 
         <div className="flex flex-col gap-10">
@@ -34,12 +37,6 @@ const Learn = () => {
           <StreakTable activeDays={[1, 2, 3, 12, 13, 15, 16, 17]} />
           <Referrals />
         </div>
-      </div>
-
-      <BasedLearning />
-      <div className="flex flex-row items-center justify-between w-full gap-4 ">
-        <BasedLearningCourses />
-        
       </div>
     </div>
   );
