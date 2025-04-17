@@ -20,7 +20,7 @@ export interface Course {
   description: string;
   stats: CourseStat[];
   trustedBy?: string[];
-  level?: string;
+  level?: "Beginner" | "Intermediate" | "Advanced";
   progress?: CourseProgress;
   onExplore: () => void;
 } 
