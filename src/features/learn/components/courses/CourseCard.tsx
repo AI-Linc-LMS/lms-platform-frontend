@@ -1,6 +1,7 @@
 import React from "react";
 import { Course } from "../../types/course.types";
 import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
+import { useNavigate } from "react-router-dom";
 
 interface CourseCardProps {
   course: Course;
@@ -8,6 +9,15 @@ interface CourseCardProps {
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({ course, className = "" }) => {
+  const navigate = useNavigate();
+
+  const handleExploreClick = () => {
+    // Create URL-friendly version of the course title
+    const courseNameSlug = course.title.toLowerCase().replace(/\s+/g, '-');
+    // Navigate to the course detail page with the course name
+    navigate(`/courses/${courseNameSlug}`);
+  };
+
   return (
     <div
       className={`w-full border border-[#80C9E0] p-3 rounded-3xl my-4 bg-white ${className}`}
@@ -49,7 +59,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "" }) => {
       >
         Explore More
       </button> */}
-      <PrimaryButton onClick={() => console.log("Primary Button Clicked")}>
+      <PrimaryButton onClick={handleExploreClick}>
         Explore More
       </PrimaryButton>
     </div>

@@ -1,6 +1,8 @@
 import Jobs from "./features/jobs/pages/Jobs";
 import Learn from "./features/learn/pages/Learn";
 import Live from "./features/live/pages/Live";
+// Might have potential bug
+import CourseDetailPage from "./features/learn/pages/EnrolledCourseDetailPage";
 export interface RouteConfig {
   path: string;
   component: React.ComponentType;
@@ -15,15 +17,20 @@ const routes: RouteConfig[] = [
     isPrivate: true,
   },
   {
-    path: '/live',
+    path: "/live",
     component: Live,
-    isPrivate:true,
+    isPrivate: true,
   },
   {
-    path:'/jobs',
+    path: "/jobs",
     component: Jobs,
     isPrivate: true,
-  }
+  },
+  {
+    path: "/courses/:courseName",
+    component: CourseDetailPage,
+    isPrivate: true,
+  },
 ];
 
 export default routes;
