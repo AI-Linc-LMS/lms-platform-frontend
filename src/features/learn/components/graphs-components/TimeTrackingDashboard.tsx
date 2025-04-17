@@ -11,7 +11,7 @@ interface ActivityData {
 }
 
 export default function TimeTrackingDashboard() {
-  const [timeRange, setTimeRange] = useState("Last 7 Days");
+  const [timeRange, setTimeRange] = useState("Last Week");
   const [hourData, setHourData] = useState<{ day: string; hours: number }[]>(
     []
   );
@@ -20,28 +20,38 @@ export default function TimeTrackingDashboard() {
   const [hoveredCell, setHoveredCell] = useState<string | null>(null);
 
   useEffect(() => {
-    generateLineChartData();
+    generateLineChartData(timeRange);
     generateHeatmapData();
   }, [timeRange]);
 
-  const generateLineChartData = () => {
-    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const data = days.map((day) => ({
-      day,
-      hours: Math.floor(Math.random() * 20) + 5,
-    }));
-
-    const total = data.reduce((sum, item) => sum + item.hours, 0);
-    setTotalHours(total);
+  const generateLineChartData = (range: string) => {
+    let data: { day: string; hours: number }[] = [];
+  
+    if (range === "Last Week") {
+      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      data = days.map((day) => ({
+        day,
+        hours: Math.floor(Math.random() * 20) + 5,
+      }));
+    } else {
+      const count = range === "Last 15 Days" ? 15 : 30;
+      data = Array.from({ length: count }, (_, index) => ({
+        day: (index + 1).toString(), // make sure it's a string
+        hours: Math.floor(Math.random() * 20) + 5,
+      }));
+    }
+  
     setHourData(data);
+    setTotalHours(data.reduce((sum, d) => sum + d.hours, 0));
   };
+  
 
   const generateHeatmapData = () => {
     const dummyActivityData: ActivityData[] = [];
     const currentDate = new Date();
 
     const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(currentDate.getMonth() - 6); 
+    sixMonthsAgo.setMonth(currentDate.getMonth() - 6);
 
     const date = new Date(sixMonthsAgo);
     while (date <= currentDate) {
@@ -61,7 +71,7 @@ export default function TimeTrackingDashboard() {
 
     setActivityData(dummyActivityData);
   };
-  console.log(activityData);
+  //console.log(activityData);
 
   return (
     <div className="flex flex-row w-full gap-4">
@@ -72,7 +82,7 @@ export default function TimeTrackingDashboard() {
         totalHours={totalHours}
       />
       <LessonsHeatmapCard
-        activityData={activityData} 
+        activityData={activityData}
         hoveredCell={hoveredCell}
         setHoveredCell={setHoveredCell}
       />
