@@ -21,7 +21,7 @@ const CourseTopicDetailPage: React.FC = () => {
         <p className="text-xl mb-4">Topic not found</p>
         <button 
           className="px-4 py-2 bg-[#255C79] text-white rounded-xl"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/learn/course')}
         >
           Back
         </button>
