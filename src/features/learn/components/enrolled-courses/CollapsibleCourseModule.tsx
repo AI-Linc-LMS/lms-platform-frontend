@@ -56,7 +56,7 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
 
   return (
     <><div>
-      <h2 className="text-xl font-semibold text-[#257195]">{week.title}</h2>
+      <h2 className="text-xl font-semibold text-[#257195] p-4">{week.title}</h2>
     </div><div className="mb-6 border border-gray-100 rounded-[22px] shadow-sm">
         {/* Week Header */}
         <div
