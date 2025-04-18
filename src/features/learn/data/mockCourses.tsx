@@ -7,6 +7,18 @@ import {
   FAQIcon,
 } from "../../../commonComponents/icons/learnIcons/CourseIcons";
 
+import pic_1 from "../../../assets/exploremore/mentor-avatars/mentor-1.jpeg";
+import pic_2 from "../../../assets/exploremore/mentor-avatars/mentor-2.png";
+import pic_3 from "../../../assets/exploremore/mentor-avatars/mentor-3.png";
+import pic_4 from "../../../assets/exploremore/mentor-avatars/mentor-4.png";
+import pic_5 from "../../../assets/exploremore/mentor-avatars/mentor-5.png";
+
+import company_1 from "../../../assets/dashboard_assets/company-logos/goggle.png";
+import company_2 from "../../../assets/dashboard_assets/company-logos/microsoft.png";
+import company_3 from  "../../../assets/dashboard_assets/company-logos/tcs.png";
+import company_4 from "../../../assets/dashboard_assets/company-logos/wipro.png";
+import company_5 from "../../../assets/dashboard_assets/company-logos/dello.png";
+
 export const defaultCourses: Course[] = [
   {
     id: 1,
@@ -20,7 +32,14 @@ export const defaultCourses: Course[] = [
       { icon: <CodeIcon />, value: "0", total: "12" },
       { icon: <FAQIcon />, value: "0", total: "6" },
     ],
-    trustedBy: ["Google", "Microsoft", "Amazon"],
+    trustedBy: [company_1,company_2,company_3,company_4,company_5],
+    teacherAvatar: [
+      pic_1,
+      pic_2,
+      pic_3,
+      pic_4,
+      pic_5,
+    ],
     level: "Intermediate",
     onExplore: () => console.log("Explore More clicked for course 1"),
   },
@@ -36,7 +55,14 @@ export const defaultCourses: Course[] = [
       { icon: <CodeIcon />, value: "0", total: "16" },
       { icon: <FAQIcon />, value: "0", total: "8" },
     ],
-    trustedBy: ["NVIDIA", "Intel", "OpenAI"],
+    trustedBy: [company_1,company_2,company_3,company_4,company_5],
+    teacherAvatar: [
+      pic_1,
+      pic_2,
+      pic_3,
+      pic_4,
+      pic_5,
+    ],
     level: "Beginner",
     onExplore: () => console.log("Explore More clicked for course 2"),
   },
@@ -52,7 +78,14 @@ export const defaultCourses: Course[] = [
       { icon: <CodeIcon />, value: "0", total: "14" },
       { icon: <FAQIcon />, value: "0", total: "10" },
     ],
-    trustedBy: ["IBM", "Deloitte", "Accenture"],
+    trustedBy: [company_1,company_2,company_3,company_4,company_5],
+    teacherAvatar: [
+      pic_1,
+      pic_2,
+      pic_3,
+      pic_4,
+      pic_5,
+    ],
     level: "Intermediate",
     onExplore: () => console.log("Explore More clicked for course 3"),
   },
@@ -68,7 +101,14 @@ export const defaultCourses: Course[] = [
       { icon: <CodeIcon />, value: "0", total: "20" },
       { icon: <FAQIcon />, value: "0", total: "12" },
     ],
-    trustedBy: ["Meta", "Hugging Face", "Google Research"],
+    trustedBy: [company_1,company_2,company_3,company_4,company_5],
+    teacherAvatar: [
+      pic_1,
+      pic_2,
+      pic_3,
+      pic_4,
+      pic_5,
+    ],
     level: "Advanced",
     onExplore: () => console.log("Explore More clicked for course 4"),
   }

@@ -3,6 +3,8 @@ import Learn from "./features/learn/pages/Learn";
 import Live from "./features/live/pages/Live";
 // Might have potential bug
 import CourseDetailPage from "./features/learn/pages/EnrolledCourseDetailPage";
+import CourseTopicDetailPage from "./features/learn/pages/CourseTopicDetailPage";
+
 export interface RouteConfig {
   path: string;
   component: React.ComponentType;
@@ -29,6 +31,11 @@ const routes: RouteConfig[] = [
   {
     path: "/courses/:courseName",
     component: CourseDetailPage,
+    isPrivate: true,
+  },
+  {
+    path: "/learn/course/:weekId/:topicId",
+    component: CourseTopicDetailPage,
     isPrivate: true,
   },
 ];
