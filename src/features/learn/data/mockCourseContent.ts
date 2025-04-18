@@ -5,11 +5,13 @@ export const mockCourseContent: CourseWeek[] = [
   {
     id: "week-1",
     title: "Week 1",
+    
     modules: [
       {
         id: "Intro-ml-model-deployment",
         title: "Introduction To Machine Learning Model Deployment",
         completed: 12,
+        started: true,
         content: [
           { type: "video", title: "Videos", count: 3 },
           { type: "article", title: "articles", count: 3 },
