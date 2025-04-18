@@ -21,7 +21,7 @@ const DailyProgress: React.FC<DailyProgressProps> = ({
   const progressPercent = Math.min((progressMinutes / goalMinutes) * 100, 100);
 
   return (
-    <div className="flex flex-col w-full lg:max-w-[270px] xl:max-w-[300px] transition-all duration-300">
+    <div className="flex flex-col w-full lg:max-w-[270px] xl:max-w-[300px] transition-all duration-300 bg-white p-4 rounded-3xl mt-10">
       <h2 className="text-3xl font-semibold text-[#343A40] mb-3">
         Daily Progress
       </h2>
