@@ -36,7 +36,7 @@ const StreakTable: React.FC<StreakTablesProps> = ({ activeDays }) => {
 
   return (
     <div className="flex flex-col w-full max-w-[300px] transition-all duration-300 bg-white p-4 rounded-3xl mt-12" >
-      <h2 className="text-3xl font-semibold text-gray-800 mb-3">
+      <h2 className="text-xl font-semibold text-gray-800 mb-3">
         Weekly Streaks
       </h2>
       <p className="text-[14px] text-gray-500 mb-10">
