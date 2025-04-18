@@ -21,6 +21,7 @@ export interface Course {
   stats: CourseStat[];
   trustedBy?: string[];
   level?: "Beginner" | "Intermediate" | "Advanced";
+  teacherAvatar: string[];
   progress?: CourseProgress;
   onExplore: () => void;
 } 
