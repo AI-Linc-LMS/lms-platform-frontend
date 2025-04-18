@@ -11,7 +11,6 @@ const StreakTable: React.FC<StreakTablesProps> = ({ activeDays }) => {
   const todayDate = today.getDate();
   const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
 
-  // Build streak state from today backwards
   let missedDayFound = false;
   const dayStyles: Record<number, string> = {};
 
@@ -36,19 +35,19 @@ const StreakTable: React.FC<StreakTablesProps> = ({ activeDays }) => {
   const days = Array.from({ length: totalDays }, (_, i) => i + 1);
 
   return (
-    <div className="flex flex-col w-full max-w-[300px] transition-all duration-300">
-      <h2 className="text-xl font-semibold text-gray-800 mb-2">
+    <div className="flex flex-col w-full max-w-[300px] transition-all duration-300 bg-white p-4 rounded-3xl mt-12" >
+      <h2 className="text-3xl font-semibold text-gray-800 mb-3">
         Weekly Streaks
       </h2>
-      <p className="text-xs text-gray-500 mb-4">
+      <p className="text-[14px] text-gray-500 mb-10">
         Study everyday to build your streak 💪
       </p>
 
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-5 space-x-5 space-y-8">
         {days.map((day) => (
           <div
             key={day}
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${dayStyles[day]}`}
+            className={`w-11 h-11 rounded-full flex items-center justify-center text-sm ${dayStyles[day]}`}
           >
             {day}
           </div>
