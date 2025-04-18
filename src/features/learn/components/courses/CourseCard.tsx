@@ -24,8 +24,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "" }) => {
     >
       <div className="flex flex-row gap-6 items-center justify-between">
         <div>
-          <h1 className="font-bold font-sans text-2xl">{course.title}</h1>
-          <p className="text-gray-600 font-normal text-lg">{course.subtitle}</p>
+          <h1 className="font-bold font-sans text-xl">{course.title}</h1>
+          <p className="text-gray-600 font-normal text-[15px]">{course.subtitle}</p>
         </div>
         <div className="flex flex-wrap  gap-3 items-center">
           {course.stats.map((stat, index) => (
