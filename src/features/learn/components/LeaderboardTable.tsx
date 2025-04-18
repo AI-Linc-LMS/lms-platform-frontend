@@ -14,7 +14,7 @@ interface LeaderboardProps {
 const Leaderboard: React.FC<LeaderboardProps> = ({ data }) => {
   return (
     <div className="flex flex-col w-full lg:max-w-[270px] xl:max-w-[300px] transition-all duration-300 bg-white p-4 rounded-3xl">
-      <h2 className="text-3xl font-semibold text-[#343A40] mb-3">
+      <h2 className="text-xl font-semibold text-[#343A40] mb-3">
         Track Your Progress
       </h2>
       <p className="text-[14px] text-[#495057] mb-8">
