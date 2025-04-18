@@ -35,7 +35,7 @@ const StreakTable: React.FC<StreakTablesProps> = ({ activeDays }) => {
   const days = Array.from({ length: totalDays }, (_, i) => i + 1);
 
   return (
-    <div className="flex flex-col w-full max-w-[300px] transition-all duration-300">
+    <div className="flex flex-col w-full max-w-[300px] transition-all duration-300 bg-white p-4 rounded-3xl mt-12" >
       <h2 className="text-3xl font-semibold text-gray-800 mb-3">
         Weekly Streaks
       </h2>
@@ -47,7 +47,7 @@ const StreakTable: React.FC<StreakTablesProps> = ({ activeDays }) => {
         {days.map((day) => (
           <div
             key={day}
-            className={`w-13 h-13 rounded-full flex items-center justify-center text-sm ${dayStyles[day]}`}
+            className={`w-11 h-11 rounded-full flex items-center justify-center text-sm ${dayStyles[day]}`}
           >
             {day}
           </div>

@@ -13,7 +13,7 @@ interface LeaderboardProps {
 
 const Leaderboard: React.FC<LeaderboardProps> = ({ data }) => {
   return (
-    <div className="flex flex-col w-full lg:max-w-[270px] xl:max-w-[300px] transition-all duration-300">
+    <div className="flex flex-col w-full lg:max-w-[270px] xl:max-w-[300px] transition-all duration-300 bg-white p-4 rounded-3xl">
       <h2 className="text-3xl font-semibold text-[#343A40] mb-3">
         Track Your Progress
       </h2>
@@ -67,7 +67,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ data }) => {
           </tbody>
         </table>
       </div>
-      <div className="bg-[#DEE2E6] rounded-xl px-4 py-5 flex items-center gap-2 max-w-md mt-12">
+      <div className="bg-[#DEE2E6] rounded-xl px-4 py-5 flex items-center gap-2 max-w-md my-4">
         <div className="mt-0.5 text-gray-500">
           <svg
             xmlns="http://www.w3.org/2000/svg"

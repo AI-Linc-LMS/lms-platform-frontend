@@ -3,7 +3,7 @@ import Referralsicon from "../../../../commonComponents/icons/referrals/Referral
 
 const Referrals = () => {
     return (
-        <div className="w-[300px] rounded-3xl bg-white" >
+        <div className="w-[300px] rounded-3xl bg-white p-4 mt-28" >
             <h1 className="text-3xl font-semibold text-[#343A40] mb-3">Referrals</h1>
             <p className="font-normal font-sans text-[14px] text-[#495057] mb-10">Invite your friends and earn exciting rewards</p>
             <div>
