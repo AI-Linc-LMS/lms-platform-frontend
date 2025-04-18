@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   VideoIcon,
   DocumentIcon,
@@ -38,6 +39,12 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
   defaultOpen = false,
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const navigate = useNavigate();
+
+  // Helper function to navigate to topic detail page
+  const navigateToTopicDetail = (moduleId: string) => {
+    navigate(`/learn/course/${week.id}/${moduleId}`);
+  };
 
   // Helper function to render the right icon for content type
   const renderContentTypeIcon = (type: string) => {
@@ -118,13 +125,19 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
                   </div>
 
                   {!module.isLocked && !module.started && (
-                    <button className="px-4 py-2 bg-[#D7EFF6] rounded-xl border border-[#80C9E0] text-[#264D64]">
+                    <button 
+                      className="px-4 py-2 bg-[#D7EFF6] rounded-xl border border-[#80C9E0] text-[#264D64]"
+                      onClick={() => navigateToTopicDetail(module.id)}
+                    >
                       Start Now
                     </button>
                   )}
 
                   {!module.isLocked && module.started && (
-                    <button className="px-4 py-2 bg-[#255C79] text-white rounded-xl">
+                    <button 
+                      className="px-4 py-2 bg-[#255C79] text-white rounded-xl"
+                      onClick={() => navigateToTopicDetail(module.id)}
+                    >
                       Continue learning
                     </button>
                   )}
