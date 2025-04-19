@@ -69,7 +69,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
 
   // Get video container classes based on size
   const getVideoContainerClasses = () => {
-    const baseClasses = "relative mx-auto";
+    const baseClasses = "relative mx-auto rounded-2xl";
     
     switch (videoSize) {
       case 'small':
@@ -97,7 +97,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
       </div>
 
       {/* Video Controls */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4 rounded-3xl">
         {/* Seek Bar */}
         <div className="mb-2">
           <input
