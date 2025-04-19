@@ -4,7 +4,7 @@ import { Course } from "../types/course.types";
 import { defaultCourses } from "../data/mockCourses";
 import PrimaryButton from "../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import DashboardPieChart from "../components/enrolled-courses/DashboardPieChart";
-import BackToHomeButton from "../components/enrolled-courses/BackToHomeButton";
+import BackToHomeButton from "../../../commonComponents/common-buttons/back-buttons/back-to-home-button/BackToHomeButton";
 import CourseContent from "../components/enrolled-courses/CourseContent";
 import EnrolledLeaderBoard from "../components/enrolled-courses/EnrolledLeader";
 

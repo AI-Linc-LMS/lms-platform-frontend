@@ -66,7 +66,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
   };
 
   return (
-    <div className="flex flex-col w-full max-w-[470px]">
+    <div className="flex flex-col w-full ">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-medium text-gray-700">Lessons</h2>
         <select
