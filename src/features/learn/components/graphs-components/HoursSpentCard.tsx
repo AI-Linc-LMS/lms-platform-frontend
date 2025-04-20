@@ -65,7 +65,7 @@ const HoursSpentCard = ({
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={hourData}
-            margin={{ top: 5, right: 20, bottom: 5, left: 0 }}
+            margin={{ top: 5, right: 20, bottom: 20, left: 20 }}
           >
             <defs>
               <linearGradient id="hoursFill" x1="0" y1="0" x2="0" y2="1">
@@ -81,6 +81,7 @@ const HoursSpentCard = ({
               tick={{ fill: "#6B7280"}}
               interval={0} 
               tickFormatter={(day) => formatDay(day, timeRange)}
+              tickMargin={30}
             />
 
             <YAxis
@@ -89,6 +90,7 @@ const HoursSpentCard = ({
               tickLine={false}
               tick={{ fill: "#6B7280"}}
               ticks={[0, 6, 12, 18, 24]}
+              tickMargin={10}
             />
 
             <Tooltip content={<CustomTooltip />} />
