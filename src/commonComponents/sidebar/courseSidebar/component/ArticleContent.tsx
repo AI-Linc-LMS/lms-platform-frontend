@@ -1,18 +1,20 @@
 import articleIcon from "../../../../assets/course_sidebar_assets/article/articleIcon.png";
 import tickIcon from "../../../../assets/course_sidebar_assets/tickIcon.png";
-import completeTickIcon from "../../../../assets/course_sidebar_assets/completeTickIcon.png"; 
+import completeTickIcon from "../../../../assets/course_sidebar_assets/completeTickIcon.png";
 
-interface ArticleItem {
-  id: string;
+export interface ArticleItem {
+  id: number;
   title: string;
   marks: number;
   completed: boolean;
+  content: string;
 }
+
 
 interface ArticleContentProps {
   articles: ArticleItem[];
-  onArticleClick?: (id: string) => void;
-  selectedArticleId?: string;
+  onArticleClick?: (id: number) => void;
+  selectedArticleId: number | null;
 }
 
 const ArticleContent = ({
