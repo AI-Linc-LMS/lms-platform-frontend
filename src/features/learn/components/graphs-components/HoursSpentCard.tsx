@@ -33,7 +33,7 @@ const HoursSpentCard = ({
   };
 
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex flex-col w-full max-w-[650px] ">
       <div className="flex justify-between items-center mb-2">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">{totalHours}</h2>
