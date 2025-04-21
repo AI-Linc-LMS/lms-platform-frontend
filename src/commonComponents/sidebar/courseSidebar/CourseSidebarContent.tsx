@@ -40,7 +40,7 @@ const CourseSidebarContent = ({ activeLabel }: CourseSidebarContentProps) => {
   };
 
   return (
-    <div className="bg-white w-[500px] h-full shadow-xl rounded-lg px-4 py-3 transition-all duration-300 mt-5">
+    <div className="bg-white w-[500px]  shadow-xl rounded-lg px-4 py-3 transition-all duration-300 mt-5">
       <div className="text-sm text-gray-700">
         {activeLabel === "Dashboard" && (
           <DashboardContent
