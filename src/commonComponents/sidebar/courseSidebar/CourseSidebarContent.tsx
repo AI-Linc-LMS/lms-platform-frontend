@@ -8,6 +8,7 @@ import { dummyVideos } from "./component/data/mockVideoData";
 import { problemsDummy } from "./component/data/mockProblemData";
 import VideoContent from "./component/VideoContent";
 import ProblemContent from "./component/ProblemContent";
+import closeSidebarIcon from "../../../assets/course_sidebar_assets/closeSidebarIcon.png";
 
 const dummyStats = [
   { title: "Articles", progress: 25, count: "1/3" },
@@ -21,7 +22,7 @@ interface CourseSidebarContentProps {
   onClose: () => void;
 }
 
-const CourseSidebarContent = ({ activeLabel }: CourseSidebarContentProps) => {
+const CourseSidebarContent = ({ activeLabel, onClose }: CourseSidebarContentProps) => {
   const [currentArticleTitle, setCurrentArticleTitle] = useState<string>("");
   const [selectedVideoId, setSelectedVideoId] = useState<string>("");
 
@@ -31,7 +32,9 @@ const CourseSidebarContent = ({ activeLabel }: CourseSidebarContentProps) => {
     console.log("Play video with ID:", id);
   };
 
-  const [selectedProblemId, setSelectedProblemId] = useState<string | undefined>(undefined);
+  const [selectedProblemId, setSelectedProblemId] = useState<
+    string | undefined
+  >(undefined);
 
   const handleProblemSelect = (id: string) => {
     setSelectedProblemId(id);
@@ -40,7 +43,14 @@ const CourseSidebarContent = ({ activeLabel }: CourseSidebarContentProps) => {
   };
 
   return (
-    <div className="bg-white w-[500px]  shadow-xl rounded-lg px-4 py-3 transition-all duration-300 mt-5">
+    <div className="relative bg-white w-[500px] max-h-screen shadow-xl rounded-lg px-4 py-3 transition-all duration-300 mt-5">
+      <button
+        onClick={onClose}
+        className="absolute top-1 -right-10 z-10 bg-white rounded-full shadow-md p-2 hover:bg-gray-100 transition"
+      >
+        <img src={closeSidebarIcon} alt="Close" className="w-4 h-4" />
+      </button>
+
       <div className="text-sm text-gray-700">
         {activeLabel === "Dashboard" && (
           <DashboardContent
