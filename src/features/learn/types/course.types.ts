@@ -22,6 +22,8 @@ export interface Course {
   trustedBy?: string[];
   level?: "Beginner" | "Intermediate" | "Advanced";
   teacherAvatar: string[];
+  teacherNames?: string[]; // Add this property
+  teacherTitles?: string[];
   progress?: CourseProgress;
   onExplore: () => void;
 } 
