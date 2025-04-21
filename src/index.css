@@ -66,3 +66,29 @@ body {
 }
 
 /* =============================== SIDE NAVIGATION BAR - END ================================== */
+
+.custom-tooltip-bubble {
+  background-color: #0F2B46;
+  border-radius: 28px 9999px 9999px 28px;
+  position: relative;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.custom-tooltip-bubble::before {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  left: 20px;
+  width: 20px;
+  height: 20px;
+  background-color: #0F2B46;
+  border-radius: 50%;
+  box-shadow: -5px 5px 0 #0F2B46;
+}
+.custom-tooltip-bubble {
+  background-color: #0F2B46;
+  border-top-left-radius: 0px;
+  border-top-right-radius: 40px;
+  border-bottom-left-radius: 40px;
+  border-bottom-right-radius: 40px;
+}
