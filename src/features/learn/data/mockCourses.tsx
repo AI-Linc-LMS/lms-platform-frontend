@@ -15,7 +15,7 @@ import pic_5 from "../../../assets/exploremore/mentor-avatars/mentor-5.png";
 
 import company_1 from "../../../assets/dashboard_assets/company-logos/goggle.png";
 import company_2 from "../../../assets/dashboard_assets/company-logos/microsoft.png";
-import company_3 from  "../../../assets/dashboard_assets/company-logos/tcs.png";
+import company_3 from "../../../assets/dashboard_assets/company-logos/tcs.png";
 import company_4 from "../../../assets/dashboard_assets/company-logos/wipro.png";
 import company_5 from "../../../assets/dashboard_assets/company-logos/dello.png";
 
@@ -32,7 +32,7 @@ export const defaultCourses: Course[] = [
       { icon: <CodeIcon />, value: "0", total: "12" },
       { icon: <FAQIcon />, value: "0", total: "6" },
     ],
-    trustedBy: [company_1,company_2,company_3,company_4,company_5],
+    trustedBy: [company_1, company_2, company_3, company_4, company_5],
     teacherAvatar: [
       pic_1,
       pic_2,
@@ -40,6 +40,8 @@ export const defaultCourses: Course[] = [
       pic_4,
       pic_5,
     ],
+    teacherNames:["Shubham lal" , "Me ",] , 
+  teacherTitles: ["AI Engineer", "ML Engineer"],
     level: "Intermediate",
     onExplore: () => console.log("Explore More clicked for course 1"),
   },
@@ -55,7 +57,7 @@ export const defaultCourses: Course[] = [
       { icon: <CodeIcon />, value: "0", total: "16" },
       { icon: <FAQIcon />, value: "0", total: "8" },
     ],
-    trustedBy: [company_1,company_2,company_3,company_4,company_5],
+    trustedBy: [company_1, company_2, company_3, company_4, company_5],
     teacherAvatar: [
       pic_1,
       pic_2,
@@ -63,6 +65,8 @@ export const defaultCourses: Course[] = [
       pic_4,
       pic_5,
     ],
+    teacherNames:["Shubham lal" , "Me ",] , 
+    teacherTitles: ["AI Engineer", "ML Engineer"],
     level: "Beginner",
     onExplore: () => console.log("Explore More clicked for course 2"),
   },
@@ -78,7 +82,7 @@ export const defaultCourses: Course[] = [
       { icon: <CodeIcon />, value: "0", total: "14" },
       { icon: <FAQIcon />, value: "0", total: "10" },
     ],
-    trustedBy: [company_1,company_2,company_3,company_4,company_5],
+    trustedBy: [company_1, company_2, company_3, company_4, company_5],
     teacherAvatar: [
       pic_1,
       pic_2,
@@ -86,6 +90,8 @@ export const defaultCourses: Course[] = [
       pic_4,
       pic_5,
     ],
+    teacherNames:["Shubham lal" , "Me ",] , 
+    teacherTitles: ["AI Engineer", "ML Engineer"],
     level: "Intermediate",
     onExplore: () => console.log("Explore More clicked for course 3"),
   },
@@ -101,7 +107,7 @@ export const defaultCourses: Course[] = [
       { icon: <CodeIcon />, value: "0", total: "20" },
       { icon: <FAQIcon />, value: "0", total: "12" },
     ],
-    trustedBy: [company_1,company_2,company_3,company_4,company_5],
+    trustedBy: [company_1, company_2, company_3, company_4, company_5],
     teacherAvatar: [
       pic_1,
       pic_2,
@@ -109,6 +115,8 @@ export const defaultCourses: Course[] = [
       pic_4,
       pic_5,
     ],
+    teacherNames:["Shubham lal" , "Me ",] , 
+    teacherTitles: ["AI Engineer", "ML Engineer"],
     level: "Advanced",
     onExplore: () => console.log("Explore More clicked for course 4"),
   }

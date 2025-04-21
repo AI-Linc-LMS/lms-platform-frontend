@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import BackToHomeButton from "../components/enrolled-courses/BackToHomeButton";
+// import BackToHomeButton from "../../../commonComponents/common-buttons/back-buttons/back-to-home-button/BackToHomeButton";
 import { mockCourseContent } from "../data/mockCourseContent";
 import VideoPlayer from "../components/video-player/VideoPlayer";
 import CourseSidebar from "../../../commonComponents/sidebar/courseSidebar/CourseSidebar";
 import CourseSidebarContent from "../../../commonComponents/sidebar/courseSidebar/CourseSidebarContent";
+import BackToHomeButton from "../../../commonComponents/common-buttons/back-buttons/back-to-home-button/BackToHomeButton";
+
 
 const CourseTopicDetailPage: React.FC = () => {
   const { weekId, topicId } = useParams<{ weekId: string; topicId: string }>();
@@ -33,7 +35,7 @@ const CourseTopicDetailPage: React.FC = () => {
         <p className="text-xl mb-4">Topic not found</p>
         <button
           className="px-4 py-2 bg-[#255C79] text-white rounded-xl"
-          onClick={() => navigate("/learn/course")}
+          onClick={() => navigate(-1)}
         >
           Back
         </button>
@@ -103,6 +105,7 @@ const CourseTopicDetailPage: React.FC = () => {
               <span className="text-gray-500">{currentWeek.title}</span>
               <span className="text-gray-500">›</span>
               <span className="font-medium">{currentTopic.title}</span>
+
             </div>
           </div>
 
