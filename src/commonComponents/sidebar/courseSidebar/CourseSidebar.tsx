@@ -40,18 +40,22 @@ const CourseSidebar = ({ activeLabel, onSelect }: Props) => {
           <button
             key={idx}
             onClick={() => onSelect(item.label)}
-            className={`flex flex-col items-center px-2 py-3 rounded-lg w-full transition-colors duration-200 ${isActive ? "bg-[#0E1F2F]" : "bg-transparent"
-              }`}
+            className={`flex flex-col items-center px-2 py-3 rounded-lg w-full transition-colors duration-200 ${
+              isActive ? "bg-[#0E1F2F]" : "bg-transparent"
+            }`}
           >
             <img
               src={isActive ? item.selectIcon : item.icon}
               alt={item.label}
-              className={`object-contain ${isActive ? "w-6 h-6" : "w-7 h-7"}`}
+              className={`object-contain ${
+                isActive ? "w-6 h-6 filter invert brightness-0" : "w-6 h-6"
+              }`}
             />
 
             <span
-              className={`text-[11px] font-medium mt-1 ${isActive ? "text-white" : "text-[#0E1F2F]"
-                }`}
+              className={`text-[11px] font-medium mt-1 ${
+                isActive ? "text-white" : "text-[#0E1F2F]"
+              }`}
             >
               {item.label}
             </span>

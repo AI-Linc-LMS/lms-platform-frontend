@@ -6,13 +6,17 @@ import CourseSidebarContent from "../../../commonComponents/sidebar/courseSideba
 import BackToHomeButton from "../../../commonComponents/common-buttons/back-buttons/back-to-home-button/BackToHomeButton";
 import VideoCard from "../components/course-cards/video/VideoCard";
 import QuizCard from "../components/course-cards/quiz/QuizCard";
+import ArticleCard from "../components/course-cards/article/ArticleCard";
 import { quizData } from "../../../commonComponents/sidebar/courseSidebar/component/data/mockQuizData";
 import expandSidebarIcon from "../../../assets/course_sidebar_assets/expandSidebarIcon.png";
+import { dummyArticles } from "../data/mockArticleData";
 
 const CourseTopicDetailPage: React.FC = () => {
   const { weekId, topicId } = useParams<{ weekId: string; topicId: string }>();
   const navigate = useNavigate();
   const [currentContentIndex, setCurrentContentIndex] = useState(0);
+  const [selectedQuizId, setSelectedQuizId] = useState<number>(1);
+  const [selectedArticleId, setSelectedArticleId] = useState<number>(1);
 
   // State for sidebar
   const [activeSidebarLabel, setActiveSidebarLabel] =
@@ -77,10 +81,9 @@ const CourseTopicDetailPage: React.FC = () => {
   // Sample video URL - in a real app, this would come from your API
   const sampleVideoUrl = "https://www.w3schools.com/html/mov_bbb.mp4";
 
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const handleNextQuestion = () => {
-    if (currentQuestionIndex < quizData.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    if (selectedQuizId! < quizData.length - 1) {
+      setSelectedQuizId(selectedQuizId! + 1);
     } else {
       // Handle the case when the quiz is finished (e.g., redirect or show results)
       alert("Quiz Completed!");
@@ -88,9 +91,19 @@ const CourseTopicDetailPage: React.FC = () => {
   };
 
   const getNextQuestionTitle = () => {
-    return currentQuestionIndex < quizData.length - 1
+    return selectedQuizId !== null && selectedQuizId < quizData.length - 1
       ? "Next Question"
       : "Finish Quiz";
+  };
+
+  const quizProps = {
+    selectedQuizId,
+    onSelectQuiz: (id: number) => setSelectedQuizId(id), // Combine into a single object
+  };
+  const articleProps = {
+    articles: dummyArticles,
+    selectedArticleId,
+    onArticleClick: (id: number) => setSelectedArticleId(id),
   };
 
   return (
@@ -107,6 +120,8 @@ const CourseTopicDetailPage: React.FC = () => {
             <CourseSidebarContent
               activeLabel={activeSidebarLabel}
               onClose={() => setIsSidebarContentOpen(false)}
+              quizProps={quizProps}
+              articleProps={articleProps}
             />
           )}
           {!isSidebarContentOpen && (
@@ -122,7 +137,8 @@ const CourseTopicDetailPage: React.FC = () => {
 
         {/* Main Content */}
         <div className={`flex-1 ${isSidebarContentOpen ? "ml-12" : ""}`}>
-          {activeSidebarLabel !== "Quiz" && (
+          {(activeSidebarLabel === "Videos" ||
+            activeSidebarLabel === "Dashboard" || activeSidebarLabel === "All" || activeSidebarLabel === "Problems" ) && (
             <VideoCard
               currentWeek={currentWeek}
               currentTopic={currentTopic}
@@ -133,11 +149,22 @@ const CourseTopicDetailPage: React.FC = () => {
           )}
           {activeSidebarLabel === "Quiz" && (
             <QuizCard
-              quizData={quizData[currentQuestionIndex]}
+              quizData={quizData[selectedQuizId - 1 || 0]}
               onNext={handleNextQuestion}
               nextTitle={getNextQuestionTitle()}
-              questionNumber={currentQuestionIndex + 1}
+              questionNumber={selectedQuizId || 1}
               totalQuestions={quizData.length}
+            />
+          )}
+          {activeSidebarLabel === "Article" && (
+            <ArticleCard
+              title={dummyArticles[currentContentIndex].title}
+              content={dummyArticles[currentContentIndex].content}
+              marks={dummyArticles[currentContentIndex].marks}
+              completed={dummyArticles[currentContentIndex].completed}
+              onMarkComplete={() => {
+                console.log("Marked as completed");
+              }}
             />
           )}
         </div>

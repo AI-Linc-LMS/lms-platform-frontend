@@ -2,13 +2,13 @@ import { useState } from "react";
 import DashboardContent from "./component/DashboardContent";
 import AllContent from "./component/AllContent";
 import { dummyContent } from "./component/data/mockAllData";
-import ArticleContent from "./component/ArticleContent";
-import { dummyArticleContent } from "./component/data/mockArticleData";
+import ArticleContent, { ArticleItem } from "./component/ArticleContent";
 import { dummyVideos } from "./component/data/mockVideoData";
 import { problemsDummy } from "./component/data/mockProblemData";
 import VideoContent from "./component/VideoContent";
 import ProblemContent from "./component/ProblemContent";
 import closeSidebarIcon from "../../../assets/course_sidebar_assets/closeSidebarIcon.png";
+import QuizContent from "./component/QuizContent";
 
 const dummyStats = [
   { title: "Articles", progress: 25, count: "1/3" },
@@ -20,10 +20,27 @@ const dummyStats = [
 interface CourseSidebarContentProps {
   activeLabel: string;
   onClose: () => void;
+  quizProps: QuizProps;
+  articleProps: ArticleProps;
 }
 
-const CourseSidebarContent = ({ activeLabel, onClose }: CourseSidebarContentProps) => {
-  const [currentArticleTitle, setCurrentArticleTitle] = useState<string>("");
+interface QuizProps {
+  selectedQuizId: number | null;
+  onSelectQuiz: (id: number) => void;
+}
+
+interface ArticleProps {
+  articles: ArticleItem[];
+  selectedArticleId: number | null;
+  onArticleClick: (id: number) => void;
+}
+
+const CourseSidebarContent = ({
+  activeLabel,
+  onClose,
+  quizProps,
+  articleProps,
+}: CourseSidebarContentProps) => {
   const [selectedVideoId, setSelectedVideoId] = useState<string>("");
 
   const handleVideoClick = (id: string) => {
@@ -43,7 +60,7 @@ const CourseSidebarContent = ({ activeLabel, onClose }: CourseSidebarContentProp
   };
 
   return (
-    <div className="relative bg-white w-[500px] max-h-screen shadow-xl rounded-lg px-4 py-3 transition-all duration-300 mt-5">
+    <div className="relative bg-white w-[500px] shadow-xl rounded-lg px-4 py-3 transition-all duration-300 mt-5">
       <button
         onClick={onClose}
         className="absolute top-1 -right-10 z-10 bg-white rounded-full shadow-md p-2 hover:bg-gray-100 transition"
@@ -62,9 +79,9 @@ const CourseSidebarContent = ({ activeLabel, onClose }: CourseSidebarContentProp
         {activeLabel === "All" && <AllContent contents={dummyContent} />}
         {activeLabel === "Article" && (
           <ArticleContent
-            articles={dummyArticleContent}
-            selectedArticleId={currentArticleTitle}
-            onArticleClick={(title) => setCurrentArticleTitle(title)}
+            articles={articleProps.articles} 
+            selectedArticleId={articleProps.selectedArticleId}
+            onArticleClick={articleProps.onArticleClick}
           />
         )}
         {activeLabel === "Videos" && (
@@ -87,7 +104,12 @@ const CourseSidebarContent = ({ activeLabel, onClose }: CourseSidebarContentProp
             onSelect={handleProblemSelect}
           />
         )}
-        {activeLabel === "Quiz" && <div>Quiz area and results.</div>}
+        {activeLabel === "Quiz" && (
+          <QuizContent
+            onSelectQuiz={quizProps.onSelectQuiz}
+            selectedQuizId={quizProps.selectedQuizId}
+          />
+        )}
       </div>
     </div>
   );
