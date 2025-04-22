@@ -1,7 +1,7 @@
 import React from "react";
 import { Quiz } from "./data/mockQuizData";
 import defaultQuizIcon from "../../../../assets/course_sidebar_assets/quiz/defaultQuizIcon.png";
-import QuizBackButton from "../../../../assets/course_sidebar_assets/QuizBackButton.png";
+import QuizBackButton from "../../../../assets/course_sidebar_assets/quizBackButton.png";
 
 interface QuizContentProps {
   quizzes: Quiz[];
