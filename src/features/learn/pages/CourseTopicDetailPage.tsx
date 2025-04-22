@@ -81,25 +81,12 @@ const CourseTopicDetailPage: React.FC = () => {
   // Sample video URL - in a real app, this would come from your API
   const sampleVideoUrl = "https://www.w3schools.com/html/mov_bbb.mp4";
 
-  const handleNextQuestion = () => {
-    if (selectedQuizId! < quizData.length - 1) {
-      setSelectedQuizId(selectedQuizId! + 1);
-    } else {
-      // Handle the case when the quiz is finished (e.g., redirect or show results)
-      alert("Quiz Completed!");
-    }
-  };
-
-  const getNextQuestionTitle = () => {
-    return selectedQuizId !== null && selectedQuizId < quizData.length - 1
-      ? "Next Question"
-      : "Finish Quiz";
-  };
-
   const quizProps = {
     selectedQuizId,
-    onSelectQuiz: (id: number) => setSelectedQuizId(id), // Combine into a single object
+    onSelectQuiz: (id: number) => setSelectedQuizId(id),
+    quizzes: quizData,
   };
+
   const articleProps = {
     articles: dummyArticles,
     selectedArticleId,
@@ -136,9 +123,11 @@ const CourseTopicDetailPage: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className={`flex-1 ${isSidebarContentOpen ? "ml-12" : ""}`}>
+        <div className={`flex-1 mt-6 ${isSidebarContentOpen ? "ml-12" : ""}`}>
           {(activeSidebarLabel === "Videos" ||
-            activeSidebarLabel === "Dashboard" || activeSidebarLabel === "All" || activeSidebarLabel === "Problems" ) && (
+            activeSidebarLabel === "Dashboard" ||
+            activeSidebarLabel === "All" ||
+            activeSidebarLabel === "Problems") && (
             <VideoCard
               currentWeek={currentWeek}
               currentTopic={currentTopic}
@@ -149,24 +138,21 @@ const CourseTopicDetailPage: React.FC = () => {
           )}
           {activeSidebarLabel === "Quiz" && (
             <QuizCard
-              quizData={quizData[selectedQuizId - 1 || 0]}
-              onNext={handleNextQuestion}
-              nextTitle={getNextQuestionTitle()}
-              questionNumber={selectedQuizId || 1}
-              totalQuestions={quizData.length}
+              quizId={selectedQuizId}
+              isSidebarContentOpen={isSidebarContentOpen}
             />
           )}
-          {activeSidebarLabel === "Article" && (
+            {activeSidebarLabel === "Article" && (
             <ArticleCard
-              title={dummyArticles[currentContentIndex].title}
-              content={dummyArticles[currentContentIndex].content}
-              marks={dummyArticles[currentContentIndex].marks}
-              completed={dummyArticles[currentContentIndex].completed}
+              title={dummyArticles[selectedArticleId - 1]?.title}
+              content={dummyArticles[selectedArticleId - 1]?.content}
+              marks={dummyArticles[selectedArticleId - 1]?.marks}
+              completed={dummyArticles[selectedArticleId - 1]?.completed}
               onMarkComplete={() => {
-                console.log("Marked as completed");
+              console.log("Marked as completed");
               }}
             />
-          )}
+            )}
         </div>
       </div>
     </div>
