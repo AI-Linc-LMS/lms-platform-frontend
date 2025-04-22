@@ -22,6 +22,7 @@ interface CourseSidebarContentProps {
   onClose: () => void;
   quizProps: QuizProps;
   articleProps: ArticleProps;
+  problemProps?: ProblemProps;
 }
 
 interface QuizProps {
@@ -35,11 +36,17 @@ interface ArticleProps {
   onArticleClick: (id: number) => void;
 }
 
+interface ProblemProps {
+  selectedProblemId?: string;
+  onProblemSelect: (id: string) => void;
+}
+
 const CourseSidebarContent = ({
   activeLabel,
   onClose,
   quizProps,
   articleProps,
+  problemProps,
 }: CourseSidebarContentProps) => {
   const [selectedVideoId, setSelectedVideoId] = useState<string>("");
 
@@ -49,14 +56,12 @@ const CourseSidebarContent = ({
     console.log("Play video with ID:", id);
   };
 
-  const [selectedProblemId, setSelectedProblemId] = useState<
-    string | undefined
-  >(undefined);
-
   const handleProblemSelect = (id: string) => {
-    setSelectedProblemId(id);
-    // open the problem (navigate, show modal, etc.)
-    console.log("Open problem with id:", id);
+    if (problemProps && problemProps.onProblemSelect) {
+      problemProps.onProblemSelect(id);
+    } else {
+      console.log("Open problem with id:", id);
+    }
   };
 
   return (
@@ -100,7 +105,7 @@ const CourseSidebarContent = ({
         {activeLabel === "Problems" && (
           <ProblemContent
             problems={problemsDummy}
-            selectedProblemId={selectedProblemId}
+            selectedProblemId={problemProps?.selectedProblemId}
             onSelect={handleProblemSelect}
           />
         )}

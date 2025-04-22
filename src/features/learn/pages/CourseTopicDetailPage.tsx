@@ -7,69 +7,44 @@ import BackToHomeButton from "../../../commonComponents/common-buttons/back-butt
 import VideoCard from "../components/course-cards/video/VideoCard";
 import QuizCard from "../components/course-cards/quiz/QuizCard";
 import ArticleCard from "../components/course-cards/article/ArticleCard";
+import ProblemCard from "../components/course-cards/problem/ProblemCard";
 import { quizData } from "../../../commonComponents/sidebar/courseSidebar/component/data/mockQuizData";
 import expandSidebarIcon from "../../../assets/course_sidebar_assets/expandSidebarIcon.png";
 import { dummyArticles } from "../data/mockArticleData";
+import { mockProblems } from "../data/mockProblemData";
 
 const CourseTopicDetailPage: React.FC = () => {
   const { weekId, topicId } = useParams<{ weekId: string; topicId: string }>();
   const navigate = useNavigate();
-  const [currentContentIndex, setCurrentContentIndex] = useState(0);
-  const [selectedQuizId, setSelectedQuizId] = useState<number>(1);
-  const [selectedArticleId, setSelectedArticleId] = useState<number>(1);
+  
+  // State for content selection
+  const [selectedQuizId, setSelectedQuizId] = useState<number | null>(1);
+  const [selectedArticleId, setSelectedArticleId] = useState<number | null>(0);
+  const [selectedProblemId, setSelectedProblemId] = useState<string | undefined>(undefined);
+  
+  const currentContentIndex = selectedArticleId || 0;
 
   // State for sidebar
-  const [activeSidebarLabel, setActiveSidebarLabel] =
-    useState<string>("Videos");
-  const [isSidebarContentOpen, setIsSidebarContentOpen] =
-    useState<boolean>(true);
+  const [isSidebarContentOpen, setIsSidebarContentOpen] = useState(false);
+  const [activeSidebarLabel, setActiveSidebarLabel] = useState("Dashboard");
 
   // Find the current week and topic from mock data
   const currentWeek = mockCourseContent.find((week) => week.id === weekId);
-  const currentTopic = currentWeek?.modules.find(
-    (module) => module.id === topicId
-  );
-
-  // Define the fallback for early return, so hooks are still called
-  if (!currentWeek || !currentTopic) {
-    return (
-      <div className="flex flex-col items-center justify-center h-96">
-        <p className="text-xl mb-4">Topic not found</p>
-        <button
-          className="px-4 py-2 bg-[#255C79] text-white rounded-xl"
-          onClick={() => navigate(-1)}
-        >
-          Back
-        </button>
-      </div>
-    );
+  if (!currentWeek) {
+    navigate("/learn");
+    return null;
   }
 
-  // Handle navigation to next content item
-  const nextContent = () => {
-    if (currentContentIndex < currentTopic.content.length - 1) {
-      setCurrentContentIndex(currentContentIndex + 1);
-    } else if (currentWeek.modules.length > 1) {
-      // Move to next topic if available
-      const currentTopicIndex = currentWeek.modules.findIndex(
-        (m) => m.id === topicId
-      );
-      if (currentTopicIndex < currentWeek.modules.length - 1) {
-        const nextTopic = currentWeek.modules[currentTopicIndex + 1];
-        navigate(`/learn/course/${weekId}/${nextTopic.id}`);
-      }
-    }
-  };
+  const currentTopic = currentWeek.modules.find((topic) => topic.id === topicId);
+  if (!currentTopic) {
+    navigate(`/learn/${weekId}`);
+    return null;
+  }
 
-  // Find the next topic to show in the Next button
-  const getNextTopicTitle = () => {
-    const currentTopicIndex = currentWeek.modules.findIndex(
-      (m) => m.id === topicId
-    );
-    if (currentTopicIndex < currentWeek.modules.length - 1) {
-      return currentWeek.modules[currentTopicIndex + 1].title;
-    }
-    return "Next Topic";
+  // Get next content
+  const nextContent = () => {
+    console.log("Moving to next content");
+    // For now, this is just a placeholder function
   };
 
   // Handle sidebar label selection
@@ -78,12 +53,19 @@ const CourseTopicDetailPage: React.FC = () => {
     setIsSidebarContentOpen(true);
   };
 
+  // Handle problem selection
+  const handleProblemSelect = (id: string) => {
+    setSelectedProblemId(id);
+    setActiveSidebarLabel("Problems");
+    console.log("Selected problem:", id);
+  };
+
   // Sample video URL - in a real app, this would come from your API
   const sampleVideoUrl = "https://www.w3schools.com/html/mov_bbb.mp4";
 
   const handleNextQuestion = () => {
-    if (selectedQuizId! < quizData.length - 1) {
-      setSelectedQuizId(selectedQuizId! + 1);
+    if (selectedQuizId && selectedQuizId < quizData.length - 1) {
+      setSelectedQuizId(selectedQuizId + 1);
     } else {
       // Handle the case when the quiz is finished (e.g., redirect or show results)
       alert("Quiz Completed!");
@@ -96,15 +78,34 @@ const CourseTopicDetailPage: React.FC = () => {
       : "Finish Quiz";
   };
 
+  const getNextTopicTitle = () => {
+    const currentTopicIndex = currentWeek.modules.findIndex(
+      (m) => m.id === topicId
+    );
+    if (currentTopicIndex < currentWeek.modules.length - 1) {
+      return currentWeek.modules[currentTopicIndex + 1].title;
+    }
+    return "Next Topic";
+  };
+
   const quizProps = {
     selectedQuizId,
-    onSelectQuiz: (id: number) => setSelectedQuizId(id), // Combine into a single object
+    onSelectQuiz: (id: number) => setSelectedQuizId(id), 
   };
+  
   const articleProps = {
     articles: dummyArticles,
     selectedArticleId,
     onArticleClick: (id: number) => setSelectedArticleId(id),
   };
+  
+  const problemProps = {
+    selectedProblemId,
+    onProblemSelect: handleProblemSelect,
+  };
+
+  // Find the selected problem by ID
+  const selectedProblem = mockProblems.find(problem => problem.id === selectedProblemId);
 
   return (
     <div className="mx-auto px-4 pb-8">
@@ -122,6 +123,7 @@ const CourseTopicDetailPage: React.FC = () => {
               onClose={() => setIsSidebarContentOpen(false)}
               quizProps={quizProps}
               articleProps={articleProps}
+              problemProps={problemProps}
             />
           )}
           {!isSidebarContentOpen && (
@@ -136,9 +138,10 @@ const CourseTopicDetailPage: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className={`flex-1 ${isSidebarContentOpen ? "ml-12" : ""}`}>
+        <div className={`flex-1 ${isSidebarContentOpen ? "ml-12" : ""} overflow-hidden`}>
           {(activeSidebarLabel === "Videos" ||
-            activeSidebarLabel === "Dashboard" || activeSidebarLabel === "All" || activeSidebarLabel === "Problems" ) && (
+            activeSidebarLabel === "Dashboard" || 
+            activeSidebarLabel === "All") && (
             <VideoCard
               currentWeek={currentWeek}
               currentTopic={currentTopic}
@@ -147,12 +150,29 @@ const CourseTopicDetailPage: React.FC = () => {
               getNextTopicTitle={getNextTopicTitle}
             />
           )}
-          {activeSidebarLabel === "Quiz" && (
+          {activeSidebarLabel === "Problems" && selectedProblem && (
+            <div className="h-[calc(100vh-10rem)] w-full">
+              <ProblemCard
+                problemId={selectedProblem.id}
+                title={selectedProblem.title}
+                description={selectedProblem.description}
+                difficulty={selectedProblem.difficulty}
+                testCases={selectedProblem.testCases}
+                initialCode={selectedProblem.initialCode["javascript"]}
+                language="javascript"
+                onSubmit={(code) => {
+                  console.log("Submitted code:", code);
+                  // Here you would typically send the code to your API for evaluation
+                }}
+              />
+            </div>
+          )}
+          {activeSidebarLabel === "Quiz" && selectedQuizId !== null && (
             <QuizCard
-              quizData={quizData[selectedQuizId - 1 || 0]}
+              quizData={quizData[selectedQuizId - 1]}
               onNext={handleNextQuestion}
               nextTitle={getNextQuestionTitle()}
-              questionNumber={selectedQuizId || 1}
+              questionNumber={selectedQuizId}
               totalQuestions={quizData.length}
             />
           )}
