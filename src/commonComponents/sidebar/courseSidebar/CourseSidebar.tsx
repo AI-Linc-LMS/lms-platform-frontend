@@ -32,7 +32,7 @@ const CourseSidebar = ({ activeLabel, onSelect }: Props) => {
   ];
 
   return (
-    <div className="bg-[#D9F5FC] rounded-lg inline-flex flex-col items-center max-h-[430px] w-18 ml-5 mt-5 mr-1">
+    <div className="bg-[#D9F5FC] rounded-lg inline-flex flex-col items-center max-h-[410px] w-18 ml-5 mt-5 mr-1">
       {menuItems.map((item, idx) => {
         const isActive = item.label === activeLabel;
 

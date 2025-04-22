@@ -14,7 +14,7 @@ export interface ArticleItem {
 interface ArticleContentProps {
   articles: ArticleItem[];
   onArticleClick?: (id: number) => void;
-  selectedArticleId: number | null;
+  selectedArticleId: number;
 }
 
 const ArticleContent = ({
@@ -22,6 +22,7 @@ const ArticleContent = ({
   onArticleClick,
   selectedArticleId,
 }: ArticleContentProps) => {
+  console.log("selectedArticleId", selectedArticleId);
   return (
     <div>
       <h2 className="text-lg font-semibold text-gray-800">
