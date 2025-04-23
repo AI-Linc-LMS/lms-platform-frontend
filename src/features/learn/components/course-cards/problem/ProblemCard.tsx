@@ -85,7 +85,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           {testCases.map((_, index) => (
             <button
               key={index}
-              className={`test-case-btn px-3 py-1 text-sm rounded ${activeTestCase === index
+              className={`test-case-btn px-3 py-1 text-sm rounded cursor-pointer ${activeTestCase === index
                 ? "bg-blue-100 text-blue-700 font-medium"
                 : "bg-gray-100 text-gray-600"
                 }`}
@@ -170,13 +170,13 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         <div className="code-actions">
           <button
             onClick={handleRunCode}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center cursor-pointer"
           >
             <span className="mr-1">▶</span> Run Code
           </button>
           <button
             onClick={handleSubmitCode}
-            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium ml-2"
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium ml-2 cursor-pointer"
           >
             Submit
           </button>
@@ -185,8 +185,8 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         <div className="testcase-section">
           <h3 className="text-lg font-semibold mb-2">Testcase</h3>
           <div className="testcase-tabs">
-            <button className="testcase-tab active">Case 1</button>
-            <button className="testcase-tab">Case 2</button>
+            <button className="testcase-tab active cursor-pointer">Case 1</button>
+            <button className="testcase-tab cursor-pointer">Case 2</button>
           </div>
           <div className="testcase-content">
             <div className="testcase-item">

@@ -11,7 +11,7 @@ const BasedLearning = () => {
                 </p>
             </div>
             <div>
-                <button className="w-[95px] h-[55px] rounded-xl border border-[#2A8CB0] text-[15px] font-medium font-sans text-[#2A8CB0]">
+                <button className="w-[95px] h-[55px] rounded-xl border border-[#2A8CB0] text-[15px] font-medium font-sans text-[#2A8CB0] cursor-pointer">
                     See all
                 </button>
             </div>

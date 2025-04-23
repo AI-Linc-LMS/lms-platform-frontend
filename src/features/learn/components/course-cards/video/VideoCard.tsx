@@ -40,7 +40,7 @@ const VideoCard: React.FC<Props> = ({
       <div className="bg-gray-100 p-4 flex justify-end">
         <button
           onClick={nextContent}
-          className="px-4 py-2 bg-[#255C79] text-white rounded-xl flex items-center"
+          className="px-4 py-2 bg-[#255C79] text-white rounded-xl flex items-center cursor-pointer"
         >
           Next: {getNextTopicTitle()}
           <svg
@@ -58,7 +58,7 @@ const VideoCard: React.FC<Props> = ({
       {/* Likes and Report */}
       <div className="flex justify-between items-center my-4">
         <div className="flex items-center space-x-2">
-          <button className="flex items-center text-blue-500">
+          <button className="flex items-center text-blue-500 cursor-pointer">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
@@ -69,7 +69,7 @@ const VideoCard: React.FC<Props> = ({
             </svg>
             368
           </button>
-          <button className="flex items-center text-gray-500">
+          <button className="flex items-center text-gray-500 cursor-pointer">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
@@ -80,7 +80,7 @@ const VideoCard: React.FC<Props> = ({
             </svg>
           </button>
         </div>
-        <button className="flex items-center text-red-500">
+        <button className="flex items-center text-red-500 cursor-pointer">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
@@ -210,7 +210,7 @@ const VideoCard: React.FC<Props> = ({
                   rows={3}
                 ></textarea>
                 <div className="mt-2 flex justify-end">
-                  <button className="px-4 py-2 bg-[#255C79] text-white rounded-xl">Comment</button>
+                  <button className="px-4 py-2 bg-[#255C79] text-white rounded-xl cursor-pointer">Comment</button>
                 </div>
               </div>
             </div>
@@ -224,7 +224,7 @@ const VideoCard: React.FC<Props> = ({
 
       {/* Floating Ask AI Button */}
       <div className="fixed bottom-6 right-6">
-        <button className="bg-[#255C79] text-white px-4 py-2 rounded-full flex items-center shadow-lg">
+        <button className="bg-[#255C79] text-white px-4 py-2 rounded-full flex items-center shadow-lg cursor-pointer">
           <span className="mr-2">Got a question? Ask AI</span>
           <svg
             xmlns="http://www.w3.org/2000/svg"

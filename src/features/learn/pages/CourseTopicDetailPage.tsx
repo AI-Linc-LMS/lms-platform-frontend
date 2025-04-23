@@ -38,7 +38,7 @@ const CourseTopicDetailPage: React.FC = () => {
       <div className="flex flex-col items-center justify-center h-96">
         <p className="text-xl mb-4">Topic not found</p>
         <button
-          className="px-4 py-2 bg-[#255C79] text-white rounded-xl"
+          className="px-4 py-2 bg-[#255C79] text-white rounded-xl cursor-pointer"
           onClick={() => navigate(-1)}
         >
           Back
@@ -132,7 +132,7 @@ const CourseTopicDetailPage: React.FC = () => {
           {!isSidebarContentOpen && (
             <button
               onClick={() => setIsSidebarContentOpen(true)}
-              className="absolute top-32 left-[142px] bg-white rounded-full shadow-md p-2 hover:bg-gray-100 transition z-10"
+              className="absolute top-32 left-[142px] bg-white rounded-full shadow-md p-2 hover:bg-gray-100 transition z-10 cursor-pointer"
               title="Expand Sidebar"
             >
               <img src={expandSidebarIcon} alt="Expand" className="w-5 h-5" />
