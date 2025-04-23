@@ -70,8 +70,8 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         <div className="flex items-center mb-4">
           <span
             className={`text-xs font-medium py-1 px-2.5 rounded-full ${difficulty === "Easy" ? "bg-green-100 text-green-800" :
-                difficulty === "Medium" ? "bg-yellow-100 text-yellow-800" :
-                  "bg-red-100 text-red-800"
+              difficulty === "Medium" ? "bg-yellow-100 text-yellow-800" :
+                "bg-red-100 text-red-800"
               }`}
           >
             {difficulty}
@@ -86,8 +86,8 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
             <button
               key={index}
               className={`test-case-btn px-3 py-1 text-sm rounded ${activeTestCase === index
-                  ? "bg-blue-100 text-blue-700 font-medium"
-                  : "bg-gray-100 text-gray-600"
+                ? "bg-blue-100 text-blue-700 font-medium"
+                : "bg-gray-100 text-gray-600"
                 }`}
               onClick={() => setActiveTestCase(index)}
             >
