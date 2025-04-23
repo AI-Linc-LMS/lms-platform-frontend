@@ -55,6 +55,10 @@ const QuizCard: React.FC<QuizCardProps> = ({
     }
   };
 
+  const handleFinishQuiz = () => {
+    alert("Quiz Finished!"); // Replace this with your finish quiz logic
+  };
+
   return (
     <div className="flex gap-6 ml-2">
       {/* Left Panel */}
@@ -164,12 +168,21 @@ const QuizCard: React.FC<QuizCardProps> = ({
             </div>
 
             <div className="flex justify-end mt-4">
-              <button
-                onClick={handleNext}
-                className="bg-gray-800 text-white px-6 py-2 rounded-lg"
-              >
-                Next
-              </button>
+              {currentQuestionIndex < quiz.questions.length - 1 ? (
+                <button
+                  onClick={handleNext}
+                  className="bg-gray-800 text-white px-6 py-2 rounded-lg"
+                >
+                  Next
+                </button>
+              ) : (
+                <button
+                  onClick={handleFinishQuiz}
+                  className="bg-gray-800 text-white px-6 py-2 rounded-lg"
+                >
+                  Finish Quiz
+                </button>
+              )}
             </div>
           </>
         )}
