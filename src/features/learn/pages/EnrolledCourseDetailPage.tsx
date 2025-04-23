@@ -61,8 +61,8 @@ const EnrolledCourseDetailPage: React.FC = () => {
         </div>
         <div className="flex flex-col gap-4 ">
 
-        <DashboardPieChart />
-        <EnrolledLeaderBoard />
+          <DashboardPieChart />
+          <EnrolledLeaderBoard />
         </div>
       </div>
     </>

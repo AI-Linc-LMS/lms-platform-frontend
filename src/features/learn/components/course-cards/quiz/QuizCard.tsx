@@ -4,6 +4,7 @@ import { quizData } from "../../../../../commonComponents/sidebar/courseSidebar/
 interface QuizCardProps {
   quizId: number;
   isSidebarContentOpen: boolean;
+  
 }
 
 const QuizCard: React.FC<QuizCardProps> = ({

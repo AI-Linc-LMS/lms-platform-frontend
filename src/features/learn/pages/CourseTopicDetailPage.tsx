@@ -3,21 +3,23 @@ import { useParams, useNavigate } from "react-router-dom";
 import { mockCourseContent } from "../data/mockCourseContent";
 import CourseSidebar from "../../../commonComponents/sidebar/courseSidebar/CourseSidebar";
 import CourseSidebarContent from "../../../commonComponents/sidebar/courseSidebar/CourseSidebarContent";
-import BackToHomeButton from "../../../commonComponents/common-buttons/back-buttons/back-to-home-button/BackToHomeButton";
+
 import VideoCard from "../components/course-cards/video/VideoCard";
 import QuizCard from "../components/course-cards/quiz/QuizCard";
 import ArticleCard from "../components/course-cards/article/ArticleCard";
 import { quizData } from "../../../commonComponents/sidebar/courseSidebar/component/data/mockQuizData";
 import expandSidebarIcon from "../../../assets/course_sidebar_assets/expandSidebarIcon.png";
 import { dummyArticles } from "../data/mockArticleData";
-
+import ProblemCard from "../components/course-cards/problem/ProblemCard";
+import { mockProblems } from "../data/mockProblemData";
+import BackToPreviousPage from "../../../commonComponents/common-buttons/back-buttons/back-to-previous-page/BackToPreviousPage";
 const CourseTopicDetailPage: React.FC = () => {
   const { weekId, topicId } = useParams<{ weekId: string; topicId: string }>();
   const navigate = useNavigate();
   const [currentContentIndex, setCurrentContentIndex] = useState(0);
   const [selectedQuizId, setSelectedQuizId] = useState<number>(1);
   const [selectedArticleId, setSelectedArticleId] = useState<number>(1);
-
+ const [selectedProblemId, setSelectedProblemId] = useState<string | undefined>("p1"); // Initialize with a default problem
   // State for sidebar
   const [activeSidebarLabel, setActiveSidebarLabel] =
     useState<string>("Videos");
@@ -78,6 +80,12 @@ const CourseTopicDetailPage: React.FC = () => {
     setIsSidebarContentOpen(true);
   };
 
+  const handleProblemSelect = (id: string) => {
+    setSelectedProblemId(id);
+    setActiveSidebarLabel("Problems");
+    console.log("Selected problem:", id);
+  };
+
   // Sample video URL - in a real app, this would come from your API
   const sampleVideoUrl = "https://www.w3schools.com/html/mov_bbb.mp4";
 
@@ -93,9 +101,18 @@ const CourseTopicDetailPage: React.FC = () => {
     onArticleClick: (id: number) => setSelectedArticleId(id),
   };
 
+    
+    const problemProps = {
+      selectedProblemId,
+      onProblemSelect: handleProblemSelect,
+    };
+  
+    // Find the selected problem by ID
+    const selectedProblem = mockProblems.find(problem => problem.id === selectedProblemId);
+
   return (
     <div className="pb-8">
-      <BackToHomeButton />
+      <BackToPreviousPage />
 
       <div className="flex mt-4">
         <div className="flex">
@@ -109,6 +126,7 @@ const CourseTopicDetailPage: React.FC = () => {
               onClose={() => setIsSidebarContentOpen(false)}
               quizProps={quizProps}
               articleProps={articleProps}
+              problemProps={problemProps}
             />
           )}
           {!isSidebarContentOpen && (
@@ -124,10 +142,7 @@ const CourseTopicDetailPage: React.FC = () => {
 
         {/* Main Content */}
         <div className={`flex-1 mt-6 ${isSidebarContentOpen ? "ml-12" : ""}`}>
-          {(activeSidebarLabel === "Videos" ||
-            activeSidebarLabel === "Dashboard" ||
-            activeSidebarLabel === "All" ||
-            activeSidebarLabel === "Problems") && (
+          {activeSidebarLabel !== "Problems" && activeSidebarLabel !== "Quiz" && activeSidebarLabel !== "Article" && (
             <VideoCard
               currentWeek={currentWeek}
               currentTopic={currentTopic}
@@ -135,6 +150,23 @@ const CourseTopicDetailPage: React.FC = () => {
               nextContent={nextContent}
               getNextTopicTitle={getNextTopicTitle}
             />
+          )}
+           {activeSidebarLabel === "Problems" && selectedProblem && (
+            <div className="h-[calc(100vh-10rem)] w-full">
+              <ProblemCard
+                problemId={selectedProblem.id}
+                title={selectedProblem.title}
+                description={selectedProblem.description}
+                difficulty={selectedProblem.difficulty}
+                testCases={selectedProblem.testCases}
+                initialCode={selectedProblem.initialCode["javascript"]}
+                language="javascript"
+                onSubmit={(code) => {
+                  console.log("Submitted code:", code);
+                  // Here you would typically send the code to your API for evaluation
+                }}
+              />
+            </div>
           )}
           {activeSidebarLabel === "Quiz" && (
             <QuizCard
