@@ -94,7 +94,7 @@ const CourseTopicDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto px-4 pb-8">
+    <div className="pb-8">
       <BackToHomeButton />
 
       <div className="flex mt-4">
