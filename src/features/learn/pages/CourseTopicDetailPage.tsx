@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { mockCourseContent } from "../data/mockCourseContent";
 import CourseSidebar from "../../../commonComponents/sidebar/courseSidebar/CourseSidebar";
 import CourseSidebarContent from "../../../commonComponents/sidebar/courseSidebar/CourseSidebarContent";
-import BackToHomeButton from "../../../commonComponents/common-buttons/back-buttons/back-to-home-button/BackToHomeButton";
+// import BackToHomeButton from "../../../commonComponents/common-buttons/back-buttons/back-to-home-button/BackToHomeButton";
 import VideoCard from "../components/course-cards/video/VideoCard";
 import QuizCard from "../components/course-cards/quiz/QuizCard";
 import ArticleCard from "../components/course-cards/article/ArticleCard";
@@ -12,6 +12,7 @@ import { quizData } from "../../../commonComponents/sidebar/courseSidebar/compon
 import expandSidebarIcon from "../../../assets/course_sidebar_assets/expandSidebarIcon.png";
 import { dummyArticles } from "../data/mockArticleData";
 import { mockProblems } from "../data/mockProblemData";
+import BackToPreviousPage from "../../../commonComponents/common-buttons/back-buttons/back-to-previous-page/BackToPreviousPage";
 
 const CourseTopicDetailPage: React.FC = () => {
   const { weekId, topicId } = useParams<{ weekId: string; topicId: string }>();
@@ -108,10 +109,10 @@ const CourseTopicDetailPage: React.FC = () => {
   const selectedProblem = mockProblems.find(problem => problem.id === selectedProblemId);
 
   return (
-    <div className="mx-auto px-4 pb-8">
-      <BackToHomeButton />
+    <div className="mx-auto px-4 pb-8 w-full">
+      <BackToPreviousPage/>
 
-      <div className="flex mt-4">
+      <div className="flex mt-4 w-full">
         <div className="flex">
           <CourseSidebar
             activeLabel={activeSidebarLabel}
