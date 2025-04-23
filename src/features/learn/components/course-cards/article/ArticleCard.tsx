@@ -23,7 +23,7 @@ const ArticleCard = ({
       </div>
 
       <div
-        className="prose max-w-none"
+        className="p-2 prose max-w-none"
         dangerouslySetInnerHTML={{ __html: content }}
       />
 
