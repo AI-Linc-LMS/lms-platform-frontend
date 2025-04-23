@@ -1,5 +1,5 @@
 import Sidebar from "../commonComponents/sidebar/Sidebar";
-// import Navbar from './Navbar/Navbar';
+import TopNav from "../constants/TopNav"; 
 import { useState, useEffect } from "react";
 import { useLocation } from 'react-router-dom';
 
@@ -20,6 +20,9 @@ function Container({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="relative">
+      {/* Top Navigation */}
+      <TopNav />
+
       {/* Sidebar and Navbar */}
       {showSidebar && (
         <nav className="fixed z-[1111] top-0 w-full">
@@ -34,7 +37,7 @@ function Container({ children }: { children: React.ReactNode }) {
       <main
         className={`${
           showSidebar ? (isSidebarExpanded ? "ml-[250px]" : "ml-[90px]") : "ml-0"
-        } pt-8 pb-0 mt-16 relative transition-all pl-7 pr-4 h-full`}
+        } pb-0 mt-16 relative transition-all pl-7 pr-4 h-full`}
       >
         {children}
       </main>
