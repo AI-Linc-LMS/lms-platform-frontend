@@ -1,4 +1,3 @@
-
 import Referralsicon from "../../../../commonComponents/icons/referrals/Referralsicon";
 
 const Referrals = () => {
@@ -9,7 +8,7 @@ const Referrals = () => {
             <div>
                 <Referralsicon />
             </div>
-            <button className="w-full h-[55px] bg-[#2A8CB0] rounded-2xl text-[16px] font-sans font-medium text-white mt-2">
+            <button className="w-full h-[55px] bg-[#2A8CB0] rounded-2xl text-[16px] font-sans font-medium text-white mt-2 cursor-pointer">
                 Copy Invitation Link
             </button>
 

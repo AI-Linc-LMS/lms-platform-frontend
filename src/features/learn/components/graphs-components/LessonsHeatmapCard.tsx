@@ -115,7 +115,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
       <div className="bottom-3 right-4 flex justify-end space-x-3">
         <button
           onClick={handlePrev}
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-[#12293A] shadow"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-[#12293A] shadow cursor-pointer"
         >
           <span className="text-lg">
             <img src={leftArrow} />
@@ -127,7 +127,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
           className={`w-10 h-10 flex items-center justify-center rounded-full ${
             monthOffset === 0
               ? "bg-gray-200 cursor-not-allowed"
-              : "bg-[#12293A]"
+              : "bg-[#12293A] cursor-pointer"
           } shadow`}
         >
           <span className="text-lg text-">
