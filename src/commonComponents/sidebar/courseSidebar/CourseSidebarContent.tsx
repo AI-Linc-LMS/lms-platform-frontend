@@ -9,6 +9,7 @@ import VideoContent from "./component/VideoContent";
 import ProblemContent from "./component/ProblemContent";
 import closeSidebarIcon from "../../../assets/course_sidebar_assets/closeSidebarIcon.png";
 import QuizContent from "./component/QuizContent";
+import { Quiz } from "./component/data/mockQuizData";
 
 const dummyStats = [
   { title: "Articles", progress: 25, count: "1/3" },
@@ -26,13 +27,14 @@ interface CourseSidebarContentProps {
 }
 
 interface QuizProps {
-  selectedQuizId: number | null;
+  selectedQuizId: number;
   onSelectQuiz: (id: number) => void;
+  quizzes: Quiz[];
 }
 
 interface ArticleProps {
   articles: ArticleItem[];
-  selectedArticleId: number | null;
+  selectedArticleId: number;
   onArticleClick: (id: number) => void;
 }
 
@@ -65,7 +67,7 @@ const CourseSidebarContent = ({
   };
 
   return (
-    <div className="relative bg-white w-[500px] shadow-xl rounded-lg px-4 py-3 transition-all duration-300 mt-5">
+    <div className="relative bg-white w-[500px] min-h-screen shadow-xl rounded-lg px-4 py-3 transition-all duration-300 mt-5">
       <button
         onClick={onClose}
         className="absolute top-1 -right-10 z-10 bg-white rounded-full shadow-md p-2 hover:bg-gray-100 transition"
@@ -84,7 +86,7 @@ const CourseSidebarContent = ({
         {activeLabel === "All" && <AllContent contents={dummyContent} />}
         {activeLabel === "Article" && (
           <ArticleContent
-            articles={articleProps.articles} 
+            articles={articleProps.articles}
             selectedArticleId={articleProps.selectedArticleId}
             onArticleClick={articleProps.onArticleClick}
           />
@@ -111,8 +113,9 @@ const CourseSidebarContent = ({
         )}
         {activeLabel === "Quiz" && (
           <QuizContent
-            onSelectQuiz={quizProps.onSelectQuiz}
+            onSelect={quizProps.onSelectQuiz}
             selectedQuizId={quizProps.selectedQuizId}
+            quizzes={quizProps.quizzes}
           />
         )}
       </div>
