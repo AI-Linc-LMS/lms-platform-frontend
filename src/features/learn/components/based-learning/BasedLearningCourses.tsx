@@ -55,7 +55,7 @@ const CourseCard = ({
 
     return (
         
-        <div className="rounded-3xl border border-[#80C9E0] p-6 flex flex-col w-full bg-white">
+        <div className="rounded-3xl border border-[#80C9E0] p-6 flex flex-col w-full bg-white min-h-[350px]">
             
             <h2 className="text-2xl font-bold text-gray-800 mb-2">{title}</h2>
             <p className="text-gray-600 mb-6">{description}</p>
