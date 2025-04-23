@@ -31,7 +31,7 @@ const ArticleCard = ({
         {!completed ? (
           <button
             onClick={onMarkComplete}
-            className="px-4 py-2 text-white bg-[#12293A] rounded-md hover:bg-[#1e4a61] transition"
+            className="px-4 py-2 text-white bg-[#12293A] rounded-md hover:bg-[#1e4a61] transition cursor-pointer"
           >
             Mark as Completed
           </button>

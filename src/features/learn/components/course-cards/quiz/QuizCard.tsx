@@ -144,7 +144,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
             <button
               onClick={handleSubmit}
               disabled={selectedOption === null}
-              className="bg-[#255C79] text-white px-6 py-2 rounded-lg"
+              className="bg-[#255C79] text-white px-6 py-2 rounded-lg cursor-pointer"
             >
               Submit
             </button>
@@ -172,14 +172,14 @@ const QuizCard: React.FC<QuizCardProps> = ({
               {currentQuestionIndex < quiz.questions.length - 1 ? (
                 <button
                   onClick={handleNext}
-                  className="bg-gray-800 text-white px-6 py-2 rounded-lg"
+                  className="bg-gray-800 text-white px-6 py-2 rounded-lg cursor-pointer"
                 >
                   Next
                 </button>
               ) : (
                 <button
                   onClick={handleFinishQuiz}
-                  className="bg-gray-800 text-white px-6 py-2 rounded-lg"
+                  className="bg-gray-800 text-white px-6 py-2 rounded-lg cursor-pointer"
                 >
                   Finish Quiz
                 </button>
