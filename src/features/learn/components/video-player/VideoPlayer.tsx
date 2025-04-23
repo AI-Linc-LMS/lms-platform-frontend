@@ -114,7 +114,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
           {/* Left Controls */}
           <div className="flex space-x-4 items-center">
             {/* Play/Pause Button */}
-            <button className="text-white" onClick={togglePlay}>
+            <button className="text-white cursor-pointer" onClick={togglePlay}>
               {isPlaying ? (
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -130,7 +130,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
             {/* Volume Control */}
             <div className="relative">
               <button 
-                className="text-white" 
+                className="text-white cursor-pointer" 
                 onClick={() => setShowVolumeControl(!showVolumeControl)}
                 onMouseEnter={() => setShowVolumeControl(true)}
                 onMouseLeave={() => setShowVolumeControl(false)}
@@ -172,7 +172,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
             <div className="flex space-x-1 mr-2">
               <button 
                 onClick={() => setVideoSize('small')} 
-                className={`text-xs px-2 py-1 rounded-md ${
+                className={`text-xs px-2 py-1 rounded-md cursor-pointer ${
                   videoSize === 'small' 
                     ? 'bg-white text-black' 
                     : 'text-white hover:bg-gray-700'
@@ -182,7 +182,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
               </button>
               <button 
                 onClick={() => setVideoSize('medium')} 
-                className={`text-xs px-2 py-1 rounded-md ${
+                className={`text-xs px-2 py-1 rounded-md cursor-pointer ${
                   videoSize === 'medium' 
                     ? 'bg-white text-black' 
                     : 'text-white hover:bg-gray-700'
@@ -192,7 +192,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
               </button>
               <button 
                 onClick={() => setVideoSize('large')} 
-                className={`text-xs px-2 py-1 rounded-md ${
+                className={`text-xs px-2 py-1 rounded-md cursor-pointer ${
                   videoSize === 'large' 
                     ? 'bg-white text-black' 
                     : 'text-white hover:bg-gray-700'
@@ -203,14 +203,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
             </div>
             
             {/* Download Button */}
-            <button className="text-white">
+            <button className="text-white cursor-pointer">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
             </button>
             
             {/* Fullscreen Button */}
-            <button className="text-white" onClick={() => videoRef.current?.requestFullscreen()}>
+            <button className="text-white cursor-pointer" onClick={() => videoRef.current?.requestFullscreen()}>
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
               </svg>

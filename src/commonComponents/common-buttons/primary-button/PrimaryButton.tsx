@@ -17,7 +17,7 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
     <button 
       onClick={onClick}
       disabled={disabled}
-      className={`w-full h-14 rounded-xl  text-white py-4 px-6 bg-[#255C79]   text-lg font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      className={`w-full h-14 rounded-xl text-white py-4 px-6 bg-[#255C79] text-lg font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${className}`}
     >
       {children}
     </button>

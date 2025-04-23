@@ -70,7 +70,7 @@ const CourseSidebarContent = ({
     <div className="relative bg-white w-[500px] min-h-screen shadow-xl rounded-lg px-4 py-3 transition-all duration-300 mt-5">
       <button
         onClick={onClose}
-        className="absolute top-1 -right-10 z-10 bg-white rounded-full shadow-md p-2 hover:bg-gray-100 transition"
+        className="absolute top-1 -right-10 z-10 bg-white rounded-full shadow-md p-2 hover:bg-gray-100 transition cursor-pointer"
       >
         <img src={closeSidebarIcon} alt="Close" className="w-4 h-4" />
       </button>

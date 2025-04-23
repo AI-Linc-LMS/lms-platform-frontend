@@ -40,7 +40,7 @@ const CourseSidebar = ({ activeLabel, onSelect }: Props) => {
           <button
             key={idx}
             onClick={() => onSelect(item.label)}
-            className={`flex flex-col items-center px-2 py-3 rounded-lg w-full transition-colors duration-200 ${
+            className={`flex flex-col items-center px-2 py-3 rounded-lg w-full transition-colors duration-200 cursor-pointer ${
               isActive ? "bg-[#0E1F2F]" : "bg-transparent"
             }`}
           >
