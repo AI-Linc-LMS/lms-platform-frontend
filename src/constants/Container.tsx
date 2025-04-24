@@ -37,7 +37,7 @@ function Container({ children }: { children: React.ReactNode }) {
       <main
         className={`${
           showSidebar ? (isSidebarExpanded ? "ml-[250px]" : "ml-[90px]") : "ml-0"
-        } pb-0 mt-16 relative transition-all pl-7 pr-4 h-full`}
+        } pb-0 mt-10 relative transition-all pl-7 pr-4 h-full`}
       >
         {children}
       </main>

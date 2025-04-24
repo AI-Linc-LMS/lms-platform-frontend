@@ -1,3 +1,5 @@
+import FloatingAIButton from "../../floating-ai-button/FloatingAIButton";
+
 interface ArticleCardProps {
   title: string;
   content: string;
@@ -39,6 +41,11 @@ const ArticleCard = ({
           <p className="text-green-600 font-medium">✓ Completed</p>
         )}
       </div>
+
+      {/* Floating Ask AI Button */}
+      <FloatingAIButton
+        onClick={() => console.log("Floating AI Button clicked")}
+      />
     </div>
   );
 };
