@@ -18,10 +18,10 @@ const CourseCard: React.FC<CourseData> = ({
     <div className="w-full border-[#80C9E0] rounded-[22px] border-[1px] bg-[#F8F9FA] p-4 mt-4 flex flex-col min-h-[300px]">
       <div className="flex flex-row gap-4 items-center justify-between">
         <div>
-          <h1 className="font-bold text-[#343A40] text-[22px] font-sans">
+          <h1 className="font-bold text-[#343A40] text-[18px] font-sans">
             {title}
           </h1>
-          <p className="font-sans font-normal text-[18px] text-[#495057]">
+          <p className="font-sans font-normal text-[15px] text-[#495057]">
             {description}
           </p>
         </div>
