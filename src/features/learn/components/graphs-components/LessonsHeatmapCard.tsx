@@ -82,7 +82,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
       </div>
 
       {/* Month Heatmap View */}
-      <div className="flex justify-between items-start">
+      <div className="flex justify-between items-start gap-1">
         {monthsData.map((monthData, monthIndex) => (
           <div key={monthIndex} className="flex flex-col items-center">
             <MonthHeatmap

@@ -17,7 +17,7 @@ const SecondaryButton: React.FC<SecondaryButtonProps> = ({
     <button 
       onClick={onClick}
       disabled={disabled}
-      className={`w-full h-14 rounded-xl text-[#343A40] py-4 px-6 bg-[#E9ECEF] text-lg font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${className}`}
+      className={`w-full h-14 rounded-xl text-[#343A40] py-4 px-6 bg-[#E9ECEF] text-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:bg-[#DDE2E6] hover:scale-95 ${className}`}
     >
       {children}
     </button>

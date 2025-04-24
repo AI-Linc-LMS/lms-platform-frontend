@@ -5,6 +5,10 @@ interface ActivityData {
   date: string;
   level: number;
   value: number;
+  articles?: number;
+  videos?: number;
+  problems?: number;
+  quizzes?: number;
 }
 
 interface MonthHeatmapProps {
@@ -34,10 +38,9 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
     return days;
   }, [year, month, daysCount]);
 
-
   const startWeekday = new Date(year, month, 1).getDay();
   const weeksCount = Math.ceil((startWeekday + daysInMonth.length) / 7);
-  
+
   const allCells = useMemo(() => {
     const prefix = Array(startWeekday).fill(null);
     const middle = daysInMonth;
@@ -62,7 +65,12 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
           <div key={weekIndex} className="flex flex-col space-y-1">
             {week.map((date, dateIndex) => {
               if (!date) {
-                return <div key={dateIndex} className="lg:w-[10px] lg:h-[10px] xl:w-[13px] xl:h-[13px] bg-transparent" />;
+                return (
+                  <div
+                    key={dateIndex}
+                    className="lg:w-[10px] lg:h-[10px] xl:w-[13px] xl:h-[13px] bg-transparent"
+                  />
+                );
               }
 
               const dateStr = format(date, "yyyy-MM-dd");
@@ -89,9 +97,26 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
                       style={{ minWidth: "max-content" }}
                     >
                       <p className="font-medium">{format(date, "MMM d")}</p>
-                      <p className="text-gray-700">
-                        Activity: {activity.value} hrs
-                      </p>
+                      {(activity?.articles ?? 0) > 0 && (
+                        <p className="text-gray-700">
+                          Articles: {activity.articles}
+                        </p>
+                      )}
+                      {(activity.videos ?? 0) > 0 && (
+                        <p className="text-gray-700">
+                          Videos: {activity.videos ?? 0}
+                        </p>
+                      )}
+                      {(activity.problems ?? 0) > 0 && (
+                        <p className="text-gray-700">
+                          Problems: {activity.problems ?? 0}
+                        </p>
+                      )}
+                      {(activity.quizzes ?? 0) > 0 && (
+                        <p className="text-gray-700">
+                          Quizzes: {activity.quizzes ?? 0}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -107,14 +132,14 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
 
 const getActivityColor = (level: number) => {
   const customColors = [
-    "bg-gray-200",   // No activity
-    "bg-[#CDE5CE]",  // Light green
-    "bg-[#A6CFA9]",  // Medium light green
-    "bg-[#77B17B]",  // Medium green
-    "bg-[#417845]",  // Dark green
-    "bg-[#2E4D31]",  // Very dark green
+    "bg-gray-200", // No activity
+    "bg-[#CDE5CE]", // Light green
+    "bg-[#A6CFA9]", // Medium light green
+    "bg-[#77B17B]", // Medium green
+    "bg-[#417845]", // Dark green
+    "bg-[#2E4D31]", // Very dark green
   ];
-  return customColors[level] ?? "bg-gray-200";  
+  return customColors[level] ?? "bg-gray-200";
 };
 
 export default MonthHeatmap;

@@ -34,7 +34,7 @@ const Learn = () => {
         <div className="flex flex-col gap-10">
           <Leaderboard data={leaderboardData} />
           <DailyProgress data={dailyProgressData} progressMinutes={20} />
-          <StreakTable activeDays={[1, 2, 3, 12, 13, 15, 16, 17]} />
+          <StreakTable activeDays={[1, 2, 3, 12, 13, 15, 16, 17,24]} />
           <Referrals />
         </div>
       </div>
