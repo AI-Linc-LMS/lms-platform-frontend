@@ -43,7 +43,7 @@ const StreakTable: React.FC<StreakTablesProps> = ({ activeDays }) => {
         Study everyday to build your streak 💪
       </p>
 
-      <div className="grid grid-cols-5 space-x-4 space-y-8">
+      <div className="grid grid-cols-5 space-x-4. space-y-8">
         {days.map((day) => (
           <div
             key={day}
