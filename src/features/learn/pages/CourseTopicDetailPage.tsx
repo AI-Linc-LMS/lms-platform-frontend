@@ -19,7 +19,7 @@ const CourseTopicDetailPage: React.FC = () => {
   const [currentContentIndex, setCurrentContentIndex] = useState(0);
   const [selectedQuizId, setSelectedQuizId] = useState<number>(1);
   const [selectedArticleId, setSelectedArticleId] = useState<number>(1);
- const [selectedProblemId, setSelectedProblemId] = useState<string | undefined>("p1"); // Initialize with a default problem
+  const [selectedProblemId, setSelectedProblemId] = useState<string | undefined>("p1"); // Initialize with a default problem
   // State for sidebar
   const [activeSidebarLabel, setActiveSidebarLabel] =
     useState<string>("Videos");
@@ -101,14 +101,14 @@ const CourseTopicDetailPage: React.FC = () => {
     onArticleClick: (id: number) => setSelectedArticleId(id),
   };
 
-    
-    const problemProps = {
-      selectedProblemId,
-      onProblemSelect: handleProblemSelect,
-    };
-  
-    // Find the selected problem by ID
-    const selectedProblem = mockProblems.find(problem => problem.id === selectedProblemId);
+
+  const problemProps = {
+    selectedProblemId,
+    onProblemSelect: handleProblemSelect,
+  };
+
+  // Find the selected problem by ID
+  const selectedProblem = mockProblems.find(problem => problem.id === selectedProblemId);
 
   return (
     <div className="pb-8">
@@ -151,7 +151,7 @@ const CourseTopicDetailPage: React.FC = () => {
               getNextTopicTitle={getNextTopicTitle}
             />
           )}
-           {activeSidebarLabel === "Problems" && selectedProblem && (
+          {activeSidebarLabel === "Problems" && selectedProblem && (
             <div className="h-[calc(100vh-10rem)] w-full">
               <ProblemCard
                 problemId={selectedProblem.id}
@@ -174,17 +174,17 @@ const CourseTopicDetailPage: React.FC = () => {
               isSidebarContentOpen={isSidebarContentOpen}
             />
           )}
-            {activeSidebarLabel === "Article" && (
+          {activeSidebarLabel === "Article" && (
             <ArticleCard
               title={dummyArticles[selectedArticleId - 1]?.title}
               content={dummyArticles[selectedArticleId - 1]?.content}
               marks={dummyArticles[selectedArticleId - 1]?.marks}
               completed={dummyArticles[selectedArticleId - 1]?.completed}
               onMarkComplete={() => {
-              console.log("Marked as completed");
+                console.log("Marked as completed");
               }}
             />
-            )}
+          )}
         </div>
       </div>
     </div>

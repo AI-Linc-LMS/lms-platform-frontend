@@ -22,19 +22,19 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "" }) => {
     <div
       className={`w-full border border-[#80C9E0] p-3 rounded-3xl my-4 bg-white flex flex-col min-h-[300px] ${className}`}
     >
-      <div className="flex flex-row gap-6 items-center justify-between">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
         <div>
-          <h1 className="font-bold font-sans text-xl">{course.title}</h1>
+          <h1 className="font-bold font-sans text-[18px]">{course.title}</h1>
           <p className="text-gray-600 font-normal text-[15px]">{course.subtitle}</p>
         </div>
-        <div className="flex flex-wrap gap-3 items-center">
+        <div className="grid grid-cols-4 gap-1">
           {course.stats.map((stat, index) => (
             <div
               key={index}
-              className="w-16 h-16 rounded-lg p-1 bg-gray-200 flex flex-col items-center justify-center gap-3"
+              className="w-full aspect-square rounded-lg p-1 bg-gray-200 flex flex-col items-center justify-center"
             >
               {stat.icon}
-              <p className="font-semibold text-xs font-sans text-gray-600">
+              <p className="font-semibold text-xs font-sans text-gray-600 mt-1">
                 {stat.total}
               </p>
             </div>
