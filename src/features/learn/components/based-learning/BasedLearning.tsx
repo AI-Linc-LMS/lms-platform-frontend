@@ -11,7 +11,7 @@ const BasedLearning = () => {
                 </p>
             </div>
             <div>
-                <button className="w-[95px] h-[55px] rounded-xl border border-[#2A8CB0] text-[15px] font-medium font-sans text-[#2A8CB0] cursor-pointer">
+                <button className="w-[95px] h-[55px] rounded-xl border border-[#2A8CB0] text-[15px] font-medium font-sans text-[#2A8CB0] cursor-pointer  transition-all duration-200 hover:bg-[#E9F7FA] hover:text-[#1E7A99] hover:scale-95">
                     See all
                 </button>
             </div>

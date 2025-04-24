@@ -1,5 +1,5 @@
 import sunIcon from '../commonComponents/icons/nav/sunIcon.png'; 
-import bellIcon from '../commonComponents/icons/nav/bellIcon.png';
+import bellIcon from '../commonComponents/icons/nav/BellIcon.png';
 import userImg from '../commonComponents/icons/nav/User Image.png'; 
 
 const TopNav: React.FC = () => {

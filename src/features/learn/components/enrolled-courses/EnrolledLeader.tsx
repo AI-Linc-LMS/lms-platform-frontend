@@ -34,24 +34,24 @@ const EnrolledLeaderBoard = () => {
           return (
             <tr
             key={index}
-            className={`transition duration-200 hover:bg-gray-50 ${item.standing === "#8" ? "bg-[#D1ECF1]" : ""}`}
+            className={`transition duration-200  ${item.standing === "#8" ? "bg-[#D1ECF1]" : ""}`}
             >
             <td
-              className={`px-2 py-2 text-xs border-gray-300 ${isLast ? "" : "border-b"
+              className={`px-2 py-2 text-xs border-gray-300 hover:bg-[#E9F7FA] ${isLast ? "" : "border-b"
                 }`}
               style={{ width: "120px", height: "50px" }}
             >
               {item.standing}
             </td>
             <td
-              className={`px-2 py-2 text-xs border-l border-gray-300 ${isLast ? "" : "border-b"
+              className={`px-2 py-2 text-xs border-l border-gray-300 hover:bg-[#E9F7FA] ${isLast ? "" : "border-b"
                 }`}
               style={{ width: "120px", height: "50px" }}
             >
               {item.name}
             </td>
             <td
-              className={`px-2 py-2 text-xs border-l border-gray-300 ${isLast ? "" : "border-b"
+              className={`px-2 py-2 text-xs border-l border-gray-300 hover:bg-[#E9F7FA] ${isLast ? "" : "border-b"
                 }`}
               style={{ width: "120px", height: "50px" }}
             >

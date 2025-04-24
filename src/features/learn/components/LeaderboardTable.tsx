@@ -13,7 +13,7 @@ interface LeaderboardProps {
 
 const Leaderboard: React.FC<LeaderboardProps> = ({ data }) => {
   return (
-    <div className="flex flex-col transition-all duration-300 bg-white p-4 rounded-3xl lg:min-w-[270px] xl:min-w-[350px]">
+    <div className="flex flex-col transition-all duration-300 p-4 rounded-3xl lg:min-w-[270px] xl:min-w-[350px]">
       <h2 className="text-xl font-semibold text-[#343A40] mb-3">
         Track Your Progress
       </h2>
@@ -24,48 +24,64 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ data }) => {
       <div className="rounded-xl border border-gray-300 overflow-hidden">
         <table className="w-full text-center border-collapse min-h-[450px]">
           <thead className="bg-gray-100">
-        <tr>
-          <th className="border-b border-r border-gray-300 w-[80px] h-[50px] text-[12px] text-gray-600">
-            Standing
-          </th>
-          <th className="border-b border-r border-gray-300 w-[80px] h-[50px] text-[12px] text-gray-600">
-            Name
-          </th>
-          <th className="border-b border-r border-gray-300 w-[80px] h-[50px] text-[12px] text-gray-600">
-            Course
-          </th>
-          <th className="border-b border-gray-300 w-[80px] h-[50px] text-[12px] text-gray-600">
-            Marks
-          </th>
-        </tr>
+            <tr>
+              <th className="border-b border-r border-gray-300 w-[80px] h-[50px] text-[12px] text-gray-600">
+                Standing
+              </th>
+              <th className="border-b border-r border-gray-300 w-[80px] h-[50px] text-[12px] text-gray-600">
+                Name
+              </th>
+              <th className="border-b border-r border-gray-300 w-[80px] h-[50px] text-[12px] text-gray-600">
+                Course
+              </th>
+              <th className="border-b border-gray-300 w-[80px] h-[50px] text-[12px] text-gray-600">
+                Marks
+              </th>
+            </tr>
           </thead>
           <tbody>
-        {data.map((item, index) => {
-          const isLast = index === data.length - 1;
-          return (
-            <tr
-          key={index}
-          className={`transition duration-200 ${
-            isLast ? "bg-[#B4E0ED] text-[#264D64]" : "hover:bg-gray-50"
-          }`}
-            >
-          <td className="border-b border-r border-gray-300 w-[70px] h-[50px] text-[12px]">
-            {item.standing}
-          </td>
-          <td className="border-b border-r border-gray-300 w-[120px] h-[50px] text-[12px]">
-            {item.name}
-          </td>
-            <td className="border-b border-r border-gray-300 w-[70px] h-[50px] text-[12px] p-1">
-            {item.courseName.length > 13
-              ? `${item.courseName.substring(0, 13)}...`
-              : item.courseName}
-            </td>
-          <td className="border-b border-gray-300 w-[70px] h-[50px] text-[12px]">
-            {item.marks}
-          </td>
-            </tr>
-          );
-        })}
+            {data.map((item, index) => {
+              const isLast = index === data.length - 1;
+              return (
+                <tr
+                  key={index}
+                  className={`transition duration-200 ${
+                    isLast ? "bg-[#B4E0ED] text-[#264D64]" : "hover:bg-gray-50"
+                  }`}
+                >
+                  <td
+                    className="border-b border-r border-gray-300 w-[70px] h-[50px] text-[12px] group relative transition-all duration-300 hover:bg-[#E9F7FA] "
+                  >
+                    <span >
+                      {item.standing}
+                    </span>
+                  </td>
+                  <td
+                    className="border-b border-r border-gray-300 w-[120px] h-[50px] text-[12px] group relative transition-all duration-300 hover:bg-[#E9F7FA]"
+                  >
+                    <span >
+                      {item.name}
+                    </span>
+                  </td>
+                  <td
+                    className="border-b border-r border-gray-300 w-[70px] h-[50px] text-[12px] p-1 group relative transition-all duration-300 hover:bg-[#E9F7FA]"
+                  >
+                    <span >
+                      {item.courseName.length > 13
+                        ? `${item.courseName.substring(0, 13)}...`
+                        : item.courseName}
+                    </span>
+                  </td>
+                  <td
+                    className="border-b border-gray-300 w-[70px] h-[50px] text-[12px] group relative transition-all duration-300 hover:bg-[#E9F7FA]"
+                  >
+                    <span className="">
+                      {item.marks}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
