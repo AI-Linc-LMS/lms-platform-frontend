@@ -29,7 +29,7 @@ const DailyProgress: React.FC<DailyProgressProps> = ({
         Keep track of your daily learning ⚡
       </p>
 
-      <div className="overflow-hidden rounded-xl border border-gray-300 mb-10">
+      <div className="overflow-hidden rounded-xl border border-gray-300 mb-4">
         <table className="w-full text-center border-collapse min-h-[270px]">
           <thead className="bg-gray-100">
             <tr>
@@ -53,25 +53,31 @@ const DailyProgress: React.FC<DailyProgressProps> = ({
                   className="transition duration-200 hover:bg-gray-50"
                 >
                   <td
-                    className={`px-2 py-2 text-xs border-gray-300 ${
+                    className={`px-2 py-2 text-xs border-gray-300 hover:bg-[#E9F7FA] ${
                       isLast ? "" : "border-b"
-                    }`}
+                    } group`}
                   >
-                    {item.standing}
+                    <span className="transition-transform duration-300">
+                      {item.standing}
+                    </span>
                   </td>
                   <td
-                    className={`px-2 py-2 text-xs border-l border-gray-300 ${
+                    className={`px-2 py-2 text-xs border-l border-gray-300 hover:bg-[#E9F7FA] ${
                       isLast ? "" : "border-b"
-                    }`}
+                    } group`}
                   >
-                    {item.name}
+                    <span className="transition-transform duration-300">
+                      {item.name}
+                    </span>
                   </td>
                   <td
-                    className={`px-2 py-2 text-xs border-l border-gray-300 ${
+                    className={`px-2 py-2 text-xs border-l border-gray-300 hover:bg-[#E9F7FA] ${
                       isLast ? "" : "border-b"
-                    }`}
+                    } group`}
                   >
-                    {item.time}
+                    <span className="transition-transform duration-300">
+                      {item.time}
+                    </span>
                   </td>
                 </tr>
               );
@@ -84,16 +90,17 @@ const DailyProgress: React.FC<DailyProgressProps> = ({
         <span className="text-[13px] text-[#5FA564]">+ {progressMinutes} mins</span>
       </div>
 
+      {/* Animated Progress Bar */}
       <div className="relative h-8 rounded-full bg-gray-200 overflow-hidden">
         <div
-          className="absolute left-0 top-0 h-full bg-[#5FA564] transition-all duration-300"
+          className="absolute left-0 top-0 h-full bg-[#5FA564] transition-all duration-[1500ms] ease-in-out"
           style={{ width: `${progressPercent}%` }}
         />
         <span
           className="absolute top-1/2 -translate-y-1/2 text-white text-xs"
           style={{ left: `calc(${progressPercent}% - 18px)` }}
         >
-          <img src={light} />
+          <img src={light} alt="Progress Icon" />
         </span>
       </div>
 
@@ -101,6 +108,7 @@ const DailyProgress: React.FC<DailyProgressProps> = ({
         <span>0 mins</span>
         <span>{goalMinutes} mins</span>
       </div>
+
       <div className="bg-[#DEE2E6] rounded-xl px-5 py-4 flex items-center gap-2 max-w-md mt-12">
         <div className="mt-0.5 text-gray-500">
           <svg

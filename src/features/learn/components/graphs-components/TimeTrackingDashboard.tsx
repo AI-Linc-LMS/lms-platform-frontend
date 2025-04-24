@@ -8,6 +8,10 @@ interface ActivityData {
   date: string;
   level: number;
   value: number;
+  articles?: number;
+  videos?: number;
+  problems?: number;
+  quizzes?: number;
 }
 
 export default function TimeTrackingDashboard() {
@@ -45,11 +49,9 @@ export default function TimeTrackingDashboard() {
     setTotalHours(data.reduce((sum, d) => sum + d.hours, 0));
   };
   
-
   const generateHeatmapData = () => {
     const dummyActivityData: ActivityData[] = [];
     const currentDate = new Date();
-
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(currentDate.getMonth() - 6);
 
@@ -60,10 +62,19 @@ export default function TimeTrackingDashboard() {
       const level = Math.floor(Math.random() * 5);
       const value = +(Math.random() * 3).toFixed(1);
 
+      const articles = Math.floor(Math.random() * 5);
+      const videos = Math.floor(Math.random() * 5);
+      const problems = Math.floor(Math.random() * 5);
+      const quizzes = Math.floor(Math.random() * 5);
+
       dummyActivityData.push({
         date: dateStr,
         level,
         value,
+        articles,
+        videos,
+        problems,
+        quizzes,
       });
 
       date.setDate(date.getDate() + 1);
@@ -71,6 +82,7 @@ export default function TimeTrackingDashboard() {
 
     setActivityData(dummyActivityData);
   };
+
   //console.log(activityData);
 
   return (
