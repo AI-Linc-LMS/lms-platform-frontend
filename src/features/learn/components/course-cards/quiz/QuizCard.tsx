@@ -19,6 +19,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
     setSelectedOption(null);
     setCurrentQuestionIndex(0);
     setSubmitted(false);
+    setTimeLeft(300); 
   }, [quizId]);
 
   const [submitted, setSubmitted] = useState(false);

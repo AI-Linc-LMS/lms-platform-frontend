@@ -5,8 +5,8 @@ import Container from "./constants/Container";
 import { Outlet } from 'react-router-dom';
 
 function App() {
-  // In a real application, you would check for authentication status
-  const isAuthenticated = false; // This would typically come from a state or context
+  const token = localStorage.getItem("token");
+  const isAuthenticated = !!token;
 
   return (
     <>

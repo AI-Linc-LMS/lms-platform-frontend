@@ -18,7 +18,7 @@ export const useAuth = () => {
       // Store token in localStorage or secure storage
       localStorage.setItem('token', data.token);
       // Redirect to dashboard or home page
-      navigate('/dashboard');
+      navigate('/');
     },
     onError: (error: Error) => {
       dispatch(loginFailure(error.message));

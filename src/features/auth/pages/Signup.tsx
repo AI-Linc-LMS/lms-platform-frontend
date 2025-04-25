@@ -1,15 +1,27 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import PrimaryButton from '../../../commonComponents/common-buttons/primary-button/PrimaryButton';
+import { useSignup } from '../../../hooks/useSignup';
+import { toast } from 'react-hot-toast';
 
 const Signup: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    slug: ''
   });
   const [showPassword, setShowPassword] = useState(false);
+
+  const signupMutation = useSignup({
+    onSuccess: () => {
+      toast.success('Account created successfully! Please log in.');
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -19,9 +31,24 @@ const Signup: React.FC = () => {
     }));
   };
 
-  const handleSignup = () => {
-    // Signup logic here
-    console.log('Signup with:', formData);
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.email || !formData.password || !formData.name) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords don't match");
+      return;
+    }
+
+    const { confirmPassword, ...signupData } = formData;
+    // Generate slug from name if not provided
+    signupData.slug = signupData.slug || signupData.name.toLowerCase().replace(/\s+/g, '-');
+    console.log('Submitting signup data:', signupData);
+    signupMutation.mutate(signupData);
   };
 
   return (
@@ -50,7 +77,7 @@ const Signup: React.FC = () => {
             <h2 className="mt-6 text-3xl font-bold text-gray-900">Create an account</h2>
           </div>
           
-          <div className="mt-8 space-y-6">
+          <form className="mt-8 space-y-6" onSubmit={handleSignup}>
             <div className="space-y-4">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700">Full Name</label>
@@ -68,7 +95,7 @@ const Signup: React.FC = () => {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
                 <div className="mt-1">
@@ -85,7 +112,7 @@ const Signup: React.FC = () => {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
                 <div className="mt-1 relative">
@@ -118,7 +145,7 @@ const Signup: React.FC = () => {
                   </button>
                 </div>
               </div>
-              
+
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">Confirm Password</label>
                 <div className="mt-1">
@@ -138,40 +165,22 @@ const Signup: React.FC = () => {
             </div>
 
             <div>
-              <PrimaryButton onClick={handleSignup}>
-                Create account
+              <PrimaryButton
+                type="submit"
+                disabled={signupMutation.isPending}
+                className="w-full"
+              >
+                {signupMutation.isPending ? 'Creating account...' : 'Create account'}
               </PrimaryButton>
             </div>
-            
-            <div className="mt-6">
-              <button
-                type="button"
-                className="w-full flex items-center justify-center border border-gray-300 h-14 rounded-xl bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
-              >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
-                  <g clipPath="url(#clip0_3547_342)">
-                    <path d="M19.805 10.2303C19.805 9.55056 19.7499 8.86711 19.6323 8.19836H10.2V12.0492H15.6014C15.3773 13.2911 14.6571 14.3898 13.5791 15.0879V17.5866H16.8001C18.6534 15.8449 19.805 13.2728 19.805 10.2303Z" fill="#4285F4"/>
-                    <path d="M10.1999 20.0001C12.897 20.0001 15.1714 19.1147 16.8 17.5866L13.579 15.0879C12.6863 15.6918 11.5347 16.0403 10.1999 16.0403C7.5937 16.0403 5.38088 14.2832 4.58797 11.9167H1.26318V14.4927C2.88263 17.7588 6.30649 20.0001 10.1999 20.0001Z" fill="#34A853"/>
-                    <path d="M4.58797 11.9166C4.39597 11.3124 4.2876 10.6658 4.2876 9.99984C4.2876 9.33384 4.39597 8.68724 4.58797 8.08306V5.50708H1.26318C0.57051 6.857 0.199951 8.39078 0.199951 9.99984C0.199951 11.609 0.57051 13.1427 1.26318 14.4926L4.58797 11.9166Z" fill="#FBBC05"/>
-                    <path d="M10.1999 3.95981C11.6543 3.95981 12.9661 4.4842 14.0048 5.46934L16.8774 2.59662C15.1684 0.98921 12.8939 0 10.1999 0C6.30649 0 2.88263 2.24126 1.26318 5.50732L4.58797 8.0833C5.38088 5.71682 7.5937 3.95981 10.1999 3.95981Z" fill="#EA4335"/>
-                  </g>
-                  <defs>
-                    <clipPath id="clip0_3547_342">
-                      <rect width="20" height="20" fill="white"/>
-                    </clipPath>
-                  </defs>
-                </svg>
-                Sign up with Google
-              </button>
-            </div>
-            
+
             <div className="text-center text-sm">
               <span className="text-gray-500">Already have an account? </span>
               <Link to="/login" className="font-medium text-[#255C79]">
                 Login
               </Link>
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </div>
