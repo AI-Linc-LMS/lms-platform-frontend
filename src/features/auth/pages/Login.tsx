@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import PrimaryButton from '../../../commonComponents/common-buttons/primary-button/PrimaryButton';
+import { useAuth } from '../../../hooks/useAuth';
+import { useAppSelector } from '../../../redux/store';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  
+  const { handleLogin, isLoading } = useAuth();
+  const { error } = useAppSelector((state) => state.auth);
 
-  const handleLogin = () => {
-    // Login logic here
-    console.log('Login with:', email, password);
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleLogin({ email, password });
   };
 
   return (
@@ -38,7 +43,13 @@ const Login: React.FC = () => {
             <h2 className="mt-6 text-3xl font-bold text-gray-900">Login to your account</h2>
           </div>
           
-          <div className="mt-8 space-y-6">
+          <form onSubmit={onSubmit} className="mt-8 space-y-6">
+            {error && (
+              <div className="p-4 text-sm text-red-700 bg-red-100 rounded-lg">
+                {error}
+              </div>
+            )}
+            
             <div className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
@@ -53,6 +64,7 @@ const Login: React.FC = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     className="block w-full h-14 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79]"
                     placeholder="example@email.com"
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -73,6 +85,7 @@ const Login: React.FC = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     className="block w-full h-14 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79]"
                     placeholder="Enter Your Password"
+                    disabled={isLoading}
                   />
                   <button
                     type="button"
@@ -95,8 +108,8 @@ const Login: React.FC = () => {
             </div>
 
             <div>
-              <PrimaryButton onClick={handleLogin}>
-                Login now
+              <PrimaryButton type="submit" disabled={isLoading}>
+                {isLoading ? 'Logging in...' : 'Login now'}
               </PrimaryButton>
             </div>
             
@@ -104,6 +117,7 @@ const Login: React.FC = () => {
               <button
                 type="button"
                 className="w-full flex items-center justify-center border border-gray-300 h-14 rounded-xl bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+                disabled={isLoading}
               >
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
                   <g clipPath="url(#clip0_3547_342)">
@@ -128,7 +142,7 @@ const Login: React.FC = () => {
                 Sign up
               </Link>
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </div>
