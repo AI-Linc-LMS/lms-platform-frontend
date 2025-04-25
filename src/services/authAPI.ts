@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 
 const API_BASE_URL = 'https://be-app.ailinc.com/';
 
