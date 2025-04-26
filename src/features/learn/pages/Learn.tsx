@@ -9,7 +9,7 @@ import EnrolledCourse from "../components/courses/EnrolledCourse";
 import Referrals from "../components/referrals/Referrals";
 import WelcomeSection from "../components/WelcomeSection";
 import { leaderboardData } from "../data/mockLeaderboardData";
-import DailyProgress from "../components/DailyProgessTable";
+import DailyProgress from "../components/DailyProgressTable";
 import { dailyProgressData } from "../data/mockDailyProgressTable";
 import StreakTable from "../components/StreakTable";
 
@@ -33,7 +33,7 @@ const Learn = () => {
 
         <div className="flex flex-col gap-10">
           <Leaderboard data={leaderboardData} />
-          <DailyProgress data={dailyProgressData} progressMinutes={20} />
+          <DailyProgress/>
           <StreakTable activeDays={[1, 2, 3, 12, 13, 15, 16, 17,24]} />
           <Referrals />
         </div>
