@@ -7,16 +7,20 @@ const goalMinutes = 30; // Default goal
 const DailyProgress: React.FC = () => {
   
   const { data, isLoading, isError, error } = useDailyLeaderboard(1);
-
   // Map API data to table format
-  const tableData = data?.map((item, idx) => ({
-    standing: idx + 1,
-    name: item.name,
-    time: `${item.progress} mins`,
-  })) || [];
+  const tableData = (data || []).map(
+    (item: { name: string; progress: { hours: number; minutes: number } }, idx: number) => ({
+      standing: `#${idx + 1}`,
+      name: item.name,
+      time:
+        item.progress.hours > 0
+          ? `${item.progress.hours}hr ${item.progress.minutes}min`
+          : `${item.progress.minutes}min`,
+    })
+  ) || [];
 
   // Calculate total progress for progress bar
-  const progressMinutes = data?.reduce((sum, item) => sum + (item.progress || 0), 0) || 0;
+  const progressMinutes = data?.reduce((sum, item) => sum + (item.progress.minutes || 0), 0) || 0;
   const progressPercent = Math.min((progressMinutes / goalMinutes) * 100, 100);
 
   if (isLoading) return <div>Loading leaderboard...</div>;
