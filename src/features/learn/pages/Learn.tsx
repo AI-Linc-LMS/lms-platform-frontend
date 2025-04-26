@@ -10,7 +10,7 @@ import Referrals from "../components/referrals/Referrals";
 import WelcomeSection from "../components/WelcomeSection";
 import { leaderboardData } from "../data/mockLeaderboardData";
 import DailyProgress from "../components/DailyProgressTable";
-import { dailyProgressData } from "../data/mockDailyProgressTable";
+// import { dailyProgressData } from "../data/mockDailyProgressTable";
 import StreakTable from "../components/StreakTable";
 
 const Learn = () => {
