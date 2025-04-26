@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../redux/store';
 import { loginStart, loginSuccess, loginFailure } from '../redux/slices/authSlice';
+import { setUser } from '../redux/slices/userSlice';
 import { login, LoginCredentials } from '../services/authAPI';
 
 export const useAuth = () => {
@@ -14,11 +15,23 @@ export const useAuth = () => {
       dispatch(loginStart());
     },
     onSuccess: (data) => {
-      dispatch(loginSuccess(data));
-      // Store token in localStorage or secure storage
-      localStorage.setItem('token', data.token);
+      dispatch(loginSuccess({
+        user: data.user,
+        token: data.access_token
+      }));
+      localStorage.setItem('token', data.access_token);
+      // Save user data in user slice and localStorage
+      const userPayload = {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        email: data.user.email,
+        full_name: data.user.full_name,
+        username: data.user.username,
+        isAuthenticated: true,
+      };
+      dispatch(setUser(userPayload));
       // Redirect to dashboard or home page
-      navigate('/dashboard');
+      navigate('/');
     },
     onError: (error: Error) => {
       dispatch(loginFailure(error.message));

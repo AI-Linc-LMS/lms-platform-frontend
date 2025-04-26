@@ -1,24 +1,26 @@
 import React from "react";
 import light from "../../../assets/dashboard_assets/light.png";
+import { useDailyLeaderboard } from "../../../hooks/useDailyLeaderboard";
 
-interface DailyProgressItem {
-  standing: string;
-  name: string;
-  time: string;
-}
+const goalMinutes = 30; // Default goal
 
-interface DailyProgressProps {
-  data: DailyProgressItem[];
-  progressMinutes: number;
-  goalMinutes?: number; // default: 30 mins
-}
+const DailyProgress: React.FC = () => {
+  
+  const { data, isLoading, isError, error } = useDailyLeaderboard(1);
 
-const DailyProgress: React.FC<DailyProgressProps> = ({
-  data,
-  progressMinutes,
-  goalMinutes = 30,
-}) => {
+  // Map API data to table format
+  const tableData = data?.map((item, idx) => ({
+    standing: idx + 1,
+    name: item.name,
+    time: `${item.progress} mins`,
+  })) || [];
+
+  // Calculate total progress for progress bar
+  const progressMinutes = data?.reduce((sum, item) => sum + (item.progress || 0), 0) || 0;
   const progressPercent = Math.min((progressMinutes / goalMinutes) * 100, 100);
+
+  if (isLoading) return <div>Loading leaderboard...</div>;
+  if (isError) return <div>Error: {error?.message}</div>;
 
   return (
     <div className="flex flex-col w-full lg:min-w-[270px] xl:min-w-[350px] transition-all duration-300 bg-white p-4 rounded-3xl mt-10">
@@ -45,8 +47,8 @@ const DailyProgress: React.FC<DailyProgressProps> = ({
             </tr>
           </thead>
           <tbody>
-            {data.map((item, index) => {
-              const isLast = index === data.length - 1;
+            {tableData.map((item, index) => {
+              const isLast = index === tableData.length - 1;
               return (
                 <tr
                   key={index}
@@ -127,7 +129,7 @@ const DailyProgress: React.FC<DailyProgressProps> = ({
           </svg>
         </div>
         <p className="text-sm text-[#6C757D]">
-          Log in every day and snag yourself a shiny +1 Streak point! Don’t miss
+          Log in every day and snag yourself a shiny +1 Streak point! Don't miss
           out on the fun—keep those streaks rolling!
         </p>
       </div>
