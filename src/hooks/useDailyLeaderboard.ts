@@ -1,18 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { getDailyLeaderboard, LeaderboardData } from "../services/leaderboardAPI";
 
-const getCSRFToken = () =>
-  document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("csrftoken="))
-    ?.split("=")[1] || "";
-
 export const useDailyLeaderboard = (clientId: number) => {
-  const csrfToken = getCSRFToken();
-
   return useQuery<LeaderboardData[], Error>({
     queryKey: ["dailyLeaderboard", clientId],
-    queryFn: () => getDailyLeaderboard(clientId, csrfToken),
+    queryFn: async () => {
+      try {
+        const data = await getDailyLeaderboard(clientId);
+        // Ensure we always return an array
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error("Error fetching leaderboard:", error);
+        return []; // Return empty array on error
+      }
+    },
     enabled: !!clientId,
   });
 }; 

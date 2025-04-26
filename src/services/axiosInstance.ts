@@ -5,12 +5,12 @@ const axiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true,
 });
 
 // Add a request interceptor to include the access token if available
 axiosInstance.interceptors.request.use(
   (config) => {
+    // Add authorization token if available
     const user = localStorage.getItem('user');
     let token = null;
     if (user) {
@@ -24,6 +24,7 @@ axiosInstance.interceptors.request.use(
       config.headers = config.headers || {};
       config.headers['Authorization'] = `Bearer ${token}`;
     }
+    
     return config;
   },
   (error) => Promise.reject(error)
