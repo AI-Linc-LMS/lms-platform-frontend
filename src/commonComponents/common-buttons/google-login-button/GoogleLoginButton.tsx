@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import  { useEffect } from "react";
 import { useAppDispatch } from '../../../redux/store';
 import { setUser } from '../../../redux/slices/userSlice';
 import { googleLogin } from '../../../services/authAPI';
@@ -16,13 +16,21 @@ const GoogleLoginButton = () => {
       script.async = true;
       script.defer = true;
       script.onload = () => {
-        (window as any).google.accounts.id.initialize({
+        interface GoogleAccounts {
+          accounts: {
+            id: {
+              initialize: (config: { client_id: string; callback: () => void }) => void;
+              renderButton: (element: HTMLElement | null, options: { theme: string; size: string }) => void;
+            };
+          };
+        }
+        
+        (window as unknown as { google: GoogleAccounts }).google.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
           callback: () => {}, // Not used in code flow
         });
-
-        // Type assertion to handle window.google property
-        (window as any).google.accounts.id.renderButton(
+        // Use the same type assertion as above for consistency
+        (window as unknown as { google: GoogleAccounts }).google.accounts.id.renderButton(
           document.getElementById("google-signin-btn"),
           { theme: "outline", size: "large" }
         );

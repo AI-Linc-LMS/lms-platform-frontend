@@ -7,6 +7,8 @@ export interface LoginCredentials {
 }
 
 export interface UserData {
+  name: string;
+  role: string;
   id: string;
   email: string;
   full_name: string;
