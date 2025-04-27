@@ -4,6 +4,7 @@ import Live from "./features/live/pages/Live";
 // Might have potential bug
 import CourseDetailPage from "./features/learn/pages/EnrolledCourseDetailPage";
 import CourseTopicDetailPage from "./features/learn/pages/CourseTopicDetailPage";
+import CourseBuilderPage from "./features/course-builder/pages/CourseBuilderPage";
 
 export interface RouteConfig {
   path: string;
@@ -36,6 +37,11 @@ const routes: RouteConfig[] = [
   {
     path: "/learn/course/:weekId/:topicId",
     component: CourseTopicDetailPage,
+    isPrivate: true,
+  },
+  {
+    path: "/course-builder",
+    component: CourseBuilderPage,
     isPrivate: true,
   },
 ];

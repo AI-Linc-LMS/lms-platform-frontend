@@ -10,8 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
     "@monaco-editor/react": "^4.7.0",
     "@tailwindcss/vite": "^4.0.17",
+    "@tinymce/tinymce-react": "^6.1.0",
     "chart.js": "^4.4.8",
     "date-fns": "^4.1.0",
     "package": "^1.0.1",
@@ -23,8 +25,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
-    "@types/react": "^19.1.1",
+    "@types/react": "^19.1.2",
     "@types/react-dom": "^19.0.4",
+    "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.21.0",
