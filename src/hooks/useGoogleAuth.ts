@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { setUser } from '../redux/slices/userSlice';
-import { googleLogin } from '../services/authAPI';
+import { googleLogin } from '../services/authApis';
 
 export const useGoogleAuth = () => {
   const [isLoading, setIsLoading] = useState(false);

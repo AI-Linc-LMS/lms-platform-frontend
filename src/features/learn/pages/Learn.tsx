@@ -8,12 +8,24 @@ import CourseDetails from "../components/courses/CoursesDetails";
 import EnrolledCourse from "../components/courses/EnrolledCourse";
 import Referrals from "../components/referrals/Referrals";
 import WelcomeSection from "../components/WelcomeSection";
-import { leaderboardData } from "../data/mockLeaderboardData";
 import DailyProgress from "../components/DailyProgressTable";
-// import { dailyProgressData } from "../data/mockDailyProgressTable";
 import StreakTable from "../components/StreakTable";
+import { useEffect } from "react";
+import { getUserDailyTimeSpentData } from "../../../services/dashboardApis";
 
 const Learn = () => {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await getUserDailyTimeSpentData(1);
+        console.log(data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+    fetchData();
+  }, []);
+
   return (
     <div>
       <WelcomeSection />
@@ -32,9 +44,9 @@ const Learn = () => {
         </div>
 
         <div className="flex flex-col gap-10">
-          <Leaderboard data={leaderboardData} />
-          <DailyProgress  />
-          <StreakTable activeDays={[1, 2, 3, 12, 13, 15, 16, 17,24]} />
+          <Leaderboard clientId={1} />
+          <DailyProgress clientId={1} />
+          <StreakTable clientId={1} />
           <Referrals />
         </div>
       </div>

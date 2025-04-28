@@ -1,54 +1,63 @@
 import "./App.css";
-import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, Navigate, useNavigate } from "react-router-dom";
 import routes from "./routes";
 import Container from "./constants/Container";
 import { Outlet } from 'react-router-dom';
+import { useEffect } from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "./redux/store";
 
 function App() {
-
-  const token = localStorage.getItem("token");
-  const isAuthenticated = !!token;
-  
-
   return (
-    <>
-      <Router>
-        <Routes>
-          {routes.map((route) => {
-            if (route.isPrivate) {
-              return (
-                <Route
-                  key={route.path}
-                  path={route.path}
-                  element={
-                    isAuthenticated ? (
-                      <Container>
-                        <Outlet/>
-                      </Container>
-                    ) : (
-                      <Navigate to="/login" replace />
-                    )
-                  }
-                >
-                  <Route index element={<route.component />} />
-                </Route>
-              );
-            }
+    <Router>
+      <AppContent />
+    </Router>
+  );
+}
 
-            return (
-              <Route
-                key={route.path}
-                path={route.path}
-                element={<route.component />}
-              />
-            );
-          })}
-          
-          {/* Redirect to login for any unmatched routes */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </Router>
-    </>
+// Separate component to use Router hooks
+function AppContent() {
+  const navigate = useNavigate();
+  const user = useSelector((state: RootState) => state.user);
+  const isAuthenticated = user.isAuthenticated;
+  
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login");
+    }
+  }, [isAuthenticated, navigate]);
+  
+  return (
+    <Routes>
+      {routes.map((route) => {
+        if (route.isPrivate) {
+          return (
+            <Route
+              key={route.path}
+              path={route.path}
+              element={
+                <Container>
+                  <Outlet />
+                </Container>
+              }
+            >
+              <Route index element={<route.component />} />
+            </Route>
+          );
+        }
+
+        return (
+          <Route
+            key={route.path}
+            path={route.path}
+            element={<route.component />}
+          />
+        );
+      })}
+      
+      {/* Redirect to login for any unmatched routes */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
   );
 }
 

@@ -1,15 +1,25 @@
 import React from "react";
 import light from "../../../assets/dashboard_assets/light.png";
-import { useDailyLeaderboard } from "../../../hooks/useDailyLeaderboard";
+import { useQuery } from "@tanstack/react-query";
+import { getDailyLeaderboard, LeaderboardData } from "../../../services/dashboardApis";
 
 const goalMinutes = 30; // Default goal
 
-const DailyProgress: React.FC = () => {
-  
-  const { data, isLoading, isError, error } = useDailyLeaderboard(1);
+const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['dailyLeaderboard', clientId],
+    queryFn: () => getDailyLeaderboard(clientId),
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  });
+
+  const dataArray = data?.leaderboard || [];
+ 
   // Map API data to table format
-  const tableData = (data || []).map(
-    (item: { name: string; progress: { hours: number; minutes: number } }, idx: number) => ({
+  const tableData = dataArray.map(
+    (item: LeaderboardData, idx: number) => ({
       standing: `#${idx + 1}`,
       name: item.name,
       time:
@@ -17,14 +27,74 @@ const DailyProgress: React.FC = () => {
           ? `${item.progress.hours}hr ${item.progress.minutes}min`
           : `${item.progress.minutes}min`,
     })
-  ) || [];
+  );
 
   // Calculate total progress for progress bar
-  const progressMinutes = data?.reduce((sum, item) => sum + (item.progress.minutes || 0), 0) || 0;
+  const progressMinutes = dataArray.reduce((sum: number, item: LeaderboardData) => sum + (item.progress.minutes || 0), 0);
   const progressPercent = Math.min((progressMinutes / goalMinutes) * 100, 100);
 
-  if (isLoading) return <div>Loading leaderboard...</div>;
-  if (isError) return <div>Error: {error?.message}</div>;
+  if (isLoading || error || !dataArray || dataArray.length === 0) {
+    return (
+      <div className="flex flex-col w-full lg:min-w-[270px] xl:min-w-[350px] transition-all duration-300 bg-white p-4 rounded-3xl mt-10">
+        <h2 className="text-xl font-semibold text-[#343A40] mb-3">
+          Daily Progress
+        </h2>
+
+        {
+          (!dataArray || dataArray.length === 0) ?
+            <p className="text-[14px] text-[#495057] mb-8">
+              No daily progress data available
+            </p> : <p className="text-[14px] text-[#495057] mb-8">
+              Keep track of your daily learning ⚡
+            </p>
+        }
+        
+        <div className="overflow-hidden rounded-xl border border-gray-300 mb-4">
+          <table className="w-full text-center border-collapse min-h-[270px]">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border-b border-gray-300 px-2 py-7 text-xs text-gray-600">
+                  Standing
+                </th>
+                <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600">
+                  Name
+                </th>
+                <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600">
+                  Spent
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...Array(3)].map((_, index) => (
+                <tr key={index} className="animate-pulse">
+                  <td className="px-2 py-2 text-xs border-b border-gray-300">
+                    <div className="h-4 bg-gray-200 rounded w-6 mx-auto"></div>
+                  </td>
+                  <td className="px-2 py-2 text-xs border-b border-l border-gray-300">
+                    <div className="h-4 bg-gray-200 rounded w-20 mx-auto"></div>
+                  </td>
+                  <td className="px-2 py-2 text-xs border-b border-l border-gray-300">
+                    <div className="h-4 bg-gray-200 rounded w-16 mx-auto"></div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="animate-pulse">
+          <div className="flex justify-end items-center mb-1">
+            <div className="h-4 bg-gray-200 rounded w-16"></div>
+          </div>
+          <div className="h-8 rounded-full bg-gray-200"></div>
+          <div className="flex justify-between mt-1">
+            <div className="h-4 bg-gray-200 rounded w-12"></div>
+            <div className="h-4 bg-gray-200 rounded w-12"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="flex flex-col w-full lg:min-w-[270px] xl:min-w-[350px] transition-all duration-300 bg-white p-4 rounded-3xl mt-10">
@@ -56,32 +126,29 @@ const DailyProgress: React.FC = () => {
               return (
                 <tr
                   key={index}
-                  className="transition duration-200 hover:bg-gray-50"
+                  className={`group relative transition-all duration-300 hover:bg-[#E9F7FA] `}
                 >
                   <td
-                    className={`px-2 py-2 text-xs border-gray-300 hover:bg-[#E9F7FA] ${
-                      isLast ? "" : "border-b"
-                    } group`}
+                    className={`px-2 py-2 text-xs border-gray-300 ${isLast ? "" : "border-b"
+                      }`}
                   >
-                    <span className="transition-transform duration-300">
+                    <span>
                       {item.standing}
                     </span>
                   </td>
                   <td
-                    className={`px-2 py-2 text-xs border-l border-gray-300 hover:bg-[#E9F7FA] ${
-                      isLast ? "" : "border-b"
-                    } group`}
+                    className={`px-2 py-2 text-xs border-l border-gray-300 ${isLast ? "" : "border-b"
+                      }`}
                   >
-                    <span className="transition-transform duration-300">
+                    <span>
                       {item.name}
                     </span>
                   </td>
                   <td
-                    className={`px-2 py-2 text-xs border-l border-gray-300 hover:bg-[#E9F7FA] ${
-                      isLast ? "" : "border-b"
-                    } group`}
+                    className={`px-2 py-2 text-xs border-l border-gray-300 ${isLast ? "" : "border-b"
+                      }`}
                   >
-                    <span className="transition-transform duration-300">
+                    <span>
                       {item.time}
                     </span>
                   </td>

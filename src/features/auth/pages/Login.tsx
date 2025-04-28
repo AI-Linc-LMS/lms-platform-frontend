@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { useAppSelector } from '../../../redux/store';
 import GoogleLoginButton from '../../../commonComponents/common-buttons/google-login-button/GoogleLoginButton';
@@ -8,6 +8,8 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
+  const navigate = useNavigate();
   
   const { handleLogin, isLoading } = useAuth();
   const { error } = useAppSelector((state) => state.auth);
@@ -16,6 +18,12 @@ const Login: React.FC = () => {
     e.preventDefault();
     handleLogin({ email, password });
   };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
 
   return (
     <div className="flex min-h-screen bg-[#F8F9FA]">

@@ -13,7 +13,6 @@ const GoogleLoginButton = () => {
       script.async = true;
       script.defer = true;
       script.onload = () => {
-        console.log("Google script loaded successfully.");
         initializeGoogleSignIn();
       };
       script.onerror = () => {
@@ -47,7 +46,7 @@ const GoogleLoginButton = () => {
       {
         theme: "outline",
         size: "large",
-        width: "100%",
+        width: 300,
         text: "signin_with",
         logo_alignment: "center",
       }
