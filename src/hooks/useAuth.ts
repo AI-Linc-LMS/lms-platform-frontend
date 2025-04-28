@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../redux/store';
 import { loginStart, loginSuccess, loginFailure } from '../redux/slices/authSlice';
 import { setUser } from '../redux/slices/userSlice';
-import { login, LoginCredentials } from '../services/authAPI';
+import { login, LoginCredentials } from '../services/authApis';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
