@@ -3,6 +3,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 const persistedUser = localStorage.getItem('user');
 
 interface UserState {
+  id: string | null;
   access_token: string | null;
   refresh_token: string | null;
   email: string | null;
