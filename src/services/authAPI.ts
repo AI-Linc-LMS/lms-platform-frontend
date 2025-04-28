@@ -3,7 +3,7 @@ import axiosInstance from './axiosInstance';
 
 export interface LoginCredentials {
   email: string;
-  password: string;
+ password: string;
 }
 
 export interface UserData {
@@ -21,9 +21,6 @@ export interface LoginResponse {
   user: UserData;
 }
 
-export interface GoogleLoginResponse extends LoginResponse {
-  // Add any additional Google-specific response fields if needed
-}
 
 export const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
   try {
@@ -37,7 +34,7 @@ export const login = async (credentials: LoginCredentials): Promise<LoginRespons
   }
 };
 
-export const googleLogin = async (googleToken: string): Promise<GoogleLoginResponse> => {
+export const googleLogin = async (googleToken: string) => {
   try {
     const response = await axiosInstance.post(
       '/accounts/user/login/google/',

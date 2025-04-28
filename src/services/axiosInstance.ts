@@ -1,16 +1,15 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'https://be-app.ailinc.com/',
+  baseURL: 'https://be-app.ailinc.com/', 
   headers: {
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json', 
   },
 });
 
 // Add a request interceptor to include the access token if available
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Add authorization token if available
     const user = localStorage.getItem('user');
     let token = null;
     if (user) {
@@ -20,14 +19,15 @@ axiosInstance.interceptors.request.use(
         token = null;
       }
     }
+
     if (token) {
-      config.headers = config.headers || {};
+      // Add Authorization header if token exists
       config.headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-export default axiosInstance; 
+export default axiosInstance;
