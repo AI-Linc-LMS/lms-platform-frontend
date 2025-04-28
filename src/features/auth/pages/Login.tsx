@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import PrimaryButton from '../../../commonComponents/common-buttons/primary-button/PrimaryButton';
 import { useAuth } from '../../../hooks/useAuth';
 import { useAppSelector } from '../../../redux/store';
 import GoogleLoginButton from '../../../commonComponents/common-buttons/google-login-button/GoogleLoginButton';
@@ -109,9 +108,10 @@ const Login: React.FC = () => {
             </div>
 
             <div>
-              <PrimaryButton type="submit" disabled={isLoading}>
+              <button type="submit" disabled={isLoading}
+              className={`w-full h-14 rounded-lg text-white py-4 px-6 bg-[#255C79] text-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:bg-[#1E4A63] hover:scale-95`}>
                 {isLoading ? 'Logging in...' : 'Login now'}
-              </PrimaryButton>
+              </button>
             </div>
           </form>
           
