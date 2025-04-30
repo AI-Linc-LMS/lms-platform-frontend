@@ -14,6 +14,8 @@ import ProblemCard from "../components/course-cards/problem/ProblemCard";
 import { mockProblems } from "../data/mockProblemData";
 import BackToPreviousPage from "../../../commonComponents/common-buttons/back-buttons/back-to-previous-page/BackToPreviousPage";
 import SubjectiveCard from "../components/course-cards/subjective/SubjectiveCard";
+import DevelopmentCard from "../components/course-cards/development/DevelopmentCard";
+import { mockDevelopmentProjects } from "../data/mockDevelopmentData";
 
 const CourseTopicDetailPage: React.FC = () => {
   const { weekId, topicId } = useParams<{ weekId: string; topicId: string }>();
@@ -22,6 +24,7 @@ const CourseTopicDetailPage: React.FC = () => {
   const [selectedQuizId, setSelectedQuizId] = useState<number>(1);
   const [selectedArticleId, setSelectedArticleId] = useState<number>(1);
   const [selectedProblemId, setSelectedProblemId] = useState<string | undefined>("p1"); // Initialize with a default problem
+  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>("dev1"); // Initialize with a default development project
   // State for sidebar
   const [activeSidebarLabel, setActiveSidebarLabel] =
     useState<string>("Videos");
@@ -88,6 +91,12 @@ const CourseTopicDetailPage: React.FC = () => {
     console.log("Selected problem:", id);
   };
 
+  const handleProjectSelect = (id: string) => {
+    setSelectedProjectId(id);
+    setActiveSidebarLabel("Development");
+    console.log("Selected development project:", id);
+  };
+
   // Sample video URL - in a real app, this would come from your API
   const sampleVideoUrl = "https://www.w3schools.com/html/mov_bbb.mp4";
 
@@ -109,8 +118,16 @@ const CourseTopicDetailPage: React.FC = () => {
     onProblemSelect: handleProblemSelect,
   };
 
+  const developmentProps = {
+    selectedProjectId,
+    onProjectSelect: handleProjectSelect,
+  };
+
   // Find the selected problem by ID
   const selectedProblem = mockProblems.find(problem => problem.id === selectedProblemId);
+  
+  // Find the selected development project by ID
+  const selectedProject = selectedProjectId ? mockDevelopmentProjects[selectedProjectId] : undefined;
 
   return (
     <div className="pb-8">
@@ -129,6 +146,7 @@ const CourseTopicDetailPage: React.FC = () => {
               quizProps={quizProps}
               articleProps={articleProps}
               problemProps={problemProps}
+              developmentProps={developmentProps}
             />
           )}
           {!isSidebarContentOpen && (
@@ -143,8 +161,12 @@ const CourseTopicDetailPage: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className={`flex-1 mt-6 ${isSidebarContentOpen ? "ml-12" : ""}`}>
-          {activeSidebarLabel !== "Problems" && activeSidebarLabel !== "Quiz" && activeSidebarLabel !== "Article" && activeSidebarLabel !== "Subjective" && (
+        <div className={`flex-1 mt-6 ${isSidebarContentOpen ? "ml-12" : ""} overflow-hidden`}>
+          {activeSidebarLabel !== "Problems" && 
+            activeSidebarLabel !== "Quiz" && 
+            activeSidebarLabel !== "Article" && 
+            activeSidebarLabel !== "Subjective" &&
+            activeSidebarLabel !== "Development" && (
             <VideoCard
               currentWeek={currentWeek}
               currentTopic={currentTopic}
@@ -192,6 +214,23 @@ const CourseTopicDetailPage: React.FC = () => {
               title="Comparison Of Electric Supercar And IC Engine Supercar Specs"
               overview="The aim of this project is to compare the specs of two supercar models: an Electric supercar and an IC Engine supercar. The comparison will be based on performance, cost, environmental impact, maintenance and repairs, comfort and convenience, and driving experience."
             />
+          )}
+          {activeSidebarLabel === "Development" && selectedProject && (
+            <div className="h-full min-h-[calc(100vh-10rem)] w-full max-w-full pr-4 overflow-auto">
+              <DevelopmentCard
+                projectId={selectedProject.id}
+                title={selectedProject.title}
+                description={selectedProject.description}
+                initialHtml={selectedProject.initialHtml}
+                initialCss={selectedProject.initialCss}
+                initialJs={selectedProject.initialJs}
+                difficulty={selectedProject.difficulty}
+                onSubmit={(html, css, js) => {
+                  console.log("Submitted development project:", { html, css, js });
+                  // Here you would typically send the code to your API for evaluation
+                }}
+              />
+            </div>
           )}
         </div>
       </div>
