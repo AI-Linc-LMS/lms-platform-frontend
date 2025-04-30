@@ -85,15 +85,15 @@ const DevelopmentContent: React.FC<DevelopmentContentProps> = ({
                   ></div>
                 </div>
               </div>
-              <button 
-                className="ml-4 px-3 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded-md transition"
+                <button 
+                className="h-[30px] ml-4 px-3 py-1 text-xs bg-[#255C79] hover:bg-[#344b5a] text-white rounded-md transition transform hover:scale-105 cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
                   onProjectSelect(project.id);
                 }}
-              >
+                >
                 {selectedProjectId === project.id ? 'Continue' : 'Start'}
-              </button>
+                </button>
             </div>
           </div>
         ))}
