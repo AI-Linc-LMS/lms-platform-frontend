@@ -1,15 +1,16 @@
 import React, { useState } from "react";
-import { Course } from "../../types/course.types";
+import type { CourseContent, Module } from "../../types/course.types";
 import CourseStatistics from "./CourseStatistics";
 import CourseActions from "./CourseActions";
 import CollapsibleCourseModule from "./CollapsibleCourseModule";
-import { mockCourseContent } from "../../data/mockCourseContent";
 
 interface CourseContentProps {
-  course: Course;
+  courseContent?: CourseContent; 
+  isLoading?: boolean;
+  error?: Error | null;
 }
 
-const CourseContent: React.FC<CourseContentProps> = ({ course }) => {
+const CourseContent: React.FC<CourseContentProps> = ({ courseContent, isLoading, error }) => {
   const [tooltipInfo, setTooltipInfo] = useState<{
     visible: boolean;
     index: number;
@@ -21,6 +22,14 @@ const CourseContent: React.FC<CourseContentProps> = ({ course }) => {
     x: 0,
     y: 0,
   });
+
+  if (!courseContent) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <p className="text-xl">Course data is not available</p>
+      </div>
+    );
+  }
 
   const handleMouseEnter = (index: number, e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -36,14 +45,31 @@ const CourseContent: React.FC<CourseContentProps> = ({ course }) => {
     setTooltipInfo((prev) => ({ ...prev, visible: false }));
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <p className="text-xl">Loading course content...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <p className="text-xl">Error loading course content</p>
+      </div>
+    );
+  }
+
+
   return (
     <div className="w-full bg-white rounded-3xl p-6 shadow-sm relative">
-      <h1 className="font-semibold text-[25px] font-sans">{course.title}</h1>
-      <p className="text-[14px] text-[#6C757D] font-normal">{course.description}</p>
+      <h1 className="font-semibold text-[25px] font-sans">{courseContent?.course_title || "course title not available"}</h1>
+      <p className="text-[14px] text-[#6C757D] font-normal">{courseContent?.course_description || "course description not available"}</p>
 
       {/* Avatars */}
       <div className="flex -space-x-2 mr-3 my-4">
-        {course.teacherAvatar.slice(0, 5).map((avatar, index) => (
+        {courseContent.instructors?.map((instructor, index) => (
           <div
             key={index}
             className="w-12 h-12 rounded-full bg-gray-300 border-2 border-white overflow-hidden cursor-pointer transition-transform hover:z-10"
@@ -51,7 +77,7 @@ const CourseContent: React.FC<CourseContentProps> = ({ course }) => {
             onMouseLeave={handleMouseLeave}
           >
             <img
-              src={avatar || "/api/placeholder/32/32"}
+              src={instructor.profile_pic_url || "/api/placeholder/32/32"}
               alt="Teacher avatar"
               className="w-full h-full object-cover"
             />
@@ -60,7 +86,7 @@ const CourseContent: React.FC<CourseContentProps> = ({ course }) => {
       </div>
 
       {/* Tooltip bubble */}
-      {tooltipInfo.visible && (
+      {tooltipInfo.visible && courseContent.instructors && (
         <div
           className="fixed z-50 pointer-events-none"
           style={{
@@ -70,10 +96,10 @@ const CourseContent: React.FC<CourseContentProps> = ({ course }) => {
         >
           <div className="custom-tooltip-bubble px-6 py-4 text-white shadow-xl min-w-[220px]">
             <p className="font-semibold text-[20px] leading-none">
-              {course.teacherNames?.[tooltipInfo.index] || "Teacher Name"}
+              {courseContent.instructors[tooltipInfo.index]?.name || "Teacher Name"}
             </p>
             <p className="text-[#D1DBE8] text-[16px] mt-2 leading-tight">
-              {course.teacherTitles?.[tooltipInfo.index] || "Instructor, Company"}
+              {courseContent.instructors[tooltipInfo.index]?.bio || "Instructor, Company"}
             </p>
           </div>
         </div>
@@ -83,11 +109,10 @@ const CourseContent: React.FC<CourseContentProps> = ({ course }) => {
       <CourseActions />
 
       <div className="mt-8">
-        {mockCourseContent.map((week) => (
+        {courseContent?.modules?.map((module: Module) => (
           <CollapsibleCourseModule
-            key={week.id}
-            week={week}
-            defaultOpen={week.id === "week-1"}
+            key={module.id}
+            week={module} // Pass the module directly
           />
         ))}
       </div>

@@ -14,19 +14,29 @@ const CourseDetails: React.FC<CourseDetailsProps> = ({ className = "" }) => {
   const dispatch = useDispatch();
   const Courses = useSelector((state: RootState) => state.courses.courses);
 
+  // Load courses from localStorage on component mount
+  useEffect(() => {
+    const savedCourses = localStorage.getItem("courses");
+    if (savedCourses) {
+      dispatch(setCourses(JSON.parse(savedCourses)));
+    }
+  }, [dispatch]);
+
   // Fetch enrolled courses using tanstack-query
   const { data, isLoading, error } = useQuery({
     queryKey: ["Courses"],
     queryFn: () => getEnrolledCourses(1),
   });
 
-  // Save fetched data into Redux store
   useEffect(() => {
     if (data) {
+      // Save fetched data into Redux store and localStorage
       dispatch(setCourses(data));
+      localStorage.setItem("courses", JSON.stringify(data));
     }
   }, [data, dispatch]);
 
+  console.log("Courses", Courses);
   if (isLoading) {
     return <p>Loading courses...</p>;
   }
@@ -40,11 +50,10 @@ const CourseDetails: React.FC<CourseDetailsProps> = ({ className = "" }) => {
       {Courses.map((course) => (
         <CourseCard
           key={course.id}
-          isLoading={true}
+          isLoading={isLoading}
           error={error}
           course={{
             ...course,
-            teacherAvatar: "",
           }}
         />
       ))}
