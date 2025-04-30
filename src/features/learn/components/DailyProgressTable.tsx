@@ -25,7 +25,7 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
 
 
   const leaderboardArray = leaderboardData?.leaderboard || [];
-  const timeSpent = dailyTimeSpentData?.timeSpent ?? 0; 
+  const timeSpent = dailyTimeSpentData?.timespent ?? 0; 
 
   // Map leaderboard data to table format
   const tableData = leaderboardArray.map((item: LeaderboardData, idx: number) => ({
