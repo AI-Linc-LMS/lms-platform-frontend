@@ -93,7 +93,7 @@ export const getUserActivityHeatmapData = async (clientId: number) => {
 
 
 // User Daily Time Spent
-export const getUserDailyTimeSpentData = async (clientId: number = 1) {
+export const getUserDailyTimeSpentData = async (clientId: number = 1) => {
   try {
     const res = await axiosInstance.get(`/api/clients/${clientId}/student/user-daily-time-spent/`);
 
