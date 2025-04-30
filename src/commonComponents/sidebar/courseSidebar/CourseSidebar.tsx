@@ -5,13 +5,16 @@ import articleIcon from "../../../assets/course_sidebar_assets/article/articleIc
 import videosIcon from "../../../assets/course_sidebar_assets/video/vidoesIcon.png";
 import problemIcon from "../../../assets/course_sidebar_assets/problem/problemIcon.png";
 import quizIcon from "../../../assets/course_sidebar_assets/quiz/defaultQuizIcon.png";
+import subjectiveicon from "../../../assets/course_sidebar_assets/subjective/subjectiveicon.png";
+import developmenticon from "../../../assets/course_sidebar_assets/development/developmenticon.png";
 
 import dashboardSelectIcon from "../../../assets/course_sidebar_assets/dashboard/dashboardSelectIcon.png";
 import allSelectIcon from "../../../assets/course_sidebar_assets/all/allSelectIcon.png";
 import videosSelectIcon from "../../../assets/course_sidebar_assets/video/videosSelectIcon.png";
 import problemSelectIcon from "../../../assets/course_sidebar_assets/problem/problemSelectIcon.png";
 import quizSelectIcon from "../../../assets/course_sidebar_assets/quiz/selectQuizIcon.png";
-
+import subjectiveSelection from "../../../assets/course_sidebar_assets/subjective/subjectiveSelection.png";
+import developmentSelection from "../../../assets/course_sidebar_assets/development/develpmentSelection.png";
 interface Props {
   activeLabel: string | null;
   onSelect: (label: string) => void;
@@ -29,10 +32,12 @@ const CourseSidebar = ({ activeLabel, onSelect }: Props) => {
     { label: "Videos", icon: videosIcon, selectIcon: videosSelectIcon },
     { label: "Problems", icon: problemIcon, selectIcon: problemSelectIcon },
     { label: "Quiz", icon: quizIcon, selectIcon: quizSelectIcon },
+    { label: "Subjective", icon: subjectiveicon , selectIcon: subjectiveSelection },
+    { label: "Development", icon: developmenticon, selectIcon: developmentSelection },
   ];
 
   return (
-    <div className="bg-[#D9F5FC] rounded-lg inline-flex flex-col items-center max-h-[410px] w-18 ml-5 mt-5 mr-1">
+    <div className="bg-[#D9F5FC] rounded-lg inline-flex flex-col items-center max-h-[560px] w-18 ml-5 mt-5 mr-1">
       {menuItems.map((item, idx) => {
         const isActive = item.label === activeLabel;
 
