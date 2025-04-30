@@ -10,12 +10,14 @@ import ProblemContent from "./component/ProblemContent";
 import closeSidebarIcon from "../../../assets/course_sidebar_assets/closeSidebarIcon.png";
 import QuizContent from "./component/QuizContent";
 import { Quiz } from "./component/data/mockQuizData";
+import SubjectiveContent from "./component/SubjectiveContent";
 
 const dummyStats = [
   { title: "Articles", progress: 25, count: "1/3" },
   { title: "Videos", progress: 25, count: "1/3" },
   { title: "Problems", progress: 25, count: "1/3" },
   { title: "Quiz", progress: 25, count: "1/3" },
+  { title: "Subjective", progress: 0, count: "0/1" },
 ];
 
 interface CourseSidebarContentProps {
@@ -116,6 +118,16 @@ const CourseSidebarContent = ({
             onSelect={quizProps.onSelectQuiz}
             selectedQuizId={quizProps.selectedQuizId}
             quizzes={quizProps.quizzes}
+          />
+        )}
+        {activeLabel === "Subjective" && (
+          <SubjectiveContent
+            assignment={{
+              id: 1,
+              title: "Comparison Of Electric Supercar And IC Engine Supercar Specs",
+              difficulty: "Easy",
+              completion: 98.82
+            }}
           />
         )}
       </div>

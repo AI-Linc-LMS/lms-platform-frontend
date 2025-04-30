@@ -13,6 +13,8 @@ import { dummyArticles } from "../data/mockArticleData";
 import ProblemCard from "../components/course-cards/problem/ProblemCard";
 import { mockProblems } from "../data/mockProblemData";
 import BackToPreviousPage from "../../../commonComponents/common-buttons/back-buttons/back-to-previous-page/BackToPreviousPage";
+import SubjectiveCard from "../components/course-cards/subjective/SubjectiveCard";
+
 const CourseTopicDetailPage: React.FC = () => {
   const { weekId, topicId } = useParams<{ weekId: string; topicId: string }>();
   const navigate = useNavigate();
@@ -142,7 +144,7 @@ const CourseTopicDetailPage: React.FC = () => {
 
         {/* Main Content */}
         <div className={`flex-1 mt-6 ${isSidebarContentOpen ? "ml-12" : ""}`}>
-          {activeSidebarLabel !== "Problems" && activeSidebarLabel !== "Quiz" && activeSidebarLabel !== "Article" && (
+          {activeSidebarLabel !== "Problems" && activeSidebarLabel !== "Quiz" && activeSidebarLabel !== "Article" && activeSidebarLabel !== "Subjective" && (
             <VideoCard
               currentWeek={currentWeek}
               currentTopic={currentTopic}
@@ -183,6 +185,12 @@ const CourseTopicDetailPage: React.FC = () => {
               onMarkComplete={() => {
                 console.log("Marked as completed");
               }}
+            />
+          )}
+          {activeSidebarLabel === "Subjective" && (
+            <SubjectiveCard
+              title="Comparison Of Electric Supercar And IC Engine Supercar Specs"
+              overview="The aim of this project is to compare the specs of two supercar models: an Electric supercar and an IC Engine supercar. The comparison will be based on performance, cost, environmental impact, maintenance and repairs, comfort and convenience, and driving experience."
             />
           )}
         </div>
