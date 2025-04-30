@@ -10,12 +10,17 @@ import ProblemContent from "./component/ProblemContent";
 import closeSidebarIcon from "../../../assets/course_sidebar_assets/closeSidebarIcon.png";
 import QuizContent from "./component/QuizContent";
 import { Quiz } from "./component/data/mockQuizData";
+import SubjectiveContent from "./component/SubjectiveContent";
+import DevelopmentContent from "./component/DevelopmentContent";
+import { developmentProjectsDummy } from "./component/data/mockDevelopmentData";
 
 const dummyStats = [
   { title: "Articles", progress: 25, count: "1/3" },
   { title: "Videos", progress: 25, count: "1/3" },
   { title: "Problems", progress: 25, count: "1/3" },
   { title: "Quiz", progress: 25, count: "1/3" },
+  { title: "Subjective", progress: 0, count: "0/1" },
+  { title: "Development", progress: 0, count: "0/4" },
 ];
 
 interface CourseSidebarContentProps {
@@ -24,6 +29,7 @@ interface CourseSidebarContentProps {
   quizProps: QuizProps;
   articleProps: ArticleProps;
   problemProps?: ProblemProps;
+  developmentProps?: DevelopmentProps;
 }
 
 interface QuizProps {
@@ -33,14 +39,19 @@ interface QuizProps {
 }
 
 interface ArticleProps {
-  articles: ArticleItem[];
   selectedArticleId: number;
   onArticleClick: (id: number) => void;
+  articles: ArticleItem[];
 }
 
 interface ProblemProps {
   selectedProblemId?: string;
   onProblemSelect: (id: string) => void;
+}
+
+interface DevelopmentProps {
+  selectedProjectId?: string;
+  onProjectSelect: (id: string) => void;
 }
 
 const CourseSidebarContent = ({
@@ -49,6 +60,7 @@ const CourseSidebarContent = ({
   quizProps,
   articleProps,
   problemProps,
+  developmentProps,
 }: CourseSidebarContentProps) => {
   const [selectedVideoId, setSelectedVideoId] = useState<string>("");
 
@@ -63,6 +75,14 @@ const CourseSidebarContent = ({
       problemProps.onProblemSelect(id);
     } else {
       console.log("Open problem with id:", id);
+    }
+  };
+
+  const handleProjectSelect = (id: string) => {
+    if (developmentProps && developmentProps.onProjectSelect) {
+      developmentProps.onProjectSelect(id);
+    } else {
+      console.log("Open development project with id:", id);
     }
   };
 
@@ -116,6 +136,23 @@ const CourseSidebarContent = ({
             onSelect={quizProps.onSelectQuiz}
             selectedQuizId={quizProps.selectedQuizId}
             quizzes={quizProps.quizzes}
+          />
+        )}
+        {activeLabel === "Subjective" && (
+          <SubjectiveContent
+            assignment={{
+              id: 1,
+              title: "Comparison Of Electric Supercar And IC Engine Supercar Specs",
+              difficulty: "Easy",
+              completion: 98.82
+            }}
+          />
+        )}
+        {activeLabel === "Development" && (
+          <DevelopmentContent
+            projects={developmentProjectsDummy}
+            selectedProjectId={developmentProps?.selectedProjectId}
+            onProjectSelect={handleProjectSelect}
           />
         )}
       </div>
