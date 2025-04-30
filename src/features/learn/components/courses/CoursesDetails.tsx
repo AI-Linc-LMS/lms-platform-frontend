@@ -40,7 +40,7 @@ const CourseDetails: React.FC<CourseDetailsProps> = ({ className = "" }) => {
       {Courses.map((course) => (
         <CourseCard
           key={course.id}
-          isLoading={true}
+          isLoading={isLoading}
           error={error}
           course={{
             ...course,

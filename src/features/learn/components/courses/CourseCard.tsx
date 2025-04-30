@@ -24,7 +24,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
     // Skeleton loader
     return (
       <div
-        className={`w-full border border-[#80C9E0] p-3 rounded-3xl my-4 bg-white flex flex-col h-full animate-pulse ${className}`}
+        className={`w-full border border-[#80C9E0] p-3 rounded-3xl bg-white flex flex-col h-full animate-pulse ${className}`}
       >
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
           <div>
