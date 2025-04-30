@@ -21,7 +21,7 @@ export interface Course {
   //stats: CourseStat[];
   trustedBy?: string[];
   level?: "Beginner" | "Intermediate" | "Advanced";
-  teacherAvatar: string;
+  teacherAvatar: string[];
   teacherNames?: string[]; // Add this property
   teacherTitles?: string[];
   progress?: CourseProgress;

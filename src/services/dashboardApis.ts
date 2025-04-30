@@ -26,9 +26,8 @@ export interface DailyLeaderboardResponse {
 }
 
 export interface StreakData {
-  month: number;
-  year: number;
-  streak: Record<string, boolean>;
+  timespent: number;
+  units: string;
 }
 
 // Daily Progress Leaderboard
