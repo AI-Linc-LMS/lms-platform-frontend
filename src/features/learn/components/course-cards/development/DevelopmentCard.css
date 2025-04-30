@@ -1,0 +1,215 @@
+.development-card {
+  max-width: 100%;
+  overflow-x: hidden;
+  transition: all 0.3s ease;
+}
+
+/* Light Theme (Default) */
+.development-card.light-theme {
+  background-color: #ffffff;
+  color: #333333;
+}
+
+/* Dark Theme */
+.development-card.dark-theme {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+}
+
+.development-card.dark-theme h1,
+.development-card.dark-theme h3 {
+  color: #ffffff;
+}
+
+.development-card.dark-theme p {
+  color: #cccccc;
+}
+
+.development-card.dark-theme .editor-container {
+  border-color: #444444;
+}
+
+.development-card.dark-theme .editor-tabs {
+  background-color: #252526;
+  border-color: #444444;
+}
+
+.development-card.dark-theme .editor-tabs button {
+  color: #9d9d9d;
+}
+
+.development-card.dark-theme .editor-tabs button:hover {
+  color: #ffffff;
+}
+
+.development-card.dark-theme .editor-tabs button.active {
+  border-color: #007acc;
+  color: #ffffff;
+}
+
+.development-card.dark-theme .theme-toggle {
+  background-color: #333333;
+  color: #ffffff;
+}
+
+.development-card.light-theme .theme-toggle {
+  background-color: #f0f0f0;
+  color: #333333;
+}
+
+.development-card pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.development-card textarea {
+  font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+  line-height: 1.5;
+  tab-size: 2;
+  width: 100%;
+  height: 100%;
+  min-height: 350px;
+  display: block;
+  box-sizing: border-box;
+  overflow-y: auto;
+  resize: vertical;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Light theme textarea */
+.development-card.light-theme textarea {
+  background-color: #f8f9fa;
+  color: #333333;
+}
+
+/* Dark theme textarea */
+.development-card.dark-theme textarea {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  border-color: #444444;
+}
+
+.development-card .editor-content {
+  height: auto;
+  min-height: 350px;
+  display: block;
+}
+
+.development-card textarea:focus {
+  outline: none;
+}
+
+.development-card.light-theme textarea:focus {
+  background-color: #f8f9fa;
+  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.development-card.dark-theme textarea:focus {
+  background-color: #252526;
+  box-shadow: inset 0 0 0 2px rgba(0, 122, 204, 0.4);
+}
+
+.development-card .preview-frame {
+  border: 1px solid #e5e7eb;
+}
+
+.development-card.dark-theme .preview-frame {
+  border-color: #444444;
+  background-color: #252526;
+}
+
+.development-card .preview-frame iframe {
+  min-height: 350px;
+  width: 100%;
+  display: block;
+  background-color: white;
+}
+
+.development-card .editor-tabs button {
+  transition: all 0.2s;
+}
+
+/* Button styling for dark theme */
+.development-card.dark-theme button {
+  border-color: #444444;
+}
+
+.development-card.dark-theme button.bg-blue-500 {
+  background-color: #007acc;
+}
+
+.development-card.dark-theme button.bg-blue-500:hover {
+  background-color: #0098ff;
+}
+
+.development-card.dark-theme button.bg-gray-500 {
+  background-color: #3a3a3a;
+}
+
+.development-card.dark-theme button.bg-gray-500:hover {
+  background-color: #4a4a4a;
+}
+
+.development-card.dark-theme button.bg-green-500 {
+  background-color: #0e8a16;
+}
+
+.development-card.dark-theme button.bg-green-500:hover {
+  background-color: #119c1a;
+}
+
+.development-card.dark-theme .hint-container {
+  background-color: #252550;
+  border-color: #334466;
+}
+
+.development-card.dark-theme .hint-container h3 {
+  color: #88aaff;
+}
+
+.development-card.dark-theme .hint-container pre {
+  color: #aaccff;
+}
+
+@media (max-width: 1200px) {
+  .development-card .header {
+    flex-direction: column;
+  }
+  
+  .development-card .actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .development-card .actions button {
+    width: 100%;
+  }
+}
+
+@media (min-height: 800px) {
+  .development-card textarea {
+    min-height: 450px;
+  }
+  
+  .development-card .editor-content {
+    min-height: 450px;
+  }
+  
+  .development-card .preview-frame iframe {
+    min-height: 450px;
+  }
+}
+
+@media (min-height: 1000px) {
+  .development-card textarea {
+    min-height: 550px;
+  }
+  
+  .development-card .editor-content {
+    min-height: 550px;
+  }
+  
+  .development-card .preview-frame iframe {
+    min-height: 550px;
+  }
+} 
