@@ -17,8 +17,9 @@ export const useGoogleAuth = () => {
 
       const { access_token, refresh_token, user } = await googleLogin(googleToken);
 
-      // Store token in localStorage
+      // Store both tokens individually in localStorage
       localStorage.setItem('token', access_token);
+      localStorage.setItem('refresh_token', refresh_token);
 
       // Update Redux store with user data
       dispatch(
@@ -31,12 +32,22 @@ export const useGoogleAuth = () => {
           isAuthenticated: true,
         })
       );
+      
+      // Log token storage for debugging
+      console.log('Google login tokens stored:', {
+        access_token_stored: !!access_token,
+        refresh_token_stored: !!refresh_token
+      });
 
       // Redirect to home page
       navigate('/');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Google login error:', error);
-      setError(error.message || 'An unexpected error occurred. Please try again.');
+      setError(
+        error instanceof Error 
+          ? error.message 
+          : 'An unexpected error occurred. Please try again.'
+      );
     } finally {
       setIsLoading(false);
     }

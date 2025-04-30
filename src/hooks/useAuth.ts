@@ -19,7 +19,11 @@ export const useAuth = () => {
         user: data.user,
         token: data.access_token
       }));
+      
+      // Store both tokens individually in localStorage
       localStorage.setItem('token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      
       // Save user data in user slice and localStorage
       const userPayload = {
         access_token: data.access_token,
@@ -30,6 +34,13 @@ export const useAuth = () => {
         isAuthenticated: true,
       };
       dispatch(setUser(userPayload));
+      
+      // Log token storage for debugging
+      console.log('Tokens stored after login:', {
+        access_token_stored: !!data.access_token,
+        refresh_token_stored: !!data.refresh_token
+      });
+      
       // Redirect to dashboard or home page
       navigate('/');
     },
