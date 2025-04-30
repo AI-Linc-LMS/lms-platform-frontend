@@ -20,6 +20,7 @@ function AppContent() {
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.user);
   const isAuthenticated = user.isAuthenticated;
+  console.log("user", user);
   
   useEffect(() => {
     if (!isAuthenticated) {

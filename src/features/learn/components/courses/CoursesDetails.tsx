@@ -1,32 +1,52 @@
-import React from "react";
-import { Course } from "../../types/course.types";
+import React, { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useDispatch, useSelector } from "react-redux";
+import { getEnrolledCourses } from "../../../../services/courses-content/coursesApis";
+import { setCourses } from "../../../../redux/slices/courseSlice";
+import { RootState } from "../../../../redux/store";
 import CourseCard from "./CourseCard";
-import { defaultCourses } from "../../data/mockCourses";
 
 interface CourseDetailsProps {
-  courses?: Course[];
   className?: string;
-  layout?: "grid" | "row";
-  maxColumns?: number;
 }
 
-/**
- * CourseDetails component displays a list of courses
- * 
- * @param {Course[]} courses - Array of course objects to display
- * @param {string} className - Additional CSS classes for the container
- * @param {string} layout - Layout style ("grid" or "row")
- * @param {number} maxColumns - Maximum number of columns for grid layout
- */
-const CourseDetails: React.FC<CourseDetailsProps> = ({
-  courses = defaultCourses,
-  className = ""}) => {
-  // Container class based on layout
+const CourseDetails: React.FC<CourseDetailsProps> = ({ className = "" }) => {
+  const dispatch = useDispatch();
+  const Courses = useSelector((state: RootState) => state.courses.courses);
+
+  // Fetch enrolled courses using tanstack-query
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["Courses"],
+    queryFn: () => getEnrolledCourses(1),
+  });
+
+  // Save fetched data into Redux store
+  useEffect(() => {
+    if (data) {
+      dispatch(setCourses(data));
+    }
+  }, [data, dispatch]);
+
+  if (isLoading) {
+    return <p>Loading courses...</p>;
+  }
+
+  if (error) {
+    return <p>Error loading courses. Please try again later.</p>;
+  }
 
   return (
     <div className={`grid grid-cols-2 gap-5 ${className}`}>
-      {courses.map((course) => (
-      <CourseCard key={course.id} course={course} />
+      {Courses.map((course) => (
+        <CourseCard
+          key={course.id}
+          isLoading={true}
+          error={error}
+          course={{
+            ...course,
+            teacherAvatar: "",
+          }}
+        />
       ))}
     </div>
   );

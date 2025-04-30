@@ -18,12 +18,12 @@ export interface Course {
   title: string;
   subtitle: string;
   description: string;
-  stats: CourseStat[];
+  //stats: CourseStat[];
   trustedBy?: string[];
   level?: "Beginner" | "Intermediate" | "Advanced";
-  teacherAvatar: string[];
+  teacherAvatar: string;
   teacherNames?: string[]; // Add this property
   teacherTitles?: string[];
   progress?: CourseProgress;
-  onExplore: () => void;
+  //onExplore: () => void;
 } 

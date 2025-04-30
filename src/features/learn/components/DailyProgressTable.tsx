@@ -1,54 +1,70 @@
 import React from "react";
 import light from "../../../assets/dashboard_assets/light.png";
 import { useQuery } from "@tanstack/react-query";
-import { getDailyLeaderboard, LeaderboardData } from "../../../services/dashboardApis";
+import { getDailyLeaderboard, getUserDailyTimeSpentData, LeaderboardData } from "../../../services/dashboardApis";
 
 const goalMinutes = 30; // Default goal
 
 const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
-
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['dailyLeaderboard', clientId],
+  
+  const { data: leaderboardData, isLoading: isLeaderboardLoading, error: leaderboardError } = useQuery({
+    queryKey: ["dailyLeaderboard", clientId],
     queryFn: () => getDailyLeaderboard(clientId),
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
   });
 
-  const dataArray = data?.leaderboard || [];
- 
-  // Map API data to table format
-  const tableData = dataArray.map(
-    (item: LeaderboardData, idx: number) => ({
-      standing: `#${idx + 1}`,
-      name: item.name,
-      time:
-        item.progress.hours > 0
-          ? `${item.progress.hours}hr ${item.progress.minutes}min`
-          : `${item.progress.minutes}min`,
-    })
-  );
+  const { data: dailyTimeSpentData, isLoading: isTimeSpentLoading, error: timeSpentError } = useQuery({
+    queryKey: ["userTimeSpent", clientId],
+    queryFn: () => getUserDailyTimeSpentData(clientId),
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  });
 
-  // Calculate total progress for progress bar
-  const progressMinutes = dataArray.reduce((sum: number, item: LeaderboardData) => sum + (item.progress.minutes || 0), 0);
+
+  const leaderboardArray = leaderboardData?.leaderboard || [];
+  const timeSpent = dailyTimeSpentData?.timeSpent ?? 0; 
+
+  // Map leaderboard data to table format
+  const tableData = leaderboardArray.map((item: LeaderboardData, idx: number) => ({
+    standing: `#${idx + 1}`,
+    name: item.name,
+    time:
+      item.progress.hours > 0
+        ? `${item.progress.hours}hr ${item.progress.minutes}min`
+        : `${item.progress.minutes}min`,
+  }));
+
+  // Calculate progress percentage for the progress bar
+  const progressMinutes = timeSpent; 
   const progressPercent = Math.min((progressMinutes / goalMinutes) * 100, 100);
 
-  if (isLoading || error || !dataArray || dataArray.length === 0) {
+  if (
+    isLeaderboardLoading ||
+    isTimeSpentLoading ||
+    leaderboardError ||
+    timeSpentError ||
+    !leaderboardArray ||
+    leaderboardArray.length === 0
+  ) {
     return (
       <div className="flex flex-col w-full lg:min-w-[270px] xl:min-w-[350px] transition-all duration-300 bg-white p-4 rounded-3xl mt-10">
         <h2 className="text-xl font-semibold text-[#343A40] mb-3">
           Daily Progress
         </h2>
 
-        {
-          (!dataArray || dataArray.length === 0) ?
-            <p className="text-[14px] text-[#495057] mb-8">
-              No daily progress data available
-            </p> : <p className="text-[14px] text-[#495057] mb-8">
-              Keep track of your daily learning ⚡
-            </p>
-        }
-        
+        {(!leaderboardArray || leaderboardArray.length === 0) ? (
+          <p className="text-[14px] text-[#495057] mb-8">
+            No daily progress data available
+          </p>
+        ) : (
+          <p className="text-[14px] text-[#495057] mb-8">
+            Keep track of your daily learning ⚡
+          </p>
+        )}
+
         <div className="overflow-hidden rounded-xl border border-gray-300 mb-4">
           <table className="w-full text-center border-collapse min-h-[270px]">
             <thead className="bg-gray-100">
@@ -95,7 +111,6 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
     );
   }
 
-
   return (
     <div className="flex flex-col w-full lg:min-w-[270px] xl:min-w-[350px] transition-all duration-300 bg-white p-4 rounded-3xl mt-10">
       <h2 className="text-xl font-semibold text-[#343A40] mb-3">
@@ -126,31 +141,28 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
               return (
                 <tr
                   key={index}
-                  className={`group relative transition-all duration-300 hover:bg-[#E9F7FA] `}
+                  className={`group relative transition-all duration-300 hover:bg-[#E9F7FA]`}
                 >
                   <td
-                    className={`px-2 py-2 text-xs border-gray-300 ${isLast ? "" : "border-b"
-                      }`}
+                    className={`px-2 py-2 text-xs border-gray-300 ${
+                      isLast ? "" : "border-b"
+                    }`}
                   >
-                    <span>
-                      {item.standing}
-                    </span>
+                    <span>{item.standing}</span>
                   </td>
                   <td
-                    className={`px-2 py-2 text-xs border-l border-gray-300 ${isLast ? "" : "border-b"
-                      }`}
+                    className={`px-2 py-2 text-xs border-l border-gray-300 ${
+                      isLast ? "" : "border-b"
+                    }`}
                   >
-                    <span>
-                      {item.name}
-                    </span>
+                    <span>{item.name}</span>
                   </td>
                   <td
-                    className={`px-2 py-2 text-xs border-l border-gray-300 ${isLast ? "" : "border-b"
-                      }`}
+                    className={`px-2 py-2 text-xs border-l border-gray-300 ${
+                      isLast ? "" : "border-b"
+                    }`}
                   >
-                    <span>
-                      {item.time}
-                    </span>
+                    <span>{item.time}</span>
                   </td>
                 </tr>
               );

@@ -15,7 +15,7 @@ axiosInstance.interceptors.request.use(
     if (user) {
       try {
         token = JSON.parse(user).access_token;
-      } catch (e) {
+      } catch {
         token = null;
       }
     }
