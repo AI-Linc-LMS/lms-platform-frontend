@@ -1,5 +1,4 @@
 import axios from 'axios';
-import axiosInstance from './axiosInstance';
 
 export interface LoginCredentials {
   email: string;
@@ -21,10 +20,17 @@ export interface LoginResponse {
   user: UserData;
 }
 
+const axiosAuthInstance = axios.create({
+  baseURL: 'https://be-app.ailinc.com/', 
+  headers: {
+    'Content-Type': 'application/json', 
+  },
+});
+
 
 export const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
   try {
-    const response = await axiosInstance.post('/accounts/user/login/', credentials);
+    const response = await axiosAuthInstance.post('/accounts/user/login/', credentials);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -36,7 +42,7 @@ export const login = async (credentials: LoginCredentials): Promise<LoginRespons
 
 export const googleLogin = async (googleToken: string) => {
   try {
-    const response = await axiosInstance.post(
+    const response = await axiosAuthInstance.post(
       '/accounts/user/login/google/',
       { token: googleToken }
     );

@@ -10,6 +10,10 @@ export interface LeaderboardData {
   // Add other fields as per your API response
 }
 
+export interface DailyTimeSpentData {
+  timespent: number;
+  units: string;
+}
 export interface LeaderboardItem {
   name: string;
   rank: number;
@@ -84,7 +88,6 @@ export const getUserActivityHeatmapData = async (clientId: number) => {
       error?.message ||
       "Failed to fetch user activity heatmap"
     );
-
   }
 }
 
@@ -164,5 +167,3 @@ export const getStreakTableData = async (clientId: number = 1): Promise<StreakDa
     );
   }
 };
-
-

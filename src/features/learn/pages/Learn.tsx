@@ -11,13 +11,13 @@ import WelcomeSection from "../components/WelcomeSection";
 import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
 import { useEffect } from "react";
-import { getUserDailyTimeSpentData } from "../../../services/dashboardApis";
+import { getCourseById } from "../../../services/courses-content/courseContentApis";
 
 const Learn = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await getUserDailyTimeSpentData(1);
+        const data = await getCourseById(1, 3);
         console.log(data);
       } catch (error) {
         console.error("Error fetching data:", error);
