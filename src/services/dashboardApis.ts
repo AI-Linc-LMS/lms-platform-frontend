@@ -26,8 +26,9 @@ export interface DailyLeaderboardResponse {
 }
 
 export interface StreakData {
-  timespent: number;
-  units: string;
+  month: number;
+  year: number;
+  streak: Record<string, boolean>;
 }
 
 // Daily Progress Leaderboard
@@ -92,7 +93,7 @@ export const getUserActivityHeatmapData = async (clientId: number) => {
 
 
 // User Daily Time Spent
-export const getUserDailyTimeSpentData = async (clientId: number = 1): Promise<StreakData> => {
+export const getUserDailyTimeSpentData = async (clientId: number = 1) {
   try {
     const res = await axiosInstance.get(`/api/clients/${clientId}/student/user-daily-time-spent/`);
 
