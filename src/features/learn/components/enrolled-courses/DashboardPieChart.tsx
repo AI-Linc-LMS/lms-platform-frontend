@@ -22,19 +22,23 @@ const DashboardPieChart = () => {
     queryKey: ["DashboardPieChart"],
     queryFn: () => getCourseDashboard(1, 3),
   });
+
   // Default data if none is provided
   const defaultData = {
     totalCompletion: 25,
     categories: [
-      { name: "Article", value: 19, color: "#3875F9", ring: 0 }, // Blue - outermost ring
-      { name: "Video", value: 22, color: "#EED21B", ring: 1 }, // Yellow - second ring
-      { name: "Problems", value: 5, color: "#417845", ring: 2 }, // Green - third ring
-      { name: "Quiz", value: 9, color: "#2A8CB0", ring: 3 }, // Light blue - innermost ring
+      { name: "Article", value: 19, color: "#3875F9", ring: 0 },
+      { name: "Video", value: 22, color: "#EED21B", ring: 1 },
+      { name: "Problems", value: 5, color: "#417845", ring: 2 },
+      { name: "Quiz", value: 9, color: "#2A8CB0", ring: 3 },
     ],
   };
 
   // Use provided data or defaults
   const chartData = data || defaultData;
+
+  // Ensure categories is always an array
+  const categories = chartData?.categories || defaultData.categories;
 
   // Create concentric circles chart with consistent progress style
   const ConcentricCirclesChart = ({
@@ -147,6 +151,19 @@ const DashboardPieChart = () => {
     );
   };
 
+  if (isLoading) {
+    return <div>Loading dashboard data...</div>;
+  }
+
+  if (error) {
+    return <div>Error loading dashboard data</div>;
+  }
+
+  // Ensure we have valid data before rendering
+  if (!categories || !Array.isArray(categories)) {
+    return <div>Invalid data format</div>;
+  }
+
   return (
     <div className="flex flex-col gap-4 items-center justify-center mx-auto">
       <div className="w-full rounded-3xl bg-[#EFF9FC] border border-[#80C9E0] p-4 shadow-sm">
@@ -157,13 +174,13 @@ const DashboardPieChart = () => {
 
         {/* Charts container */}
         <div className="flex items-center justify-center gap-4 mt-6 mb-6">
-          <ConcentricCirclesChart categories={chartData.categories} />
-          <CompletionCircle percentage={chartData.totalCompletion} />
+          <ConcentricCirclesChart categories={categories} />
+          <CompletionCircle percentage={chartData.totalCompletion || 0} />
         </div>
 
         {/* Stats row */}
         <div className="flex justify-between">
-          {chartData.categories.map((category, index) => (
+          {categories.map((category: Category, index: number) => (
             <div key={index} className="flex flex-col items-center">
               <span
                 className="text-2xl font-bold"

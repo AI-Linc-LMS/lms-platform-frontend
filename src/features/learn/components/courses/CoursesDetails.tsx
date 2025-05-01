@@ -44,7 +44,6 @@ const CourseDetails: React.FC<CourseDetailsProps> = ({ className = "" }) => {
           error={error}
           course={{
             ...course,
-            teacherAvatar: [""],
           }}
         />
       ))}
