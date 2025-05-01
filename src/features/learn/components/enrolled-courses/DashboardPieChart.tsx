@@ -10,12 +10,6 @@ interface Category {
   ring: number;
 }
 
-interface DashboardPieChartProps {
-  data?: {
-    totalCompletion: number;
-    categories: Category[];
-  } | null;
-}
 
 const DashboardPieChart = () => {
   const { data, isLoading, error } = useQuery({
