@@ -11,13 +11,14 @@ import WelcomeSection from "../components/WelcomeSection";
 import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
 import { useEffect } from "react";
-import { getCourseDashboard } from "../../../services/courses-content/courseContentApis";
+import { getCourseById, getCourseContent, getCourseDashboard, getCourseLeaderboard, getSubmoduleById } from "../../../services/courses-content/courseContentApis";
+import EnrolledLeaderBoard from "../components/enrolled-courses/EnrolledLeader";
 
 const Learn = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await getCourseDashboard(1, 3);
+        const data = await getCourseById(1,3);
         console.log(data);
       } catch (error) {
         console.error("Error fetching data:", error);

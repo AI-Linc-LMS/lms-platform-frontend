@@ -23,77 +23,89 @@ export const defaultCourses: Course[] = [
   {
     id: 1,
     title: "Machine Learning Deployment",
-    subtitle: "Learn to deploy ML models to production",
-    description:
-      "Master the art of deploying machine learning models to production environments. This course covers containerization, API development, scaling, and monitoring for ML systems.",
-    // stats: [
-    //   { icon: <VideoIcon />, value: "0", total: "24" },
-    //   { icon: <DocumentIcon />, value: "0", total: "18" },
-    //   { icon: <CodeIcon />, value: "0", total: "12" },
-    //   { icon: <FAQIcon />, value: "0", total: "6" },
-    // ],
-    trustedBy: [company_1, company_2, company_3, company_4, company_5],
-    teacherAvatar: [pic_1],
-    teacherNames: ["Shubham lal", "Me "],
-    teacherTitles: ["AI Engineer", "ML Engineer"],
-    level: "Intermediate",
-   // //onExplore: () => console.log("Explore More clicked for course 1"),
+    description: "Master the art of deploying machine learning models to production environments. This course covers containerization, API development, scaling, and monitoring for ML systems.",
+    enrolled_students: [1, 2, 3],
+    instructors: [
+      {
+        id: 1,
+        name: "Shubham Lal",
+        profile_pic_url: "/api/placeholder/32/32",
+        designation: "AI Engineer"
+      },
+      {
+        id: 2,
+        name: "Me",
+        profile_pic_url: "/api/placeholder/32/32",
+        designation: "ML Engineer"
+      }
+    ],
+    is_certified: true,
+    modules: []
   },
   {
     id: 2,
     title: "Deep Learning Fundamentals",
-    subtitle: "Master neural networks from scratch",
-    description:
-      "Comprehensive introduction to deep learning concepts and techniques. Build and train neural networks for image recognition, natural language processing, and more.",
-    // stats: [
-    //   { icon: <VideoIcon />, value: "0", total: "32" },
-    //   { icon: <DocumentIcon />, value: "0", total: "24" },
-    //   { icon: <CodeIcon />, value: "0", total: "16" },
-    //   { icon: <FAQIcon />, value: "0", total: "8" },
-    // ],
-    trustedBy: [company_1, company_2, company_3, company_4, company_5],
-    teacherAvatar: [pic_1],
-    teacherNames: ["Shubham lal", "Me "],
-    teacherTitles: ["AI Engineer", "ML Engineer"],
-    level: "Beginner",
-    //onExplore: () => console.log("Explore More clicked for course 2"),
+    description: "Comprehensive introduction to deep learning concepts and techniques. Build and train neural networks for image recognition, natural language processing, and more.",
+    enrolled_students: [1, 2, 3, 4],
+    instructors: [
+      {
+        id: 1,
+        name: "Shubham Lal",
+        profile_pic_url: "/api/placeholder/32/32",
+        designation: "AI Engineer"
+      },
+      {
+        id: 2,
+        name: "Me",
+        profile_pic_url: "/api/placeholder/32/32",
+        designation: "ML Engineer"
+      }
+    ],
+    is_certified: true,
+    modules: []
   },
   {
     id: 3,
     title: "Data Science for Business",
-    subtitle: "Transform data into business insights",
-    description:
-      "Learn how to leverage data science techniques to solve real business problems. From data collection and analysis to visualization and decision-making.",
-    // stats: [
-    //   { icon: <VideoIcon />, value: "0", total: "28" },
-    //   { icon: <DocumentIcon />, value: "0", total: "22" },
-    //   { icon: <CodeIcon />, value: "0", total: "14" },
-    //   { icon: <FAQIcon />, value: "0", total: "10" },
-    // ],
-    trustedBy: [company_1, company_2, company_3, company_4, company_5],
-    teacherAvatar: [pic_1],
-    teacherNames: ["Shubham lal", "Me "],
-    teacherTitles: ["AI Engineer", "ML Engineer"],
-    level: "Intermediate",
-    //onExplore: () => console.log("Explore More clicked for course 3"),
+    description: "Learn how to leverage data science techniques to solve real business problems. From data collection and analysis to visualization and decision-making.",
+    enrolled_students: [1, 2],
+    instructors: [
+      {
+        id: 1,
+        name: "Shubham Lal",
+        profile_pic_url: "/api/placeholder/32/32",
+        designation: "AI Engineer"
+      },
+      {
+        id: 2,
+        name: "Me",
+        profile_pic_url: "/api/placeholder/32/32",
+        designation: "ML Engineer"
+      }
+    ],
+    is_certified: true,
+    modules: []
   },
   {
     id: 4,
     title: "Natural Language Processing",
-    subtitle: "Build intelligent language systems",
-    description:
-      "Deep dive into NLP technologies powering chatbots, translation systems, and text analytics. Learn about transformers, BERT, and other cutting-edge models.",
-    // stats: [
-    //   { icon: <VideoIcon />, value: "0", total: "36" },
-    //   { icon: <DocumentIcon />, value: "0", total: "28" },
-    //   { icon: <CodeIcon />, value: "0", total: "20" },
-    //   { icon: <FAQIcon />, value: "0", total: "12" },
-    // ],
-    trustedBy: [company_1, company_2, company_3, company_4, company_5],
-    teacherAvatar: [pic_1],
-    teacherNames: ["Shubham lal", "Me "],
-    teacherTitles: ["AI Engineer", "ML Engineer"],
-    level: "Advanced",
-    //onExplore: () => console.log("Explore More clicked for course 4"),
-  },
+    description: "Deep dive into NLP technologies powering chatbots, translation systems, and text analytics. Learn about transformers, BERT, and other cutting-edge models.",
+    enrolled_students: [1, 2, 3, 4, 5],
+    instructors: [
+      {
+        id: 1,
+        name: "Shubham Lal",
+        profile_pic_url: "/api/placeholder/32/32",
+        designation: "AI Engineer"
+      },
+      {
+        id: 2,
+        name: "Me",
+        profile_pic_url: "/api/placeholder/32/32",
+        designation: "ML Engineer"
+      }
+    ],
+    is_certified: true,
+    modules: []
+  }
 ];

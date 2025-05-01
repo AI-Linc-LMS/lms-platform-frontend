@@ -15,8 +15,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
 
   const handleExploreClick = () => {
     if (course) {
-      const courseNameSlug = course.title.toLowerCase().replace(/\s+/g, "-");
-      navigate(`/courses/${courseNameSlug}`);
+      navigate(`/courses/${course.id}`);
     }
   };
 
@@ -72,33 +71,20 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
         <div>
           <h1 className="font-bold font-sans text-[18px]">{course.title}</h1>
-          <p className="text-gray-600 font-normal text-[15px]">{course.subtitle}</p>
+          <p className="text-gray-600 font-normal text-[15px]">{course.description}</p>
         </div>
-        {/* <div className="grid grid-cols-4 gap-1">
-          {course.stats.map((stat, index) => (
-            <div
-              key={index}
-              className="w-full aspect-square rounded-lg p-1 bg-gray-200 flex flex-col items-center justify-center"
-            >
-              {stat.icon}
-              <p className="font-semibold text-xs font-sans text-gray-600 mt-1">
-                {stat.total}
-              </p>
-            </div>
-          ))}
-        </div> */}
       </div>
       <div className="w-full my-5">
         <p className="text-gray-500">{course.description}</p>
       </div>
       <div className="flex flex-row gap-1 mb-4">
-        <h1>Trusted by :</h1>
+        <h1>Instructors:</h1>
         <div className="flex -space-x-2 mr-3">
-          {course.trustedBy?.slice(0, 5).map((avatar, index) => (
+          {course.instructors.slice(0, 5).map((instructor, index) => (
             <div key={index} className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white overflow-hidden">
               <img
-                src={avatar || "/api/placeholder/32/32"}
-                alt="Student avatar"
+                src={instructor.profile_pic_url}
+                alt={instructor.name}
                 className="w-full h-full object-cover"
               />
             </div>
