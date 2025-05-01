@@ -10,26 +10,92 @@ import {
   getYear,
   format,
 } from "date-fns";
+import { getUserActivityHeatmapData } from "../../../../services/dashboardApis";
+import { useQuery } from "@tanstack/react-query";
 
 interface ActivityData {
   date: string;
-  level: number;
-  value: number;
+  articles: number;
+  problems: number;
+  quizzes: number;
+  videos: number;
+  total: number;
+  level?: number;
+  value?: number;
 }
 
 interface LessonsHeatmapCardProps {
   hoveredCell: string | null;
   setHoveredCell: (cell: string | null) => void;
-  activityData: ActivityData[];
 }
 
 const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
   hoveredCell,
   setHoveredCell,
-  activityData,
 }) => {
+  const { data: apiData, isLoading, error } = useQuery({
+    queryKey: ["activityData"],
+    queryFn: () => getUserActivityHeatmapData(1),
+  });
+
   const [monthOffset, setMonthOffset] = useState(0);
   const [year, setYear] = useState(2025);
+
+  // Activity weights - different activities have different importance
+  const ACTIVITY_WEIGHTS = {
+    articles: 1,    // Reading articles
+    videos: 1.2,    // Watching videos
+    problems: 1.5,  // Solving problems
+    quizzes: 2      // Taking quizzes
+  };
+
+  // Calculate weighted score based on activities
+  const calculateWeightedScore = (activities: any): number => {
+    return (
+      activities.articles * ACTIVITY_WEIGHTS.articles +
+      activities.videos * ACTIVITY_WEIGHTS.videos +
+      activities.problems * ACTIVITY_WEIGHTS.problems +
+      activities.quizzes * ACTIVITY_WEIGHTS.quizzes
+    );
+  };
+
+  // Calculate level based on weighted score
+  const calculateLevel = (activities: any): number => {
+    const weightedScore = calculateWeightedScore(activities);
+    
+    // Level thresholds based on weighted score
+    if (weightedScore === 0) return 0;        // No activity
+    if (weightedScore <= 2) return 1;         // Light activity
+    if (weightedScore <= 4) return 2;         // Moderate activity
+    if (weightedScore <= 6) return 3;         // Active
+    if (weightedScore <= 8) return 4;         // Very active
+    return 5;                                 // Highly active
+  };
+
+  // Transform API data into the format needed for the heatmap
+  const activityData = useMemo(() => {
+    if (!apiData) return [];
+    
+    return Object.entries(apiData).map(([date, value]: [string, any]) => {
+      const activities = {
+        articles: value.articles || 0,
+        videos: value.videos || 0,
+        problems: value.problems || 0,
+        quizzes: value.quizzes || 0,
+        total: value.total || 0
+      };
+
+      const level = calculateLevel(activities);
+      const weightedScore = calculateWeightedScore(activities);
+      
+      return {
+        date,
+        ...activities,
+        level,
+        value: weightedScore / 10 
+      };
+    });
+  }, [apiData]);
 
   const getLast6MonthsData = () => {
     const monthsData = [];
@@ -56,24 +122,50 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
   };
 
   const monthsData = useMemo(() => getLast6MonthsData(), [monthOffset]);
+
   const activityMap = useMemo(() => {
     return new Map(activityData.map((item) => [item.date, item]));
   }, [activityData]);
+
 
   const handlePrev = () => setMonthOffset((prev) => prev + 1);
   const handleNext = () => {
     if (monthOffset > 0) setMonthOffset((prev) => prev - 1);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col w-full">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-medium text-gray-700">Lessons</h2>
+          <div className="w-24 h-8 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        <div className="flex justify-between items-start gap-1">
+          {Array(5).fill(0).map((_, index) => (
+            <div key={index} className="w-full h-40 bg-gray-200 rounded animate-pulse"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col w-full">
+        <div className="text-red-500">Error loading activity data</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col w-full ">
+    <div className="flex flex-col w-full">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-medium text-gray-700">Lessons</h2>
         <select
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
           className="appearance-none bg-white border border-gray-200 rounded-full px-4 py-2 text-gray-700"
-          disabled // You may later support per-year filtering
+          disabled
         >
           <option value="2023">2023</option>
           <option value="2024">2024</option>
@@ -118,7 +210,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
           className="w-10 h-10 flex items-center justify-center rounded-full bg-[#12293A] shadow cursor-pointer"
         >
           <span className="text-lg">
-            <img src={leftArrow} />
+            <img src={leftArrow} alt="Previous" />
           </span>
         </button>
         <button
@@ -130,8 +222,8 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
               : "bg-[#12293A] cursor-pointer"
           } shadow`}
         >
-          <span className="text-lg text-">
-            <img src={rightArrow} />
+          <span className="text-lg">
+            <img src={rightArrow} alt="Next" />
           </span>
         </button>
       </div>

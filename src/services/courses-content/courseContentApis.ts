@@ -49,7 +49,7 @@ export const getCourseById = async (clientId: number, courseId: number) => {
   }
 };
 
-//getting course content
+//getting course content (videos, quizzes, etc.)
 export const getCourseContent = async (clientId: number, courseId: number, contentId: number) => {
   try {
     const res = await axiosInstance.get(
@@ -99,7 +99,7 @@ export const getCourseLeaderboard = async (clientId: number, courseId: number) =
   }
 }
 
-//getting course dashboard
+//getting course dashboard (done)
 export const getCourseDashboard = async (clientId: number, courseId: number) => {
   try {
     const res = await axiosInstance.get(`/lms/clients/${clientId}/courses/${courseId}/user-course-dashboard`);
@@ -126,7 +126,7 @@ export const getCourseDashboard = async (clientId: number, courseId: number) => 
 //getting course submodules by id
 export const getSubmoduleById = async (clientId: number, courseId: number, submoduleId: number) => {
   try {
-    const res = await axiosInstance.get(`/lms/clients/${clientId}/courses/${courseId}/submodules/${submoduleId}/`);
+    const res = await axiosInstance.get(`/lms/clients/${clientId}/courses/${courseId}/sub-module/${submoduleId}/`);
 
     console.log("Submodule By Id API response:", res.data);
     return res.data;

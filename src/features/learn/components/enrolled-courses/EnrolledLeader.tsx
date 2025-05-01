@@ -1,68 +1,79 @@
+import { useQuery } from "@tanstack/react-query";
+import { getCourseLeaderboard } from "../../../../services/courses-content/courseContentApis";
+import React from "react";
+
 const EnrolledLeaderBoard = () => {
-  const data = [
-    { standing: "#1", name: "Shane", time: 1200 },
-    { standing: "#2", name: "Wade", time: 800 },
-    { standing: "#3", name: "Darrell", time: 765 },
-    { standing: "#4", name: "Dustin", time: 660 },
-    { standing: "#5", name: "Marvin", time: 520 },
-    { standing: "#8", name: "You", time: 358 },
-  ];
+  const { data = [], isLoading, error } = useQuery<Array<{ rank: number; name: string; score: number }>>({
+    queryKey: ["leaderboard"],
+    queryFn: () => getCourseLeaderboard(1, 3),
+  });
+
+  const renderSkeleton = () => (
+    <tr>
+      <td className="border-b border-gray-300 px-2 py-7">
+        <div className="h-4 bg-gray-200 rounded w-10 animate-pulse"></div>
+      </td>
+      <td className="border-b border-l border-gray-300 px-2 py-2">
+        <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
+      </td>
+      <td className="border-b border-l border-gray-300 px-2 py-2">
+        <div className="h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
+      </td>
+    </tr>
+  );
+
+  if (error) {
+    return (
+      <div className="w-full rounded-3xl bg-white p-4">
+        <h1 className="text-[22px] font-semibold">Leaderboard</h1>
+        <p className="text-red-500">Error loading leaderboard data</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full rounded-3xl bg-white p-4">
       <h1 className="text-[22px] font-semibold">Leaderboard</h1>
       <p>Let's see who is on top of the leaderboard.</p>
 
-    <div className="overflow-hidden rounded-xl border border-gray-300 my-10">
-      <table className="w-full text-center border-collapse ">
-        <thead className="bg-gray-100">
-        <tr>
-          <th className="border-b border-gray-300 px-2 py-7 text-xs text-gray-600" style={{ width: "120px", height: "30px" }}>
-            Standing
-          </th>
-          <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600" style={{ width: "120px", height: "30px" }}>
-            Name
-          </th>
-          <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600" style={{ width: "120px", height: "30px" }}>
-            Marks
-          </th>
-        </tr>
-        </thead>
-        <tbody>
-        {data.map((item, index) => {
-          const isLast = index === data.length - 1;
-          return (
-            <tr
-            key={index}
-            className={`transition duration-200  ${item.standing === "#8" ? "bg-[#D1ECF1]" : ""}`}
-            >
-            <td
-              className={`px-2 py-2 text-xs border-gray-300 hover:bg-[#E9F7FA] ${isLast ? "" : "border-b"
-                }`}
-              style={{ width: "120px", height: "50px" }}
-            >
-              {item.standing}
-            </td>
-            <td
-              className={`px-2 py-2 text-xs border-l border-gray-300 hover:bg-[#E9F7FA] ${isLast ? "" : "border-b"
-                }`}
-              style={{ width: "120px", height: "50px" }}
-            >
-              {item.name}
-            </td>
-            <td
-              className={`px-2 py-2 text-xs border-l border-gray-300 hover:bg-[#E9F7FA] ${isLast ? "" : "border-b"
-                }`}
-              style={{ width: "120px", height: "50px" }}
-            >
-              {item.time}
-            </td>
+      <div className="overflow-hidden rounded-xl border border-gray-300 my-10">
+        <table className="w-full text-center border-collapse">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="border-b border-gray-300 px-2 py-7 text-xs text-gray-600" style={{ width: "120px", height: "30px" }}>
+                Standing
+              </th>
+              <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600" style={{ width: "120px", height: "30px" }}>
+                Name
+              </th>
+              <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600" style={{ width: "120px", height: "30px" }}>
+                Marks
+              </th>
             </tr>
-          );
-        })}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              // Show 6 skeleton rows while loading
+              Array(6).fill(0).map((_, index) => (
+                <React.Fragment key={index}>
+                  {renderSkeleton()}
+                </React.Fragment>
+              ))
+            ) : (
+              data?.map((entry: { rank: number; name: string; score: number }) => (
+                <tr 
+                  key={entry.rank}
+                  className={`${entry.name === 'You' ? 'bg-blue-50' : ''}`}
+                >
+                  <td className="border-b border-gray-300 px-2 py-7">{entry.rank}</td>
+                  <td className="border-b border-l border-gray-300 px-2 py-2">{entry.name}</td>
+                  <td className="border-b border-l border-gray-300 px-2 py-2">{entry.score}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
       <div className="w-full bg-[#DEE2E6] rounded-xl flex flex-row p-4 gap-3">
         <svg width="38" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -76,4 +87,5 @@ const EnrolledLeaderBoard = () => {
     </div>
   );
 };
+
 export default EnrolledLeaderBoard;
