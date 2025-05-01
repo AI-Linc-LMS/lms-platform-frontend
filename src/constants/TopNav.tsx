@@ -1,8 +1,34 @@
 import sunIcon from '../commonComponents/icons/nav/sunIcon.png'; 
 import bellIcon from '../commonComponents/icons/nav/BellIcon.png';
 import userImg from '../commonComponents/icons/nav/User Image.png'; 
+import { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { logout } from '../redux/slices/authSlice';
+import { useNavigate } from 'react-router-dom';
 
 const TopNav: React.FC = () => {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const toggleDropdown = () => {
+    setShowDropdown(!showDropdown);
+  };
+
+  const handleLogout = () => {
+    // Clear token from localStorage
+    localStorage.removeItem('token');
+    
+    // Dispatch logout action to reset the auth state
+    dispatch(logout());
+    
+    // Navigate to login page
+    navigate('/login');
+    
+    // Close dropdown
+    setShowDropdown(false);
+  };
+
   return (
     <div className="w-full flex justify-end items-center px-4 pt-4">
       {/* Right Side - Spinner, Bell, Avatar */}
@@ -13,11 +39,24 @@ const TopNav: React.FC = () => {
         <div className="bg-gray-100 p-2 rounded-md">
           <img src={bellIcon} alt="Notifications" className="w-7 h-7" />
         </div>
-        <img
-          src={userImg}
-          alt="User Avatar"
-          className="w-8 h-8 rounded-full object-cover"
-        />
+        <div className="relative">
+          <img
+            src={userImg}
+            alt="User Avatar"
+            className="w-8 h-8 rounded-full object-cover cursor-pointer"
+            onClick={toggleDropdown}
+          />
+          {showDropdown && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200">
+              <button
+                onClick={handleLogout}
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              >
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
