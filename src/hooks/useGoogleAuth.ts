@@ -17,6 +17,7 @@ export const useGoogleAuth = () => {
 
       const { access_token, refresh_token, user } = await googleLogin(googleToken);
 
+      console.log('Google login response:', { access_token, refresh_token, user });
       // Store token in localStorage
       localStorage.setItem('token', access_token);
 
@@ -28,6 +29,7 @@ export const useGoogleAuth = () => {
           email: user.email,
           full_name: user.full_name,
           username: user.username,
+          profile_picture: user.profile_picture,
           isAuthenticated: true,
         })
       );
