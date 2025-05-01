@@ -13,17 +13,6 @@ import {
 import { getUserActivityHeatmapData } from "../../../../services/dashboardApis";
 import { useQuery } from "@tanstack/react-query";
 
-interface ActivityData {
-  date: string;
-  articles: number;
-  problems: number;
-  quizzes: number;
-  videos: number;
-  total: number;
-  level?: number;
-  value?: number;
-}
-
 interface LessonsHeatmapCardProps {
   hoveredCell: string | null;
   setHoveredCell: (cell: string | null) => void;

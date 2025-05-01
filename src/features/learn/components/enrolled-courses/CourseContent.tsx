@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Course, Instructor, Module, Submodule } from "../../types/course.types";
+import { Instructor, Module, Submodule } from "../../types/course.types";
 import CourseStatistics from "./CourseStatistics";
 import CourseActions from "./CourseActions";
 import CollapsibleCourseModule from "./CollapsibleCourseModule";
