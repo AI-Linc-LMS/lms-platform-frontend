@@ -36,17 +36,17 @@ const EnrolledLeaderBoard = () => {
       <h1 className="text-[22px] font-semibold">Leaderboard</h1>
       <p>Let's see who is on top of the leaderboard.</p>
 
-      <div className="overflow-hidden rounded-xl border border-gray-300 my-10">
+      <div className="overflow-hidden rounded-xl border border-gray-300 my-5">
         <table className="w-full text-center border-collapse">
           <thead className="bg-gray-100">
             <tr>
-              <th className="border-b border-gray-300 px-2 py-7 text-xs text-gray-600" style={{ width: "120px", height: "30px" }}>
+              <th className="border-b border-gray-300 px-2 py-4 text-xs text-gray-600" style={{ width: "120px", height: "30px" }}>
                 Standing
               </th>
-              <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600" style={{ width: "120px", height: "30px" }}>
+              <th className="border-b border-l border-gray-300 px-2 text-xs text-gray-600" style={{ width: "120px", height: "30px" }}>
                 Name
               </th>
-              <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600" style={{ width: "120px", height: "30px" }}>
+              <th className="border-b border-l border-gray-300 px-2 text-xs text-gray-600" style={{ width: "120px", height: "30px" }}>
                 Marks
               </th>
             </tr>
@@ -65,7 +65,7 @@ const EnrolledLeaderBoard = () => {
                   key={entry.rank}
                   className={`${entry.name === 'You' ? 'bg-blue-50' : ''}`}
                 >
-                  <td className="border-b border-gray-300 px-2 py-7">{entry.rank}</td>
+                  <td className="border-b border-gray-300 px-2 py-4">{entry.rank}</td>
                   <td className="border-b border-l border-gray-300 px-2 py-2">{entry.name}</td>
                   <td className="border-b border-l border-gray-300 px-2 py-2">{entry.score}</td>
                 </tr>

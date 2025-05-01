@@ -1,47 +1,44 @@
-import React from "react";
-import { Outlet, useLocation } from "react-router-dom";
-import { getEnrolledCourses } from "../../../services/courses-content/coursesApis";
-import { useQuery } from "@tanstack/react-query";
-import { useDispatch} from "react-redux";
-import { setCourses } from "../../../redux/slices/courseSlice";
+import Leaderboard from "../components/LeaderboardTable";
+import TimeTrackingDashboard from "../components/graphs-components/TimeTrackingDashboard";
+import BasedLearning from "../components/based-learning/BasedLearning";
+import BasedLearningCourses from "../components/based-learning/BasedLearningCourses";
+import ContinueCourses from "../components/continue-learning/ContinueCourses";
+import ContinueCoursesDetails from "../components/continue-learning/ContinueCoursesDetails";
 import CourseDetails from "../components/courses/CoursesDetails";
-import Sidebar from "../../../commonComponents/sidebar/Sidebar";
+import EnrolledCourse from "../components/courses/EnrolledCourse";
+import Referrals from "../components/referrals/Referrals";
+import WelcomeSection from "../components/WelcomeSection";
+import DailyProgress from "../components/DailyProgressTable";
+import StreakTable from "../components/StreakTable";
 
-const Learn: React.FC = () => {
-  const dispatch = useDispatch();
-  const location = useLocation();
-
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["Courses"],
-    queryFn: () => getEnrolledCourses(1),
-  });
-
-  React.useEffect(() => {
-    if (data) {
-      dispatch(setCourses(data));
-    }
-  }, [data, dispatch]);
-
-  if (isLoading) {
-    return <p>Loading courses...</p>;
-  }
-
-  if (error) {
-    return <p>Error loading courses. Please try again later.</p>;
-  }
-
+const Learn = () => {
+  
   return (
-    <div className="flex">
-      <Sidebar isExpanded={true} toggleSidebar={() => {}} />
-      <div className="flex-1 p-8">
-        {location.pathname === "/learn" ? (
+    <div>
+      <WelcomeSection />
+      <div className="flex flex-row justify-between mt-10 gap-8">
+        <div className="flex flex-col justify-between w-full gap-4 mt-4">
+          <TimeTrackingDashboard />
+
+          <EnrolledCourse />
           <CourseDetails />
-        ) : (
-          <Outlet />
-        )}
+
+          <ContinueCourses />
+          <ContinueCoursesDetails />
+ 
+          <BasedLearning />
+          <BasedLearningCourses />
+        </div>
+
+        <div className="flex flex-col gap-10">
+          <Leaderboard clientId={1} />
+          <DailyProgress clientId={1} />
+          <StreakTable clientId={1} />
+          <Referrals />
+        </div>
       </div>
     </div>
   );
-};
+}
 
 export default Learn;
