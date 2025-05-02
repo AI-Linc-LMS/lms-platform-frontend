@@ -1,15 +1,16 @@
 import React, { useState } from "react";
-import { Course } from "../../types/course.types";
+import { Instructor, Module, Submodule } from "../../types/course.types";
 import CourseStatistics from "./CourseStatistics";
 import CourseActions from "./CourseActions";
 import CollapsibleCourseModule from "./CollapsibleCourseModule";
-import { mockCourseContent } from "../../data/mockCourseContent";
+import { useQuery } from "@tanstack/react-query";
+import { getCourseById } from "../../../../services/courses-content/courseContentApis";
 
 interface CourseContentProps {
-  course: Course;
+  courseId: number;
 }
 
-const CourseContent: React.FC<CourseContentProps> = ({ course }) => {
+const CourseContent: React.FC<CourseContentProps> = ({ courseId }) => {
   const [tooltipInfo, setTooltipInfo] = useState<{
     visible: boolean;
     index: number;
@@ -20,6 +21,11 @@ const CourseContent: React.FC<CourseContentProps> = ({ course }) => {
     index: 0,
     x: 0,
     y: 0,
+  });
+
+  const { data: course, isLoading, error } = useQuery({
+    queryKey: ["course", courseId],
+    queryFn: () => getCourseById(1, courseId),
   });
 
   const handleMouseEnter = (index: number, e: React.MouseEvent) => {
@@ -36,23 +42,32 @@ const CourseContent: React.FC<CourseContentProps> = ({ course }) => {
     setTooltipInfo((prev) => ({ ...prev, visible: false }));
   };
 
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error || !course) {
+    return <div>Error loading course</div>;
+  }
+
   return (
     <div className="w-full bg-white rounded-3xl p-6 shadow-sm relative">
-      <h1 className="font-semibold text-[25px] font-sans">{course.title}</h1>
-      <p className="text-[14px] text-[#6C757D] font-normal">{course.description}</p>
+      <h1 className="font-semibold text-[25px] font-sans">{course.course_title ?? "Course Title"}</h1>
+      <p className="text-[14px] text-[#6C757D] font-normal">{course.course_description ?? "Course Description"}</p>
 
       {/* Avatars */}
       <div className="flex -space-x-2 mr-3 my-4">
-        {course.teacherAvatar.slice(0, 5).map((avatar, index) => (
+        
+        {course.instructors.map((instructor: Instructor, index: number) => (
           <div
-            key={index}
+            key={instructor.id}
             className="w-12 h-12 rounded-full bg-gray-300 border-2 border-white overflow-hidden cursor-pointer transition-transform hover:z-10"
             onMouseEnter={(e) => handleMouseEnter(index, e)}
             onMouseLeave={handleMouseLeave}
           >
             <img
-              src={avatar || "/api/placeholder/32/32"}
-              alt="Teacher avatar"
+              src={instructor.profile_pic_url}
+              alt={instructor.name}
               className="w-full h-full object-cover"
             />
           </div>
@@ -60,7 +75,7 @@ const CourseContent: React.FC<CourseContentProps> = ({ course }) => {
       </div>
 
       {/* Tooltip bubble */}
-      {tooltipInfo.visible && (
+      {tooltipInfo.visible && course.instructors[tooltipInfo.index] && (
         <div
           className="fixed z-50 pointer-events-none"
           style={{
@@ -70,24 +85,38 @@ const CourseContent: React.FC<CourseContentProps> = ({ course }) => {
         >
           <div className="custom-tooltip-bubble px-6 py-4 text-white shadow-xl min-w-[220px]">
             <p className="font-semibold text-[20px] leading-none">
-              {course.teacherNames?.[tooltipInfo.index] || "Teacher Name"}
+              {course.instructors[tooltipInfo.index].name}
             </p>
             <p className="text-[#D1DBE8] text-[16px] mt-2 leading-tight">
-              {course.teacherTitles?.[tooltipInfo.index] || "Instructor, Company"}
+              {course.instructors[tooltipInfo.index].bio}
             </p>
           </div>
         </div>
       )}
 
-      <CourseStatistics />
+      <CourseStatistics course={course} />
       <CourseActions />
 
       <div className="mt-8">
-        {mockCourseContent.map((week) => (
+        {course.modules.map((module: Module) => (
           <CollapsibleCourseModule
-            key={week.id}
-            week={week}
-            defaultOpen={week.id === "week-1"}
+            key={module.id}
+            week={{
+              id: `week-${module.weekno}`,
+              title: module.title,
+              completed: module.completion_percentage,
+              modules: module.submodules.map((submodule: Submodule) => ({
+                id: submodule.id.toString(),
+                title: submodule.title,
+                content: [
+                  { type: "video", title: "Videos", count: submodule.video_count },
+                  { type: "article", title: "Articles", count: submodule.article_count },
+                  { type: "problem", title: "Problems", count: submodule.coding_problem_count },
+                  { type: "quiz", title: "Quizzes", count: submodule.quiz_count },
+                ]
+              }))
+            }}
+            defaultOpen={module.weekno === 1}
           />
         ))}
       </div>

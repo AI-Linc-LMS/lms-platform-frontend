@@ -13,17 +13,41 @@ export interface CourseProgress {
   percentComplete?: number;
 }
 
+export interface Instructor {
+  id: number;
+  name: string;
+  bio: string;
+  linkedin: string;
+  profile_pic_url: string;
+}
+
+export interface Submodule {
+  id: number;
+  title: string;
+  description: string;
+  order: number;
+  article_count: number;
+  assignment_count: number;
+  coding_problem_count: number;
+  quiz_count: number;
+  video_count: number;
+}
+
+export interface Module {
+  id: number;
+  title: string;
+  weekno: number;
+  completion_percentage: number;
+  submodules: Submodule[];
+}
+
 export interface Course {
   id: number;
   title: string;
-  subtitle: string;
   description: string;
-  //stats: CourseStat[];
-  trustedBy?: string[];
-  level?: "Beginner" | "Intermediate" | "Advanced";
-  teacherAvatar: string[];
-  teacherNames?: string[]; // Add this property
-  teacherTitles?: string[];
-  progress?: CourseProgress;
-  //onExplore: () => void;
+  enrolled_students: number;
+  instructors: Instructor[];
+  is_certified: boolean;
+  modules: Module[];
+  last_updated?: string;
 } 

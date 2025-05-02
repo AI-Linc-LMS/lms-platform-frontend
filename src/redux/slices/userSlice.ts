@@ -9,6 +9,7 @@ interface UserState {
   email: string | null;
   full_name: string | null;
   username: string | null;
+  profile_picture: string | null;
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
@@ -23,6 +24,7 @@ const initialState: UserState = persistedUser
       full_name: null,
       username: null,
       isAuthenticated: false,
+      profile_picture: null,
       loading: false,
       error: null,
     };

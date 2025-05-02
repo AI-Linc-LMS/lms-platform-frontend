@@ -61,8 +61,8 @@ export const getDailyLeaderboard = async (
     // You can throw a custom error if you want
     throw new Error(
       error?.response?.data?.detail ||
-      error?.message ||
-      "Failed to fetch leaderboard"
+        error?.message ||
+        "Failed to fetch leaderboard"
     );
   }
 };
@@ -70,7 +70,9 @@ export const getDailyLeaderboard = async (
 // User Activity Heatmap
 export const getUserActivityHeatmapData = async (clientId: number) => {
   try {
-    const res = await axiosInstance.get(`/api/clients/${clientId}/student/user-activity-heatmap/`);
+    const res = await axiosInstance.get(
+      `/api/clients/${clientId}/student/user-activity-heatmap/`
+    );
 
     console.log("User activity heatmap API response:", res.data);
     return res.data;
@@ -85,17 +87,18 @@ export const getUserActivityHeatmapData = async (clientId: number) => {
     // You can throw a custom error if you want
     throw new Error(
       error?.response?.data?.detail ||
-      error?.message ||
-      "Failed to fetch user activity heatmap"
+        error?.message ||
+        "Failed to fetch user activity heatmap"
     );
   }
-}
-
+};
 
 // User Daily Time Spent
 export const getUserDailyTimeSpentData = async (clientId: number = 1) => {
   try {
-    const res = await axiosInstance.get(`/api/clients/${clientId}/student/user-daily-time-spent/`);
+    const res = await axiosInstance.get(
+      `/api/clients/${clientId}/student/user-daily-time-spent/`
+    );
 
     console.log("User daily time spent API response:", res.data);
     return res.data;
@@ -111,17 +114,20 @@ export const getUserDailyTimeSpentData = async (clientId: number = 1) => {
     // You can throw a custom error if you want
     throw new Error(
       error?.response?.data?.detail ||
-      error?.message ||
-      "Failed to fetch user daily time spent"
+        error?.message ||
+        "Failed to fetch user daily time spent"
     );
   }
 };
 
-
 // Overall Leaderboard
-export const getLeaderboardData = async (clientId: number = 1): Promise<LeaderboardItem[]> => {
+export const getLeaderboardData = async (
+  clientId: number = 1
+): Promise<LeaderboardItem[]> => {
   try {
-    const res = await axiosInstance.get(`/api/clients/${clientId}/overall-leaderboard/`);
+    const res = await axiosInstance.get(
+      `/api/clients/${clientId}/overall-leaderboard/`
+    );
 
     console.log("Leaderboard API response:", res.data);
     return res.data;
@@ -137,16 +143,20 @@ export const getLeaderboardData = async (clientId: number = 1): Promise<Leaderbo
     // You can throw a custom error if you want
     throw new Error(
       error?.response?.data?.detail ||
-      error?.message ||
-      "Failed to fetch leaderboard"
+        error?.message ||
+        "Failed to fetch leaderboard"
     );
   }
 };
 
 // Streak Table
-export const getStreakTableData = async (clientId: number = 1): Promise<StreakData> => {
+export const getStreakTableData = async (
+  clientId: number = 1
+): Promise<StreakData> => {
   try {
-    const res = await axiosInstance.get(`/api/clients/${clientId}/student/monthly-streak/`);
+    const res = await axiosInstance.get(
+      `/api/clients/${clientId}/student/monthly-streak/`
+    );
 
     console.log("Streak table API response:", res.data);
     return res.data;
@@ -162,8 +172,35 @@ export const getStreakTableData = async (clientId: number = 1): Promise<StreakDa
     // You can throw a custom error if you want
     throw new Error(
       error?.response?.data?.detail ||
-      error?.message ||
-      "Failed to fetch streak table"
+        error?.message ||
+        "Failed to fetch streak table"
     );
   }
 };
+
+
+export const getHoursSpentData = async (clientId: number = 1, range: number = 7) => {
+  try {
+    const res = await axiosInstance.get(
+      `/api/clients/${clientId}/student/hours-spent-graph/?range=last-${range}-days`
+    );
+
+    console.log("Hours spent data API response:", res.data);
+    return res.data;
+  } catch (error: any) {
+    // Log the error details
+    console.error("Failed to fetch hours spent data:", error);
+    console.error("Error details:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
+
+    // You can throw a custom error if you want
+    throw new Error(
+      error?.response?.data?.detail ||
+        error?.message ||
+        "Failed to fetch hours spent data"
+    );
+  }
+}

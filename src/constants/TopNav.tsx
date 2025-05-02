@@ -2,7 +2,7 @@ import sunIcon from '../commonComponents/icons/nav/sunIcon.png';
 import bellIcon from '../commonComponents/icons/nav/BellIcon.png';
 import userImg from '../commonComponents/icons/nav/User Image.png'; 
 import { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,7 +10,9 @@ const TopNav: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
+  const user = useSelector((state: any) => state.user);
+  const profilePicture = user.profile_picture;
+  
   const toggleDropdown = () => {
     setShowDropdown(!showDropdown);
   };
@@ -41,7 +43,7 @@ const TopNav: React.FC = () => {
         </div>
         <div className="relative">
           <img
-            src={userImg}
+            src={profilePicture || userImg}
             alt="User Avatar"
             className="w-8 h-8 rounded-full object-cover cursor-pointer"
             onClick={toggleDropdown}
