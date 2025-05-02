@@ -26,6 +26,7 @@ export interface CourseModule {
 export interface CourseWeek {
   id: string;
   title: string;
+  completed?: number; // Percentage completed
   modules: CourseModule[];
 }
 
@@ -65,7 +66,7 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
   return (
     <>
       <div>
-        <h2 className="text-xl font-semibold text-[#257195] p-4">{week.title}</h2>
+        <h2 className="text-xl font-semibold text-[#257195] p-4">Week {week.id.split('-')[1]}</h2>
       </div>
       <div className="mb-6 border border-gray-100 rounded-[22px] shadow-sm">
         {/* Week Header */}
@@ -73,27 +74,25 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
           className="p-4 flex justify-between items-center cursor-pointer"
           onClick={() => setIsOpen(!isOpen)}
         >
-          <h2 className="text-xl font-semibold text-gray-800">
-            {week.modules.length > 0 ? week.modules[0].id : ""}
-          </h2>
-          {isOpen &&
-            week.modules.map(
-              (module) =>
-                module.completed !== undefined && (
-                  <div key={module.id} className="mt-2 w-full max-w-xs">
-                    <div className="bg-gray-200 rounded-full h-2.5">
-                      <div
-                        className="bg-[#5FA564] h-2.5 rounded-full"
-                        style={{ width: `${module.completed}%` }}
-                      ></div>
-                    </div>
-                    <span className="text-sm text-gray-500 mt-1">
-                      {module.completed}% Completed
-                    </span>
-                  </div>
-                )
+          <div className="flex justify-between w-full">
+            <h2 className="text-xl font-semibold text-gray-800">
+              {week.title}
+            </h2>
+            {week.completed !== undefined && (
+              <div className="mt-2 w-full max-w-xs">
+                <div className="bg-gray-200 rounded-full h-2.5">
+                  <div
+                    className="bg-[#5FA564] h-2.5 rounded-full"
+                    style={{ width: `${week.completed}%` }}
+                  ></div>
+                </div>
+                <span className="text-sm text-gray-500 mt-1">
+                  {week.completed}% Completed
+                </span>
+              </div>
             )}
-          <button className="text-gray-600 cursor-pointer">
+          </div>
+          <button className="text-gray-600 cursor-pointer ml-4">
             {isOpen ? (
               <span className="text-xl">
                 <svg
@@ -111,7 +110,7 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
                     stroke-linejoin="round"
                   />
                 </svg>
-              </span> // Up arrow
+              </span>
             ) : (
               <span className="text-xl">
                 <svg
@@ -129,13 +128,17 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
                     stroke-linejoin="round"
                   />
                 </svg>
-              </span> // Down arrow
+              </span>
             )}
           </button>
         </div>
 
         {/* Collapsible Content */}
-        {isOpen && (
+        <div 
+          className={`transition-all duration-500 ease-in-out transform origin-top overflow-hidden ${
+            isOpen ? 'max-h-[2000px] opacity-100 scale-100' : 'max-h-0 opacity-0 scale-98'
+          }`}
+        >
           <div className="px-4 pb-4">
             {week.modules.map((module) => (
               <div
@@ -199,7 +202,6 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
                           />
                         </g>
                       </svg>
-
                       Locked
                     </div>
                   )}
@@ -207,22 +209,24 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
 
                 {/* Content items */}
                 <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {module.content.map((item, idx) => (
-                    <div
-                      key={`${module.id}-${item.type}-${idx}`}
-                      className="flex border rounded-xl m-auto p-2 border-[#DEE2E6] items-center space-x-2 text-sm text-gray-600"
-                    >
-                      {renderContentTypeIcon(item.type)}
-                      <span>
-                        {item.count} {item.title}
-                      </span>
-                    </div>
-                  ))}
+                  {module.content
+                    .filter(item => item.count > 0)
+                    .map((item, idx) => (
+                      <div
+                        key={`${module.id}-${item.type}-${idx}`}
+                        className="flex border rounded-xl m-auto p-2 border-[#DEE2E6] items-center space-x-2 text-sm text-gray-600"
+                      >
+                        {renderContentTypeIcon(item.type)}
+                        <span>
+                          {item.count} {item.title}
+                        </span>
+                      </div>
+                    ))}
                 </div>
               </div>
             ))}
           </div>
-        )}
+        </div>
       </div>
     </>
   );

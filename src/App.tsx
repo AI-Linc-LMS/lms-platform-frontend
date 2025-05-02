@@ -4,8 +4,6 @@ import routes from "./routes";
 import Container from "./constants/Container";
 import { Outlet } from 'react-router-dom';
 import { useEffect } from "react";
-import { useSelector } from "react-redux";
-import { RootState } from "./redux/store";
 
 function App() {
   return (
@@ -18,8 +16,8 @@ function App() {
 // Separate component to use Router hooks
 function AppContent() {
   const navigate = useNavigate();
-  const user = useSelector((state: RootState) => state.user);
-  const isAuthenticated = user.isAuthenticated;
+  const user = localStorage.getItem("user");
+  const isAuthenticated = user ? true : false;
   console.log("user", user);
   
   useEffect(() => {

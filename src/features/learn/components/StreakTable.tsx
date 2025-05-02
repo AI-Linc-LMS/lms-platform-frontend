@@ -40,7 +40,6 @@ const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
       }
     });
 
-    console.log("Active days extracted:", days);
     setActiveDays(days);
   }, [data]);
 

@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useDispatch, useSelector } from "react-redux";
 import { getEnrolledCourses } from "../../../../services/courses-content/coursesApis";
-import { setCourses } from "../../../../redux/slices/courseSlice";
+import { Course, setCourses } from "../../../../redux/slices/courseSlice";
 import { RootState } from "../../../../redux/store";
 import CourseCard from "./CourseCard";
 
@@ -36,17 +36,19 @@ const CourseDetails: React.FC<CourseDetailsProps> = ({ className = "" }) => {
   }
 
   return (
-    <div className={`grid grid-cols-2 gap-5 ${className}`}>
-      {Courses.map((course) => (
-        <CourseCard
-          key={course.id}
-          isLoading={isLoading}
-          error={error}
-          course={{
-            ...course,
-            teacherAvatar: [""],
-          }}
-        />
+    <div className={`grid grid-cols-1 md:grid-cols-2 gap-5 ${className}`}>
+      {Courses?.map((course: Course) => (
+      <CourseCard
+        key={course.id}
+        isLoading={isLoading}
+        error={error}
+        course={{
+          ...course,
+          is_certified: false,
+          modules: [],
+          enrolled_students: 0
+        }}
+      />
       ))}
     </div>
   );

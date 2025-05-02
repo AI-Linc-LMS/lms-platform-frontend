@@ -1,7 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Course } from "../types/course.types";
-import { defaultCourses } from "../data/mockCourses";
 import PrimaryButton from "../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import DashboardPieChart from "../components/enrolled-courses/DashboardPieChart";
 import BackToHomeButton from "../../../commonComponents/common-buttons/back-buttons/back-to-home-button/BackToHomeButton";
@@ -9,42 +7,13 @@ import CourseContent from "../components/enrolled-courses/CourseContent";
 import EnrolledLeaderBoard from "../components/enrolled-courses/EnrolledLeader";
 
 const EnrolledCourseDetailPage: React.FC = () => {
-  const { courseName } = useParams<{ courseName: string }>();
+  const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
-  const [course, setCourse] = useState<Course | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
 
-  useEffect(() => {
-    // Simulating API call to fetch course by name
-    // In a real app, you would make an API request here
-    setLoading(true);
-
-    // Convert URL slug back to a format that can be compared with course titles
-    const normalizedCourseName = courseName?.replace(/-/g, ' ');
-
-    // For now, find the course in our mock data that matches the URL slug
-    const foundCourse = defaultCourses.find(
-      (c) => c.title.toLowerCase() === normalizedCourseName
-    );
-
-    setTimeout(() => {
-      setCourse(foundCourse || null);
-      setLoading(false);
-    }, 500); // Simulate network delay
-  }, [courseName]);
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-96">
-        <p className="text-xl">Loading course details...</p>
-      </div>
-    );
-  }
-
-  if (!course) {
+  if (!courseId) {
     return (
       <div className="">
-        <p className="text-xl">Course not found</p>
+        <p className="text-xl">Course ID not found</p>
         <PrimaryButton onClick={() => navigate("/")}>
           Back to Courses
         </PrimaryButton>
@@ -57,10 +26,9 @@ const EnrolledCourseDetailPage: React.FC = () => {
       <BackToHomeButton />
       <div className="flex flex-row w-full gap-4">
         <div className="w-full">
-          <CourseContent course={course} />
+          <CourseContent courseId={parseInt(courseId)} />
         </div>
-        <div className="flex flex-col gap-4 ">
-
+        <div className="flex flex-col gap-4">
           <DashboardPieChart />
           <EnrolledLeaderBoard />
         </div>

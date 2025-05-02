@@ -10,40 +10,33 @@ import Referrals from "../components/referrals/Referrals";
 import WelcomeSection from "../components/WelcomeSection";
 import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
-import { useEffect } from "react";
-import { getCourseDashboard } from "../../../services/courses-content/courseContentApis";
 
 const Learn = () => {
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const data = await getCourseDashboard(1, 3);
-        console.log(data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-    fetchData();
-  }, []);
-
+  
   return (
     <div>
       <WelcomeSection />
-      <div className="flex flex-row justify-between mt-10 gap-8">
-        <div className="flex flex-col justify-between w-full gap-4 mt-4">
+      <div className="flex flex-row justify-between mt-6 gap-6">
+        <div className="flex flex-col justify-between w-full space-y-6">
           <TimeTrackingDashboard />
 
-          <EnrolledCourse />
-          <CourseDetails />
+          <div className="space-y-2">
+            <EnrolledCourse />
+            <CourseDetails />
+          </div>
 
-          <ContinueCourses />
-          <ContinueCoursesDetails />
+          <div className="space-y-2">
+            <ContinueCourses />
+            <ContinueCoursesDetails />
+          </div>
  
-          <BasedLearning />
-          <BasedLearningCourses />
+          <div className="space-y-2">
+            <BasedLearning />
+            <BasedLearningCourses />
+          </div>
         </div>
 
-        <div className="flex flex-col gap-10">
+        <div className="flex flex-col gap-6">
           <Leaderboard clientId={1} />
           <DailyProgress clientId={1} />
           <StreakTable clientId={1} />
@@ -52,6 +45,6 @@ const Learn = () => {
       </div>
     </div>
   );
-};
+}
 
 export default Learn;
