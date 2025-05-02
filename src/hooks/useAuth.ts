@@ -27,6 +27,7 @@ export const useAuth = () => {
         email: data.user.email,
         full_name: data.user.full_name,
         username: data.user.username,
+        profile_picture: data.user.profile_picture || null,
         isAuthenticated: true,
       };
       dispatch(setUser(userPayload));

@@ -28,15 +28,17 @@ export const useGoogleAuth = () => {
           email: user.email,
           full_name: user.full_name,
           username: user.username,
+          profile_picture: user.profile_picture || null,
           isAuthenticated: true,
         })
       );
 
       // Redirect to home page
       navigate('/');
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.';
       console.error('Google login error:', error);
-      setError(error.message || 'An unexpected error occurred. Please try again.');
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

@@ -13,6 +13,7 @@ export interface UserData {
   email: string;
   full_name: string;
   username: string;
+  profile_picture?: string;
 }
 
 export interface LoginResponse {

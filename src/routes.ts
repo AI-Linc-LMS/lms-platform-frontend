@@ -7,12 +7,18 @@ import CourseTopicDetailPage from "./features/learn/pages/CourseTopicDetailPage"
 import Login from "./features/auth/pages/Login";
 import ForgotPassword from "./features/auth/pages/ForgotPassword";
 import Signup from "./features/auth/pages/Signup";
+// Admin imports
+import CourseBuilder from "./features/admin/pages/CourseBuilder";
+import Dashboard from "./features/admin/pages/Dashboard";
+import CourseEditor from "./features/admin/pages/CourseEditor";
+import CourseDetail from "./features/admin/pages/CourseDetail";
 
+// Type for route configuration
 export interface RouteConfig {
   path: string;
-  component: React.ComponentType;
+  component: React.ComponentType<object>;
   isPrivate: boolean;
-  requiredPermissions?: string[];
+  isAdmin?: boolean;
 }
 
 const routes: RouteConfig[] = [
@@ -55,6 +61,31 @@ const routes: RouteConfig[] = [
     path: "/learn/course/:weekId/:topicId",
     component: CourseTopicDetailPage,
     isPrivate: true,
+  },
+  // Admin routes
+  {
+    path: "/admin/dashboard",
+    component: Dashboard,
+    isPrivate: true,
+    isAdmin: true,
+  },
+  {
+    path: "/admin/course-builder",
+    component: CourseBuilder,
+    isPrivate: true,
+    isAdmin: true,
+  },
+  {
+    path: "/admin/course-builder/edit/:courseId",
+    component: CourseEditor,
+    isPrivate: true,
+    isAdmin: true,
+  },
+  {
+    path: "/admin/course-builder/detail/:courseId",
+    component: CourseDetail,
+    isPrivate: true,
+    isAdmin: true,
   },
 ];
 

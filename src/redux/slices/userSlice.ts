@@ -9,6 +9,7 @@ interface UserState {
   email: string | null;
   full_name: string | null;
   username: string | null;
+  profile_picture: string | null;
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
@@ -22,6 +23,7 @@ const initialState: UserState = persistedUser
       email: null,
       full_name: null,
       username: null,
+      profile_picture: null,
       isAuthenticated: false,
       loading: false,
       error: null,
@@ -43,12 +45,12 @@ const userSlice = createSlice({
       state.error = action.payload;
       state.loading = false;
     },
-    // logout: (state) => {
-    //   localStorage.removeItem('user');
-    //   return initialState;
-    // },
+    logout: () => {
+      localStorage.removeItem('user');
+      return initialState;
+    },
   },
 });
 
-export const { setUser, setLoading, setError } = userSlice.actions;
+export const { setUser, setLoading, setError, logout } = userSlice.actions;
 export default userSlice.reducer; 

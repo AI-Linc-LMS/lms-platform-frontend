@@ -2,6 +2,7 @@ import "./App.css";
 import { BrowserRouter as Router, Route, Routes, Navigate, useNavigate } from "react-router-dom";
 import routes from "./routes";
 import Container from "./constants/Container";
+import AdminContainer from "./constants/AdminContainer";
 import { Outlet } from 'react-router-dom';
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
@@ -31,6 +32,24 @@ function AppContent() {
     <Routes>
       {routes.map((route) => {
         if (route.isPrivate) {
+          // Handle admin routes
+          if (route.isAdmin) {
+            return (
+              <Route
+                key={route.path}
+                path={route.path}
+                element={
+                  <AdminContainer>
+                    <Outlet />
+                  </AdminContainer>
+                }
+              >
+                <Route index element={<route.component />} />
+              </Route>
+            );
+          }
+          
+          // Regular private routes
           return (
             <Route
               key={route.path}
@@ -46,6 +65,7 @@ function AppContent() {
           );
         }
 
+        // Public routes
         return (
           <Route
             key={route.path}
