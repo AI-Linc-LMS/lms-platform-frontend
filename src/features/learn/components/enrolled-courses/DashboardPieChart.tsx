@@ -10,12 +10,61 @@ interface Category {
   ring: number;
 }
 
+interface DashboardData {
+  totalCompletion: number;
+  categories: Category[];
+}
+
+interface ApiResponse {
+  article_progress: number;
+  video_progress: number;
+  coding_problem_progress: number;
+  quiz_progress: number;
+  total_progress: number;
+  [key: string]: number; // For any other fields that might be present
+}
 
 const DashboardPieChart = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ["DashboardPieChart"],
     queryFn: () => getCourseDashboard(1, 3),
   });
+
+  // Add console log to see the raw API response
+  console.log("API Response for DashboardPieChart:", data);
+
+  // Process API data to match our component structure
+  const processApiData = (apiData: ApiResponse): DashboardData => {
+    // Extract progress values from API response
+    const {
+      article_progress = 0,
+      video_progress = 0, 
+      coding_problem_progress = 0,
+      quiz_progress = 0,
+      total_progress = 0
+    } = apiData || {};
+    
+    return {
+      totalCompletion: total_progress,
+      categories: [
+        { name: "Article", value: article_progress, color: "#3875F9", ring: 0 },
+        { name: "Video", value: video_progress, color: "#EED21B", ring: 1 },
+        { name: "Problems", value: coding_problem_progress, color: "#417845", ring: 2 },
+        { name: "Quiz", value: quiz_progress, color: "#2A8CB0", ring: 3 },
+      ],
+    };
+  };
+
+  // For testing purposes only - comment out in production
+  /* 
+  const mockApiData: ApiResponse = {
+    article_progress: 75,
+    video_progress: 80,
+    coding_problem_progress: 40,
+    quiz_progress: 60,
+    total_progress: 60
+  };
+  */
 
   // Default data if none is provided
   const defaultData = {
@@ -28,8 +77,10 @@ const DashboardPieChart = () => {
     ],
   };
 
-  // Use provided data or defaults
-  const chartData = data || defaultData;
+  // Use provided data, mock data for testing, or defaults
+  // Uncomment the line below to test with mock data
+  // const chartData = processApiData(mockApiData);
+  const chartData = data ? processApiData(data) : defaultData;
 
   // Ensure categories is always an array
   const categories = chartData?.categories || defaultData.categories;
