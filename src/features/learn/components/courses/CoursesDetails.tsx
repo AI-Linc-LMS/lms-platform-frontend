@@ -36,7 +36,7 @@ const CourseDetails: React.FC<CourseDetailsProps> = ({ className = "" }) => {
   }
 
   return (
-    <div className={`grid grid-cols-2 gap-5 ${className}`}>
+    <div className={`grid grid-cols-1 md:grid-cols-2 gap-5 ${className}`}>
       {Courses?.map((course: Course) => (
       <CourseCard
         key={course.id}
