@@ -33,15 +33,26 @@ interface QuizCardProps {
   courseId: number;
   isSidebarContentOpen: boolean;
   quizData?: QuizData; // Optional prop for direct data injection
+  onSubmission?: (contentId: number) => void; // Callback when submission happens
+  onReset?: (contentId: number) => void; // Callback when quiz is reset
 }
 
-const QuizCard: React.FC<QuizCardProps> = ({ contentId, courseId, isSidebarContentOpen, quizData: injectedData }) => {
+const QuizCard: React.FC<QuizCardProps> = ({ 
+  contentId, 
+  courseId, 
+  isSidebarContentOpen, 
+  quizData: injectedData,
+  onSubmission,
+  onReset
+}) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [formattedTime, setFormattedTime] = useState("00:00");
   const [score, setScore] = useState(0);
   const [quizCompleted, setQuizCompleted] = useState(false);
+  const [totalQuestions, setTotalQuestions] = useState(0);
+  const [totalSubmissions, setTotalSubmissions] = useState(0);
 
   const { data: fetchedData, isLoading, error } = useQuery<QuizData>({
     queryKey: ['quiz', contentId],
@@ -51,6 +62,12 @@ const QuizCard: React.FC<QuizCardProps> = ({ contentId, courseId, isSidebarConte
 
   // Use either injected data or fetched data
   const data = injectedData || fetchedData;
+
+  useEffect(() => {
+    if (data?.details?.mcqs) {
+      setTotalQuestions(data.details.mcqs.length);
+    }
+  }, [data]);
 
   useEffect(() => {
     if (data?.duration_in_minutes) {
@@ -92,8 +109,14 @@ const QuizCard: React.FC<QuizCardProps> = ({ contentId, courseId, isSidebarConte
 
   const handleSubmit = () => {
     setSubmitted(true);
+    setTotalSubmissions(prev => prev + 1);
     if (selectedOption === currentQuestion.correct_option) {
       setScore(score + 1);
+    }
+    
+    // Notify parent component about submission
+    if (onSubmission) {
+      onSubmission(contentId);
     }
   };
 
@@ -113,12 +136,25 @@ const QuizCard: React.FC<QuizCardProps> = ({ contentId, courseId, isSidebarConte
     setSubmitted(false);
     setScore(0);
     setQuizCompleted(false);
+    setTotalSubmissions(0); // Reset submissions count when quiz is restarted
+    
+    // Notify parent component about reset
+    if (onReset) {
+      onReset(contentId);
+    }
   };
 
   if (quizCompleted) {
     return (
       <div className="flex flex-col items-center justify-center p-8 bg-white rounded-lg shadow">
         <h2 className="text-2xl font-bold text-[#255C79] mb-4">Quiz Completed!</h2>
+        <div className="text-sm text-gray-500 flex gap-2 mb-4">
+          <span>{data.details?.mcqs ? mcqs.length : 10} Marks</span>
+          <span>|</span>
+          <span>{totalQuestions} Questions</span>
+          <span>|</span>
+          <span>{totalSubmissions} Submissions</span>
+        </div>
         <p className="text-lg mb-6">
           Your score: <span className="font-bold">{score}/{mcqs.length}</span> ({Math.round((score / mcqs.length) * 100)}%)
         </p>
@@ -145,6 +181,13 @@ const QuizCard: React.FC<QuizCardProps> = ({ contentId, courseId, isSidebarConte
               <h2 className="text-md font-semibold text-gray-800 mb-2">
                 {data.content_title}
               </h2>
+              <div className="text-xs text-gray-500 flex gap-2 mb-2">
+                <span>{mcqs.length} Marks</span>
+                <span>|</span>
+                <span>{totalQuestions} Questions</span>
+                <span>|</span>
+                <span>{totalSubmissions} Submissions</span>
+              </div>
               <p className="text-xs text-gray-500">
                 {data.details.instructions || "Solve real world questions and gain insight knowledge."}
               </p>
@@ -179,6 +222,21 @@ const QuizCard: React.FC<QuizCardProps> = ({ contentId, courseId, isSidebarConte
 
       {/* Right Panel */}
       <div className={`${isSidebarContentOpen ? "w-full" : "w-2/3"} `}>
+        {isSidebarContentOpen && (
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-[#255C79] mb-1">
+              {data.content_title}
+            </h2>
+            <div className="text-xs text-gray-500 flex gap-2 mb-3">
+              <span>{mcqs.length} Marks</span>
+              <span>|</span>
+              <span>{totalQuestions} Questions</span>
+              <span>|</span>
+              <span>{totalSubmissions} Submissions</span>
+            </div>
+          </div>
+        )}
+        
         <div className="flex justify-between items-center mb-4">
           <span className="text-sm font-medium text-gray-700">
             Question {currentQuestionIndex + 1}
