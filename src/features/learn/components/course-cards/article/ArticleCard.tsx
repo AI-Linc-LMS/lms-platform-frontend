@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getCourseContent } from '../../../../../services/courses-content/courseContentApis';
 import ReactMarkdown from 'react-markdown';
@@ -7,18 +7,26 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import FloatingAIButton from "../../floating-ai-button/FloatingAIButton";
 
-interface ArticleData {
-  id: number;
-  title: string;
-  content: string;
-  duration_in_minutes: number;
-  order: number;
-}
-
 interface ArticleCardProps {
   contentId: number;
   courseId: number;
   onMarkComplete: () => void;
+}
+
+interface ArticleDetails {
+  id: number;
+  title: string;
+  content: string;
+  difficulty_level: string;
+}
+
+interface ArticleData {
+  id: number;
+  content_title: string;
+  content_type: string;
+  duration_in_minutes: number;
+  order: number;
+  details: ArticleDetails;
 }
 
 interface CodeProps {
@@ -30,86 +38,58 @@ interface CodeProps {
 }
 
 const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkComplete }) => {
-  const { data, isLoading, error } = useQuery<ArticleData>({
+  const [isCompleted, setIsCompleted] = useState(false);
+
+  const { data: articleData, isLoading, error } = useQuery<ArticleData>({
     queryKey: ['article', contentId],
     queryFn: () => getCourseContent(1, courseId, contentId),
-    enabled: !!contentId && !!courseId,
   });
 
+  const handleMarkComplete = () => {
+    setIsCompleted(true);
+    onMarkComplete();
+  };
+
   if (isLoading) {
-    return (
-      <div className="animate-pulse">
-        <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
-        <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-5/6 mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-4/6 mb-2"></div>
-      </div>
-    );
+    return <div className="flex justify-center items-center h-64">Loading...</div>;
   }
 
   if (error) {
-    return (
-      <div className="text-red-500 p-4">
-        Error loading article. Please try again later.
-      </div>
-    );
+    return <div className="flex justify-center items-center h-64 text-red-500">Error loading article</div>;
   }
 
-  if (!data) {
-    return (
-      <div className="text-gray-500 p-4">
-        No article data available.
-      </div>
-    );
+  if (!articleData) {
+    return <div className="flex justify-center items-center h-64">Article not found</div>;
   }
-
-  console.log('Article Data:', data);
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-sm">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">{data.title}</h1>
-        
-        <div className="flex items-center text-sm text-gray-500 mb-4">
-          <span className="mr-4">⏱ {data.duration_in_minutes} minutes</span>
-          <span>Order: {data.order}</span>
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold capitalize text-gray-800 mb-2">
+            {articleData.content_title}
+          </h1>
+          <div className="flex items-center gap-4 text-sm text-gray-500">
+            <span>⏱ {articleData.duration_in_minutes} min</span>
+            <span>•</span>
+            <span>📚 {articleData.details.difficulty_level}</span>
+          </div>
         </div>
-
-        <div className="prose max-w-none">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={{
-              code({ node, inline, className, children, ...props }: CodeProps) {
-                const match = /language-(\w+)/.exec(className || '');
-                return !inline && match ? (
-                  <SyntaxHighlighter
-                    style={vscDarkPlus}
-                    language={match[1]}
-                    PreTag="div"
-                    {...props}
-                  >
-                    {String(children).replace(/\n$/, '')}
-                  </SyntaxHighlighter>
-                ) : (
-                  <code className={className} {...props}>
-                    {children}
-                  </code>
-                );
-              },
-            }}
-          >
-            {data.content}
-          </ReactMarkdown>
-        </div>
+        <button
+          onClick={handleMarkComplete}
+          disabled={isCompleted}
+          className={`px-4 py-2 rounded-md text-sm font-medium ${
+            isCompleted
+              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+              : 'bg-[#255C79] text-white hover:bg-[#1a4a5f]'
+          }`}
+        >
+          {isCompleted ? 'Completed' : 'Mark as Complete'}
+        </button>
       </div>
 
-      <div className="flex justify-end">
-        <button
-          onClick={onMarkComplete}
-          className="px-6 py-2 bg-[#255C79] text-white rounded-lg font-medium hover:bg-[#1a4a5f] transition-colors"
-        >
-          Mark as Complete
-        </button>
+      <div className="prose max-w-none text-lg">
+        <ReactMarkdown>{articleData.details.content}</ReactMarkdown>
       </div>
 
       {/* Floating Ask AI Button */}
