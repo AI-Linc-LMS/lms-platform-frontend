@@ -66,33 +66,33 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
   return (
     <>
       <div>
-        <h2 className="text-xl font-semibold text-[#257195] p-4">Week {week.id.split('-')[1]}</h2>
+        <h2 className="text-lg md:text-xl font-semibold text-[#257195] p-2 md:p-4">Week {week.id.split('-')[1]}</h2>
       </div>
-      <div className="mb-6 border border-gray-100 rounded-[22px] shadow-sm">
+      <div className="mb-4 md:mb-6 border border-gray-100 rounded-[22px] shadow-sm">
         {/* Week Header */}
         <div
-          className="p-4 flex justify-between items-center cursor-pointer"
+          className="p-3 md:p-4 flex justify-between items-center cursor-pointer"
           onClick={() => setIsOpen(!isOpen)}
         >
-          <div className="flex justify-between w-full">
-            <h2 className="text-xl font-semibold text-gray-800">
+          <div className="flex flex-col md:flex-row md:justify-between w-full md:items-center gap-2">
+            <h2 className="text-base md:text-xl font-semibold text-gray-800">
               {week.title}
             </h2>
             {week.completed !== undefined && (
-              <div className="mt-2 w-full max-w-xs">
+              <div className="mt-1 md:mt-2 w-full max-w-xs">
                 <div className="bg-gray-200 rounded-full h-2.5">
                   <div
                     className="bg-[#5FA564] h-2.5 rounded-full"
                     style={{ width: `${week.completed}%` }}
                   ></div>
                 </div>
-                <span className="text-sm text-gray-500 mt-1">
+                <span className="text-xs md:text-sm text-gray-500 mt-1">
                   {week.completed}% Completed
                 </span>
               </div>
             )}
           </div>
-          <button className="text-gray-600 cursor-pointer ml-4">
+          <button className="text-gray-600 cursor-pointer ml-2 md:ml-4 flex-shrink-0">
             {isOpen ? (
               <span className="text-xl">
                 <svg
@@ -139,15 +139,15 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
             isOpen ? 'max-h-[2000px] opacity-100 scale-100' : 'max-h-0 opacity-0 scale-98'
           }`}
         >
-          <div className="px-4 pb-4">
+          <div className="px-3 md:px-4 pb-3 md:pb-4">
             {week.modules.map((module) => (
               <div
                 key={module.id}
-                className="mb-4 border-b border-[#DEE2E6] pb-3"
+                className="mb-3 md:mb-4 border-b border-[#DEE2E6] pb-3"
               >
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
                   <div className="flex flex-col">
-                    <h3 className="text-lg font-medium text-gray-700">
+                    <h3 className="text-base md:text-lg font-medium text-gray-700">
                       {module.title}
                       {module.isLocked && (
                         <span className="inline-block ml-2 text-gray-400">
@@ -159,7 +159,7 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
 
                   {!module.isLocked && !module.started && (
                     <button
-                      className="px-4 py-2 bg-[#D7EFF6] rounded-xl border border-[#80C9E0] text-[#264D64] cursor-pointer"
+                      className="px-3 py-1.5 md:px-4 md:py-2 bg-[#D7EFF6] rounded-xl border border-[#80C9E0] text-[#264D64] text-sm md:text-base cursor-pointer w-full sm:w-auto"
                       onClick={() => navigateToTopicDetail(module.id)}
                     >
                       Start Now
@@ -168,7 +168,7 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
 
                   {!module.isLocked && module.started && (
                     <button
-                      className="px-4 py-2 bg-[#255C79] text-white rounded-xl cursor-pointer"
+                      className="px-3 py-1.5 md:px-4 md:py-2 bg-[#255C79] text-white rounded-xl text-sm md:text-base cursor-pointer w-full sm:w-auto"
                       onClick={() => navigateToTopicDetail(module.id)}
                     >
                       Continue learning
@@ -176,7 +176,7 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
                   )}
 
                   {module.isLocked && (
-                    <div className="px-4 py-2 bg-gray-100 text-gray-500 rounded-xl flex flex-row gap-2 items-center cursor-pointer">
+                    <div className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 text-gray-500 rounded-xl flex flex-row gap-2 items-center justify-center sm:justify-start cursor-pointer w-full sm:w-auto text-sm md:text-base">
                       <svg
                         width="18"
                         height="18"
@@ -208,13 +208,13 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
                 </div>
 
                 {/* Content items */}
-                <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
                   {module.content
                     .filter(item => item.count > 0)
                     .map((item, idx) => (
                       <div
                         key={`${module.id}-${item.type}-${idx}`}
-                        className="flex border rounded-xl m-auto p-2 border-[#DEE2E6] items-center space-x-2 text-sm text-gray-600"
+                        className="flex border rounded-xl m-auto p-2 border-[#DEE2E6] items-center space-x-2 text-xs md:text-sm text-gray-600 w-full"
                       >
                         {renderContentTypeIcon(item.type)}
                         <span>
