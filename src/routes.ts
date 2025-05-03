@@ -52,7 +52,7 @@ const routes: RouteConfig[] = [
     isPrivate: true,
   },
   {
-    path: "/learn/course/:weekId/:topicId",
+    path: "/learn/course/:courseId/:submoduleId",
     component: CourseTopicDetailPage,
     isPrivate: true,
   },

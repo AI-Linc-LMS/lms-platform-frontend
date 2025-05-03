@@ -10,9 +10,17 @@ import Referrals from "../components/referrals/Referrals";
 import WelcomeSection from "../components/WelcomeSection";
 import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
+import { use, useEffect } from "react";
+import { getCourseContent, getSubmoduleById } from "../../../services/courses-content/courseContentApis";
 
 const Learn = () => {
-  
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await getCourseContent(1, 3, 8);
+      console.log(response);
+    };
+    fetchData();
+  }, []);
   return (
     <div>
       <WelcomeSection />
