@@ -6,11 +6,15 @@ import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
 
+interface UserState {
+  profile_picture?: string;
+}
+
 const TopNav: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const user = useSelector((state: any) => state.user);
+  const user = useSelector((state: { user: UserState }) => state.user);
   const profilePicture = user.profile_picture;
   
   const toggleDropdown = () => {
@@ -32,7 +36,16 @@ const TopNav: React.FC = () => {
   };
 
   return (
-    <div className="w-full flex justify-end items-center px-4 pt-4">
+    <div className="w-full flex justify-between md:justify-end items-center px-4 pt-4">
+      {/* Logo - Only visible on mobile */}
+      <div className="md:hidden">
+        <div className="w-12 h-12 bg-[#1A5A7A] text-white rounded-full flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+      </div>
+
       {/* Right Side - Spinner, Bell, Avatar */}
       <div className="flex items-center gap-5">
         <div className="bg-gray-100 p-2 rounded-md">

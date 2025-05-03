@@ -37,6 +37,11 @@ const routes: RouteConfig[] = [
     isPrivate: true,
   },
   {
+    path: "/learn",
+    component: Learn,
+    isPrivate: true,
+  },
+  {
     path: "/live",
     component: Live,
     isPrivate: true,
@@ -44,6 +49,11 @@ const routes: RouteConfig[] = [
   {
     path: "/jobs",
     component: Jobs,
+    isPrivate: true,
+  },
+  {
+    path: "/community",
+    component: Learn, // Using Learn as placeholder for Community page
     isPrivate: true,
   },
   {
