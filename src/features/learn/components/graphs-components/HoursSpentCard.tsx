@@ -65,7 +65,7 @@ const HoursSpentCard = ({
   const formatDate = (date: string) => {
     try {
       return format(parseISO(date), 'MMM dd');
-    } catch (e) {
+    } catch {
       return date;
     }
   };
@@ -85,15 +85,15 @@ const HoursSpentCard = ({
   }));
 
   return (
-    <div className="flex flex-col w-full max-w-[650px]">
-      <div className="flex justify-between items-center mb-2">
+    <div className="flex flex-col w-full max-w-full md:max-w-[650px]">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-2">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">{totalHours}</h2>
           <p className="text-gray-500 text-md">Total hours spent</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 mt-2 md:mt-0">
           {error && (
-            <div className=" text-sm">
+            <div className="text-sm">
               Error loading data
             </div>
           )}
@@ -101,7 +101,7 @@ const HoursSpentCard = ({
             <select
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value)}
-              className="appearance-none bg-white border border-gray-200 rounded-full px-4 py-2 pr-8 text-gray-700 focus:outline-none"
+              className="appearance-none bg-white border border-gray-200 rounded-full px-3 md:px-4 py-1 md:py-2 pr-8 text-sm text-gray-700 focus:outline-none"
             >
               <option value="7">Last Week</option>
               <option value="15">Last 15 Days</option>
@@ -120,11 +120,11 @@ const HoursSpentCard = ({
         </div>
       </div>
 
-      <div className="h-[200px] mt-4">
+      <div className="h-[180px] md:h-[200px] mt-4 -ml-4">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={error ? emptyData : chartData}
-            margin={{ top: 5, right: 20, bottom: 20, left: 20 }}
+            margin={{ top: 5, right: 20, bottom: 20, left: 0 }}
           >
             <defs>
               <linearGradient id="hoursFill" x1="0" y1="0" x2="0" y2="1">
@@ -137,18 +137,18 @@ const HoursSpentCard = ({
               dataKey="day"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#6B7280" }}
+              tick={{ fill: "#6B7280", fontSize: 10 }}
               tickFormatter={formatDate}
-              tickMargin={30}
+              tickMargin={10}
             />
 
             <YAxis
               domain={[0, error ? 24 : maxHours]}
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#6B7280" }}
+              tick={{ fill: "#6B7280", fontSize: 10 }}
               ticks={[0, error ? 12 : Math.floor(maxHours/2), error ? 24 : maxHours]}
-              tickMargin={10}
+              tickMargin={5}
             />
 
             <Tooltip content={<CustomTooltip />} />

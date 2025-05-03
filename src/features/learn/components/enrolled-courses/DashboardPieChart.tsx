@@ -153,7 +153,7 @@ const DashboardPieChart = () => {
     const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
     return (
-      <div className="relative w-40 h-40 flex items-center justify-center">
+      <div className="relative w-32 h-32 md:w-40 md:h-40 flex items-center justify-center">
         <svg
           viewBox="0 0 100 100"
           className="w-full h-full transform -rotate-90"
@@ -187,10 +187,10 @@ const DashboardPieChart = () => {
 
         {/* Percentage text in the center */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-3xl font-bold text-[#2A9DC4]">
+          <span className="text-2xl md:text-3xl font-bold text-[#2A9DC4]">
             {percentage}%
           </span>
-          <span className="text-lg text-[#2A9DC4]">Completed</span>
+          <span className="text-sm md:text-lg text-[#2A9DC4]">Completed</span>
         </div>
       </div>
     );
@@ -211,99 +211,36 @@ const DashboardPieChart = () => {
 
   return (
     <div className="flex flex-col gap-4 items-center justify-center mx-auto">
-      <div className="w-full rounded-3xl bg-[#EFF9FC] border border-[#80C9E0] p-4 shadow-sm">
-        <h1 className="font-sans text-[18px] text-[#343A40]">Dashboard</h1>
-        <p className="text-[#495057] font-normal text-[12px] font-sans">
+      <div className="w-full rounded-3xl bg-[#EFF9FC] border border-[#80C9E0] p-3 md:p-4 shadow-sm">
+        <h1 className="font-sans text-base md:text-[18px] text-[#343A40]">Dashboard</h1>
+        <p className="text-[#495057] font-normal text-xs md:text-[12px] font-sans">
           A simple overview of your status.
         </p>
 
         {/* Charts container */}
-        <div className="flex items-center justify-center gap-4 mt-6 mb-6">
+        <div className="flex flex-col md:flex-row items-center justify-center gap-4 mt-4 md:mt-6 mb-4 md:mb-6">
           <ConcentricCirclesChart categories={categories} />
           <CompletionCircle percentage={chartData.totalCompletion || 0} />
         </div>
 
         {/* Stats row */}
-        <div className="flex justify-between">
+        <div className="grid grid-cols-2 md:flex md:justify-between gap-2 md:gap-0">
           {categories.map((category: Category, index: number) => (
             <div key={index} className="flex flex-col items-center">
               <span
-                className="text-2xl font-bold"
+                className="text-xl md:text-2xl font-bold"
                 style={{ color: category.color }}
               >
                 {category.value}%
               </span>
-              <div className="flex items-center gap-1 text-sm text-[#495057]">
-                {category.name === "Article" && (
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M8 12C10.2091 12 12 10.2091 12 8C12 5.79086 10.2091 4 8 4C5.79086 4 4 5.79086 4 8C4 10.2091 5.79086 12 8 12Z"
-                      fill="#4169E1"
-                    />
-                  </svg>
-                )}
-                {category.name === "Video" && (
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <rect
-                      x="3"
-                      y="3"
-                      width="10"
-                      height="10"
-                      rx="2"
-                      fill="#FFD700"
-                    />
-                  </svg>
-                )}
-                {category.name === "Problems" && (
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M3 3L13 13M3 13L13 3"
-                      stroke="#2E8B57"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                )}
-                {category.name === "Quiz" && (
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M3 5H13M3 8H13M3 11H8"
-                      stroke="#1E90FF"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                )}
-                <span>{category.name}</span>
-              </div>
+              {/* Category icons */}
+              <span className="text-xs md:text-sm">{category.name}</span>
             </div>
           ))}
         </div>
 
-        <div className="w-full mx-auto h-[62px] bg-[#DEE2E6] rounded-xl flex flex-row items-center justify-center p-4 gap-4 mt-3">
-          <div>
+        <div className="w-full mx-auto h-auto md:h-[62px] bg-[#DEE2E6] rounded-xl flex flex-row items-center justify-center p-3 md:p-4 gap-2 md:gap-4 mt-3">
+          <div className="flex-shrink-0">
             <svg
               width="16"
               height="16"

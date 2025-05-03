@@ -68,7 +68,7 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
                 return (
                   <div
                     key={dateIndex}
-                    className="lg:w-[10px] lg:h-[10px] xl:w-[13px] xl:h-[13px] bg-transparent"
+                    className="w-[8px] h-[8px] md:w-[10px] md:h-[10px] lg:w-[12px] lg:h-[12px] xl:w-[14px] xl:h-[14px] bg-transparent rounded-sm"
                   />
                 );
               }
@@ -85,10 +85,10 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
                   onMouseLeave={() => setHoveredCell(null)}
                 >
                   <div
-                    className={`lg:w-[10px] lg:h-[10px] xl:w-[13px] xl:h-[13px] rounded-sm ${
+                    className={`w-[8px] h-[8px] md:w-[10px] md:h-[10px] lg:w-[12px] lg:h-[12px] xl:w-[14px] xl:h-[14px] rounded-sm ${
                       activity
                         ? getActivityColor(activity.level)
-                        : "bg-gray-200"
+                        : "bg-[#E9ECE9]"
                     } ${isHovered ? "transform scale-110 shadow-md" : ""}`}
                   />
                   {isHovered && activity && (
@@ -125,21 +125,21 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
           </div>
         ))}
       </div>
-      <div className="text-end text-sm font-medium mb-2">{monthName}</div>
+      <div className="text-center md:text-end text-xs md:text-sm font-medium mb-1 md:mb-2">{monthName}</div>
     </div>
   );
 };
 
 const getActivityColor = (level: number) => {
   const customColors = [
-    "bg-gray-200", // No activity
+    "bg-[#E9ECE9]", // No activity
     "bg-[#CDE5CE]", // Light green
     "bg-[#A6CFA9]", // Medium light green
     "bg-[#77B17B]", // Medium green
     "bg-[#417845]", // Dark green
     "bg-[#2E4D31]", // Very dark green
   ];
-  return customColors[level] ?? "bg-gray-200";
+  return customColors[level] ?? "bg-[#E9ECE9]";
 };
 
 export default MonthHeatmap;
