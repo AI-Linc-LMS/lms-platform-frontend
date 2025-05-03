@@ -22,9 +22,9 @@ const Learn = () => {
     fetchData();
   }, []);
   return (
-    <div>
+    <div className="px-2 md:px-0">
       <WelcomeSection />
-      <div className="flex flex-row justify-between mt-6 gap-6">
+      <div className="flex flex-col md:flex-row justify-between mt-6 gap-6">
         <div className="flex flex-col justify-between w-full space-y-6">
           <TimeTrackingDashboard />
 
@@ -44,7 +44,7 @@ const Learn = () => {
           </div>
         </div>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 w-full md:w-auto md:min-w-[300px] lg:min-w-[350px]">
           <Leaderboard clientId={1} />
           <DailyProgress clientId={1} />
           <StreakTable clientId={1} />

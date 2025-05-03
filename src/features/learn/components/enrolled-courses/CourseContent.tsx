@@ -43,25 +43,25 @@ const CourseContent: React.FC<CourseContentProps> = ({ courseId }) => {
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div className="p-4">Loading...</div>;
   }
 
   if (error || !course) {
-    return <div>Error loading course</div>;
+    return <div className="p-4">Error loading course</div>;
   }
 
   return (
-    <div className="w-full bg-white rounded-3xl p-6 shadow-sm relative">
-      <h1 className="font-semibold text-[25px] font-sans">{course.course_title ?? "Course Title"}</h1>
-      <p className="text-[14px] text-[#6C757D] font-normal">{course.course_description ?? "Course Description"}</p>
+    <div className="w-full bg-white rounded-3xl p-4 md:p-6 shadow-sm relative">
+      <h1 className="font-semibold text-xl md:text-[25px] font-sans">{course.course_title ?? "Course Title"}</h1>
+      <p className="text-sm md:text-[14px] text-[#6C757D] font-normal">{course.course_description ?? "Course Description"}</p>
 
       {/* Avatars */}
-      <div className="flex -space-x-2 mr-3 my-4">
+      <div className="flex -space-x-2 mr-3 my-3 md:my-4 overflow-x-auto">
         
         {course.instructors.map((instructor: Instructor, index: number) => (
           <div
             key={instructor.id}
-            className="w-12 h-12 rounded-full bg-gray-300 border-2 border-white overflow-hidden cursor-pointer transition-transform hover:z-10"
+            className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-300 border-2 border-white overflow-hidden cursor-pointer transition-transform hover:z-10 flex-shrink-0"
             onMouseEnter={(e) => handleMouseEnter(index, e)}
             onMouseLeave={handleMouseLeave}
           >
@@ -83,11 +83,11 @@ const CourseContent: React.FC<CourseContentProps> = ({ courseId }) => {
             top: `${tooltipInfo.y - 80}px`,
           }}
         >
-          <div className="custom-tooltip-bubble px-6 py-4 text-white shadow-xl min-w-[220px]">
-            <p className="font-semibold text-[20px] leading-none">
+          <div className="custom-tooltip-bubble px-4 md:px-6 py-3 md:py-4 text-white shadow-xl min-w-[220px]">
+            <p className="font-semibold text-base md:text-[20px] leading-none">
               {course.instructors[tooltipInfo.index].name}
             </p>
-            <p className="text-[#D1DBE8] text-[16px] mt-2 leading-tight">
+            <p className="text-[#D1DBE8] text-xs md:text-[16px] mt-2 leading-tight">
               {course.instructors[tooltipInfo.index].bio}
             </p>
           </div>
@@ -97,7 +97,7 @@ const CourseContent: React.FC<CourseContentProps> = ({ courseId }) => {
       <CourseStatistics course={course} />
       <CourseActions />
 
-      <div className="mt-8">
+      <div className="mt-4 md:mt-8">
         {course.modules.map((module: Module) => (
           <CollapsibleCourseModule
             key={module.id}

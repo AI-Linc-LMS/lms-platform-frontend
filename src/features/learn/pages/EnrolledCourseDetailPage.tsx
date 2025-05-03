@@ -12,8 +12,8 @@ const EnrolledCourseDetailPage: React.FC = () => {
 
   if (!courseId) {
     return (
-      <div className="">
-        <p className="text-xl">Course ID not found</p>
+      <div className="p-4">
+        <p className="text-xl mb-4">Course ID not found</p>
         <PrimaryButton onClick={() => navigate("/")}>
           Back to Courses
         </PrimaryButton>
@@ -24,11 +24,11 @@ const EnrolledCourseDetailPage: React.FC = () => {
   return (
     <>
       <BackToHomeButton />
-      <div className="flex flex-row w-full gap-4">
+      <div className="flex flex-col md:flex-row w-full gap-4 p-4">
         <div className="w-full">
           <CourseContent courseId={parseInt(courseId)} />
         </div>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 w-full md:w-auto">
           <DashboardPieChart />
           <EnrolledLeaderBoard />
         </div>
