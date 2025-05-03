@@ -102,7 +102,8 @@ const CourseContent: React.FC<CourseContentProps> = ({ courseId }) => {
           <CollapsibleCourseModule
             key={module.id}
             week={{
-              id: `week-${module.weekno}`,
+              id: courseId.toString(),
+              weekNo: module.weekno,
               title: module.title,
               completed: module.completion_percentage,
               modules: module.submodules.map((submodule: Submodule) => ({

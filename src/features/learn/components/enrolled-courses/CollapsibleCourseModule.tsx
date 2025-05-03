@@ -25,6 +25,7 @@ export interface CourseModule {
 
 export interface CourseWeek {
   id: string;
+  weekNo: number;
   title: string;
   completed?: number; // Percentage completed
   modules: CourseModule[];
@@ -43,8 +44,8 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
   const navigate = useNavigate();
 
   // Helper function to navigate to topic detail page
-  const navigateToTopicDetail = (moduleId: string) => {
-    navigate(`/learn/course/${week.id}/${moduleId}`);
+  const navigateToTopicDetail = (courseId: string, submoduleId: string) => {
+    navigate(`/learn/course/${courseId}/${submoduleId}`);
   };
 
   // Helper function to render the right icon for content type
@@ -66,7 +67,7 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
   return (
     <>
       <div>
-        <h2 className="text-xl font-semibold text-[#257195] p-4">Week {week.id.split('-')[1]}</h2>
+        <h2 className="text-xl font-semibold text-[#257195] p-4">Week {week.weekNo}</h2>
       </div>
       <div className="mb-6 border border-gray-100 rounded-[22px] shadow-sm">
         {/* Week Header */}
@@ -160,7 +161,7 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
                   {!module.isLocked && !module.started && (
                     <button
                       className="px-4 py-2 bg-[#D7EFF6] rounded-xl border border-[#80C9E0] text-[#264D64] cursor-pointer"
-                      onClick={() => navigateToTopicDetail(module.id)}
+                      onClick={() => navigateToTopicDetail(week.id, module.id)}
                     >
                       Start Now
                     </button>
@@ -169,7 +170,7 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
                   {!module.isLocked && module.started && (
                     <button
                       className="px-4 py-2 bg-[#255C79] text-white rounded-xl cursor-pointer"
-                      onClick={() => navigateToTopicDetail(module.id)}
+                      onClick={() => navigateToTopicDetail(week.id, module.id)}
                     >
                       Continue learning
                     </button>

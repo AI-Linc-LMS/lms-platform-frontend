@@ -1,18 +1,24 @@
 import React, { useRef, useState, useEffect } from "react";
+import { useQuery } from '@tanstack/react-query';
+import { getCourseContent } from '../../../../../services/courses-content/courseContentApis';
 
-interface SubjectiveCardProps {
+interface AssignmentData {
+  id: number;
   title: string;
-  overview: string;
-  difficulty?: string;
-  completion?: number;
+  content_title: string;
+  content_type: string;
+  question: string;
+  difficulty_level: string;
+  duration_in_minutes: number;
+  order: number;
 }
 
-const SubjectiveCard: React.FC<SubjectiveCardProps> = ({
-  title,
-  overview,
-  difficulty = "Easy",
-  completion = 98.82,
-}) => {
+interface SubjectiveCardProps {
+  contentId: number;
+  courseId: number;
+}
+
+const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) => {
   const [answer, setAnswer] = useState<string>("");
   const [fontSize, setFontSize] = useState<number>(14);
   const editorRef = useRef<HTMLDivElement>(null);
@@ -37,6 +43,12 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({
     "#D53F8C", // Pink
     "#000000"  // Black
   ];
+
+  const { data, isLoading, error } = useQuery<AssignmentData>({
+    queryKey: ['assignment', contentId],
+    queryFn: () => getCourseContent(1, courseId, contentId),
+    enabled: !!contentId && !!courseId,
+  });
 
   // Check if content is empty to show/hide placeholder
   useEffect(() => {
@@ -94,28 +106,68 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({
     execCommand("fontSize", (size / 4).toString());
   };
 
+  if (isLoading) {
+    return (
+      <div className="animate-pulse">
+        <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
+        <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-5/6 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-4/6 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-5/6 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-3/6 mb-2"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-red-500 p-4">
+        Error loading assignment. Please try again later.
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="text-gray-500 p-4">
+        No assignment data available.
+      </div>
+    );
+  }
+
+  console.log('Assignment Data:', data);
+
+  const handleSubmit = () => {
+    // Handle submission logic here
+    console.log('Submitted answer:', answer);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-6 max-w-4xl mx-auto">
       {/* <BackToHomeButton /> */}
 
       <div className="mt-8">
-        <h1 className="text-2xl font-semibold">{title}</h1>
+        <h1 className="text-2xl font-semibold">{data.content_title}</h1>
 
         <div className="flex items-center gap-4 mt-4">
           <div className="inline-flex items-center px-3 py-1 rounded-full bg-gray-100">
-            <span className="material-icons text-sm mr-1">bolt</span>
-            <span className="text-sm">{difficulty}</span>
+            <span className={`material-icons text-sm mr-1 ${
+              data.difficulty_level === 'Easy' ? 'text-green-800' :
+              data.difficulty_level === 'Medium' ? 'text-yellow-800' :
+              'text-red-800'
+            }`}>bolt</span>
+            <span className="text-sm">{data.difficulty_level}</span>
           </div>
 
           <div className="inline-flex items-center px-3 py-1 rounded-full bg-gray-100">
             <span className="material-icons text-sm mr-1">bar_chart</span>
-            <span className="text-sm">{completion}%</span>
+            <span className="text-sm">{data.duration_in_minutes} minutes</span>
           </div>
         </div>
 
         <div className="mt-6">
           <h2 className="text-lg font-medium">Overview</h2>
-          <p className="mt-2 text-gray-700">{overview}</p>
+          <div dangerouslySetInnerHTML={{ __html: data.question }} />
         </div>
 
         <div className="mt-6">
@@ -311,8 +363,13 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({
 
           <div className="flex justify-end mt-4">
             <button
-              className="bg-[#255C79] text-white px-12 py-3 rounded-lg font-medium cursor-pointer hover:bg-[#1D4A61] transition-colors"
-              onClick={() => console.log("Submitted answer:", answer)}
+              className={`px-12 py-3 rounded-lg font-medium ${
+                !answer.trim()
+                  ? 'bg-gray-300 cursor-not-allowed'
+                  : 'bg-[#255C79] text-white hover:bg-[#1a4a5f] transition-colors'
+              }`}
+              onClick={handleSubmit}
+              disabled={!answer.trim()}
             >
               Submit
             </button>
