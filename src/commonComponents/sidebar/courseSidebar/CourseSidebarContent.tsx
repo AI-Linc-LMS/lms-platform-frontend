@@ -259,7 +259,9 @@ const CourseSidebarContent = ({
           <QuizContent
             onSelect={quizProps.onSelectQuiz}
             selectedQuizId={quizProps.selectedQuizId}
-            quizzes={quizzes}
+            quizzes={quizzes.length > 0 ? quizzes : quizProps.quizzes}
+            courseId={courseId}
+            clientId={1}
           />
         )}
         {activeLabel === "Subjective" && assignments.length > 0 && (
