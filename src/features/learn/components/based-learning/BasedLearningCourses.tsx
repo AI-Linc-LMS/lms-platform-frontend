@@ -97,10 +97,10 @@ const CourseCard = ({
             </div>
 
             <div className="flex gap-4 mt-auto">
-                <PrimaryButton onClick={() => alert('Enrolled!')}>Enroll Now</PrimaryButton>
+                <PrimaryButton className="whitespace-nowrap text-sm" onClick={() => alert('Enrolled!')}>Enroll Now</PrimaryButton>
 
 
-                <SecondaryButton onClick={() => alert('Not Interested')} >Not Interested</SecondaryButton>
+                <SecondaryButton className="whitespace-nowrap text-sm" onClick={() => alert('Not Interested')} >Not Interested</SecondaryButton>
 
 
             </div>
