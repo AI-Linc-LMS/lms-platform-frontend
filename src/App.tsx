@@ -4,6 +4,7 @@ import routes from "./routes";
 import Container from "./constants/Container";
 import { Outlet } from 'react-router-dom';
 import { useEffect } from "react";
+import { useTokenExpirationHandler } from "./hooks/useTokenExpirationHandler";
 
 function App() {
   return (
@@ -19,6 +20,9 @@ function AppContent() {
   const user = localStorage.getItem("user");
   const isAuthenticated = user ? true : false;
   console.log("user", user);
+  
+  // Use the token expiration handler
+  useTokenExpirationHandler();
   
   useEffect(() => {
     if (!isAuthenticated) {
