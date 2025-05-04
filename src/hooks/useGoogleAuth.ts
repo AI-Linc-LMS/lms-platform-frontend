@@ -18,8 +18,12 @@ export const useGoogleAuth = () => {
       const { access_token, refresh_token, user } = await googleLogin(googleToken);
 
       console.log('Google login response:', { access_token, refresh_token, user });
+      
       // Store token in localStorage
       localStorage.setItem('token', access_token);
+      
+      // Store the current timestamp for token expiration checks
+      localStorage.setItem('tokenTimestamp', Date.now().toString());
 
       // Update Redux store with user data
       dispatch(
@@ -36,9 +40,10 @@ export const useGoogleAuth = () => {
 
       // Redirect to home page
       navigate('/');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Google login error:', error);
-      setError(error.message || 'An unexpected error occurred. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

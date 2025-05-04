@@ -19,7 +19,13 @@ export const useAuth = () => {
         user: data.user,
         token: data.access_token
       }));
+      
+      // Store the token in localStorage
       localStorage.setItem('token', data.access_token);
+      
+      // Store the current timestamp for token expiration checks
+      localStorage.setItem('tokenTimestamp', Date.now().toString());
+      
       // Save user data in user slice and localStorage
       const userPayload = {
         access_token: data.access_token,
