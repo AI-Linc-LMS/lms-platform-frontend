@@ -196,7 +196,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
           </div>
 
           <div className="grid grid-cols-4 gap-2">
-            {mcqs.map((question, index) => (
+            {mcqs.map((_, index) => (
               <button
                 key={index}
                 onClick={() => {

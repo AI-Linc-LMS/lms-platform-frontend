@@ -57,8 +57,6 @@ const CourseTopicDetailPage: React.FC = () => {
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [selectedQuizId, setSelectedQuizId] = useState<number>(1);
   const [selectedArticleId, setSelectedArticleId] = useState<number>(1);
-  const [selectedSubjectiveId, setSelectedSubjectiveId] = useState<string | null>(null);
-  const [selectedDevelopmentId, setSelectedDevelopmentId] = useState<string | null>(null);
   const [selectedProblemId, setSelectedProblemId] = useState<string | undefined>();
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
   const [activeSidebarLabel, setActiveSidebarLabel] = useState<string>("Videos");
@@ -146,7 +144,7 @@ const CourseTopicDetailPage: React.FC = () => {
       // Find the first assignment
       const firstAssignment = submoduleData.data.find(content => content.content_type === 'Assignment');
       if (firstAssignment) {
-        setSelectedSubjectiveId(firstAssignment.id.toString());
+        setSelectedProblemId(firstAssignment.id.toString());
       }
 
       // Find the first development project
@@ -286,7 +284,7 @@ const CourseTopicDetailPage: React.FC = () => {
           setSelectedProjectId(firstContent.id.toString());
           break;
         case "Subjective":
-          setSelectedSubjectiveId(firstContent.id.toString());
+          setSelectedProblemId(firstContent.id.toString());
           break;
         case "Article":
           setSelectedArticleId(firstContent.id);
