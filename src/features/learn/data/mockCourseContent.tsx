@@ -5,7 +5,7 @@ export const mockCourseContent: CourseWeek[] = [
   {
     id: "week-1",
     title: "Week 1",
-    
+    weekNo: 1,
     modules: [
       {
         id: "Intro-ml-model-deployment",
@@ -44,6 +44,7 @@ export const mockCourseContent: CourseWeek[] = [
   {
     id: "week-2",
     title: "Week 2",
+    weekNo: 2,
     modules: [
       {
         id: "Intro-git-github",
@@ -61,6 +62,7 @@ export const mockCourseContent: CourseWeek[] = [
   {
     id: "week-3",
     title: "Week 3",
+    weekNo: 3,
     modules: [
       {
         id: "Deploy-ml-models",
@@ -78,6 +80,7 @@ export const mockCourseContent: CourseWeek[] = [
   {
     id: "week-4",
     title: "Week 4",
+    weekNo: 4,
     modules: [
       {
         id: "Deploy-ml-heroku",
@@ -95,6 +98,7 @@ export const mockCourseContent: CourseWeek[] = [
   {
     id: "week-5",
     title: "Week 5",
+    weekNo: 5,
     modules: [
       {
         id: "Deploy-ml-aws",
@@ -112,6 +116,7 @@ export const mockCourseContent: CourseWeek[] = [
   {
     id: "week-6",
     title: "Week 6",
+    weekNo: 6,
     modules: [
       {
         id: "Week-6-content",

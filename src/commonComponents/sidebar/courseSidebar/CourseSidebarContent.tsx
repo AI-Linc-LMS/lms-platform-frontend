@@ -1,18 +1,14 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getCourseContent, getSubmoduleById } from "../../../services/courses-content/courseContentApis";
 import DashboardContent from "./component/DashboardContent";
 import AllContent from "./component/AllContent";
 import { dummyContent } from "./component/data/mockAllData";
 import ArticleContent, { ArticleItem } from "./component/ArticleContent";
-import { dummyVideos } from "./component/data/mockVideoData";
-import { problemsDummy } from "./component/data/mockProblemData";
 import VideoContent from "./component/VideoContent";
 import ProblemContent from "./component/ProblemContent";
 import closeSidebarIcon from "../../../assets/course_sidebar_assets/closeSidebarIcon.png";
 import QuizContent from "./component/QuizContent";
 import { Quiz } from "./component/data/mockQuizData";
-import SubjectiveContent from "./component/SubjectiveContent";
 import DevelopmentContent from "./component/DevelopmentContent";
 import { developmentProjectsDummy } from "./component/data/mockDevelopmentData";
 
@@ -24,14 +20,6 @@ interface SubmoduleContent {
   title: string;
   difficulty_level?: string;
   description?: string;
-}
-
-interface Assignment {
-  id: number;
-  title: string;
-  difficulty: string;
-  completion: number;
-  duration_in_minutes: number;
 }
 
 interface SubmoduleData {
@@ -111,7 +99,7 @@ const CourseSidebarContent = ({
   courseId,
 }: CourseSidebarContentProps) => {
   // Fetch submodule data by ID if provided
-  const { data: submoduleData, isLoading: isSubmoduleLoading } = useQuery<SubmoduleData | null>({
+  const { data: submoduleData } = useQuery<SubmoduleData | null>({
     queryKey: ['submodule', submoduleId],
     queryFn: () => submoduleId && courseId ? getSubmoduleById(1, courseId, submoduleId) : Promise.resolve(null),
     enabled: !!submoduleId && !!courseId,
@@ -194,22 +182,6 @@ const CourseSidebarContent = ({
         }))
     : [];
 
-  // Transform submodule data into assignments if available
-  const assignments = submoduleData?.data
-    ? submoduleData.data
-        .filter((content: SubmoduleContent) => content.content_type === 'Assignment')
-        .map((content: SubmoduleContent) => ({
-          id: content.id,
-          title: content.title,
-          difficulty: content.difficulty_level || "Easy",
-          completion: 0,
-          duration_in_minutes: content.duration_in_minutes
-        }))
-    : [];
-
-  // State for selected subjective assignment
-  const [selectedSubjectiveId, setSelectedSubjectiveId] = useState<number | null>(null);
-
   return (
     <div className="relative bg-white w-[500px] min-h-screen shadow-xl rounded-lg px-4 py-3 transition-all duration-300 mt-5">
       <button
@@ -262,11 +234,6 @@ const CourseSidebarContent = ({
             quizzes={quizzes.length > 0 ? quizzes : quizProps.quizzes}
             courseId={courseId}
             clientId={1}
-          />
-        )}
-        {activeLabel === "Subjective" && assignments.length > 0 && (
-          <SubjectiveContent
-            assignment={assignments[0]}
           />
         )}
         {activeLabel === "Development" && (

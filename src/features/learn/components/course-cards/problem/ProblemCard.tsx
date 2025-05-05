@@ -10,11 +10,6 @@ interface ProblemCardProps {
   onSubmit: (code: string) => void;
 }
 
-interface TestCase {
-  input: string;
-  output: string;
-}
-
 interface ProblemDetails {
   id: number;
   difficulty_level: string;
@@ -47,7 +42,6 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const [code, setCode] = useState("// Write your code here");
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
   const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(true);
-  const [activeTestCase, setActiveTestCase] = useState(0);
   const [results, setResults] = useState<null | { success: boolean; message: string }>(null);
 
   if (isLoading) {
