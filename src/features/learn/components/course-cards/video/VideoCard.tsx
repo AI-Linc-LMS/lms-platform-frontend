@@ -1,25 +1,66 @@
 import React, { useState } from "react";
 import VideoPlayer from "../../video-player/VideoPlayer";
 import FloatingAIButton from "../../floating-ai-button/FloatingAIButton";
+import { useQuery } from "@tanstack/react-query";
+import { getCourseContent } from "../../../../../services/courses-content/courseContentApis";
 
-interface Props {
+interface VideoCardProps {
   currentWeek: { title: string };
   currentTopic: { title: string };
-  sampleVideoUrl: string;
+  contentId: number;
+  courseId: number;
   nextContent: () => void;
   getNextTopicTitle: () => string;
 }
 
-const VideoCard: React.FC<Props> = ({
+const VideoCard: React.FC<VideoCardProps> = ({
   currentWeek,
   currentTopic,
-  sampleVideoUrl,
+  contentId,
+  courseId,
   nextContent,
   getNextTopicTitle,
 }) => {
   const [activeTab, setActiveTab] = useState<"description" | "comments">(
     "description"
   );
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['video', contentId],
+    queryFn: () => getCourseContent(1, courseId, contentId),
+    enabled: !!contentId && !!courseId,
+  });
+  
+  if (isLoading) {
+    return (
+      <div className="animate-pulse">
+        <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
+        <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-5/6 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-4/6 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-5/6 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-3/6 mb-2"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-red-500 p-4">
+        Error loading video. Please try again later.
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="text-gray-500 p-4">
+        No video data available.
+      </div>
+    );
+  }
+
+  console.log('Video Data:', data);
 
   return (
     <div className="flex-1">
@@ -34,8 +75,8 @@ const VideoCard: React.FC<Props> = ({
 
       {/* Video Player Section */}
       <VideoPlayer
-        videoUrl={sampleVideoUrl}
-        title={currentTopic.title}
+        videoUrl={data.video_url}
+        title={data.title}
         onComplete={nextContent}
       />
 
@@ -150,12 +191,10 @@ const VideoCard: React.FC<Props> = ({
         {activeTab === "description" && (
           <div>
             <h2 className="text-xl font-bold mb-4">
-              Are you ready to embark on an exhilarating journey of discovery?
+              {data.title}
             </h2>
             <p className="mb-4">
-              Brace yourself as we delve into the captivating world of Arrays.
-              Prepare to unlock the power of organized data, where each element
-              holds a unique story waiting to be explored...
+              {data.description}
             </p>
 
             <h3 className="text-lg font-bold mt-6 mb-2">What is an Array??</h3>

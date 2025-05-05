@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { store } from '../redux/store';
+import { logout } from '../redux/slices/authSlice';
 
 export interface LoginCredentials {
   email: string;
@@ -27,6 +29,30 @@ const axiosAuthInstance = axios.create({
   },
 });
 
+// Add a response interceptor to handle token expiration
+axiosAuthInstance.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    // Check if the error is due to an expired token (status 401)
+    if (error.response && error.response.status === 401) {
+      console.log('Token expired or invalid. Logging out...');
+      
+      // Clear user data from localStorage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // Dispatch logout action
+      store.dispatch(logout());
+      
+      // Redirect to login page
+      window.location.href = '/login';
+    }
+    
+    return Promise.reject(error);
+  }
+);
 
 export const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
   try {
@@ -50,7 +76,21 @@ export const googleLogin = async (googleToken: string) => {
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      throw new Error(error.response?.data?.message || 'Google login failed');
+      // Log detailed error information for debugging
+      console.error('Google login API error:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      // For 500 errors, throw a more specific error
+      if (error.response?.status === 500) {
+        throw new Error('Server error with this Google account. Please try another account or contact support.');
+      }
+      
+      // For other errors, use the server's error message or a default
+      throw new Error(error.response?.data?.message || error.response?.data?.detail || 'Google login failed');
     }
     throw error;
   }

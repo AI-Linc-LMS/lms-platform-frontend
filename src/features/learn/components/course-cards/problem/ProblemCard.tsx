@@ -1,37 +1,79 @@
 import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getCourseContent } from "../../../../../services/courses-content/courseContentApis";
 import Editor from '@monaco-editor/react';
 import './ProblemCard.css';
 
 interface ProblemCardProps {
-  problemId: string;
-  title: string;
-  description: string;
-  difficulty: string;
-  testCases: {
-    input: string;
-    output: string;
-  }[];
-  initialCode: string;
-  language: string;
+  contentId: number;
+  courseId: number;
   onSubmit: (code: string) => void;
 }
 
+interface ProblemDetails {
+  id: number;
+  difficulty_level: string;
+  input_format: string;
+  output_format: string;
+  problem_statement: string;
+  sample_input: string;
+  sample_output: string;
+  title: string;
+}
+
+interface ProblemData {
+  id: number;
+  content_type: string;
+  content_title: string;
+  details: ProblemDetails;
+}
+
 const ProblemCard: React.FC<ProblemCardProps> = ({
-  /* We keep problemId even though it's not directly used in the component
-     because it might be needed for future functionality like tracking progress */
-  title,
-  description,
-  difficulty,
-  testCases,
-  initialCode,
-  language,
+  contentId,
+  courseId,
   onSubmit,
 }) => {
-  const [code, setCode] = useState(initialCode);
-  const [selectedLanguage, setSelectedLanguage] = useState(language);
+  const { data, isLoading, error } = useQuery<ProblemData>({
+    queryKey: ['problem', contentId],
+    queryFn: () => getCourseContent(1, courseId, contentId),
+    enabled: !!contentId && !!courseId,
+  });
+
+  const [code, setCode] = useState("// Write your code here");
+  const [selectedLanguage, setSelectedLanguage] = useState("javascript");
   const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(true);
-  const [activeTestCase, setActiveTestCase] = useState(0);
   const [results, setResults] = useState<null | { success: boolean; message: string }>(null);
+
+  if (isLoading) {
+    return (
+      <div className="animate-pulse">
+        <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
+        <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-5/6 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-4/6 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-5/6 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-3/6 mb-2"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-red-500 p-4">
+        Error loading problem. Please try again later.
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="text-gray-500 p-4">
+        No problem data available.
+      </div>
+    );
+  }
+
+  console.log('Problem Data:', data);
 
   const handleCodeChange = (value: string | undefined) => {
     if (value) {
@@ -66,47 +108,41 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     <div className="problem-card-container">
       {/* Problem Description Panel */}
       <div className="problem-panel">
-        <h2 className="text-xl font-semibold text-gray-800 mb-2">{title}</h2>
+        <h2 className="text-xl font-semibold text-gray-800 mb-2">{data.details.title}</h2>
         <div className="flex items-center mb-4">
           <span
-            className={`text-xs font-medium py-1 px-2.5 rounded-full ${difficulty === "Easy" ? "bg-green-100 text-green-800" :
-              difficulty === "Medium" ? "bg-yellow-100 text-yellow-800" :
+            className={`text-xs font-medium py-1 px-2.5 rounded-full ${data.details.difficulty_level === "Easy" ? "bg-green-100 text-green-800" :
+              data.details.difficulty_level === "Medium" ? "bg-yellow-100 text-yellow-800" :
                 "bg-red-100 text-red-800"
               }`}
           >
-            {difficulty}
+            {data.details.difficulty_level}
           </span>
         </div>
 
-        <div className="prose problem-description mb-6" dangerouslySetInnerHTML={{ __html: description }} />
+        <div className="prose problem-description mb-6" dangerouslySetInnerHTML={{ __html: data.details.problem_statement || "" }} />
 
-        <h3 className="text-lg font-semibold mb-4">Test Cases</h3>
-        <div className="flex space-x-2 mb-4">
-          {testCases.map((_, index) => (
-            <button
-              key={index}
-              className={`test-case-btn px-3 py-1 text-sm rounded cursor-pointer ${activeTestCase === index
-                ? "bg-blue-100 text-blue-700 font-medium"
-                : "bg-gray-100 text-gray-600"
-                }`}
-              onClick={() => setActiveTestCase(index)}
-            >
-              Case {index + 1}
-            </button>
-          ))}
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-2">Input Format</h3>
+          <div className="bg-gray-50 rounded-lg p-4" dangerouslySetInnerHTML={{ __html: data.details.input_format || "" }} />
         </div>
-        <div className="bg-gray-50 rounded-lg p-4 my-10">
-          <div className="mb-3">
-            <h4 className="text-sm font-medium text-gray-700 mb-1">Input:</h4>
-            <pre className="bg-white p-2 rounded border text-sm">
-              {testCases[activeTestCase].input}
-            </pre>
+
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-2">Output Format</h3>
+          <div className="bg-gray-50 rounded-lg p-4" dangerouslySetInnerHTML={{ __html: data.details.output_format || "" }} />
+        </div>
+
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-2">Sample Input</h3>
+          <div className="bg-gray-50 rounded-lg p-4">
+            <pre className="text-sm">{data.details.sample_input}</pre>
           </div>
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-1">Expected Output:</h4>
-            <pre className="bg-white p-2 rounded border text-sm">
-              {testCases[activeTestCase].output}
-            </pre>
+        </div>
+
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-2">Sample Output</h3>
+          <div className="bg-gray-50 rounded-lg p-4">
+            <pre className="text-sm">{data.details.sample_output}</pre>
           </div>
         </div>
       </div>
@@ -180,22 +216,6 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           >
             Submit
           </button>
-        </div>
-
-        <div className="testcase-section">
-          <h3 className="text-lg font-semibold mb-2">Testcase</h3>
-          <div className="testcase-tabs">
-            <button className="testcase-tab active cursor-pointer">Case 1</button>
-            <button className="testcase-tab cursor-pointer">Case 2</button>
-          </div>
-          <div className="testcase-content">
-            <div className="testcase-item">
-              <h4 className="text-sm font-medium text-gray-700">root=</h4>
-              <pre className="bg-white p-2 rounded border text-sm mt-1">
-                {testCases[activeTestCase].input}
-              </pre>
-            </div>
-          </div>
         </div>
 
         <div className="output-section">
