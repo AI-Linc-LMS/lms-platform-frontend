@@ -76,7 +76,21 @@ export const googleLogin = async (googleToken: string) => {
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      throw new Error(error.response?.data?.message || 'Google login failed');
+      // Log detailed error information for debugging
+      console.error('Google login API error:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      // For 500 errors, throw a more specific error
+      if (error.response?.status === 500) {
+        throw new Error('Server error with this Google account. Please try another account or contact support.');
+      }
+      
+      // For other errors, use the server's error message or a default
+      throw new Error(error.response?.data?.message || error.response?.data?.detail || 'Google login failed');
     }
     throw error;
   }
