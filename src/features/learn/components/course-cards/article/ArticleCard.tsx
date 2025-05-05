@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getCourseContent } from '../../../../../services/courses-content/courseContentApis';
 import FloatingAIButton from "../../floating-ai-button/FloatingAIButton";
+import { useMediaQuery } from "../../../../../hooks/useMediaQuery";
 
 interface ArticleCardProps {
   contentId: number;
@@ -27,6 +28,7 @@ interface ArticleData {
 
 const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkComplete }) => {
   const [isCompleted, setIsCompleted] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   const { data: articleData, isLoading, error } = useQuery<ArticleData>({
     queryKey: ['article', contentId],
@@ -52,13 +54,13 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm">
-      <div className="flex justify-between items-center mb-6">
+    <div className="max-w-4xl mx-auto p-3 md:p-6 bg-white rounded-lg shadow-sm">
+      <div className={`${isMobile ? 'flex flex-col gap-4' : 'flex justify-between items-center'} mb-6`}>
         <div>
-          <h1 className="text-2xl font-semibold capitalize text-gray-800 mb-2">
+          <h1 className="text-xl md:text-2xl font-semibold capitalize text-gray-800 mb-2">
             {articleData.content_title}
           </h1>
-          <div className="flex items-center gap-4 text-sm text-gray-500">
+          <div className="flex items-center gap-4 text-xs md:text-sm text-gray-500">
             <span>⏱ {articleData.duration_in_minutes} min</span>
             <span>•</span>
             <span>📚 {articleData.details.difficulty_level}</span>
@@ -67,17 +69,17 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
         <button
           onClick={handleMarkComplete}
           disabled={isCompleted}
-          className={`px-4 py-2 rounded-md text-sm font-medium ${
+          className={`px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium ${
             isCompleted
               ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
               : 'bg-[#255C79] text-white hover:bg-[#1a4a5f]'
-          }`}
+          } ${isMobile ? 'self-start' : ''}`}
         >
           {isCompleted ? 'Completed' : 'Mark as Complete'}
         </button>
       </div>
 
-      <div className="prose max-w-none text-lg">
+      <div className="prose max-w-none text-sm md:text-lg prose-headings:text-lg md:prose-headings:text-xl prose-p:text-sm md:prose-p:text-base">
         <div dangerouslySetInnerHTML={{ __html: articleData.details.content }} />
       </div>
 

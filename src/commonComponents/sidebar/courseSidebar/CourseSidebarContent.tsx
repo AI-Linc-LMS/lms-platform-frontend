@@ -11,6 +11,7 @@ import QuizContent from "./component/QuizContent";
 import { Quiz } from "./component/data/mockQuizData";
 import DevelopmentContent from "./component/DevelopmentContent";
 import { developmentProjectsDummy } from "./component/data/mockDevelopmentData";
+import { useMediaQuery } from "../../../hooks/useMediaQuery";
 
 interface SubmoduleContent {
   content_type: string;
@@ -98,6 +99,8 @@ const CourseSidebarContent = ({
   submoduleId,
   courseId,
 }: CourseSidebarContentProps) => {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+
   // Fetch submodule data by ID if provided
   const { data: submoduleData } = useQuery<SubmoduleData | null>({
     queryKey: ['submodule', submoduleId],
@@ -110,11 +113,17 @@ const CourseSidebarContent = ({
     if (courseId) {
       getCourseContent(1, courseId, parseInt(id));
     }
+    if (isMobile) {
+      onClose();
+    }
   };
 
   const handleProblemSelect = (id: string) => {
     if (problemProps && problemProps.onProblemSelect) {
       problemProps.onProblemSelect(id);
+      if (isMobile) {
+        onClose();
+      }
     } else if (courseId) {
       getCourseContent(1, courseId, parseInt(id));
     }
@@ -123,6 +132,23 @@ const CourseSidebarContent = ({
   const handleProjectSelect = (id: string) => {
     if (developmentProps && developmentProps.onProjectSelect) {
       developmentProps.onProjectSelect(id);
+      if (isMobile) {
+        onClose();
+      }
+    }
+  };
+
+  const handleQuizSelect = (id: number) => {
+    quizProps.onSelectQuiz(id);
+    if (isMobile) {
+      onClose();
+    }
+  };
+
+  const handleArticleClick = (id: number) => {
+    articleProps.onArticleClick(id);
+    if (isMobile) {
+      onClose();
     }
   };
 
@@ -183,66 +209,85 @@ const CourseSidebarContent = ({
     : [];
 
   return (
-    <div className="relative bg-white w-[500px] min-h-screen shadow-xl rounded-lg px-4 py-3 transition-all duration-300 mt-5">
+    <div 
+      className={`relative bg-white ${
+        isMobile 
+          ? 'h-full overflow-y-auto rounded-l-lg shadow-xl' 
+          : 'w-[500px] min-h-screen rounded-lg px-4 py-3 mt-5 shadow-xl'
+      }`}
+    >
       <button
         onClick={onClose}
-        className="absolute top-1 -right-10 z-10 bg-white rounded-full shadow-md p-2 hover:bg-gray-100 transition cursor-pointer"
+        className={`${
+          isMobile 
+            ? 'absolute top-3 right-3 z-10 bg-white rounded-full shadow-md p-2' 
+            : 'absolute top-1 -right-10 z-10 bg-white rounded-full shadow-md p-2'
+        } hover:bg-gray-100 transition cursor-pointer`}
       >
         <img src={closeSidebarIcon} alt="Close" className="w-4 h-4" />
       </button>
 
-      <div className="text-sm text-gray-700">
-        {activeLabel === "Dashboard" && (
-          <DashboardContent
-            courseTitle={submoduleData?.moduleName || "Course"}
-            courseType="Self pace"
-            stats={dummyStats}
-          />
-        )}
-        {activeLabel === "All" && <AllContent contents={dummyContent} />}
-        {activeLabel === "Article" && (
-          <ArticleContent
-            articles={articles}
-            selectedArticleId={articleProps.selectedArticleId}
-            onArticleClick={articleProps.onArticleClick}
-          />
-        )}
-        {activeLabel === "Videos" && (
-          <VideoContent
-            videos={videos}
-            selectedVideoId={videoProps.selectedVideoId || ""}
-            onVideoClick={handleVideoClick}
-            totalDuration={`${submoduleData?.data?.reduce((acc: number, curr: SubmoduleContent) => acc + curr.duration_in_minutes, 0) || 0} min`}
-            topicNo={submoduleData?.weekNo || 1}
-            topicTitle={submoduleData?.submoduleName || "Topic 1"}
-            week={`Week ${submoduleData?.weekNo || 1}`}
-            difficulty="Beginner"
-            completionPercentage={0}
-          />
-        )}
-        {activeLabel === "Problems" && (
-          <ProblemContent
-            problems={problems}
-            selectedProblemId={problemProps?.selectedProblemId}
-            onSelect={handleProblemSelect}
-          />
-        )}
-        {activeLabel === "Quiz" && (
-          <QuizContent
-            onSelect={quizProps.onSelectQuiz}
-            selectedQuizId={quizProps.selectedQuizId}
-            quizzes={quizzes.length > 0 ? quizzes : quizProps.quizzes}
-            courseId={courseId}
-            clientId={1}
-          />
-        )}
-        {activeLabel === "Development" && (
-          <DevelopmentContent
-            projects={developmentProjectsDummy}
-            selectedProjectId={developmentProps?.selectedProjectId}
-            onProjectSelect={handleProjectSelect}
-          />
-        )}
+      <div className={`${isMobile ? 'p-4' : 'px-4 py-3'}`}>
+        <div className="border-b border-gray-200 mb-4 pb-3">
+          <h3 className="text-lg font-semibold text-[#255C79]">{activeLabel}</h3>
+          <p className="text-xs text-gray-500">
+            {submoduleData?.moduleName || "Course"} - {submoduleData?.submoduleName || "Topic"}
+          </p>
+        </div>
+        
+        <div className="text-sm text-gray-700">
+          {activeLabel === "Dashboard" && (
+            <DashboardContent
+              courseTitle={submoduleData?.moduleName || "Course"}
+              courseType="Self pace"
+              stats={dummyStats}
+            />
+          )}
+          {activeLabel === "All" && <AllContent contents={dummyContent} />}
+          {activeLabel === "Article" && (
+            <ArticleContent
+              articles={articles}
+              selectedArticleId={articleProps.selectedArticleId}
+              onArticleClick={handleArticleClick}
+            />
+          )}
+          {activeLabel === "Videos" && (
+            <VideoContent
+              videos={videos}
+              selectedVideoId={videoProps.selectedVideoId || ""}
+              onVideoClick={handleVideoClick}
+              totalDuration={`${submoduleData?.data?.reduce((acc: number, curr: SubmoduleContent) => acc + curr.duration_in_minutes, 0) || 0} min`}
+              topicNo={submoduleData?.weekNo || 1}
+              topicTitle={submoduleData?.submoduleName || "Topic 1"}
+              week={`Week ${submoduleData?.weekNo || 1}`}
+              difficulty="Beginner"
+              completionPercentage={0}
+            />
+          )}
+          {activeLabel === "Problems" && (
+            <ProblemContent
+              problems={problems}
+              selectedProblemId={problemProps?.selectedProblemId}
+              onSelect={handleProblemSelect}
+            />
+          )}
+          {activeLabel === "Quiz" && (
+            <QuizContent
+              onSelect={handleQuizSelect}
+              selectedQuizId={quizProps.selectedQuizId}
+              quizzes={quizzes.length > 0 ? quizzes : quizProps.quizzes}
+              courseId={courseId}
+              clientId={1}
+            />
+          )}
+          {activeLabel === "Development" && (
+            <DevelopmentContent
+              projects={developmentProjectsDummy}
+              selectedProjectId={developmentProps?.selectedProjectId}
+              onProjectSelect={handleProjectSelect}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
