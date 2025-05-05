@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { setUser } from '../redux/slices/userSlice';
 import { googleLogin } from '../services/authApis';
+import axios from 'axios';
 
 export const useGoogleAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -42,7 +43,24 @@ export const useGoogleAuth = () => {
       navigate('/');
     } catch (error: unknown) {
       console.error('Google login error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.';
+      
+      let errorMessage: string;
+      
+      if (axios.isAxiosError(error) && error.response) {
+        // Handle specific status codes
+        if (error.response.status === 500) {
+          errorMessage = 'Server error occurred with this Google account. Please try a different Google account or contact support.';
+        } else if (error.response.data?.message) {
+          errorMessage = error.response.data.message;
+        } else {
+          errorMessage = `Google login failed (${error.response.status}): ${error.message}`;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      } else {
+        errorMessage = 'An unexpected error occurred. Please try again.';
+      }
+      
       setError(errorMessage);
     } finally {
       setIsLoading(false);
