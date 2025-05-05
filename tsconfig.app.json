@@ -23,7 +23,10 @@
     "noUncheckedSideEffectImports": true,
 
     /* Type Definitions */
-    "typeRoots": ["./node_modules/@types", "./src/types"]
+    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "types": ["react", "react-dom"],
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
   },
   "include": ["src"]
 }

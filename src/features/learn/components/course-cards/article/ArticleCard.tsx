@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getCourseContent } from '../../../../../services/courses-content/courseContentApis';
-import ReactMarkdown from 'react-markdown';
 import FloatingAIButton from "../../floating-ai-button/FloatingAIButton";
 
 interface ArticleCardProps {
@@ -79,7 +78,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
       </div>
 
       <div className="prose max-w-none text-lg">
-        <ReactMarkdown>{articleData.details.content}</ReactMarkdown>
+        <div dangerouslySetInnerHTML={{ __html: articleData.details.content }} />
       </div>
 
       {/* Floating Ask AI Button */}
