@@ -12,7 +12,6 @@ import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
 
 const Learn = () => {
-  
   return (
     <div className="px-2 md:px-0">
       <WelcomeSection />

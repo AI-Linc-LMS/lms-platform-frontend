@@ -1,45 +1,84 @@
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { getCourseContent } from '../../../../../services/courses-content/courseContentApis';
 import FloatingAIButton from "../../floating-ai-button/FloatingAIButton";
 
 interface ArticleCardProps {
-  title: string;
-  content: string;
-  marks: number;
-  onMarkComplete?: () => void;
-  completed?: boolean;
+  contentId: number;
+  courseId: number;
+  onMarkComplete: () => void;
 }
 
-const ArticleCard = ({
-  title,
-  content,
-  marks,
-  onMarkComplete,
-  completed,
-}: ArticleCardProps) => {
+interface ArticleDetails {
+  id: number;
+  title: string;
+  content: string;
+  difficulty_level: string;
+}
+
+interface ArticleData {
+  id: number;
+  content_title: string;
+  content_type: string;
+  duration_in_minutes: number;
+  order: number;
+  details: ArticleDetails;
+}
+
+const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkComplete }) => {
+  const [isCompleted, setIsCompleted] = useState(false);
+
+  const { data: articleData, isLoading, error } = useQuery<ArticleData>({
+    queryKey: ['article', contentId],
+    queryFn: () => getCourseContent(1, courseId, contentId),
+  });
+
+  console.log('Article Data:', articleData);
+  const handleMarkComplete = () => {
+    setIsCompleted(true);
+    onMarkComplete();
+  };
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-64">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="flex justify-center items-center h-64 text-red-500">Error loading article</div>;
+  }
+
+  if (!articleData) {
+    return <div className="flex justify-center items-center h-64">Article not found</div>;
+  }
+
   return (
-    <div className="flex flex-col bg-white shadow-lg p-3 rounded-lg space-y-4 max-w-3xl mx-auto">
-      <div className="flex justify-between items-start border-b border-gray-200 py-2 mb-5">
-        <h2 className="text-2xl font-semibold text-gray-800">{title}</h2>
-        <span className="text-sm px-3 py-1 text-[#264D64] bg-[#EFF9FC] rounded-md ">
-          {marks} marks
-        </span>
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold capitalize text-gray-800 mb-2">
+            {articleData.content_title}
+          </h1>
+          <div className="flex items-center gap-4 text-sm text-gray-500">
+            <span>⏱ {articleData.duration_in_minutes} min</span>
+            <span>•</span>
+            <span>📚 {articleData.details.difficulty_level}</span>
+          </div>
+        </div>
+        <button
+          onClick={handleMarkComplete}
+          disabled={isCompleted}
+          className={`px-4 py-2 rounded-md text-sm font-medium ${
+            isCompleted
+              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+              : 'bg-[#255C79] text-white hover:bg-[#1a4a5f]'
+          }`}
+        >
+          {isCompleted ? 'Completed' : 'Mark as Complete'}
+        </button>
       </div>
 
-      <div
-        className="p-2 prose max-w-none"
-        dangerouslySetInnerHTML={{ __html: content }}
-      />
-
-      <div className="flex justify-end mt-4">
-        {!completed ? (
-          <button
-            onClick={onMarkComplete}
-            className="px-4 py-2 text-white bg-[#12293A] rounded-md hover:bg-[#1e4a61] transition cursor-pointer"
-          >
-            Mark as Completed
-          </button>
-        ) : (
-          <p className="text-green-600 font-medium">✓ Completed</p>
-        )}
+      <div className="prose max-w-none text-lg">
+        <div dangerouslySetInnerHTML={{ __html: articleData.details.content }} />
       </div>
 
       {/* Floating Ask AI Button */}
