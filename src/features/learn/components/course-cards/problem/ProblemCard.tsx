@@ -42,6 +42,10 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const [code, setCode] = useState("// Write your code here");
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
   const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(true);
+  const [isDarkTheme, setIsDarkTheme] = useState(() => {
+    const saved = localStorage.getItem('ide-theme');
+    return saved ? saved === 'dark' : false;
+  });
   const [results, setResults] = useState<null | { success: boolean; message: string }>(null);
 
   if (isLoading) {
@@ -103,6 +107,13 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     { value: "java", label: "Java" },
     { value: "cpp", label: "C++" },
   ];
+
+  // Save theme preference
+  const handleThemeChange = () => {
+    const newTheme = !isDarkTheme;
+    setIsDarkTheme(newTheme);
+    localStorage.setItem('ide-theme', newTheme ? 'dark' : 'light');
+  };
 
   return (
     <div className="problem-card-container">
@@ -183,6 +194,25 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
               </div>
               <span className="ml-2 text-sm text-gray-600">{isAutocompleteEnabled ? "On" : "Off"}</span>
             </div>
+            <div className="theme-toggle flex items-center ml-3">
+              <span className="text-sm text-gray-600 mr-2">Theme</span>
+              <div className="relative inline-block w-10 align-middle select-none">
+                <input
+                  type="checkbox"
+                  id="theme-toggle"
+                  checked={isDarkTheme}
+                  onChange={handleThemeChange}
+                  className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                />
+                <label
+                  htmlFor="theme-toggle"
+                  className={`toggle-label block overflow-hidden h-5 rounded-full cursor-pointer ${isDarkTheme ? "bg-blue-500" : "bg-gray-300"}`}
+                ></label>
+              </div>
+              <span className="ml-2 text-sm text-gray-600">
+                {isDarkTheme ? "Dark" : "Light"}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -192,6 +222,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
             language={selectedLanguage}
             value={code}
             onChange={handleCodeChange}
+            theme={isDarkTheme ? "vs-dark" : "light"}
             options={{
               minimap: { enabled: false },
               fontSize: 14,
@@ -199,6 +230,10 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
               automaticLayout: true,
               wordWrap: "on",
               suggestOnTriggerCharacters: isAutocompleteEnabled,
+              lineNumbers: "on",
+              roundedSelection: true,
+              selectOnLineNumbers: true,
+              quickSuggestions: isAutocompleteEnabled,
             }}
           />
         </div>
