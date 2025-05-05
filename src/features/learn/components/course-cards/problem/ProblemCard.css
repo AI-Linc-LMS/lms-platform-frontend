@@ -47,6 +47,19 @@
   min-height: 300px;
   background-color: white;
   margin-bottom: 1rem;
+  transition: all 0.2s ease;
+}
+
+/* Light theme styles */
+.editor-container {
+  border-color: #e5e7eb;
+  background-color: #ffffff;
+}
+
+/* Dark theme styles */
+.dark .editor-container {
+  border-color: #374151;
+  background-color: #1f2937;
 }
 
 .code-actions {
@@ -97,17 +110,18 @@
 /* Toggle Switch Styles */
 .toggle-checkbox {
   right: 0;
-  z-index: 5;
+  z-index: 1;
   transition: all 0.3s;
 }
 
 .toggle-checkbox:checked {
-  right: 5px;
+  right: 20px;
+  border-color: #3b82f6;
 }
 
 .toggle-label {
   width: 40px;
-  transition: all 0.3s;
+  transition: background-color 0.3s;
 }
 
 .toggle-label:before {
@@ -169,5 +183,17 @@
     border-right: none;
     border-bottom: 1px solid #e5e7eb;
     max-height: 350px;
+  }
+}
+
+/* Theme toggle button hover effects */
+.theme-toggle input[type="checkbox"]:hover + label {
+  opacity: 0.8;
+}
+
+/* Responsive styles */
+@media (max-width: 640px) {
+  .theme-toggle {
+    margin-top: 0.5rem;
   }
 } 
