@@ -236,7 +236,3 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
 };
 
 export default CollapsibleCourseModule;
-
-function navigateToTopicDetail(id: any, id1: any): void {
-  throw new Error("Function not implemented.");
-}

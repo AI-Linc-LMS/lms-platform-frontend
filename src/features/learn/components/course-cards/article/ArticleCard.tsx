@@ -2,9 +2,6 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getCourseContent } from '../../../../../services/courses-content/courseContentApis';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import FloatingAIButton from "../../floating-ai-button/FloatingAIButton";
 
 interface ArticleCardProps {
@@ -29,14 +26,6 @@ interface ArticleData {
   details: ArticleDetails;
 }
 
-interface CodeProps {
-  node?: any;
-  inline?: boolean;
-  className?: string;
-  children?: React.ReactNode;
-  [key: string]: any;
-}
-
 const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkComplete }) => {
   const [isCompleted, setIsCompleted] = useState(false);
 
@@ -45,6 +34,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
     queryFn: () => getCourseContent(1, courseId, contentId),
   });
 
+  console.log('Article Data:', articleData);
   const handleMarkComplete = () => {
     setIsCompleted(true);
     onMarkComplete();
