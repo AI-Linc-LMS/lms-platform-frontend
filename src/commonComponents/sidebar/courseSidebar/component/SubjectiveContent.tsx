@@ -1,60 +1,76 @@
-import React from "react";
+import subjectiveicon from "../../../../assets/course_sidebar_assets/subjective/subjectiveicon.png";
+import tickIcon from "../../../../assets/course_sidebar_assets/tickIcon.png";
+import completeTickIcon from "../../../../assets/course_sidebar_assets/completeTickIcon.png";
 
-interface SubjectiveAssignment {
+export interface AssignmentItem {
   id: number;
   title: string;
-  difficulty: string;
-  completion: number;
+  content_type: string;
+  duration_in_minutes: number;
+  order: number;
+  status: string;
 }
 
 interface SubjectiveContentProps {
-  assignment: SubjectiveAssignment;
+  assignments: AssignmentItem[];
+  onAssignmentClick?: (id: number) => void;
+  selectedAssignmentId: number;
 }
 
-const SubjectiveContent: React.FC<SubjectiveContentProps> = ({ assignment }) => {
+const SubjectiveContent = ({
+  assignments,
+  onAssignmentClick,
+  selectedAssignmentId,
+}: SubjectiveContentProps) => {
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-medium">Subjective Assignment</h2>
-        <div className="text-sm bg-gray-100 px-3 py-1 rounded-full">
-          {assignment.completion}% completion
-        </div>
-      </div>
+    <div>
+      <h2 className="text-lg font-semibold text-gray-800">
+        Assignments ({assignments.length})
+      </h2>
+      <p className="text-[15px] text-gray-500 mb-4">
+        Complete these assignments to test your understanding and earn marks.
+      </p>
 
-      <div className="bg-white border rounded-lg p-4 hover:shadow-md transition cursor-pointer mb-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="font-medium text-base mb-2">{assignment.title}</h3>
-            <div className="flex items-center gap-2 mt-2">
-              <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">
-                {assignment.difficulty}
-              </span>
-            </div>
-          </div>
-          <div className="flex flex-col items-end">
-            <div className="w-8 h-8 rounded-full bg-[#D9F5FC] flex items-center justify-center text-sm">
-              {assignment.id}
-            </div>
-          </div>
-        </div>
-      </div>
+      <div className="flex flex-col border border-gray-300 rounded-lg overflow-hidden">
+        {assignments.map((item, idx) => {
+          const isSelected = selectedAssignmentId === item.id;
+          const isLastItem = idx === assignments.length - 1;
 
-      <div className="mt-6">
-        <p className="text-sm text-gray-600 mb-2">
-          This assignment requires you to compare and analyze the specifications of electric and IC engine supercars.
-        </p>
-        <ul className="list-disc text-sm text-gray-600 pl-5 space-y-1">
-          <li>Compare performance metrics</li>
-          <li>Analyze cost differences</li>
-          <li>Evaluate environmental impact</li>
-          <li>Examine maintenance requirements</li>
-          <li>Assess comfort and convenience features</li>
-        </ul>
+          return (
+            <div
+              key={item.id}
+              onClick={() => onAssignmentClick?.(item.id)}
+              className={`cursor-pointer p-4 flex justify-between items-start transition ${
+                isSelected ? "bg-blue-50 border-blue-300" : "hover:shadow"
+              } ${!isLastItem ? "border-b border-gray-300" : ""}`}
+            >
+              <div className="flex items-start gap-3 flex-1">
+                <img src={subjectiveicon} alt="icon" className="w-5 h-5 mt-1" />
+                <div className="flex-1">
+                  <h3
+                    className={`text-sm font-medium ${
+                      isSelected ? "text-[#007B9F]" : "text-gray-800"
+                    } mb-1`}
+                  >
+                    {item.title}
+                  </h3>
+                  <div className="text-xs text-gray-500 space-y-1">
+                    <p>Duration: {item.duration_in_minutes} minutes</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="w-5 h-5 ml-4">
+                <img
+                  src={item.status === "complete" ? completeTickIcon : tickIcon}
+                  alt={item.status === "complete" ? "Completed" : "Incomplete"}
+                  className="w-full h-full"
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
-      
-      <button className="w-full bg-[#255C79] text-white rounded-lg py-2 mt-6">
-        Start Assignment
-      </button>
     </div>
   );
 };

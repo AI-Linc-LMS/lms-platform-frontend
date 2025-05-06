@@ -5,53 +5,41 @@ import quizIcon from "../../../../assets/course_sidebar_assets/quiz/defaultQuizI
 import tickIcon from "../../../../assets/course_sidebar_assets/tickIcon.png";
 import completeTickIcon from "../../../../assets/course_sidebar_assets/completeTickIcon.png";
 
-type ContentType = "article" | "video" | "problem" | "quiz";
+export type ContentType = "Article" | "VideoTutorial" | "CodingProblem" | "Quiz" | "Assignment";
 
 export interface ContentItem {
+  id: number;
   title: string;
-  marks: number;
-  duration?: string;
-  idealTime?: string;
-  questions?: number;
-  difficulty?: number;
-  type: ContentType;
-  completed?: boolean;
+  content_type: ContentType;
+  order: number;
+  duration_in_minutes: number;
+  status?: string;
 }
 
 interface AllContentProps {
   contents: ContentItem[];
+  onContentClick: (contentId: number, contentType: ContentType) => void;
+  selectedContentId?: number;
 }
 
-const AllContent = ({ contents }: AllContentProps) => {
-  const getIconByType = (type: string) => {
+const AllContent = ({ contents, onContentClick, selectedContentId }: AllContentProps) => {
+  const sortedContents = [...contents].sort((a, b) => a.order - b.order);
+
+  const getIconByType = (type: ContentType) => {
     switch (type) {
-      case "article":
+      case "Article":
         return articleIcon;
-      case "video":
+      case "VideoTutorial":
         return videosIcon;
-      case "problem":
+      case "CodingProblem":
         return problemIcon;
-      case "quiz":
+      case "Quiz":
         return quizIcon;
+      case "Assignment":
+        return articleIcon; 
       default:
         return articleIcon;
     }
-  };
-
-  const renderDifficulty = (level: number = 0) => {
-    return (
-      <div className="flex gap-1 items-center">
-        <span className="text-sm text-gray-500">Difficulty:</span>
-        {[...Array(5)].map((_, i) => (
-          <span
-            key={i}
-            className={`w-2.5 h-2.5 rounded-full ${
-              i < level ? "bg-[#00AEEF]" : "bg-[#E0F3FB]"
-            }`}
-          />
-        ))}
-      </div>
-    );
   };
 
   return (
@@ -64,15 +52,18 @@ const AllContent = ({ contents }: AllContentProps) => {
       </p>
 
       <div className="flex flex-col gap-2">
-        {contents.map((item, idx) => (
+        {sortedContents.map((item) => (
           <div
-            key={idx}
-            className="border border-gray-300 rounded-lg p-2 flex justify-between items-center hover:shadow transition"
+            key={item.id}
+            onClick={() => onContentClick(item.id, item.content_type)}
+            className={`border border-gray-300 rounded-lg p-2 flex justify-between items-center hover:shadow transition cursor-pointer ${
+              selectedContentId === item.id ? 'border-[#255C79] bg-blue-50' : ''
+            }`}
           >
             <div className="flex items-start gap-3">
               <img
-                src={getIconByType(item.type)}
-                alt={item.type}
+                src={getIconByType(item.content_type)}
+                alt={item.content_type}
                 className="w-6 h-6 mt-1"
               />
               <div>
@@ -80,43 +71,17 @@ const AllContent = ({ contents }: AllContentProps) => {
                   {item.title}
                 </h3>
                 <div className="text-xs text-gray-500 flex flex-wrap gap-2 items-center">
-                  <span>{item.marks} Marks</span>
-
-                  {item.duration && (
-                    <>
-                      <span>|</span>
-                      <span>Duration: {item.duration}</span>
-                    </>
-                  )}
-
-                  {item.idealTime && (
-                    <>
-                      <span>|</span>
-                      <span>Ideal time - {item.idealTime}</span>
-                    </>
-                  )}
-
-                  {item.questions && (
-                    <>
-                      <span>|</span>
-                      <span>{item.questions} Questions</span>
-                    </>
-                  )}
-
-                  {typeof item.difficulty === "number" && (
-                    <>
-                      <span>|</span>
-                      {renderDifficulty(item.difficulty)}
-                    </>
-                  )}
+                  <span>⏱ {item.duration_in_minutes} min</span>
+                  <span>|</span>
+                  <span>{item.content_type}</span>
                 </div>
               </div>
             </div>
 
             <div className="w-5 h-5">
               <img
-                src={item.completed ? completeTickIcon : tickIcon}
-                alt={item.completed ? "Completed" : "Pending"}
+                src={item.status === "complete" ? completeTickIcon : tickIcon}
+                alt={item.status === "complete" ? "Completed" : "Pending"}
                 className="w-full h-full"
               />
             </div>

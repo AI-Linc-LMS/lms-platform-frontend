@@ -4,13 +4,17 @@ import { getCourseContent } from '../../../../../services/courses-content/course
 
 interface AssignmentData {
   id: number;
-  title: string;
   content_title: string;
   content_type: string;
-  question: string;
-  difficulty_level: string;
   duration_in_minutes: number;
   order: number;
+  status?: string;
+  details: {
+    id: number;
+    title: string;
+    question: string;
+    difficulty_level: string;
+  };
 }
 
 interface SubjectiveCardProps {
@@ -50,6 +54,7 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
     enabled: !!contentId && !!courseId,
   });
 
+  console.log('Assignment Data:', data);
   // Check if content is empty to show/hide placeholder
   useEffect(() => {
     if (editorRef.current) {
@@ -152,11 +157,11 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
         <div className="flex items-center gap-4 mt-4">
           <div className="inline-flex items-center px-3 py-1 rounded-full bg-gray-100">
             <span className={`material-icons text-sm mr-1 ${
-              data.difficulty_level === 'Easy' ? 'text-green-800' :
-              data.difficulty_level === 'Medium' ? 'text-yellow-800' :
+              data.details.difficulty_level === 'Easy' ? 'text-green-800' :
+              data.details.difficulty_level === 'Medium' ? 'text-yellow-800' :
               'text-red-800'
             }`}>bolt</span>
-            <span className="text-sm">{data.difficulty_level}</span>
+            <span className="text-sm">{data.details.difficulty_level}</span>
           </div>
 
           <div className="inline-flex items-center px-3 py-1 rounded-full bg-gray-100">
@@ -166,11 +171,13 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
         </div>
 
         <div className="mt-6">
-          <h2 className="text-lg font-medium">Overview</h2>
-          <div dangerouslySetInnerHTML={{ __html: data.question }} />
+          <h2 className="text-lg font-medium">Question</h2>
+          <div className="mt-2 text-gray-700">
+            {data.details.question}
+          </div>
         </div>
 
-        <div className="mt-6">
+        {/* <div className="mt-6">
           <h2 className="text-lg font-medium mb-4">Selection of Vehicle Models:</h2>
           <ol className="list-decimal pl-6 space-y-2">
             <li>Choose one electric supercar and one IC engine supercar (or road-legal production cars). Specific models should be selected, not a general comparison.</li>
@@ -209,11 +216,11 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
         <div className="mt-6">
           <h2 className="text-lg font-medium mb-4">Conclusion:</h2>
           <p>Provide a subjective but logical conclusion summarizing the advantages and disadvantages of each vehicle.</p>
-        </div>
+        </div> */}
 
         {/* Text Box */}
         <div className="mt-8">
-          <h2 className="text-xl font-medium">Text Box</h2>
+          <h2 className="text-xl font-medium">Your Answer</h2>
           <div className="border rounded-lg overflow-hidden mt-3">
             <div className="bg-[#D7EFF6] px-4 py-2 border-b flex items-center justify-between">
               <div className="flex items-center relative" ref={fontSizeDropdownRef}>

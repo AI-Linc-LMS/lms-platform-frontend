@@ -1,19 +1,4 @@
-export interface QuizQuestion {
-  id: number;
-  question: string;
-  options: string[];
-  correctAnswer: number;
-  explanation: string;
-  marks: number;
-}
 
-export interface Quiz {
-  id: number;
-  title: string;
-  marks: number;
-  submissions: number;
-  questions: QuizQuestion[];
-}
 
 export const quizData: Quiz[] = [
   {
