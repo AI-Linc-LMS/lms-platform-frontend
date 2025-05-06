@@ -27,13 +27,13 @@ const Login: React.FC = () => {
   }, [isAuthenticated, navigate]);
 
   return (
-    <div className="flex min-h-screen bg-[#F8F9FA]">
+    <div className="flex h-screen bg-[#F8F9FA]">
       {/* Left Section - Background Image */}
-      <div className="hidden md:block md:w-1/2 bg-gradient-to-r from-[#D7EFF6] to-[#E9F7FC]">
+      <div className="hidden md:block md:w-1/2 h-full bg-gradient-to-r from-[#D7EFF6] to-[#E9F7FC]">
         <img 
           src={logimg} 
           alt="Office workspace" 
-          className="h-full w-full object-cover opacity-70"
+          className="w-full h-full object-cover"
         />
       </div>
 
