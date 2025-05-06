@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { useAppSelector } from '../../../redux/store';
 import GoogleLoginButton from '../../../commonComponents/common-buttons/google-login-button/GoogleLoginButton';
+import logimg from "../../../assets/login-placeholder/login-picture.png";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -30,7 +31,7 @@ const Login: React.FC = () => {
       {/* Left Section - Background Image */}
       <div className="hidden md:block md:w-1/2 bg-gradient-to-r from-[#D7EFF6] to-[#E9F7FC]">
         <img 
-          src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=1170" 
+          src={logimg} 
           alt="Office workspace" 
           className="h-full w-full object-cover opacity-70"
         />
