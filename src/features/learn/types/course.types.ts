@@ -49,5 +49,5 @@ export interface Course {
   instructors: Instructor[];
   is_certified: boolean;
   modules: Module[];
-  last_updated?: string;
+  updated_at?: string;
 } 
