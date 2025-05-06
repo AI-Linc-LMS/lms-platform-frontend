@@ -57,7 +57,7 @@ const CourseContent: React.FC<CourseContentProps> = ({ courseId }) => {
 
       {/* Avatars */}
       <div className="flex -space-x-2 mr-3 my-3 md:my-4 overflow-x-auto">
-        
+
         {course.instructors.map((instructor: Instructor, index: number) => (
           <div
             key={instructor.id}
