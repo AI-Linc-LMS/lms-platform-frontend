@@ -1,7 +1,7 @@
 import sunIcon from '../commonComponents/icons/nav/sunIcon.png'; 
 import bellIcon from '../commonComponents/icons/nav/BellIcon.png';
 import userImg from '../commonComponents/icons/nav/User Image.png'; 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
@@ -12,32 +12,42 @@ interface UserState {
 
 const TopNav: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector((state: { user: UserState }) => state.user);
   const profilePicture = user.profile_picture;
   
   const toggleDropdown = () => {
-    setShowDropdown(!showDropdown);
+    setShowDropdown((prev) => !prev);
   };
 
   const handleLogout = () => {
-    // Clear token from localStorage
     localStorage.removeItem('token');
-    
-    // Dispatch logout action to reset the auth state
     dispatch(logout());
-    
-    // Navigate to login page
     navigate('/login');
-    
-    // Close dropdown
     setShowDropdown(false);
   };
 
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="w-full flex justify-between md:justify-end items-center px-4 pt-4">
-      {/* Logo - Only visible on mobile */}
       <div className="md:hidden">
         <div className="w-12 h-12 bg-[#1A5A7A] text-white rounded-full flex items-center justify-center">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -46,7 +56,6 @@ const TopNav: React.FC = () => {
         </div>
       </div>
 
-      {/* Right Side - Spinner, Bell, Avatar */}
       <div className="flex items-center gap-5">
         <div className="bg-gray-100 p-2 rounded-md">
           <img src={sunIcon} alt="Loading" className="w-7 h-7" />
@@ -54,7 +63,7 @@ const TopNav: React.FC = () => {
         <div className="bg-gray-100 p-2 rounded-md">
           <img src={bellIcon} alt="Notifications" className="w-7 h-7" />
         </div>
-        <div className="relative">
+        <div className="relative" ref={dropdownRef}>
           <img
             src={profilePicture || userImg}
             alt="User Avatar"

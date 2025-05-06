@@ -16,7 +16,9 @@ const CourseStatistics: React.FC<CourseStatisticsProps> = ({ course }) => {
           <RefreshIcon />
         </div>
         <div>
-          <p className="text-xs md:text-[13px]">Last updated on: {course.last_updated || "N/A"}</p>
+          <p className="text-xs md:text-[13px]">
+            Last updated on: {course.updated_at ? new Date(course.updated_at).toLocaleDateString() : "N/A"}
+          </p>
         </div>
       </div>
       <div className="w-full md:w-[240px] h-[45px] rounded-xl border border-[#DEE2E6] flex flex-row items-center justify-center gap-2 p-3">
