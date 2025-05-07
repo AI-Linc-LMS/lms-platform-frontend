@@ -27,8 +27,8 @@ interface ArticleData {
   duration_in_minutes: number;
   order: number;
   details: ArticleDetails;
-  marks?: number; 
-  status: string; 
+  marks?: number;
+  status: string;
 }
 
 const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkComplete }) => {
@@ -38,23 +38,39 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
     queryKey: ['article', contentId],
     queryFn: () => getCourseContent(1, courseId, contentId),
   });
-  console.log("articleData", articleData);
 
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
   useEffect(() => {
     if (articleData && typeof articleData.status === 'string') {
       setIsCompleted(articleData.status === 'complete');
     }
+
+    if (articleData?.duration_in_minutes) {
+      setTimeLeft(articleData.duration_in_minutes * 60); // Convert minutes to seconds
+    }
   }, [articleData]);
 
-  console.log("isCompleted", isCompleted);
+  useEffect(() => {
+    if (timeLeft === null || timeLeft <= 0) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((prevTime) => (prevTime !== null ? prevTime - 1 : null));
+    }, 1000);
+
+    return () => clearInterval(timer); // Cleanup on unmount
+  }, [timeLeft]);
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
   const handleMarkComplete = async () => {
     try {
-      console.log("mark complete");
-      const res = await submitContent(1, courseId, contentId, 'Article', {});
-      
-      console.log("res", res);
+      await submitContent(1, courseId, contentId, 'Article', {});
       setIsCompleted(!isCompleted);
       onMarkComplete();
       navigate(0);
@@ -90,7 +106,6 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
     return <div className="flex justify-center items-center h-64">Article not found</div>;
   }
 
-  // Use marks from details or articleData, fallback to 0
   const marks = articleData.details.marks ?? articleData.marks ?? 0;
 
   return (
@@ -101,7 +116,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
             {articleData.content_title}
           </h1>
           <div className="flex items-center gap-4 text-sm text-gray-500">
-            <span>⏱ {articleData.duration_in_minutes} min</span>
+            <span>⏱ {timeLeft !== null ? formatTime(timeLeft) : '0:00'}</span>
             <span>•</span>
             <span>📚 {articleData.details.difficulty_level}</span>
           </div>
