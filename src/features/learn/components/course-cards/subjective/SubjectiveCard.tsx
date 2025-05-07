@@ -57,7 +57,6 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
     enabled: !!contentId && !!courseId,
   });
 
-  console.log('Assignment Data:', data);
   // Check if content is empty to show/hide placeholder
   useEffect(() => {
     if (editorRef.current) {
@@ -91,9 +90,25 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
 
   // Execute formatting command on the editor content
   const execCommand = (command: string, value: string = "") => {
-    document.execCommand(command, false, value);
     if (editorRef.current) {
+      // Save selection
+      const selection = window.getSelection();
+      const range = selection?.getRangeAt(0);
+      
+      // Focus on editor
       editorRef.current.focus();
+      
+      // Restore selection if it exists
+      if (selection && range) {
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+      
+      // Execute command
+      document.execCommand(command, false, value);
+      
+      // Update answer state with new content
+      setAnswer(editorRef.current.innerHTML);
       setShowPlaceholder(false);
     }
   };
@@ -112,6 +127,32 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
   const handleFontSizeChange = (size: number) => {
     setFontSize(size);
     execCommand("fontSize", (size / 4).toString());
+  };
+
+  // Add a function to focus the editor
+  const focusEditor = () => {
+    if (editorRef.current) {
+      editorRef.current.focus();
+      
+      // Set cursor at the end
+      const range = document.createRange();
+      const selection = window.getSelection();
+      if (selection) {
+        if (editorRef.current.childNodes.length > 0) {
+          const lastNode = editorRef.current.lastChild;
+          if (lastNode) {
+            range.setStartAfter(lastNode);
+          } else {
+            range.setStart(editorRef.current, 0);
+          }
+        } else {
+          range.setStart(editorRef.current, 0);
+        }
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
   };
 
   if (isLoading) {
@@ -143,8 +184,6 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
     );
   }
 
-  console.log('Assignment Data:', data);
-  console.log("answer", answer);
   const handleSubmit = async () => {
     // Handle submission logic here
     const response = await submitContent(1, courseId, contentId, "Assignment", { answer });
@@ -155,6 +194,17 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
     } else {
       console.log("error", response);
     }
+  };
+
+  // Handle input in the contentEditable div
+  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
+    const content = e.currentTarget.innerHTML;
+    setAnswer(content);
+    const isEmpty = content.trim() === '' || 
+      content === '<br>' || 
+      content === '<div></div>' || 
+      content === '<p></p>';
+    setShowPlaceholder(isEmpty);
   };
 
   return (
@@ -185,7 +235,6 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
             {data.details.question}
           </div>
         </div>
-
 
         {/* Text Box */}
         <div className="mt-8">
@@ -306,31 +355,25 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
                 ref={editorRef}
                 className="w-full p-4 min-h-[300px] focus:outline-none text-gray-700 overflow-auto"
                 contentEditable
-                onInput={(e) => {
-                  setAnswer(e.currentTarget.innerHTML);
-                  setShowPlaceholder(e.currentTarget.innerHTML.trim() === '' ||
-                    e.currentTarget.innerHTML === '<br>' ||
-                    e.currentTarget.innerHTML === '<div></div>' ||
-                    e.currentTarget.innerHTML === '<p></p>');
-                }}
-                onFocus={() => {
-                  if (showPlaceholder) {
-                    setShowPlaceholder(false);
-                  }
-                }}
+                onInput={handleInput}
+                onFocus={() => setShowPlaceholder(false)}
                 onBlur={() => {
-                  if (editorRef.current?.innerHTML.trim() === '' ||
-                    editorRef.current?.innerHTML === '<br>' ||
-                    editorRef.current?.innerHTML === '<div></div>' ||
-                    editorRef.current?.innerHTML === '<p></p>') {
-                    setShowPlaceholder(true);
-                  }
+                  const content = editorRef.current?.innerHTML || '';
+                  const isEmpty = content.trim() === '' || 
+                    content === '<br>' || 
+                    content === '<div></div>' || 
+                    content === '<p></p>';
+                  setShowPlaceholder(isEmpty);
                 }}
+                style={{ direction: "ltr" }}
                 suppressContentEditableWarning={true}
-                dangerouslySetInnerHTML={{ __html: answer }}
-              />
+                onClick={focusEditor}
+              ></div>
               {showPlaceholder && (
-                <div className="absolute top-4 left-4 text-gray-400 pointer-events-none">
+                <div 
+                  className="absolute top-4 left-4 text-gray-400 cursor-text"
+                  onClick={focusEditor}
+                >
                   Type your answers here...
                 </div>
               )}
