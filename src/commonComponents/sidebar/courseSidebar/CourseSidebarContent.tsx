@@ -147,6 +147,11 @@ const CourseSidebarContent = ({
           subjectiveProps.onAssignmentClick(contentId);
         }
         break;
+      case "Development":
+        if (developmentProps?.onProjectSelect) {
+          developmentProps.onProjectSelect(contentId.toString());
+        }
+        break;
     }
   };
 

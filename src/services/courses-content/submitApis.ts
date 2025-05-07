@@ -23,7 +23,7 @@ export const submitContent = async (
     const res = await axiosInstance.post(url, data);
     
     console.log("submit content",res);
-    return res.data;
+    return res.status;
   } catch (error: any) {
     console.error("Failed to submit content:", error);
     throw new Error(

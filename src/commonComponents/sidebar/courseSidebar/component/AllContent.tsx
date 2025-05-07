@@ -5,7 +5,7 @@ import quizIcon from "../../../../assets/course_sidebar_assets/quiz/defaultQuizI
 import tickIcon from "../../../../assets/course_sidebar_assets/tickIcon.png";
 import completeTickIcon from "../../../../assets/course_sidebar_assets/completeTickIcon.png";
 
-export type ContentType = "Article" | "VideoTutorial" | "CodingProblem" | "Quiz" | "Assignment";
+export type ContentType = "Article" | "VideoTutorial" | "CodingProblem" | "Quiz" | "Assignment" | "Development";
 
 export interface ContentItem {
   id: number;
