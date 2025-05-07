@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {getSubmoduleById } from "../../../services/courses-content/courseContentApis";
 import DashboardContent from "./component/DashboardContent";
-import AllContent, { ContentType, ContentItem } from "./component/AllContent";
+import AllContent, { ContentType} from "./component/AllContent";
 import ArticleContent, { ArticleItem } from "./component/ArticleContent";
 import VideoContent from "./component/VideoContent";
 import ProblemContent from "./component/ProblemContent";
@@ -69,12 +69,6 @@ function getOverallProgress(data: Array<{ status?: string }>): number {
   return total ? Math.round((completed / total) * 100) : 0;
 }
 
-// Dummy content for when real data isn't available
-const dummyContent: ContentItem[] = [
-  { id: 1, title: "Introduction", content_type: "Article" as ContentType, order: 1, duration_in_minutes: 5, status: "completed" },
-  { id: 2, title: "Getting Started", content_type: "VideoTutorial" as ContentType, order: 2, duration_in_minutes: 10, status: "completed" },
-  { id: 3, title: "Basic Concepts", content_type: "Quiz" as ContentType, order: 3, duration_in_minutes: 15, status: "non-complete" },
-];
 
 interface VideoProps {
   selectedVideoId: string | null;
@@ -133,12 +127,6 @@ interface CourseSidebarContentProps {
   onContentSelect: (contentId: number, contentType: ContentType) => void;
 }
 
-// Define the missing getCourseContent function
-const getCourseContent = (clientId: number, courseId: number, contentId: number) => {
-  // Implementation would be added here based on your API requirements
-  console.log("Getting course content for", clientId, courseId, contentId);
-  // This is just a placeholder - implement the actual API call as needed
-};
 
 const CourseSidebarContent = ({
   activeLabel,
@@ -163,49 +151,6 @@ const CourseSidebarContent = ({
     enabled: !!submoduleId && !!courseId,
   });
 
-  const handleVideoClick = (id: string) => {
-    videoProps.onVideoClick(id);
-    if (courseId) {
-      getCourseContent(1, courseId, parseInt(id));
-    }
-    if (isMobile) {
-      onClose();
-    }
-  };
-
-  const handleProblemSelect = (id: string) => {
-    if (problemProps && problemProps.onProblemSelect) {
-      problemProps.onProblemSelect(id);
-      if (isMobile) {
-        onClose();
-      }
-    } else if (courseId) {
-      getCourseContent(1, courseId, parseInt(id));
-    }
-  };
-
-  const handleProjectSelect = (id: string) => {
-    if (developmentProps && developmentProps.onProjectSelect) {
-      developmentProps.onProjectSelect(id);
-      if (isMobile) {
-        onClose();
-      }
-    }
-  };
-
-  const handleQuizSelect = (id: number) => {
-    quizProps.onSelectQuiz(id);
-    if (isMobile) {
-      onClose();
-    }
-  };
-
-  const handleArticleClick = (id: number) => {
-    articleProps.onArticleClick(id);
-    if (isMobile) {
-      onClose();
-    }
-  };
 
   console.log("submoduleData", submoduleData);
 
