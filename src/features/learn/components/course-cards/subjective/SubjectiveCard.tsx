@@ -1,16 +1,22 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useQuery } from '@tanstack/react-query';
 import { getCourseContent } from '../../../../../services/courses-content/courseContentApis';
+import { submitContent } from "../../../../../services/courses-content/submitApis";
+import { useNavigate } from "react-router-dom";
 
 interface AssignmentData {
   id: number;
-  title: string;
   content_title: string;
   content_type: string;
-  question: string;
-  difficulty_level: string;
   duration_in_minutes: number;
   order: number;
+  status?: string;
+  details: {
+    id: number;
+    title: string;
+    question: string;
+    difficulty_level: string;
+  };
 }
 
 interface SubjectiveCardProps {
@@ -19,6 +25,7 @@ interface SubjectiveCardProps {
 }
 
 const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) => {
+  const navigate = useNavigate();
   const [answer, setAnswer] = useState<string>("");
   const [fontSize, setFontSize] = useState<number>(14);
   const editorRef = useRef<HTMLDivElement>(null);
@@ -83,9 +90,25 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
 
   // Execute formatting command on the editor content
   const execCommand = (command: string, value: string = "") => {
-    document.execCommand(command, false, value);
     if (editorRef.current) {
+      // Save selection
+      const selection = window.getSelection();
+      const range = selection?.getRangeAt(0);
+      
+      // Focus on editor
       editorRef.current.focus();
+      
+      // Restore selection if it exists
+      if (selection && range) {
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+      
+      // Execute command
+      document.execCommand(command, false, value);
+      
+      // Update answer state with new content
+      setAnswer(editorRef.current.innerHTML);
       setShowPlaceholder(false);
     }
   };
@@ -104,6 +127,32 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
   const handleFontSizeChange = (size: number) => {
     setFontSize(size);
     execCommand("fontSize", (size / 4).toString());
+  };
+
+  // Add a function to focus the editor
+  const focusEditor = () => {
+    if (editorRef.current) {
+      editorRef.current.focus();
+      
+      // Set cursor at the end
+      const range = document.createRange();
+      const selection = window.getSelection();
+      if (selection) {
+        if (editorRef.current.childNodes.length > 0) {
+          const lastNode = editorRef.current.lastChild;
+          if (lastNode) {
+            range.setStartAfter(lastNode);
+          } else {
+            range.setStart(editorRef.current, 0);
+          }
+        } else {
+          range.setStart(editorRef.current, 0);
+        }
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
   };
 
   if (isLoading) {
@@ -135,11 +184,27 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
     );
   }
 
-  console.log('Assignment Data:', data);
-
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Handle submission logic here
-    console.log('Submitted answer:', answer);
+    const response = await submitContent(1, courseId, contentId, "Assignment", { answer });
+    console.log("response", response);
+    if (response === 201) {
+      console.log('Submitted answer:', answer);
+      navigate(0);
+    } else {
+      console.log("error", response);
+    }
+  };
+
+  // Handle input in the contentEditable div
+  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
+    const content = e.currentTarget.innerHTML;
+    setAnswer(content);
+    const isEmpty = content.trim() === '' || 
+      content === '<br>' || 
+      content === '<div></div>' || 
+      content === '<p></p>';
+    setShowPlaceholder(isEmpty);
   };
 
   return (
@@ -151,12 +216,11 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
 
         <div className="flex items-center gap-4 mt-4">
           <div className="inline-flex items-center px-3 py-1 rounded-full bg-gray-100">
-            <span className={`material-icons text-sm mr-1 ${
-              data.difficulty_level === 'Easy' ? 'text-green-800' :
-              data.difficulty_level === 'Medium' ? 'text-yellow-800' :
-              'text-red-800'
-            }`}>bolt</span>
-            <span className="text-sm">{data.difficulty_level}</span>
+            <span className={`material-icons text-sm mr-1 ${data.details.difficulty_level === 'Easy' ? 'text-green-800' :
+                data.details.difficulty_level === 'Medium' ? 'text-yellow-800' :
+                  'text-red-800'
+              }`}>bolt</span>
+            <span className="text-sm">{data.details.difficulty_level}</span>
           </div>
 
           <div className="inline-flex items-center px-3 py-1 rounded-full bg-gray-100">
@@ -166,54 +230,15 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
         </div>
 
         <div className="mt-6">
-          <h2 className="text-lg font-medium">Overview</h2>
-          <div dangerouslySetInnerHTML={{ __html: data.question }} />
-        </div>
-
-        <div className="mt-6">
-          <h2 className="text-lg font-medium mb-4">Selection of Vehicle Models:</h2>
-          <ol className="list-decimal pl-6 space-y-2">
-            <li>Choose one electric supercar and one IC engine supercar (or road-legal production cars). Specific models should be selected, not a general comparison.</li>
-          </ol>
-        </div>
-
-        <div className="mt-6">
-          <h2 className="text-lg font-medium mb-4">Parameter-Based Comparison:</h2>
-          <ol className="list-decimal pl-6 space-y-2">
-            <li>
-              <strong>Performance:</strong> Compare motor power, battery capacity, top speed, acceleration time, range, mileage, and power-to-weight ratio with numbers.
-            </li>
-            <li>
-              <strong>Cost:</strong> Compare buying price and running cost (mileage) in the same currency.
-            </li>
-            <li>
-              <strong>Environmental Impact:</strong> Evaluate emissions.
-            </li>
-            <li>
-              <strong>Maintenance and Repairs:</strong> Compare annual maintenance and repair costs with estimated values.
-            </li>
-            <li>
-              <strong>Comfort and Convenience:</strong> Compare interior design, special features, and technology.
-            </li>
-            <li>
-              <strong>Driving Experience:</strong> Analyze transmission type, sound, feel, and handling.
-            </li>
-          </ol>
-        </div>
-
-        <div className="mt-6">
-          <h2 className="text-lg font-medium mb-4">Tabular Comparison and Presentation:</h2>
-          <p>Use tables for numerical comparisons and include relevant images of both vehicles.</p>
-        </div>
-
-        <div className="mt-6">
-          <h2 className="text-lg font-medium mb-4">Conclusion:</h2>
-          <p>Provide a subjective but logical conclusion summarizing the advantages and disadvantages of each vehicle.</p>
+          <h2 className="text-lg font-medium">Question</h2>
+          <div className="mt-2 text-gray-700">
+            {data.details.question}
+          </div>
         </div>
 
         {/* Text Box */}
         <div className="mt-8">
-          <h2 className="text-xl font-medium">Text Box</h2>
+          <h2 className="text-xl font-medium">Your Answer</h2>
           <div className="border rounded-lg overflow-hidden mt-3">
             <div className="bg-[#D7EFF6] px-4 py-2 border-b flex items-center justify-between">
               <div className="flex items-center relative" ref={fontSizeDropdownRef}>
@@ -330,31 +355,25 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
                 ref={editorRef}
                 className="w-full p-4 min-h-[300px] focus:outline-none text-gray-700 overflow-auto"
                 contentEditable
-                onInput={(e) => {
-                  setAnswer(e.currentTarget.innerHTML);
-                  setShowPlaceholder(e.currentTarget.innerHTML.trim() === '' ||
-                    e.currentTarget.innerHTML === '<br>' ||
-                    e.currentTarget.innerHTML === '<div></div>' ||
-                    e.currentTarget.innerHTML === '<p></p>');
-                }}
-                onFocus={() => {
-                  if (showPlaceholder) {
-                    setShowPlaceholder(false);
-                  }
-                }}
+                onInput={handleInput}
+                onFocus={() => setShowPlaceholder(false)}
                 onBlur={() => {
-                  if (editorRef.current?.innerHTML.trim() === '' ||
-                    editorRef.current?.innerHTML === '<br>' ||
-                    editorRef.current?.innerHTML === '<div></div>' ||
-                    editorRef.current?.innerHTML === '<p></p>') {
-                    setShowPlaceholder(true);
-                  }
+                  const content = editorRef.current?.innerHTML || '';
+                  const isEmpty = content.trim() === '' || 
+                    content === '<br>' || 
+                    content === '<div></div>' || 
+                    content === '<p></p>';
+                  setShowPlaceholder(isEmpty);
                 }}
+                style={{ direction: "ltr" }}
                 suppressContentEditableWarning={true}
-                dangerouslySetInnerHTML={{ __html: answer }}
-              />
+                onClick={focusEditor}
+              ></div>
               {showPlaceholder && (
-                <div className="absolute top-4 left-4 text-gray-400 pointer-events-none">
+                <div 
+                  className="absolute top-4 left-4 text-gray-400 cursor-text"
+                  onClick={focusEditor}
+                >
                   Type your answers here...
                 </div>
               )}
@@ -363,11 +382,10 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
 
           <div className="flex justify-end mt-4">
             <button
-              className={`px-12 py-3 rounded-lg font-medium ${
-                !answer.trim()
+              className={`px-12 py-3 rounded-lg font-medium ${!answer.trim()
                   ? 'bg-gray-300 cursor-not-allowed'
                   : 'bg-[#255C79] text-white hover:bg-[#1a4a5f] transition-colors'
-              }`}
+                }`}
               onClick={handleSubmit}
               disabled={!answer.trim()}
             >

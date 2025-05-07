@@ -1,25 +1,29 @@
 import { useQuery } from "@tanstack/react-query";
-import { getCourseContent, getSubmoduleById } from "../../../services/courses-content/courseContentApis";
+import {getSubmoduleById } from "../../../services/courses-content/courseContentApis";
 import DashboardContent from "./component/DashboardContent";
-import AllContent from "./component/AllContent";
-import { dummyContent } from "./component/data/mockAllData";
+import AllContent, { ContentType } from "./component/AllContent";
 import ArticleContent, { ArticleItem } from "./component/ArticleContent";
 import VideoContent from "./component/VideoContent";
 import ProblemContent from "./component/ProblemContent";
 import closeSidebarIcon from "../../../assets/course_sidebar_assets/closeSidebarIcon.png";
-import QuizContent from "./component/QuizContent";
-import { Quiz } from "./component/data/mockQuizData";
+import QuizContent, { Quiz } from "./component/QuizContent";
 import DevelopmentContent from "./component/DevelopmentContent";
 import { developmentProjectsDummy } from "./component/data/mockDevelopmentData";
+import SubjectiveContent, { AssignmentItem } from "./component/SubjectiveContent";
 
 interface SubmoduleContent {
-  content_type: string;
+  content_type: ContentType;
   duration_in_minutes: number;
   id: number;
   order: number;
   title: string;
   difficulty_level?: string;
   description?: string;
+  status?: string;
+  marks?: number;
+  submissions?: number;
+  questions?: number;
+  accuracy?: number;
 }
 
 interface SubmoduleData {
@@ -75,6 +79,12 @@ interface DevelopmentProps {
   onProjectSelect: (id: string) => void;
 }
 
+interface SubjectiveProps {
+  selectedAssignmentId: number;
+  onAssignmentClick: (id: number) => void;
+  assignments: AssignmentItem[];
+}
+
 interface CourseSidebarContentProps {
   activeLabel: string;
   onClose: () => void;
@@ -83,8 +93,11 @@ interface CourseSidebarContentProps {
   articleProps: ArticleProps;
   problemProps?: ProblemProps;
   developmentProps?: DevelopmentProps;
+  subjectiveProps?: SubjectiveProps;
   submoduleId?: number;
   courseId?: number;
+  selectedContentId?: number;
+  onContentSelect: (contentId: number, contentType: ContentType) => void;
 }
 
 const CourseSidebarContent = ({
@@ -95,8 +108,11 @@ const CourseSidebarContent = ({
   articleProps,
   problemProps,
   developmentProps,
+  subjectiveProps,
   submoduleId,
   courseId,
+  selectedContentId,
+  onContentSelect,
 }: CourseSidebarContentProps) => {
   // Fetch submodule data by ID if provided
   const { data: submoduleData } = useQuery<SubmoduleData | null>({
@@ -105,24 +121,37 @@ const CourseSidebarContent = ({
     enabled: !!submoduleId && !!courseId,
   });
 
-  const handleVideoClick = (id: string) => {
-    videoProps.onVideoClick(id);
-    if (courseId) {
-      getCourseContent(1, courseId, parseInt(id));
-    }
-  };
+  console.log("submoduleData", submoduleData);
 
-  const handleProblemSelect = (id: string) => {
-    if (problemProps && problemProps.onProblemSelect) {
-      problemProps.onProblemSelect(id);
-    } else if (courseId) {
-      getCourseContent(1, courseId, parseInt(id));
-    }
-  };
-
-  const handleProjectSelect = (id: string) => {
-    if (developmentProps && developmentProps.onProjectSelect) {
-      developmentProps.onProjectSelect(id);
+  const handleContentClick = (contentId: number, contentType: ContentType) => {
+    onContentSelect(contentId, contentType);
+    
+    // Only trigger the specific content type handler without changing activeSidebarLabel
+    switch (contentType) {
+      case "VideoTutorial":
+        videoProps.onVideoClick(contentId.toString());
+        break;
+      case "Article":
+        articleProps.onArticleClick(contentId);
+        break;
+      case "CodingProblem":
+        if (problemProps?.onProblemSelect) {
+          problemProps.onProblemSelect(contentId.toString());
+        }
+        break;
+      case "Quiz":
+        quizProps.onSelectQuiz(contentId);
+        break;
+      case "Assignment":
+        if (subjectiveProps?.onAssignmentClick) {
+          subjectiveProps.onAssignmentClick(contentId);
+        }
+        break;
+      case "Development":
+        if (developmentProps?.onProjectSelect) {
+          developmentProps.onProjectSelect(contentId.toString());
+        }
+        break;
     }
   };
 
@@ -134,7 +163,7 @@ const CourseSidebarContent = ({
           id: content.id.toString(),
           title: content.title,
           duration: `${content.duration_in_minutes} min`,
-          marks: 10,
+          marks: content.marks || 10,
           completed: false
         }))
     : [];
@@ -146,10 +175,10 @@ const CourseSidebarContent = ({
         .map((content: SubmoduleContent) => ({
           id: content.id.toString(),
           title: content.title,
-          marks: 10,
-          accuracy: 0,
-          submissions: 0,
-          completed: false
+          marks: content.marks || 10,
+          accuracy: content.accuracy || 0,
+          submissions: content.submissions || 0,
+          status: content.status || "non-complete"
         }))
     : [];
 
@@ -160,10 +189,9 @@ const CourseSidebarContent = ({
         .map((content: SubmoduleContent) => ({
           id: content.id,
           title: content.title,
-          content: content.title,
-          duration: `${content.duration_in_minutes} min`,
-          marks: 10,
-          completed: false
+          duration: content.duration_in_minutes,
+          marks: content.marks || 10,
+          status: content.status || "non-complete"
         }))
     : [];
 
@@ -175,10 +203,24 @@ const CourseSidebarContent = ({
           id: content.id,
           title: content.title,
           duration: `${content.duration_in_minutes} min`,
-          marks: 10,
-          submissions: 0,
-          questions: [],
-          completed: false
+          marks: content.marks || 10,
+          submissions: content.submissions || 0,
+          questions: content.questions || 10,
+          status: content.status || "non-complete"
+        }))
+    : [];
+
+  // Transform submodule data into assignments if available
+  const assignments = submoduleData?.data
+    ? submoduleData.data
+        .filter((content: SubmoduleContent) => content.content_type === 'Assignment')
+        .map((content: SubmoduleContent) => ({
+          id: content.id,
+          title: content.title,
+          content_type: content.content_type,
+          duration_in_minutes: content.duration_in_minutes,
+          order: content.order,
+          status: content.status || "non-complete"
         }))
     : [];
 
@@ -199,7 +241,20 @@ const CourseSidebarContent = ({
             stats={dummyStats}
           />
         )}
-        {activeLabel === "All" && <AllContent contents={dummyContent} />}
+        {activeLabel === "All" && submoduleData && (
+          <AllContent 
+            contents={submoduleData.data.map(content => ({
+              id: content.id,
+              title: content.title,
+              content_type: content.content_type,
+              order: content.order,
+              duration_in_minutes: content.duration_in_minutes,
+              status: content.status || "non-complete"
+            }))}
+            onContentClick={handleContentClick}
+            selectedContentId={selectedContentId}
+          />
+        )}
         {activeLabel === "Article" && (
           <ArticleContent
             articles={articles}
@@ -211,36 +266,41 @@ const CourseSidebarContent = ({
           <VideoContent
             videos={videos}
             selectedVideoId={videoProps.selectedVideoId || ""}
-            onVideoClick={handleVideoClick}
-            totalDuration={`${submoduleData?.data?.reduce((acc: number, curr: SubmoduleContent) => acc + curr.duration_in_minutes, 0) || 0} min`}
+            onVideoClick={videoProps.onVideoClick}
             topicNo={submoduleData?.weekNo || 1}
             topicTitle={submoduleData?.submoduleName || "Topic 1"}
             week={`Week ${submoduleData?.weekNo || 1}`}
             difficulty="Beginner"
             completionPercentage={0}
+            totalDuration={`${submoduleData?.data?.reduce((acc: number, curr: SubmoduleContent) => acc + curr.duration_in_minutes, 0) || 0} min`}
           />
         )}
-        {activeLabel === "Problems" && (
+        {activeLabel === "Problems" && problemProps && (
           <ProblemContent
             problems={problems}
-            selectedProblemId={problemProps?.selectedProblemId}
-            onSelect={handleProblemSelect}
+            selectedProblemId={problemProps.selectedProblemId}
+            onSelect={problemProps.onProblemSelect}
           />
         )}
         {activeLabel === "Quiz" && (
           <QuizContent
-            onSelect={quizProps.onSelectQuiz}
+            quizzes={quizzes}
             selectedQuizId={quizProps.selectedQuizId}
-            quizzes={quizzes.length > 0 ? quizzes : quizProps.quizzes}
-            courseId={courseId}
-            clientId={1}
+            onSelect={quizProps.onSelectQuiz}
           />
         )}
-        {activeLabel === "Development" && (
+        {activeLabel === "Development" && developmentProps && (
           <DevelopmentContent
             projects={developmentProjectsDummy}
-            selectedProjectId={developmentProps?.selectedProjectId}
-            onProjectSelect={handleProjectSelect}
+            selectedProjectId={developmentProps.selectedProjectId}
+            onProjectSelect={developmentProps.onProjectSelect}
+          />
+        )}
+        {activeLabel === "Subjective" && (
+          <SubjectiveContent
+            assignments={assignments}
+            selectedAssignmentId={selectedContentId || 0}
+            onAssignmentClick={(id) => handleContentClick(id, "Assignment")}
           />
         )}
       </div>
