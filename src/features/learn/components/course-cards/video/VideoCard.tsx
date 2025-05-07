@@ -63,13 +63,13 @@ const VideoCard: React.FC<VideoCardProps> = ({
   console.log('Video Data:', data);
 
   return (
-    <div className="flex-1">
+    <div className="flex-1 max-w-full">
       {/* Week and Topic Navigation */}
-      <div className="bg-gray-100 p-4 rounded-t-2xl">
-        <div className="flex items-center space-x-2">
-          <span className="text-gray-500">{currentWeek.title}</span>
+      <div className="bg-gray-100 p-3 md:p-4 rounded-t-2xl">
+        <div className="flex items-center space-x-2 text-sm md:text-base overflow-hidden">
+          <span className="text-gray-500 whitespace-nowrap">{currentWeek.title}</span>
           <span className="text-gray-500">›</span>
-          <span className="font-medium">{currentTopic.title}</span>
+          <span className="font-medium truncate">{currentTopic.title}</span>
         </div>
       </div>
 
@@ -81,18 +81,18 @@ const VideoCard: React.FC<VideoCardProps> = ({
       />
 
       {/* Next Button */}
-      <div className="bg-gray-100 p-4 flex justify-end">
+      <div className="bg-gray-100 p-3 md:p-4 flex justify-end">
         <button
           onClick={nextContent}
-          className="px-4 py-2 bg-[#255C79] text-white rounded-xl flex items-center cursor-pointer"
+          className="px-3 md:px-4 py-2 bg-[#255C79] text-white text-sm md:text-base rounded-xl flex items-center cursor-pointer"
         >
-          Next: {getNextTopicTitle()}
+          <span className="truncate max-w-[150px] md:max-w-none">Next: {getNextTopicTitle()}</span>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
-            className="w-4 h-4 ml-2"
+            className="w-4 h-4 ml-2 flex-shrink-0"
           >
             <path
               strokeLinecap="round"
@@ -105,7 +105,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
       </div>
 
       {/* Likes and Report */}
-      <div className="flex justify-between items-center my-4">
+      <div className="flex justify-between items-center my-4 px-2 md:px-0">
         <div className="flex items-center space-x-2">
           <button className="flex items-center text-blue-500 cursor-pointer">
             <svg
@@ -116,7 +116,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
             >
               <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
             </svg>
-            368
+            <span className="text-sm md:text-base">368</span>
           </button>
           <button className="flex items-center text-gray-500 cursor-pointer">
             <svg
@@ -130,13 +130,14 @@ const VideoCard: React.FC<VideoCardProps> = ({
           </button>
         </div>
         <div>
-          <button className="flex flex-row gap-3 cursor-pointer">
+          <button className="flex flex-row gap-2 md:gap-3 cursor-pointer">
             <svg
               width="22"
               height="21"
               viewBox="0 0 22 21"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
+              className="w-5 h-5 md:w-6 md:h-6"
             >
               <path
                 d="M11 5.75C11.4142 5.75 11.75 6.08579 11.75 6.5V11.5C11.75 11.9142 11.4142 12.25 11 12.25C10.5858 12.25 10.25 11.9142 10.25 11.5V6.5C10.25 6.08579 10.5858 5.75 11 5.75Z"
@@ -153,7 +154,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
                 fill="#AE0606"
               />
             </svg>
-            <p className="text-[#AE0606] font-medium text-[14px] ">
+            <p className="text-[#AE0606] font-medium text-xs md:text-sm">
               Report an issue
             </p>
           </button>
@@ -162,10 +163,10 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
+        <nav className="-mb-px flex space-x-4 md:space-x-8 overflow-x-auto">
           <button
             onClick={() => setActiveTab("description")}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+            className={`whitespace-nowrap py-3 md:py-4 px-1 border-b-2 font-medium text-xs md:text-sm ${
               activeTab === "description"
                 ? "border-[#255C79] text-[#255C79]"
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
@@ -175,7 +176,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
           </button>
           <button
             onClick={() => setActiveTab("comments")}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+            className={`whitespace-nowrap py-3 md:py-4 px-1 border-b-2 font-medium text-xs md:text-sm ${
               activeTab === "comments"
                 ? "border-[#255C79] text-[#255C79]"
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
@@ -187,30 +188,30 @@ const VideoCard: React.FC<VideoCardProps> = ({
       </div>
 
       {/* Tab Content */}
-      <div className="py-6">
+      <div className="py-4 md:py-6 px-2 md:px-0">
         {activeTab === "description" && (
           <div>
-            <h2 className="text-xl font-bold mb-4">
+            <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4">
               {data.title}
             </h2>
-            <p className="mb-4">
+            <p className="mb-4 text-sm md:text-base">
               {data.description}
             </p>
 
-            <h3 className="text-lg font-bold mt-6 mb-2">What is an Array??</h3>
-            <p className="mb-4">
+            <h3 className="text-md md:text-lg font-bold mt-4 md:mt-6 mb-2">What is an Array??</h3>
+            <p className="mb-4 text-sm md:text-base">
               An array is a collection of items of the same data type stored at
               contiguous memory locations...
             </p>
 
-            <div className="border rounded-lg p-4 my-6">
-              <h4 className="font-bold mb-2">Array Elements</h4>
+            <div className="border rounded-lg p-3 md:p-4 my-4 md:my-6 overflow-x-auto">
+              <h4 className="font-bold mb-2 text-sm md:text-base">Array Elements</h4>
               <div className="flex justify-center">
                 <div className="flex">
                   {[2, 4, 10, 5, 5, 3].map((num, i) => (
                     <div
                       key={i}
-                      className="w-12 h-12 bg-gray-200 flex items-center justify-center border border-gray-300"
+                      className="w-8 h-8 md:w-12 md:h-12 bg-gray-200 flex items-center justify-center border border-gray-300 text-xs md:text-base"
                     >
                       {num}
                     </div>
@@ -222,20 +223,20 @@ const VideoCard: React.FC<VideoCardProps> = ({
                   {[1, 2, 3, 4, 5, 6].map((index, i) => (
                     <div
                       key={i}
-                      className="w-12 h-8 flex items-center justify-center"
+                      className="w-8 md:w-12 h-6 md:h-8 flex items-center justify-center text-xs md:text-base"
                     >
                       {index}
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="text-center mt-2">Array Indexes</div>
+              <div className="text-center mt-2 text-xs md:text-sm">Array Indexes</div>
             </div>
 
-            <h3 className="text-lg font-bold mt-6 mb-2">
+            <h3 className="text-md md:text-lg font-bold mt-4 md:mt-6 mb-2">
               This video will enlighten you with the following concepts:
             </h3>
-            <ul className="list-disc pl-6 space-y-1">
+            <ul className="list-disc pl-6 space-y-1 text-sm md:text-base">
               <li>Introduction to the World of Arrays</li>
               <li>What is an Array?</li>
               <li>Use of an Array</li>
@@ -249,41 +250,9 @@ const VideoCard: React.FC<VideoCardProps> = ({
             </ul>
           </div>
         )}
-
         {activeTab === "comments" && (
-          <div className="space-y-4">
-            <div className="border-b pb-4">
-              <h3 className="font-bold mb-2">Course Comments</h3>
-              <p className="text-sm text-gray-500">
-                Share your thoughts about this lesson with other students
-              </p>
-            </div>
-
-            <div className="flex items-start space-x-4">
-              <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden">
-                <img
-                  src="/placeholder-avatar.jpg"
-                  alt="User"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="flex-1">
-                <textarea
-                  className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#255C79]"
-                  placeholder="Add a comment..."
-                  rows={3}
-                ></textarea>
-                <div className="mt-2 flex justify-end">
-                  <button className="px-4 py-2 bg-[#255C79] text-white rounded-xl cursor-pointer">
-                    Comment
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-center py-8 text-gray-500">
-              No comments yet. Be the first to share your thoughts!
-            </div>
+          <div className="text-center py-8 text-gray-500">
+            Comments will be available soon!
           </div>
         )}
       </div>
