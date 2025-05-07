@@ -7,9 +7,9 @@ interface ProblemItem {
   id: string;
   title: string;
   marks: number;
-  accuracy: number; // In percentage
+  accuracy: number; 
   submissions: number;
-  completed: boolean;
+  status: string;
 }
 
 interface ProblemContentProps {
@@ -64,7 +64,7 @@ const ProblemContent: React.FC<ProblemContentProps> = ({
               </div>
 
               <img
-                src={problem.completed ? completeTickIcon : tickIcon}
+                src={problem.status === "complete" ? completeTickIcon : tickIcon}
                 alt="Status"
                 className="w-5 h-5"
               />
