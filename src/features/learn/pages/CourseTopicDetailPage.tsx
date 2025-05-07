@@ -7,9 +7,7 @@ import CourseSidebarContent from "../../../commonComponents/sidebar/courseSideba
 import VideoCard from "../components/course-cards/video/VideoCard";
 import QuizCard from "../components/course-cards/quiz/QuizCard";
 import ArticleCard from "../components/course-cards/article/ArticleCard";
-// import { quizData } from "../../../commonComponents/sidebar/courseSidebar/component/data/mockQuizData";
 import expandSidebarIcon from "../../../assets/course_sidebar_assets/expandSidebarIcon.png";
-import { dummyArticles } from "../data/mockArticleData";
 import ProblemCard from "../components/course-cards/problem/ProblemCard";
 import BackToPreviousPage from "../../../commonComponents/common-buttons/back-buttons/back-to-previous-page/BackToPreviousPage";
 import SubjectiveCard from "../components/course-cards/subjective/SubjectiveCard";
@@ -33,22 +31,6 @@ interface SubmoduleData {
   weekNo: number;
 }
 
-interface VideoItem {
-  id: string;
-  title: string;
-  duration: string;
-  marks: number;
-  completed: boolean;
-}
-
-interface ProblemItem {
-  id: string;
-  title: string;
-  marks: number;
-  accuracy: number;
-  submissions: number;
-  completed: boolean;
-}
 
 const CourseTopicDetailPage: React.FC = () => {
   const { courseId, submoduleId } = useParams<{ courseId: string; submoduleId: string }>();
