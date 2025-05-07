@@ -166,11 +166,10 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
 
         <div className="flex items-center gap-4 mt-4">
           <div className="inline-flex items-center px-3 py-1 rounded-full bg-gray-100">
-            <span className={`material-icons text-sm mr-1 ${
-              data.details.difficulty_level === 'Easy' ? 'text-green-800' :
-              data.details.difficulty_level === 'Medium' ? 'text-yellow-800' :
-              'text-red-800'
-            }`}>bolt</span>
+            <span className={`material-icons text-sm mr-1 ${data.details.difficulty_level === 'Easy' ? 'text-green-800' :
+                data.details.difficulty_level === 'Medium' ? 'text-yellow-800' :
+                  'text-red-800'
+              }`}>bolt</span>
             <span className="text-sm">{data.details.difficulty_level}</span>
           </div>
 
@@ -187,46 +186,6 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
           </div>
         </div>
 
-        {/* <div className="mt-6">
-          <h2 className="text-lg font-medium mb-4">Selection of Vehicle Models:</h2>
-          <ol className="list-decimal pl-6 space-y-2">
-            <li>Choose one electric supercar and one IC engine supercar (or road-legal production cars). Specific models should be selected, not a general comparison.</li>
-          </ol>
-        </div>
-
-        <div className="mt-6">
-          <h2 className="text-lg font-medium mb-4">Parameter-Based Comparison:</h2>
-          <ol className="list-decimal pl-6 space-y-2">
-            <li>
-              <strong>Performance:</strong> Compare motor power, battery capacity, top speed, acceleration time, range, mileage, and power-to-weight ratio with numbers.
-            </li>
-            <li>
-              <strong>Cost:</strong> Compare buying price and running cost (mileage) in the same currency.
-            </li>
-            <li>
-              <strong>Environmental Impact:</strong> Evaluate emissions.
-            </li>
-            <li>
-              <strong>Maintenance and Repairs:</strong> Compare annual maintenance and repair costs with estimated values.
-            </li>
-            <li>
-              <strong>Comfort and Convenience:</strong> Compare interior design, special features, and technology.
-            </li>
-            <li>
-              <strong>Driving Experience:</strong> Analyze transmission type, sound, feel, and handling.
-            </li>
-          </ol>
-        </div>
-
-        <div className="mt-6">
-          <h2 className="text-lg font-medium mb-4">Tabular Comparison and Presentation:</h2>
-          <p>Use tables for numerical comparisons and include relevant images of both vehicles.</p>
-        </div>
-
-        <div className="mt-6">
-          <h2 className="text-lg font-medium mb-4">Conclusion:</h2>
-          <p>Provide a subjective but logical conclusion summarizing the advantages and disadvantages of each vehicle.</p>
-        </div> */}
 
         {/* Text Box */}
         <div className="mt-8">
@@ -380,11 +339,10 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
 
           <div className="flex justify-end mt-4">
             <button
-              className={`px-12 py-3 rounded-lg font-medium ${
-                !answer.trim()
+              className={`px-12 py-3 rounded-lg font-medium ${!answer.trim()
                   ? 'bg-gray-300 cursor-not-allowed'
                   : 'bg-[#255C79] text-white hover:bg-[#1a4a5f] transition-colors'
-              }`}
+                }`}
               onClick={handleSubmit}
               disabled={!answer.trim()}
             >
