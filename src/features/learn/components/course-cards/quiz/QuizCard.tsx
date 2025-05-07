@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useQuery } from '@tanstack/react-query';
 import { getCourseContent } from '../../../../../services/courses-content/courseContentApis';
+import { useMediaQuery } from '../../../../../hooks/useMediaQuery';
 import { submitContent } from "../../../../../services/courses-content/submitApis";
 import { useNavigate } from "react-router-dom";
 
@@ -65,6 +66,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
   const [totalSubmissions, setTotalSubmissions] = useState(0);
   const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
   const [isReviewing, setIsReviewing] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   const { data: fetchedData, isLoading, error } = useQuery<QuizData>({
     queryKey: ['quiz', contentId],
@@ -268,128 +270,6 @@ const QuizCard: React.FC<QuizCardProps> = ({
     return "bg-white border-gray-300 text-gray-600";
   };
 
-  if (quizCompleted) {
-    return (
-      <div className="p-8 bg-white rounded-lg shadow">
-        <div className="flex flex-col">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-[#255C79] mb-2">Your Quiz Review</h2>
-            <div className="text-sm text-gray-500 flex gap-2 mb-6">
-              <span>Your Score: {score}</span>
-              <span>|</span>
-              <span>{totalQuestions} Questions</span>
-            </div>
-
-            {/* Question blocks shown only in sidebar, not in main review area */}
-            {!isReviewing && (
-              <div className="grid grid-cols-6 gap-2 mb-8">
-                {mcqs.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      setIsReviewing(true);
-                      navigateToQuestion(index);
-                    }}
-                    className={`py-2 rounded-md border text-sm ${getQuestionButtonStyle(index)}`}
-                  >
-                    {index + 1}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {renderReviewContent()}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex gap-6 ml-2">
-      {/* Left Panel */}
-      {!isSidebarContentOpen && renderSidebar()}
-
-      {/* Right Panel */}
-      <div className={`${isSidebarContentOpen ? "w-full" : "w-2/3"} `}>
-      {isSidebarContentOpen && (
-        <div className="mb-4">
-        <h2 className="text-lg font-semibold text-[#255C79] mb-1">
-          {data.content_title}
-        </h2>
-        <div className="text-xs text-gray-500 flex gap-2 mb-3">
-          <span>{mcqs.length} Marks</span>
-          <span>|</span>
-          <span>{totalQuestions} Questions</span>
-          <span>|</span>
-          <span>{totalSubmissions} Submissions</span>
-        </div>
-        </div>
-      )}
-
-      <div className="flex justify-between items-center mb-4">
-        <span className="text-sm font-medium text-gray-700">
-        Question {currentQuestionIndex + 1}
-        </span>
-        <span className="text-xs bg-blue-100 text-[#255C79] px-2 py-1 rounded">
-        {currentQuestion.difficulty_level}
-        </span>
-      </div>
-
-      <h3 className="text-lg font-semibold mb-6 text-[#255C79]">
-        {currentQuestion.question_text}
-      </h3>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-        {currentQuestion.options.map((option, idx) => {
-        const optionLetter = optionLetters[idx];
-        const isSelected = selectedOption === optionLetter;
-
-        return (
-          <div
-          key={idx}
-          onClick={() => handleOptionSelect(optionLetter)}
-          className={`cursor-pointer border rounded-lg p-4 transition ${isSelected
-            ? "border-[#255C79] bg-blue-50"
-            : "bg-white border-gray-200"
-            }`}
-          >
-          <span className="font-medium mr-2">{optionLetter}.</span> {option}
-          </div>
-        );
-        })}
-      </div>
-
-      <div className="flex justify-between items-center">
-        {currentQuestionIndex > 0 && (
-        <button
-          onClick={handleBack}
-          className="px-4 py-2 border border-[#255C79] text-[#255C79] rounded-md text-sm font-medium hover:bg-blue-50"
-        >
-          Back
-        </button>
-        )}
-
-        <button
-        onClick={handleNext}
-        disabled={selectedOption === null}
-        className={`px-4 py-2 rounded-md text-sm font-medium ml-auto ${selectedOption === null
-          ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-          : "bg-[#255C79] text-white hover:bg-[#1a4a5f]"
-          }`}
-        >
-        {currentQuestionIndex < mcqs.length - 1 ? "Next" : "Finish Quiz"}
-        </button>
-      </div>
-
-      {/* Timer */}
-      {/* <div className="mt-4 text-right text-sm text-gray-500">
-        <span>Time Remaining: {formattedTime}</span>
-      </div> */}
-      </div>
-    </div>
-  );
-
   function renderSidebar() {
     // Add a safety check for data
     if (!data) return null;
@@ -441,19 +321,19 @@ const QuizCard: React.FC<QuizCardProps> = ({
   function renderReviewContent() {
     if (isReviewing) {
       return (
-        <div className="border rounded-lg p-6">
+        <div className="border rounded-lg p-4 md:p-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Question {currentQuestionIndex + 1}</h3>
+            <h3 className="text-base md:text-lg font-semibold">Question {currentQuestionIndex + 1}</h3>
             <span className="text-xs bg-blue-100 text-[#255C79] px-2 py-1 rounded">
               {currentQuestion.difficulty_level}
             </span>
           </div>
-
+          
           <h3 className="text-lg font-medium mb-6">
             {currentQuestion.question_text}
           </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'} gap-3 md:gap-4 mb-4 md:mb-6`}>
             {currentQuestion.options.map((option, idx) => {
               const optionLetter = optionLetters[idx];
               const isSelected = userAnswers[currentQuestionIndex].selectedOption === optionLetter;
@@ -462,14 +342,15 @@ const QuizCard: React.FC<QuizCardProps> = ({
               return (
                 <div
                   key={idx}
-                  className={`border rounded-lg p-4 ${isSelected && isCorrect
-                    ? "border-green-600 bg-green-50"
-                    : isSelected && !isCorrect
+                  className={`border rounded-lg p-3 md:p-4 text-sm md:text-base ${
+                    isSelected && isCorrect
+                      ? "border-green-600 bg-green-50"
+                      : isSelected && !isCorrect
                       ? "border-red-600 bg-red-50"
                       : isCorrect
                         ? "border-green-600 bg-green-50"
                         : "bg-white border-gray-200"
-                    }`}
+                  }`}
                 >
                   <span className="font-medium mr-2">{optionLetter}.</span> {option}
                   {isCorrect && <span className="ml-2 text-green-600">✓</span>}
@@ -490,7 +371,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
           <div className="flex justify-between">
             <button
               onClick={handleBack}
-              className="px-4 py-2 border border-[#255C79] text-[#255C79] rounded-md text-sm font-medium hover:bg-blue-50"
+              className="px-3 md:px-4 py-2 border border-[#255C79] text-[#255C79] rounded-md text-xs md:text-sm font-medium hover:bg-blue-50"
             >
               Back
             </button>
@@ -502,7 +383,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
                   setIsReviewing(false);
                 }
               }}
-              className="px-4 py-2 bg-[#255C79] text-white rounded-md text-sm font-medium hover:bg-[#1a4a5f]"
+              className="px-3 md:px-4 py-2 bg-[#255C79] text-white rounded-md text-xs md:text-sm font-medium hover:bg-[#1a4a5f]"
             >
               {currentQuestionIndex < mcqs.length - 1 ? "Next" : "Done"}
             </button>
@@ -511,24 +392,24 @@ const QuizCard: React.FC<QuizCardProps> = ({
       );
     } else {
       return (
-        <div className="flex flex-col items-center justify-center border rounded-lg p-6">
-          <h3 className="text-xl font-semibold mb-4">Quiz Result</h3>
-          <p className="text-lg mb-6">
+        <div className="flex flex-col items-center justify-center border rounded-lg p-4 md:p-6">
+          <h3 className="text-lg md:text-xl font-semibold mb-4">Quiz Result</h3>
+          <p className="text-base md:text-lg mb-4 md:mb-6">
             Your score: <span className="font-bold">{score}/{mcqs.length}</span> ({Math.round((score / mcqs.length) * 100)}%)
           </p>
-          <p className="text-sm text-gray-600 mb-8">
+          <p className="text-xs md:text-sm text-gray-600 mb-6 md:mb-8">
             Your submitted response was correct.
           </p>
           <div className="flex gap-4">
             <button
               onClick={reviewAnswers}
-              className="px-4 py-2 border border-[#255C79] text-[#255C79] rounded-md text-sm font-medium hover:bg-blue-50"
+              className="px-3 md:px-4 py-2 border border-[#255C79] text-[#255C79] rounded-md text-xs md:text-sm font-medium hover:bg-blue-50"
             >
               Review
             </button>
             <button
               onClick={resetQuiz}
-              className="px-4 py-2 bg-[#255C79] text-white rounded-md text-sm font-medium hover:bg-[#1a4a5f]"
+              className="px-3 md:px-4 py-2 bg-[#255C79] text-white rounded-md text-xs md:text-sm font-medium hover:bg-[#1a4a5f]"
             >
               Next
             </button>
@@ -537,6 +418,128 @@ const QuizCard: React.FC<QuizCardProps> = ({
       );
     }
   }
+
+  if (quizCompleted) {
+    return (
+      <div className="p-4 md:p-8 bg-white rounded-lg shadow">
+        <div className="flex flex-col">
+          <div className="mb-6 md:mb-8">
+            <h2 className="text-xl md:text-2xl font-bold text-[#255C79] mb-2">Your Quiz Review</h2>
+            <div className="text-xs md:text-sm text-gray-500 flex gap-2 mb-4 md:mb-6">
+              <span>Your Score: {score}</span>
+              <span>|</span>
+              <span>{totalQuestions} Questions</span>
+            </div>
+
+            {/* Question blocks shown only in sidebar, not in main review area */}
+            {!isReviewing && (
+              <div className="grid grid-cols-4 md:grid-cols-6 gap-2 mb-6 md:mb-8">
+                {mcqs.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      setIsReviewing(true);
+                      navigateToQuestion(index);
+                    }}
+                    className={`py-2 rounded-md border text-xs md:text-sm ${getQuestionButtonStyle(index)}`}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {renderReviewContent()}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`${isMobile ? 'flex flex-col w-full' : 'flex gap-6 ml-2'}`}>
+      {/* Left Panel - Hidden on mobile */}
+      {!isSidebarContentOpen && !isMobile && renderSidebar()}
+
+      {/* Right Panel */}
+      <div className={`${isMobile ? "w-full pb-2" : (isSidebarContentOpen ? "w-full" : "w-2/3")}`}>
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-[#255C79] mb-1">
+            {data.content_title}
+          </h2>
+          <div className="text-xs text-gray-500 flex flex-wrap gap-2 mb-3">
+            <span>{mcqs.length} Marks</span>
+            <span>|</span>
+            <span>{totalQuestions} Questions</span>
+            <span>|</span>
+            <span>{totalSubmissions} Submissions</span>
+          </div>
+        </div>
+        
+        <div className="flex justify-between items-center mb-4">
+          <span className="text-xs md:text-sm font-medium text-gray-700">
+            Question {currentQuestionIndex + 1}
+          </span>
+          <span className="text-xs bg-blue-100 text-[#255C79] px-2 py-1 rounded">
+            {currentQuestion.difficulty_level}
+          </span>
+        </div>
+
+        <h3 className="text-base md:text-lg font-semibold mb-4 md:mb-6 text-[#255C79]">
+          {currentQuestion.question_text}
+        </h3>
+
+        <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'} gap-3 md:gap-4 mb-4 md:mb-6`}>
+          {currentQuestion.options.map((option, idx) => {
+            const optionLetter = optionLetters[idx];
+            const isSelected = selectedOption === optionLetter;
+
+            return (
+              <div
+                key={idx}
+                onClick={() => handleOptionSelect(optionLetter)}
+                className={`cursor-pointer border rounded-lg p-3 md:p-4 transition text-sm md:text-base ${
+                  isSelected
+                    ? "border-[#255C79] bg-blue-50"
+                    : "bg-white border-gray-200"
+                }`}
+              >
+                <span className="font-medium mr-2">{optionLetter}.</span> {option}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="flex justify-between items-center">
+          {currentQuestionIndex > 0 && (
+            <button
+              onClick={handleBack}
+              className="px-3 md:px-4 py-2 border border-[#255C79] text-[#255C79] rounded-md text-xs md:text-sm font-medium hover:bg-blue-50"
+            >
+              Back
+            </button>
+          )}
+          
+          <button
+            onClick={handleNext}
+            disabled={selectedOption === null}
+            className={`px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium ml-auto ${
+              selectedOption === null
+                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                : "bg-[#255C79] text-white hover:bg-[#1a4a5f]"
+            }`}
+          >
+            {currentQuestionIndex < mcqs.length - 1 ? "Next" : "Finish Quiz"}
+          </button>
+        </div>
+
+        {/* Timer */}
+        <div className="mt-4 text-right text-sm text-gray-500">
+          <span>Time Remaining: {formattedTime}</span>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default QuizCard;

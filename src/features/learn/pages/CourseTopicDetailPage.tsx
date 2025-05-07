@@ -12,6 +12,7 @@ import ProblemCard from "../components/course-cards/problem/ProblemCard";
 import BackToPreviousPage from "../../../commonComponents/common-buttons/back-buttons/back-to-previous-page/BackToPreviousPage";
 import SubjectiveCard from "../components/course-cards/subjective/SubjectiveCard";
 import DevelopmentCard from "../components/course-cards/development/DevelopmentCard";
+import useMediaQuery from "../../../hooks/useMediaQuery";
 
 interface SubmoduleContent {
   content_type: string;
@@ -44,7 +45,17 @@ const CourseTopicDetailPage: React.FC = () => {
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<number>(0);
   const [activeSidebarLabel, setActiveSidebarLabel] = useState<string>("Videos");
   const [isSidebarContentOpen, setIsSidebarContentOpen] = useState<boolean>(true);
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const [selectedContentId, setSelectedContentId] = useState<number | undefined>();
+
+  // Effect to close sidebar on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setIsSidebarContentOpen(false);
+    } else if (!isMobile && !isSidebarContentOpen) {
+      setIsSidebarContentOpen(true);
+    }
+  }, [isMobile]);
 
   // Fetch submodule data
   const { data: submoduleData, isLoading: isSubmoduleLoading, error: submoduleError } = useQuery<SubmoduleData>({
@@ -323,101 +334,171 @@ const CourseTopicDetailPage: React.FC = () => {
   console.log("Active Sidebar Label:", activeSidebarLabel);
 
   return (
-    <div className="pb-8">
+    <div style={{ paddingBottom: isMobile ? "calc(60px + 1.5rem)" : "2rem" }} className="relative min-h-screen">
       <BackToPreviousPage />
 
-      <div className="flex mt-4">
-        <div className="flex">
+      <div className="flex flex-col md:flex-row mt-4 relative">
+        {/* Sidebar container - only shown as content panel on desktop */}
+        {!isMobile && (
+          <div className="flex">
+            <CourseSidebar
+              activeLabel={activeSidebarLabel}
+              onSelect={handleSidebarLabelSelect}
+            />
+            {isSidebarContentOpen && (
+              <CourseSidebarContent
+                submoduleId={parseInt(submoduleId || "0")}
+                courseId={parseInt(courseId || "0")}
+                activeLabel={activeSidebarLabel}
+                onClose={() => setIsSidebarContentOpen(false)}
+                videoProps={videoProps}
+                quizProps={quizProps}
+                articleProps={articleProps}
+                problemProps={problemProps}
+                developmentProps={developmentProps}
+                subjectiveProps={subjectiveProps}
+                selectedContentId={selectedContentId}
+                onContentSelect={handleContentSelect}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Mobile sidebar content panel - shown as an overlay */}
+        {isMobile && isSidebarContentOpen && (
+          <div className="fixed inset-0 z-40">
+            <div 
+              className="absolute inset-0 bg-black/50"
+              onClick={() => setIsSidebarContentOpen(false)}
+            ></div>
+            <div className="absolute right-0 top-0 h-full w-[90vw] max-w-[350px] z-50">
+              <CourseSidebarContent
+                submoduleId={parseInt(submoduleId || "0")}
+                courseId={parseInt(courseId || "0")}
+                activeLabel={activeSidebarLabel}
+                onClose={() => setIsSidebarContentOpen(false)}
+                videoProps={videoProps}
+                quizProps={quizProps}
+                articleProps={articleProps}
+                problemProps={problemProps}
+                developmentProps={developmentProps}
+                subjectiveProps={subjectiveProps}
+                selectedContentId={selectedContentId}
+                onContentSelect={handleContentSelect}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Button to expand sidebar when collapsed (non-mobile) */}
+        {!isMobile && !isSidebarContentOpen && (
+          <button
+            onClick={() => setIsSidebarContentOpen(true)}
+            className="absolute top-32 left-[142px] bg-white rounded-full shadow-md p-2 hover:bg-gray-100 transition z-10 cursor-pointer"
+            title="Expand Sidebar"
+          >
+            <img src={expandSidebarIcon} alt="Expand" className="w-5 h-5" />
+          </button>
+        )}
+
+        {/* Main Content */}
+        <div 
+          className={`flex-1 mt-6 px-4 md:px-0 ${isMobile ? 'w-full mb-4' : ''} ${isSidebarContentOpen && !isMobile ? "md:ml-12" : ""} overflow-hidden`}
+        >
+          {isMobile && (
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-[#255C79]">{currentContent.title}</h2>
+              <div className="text-xs text-gray-500 flex items-center gap-2">
+                <span>{`Week ${submoduleData.weekNo}`}</span>
+                <span>•</span>
+                <span>{currentContent.content_type}</span>
+              </div>
+            </div>
+          )}
+          
+          {/* Floating button to open sidebar content on mobile */}
+          {isMobile && (
+            <button
+              onClick={() => setIsSidebarContentOpen(true)}
+              className="fixed top-20 right-4 z-20 bg-[#255C79] text-white rounded-full shadow-md p-3 hover:bg-[#1a4057] transition"
+              title="Open Course Contents"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+              </svg>
+            </button>
+          )}
+          
+          {/* Content display based on active tab */}
+          <div className="mb-20 md:mb-0">
+            {currentContent?.content_type === "VideoTutorial" && (
+              <VideoCard
+                currentWeek={{ title: `Week ${submoduleData.weekNo}` }}
+                currentTopic={{ title: currentContent.title }}
+                contentId={currentContent.id}
+                courseId={parseInt(courseId || "0")}
+                nextContent={nextContent}
+                getNextTopicTitle={getNextTopicTitle}
+              />
+            )}
+            {currentContent?.content_type === "CodingProblem" && (
+              <ProblemCard
+                contentId={currentContent.id}
+                courseId={parseInt(courseId || "0")}
+                onSubmit={(code) => {
+                  console.log("Submitted code:", code);
+                }}
+              />
+            )}
+            {currentContent?.content_type === "Quiz" && (
+              <QuizCard
+                contentId={currentContent.id}
+                courseId={parseInt(courseId || "0")}
+                isSidebarContentOpen={isSidebarContentOpen}
+              />
+            )}
+            {currentContent?.content_type === "Article" && (
+              <ArticleCard
+                contentId={currentContent.id}
+                courseId={parseInt(courseId || "0")}
+                onMarkComplete={() => {
+                  console.log("Marked as completed");
+                }}
+              />
+            )}
+            {currentContent?.content_type === "Assignment" && (
+              <SubjectiveCard
+                contentId={currentContent.id}
+                courseId={parseInt(courseId || "0")}
+              />
+            )}
+            {currentContent?.content_type === "Development" && (
+              <DevelopmentCard
+                projectId={selectedProjectId || "dev1"}
+                title="Development Project"
+                description="Project description"
+                initialHtml=""
+                initialCss=""
+                initialJs=""
+                difficulty="Medium"
+                onSubmit={(html, css, js) => {
+                  console.log("Submitted development project:", { html, css, js });
+                }}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile bottom navigation */}
+      {isMobile && (
+        <div className="fixed bottom-0 left-0 right-0 z-50">
           <CourseSidebar
             activeLabel={activeSidebarLabel}
             onSelect={handleSidebarLabelSelect}
           />
-          {isSidebarContentOpen && (
-            <CourseSidebarContent
-              submoduleId={parseInt(submoduleId || "0")}
-              courseId={parseInt(courseId || "0")}
-              activeLabel={activeSidebarLabel}
-              onClose={() => setIsSidebarContentOpen(false)}
-              videoProps={videoProps}
-              quizProps={quizProps}
-              articleProps={articleProps}
-              problemProps={problemProps}
-              developmentProps={developmentProps}
-              subjectiveProps={subjectiveProps}
-              selectedContentId={selectedContentId}
-              onContentSelect={handleContentSelect}
-            />
-          )}
-          {!isSidebarContentOpen && (
-            <button
-              onClick={() => setIsSidebarContentOpen(true)}
-              className="absolute top-32 left-[142px] bg-white rounded-full shadow-md p-2 hover:bg-gray-100 transition z-10 cursor-pointer"
-              title="Expand Sidebar"
-            >
-              <img src={expandSidebarIcon} alt="Expand" className="w-5 h-5" />
-            </button>
-          )}
         </div>
-
-        {/* Main Content */}
-        <div className={`flex-1 mt-6 ${isSidebarContentOpen ? "ml-12" : ""} overflow-hidden`}>
-          { currentContent?.content_type === "VideoTutorial" && (
-            <VideoCard
-              currentWeek={{ title: `Week ${submoduleData.weekNo}` }}
-              currentTopic={{ title: currentContent.title }}
-              contentId={currentContent.id}
-              courseId={parseInt(courseId || "0")}
-              nextContent={nextContent}
-              getNextTopicTitle={getNextTopicTitle}
-            />
-          )}
-          { currentContent?.content_type === "CodingProblem" && (
-            <ProblemCard
-              contentId={currentContent.id}
-              courseId={parseInt(courseId || "0")}
-              onSubmit={(code) => {
-                console.log("Submitted code:", code);
-              }}
-            />
-          )}
-          {currentContent?.content_type === "Quiz" && (
-            <QuizCard
-              contentId={currentContent.id}
-              courseId={parseInt(courseId || "0")}
-              isSidebarContentOpen={isSidebarContentOpen}
-            />
-          )}
-          {currentContent?.content_type === "Article" && (
-            <ArticleCard
-              contentId={currentContent.id}
-              courseId={parseInt(courseId || "0")}
-              onMarkComplete={() => {
-                console.log("Marked as completed");
-              }}
-            />
-          )}
-          { currentContent?.content_type === "Assignment" && (
-            <SubjectiveCard
-              contentId={currentContent.id}
-              courseId={parseInt(courseId || "0")}
-            />
-          )}
-          {currentContent?.content_type === "Development" && (
-            <DevelopmentCard
-              projectId={selectedProjectId || "dev1"}
-              title="Development Project"
-              description="Project description"
-              initialHtml=""
-              initialCss=""
-              initialJs=""
-              difficulty="Medium"
-              onSubmit={(html, css, js) => {
-                console.log("Submitted development project:", { html, css, js });
-              }}
-            />
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 };
