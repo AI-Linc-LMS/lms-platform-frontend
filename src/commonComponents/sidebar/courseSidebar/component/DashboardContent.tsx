@@ -8,6 +8,7 @@ interface Stat {
     courseTitle: string;
     courseType: string;
     stats: Stat[];
+    overallProgress: number;
   }
   
   const ProgressCircle = ({ percent }: { percent: number }) => {
@@ -48,7 +49,7 @@ interface Stat {
     );
   };
   
-  const DashboardContent = ({ courseTitle, courseType, stats }: DashboardContentProps) => {
+  const DashboardContent = ({ courseTitle, courseType, stats, overallProgress }: DashboardContentProps) => {
     return (
       <div className="">
         <h2 className="text-lg font-semibold text-gray-800">Dashboard</h2>
@@ -60,7 +61,7 @@ interface Stat {
               <h3 className="text-md font-medium">{courseTitle}</h3>
               <p className="text-xs text-gray-500">{courseType}</p>
             </div>
-            <ProgressCircle percent={25} />
+            <ProgressCircle percent={overallProgress} />
           </div>
         </div>
   
