@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { getCourseContent } from '../../../../../services/courses-content/courseContentApis';
 import { submitContent } from '../../../../../services/courses-content/submitApis';
 import FloatingAIButton from "../../floating-ai-button/FloatingAIButton";
-import { useMediaQuery } from "../../../../../hooks/useMediaQuery";
 import completedIcon from "../../../../../commonComponents/icons/sidebarIcons/completedIcon.png";
 import { useNavigate } from 'react-router-dom';
 
@@ -33,8 +32,6 @@ interface ArticleData {
 }
 
 const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkComplete }) => {
-  // Removed duplicate declaration of isCompleted
-  const isMobile = useMediaQuery("(max-width: 768px)");
   const navigate = useNavigate();
 
   const { data: articleData, isLoading, error } = useQuery<ArticleData>({
@@ -112,38 +109,24 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
   const marks = articleData.details.marks ?? articleData.marks ?? 0;
 
   return (
-    <div className="max-w-4xl mx-auto p-3 md:p-6 bg-white rounded-lg shadow-sm">
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm relative pb-10">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-xl md:text-2xl font-semibold capitalize text-gray-800 mb-2">
+          <h1 className="text-2xl font-semibold capitalize text-gray-800 mb-2">
             {articleData.content_title}
           </h1>
-          <div className="flex items-center gap-4 text-xs md:text-sm text-gray-500">
-            <span>⏱ {articleData.duration_in_minutes} min</span>
           <div className="flex items-center gap-4 text-sm text-gray-500">
             <span>⏱ {timeLeft !== null ? formatTime(timeLeft) : '0:00'}</span>
             <span>•</span>
             <span>📚 {articleData.details.difficulty_level}</span>
           </div>
         </div>
-        <button
-          onClick={handleMarkComplete}
-          disabled={isCompleted}
-          className={`px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium ${
-            isCompleted
-              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-              : 'bg-[#255C79] text-white hover:bg-[#1a4a5f]'
-          } ${isMobile ? 'self-start' : ''}`}
-        >
-          {isCompleted ? 'Completed' : 'Mark as Complete'}
-        </button>
         <div className="flex flex-col items-end">
           <span className="text-lg text-semibold text-[#007B9F] bg-[#EFF9FC] px-2 py-1 rounded-md">{marks} Marks</span>
         </div>
       </div>
 
-      <div className="prose max-w-none text-sm md:text-lg prose-headings:text-lg md:prose-headings:text-xl prose-p:text-sm md:prose-p:text-base">
+      <div className="prose max-w-none text-lg">
         <div dangerouslySetInnerHTML={{ __html: articleData.details.content }} />
       </div>
 
@@ -180,9 +163,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
             </span>
           </button>
         </div>
-}
-        </div>
-      </div>
+      }
     </div>
   );
 };
