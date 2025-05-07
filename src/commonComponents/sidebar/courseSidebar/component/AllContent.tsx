@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import articleIcon from "../../../../assets/course_sidebar_assets/article/articleIcon.png";
 import videosIcon from "../../../../assets/course_sidebar_assets/video/vidoesIcon.png";
 import problemIcon from "../../../../assets/course_sidebar_assets/problem/problemIcon.png";

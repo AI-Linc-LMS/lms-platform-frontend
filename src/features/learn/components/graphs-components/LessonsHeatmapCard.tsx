@@ -5,13 +5,10 @@ import MonthHeatmap from "./MonthHeatmap";
 import {
   endOfToday,
   subMonths,
-  getDate,
-  getMonth,
   getYear,
   format,
   eachDayOfInterval,
   isBefore,
-  startOfDay,
   subDays,
 } from "date-fns";
 import { getUserActivityHeatmapData } from "../../../../services/dashboardApis";
@@ -22,16 +19,6 @@ interface LessonsHeatmapCardProps {
   setHoveredCell: (cell: string | null) => void;
 }
 
-interface ActivityData {
-  date: string;
-  level: number;
-  value: number;
-  articles?: number;
-  videos?: number;
-  problems?: number;
-  quizzes?: number;
-  total?: number;
-}
 
 type ApiDataType = Record<
   string,
