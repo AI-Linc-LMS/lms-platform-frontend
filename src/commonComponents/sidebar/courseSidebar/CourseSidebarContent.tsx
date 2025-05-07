@@ -34,14 +34,39 @@ interface SubmoduleData {
   weekNo: number;
 }
 
-const dummyStats = [
-  { title: "Articles", progress: 25, count: "1/3" },
-  { title: "Videos", progress: 25, count: "1/3" },
-  { title: "Problems", progress: 25, count: "1/3" },
-  { title: "Quiz", progress: 25, count: "1/3" },
-  { title: "Subjective", progress: 0, count: "0/1" },
-  { title: "Development", progress: 0, count: "0/4" },
-];
+const contentTypeLabels = {
+  Article: "Articles",
+  VideoTutorial: "Videos",
+  CodingProblem: "Problems",
+  Quiz: "Quiz",
+  Assignment: "Subjective",
+  Development: "Development"
+};
+
+interface Stat {
+  title: string;
+  progress: number;
+  count: string;
+}
+
+function getDashboardStats(data: Array<{ content_type: ContentType; status?: string }>): Stat[] {
+  return Object.keys(contentTypeLabels).map((type) => {
+    const items = data.filter((item) => item.content_type === type);
+    const completed = items.filter((item) => item.status === "complete");
+    return {
+      title: contentTypeLabels[type as ContentType],
+      progress: items.length ? Math.round((completed.length / items.length) * 100) : 0,
+      count: `${completed.length}/${items.length}`
+    };
+  });
+}
+
+function getOverallProgress(data: Array<{ status?: string }>): number {
+  const total = data.length;
+  const completed = data.filter((item) => item.status === "complete").length;
+  
+  return total ? Math.round((completed / total) * 100) : 0;
+}
 
 interface VideoProps {
   selectedVideoId: string | null;
@@ -238,21 +263,16 @@ const CourseSidebarContent = ({
           <DashboardContent
             courseTitle={submoduleData?.moduleName || "Course"}
             courseType="Self pace"
-            stats={dummyStats}
+            stats={submoduleData?.data ? getDashboardStats(submoduleData.data) : []}
+            overallProgress={submoduleData?.data ? getOverallProgress(submoduleData.data) : 0}
           />
         )}
-        {activeLabel === "All" && submoduleData && (
-          <AllContent 
-            contents={submoduleData.data.map(content => ({
-              id: content.id,
-              title: content.title,
-              content_type: content.content_type,
-              order: content.order,
-              duration_in_minutes: content.duration_in_minutes,
-              status: content.status || "non-complete"
-            }))}
+        {activeLabel === "All" && (
+          <AllContent
+            contents={submoduleData?.data || []}
             onContentClick={handleContentClick}
             selectedContentId={selectedContentId}
+            activeLabel={activeLabel}
           />
         )}
         {activeLabel === "Article" && (
