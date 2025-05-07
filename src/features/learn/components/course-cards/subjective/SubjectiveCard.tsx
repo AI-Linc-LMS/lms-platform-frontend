@@ -1,6 +1,8 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useQuery } from '@tanstack/react-query';
 import { getCourseContent } from '../../../../../services/courses-content/courseContentApis';
+import { submitContent } from "../../../../../services/courses-content/submitApis";
+import { useNavigate } from "react-router-dom";
 
 interface AssignmentData {
   id: number;
@@ -23,6 +25,7 @@ interface SubjectiveCardProps {
 }
 
 const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) => {
+  const navigate = useNavigate();
   const [answer, setAnswer] = useState<string>("");
   const [fontSize, setFontSize] = useState<number>(14);
   const editorRef = useRef<HTMLDivElement>(null);
@@ -141,10 +144,17 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
   }
 
   console.log('Assignment Data:', data);
-
-  const handleSubmit = () => {
+  console.log("answer", answer);
+  const handleSubmit = async () => {
     // Handle submission logic here
-    console.log('Submitted answer:', answer);
+    const response = await submitContent(1, courseId, contentId, "Assignment", { answer });
+    console.log("response", response);
+    if (response === 201) {
+      console.log('Submitted answer:', answer);
+      navigate(0);
+    } else {
+      console.log("error", response);
+    }
   };
 
   return (

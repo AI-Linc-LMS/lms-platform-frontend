@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useQuery } from '@tanstack/react-query';
 import { getCourseContent } from '../../../../../services/courses-content/courseContentApis';
+import { submitContent } from "../../../../../services/courses-content/submitApis";
+import { useNavigate } from "react-router-dom";
 
 interface MCQ {
   id: number;
@@ -32,25 +34,27 @@ interface UserAnswer {
   questionIndex: number;
   selectedOption: string | null;
   isCorrect: boolean;
+  questionId: number;
 }
 
 interface QuizCardProps {
   contentId: number;
   courseId: number;
   isSidebarContentOpen: boolean;
-  quizData?: QuizData; // Optional prop for direct data injection
-  onSubmission?: (contentId: number) => void; // Callback when submission happens
-  onReset?: (contentId: number) => void; // Callback when quiz is reset
+  quizData?: QuizData;
+  onSubmission?: (contentId: number) => void;
+  onReset?: (contentId: number) => void;
 }
 
-const QuizCard: React.FC<QuizCardProps> = ({ 
-  contentId, 
-  courseId, 
-  isSidebarContentOpen, 
+const QuizCard: React.FC<QuizCardProps> = ({
+  contentId,
+  courseId,
+  isSidebarContentOpen,
   quizData: injectedData,
   onSubmission,
   onReset
 }) => {
+  const navigate = useNavigate();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -68,18 +72,22 @@ const QuizCard: React.FC<QuizCardProps> = ({
     enabled: !!contentId && !!courseId && !injectedData,
   });
 
+  console.log("quiz Data", fetchedData);
+
   // Use either injected data or fetched data
   const data = injectedData || fetchedData;
   const optionLetters = ['A', 'B', 'C', 'D'];
 
+  console.log("userAnswers", userAnswers);
   useEffect(() => {
     if (data?.details?.mcqs) {
       setTotalQuestions(data.details.mcqs.length);
       // Initialize user answers array
       setUserAnswers(data.details.mcqs.map((_, index) => ({
+        questionId: data.details.mcqs[index].id,
+        isCorrect: false,
         questionIndex: index,
         selectedOption: null,
-        isCorrect: false
       })));
     }
   }, [data]);
@@ -128,7 +136,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
   const handleOptionSelect = (option: string) => {
     if (!submitted) {
       setSelectedOption(option);
-      
+
       // Update userAnswers state
       const updatedAnswers = [...userAnswers];
       updatedAnswers[currentQuestionIndex] = {
@@ -143,17 +151,17 @@ const QuizCard: React.FC<QuizCardProps> = ({
     // Mark as submitted internally to track answers
     setSubmitted(true);
     setTotalSubmissions(prev => prev + 1);
-    
+
     const isCorrect = selectedOption === currentQuestion.correct_option;
-    
+
     // Update userAnswers state with selection
     updateUserAnswer(currentQuestionIndex, selectedOption!, isCorrect);
-    
+
     // Notify parent component about submission
     if (onSubmission) {
       onSubmission(contentId);
     }
-    
+
     // Move to next question or finish quiz
     if (currentQuestionIndex < mcqs.length - 1) {
       navigateToNext();
@@ -169,14 +177,21 @@ const QuizCard: React.FC<QuizCardProps> = ({
     setSubmitted(false);
   };
 
-  const finishQuiz = () => {
+  const finishQuiz = async () => {
     // Calculate total score when quiz is completed
-    const totalCorrect = userAnswers.filter(answer => answer.isCorrect).length;
-    setScore(totalCorrect);
-    setQuizCompleted(true);
+    const response = await submitContent(1, courseId, contentId, "Quiz", { userAnswers });
+    console.log("response", response);
+    if (response === 201) {
+      const totalCorrect = userAnswers.filter(answer => answer.isCorrect).length;
+      setScore(totalCorrect);
+      setQuizCompleted(true);
+    } else {
+      console.log("error", response);
+    }
   };
 
   const resetQuiz = () => {
+    navigate(0);
     setCurrentQuestionIndex(0);
     setSelectedOption(null);
     setSubmitted(false);
@@ -184,14 +199,15 @@ const QuizCard: React.FC<QuizCardProps> = ({
     setQuizCompleted(false);
     setTotalSubmissions(0);
     setIsReviewing(false);
-    
+
     // Reset userAnswers
     setUserAnswers(mcqs.map((_, index) => ({
+      questionId: mcqs[index].id,
       questionIndex: index,
       selectedOption: null,
       isCorrect: false
     })));
-    
+
     // Notify parent component about reset
     if (onReset) {
       onReset(contentId);
@@ -220,16 +236,16 @@ const QuizCard: React.FC<QuizCardProps> = ({
 
   const getQuestionButtonStyle = (index: number) => {
     const answer = userAnswers[index];
-    
+
     if (index === currentQuestionIndex && !isReviewing) {
       return "bg-blue-50 border-[#007B9F] text-[#255C79]";
     }
-    
+
     // Show correct/incorrect colors only after quiz is completed
     if (quizCompleted) {
       if (answer.selectedOption) {
-        return answer.isCorrect 
-          ? "bg-green-100 border-green-500 text-green-700" 
+        return answer.isCorrect
+          ? "bg-green-100 border-green-500 text-green-700"
           : "bg-red-100 border-red-500 text-red-700";
       }
     } else {
@@ -238,7 +254,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
         return "bg-[#2A8CB0] border-[#2A8CB0] text-white";
       }
     }
-    
+
     return "bg-white border-gray-300 text-gray-600";
   };
 
@@ -300,7 +316,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
             </div>
           </div>
         )}
-        
+
         <div className="flex justify-between items-center mb-4">
           <span className="text-sm font-medium text-gray-700">
             Question {currentQuestionIndex + 1}
@@ -323,11 +339,10 @@ const QuizCard: React.FC<QuizCardProps> = ({
               <div
                 key={idx}
                 onClick={() => handleOptionSelect(optionLetter)}
-                className={`cursor-pointer border rounded-lg p-4 transition ${
-                  isSelected
+                className={`cursor-pointer border rounded-lg p-4 transition ${isSelected
                     ? "border-[#255C79] bg-blue-50"
                     : "bg-white border-gray-200"
-                }`}
+                  }`}
               >
                 <span className="font-medium mr-2">{optionLetter}.</span> {option}
               </div>
@@ -344,15 +359,14 @@ const QuizCard: React.FC<QuizCardProps> = ({
               Back
             </button>
           )}
-          
+
           <button
             onClick={handleNext}
             disabled={selectedOption === null}
-            className={`px-4 py-2 rounded-md text-sm font-medium ml-auto ${
-              selectedOption === null
+            className={`px-4 py-2 rounded-md text-sm font-medium ml-auto ${selectedOption === null
                 ? "bg-gray-200 text-gray-500 cursor-not-allowed"
                 : "bg-[#255C79] text-white hover:bg-[#1a4a5f]"
-            }`}
+              }`}
           >
             {currentQuestionIndex < mcqs.length - 1 ? "Next" : "Finish Quiz"}
           </button>
@@ -364,7 +378,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
   function renderSidebar() {
     // Add a safety check for data
     if (!data) return null;
-    
+
     return (
       <div className="w-1/3 ml-10">
         <div className="flex justify-between items-center text-sm text-gray-500 mb-8">
@@ -419,7 +433,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
               {currentQuestion.difficulty_level}
             </span>
           </div>
-          
+
           <h3 className="text-lg font-medium mb-6">
             {currentQuestion.question_text}
           </h3>
@@ -433,15 +447,14 @@ const QuizCard: React.FC<QuizCardProps> = ({
               return (
                 <div
                   key={idx}
-                  className={`border rounded-lg p-4 ${
-                    isSelected && isCorrect
+                  className={`border rounded-lg p-4 ${isSelected && isCorrect
                       ? "border-green-600 bg-green-50"
                       : isSelected && !isCorrect
-                      ? "border-red-600 bg-red-50"
-                      : isCorrect
-                      ? "border-green-600 bg-green-50"
-                      : "bg-white border-gray-200"
-                  }`}
+                        ? "border-red-600 bg-red-50"
+                        : isCorrect
+                          ? "border-green-600 bg-green-50"
+                          : "bg-white border-gray-200"
+                    }`}
                 >
                   <span className="font-medium mr-2">{optionLetter}.</span> {option}
                   {isCorrect && <span className="ml-2 text-green-600">✓</span>}
@@ -452,8 +465,8 @@ const QuizCard: React.FC<QuizCardProps> = ({
 
           <div className="mb-4 p-4 bg-gray-50 rounded-lg">
             <div className="text-sm font-medium text-gray-700">
-              {userAnswers[currentQuestionIndex].isCorrect ? 
-                <span className="text-green-600">Your response was correct!</span> : 
+              {userAnswers[currentQuestionIndex].isCorrect ?
+                <span className="text-green-600">Your response was correct!</span> :
                 <span className="text-red-600">Your response was incorrect. The correct answer is {currentQuestion.correct_option}.</span>
               }
             </div>
