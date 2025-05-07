@@ -94,10 +94,20 @@ const QuizCard: React.FC<QuizCardProps> = ({
 
   useEffect(() => {
     if (data?.duration_in_minutes) {
-      const totalSeconds = data.duration_in_minutes * 60;
-      const minutesLeft = Math.floor(totalSeconds / 60);
-      const secondsLeft = totalSeconds % 60;
-      setFormattedTime(`${minutesLeft.toString().padStart(2, '0')}:${secondsLeft.toString().padStart(2, '0')}`);
+      let totalSeconds = data.duration_in_minutes * 60;
+
+      const interval = setInterval(() => {
+        if (totalSeconds > 0) {
+          totalSeconds -= 1;
+          const minutesLeft = Math.floor(totalSeconds / 60);
+          const secondsLeft = totalSeconds % 60;
+          setFormattedTime(`${minutesLeft.toString().padStart(2, '0')}:${secondsLeft.toString().padStart(2, '0')}`);
+        } else {
+          clearInterval(interval);
+        }
+      }, 1000);
+
+      return () => clearInterval(interval);
     }
   }, [data?.duration_in_minutes]);
 
@@ -302,75 +312,80 @@ const QuizCard: React.FC<QuizCardProps> = ({
 
       {/* Right Panel */}
       <div className={`${isSidebarContentOpen ? "w-full" : "w-2/3"} `}>
-        {isSidebarContentOpen && (
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-[#255C79] mb-1">
-              {data.content_title}
-            </h2>
-            <div className="text-xs text-gray-500 flex gap-2 mb-3">
-              <span>{mcqs.length} Marks</span>
-              <span>|</span>
-              <span>{totalQuestions} Questions</span>
-              <span>|</span>
-              <span>{totalSubmissions} Submissions</span>
-            </div>
+      {isSidebarContentOpen && (
+        <div className="mb-4">
+        <h2 className="text-lg font-semibold text-[#255C79] mb-1">
+          {data.content_title}
+        </h2>
+        <div className="text-xs text-gray-500 flex gap-2 mb-3">
+          <span>{mcqs.length} Marks</span>
+          <span>|</span>
+          <span>{totalQuestions} Questions</span>
+          <span>|</span>
+          <span>{totalSubmissions} Submissions</span>
+        </div>
+        </div>
+      )}
+
+      <div className="flex justify-between items-center mb-4">
+        <span className="text-sm font-medium text-gray-700">
+        Question {currentQuestionIndex + 1}
+        </span>
+        <span className="text-xs bg-blue-100 text-[#255C79] px-2 py-1 rounded">
+        {currentQuestion.difficulty_level}
+        </span>
+      </div>
+
+      <h3 className="text-lg font-semibold mb-6 text-[#255C79]">
+        {currentQuestion.question_text}
+      </h3>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        {currentQuestion.options.map((option, idx) => {
+        const optionLetter = optionLetters[idx];
+        const isSelected = selectedOption === optionLetter;
+
+        return (
+          <div
+          key={idx}
+          onClick={() => handleOptionSelect(optionLetter)}
+          className={`cursor-pointer border rounded-lg p-4 transition ${isSelected
+            ? "border-[#255C79] bg-blue-50"
+            : "bg-white border-gray-200"
+            }`}
+          >
+          <span className="font-medium mr-2">{optionLetter}.</span> {option}
           </div>
+        );
+        })}
+      </div>
+
+      <div className="flex justify-between items-center">
+        {currentQuestionIndex > 0 && (
+        <button
+          onClick={handleBack}
+          className="px-4 py-2 border border-[#255C79] text-[#255C79] rounded-md text-sm font-medium hover:bg-blue-50"
+        >
+          Back
+        </button>
         )}
 
-        <div className="flex justify-between items-center mb-4">
-          <span className="text-sm font-medium text-gray-700">
-            Question {currentQuestionIndex + 1}
-          </span>
-          <span className="text-xs bg-blue-100 text-[#255C79] px-2 py-1 rounded">
-            {currentQuestion.difficulty_level}
-          </span>
-        </div>
+        <button
+        onClick={handleNext}
+        disabled={selectedOption === null}
+        className={`px-4 py-2 rounded-md text-sm font-medium ml-auto ${selectedOption === null
+          ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+          : "bg-[#255C79] text-white hover:bg-[#1a4a5f]"
+          }`}
+        >
+        {currentQuestionIndex < mcqs.length - 1 ? "Next" : "Finish Quiz"}
+        </button>
+      </div>
 
-        <h3 className="text-lg font-semibold mb-6 text-[#255C79]">
-          {currentQuestion.question_text}
-        </h3>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          {currentQuestion.options.map((option, idx) => {
-            const optionLetter = optionLetters[idx];
-            const isSelected = selectedOption === optionLetter;
-
-            return (
-              <div
-                key={idx}
-                onClick={() => handleOptionSelect(optionLetter)}
-                className={`cursor-pointer border rounded-lg p-4 transition ${isSelected
-                    ? "border-[#255C79] bg-blue-50"
-                    : "bg-white border-gray-200"
-                  }`}
-              >
-                <span className="font-medium mr-2">{optionLetter}.</span> {option}
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="flex justify-between items-center">
-          {currentQuestionIndex > 0 && (
-            <button
-              onClick={handleBack}
-              className="px-4 py-2 border border-[#255C79] text-[#255C79] rounded-md text-sm font-medium hover:bg-blue-50"
-            >
-              Back
-            </button>
-          )}
-
-          <button
-            onClick={handleNext}
-            disabled={selectedOption === null}
-            className={`px-4 py-2 rounded-md text-sm font-medium ml-auto ${selectedOption === null
-                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                : "bg-[#255C79] text-white hover:bg-[#1a4a5f]"
-              }`}
-          >
-            {currentQuestionIndex < mcqs.length - 1 ? "Next" : "Finish Quiz"}
-          </button>
-        </div>
+      {/* Timer */}
+      {/* <div className="mt-4 text-right text-sm text-gray-500">
+        <span>Time Remaining: {formattedTime}</span>
+      </div> */}
       </div>
     </div>
   );
@@ -448,12 +463,12 @@ const QuizCard: React.FC<QuizCardProps> = ({
                 <div
                   key={idx}
                   className={`border rounded-lg p-4 ${isSelected && isCorrect
-                      ? "border-green-600 bg-green-50"
-                      : isSelected && !isCorrect
-                        ? "border-red-600 bg-red-50"
-                        : isCorrect
-                          ? "border-green-600 bg-green-50"
-                          : "bg-white border-gray-200"
+                    ? "border-green-600 bg-green-50"
+                    : isSelected && !isCorrect
+                      ? "border-red-600 bg-red-50"
+                      : isCorrect
+                        ? "border-green-600 bg-green-50"
+                        : "bg-white border-gray-200"
                     }`}
                 >
                   <span className="font-medium mr-2">{optionLetter}.</span> {option}
