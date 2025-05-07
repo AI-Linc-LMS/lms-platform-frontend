@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useQuery } from '@tanstack/react-query';
 import { getCourseContent } from '../../../../../services/courses-content/courseContentApis';
 import { useMediaQuery } from '../../../../../hooks/useMediaQuery';
+import { submitContent } from "../../../../../services/courses-content/submitApis";
+import { useNavigate } from "react-router-dom";
 
 interface MCQ {
   id: number;
@@ -33,25 +35,27 @@ interface UserAnswer {
   questionIndex: number;
   selectedOption: string | null;
   isCorrect: boolean;
+  questionId: number;
 }
 
 interface QuizCardProps {
   contentId: number;
   courseId: number;
   isSidebarContentOpen: boolean;
-  quizData?: QuizData; // Optional prop for direct data injection
-  onSubmission?: (contentId: number) => void; // Callback when submission happens
-  onReset?: (contentId: number) => void; // Callback when quiz is reset
+  quizData?: QuizData;
+  onSubmission?: (contentId: number) => void;
+  onReset?: (contentId: number) => void;
 }
 
-const QuizCard: React.FC<QuizCardProps> = ({ 
-  contentId, 
-  courseId, 
-  isSidebarContentOpen, 
+const QuizCard: React.FC<QuizCardProps> = ({
+  contentId,
+  courseId,
+  isSidebarContentOpen,
   quizData: injectedData,
   onSubmission,
   onReset
 }) => {
+  const navigate = useNavigate();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -70,28 +74,42 @@ const QuizCard: React.FC<QuizCardProps> = ({
     enabled: !!contentId && !!courseId && !injectedData,
   });
 
+  console.log("quiz Data", fetchedData);
+
   // Use either injected data or fetched data
   const data = injectedData || fetchedData;
   const optionLetters = ['A', 'B', 'C', 'D'];
 
+  console.log("userAnswers", userAnswers);
   useEffect(() => {
     if (data?.details?.mcqs) {
       setTotalQuestions(data.details.mcqs.length);
       // Initialize user answers array
       setUserAnswers(data.details.mcqs.map((_, index) => ({
+        questionId: data.details.mcqs[index].id,
+        isCorrect: false,
         questionIndex: index,
         selectedOption: null,
-        isCorrect: false
       })));
     }
   }, [data]);
 
   useEffect(() => {
     if (data?.duration_in_minutes) {
-      const totalSeconds = data.duration_in_minutes * 60;
-      const minutesLeft = Math.floor(totalSeconds / 60);
-      const secondsLeft = totalSeconds % 60;
-      setFormattedTime(`${minutesLeft.toString().padStart(2, '0')}:${secondsLeft.toString().padStart(2, '0')}`);
+      let totalSeconds = data.duration_in_minutes * 60;
+
+      const interval = setInterval(() => {
+        if (totalSeconds > 0) {
+          totalSeconds -= 1;
+          const minutesLeft = Math.floor(totalSeconds / 60);
+          const secondsLeft = totalSeconds % 60;
+          setFormattedTime(`${minutesLeft.toString().padStart(2, '0')}:${secondsLeft.toString().padStart(2, '0')}`);
+        } else {
+          clearInterval(interval);
+        }
+      }, 1000);
+
+      return () => clearInterval(interval);
     }
   }, [data?.duration_in_minutes]);
 
@@ -130,7 +148,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
   const handleOptionSelect = (option: string) => {
     if (!submitted) {
       setSelectedOption(option);
-      
+
       // Update userAnswers state
       const updatedAnswers = [...userAnswers];
       updatedAnswers[currentQuestionIndex] = {
@@ -145,17 +163,17 @@ const QuizCard: React.FC<QuizCardProps> = ({
     // Mark as submitted internally to track answers
     setSubmitted(true);
     setTotalSubmissions(prev => prev + 1);
-    
+
     const isCorrect = selectedOption === currentQuestion.correct_option;
-    
+
     // Update userAnswers state with selection
     updateUserAnswer(currentQuestionIndex, selectedOption!, isCorrect);
-    
+
     // Notify parent component about submission
     if (onSubmission) {
       onSubmission(contentId);
     }
-    
+
     // Move to next question or finish quiz
     if (currentQuestionIndex < mcqs.length - 1) {
       navigateToNext();
@@ -171,14 +189,21 @@ const QuizCard: React.FC<QuizCardProps> = ({
     setSubmitted(false);
   };
 
-  const finishQuiz = () => {
+  const finishQuiz = async () => {
     // Calculate total score when quiz is completed
-    const totalCorrect = userAnswers.filter(answer => answer.isCorrect).length;
-    setScore(totalCorrect);
-    setQuizCompleted(true);
+    const response = await submitContent(1, courseId, contentId, "Quiz", { userAnswers });
+    console.log("response", response);
+    if (response === 201) {
+      const totalCorrect = userAnswers.filter(answer => answer.isCorrect).length;
+      setScore(totalCorrect);
+      setQuizCompleted(true);
+    } else {
+      console.log("error", response);
+    }
   };
 
   const resetQuiz = () => {
+    navigate(0);
     setCurrentQuestionIndex(0);
     setSelectedOption(null);
     setSubmitted(false);
@@ -186,14 +211,15 @@ const QuizCard: React.FC<QuizCardProps> = ({
     setQuizCompleted(false);
     setTotalSubmissions(0);
     setIsReviewing(false);
-    
+
     // Reset userAnswers
     setUserAnswers(mcqs.map((_, index) => ({
+      questionId: mcqs[index].id,
       questionIndex: index,
       selectedOption: null,
       isCorrect: false
     })));
-    
+
     // Notify parent component about reset
     if (onReset) {
       onReset(contentId);
@@ -222,16 +248,16 @@ const QuizCard: React.FC<QuizCardProps> = ({
 
   const getQuestionButtonStyle = (index: number) => {
     const answer = userAnswers[index];
-    
+
     if (index === currentQuestionIndex && !isReviewing) {
       return "bg-blue-50 border-[#007B9F] text-[#255C79]";
     }
-    
+
     // Show correct/incorrect colors only after quiz is completed
     if (quizCompleted) {
       if (answer.selectedOption) {
-        return answer.isCorrect 
-          ? "bg-green-100 border-green-500 text-green-700" 
+        return answer.isCorrect
+          ? "bg-green-100 border-green-500 text-green-700"
           : "bg-red-100 border-red-500 text-red-700";
       }
     } else {
@@ -240,9 +266,158 @@ const QuizCard: React.FC<QuizCardProps> = ({
         return "bg-[#2A8CB0] border-[#2A8CB0] text-white";
       }
     }
-    
+
     return "bg-white border-gray-300 text-gray-600";
   };
+
+  function renderSidebar() {
+    // Add a safety check for data
+    if (!data) return null;
+
+    return (
+      <div className="w-1/3 ml-10">
+        <div className="flex justify-between items-center text-sm text-gray-500 mb-8">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">
+              {data.content_type} {data.id}
+            </h2>
+            <h2 className="text-md font-semibold text-gray-800 mb-2">
+              {data.content_title}
+            </h2>
+            <div className="text-xs text-gray-500 flex gap-2 mb-2">
+              <span>{mcqs.length} Marks</span>
+              <span>|</span>
+              <span>{totalQuestions} Questions</span>
+              <span>|</span>
+              <span>{totalSubmissions} Submissions</span>
+            </div>
+            <p className="text-xs text-gray-500">
+              {data.details.instructions || "Solve real world questions and gain insight knowledge."}
+            </p>
+          </div>
+          <span className="text-[14px]">⏱ {formattedTime}</span>
+        </div>
+
+        <div className="grid grid-cols-4 gap-2">
+          {mcqs.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                if (!submitted || currentQuestionIndex === index) {
+                  navigateToQuestion(index);
+                }
+              }}
+              className={`py-2 rounded-md border text-sm ${getQuestionButtonStyle(index)}`}
+              disabled={submitted && currentQuestionIndex !== index && !userAnswers[index].selectedOption}
+            >
+              {index + 1}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function renderReviewContent() {
+    if (isReviewing) {
+      return (
+        <div className="border rounded-lg p-4 md:p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-base md:text-lg font-semibold">Question {currentQuestionIndex + 1}</h3>
+            <span className="text-xs bg-blue-100 text-[#255C79] px-2 py-1 rounded">
+              {currentQuestion.difficulty_level}
+            </span>
+          </div>
+          
+          <h3 className="text-lg font-medium mb-6">
+            {currentQuestion.question_text}
+          </h3>
+
+          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'} gap-3 md:gap-4 mb-4 md:mb-6`}>
+            {currentQuestion.options.map((option, idx) => {
+              const optionLetter = optionLetters[idx];
+              const isSelected = userAnswers[currentQuestionIndex].selectedOption === optionLetter;
+              const isCorrect = optionLetter === currentQuestion.correct_option;
+
+              return (
+                <div
+                  key={idx}
+                  className={`border rounded-lg p-3 md:p-4 text-sm md:text-base ${
+                    isSelected && isCorrect
+                      ? "border-green-600 bg-green-50"
+                      : isSelected && !isCorrect
+                      ? "border-red-600 bg-red-50"
+                      : isCorrect
+                        ? "border-green-600 bg-green-50"
+                        : "bg-white border-gray-200"
+                  }`}
+                >
+                  <span className="font-medium mr-2">{optionLetter}.</span> {option}
+                  {isCorrect && <span className="ml-2 text-green-600">✓</span>}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+            <div className="text-sm font-medium text-gray-700">
+              {userAnswers[currentQuestionIndex].isCorrect ?
+                <span className="text-green-600">Your response was correct!</span> :
+                <span className="text-red-600">Your response was incorrect. The correct answer is {currentQuestion.correct_option}.</span>
+              }
+            </div>
+          </div>
+
+          <div className="flex justify-between">
+            <button
+              onClick={handleBack}
+              className="px-3 md:px-4 py-2 border border-[#255C79] text-[#255C79] rounded-md text-xs md:text-sm font-medium hover:bg-blue-50"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => {
+                if (currentQuestionIndex < mcqs.length - 1) {
+                  navigateToQuestion(currentQuestionIndex + 1);
+                } else {
+                  setIsReviewing(false);
+                }
+              }}
+              className="px-3 md:px-4 py-2 bg-[#255C79] text-white rounded-md text-xs md:text-sm font-medium hover:bg-[#1a4a5f]"
+            >
+              {currentQuestionIndex < mcqs.length - 1 ? "Next" : "Done"}
+            </button>
+          </div>
+        </div>
+      );
+    } else {
+      return (
+        <div className="flex flex-col items-center justify-center border rounded-lg p-4 md:p-6">
+          <h3 className="text-lg md:text-xl font-semibold mb-4">Quiz Result</h3>
+          <p className="text-base md:text-lg mb-4 md:mb-6">
+            Your score: <span className="font-bold">{score}/{mcqs.length}</span> ({Math.round((score / mcqs.length) * 100)}%)
+          </p>
+          <p className="text-xs md:text-sm text-gray-600 mb-6 md:mb-8">
+            Your submitted response was correct.
+          </p>
+          <div className="flex gap-4">
+            <button
+              onClick={reviewAnswers}
+              className="px-3 md:px-4 py-2 border border-[#255C79] text-[#255C79] rounded-md text-xs md:text-sm font-medium hover:bg-blue-50"
+            >
+              Review
+            </button>
+            <button
+              onClick={resetQuiz}
+              className="px-3 md:px-4 py-2 bg-[#255C79] text-white rounded-md text-xs md:text-sm font-medium hover:bg-[#1a4a5f]"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      );
+    }
+  }
 
   if (quizCompleted) {
     return (
@@ -335,7 +510,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
           })}
         </div>
 
-        <div className="flex justify-between items-center mb-8 md:mb-0">
+        <div className="flex justify-between items-center">
           {currentQuestionIndex > 0 && (
             <button
               onClick={handleBack}
@@ -357,158 +532,14 @@ const QuizCard: React.FC<QuizCardProps> = ({
             {currentQuestionIndex < mcqs.length - 1 ? "Next" : "Finish Quiz"}
           </button>
         </div>
+
+        {/* Timer */}
+        <div className="mt-4 text-right text-sm text-gray-500">
+          <span>Time Remaining: {formattedTime}</span>
+        </div>
       </div>
     </div>
   );
-
-  function renderSidebar() {
-    // Add a safety check for data
-    if (!data) return null;
-    
-    return (
-      <div className="w-1/3 ml-10">
-        <div className="flex justify-between items-center text-sm text-gray-500 mb-8">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">
-              {data.content_type} {data.id}
-            </h2>
-            <h2 className="text-md font-semibold text-gray-800 mb-2">
-              {data.content_title}
-            </h2>
-            <div className="text-xs text-gray-500 flex gap-2 mb-2">
-              <span>{mcqs.length} Marks</span>
-              <span>|</span>
-              <span>{totalQuestions} Questions</span>
-              <span>|</span>
-              <span>{totalSubmissions} Submissions</span>
-            </div>
-            <p className="text-xs text-gray-500">
-              {data.details.instructions || "Solve real world questions and gain insight knowledge."}
-            </p>
-          </div>
-          <span className="text-[14px]">⏱ {formattedTime}</span>
-        </div>
-
-        <div className="grid grid-cols-4 gap-2">
-          {mcqs.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                if (!submitted || currentQuestionIndex === index) {
-                  navigateToQuestion(index);
-                }
-              }}
-              className={`py-2 rounded-md border text-sm ${getQuestionButtonStyle(index)}`}
-              disabled={submitted && currentQuestionIndex !== index && !userAnswers[index].selectedOption}
-            >
-              {index + 1}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  function renderReviewContent() {
-    if (isReviewing) {
-      return (
-        <div className="border rounded-lg p-4 md:p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-base md:text-lg font-semibold">Question {currentQuestionIndex + 1}</h3>
-            <span className="text-xs bg-blue-100 text-[#255C79] px-2 py-1 rounded">
-              {currentQuestion.difficulty_level}
-            </span>
-          </div>
-          
-          <h3 className="text-base md:text-lg font-medium mb-4 md:mb-6">
-            {currentQuestion.question_text}
-          </h3>
-
-          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'} gap-3 md:gap-4 mb-4 md:mb-6`}>
-            {currentQuestion.options.map((option, idx) => {
-              const optionLetter = optionLetters[idx];
-              const isSelected = userAnswers[currentQuestionIndex].selectedOption === optionLetter;
-              const isCorrect = optionLetter === currentQuestion.correct_option;
-
-              return (
-                <div
-                  key={idx}
-                  className={`border rounded-lg p-3 md:p-4 text-sm md:text-base ${
-                    isSelected && isCorrect
-                      ? "border-green-600 bg-green-50"
-                      : isSelected && !isCorrect
-                      ? "border-red-600 bg-red-50"
-                      : isCorrect
-                      ? "border-green-600 bg-green-50"
-                      : "bg-white border-gray-200"
-                  }`}
-                >
-                  <span className="font-medium mr-2">{optionLetter}.</span> {option}
-                  {isCorrect && <span className="ml-2 text-green-600">✓</span>}
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="mb-4 p-3 md:p-4 bg-gray-50 rounded-lg">
-            <div className="text-xs md:text-sm font-medium text-gray-700">
-              {userAnswers[currentQuestionIndex].isCorrect ? 
-                <span className="text-green-600">Your response was correct!</span> : 
-                <span className="text-red-600">Your response was incorrect. The correct answer is {currentQuestion.correct_option}.</span>
-              }
-            </div>
-          </div>
-
-          <div className="flex justify-between">
-            <button
-              onClick={handleBack}
-              className="px-3 md:px-4 py-2 border border-[#255C79] text-[#255C79] rounded-md text-xs md:text-sm font-medium hover:bg-blue-50"
-            >
-              Back
-            </button>
-            <button
-              onClick={() => {
-                if (currentQuestionIndex < mcqs.length - 1) {
-                  navigateToQuestion(currentQuestionIndex + 1);
-                } else {
-                  setIsReviewing(false);
-                }
-              }}
-              className="px-3 md:px-4 py-2 bg-[#255C79] text-white rounded-md text-xs md:text-sm font-medium hover:bg-[#1a4a5f]"
-            >
-              {currentQuestionIndex < mcqs.length - 1 ? "Next" : "Done"}
-            </button>
-          </div>
-        </div>
-      );
-    } else {
-      return (
-        <div className="flex flex-col items-center justify-center border rounded-lg p-4 md:p-6">
-          <h3 className="text-lg md:text-xl font-semibold mb-4">Quiz Result</h3>
-          <p className="text-base md:text-lg mb-4 md:mb-6">
-            Your score: <span className="font-bold">{score}/{mcqs.length}</span> ({Math.round((score / mcqs.length) * 100)}%)
-          </p>
-          <p className="text-xs md:text-sm text-gray-600 mb-6 md:mb-8">
-            Your submitted response was correct.
-          </p>
-          <div className="flex gap-4">
-            <button
-              onClick={reviewAnswers}
-              className="px-3 md:px-4 py-2 border border-[#255C79] text-[#255C79] rounded-md text-xs md:text-sm font-medium hover:bg-blue-50"
-            >
-              Review
-            </button>
-            <button
-              onClick={resetQuiz}
-              className="px-3 md:px-4 py-2 bg-[#255C79] text-white rounded-md text-xs md:text-sm font-medium hover:bg-[#1a4a5f]"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      );
-    }
-  }
 };
 
 export default QuizCard;

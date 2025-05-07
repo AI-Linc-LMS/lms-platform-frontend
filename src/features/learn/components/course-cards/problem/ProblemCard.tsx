@@ -47,10 +47,13 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     return saved ? saved === 'dark' : false;
   });
   const [results, setResults] = useState<null | { success: boolean; message: string }>(null);
+  const [isRunning, setIsRunning] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState("description");
 
   if (isLoading) {
     return (
-      <div className="animate-pulse">
+      <div className="animate-pulse bg-white rounded-lg shadow-lg p-6">
         <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
         <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
         <div className="h-4 bg-gray-200 rounded w-5/6 mb-2"></div>
@@ -63,7 +66,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
   if (error) {
     return (
-      <div className="text-red-500 p-4">
+      <div className="text-red-500 p-4 bg-white rounded-lg shadow-lg">
         Error loading problem. Please try again later.
       </div>
     );
@@ -71,13 +74,11 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
   if (!data) {
     return (
-      <div className="text-gray-500 p-4">
+      <div className="text-gray-500 p-4 bg-white rounded-lg shadow-lg">
         No problem data available.
       </div>
     );
   }
-
-  console.log('Problem Data:', data);
 
   const handleCodeChange = (value: string | undefined) => {
     if (value) {
@@ -86,18 +87,32 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   };
 
   const handleRunCode = () => {
-    // Here you would typically call an API to run the code against test cases
-    // For demo purposes, we'll simulate a response
+    setIsRunning(true);
+    setResults(null);
+    
+    // Simulate code execution
     setTimeout(() => {
       setResults({
         success: true,
         message: "All test cases passed!",
       });
+      setIsRunning(false);
     }, 1000);
   };
 
   const handleSubmitCode = () => {
-    onSubmit(code);
+    setIsSubmitting(true);
+    setResults(null);
+    
+    // Simulate submission
+    setTimeout(() => {
+      onSubmit(code);
+      setResults({
+        success: true,
+        message: "Solution accepted! Your submission beats 85% of users in runtime.",
+      });
+      setIsSubmitting(false);
+    }, 1500);
   };
 
   const languageOptions = [
@@ -116,156 +131,190 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   };
 
   return (
-    <div className="problem-card-container">
-      {/* Problem Description Panel */}
-      <div className="problem-panel">
-        <h2 className="text-xl font-semibold text-gray-800 mb-2">{data.details.title}</h2>
-        <div className="flex items-center mb-4">
+    <div className={`problem-card-container rounded-2xl ${isDarkTheme ? 'dark-mode' : ''}`}>
+      <div className="problem-header rounded-2xl">
+        <div className="problem-title-section">
+          <h1 className="problem-title">{data.details.title}</h1>
           <span
-            className={`text-xs font-medium py-1 px-2.5 rounded-full ${data.details.difficulty_level === "Easy" ? "bg-green-100 text-green-800" :
-              data.details.difficulty_level === "Medium" ? "bg-yellow-100 text-yellow-800" :
-                "bg-red-100 text-red-800"
-              }`}
+            className={`difficulty-badge ${
+              data.details.difficulty_level === "Easy" ? "easy" :
+              data.details.difficulty_level === "Medium" ? "medium" : "hard"
+            }`}
           >
             {data.details.difficulty_level}
           </span>
         </div>
-
-        <div className="prose problem-description mb-6" dangerouslySetInnerHTML={{ __html: data.details.problem_statement || "" }} />
-
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-2">Input Format</h3>
-          <div className="bg-gray-50 rounded-lg p-4" dangerouslySetInnerHTML={{ __html: data.details.input_format || "" }} />
-        </div>
-
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-2">Output Format</h3>
-          <div className="bg-gray-50 rounded-lg p-4" dangerouslySetInnerHTML={{ __html: data.details.output_format || "" }} />
-        </div>
-
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-2">Sample Input</h3>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <pre className="text-sm">{data.details.sample_input}</pre>
-          </div>
-        </div>
-
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-2">Sample Output</h3>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <pre className="text-sm">{data.details.sample_output}</pre>
-          </div>
-        </div>
       </div>
 
-      {/* Code Panel */}
-      <div className="code-panel">
-        <div className="code-header">
-          <h2 className="text-lg font-semibold text-gray-800">Code</h2>
-          <div className="code-controls">
-            <div className="language-selector">
-              <select
-                value={selectedLanguage}
-                onChange={(e) => setSelectedLanguage(e.target.value)}
-                className="bg-white border border-gray-200 text-gray-700 text-sm rounded focus:ring-blue-500 focus:border-blue-500 px-3 py-1"
-              >
-                {languageOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="autocomplete-toggle flex items-center ml-3">
-              <span className="text-sm text-gray-600 mr-2">Autocomplete</span>
-              <div className="relative inline-block w-10 align-middle select-none">
-                <input
-                  type="checkbox"
-                  id="autocomplete"
-                  checked={isAutocompleteEnabled}
-                  onChange={() => setIsAutocompleteEnabled(!isAutocompleteEnabled)}
-                  className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                />
-                <label
-                  htmlFor="autocomplete"
-                  className={`toggle-label block overflow-hidden h-5 rounded-full cursor-pointer ${isAutocompleteEnabled ? "bg-blue-500" : "bg-gray-300"
-                    }`}
-                ></label>
+      <div className="leetcode-layout">
+        {/* Left panel with problem description */}
+        <div className="description-panel">
+          <div className="description-tabs">
+            <button 
+              className={`tab-button ${activeTab === 'description' ? 'active' : ''}`}
+              onClick={() => setActiveTab('description')}
+            >
+              Description
+            </button>
+            <button 
+              className={`tab-button ${activeTab === 'solutions' ? 'active' : ''}`}
+              onClick={() => setActiveTab('solutions')}
+            >
+              Solutions
+            </button>
+            <button 
+              className={`tab-button ${activeTab === 'discussion' ? 'active' : ''}`}
+              onClick={() => setActiveTab('discussion')}
+            >
+              Submissions
+            </button>
+          </div>
+
+          <div className="description-content">
+            {activeTab === 'description' && (
+              <>
+                <div className="problem-description" dangerouslySetInnerHTML={{ __html: data.details.problem_statement || "" }} />
+
+                <div className="section">
+                  <h3 className="section-title">Input Format</h3>
+                  <div className="section-content" dangerouslySetInnerHTML={{ __html: data.details.input_format || "" }} />
+                </div>
+
+                <div className="section">
+                  <h3 className="section-title">Output Format</h3>
+                  <div className="section-content" dangerouslySetInnerHTML={{ __html: data.details.output_format || "" }} />
+                </div>
+
+                <div className="examples-section">
+                  <div className="example">
+                    <h3 className="example-title">Example 1:</h3>
+                    <div className="example-box">
+                      <div className="example-input">
+                        <span className="example-label">Input:</span>
+                        <pre className="example-code">{data.details.sample_input}</pre>
+                      </div>
+                      <div className="example-output">
+                        <span className="example-label">Output:</span>
+                        <pre className="example-code">{data.details.sample_output}</pre>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activeTab === 'solutions' && (
+              <div className="placeholder-content">
+                <p>Community solutions will appear here.</p>
               </div>
-              <span className="ml-2 text-sm text-gray-600">{isAutocompleteEnabled ? "On" : "Off"}</span>
-            </div>
-            <div className="theme-toggle flex items-center ml-3">
-              <span className="text-sm text-gray-600 mr-2">Theme</span>
-              <div className="relative inline-block w-10 align-middle select-none">
-                <input
-                  type="checkbox"
-                  id="theme-toggle"
-                  checked={isDarkTheme}
-                  onChange={handleThemeChange}
-                  className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                />
-                <label
-                  htmlFor="theme-toggle"
-                  className={`toggle-label block overflow-hidden h-5 rounded-full cursor-pointer ${isDarkTheme ? "bg-blue-500" : "bg-gray-300"}`}
-                ></label>
+            )}
+
+            {activeTab === 'discussion' && (
+              <div className="placeholder-content">
+                <p>Community discussions will appear here.</p>
               </div>
-              <span className="ml-2 text-sm text-gray-600">
-                {isDarkTheme ? "Dark" : "Light"}
-              </span>
-            </div>
+            )}
           </div>
         </div>
 
-        <div className="editor-container">
-          <Editor
-            height="100%"
-            language={selectedLanguage}
-            value={code}
-            onChange={handleCodeChange}
-            theme={isDarkTheme ? "vs-dark" : "light"}
-            options={{
-              minimap: { enabled: false },
-              fontSize: 14,
-              scrollBeyondLastLine: false,
-              automaticLayout: true,
-              wordWrap: "on",
-              suggestOnTriggerCharacters: isAutocompleteEnabled,
-              lineNumbers: "on",
-              roundedSelection: true,
-              selectOnLineNumbers: true,
-              quickSuggestions: isAutocompleteEnabled,
-            }}
-          />
-        </div>
-
-        <div className="code-actions">
-          <button
-            onClick={handleRunCode}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center cursor-pointer"
-          >
-            <span className="mr-1">▶</span> Run Code
-          </button>
-          <button
-            onClick={handleSubmitCode}
-            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium ml-2 cursor-pointer"
-          >
-            Submit
-          </button>
-        </div>
-
-        <div className="output-section">
-          {results ? (
-            <div
-              className={`p-4 rounded-lg ${results.success ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                }`}
-            >
-              {results.message}
+        {/* Right panel with code editor */}
+        <div className="code-editor-panel">
+          <div className="editor-header">
+            <div className="header-top-row">
+              <div className="language-selector">
+                <select
+                  value={selectedLanguage}
+                  onChange={(e) => setSelectedLanguage(e.target.value)}
+                  className="language-select"
+                >
+                  {languageOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="run-submit-buttons">
+                <button
+                  onClick={handleRunCode}
+                  disabled={isRunning}
+                  className={`run-button ${isRunning ? 'button-loading' : ''}`}
+                >
+                  {isRunning ? 'Running...' : 'Run'}
+                </button>
+                <button
+                  onClick={handleSubmitCode}
+                  disabled={isSubmitting}
+                  className={`submit-button ${isSubmitting ? 'button-loading' : ''}`}
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                </button>
+              </div>
             </div>
-          ) : (
-            <div className="text-gray-500 text-sm">
-              Run your code to see the output here.
+            
+            <div className="editor-actions">
+              <div className="toggle-container">
+                <label className="toggle-label">
+                  <span>Autocomplete</span>
+                  <div className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={isAutocompleteEnabled}
+                      onChange={() => setIsAutocompleteEnabled(!isAutocompleteEnabled)}
+                    />
+                    <span className="toggle-slider"></span>
+                  </div>
+                </label>
+              </div>
+              
+              <div className="toggle-container">
+                <label className="toggle-label">
+                  <span>Dark Mode</span>
+                  <div className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={isDarkTheme}
+                      onChange={handleThemeChange}
+                    />
+                    <span className="toggle-slider"></span>
+                  </div>
+                </label>
+              </div>
             </div>
-          )}
+          </div>
+
+          <div className="monaco-editor-container">
+            <Editor
+              height="100%"
+              language={selectedLanguage}
+              value={code}
+              onChange={handleCodeChange}
+              theme={isDarkTheme ? "vs-dark" : "light"}
+              options={{
+                minimap: { enabled: false },
+                fontSize: 14,
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                wordWrap: "on",
+                suggestOnTriggerCharacters: isAutocompleteEnabled,
+                lineNumbers: "on",
+                roundedSelection: true,
+                selectOnLineNumbers: true,
+                quickSuggestions: isAutocompleteEnabled,
+              }}
+            />
+            
+            <div className="editor-footer">
+              <div className="results-container">
+                {results && (
+                  <div className={`results ${results.success ? 'success' : 'error'}`}>
+                    {results.message}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
