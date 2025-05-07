@@ -1,64 +1,31 @@
 import React from "react";
-import { Quiz } from "./data/mockQuizData";
 import defaultQuizIcon from "../../../../assets/course_sidebar_assets/quiz/defaultQuizIcon.png";
 import QuizBackButton from "../../../../assets/course_sidebar_assets/quizBackButton.png";
-import { useQuery } from "@tanstack/react-query";
-import { getCourseContent } from "../../../../services/courses-content/courseContentApis";
 
-interface QuizContentProps {
-  quizzes?: Quiz[]; // Make optional for backward compatibility
-  selectedQuizId: number;
-  onSelect: (quizId: number) => void;
-  courseId?: number; // New prop for API integration
-  clientId?: number; // New prop for API integration
-}
-
-// Interface for the API response data structure
-interface MCQ {
-  id: number;
-  question_text: string;
-  difficulty_level: string;
-  options: string[];
-  correct_option: string;
-}
-
-interface QuizDetails {
+export interface Quiz {
   id: number;
   title: string;
-  instructions: string;
-  durating_in_minutes: number;
-  difficulty_level: string;
-  mcqs: MCQ[];
+  marks: number;
+  submissions: number;
+  questions: number;
+  status: string;
 }
 
-// The API response structure
-interface QuizApiResponse {
-  id: number;
-  content_type: string;
-  content_title: string;
-  duration_in_minutes: number;
-  order: number;
-  details: QuizDetails;
+interface QuizContentProps {
+  quizzes: Quiz[]; 
+  selectedQuizId: number;
+  onSelect: (quizId: number) => void;
 }
 
 const QuizContent: React.FC<QuizContentProps> = ({
-  quizzes: mockQuizzes,
+  quizzes: Quizzes,
   selectedQuizId,
   onSelect,
-  courseId = 1, // Default to 1 if not provided
-  clientId = 1, // Default to 1 if not provided
 }) => {
-  // Fetch quiz data from API if courseId is provided, otherwise use mock data
-  const useApiData = !!courseId && !!selectedQuizId;
   
-  const { data: apiQuizData, isLoading, error } = useQuery<QuizApiResponse>({
-    queryKey: ['quiz', courseId, selectedQuizId],
-    queryFn: () => getCourseContent(clientId, courseId, selectedQuizId),
-    enabled: useApiData,
-  });
-
+  console.log(Quizzes);
   // If loading, show a loading state
-  if (useApiData && isLoading) {
+  if (Quizzes.length === 0) {
     return (
       <div className="animate-pulse">
         <div className="h-6 bg-gray-200 rounded w-1/2 mb-2"></div>
@@ -69,17 +36,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
     );
   }
 
-  // If error, show error state
-  if (useApiData && error) {
-    return (
-      <div className="text-red-500 p-4">
-        Failed to load quizzes. Please try again later.
-      </div>
-    );
-  }
-
-  // Use mock quizzes if no API data is available
-  const quizzes = mockQuizzes || [];
+  const quizzes = Quizzes;
   
   return (
     <div>
@@ -96,13 +53,11 @@ const QuizContent: React.FC<QuizContentProps> = ({
           const isLastItem = idx === quizzes.length - 1;
           
           // If this quiz is selected and we have API data, get the question count from API
-          const questionCount = isSelected && apiQuizData?.details?.mcqs 
-            ? apiQuizData.details.mcqs.length 
-            : quiz.questions.length;
+          const questionCount = isSelected && quiz.questions
             
           // Use a placeholder submissions count based on API data if available
-          const submissions = isSelected && apiQuizData 
-            ? (apiQuizData.details.mcqs.length * 10) // Just a placeholder calculation
+          const submissions = isSelected && quizzes 
+            ? (quiz.questions * 10) 
             : quiz.submissions;
 
           return (
@@ -127,7 +82,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
                       isSelected ? "text-[#007B9F]" : "text-gray-800"
                     }`}
                   >
-                    {isSelected && apiQuizData ? apiQuizData.details.title : quiz.title}
+                    {isSelected && quizzes ? quiz.title : quiz.title}
                   </h3>
                   <div className="text-xs text-gray-500 flex gap-2 mt-1">
                     <span>{quiz.marks} Marks</span>
