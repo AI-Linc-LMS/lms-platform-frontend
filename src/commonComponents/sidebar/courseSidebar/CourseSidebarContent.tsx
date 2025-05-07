@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {getSubmoduleById } from "../../../services/courses-content/courseContentApis";
 import DashboardContent from "./component/DashboardContent";
-import AllContent, { ContentType } from "./component/AllContent";
+import AllContent, { ContentType, ContentItem } from "./component/AllContent";
 import ArticleContent, { ArticleItem } from "./component/ArticleContent";
 import VideoContent from "./component/VideoContent";
 import ProblemContent from "./component/ProblemContent";
@@ -9,6 +9,7 @@ import closeSidebarIcon from "../../../assets/course_sidebar_assets/closeSidebar
 import QuizContent, { Quiz } from "./component/QuizContent";
 import DevelopmentContent from "./component/DevelopmentContent";
 import { developmentProjectsDummy } from "./component/data/mockDevelopmentData";
+import { useMediaQuery } from "../../../hooks/useMediaQuery";
 import SubjectiveContent, { AssignmentItem } from "./component/SubjectiveContent";
 
 interface SubmoduleContent {
@@ -41,6 +42,13 @@ const dummyStats = [
   { title: "Quiz", progress: 25, count: "1/3" },
   { title: "Subjective", progress: 0, count: "0/1" },
   { title: "Development", progress: 0, count: "0/4" },
+];
+
+// Dummy content for when real data isn't available
+const dummyContent: ContentItem[] = [
+  { id: 1, title: "Introduction", content_type: "Article" as ContentType, order: 1, duration_in_minutes: 5, status: "completed" },
+  { id: 2, title: "Getting Started", content_type: "VideoTutorial" as ContentType, order: 2, duration_in_minutes: 10, status: "completed" },
+  { id: 3, title: "Basic Concepts", content_type: "Quiz" as ContentType, order: 3, duration_in_minutes: 15, status: "non-complete" },
 ];
 
 interface VideoProps {
@@ -100,6 +108,13 @@ interface CourseSidebarContentProps {
   onContentSelect: (contentId: number, contentType: ContentType) => void;
 }
 
+// Define the missing getCourseContent function
+const getCourseContent = (clientId: number, courseId: number, contentId: number) => {
+  // Implementation would be added here based on your API requirements
+  console.log("Getting course content for", clientId, courseId, contentId);
+  // This is just a placeholder - implement the actual API call as needed
+};
+
 const CourseSidebarContent = ({
   activeLabel,
   onClose,
@@ -114,12 +129,58 @@ const CourseSidebarContent = ({
   selectedContentId,
   onContentSelect,
 }: CourseSidebarContentProps) => {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+
   // Fetch submodule data by ID if provided
   const { data: submoduleData } = useQuery<SubmoduleData | null>({
     queryKey: ['submodule', submoduleId],
     queryFn: () => submoduleId && courseId ? getSubmoduleById(1, courseId, submoduleId) : Promise.resolve(null),
     enabled: !!submoduleId && !!courseId,
   });
+
+  const handleVideoClick = (id: string) => {
+    videoProps.onVideoClick(id);
+    if (courseId) {
+      getCourseContent(1, courseId, parseInt(id));
+    }
+    if (isMobile) {
+      onClose();
+    }
+  };
+
+  const handleProblemSelect = (id: string) => {
+    if (problemProps && problemProps.onProblemSelect) {
+      problemProps.onProblemSelect(id);
+      if (isMobile) {
+        onClose();
+      }
+    } else if (courseId) {
+      getCourseContent(1, courseId, parseInt(id));
+    }
+  };
+
+  const handleProjectSelect = (id: string) => {
+    if (developmentProps && developmentProps.onProjectSelect) {
+      developmentProps.onProjectSelect(id);
+      if (isMobile) {
+        onClose();
+      }
+    }
+  };
+
+  const handleQuizSelect = (id: number) => {
+    quizProps.onSelectQuiz(id);
+    if (isMobile) {
+      onClose();
+    }
+  };
+
+  const handleArticleClick = (id: number) => {
+    articleProps.onArticleClick(id);
+    if (isMobile) {
+      onClose();
+    }
+  };
 
   console.log("submoduleData", submoduleData);
 
@@ -225,84 +286,110 @@ const CourseSidebarContent = ({
     : [];
 
   return (
-    <div className="relative bg-white w-[500px] min-h-screen shadow-xl rounded-lg px-4 py-3 transition-all duration-300 mt-5">
+    <div 
+      className={`relative bg-white ${
+        isMobile 
+          ? 'h-full overflow-y-auto rounded-l-lg shadow-xl' 
+          : 'w-[500px] min-h-screen rounded-lg px-4 py-3 mt-5 shadow-xl'
+      }`}
+    >
       <button
         onClick={onClose}
-        className="absolute top-1 -right-10 z-10 bg-white rounded-full shadow-md p-2 hover:bg-gray-100 transition cursor-pointer"
+        className={`${
+          isMobile 
+            ? 'absolute top-3 right-3 z-10 bg-white rounded-full shadow-md p-2' 
+            : 'absolute top-1 -right-10 z-10 bg-white rounded-full shadow-md p-2'
+        } hover:bg-gray-100 transition cursor-pointer`}
       >
         <img src={closeSidebarIcon} alt="Close" className="w-4 h-4" />
       </button>
 
-      <div className="text-sm text-gray-700">
-        {activeLabel === "Dashboard" && (
-          <DashboardContent
-            courseTitle={submoduleData?.moduleName || "Course"}
-            courseType="Self pace"
-            stats={dummyStats}
-          />
-        )}
-        {activeLabel === "All" && submoduleData && (
-          <AllContent 
-            contents={submoduleData.data.map(content => ({
-              id: content.id,
-              title: content.title,
-              content_type: content.content_type,
-              order: content.order,
-              duration_in_minutes: content.duration_in_minutes,
-              status: content.status || "non-complete"
-            }))}
-            onContentClick={handleContentClick}
-            selectedContentId={selectedContentId}
-          />
-        )}
-        {activeLabel === "Article" && (
-          <ArticleContent
-            articles={articles}
-            selectedArticleId={articleProps.selectedArticleId}
-            onArticleClick={articleProps.onArticleClick}
-          />
-        )}
-        {activeLabel === "Videos" && (
-          <VideoContent
-            videos={videos}
-            selectedVideoId={videoProps.selectedVideoId || ""}
-            onVideoClick={videoProps.onVideoClick}
-            topicNo={submoduleData?.weekNo || 1}
-            topicTitle={submoduleData?.submoduleName || "Topic 1"}
-            week={`Week ${submoduleData?.weekNo || 1}`}
-            difficulty="Beginner"
-            completionPercentage={0}
-            totalDuration={`${submoduleData?.data?.reduce((acc: number, curr: SubmoduleContent) => acc + curr.duration_in_minutes, 0) || 0} min`}
-          />
-        )}
-        {activeLabel === "Problems" && problemProps && (
-          <ProblemContent
-            problems={problems}
-            selectedProblemId={problemProps.selectedProblemId}
-            onSelect={problemProps.onProblemSelect}
-          />
-        )}
-        {activeLabel === "Quiz" && (
-          <QuizContent
-            quizzes={quizzes}
-            selectedQuizId={quizProps.selectedQuizId}
-            onSelect={quizProps.onSelectQuiz}
-          />
-        )}
-        {activeLabel === "Development" && developmentProps && (
-          <DevelopmentContent
-            projects={developmentProjectsDummy}
-            selectedProjectId={developmentProps.selectedProjectId}
-            onProjectSelect={developmentProps.onProjectSelect}
-          />
-        )}
-        {activeLabel === "Subjective" && (
-          <SubjectiveContent
-            assignments={assignments}
-            selectedAssignmentId={selectedContentId || 0}
-            onAssignmentClick={(id) => handleContentClick(id, "Assignment")}
-          />
-        )}
+      <div className={`${isMobile ? 'p-4' : 'px-4 py-3'}`}>
+        <div className="border-b border-gray-200 mb-4 pb-3">
+          <h3 className="text-lg font-semibold text-[#255C79]">{activeLabel}</h3>
+          <p className="text-xs text-gray-500">
+            {submoduleData?.moduleName || "Course"} - {submoduleData?.submoduleName || "Topic"}
+          </p>
+        </div>
+        
+        <div className="text-sm text-gray-700">
+          {activeLabel === "Dashboard" && (
+            <DashboardContent
+              courseTitle={submoduleData?.moduleName || "Course"}
+              courseType="Self pace"
+              stats={dummyStats}
+            />
+          )}
+          {activeLabel === "All" && submoduleData && (
+            <AllContent 
+              contents={submoduleData.data.map(content => ({
+                id: content.id,
+                title: content.title,
+                content_type: content.content_type,
+                order: content.order,
+                duration_in_minutes: content.duration_in_minutes,
+                status: content.status || "non-complete"
+              }))}
+              onContentClick={handleContentClick}
+              selectedContentId={selectedContentId}
+            />
+          )}
+          {activeLabel === "All" && !submoduleData && (
+            <AllContent 
+              contents={dummyContent}
+              onContentClick={handleContentClick}
+              selectedContentId={selectedContentId}
+            />
+          )}
+          {activeLabel === "Article" && (
+            <ArticleContent
+              articles={articles}
+              selectedArticleId={articleProps.selectedArticleId}
+              onArticleClick={handleArticleClick}
+            />
+          )}
+          {activeLabel === "Videos" && (
+            <VideoContent
+              videos={videos}
+              selectedVideoId={videoProps.selectedVideoId || ""}
+              onVideoClick={handleVideoClick}
+              totalDuration={`${submoduleData?.data?.reduce((acc: number, curr: SubmoduleContent) => acc + curr.duration_in_minutes, 0) || 0} min`}
+              topicNo={submoduleData?.weekNo || 1}
+              topicTitle={submoduleData?.submoduleName || "Topic 1"}
+              week={`Week ${submoduleData?.weekNo || 1}`}
+              difficulty="Beginner"
+              completionPercentage={0}
+            />
+          )}
+          {activeLabel === "Problems" && (
+            <ProblemContent
+              problems={problems}
+              selectedProblemId={problemProps?.selectedProblemId}
+              onSelect={handleProblemSelect}
+            />
+          )}
+          {activeLabel === "Quiz" && (
+            <QuizContent
+              quizzes={quizzes.length > 0 ? quizzes : quizProps.quizzes}
+              selectedQuizId={quizProps.selectedQuizId}
+              onSelect={handleQuizSelect}
+            />
+          )}
+          {activeLabel === "Development" && (
+            <DevelopmentContent
+              projects={developmentProjectsDummy}
+              selectedProjectId={developmentProps?.selectedProjectId}
+              onProjectSelect={handleProjectSelect}
+            />
+          )}
+          {activeLabel === "Subjective" && (
+            <SubjectiveContent
+              assignments={assignments}
+              selectedAssignmentId={selectedContentId || 0}
+              onAssignmentClick={(id) => handleContentClick(id, "Assignment")}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

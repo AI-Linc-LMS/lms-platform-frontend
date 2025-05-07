@@ -8,11 +8,13 @@ function Container({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false); // Default expanded
   const [showSidebar, setShowSidebar] = useState(true); // Control sidebar visibility
+  const [showMobileNav, setShowMobileNav] = useState(true);
 
   useEffect(() => {
-    // Hide sidebar on CourseTopicDetailPage
+    // Hide sidebar and mobile nav on CourseTopicDetailPage
     const isCourseTopicPage = location.pathname.includes('/learn/course/');
     setShowSidebar(!isCourseTopicPage);
+    setShowMobileNav(!isCourseTopicPage);
   }, [location.pathname]);
 
   const toggleSidebar = () => {
@@ -44,7 +46,7 @@ function Container({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* Mobile Navigation Bar */}
-      <MobileNavBar />
+      {showMobileNav && <MobileNavBar />}
     </div>
   );
 }
