@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import VideoPlayer from "../../video-player/VideoPlayer";
 import FloatingAIButton from "../../floating-ai-button/FloatingAIButton";
 import { useQuery } from "@tanstack/react-query";
@@ -13,6 +13,9 @@ interface VideoCardProps {
   getNextTopicTitle: () => string;
 }
 
+// Define the test Vimeo URL that works
+const TEST_VIMEO_URL = "https://player.vimeo.com/video/1048123643?badge=0&autopause=0&player_id=0&app_id=58479";
+
 const VideoCard: React.FC<VideoCardProps> = ({
   currentWeek,
   currentTopic,
@@ -21,17 +24,80 @@ const VideoCard: React.FC<VideoCardProps> = ({
   nextContent,
   getNextTopicTitle,
 }) => {
-  const [activeTab, setActiveTab] = useState<"description" | "comments">(
-    "description"
-  );
+  const [activeTab, setActiveTab] = useState<"description" | "comments">("description");
+  const [processedVideoUrl, setProcessedVideoUrl] = useState<string>(TEST_VIMEO_URL);
+  const [useTestVideo, setUseTestVideo] = useState(false);
+  
+  // Log component props for debugging
+  useEffect(() => {
+    console.log('VideoCard - Component Props:', { 
+      contentId, 
+      courseId,
+      isQueryEnabled: !!contentId && !!courseId 
+    });
+  }, [contentId, courseId]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['video', contentId],
     queryFn: () => getCourseContent(1, courseId, contentId),
     enabled: !!contentId && !!courseId,
+    retry: 3,
+    retryDelay: 1000,
   });
   
-  if (isLoading) {
+  // Process the video URL when data changes
+  useEffect(() => {
+    // Always use test video if in test mode
+    if (useTestVideo) {
+      setProcessedVideoUrl(TEST_VIMEO_URL);
+      console.log('VideoCard - Using TEST Vimeo URL');
+      return;
+    }
+    
+    // If no data or error, fall back to test video
+    if (!data) {
+      setProcessedVideoUrl(TEST_VIMEO_URL);
+      console.log('VideoCard - Falling back to test video URL (no data)');
+      return;
+    }
+    
+    // Type assertion - we know the structure at this point
+    const responseData = data as any;
+    
+    // Process video URL from response data
+    if (!responseData.video_url) {
+      setProcessedVideoUrl(TEST_VIMEO_URL);
+      console.log('VideoCard - Falling back to test video URL (no video_url in data)');
+      return;
+    }
+    
+    const videoUrl = String(responseData.video_url);
+    console.log('VideoCard - Original Video URL:', videoUrl);
+    
+    // Process the URL
+    let processedUrl = videoUrl;
+    
+    // Clean HTML entities
+    processedUrl = processedUrl.replace(/&amp;/g, '&');
+    
+    // Handle Vimeo URLs
+    if (processedUrl.includes('vimeo.com') && !processedUrl.includes('player.vimeo.com')) {
+      const vimeoRegex = /vimeo.com\/(\d+)/;
+      const match = processedUrl.match(vimeoRegex);
+      
+      if (match && match[1]) {
+        const videoId = match[1];
+        processedUrl = `https://player.vimeo.com/video/${videoId}?badge=0&autopause=0&player_id=0&app_id=58479`;
+        console.log('VideoCard - Converted to player URL:', processedUrl);
+      }
+    }
+    
+    console.log('VideoCard - Final Processed URL:', processedUrl);
+    setProcessedVideoUrl(processedUrl);
+    
+  }, [data, useTestVideo]);
+  
+  if (isLoading && !useTestVideo) {
     return (
       <div className="animate-pulse">
         <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
@@ -44,24 +110,39 @@ const VideoCard: React.FC<VideoCardProps> = ({
     );
   }
 
-  if (error) {
+  if (error && !useTestVideo) {
+    console.error('VideoCard - Error loading data:', error);
     return (
       <div className="text-red-500 p-4">
         Error loading video. Please try again later.
+        {/* Test button for development */}
+        <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+          <p className="mb-2 font-medium">API Error - Try with test Vimeo URL?</p>
+          <button 
+            onClick={() => setUseTestVideo(true)}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+          >
+            Test with sample Vimeo video
+          </button>
+        </div>
       </div>
     );
   }
-
-  if (!data) {
-    return (
-      <div className="text-gray-500 p-4">
-        No video data available.
-      </div>
-    );
-  }
-
-  console.log('Video Data:', data);
-
+  
+  // Get video title, with fallback
+  const videoTitle = useTestVideo 
+    ? 'Test Vimeo Video' 
+    : (data && (data as any).title) 
+      ? (data as any).title 
+      : currentTopic.title;
+  
+  // Get video description, with fallback
+  const videoDescription = useTestVideo
+    ? 'This is a test video.'
+    : (data && (data as any).description)
+      ? (data as any).description
+      : '';
+  
   return (
     <div className="flex-1 max-w-full">
       {/* Week and Topic Navigation */}
@@ -70,13 +151,35 @@ const VideoCard: React.FC<VideoCardProps> = ({
           <span className="text-gray-500 whitespace-nowrap">{currentWeek.title}</span>
           <span className="text-gray-500">›</span>
           <span className="font-medium truncate">{currentTopic.title}</span>
+          
+          {/* Test mode indicator and toggle */}
+          {useTestVideo && (
+            <span className="ml-auto flex items-center">
+              <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded mr-2">TEST MODE</span>
+              <button 
+                onClick={() => setUseTestVideo(false)}
+                className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded"
+              >
+                Exit Test
+              </button>
+            </span>
+          )}
+          
+          {!useTestVideo && (
+            <button 
+              onClick={() => setUseTestVideo(true)}
+              className="ml-auto text-xs bg-blue-500 text-white px-2 py-1 rounded"
+            >
+              Try Test Video
+            </button>
+          )}
         </div>
       </div>
 
       {/* Video Player Section */}
       <VideoPlayer
-        videoUrl={data.video_url}
-        title={data.title}
+        videoUrl={processedVideoUrl}
+        title={videoTitle}
         onComplete={nextContent}
       />
 
@@ -192,10 +295,10 @@ const VideoCard: React.FC<VideoCardProps> = ({
         {activeTab === "description" && (
           <div>
             <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4">
-              {data.title}
+              {videoTitle}
             </h2>
             <p className="mb-4 text-sm md:text-base">
-              {data.description}
+              {videoDescription}
             </p>
 
             <h3 className="text-md md:text-lg font-bold mt-4 md:mt-6 mb-2">What is an Array??</h3>
