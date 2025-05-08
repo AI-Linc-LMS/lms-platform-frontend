@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import articleIcon from "../../../../assets/course_sidebar_assets/article/articleIcon.png";
 import videosIcon from "../../../../assets/course_sidebar_assets/video/vidoesIcon.png";
 import problemIcon from "../../../../assets/course_sidebar_assets/problem/problemIcon.png";
@@ -20,10 +21,21 @@ interface AllContentProps {
   contents: ContentItem[];
   onContentClick: (contentId: number, contentType: ContentType) => void;
   selectedContentId?: number;
+  activeLabel: string;
 }
 
-const AllContent = ({ contents, onContentClick, selectedContentId }: AllContentProps) => {
+const AllContent = ({ contents, onContentClick, selectedContentId, activeLabel }: AllContentProps) => {
   const sortedContents = [...contents].sort((a, b) => a.order - b.order);
+  const isFirstRender = useRef(true);
+
+  // Select first content only when All tab is first opened
+  useEffect(() => {
+    if (sortedContents.length > 0 && activeLabel === "All" && isFirstRender.current) {
+      const firstContent = sortedContents[0];
+      onContentClick(firstContent.id, firstContent.content_type);
+      isFirstRender.current = false;
+    }
+  }, [sortedContents, activeLabel, onContentClick]);
 
   const getIconByType = (type: ContentType) => {
     switch (type) {

@@ -4,25 +4,20 @@ import BasedLearning from "../components/based-learning/BasedLearning";
 import BasedLearningCourses from "../components/based-learning/BasedLearningCourses";
 import ContinueCourses from "../components/continue-learning/ContinueCourses";
 import ContinueCoursesDetails from "../components/continue-learning/ContinueCoursesDetails";
-import CourseDetails from "../components/courses/CoursesDetails";
-import EnrolledCourse from "../components/courses/EnrolledCourse";
 import Referrals from "../components/referrals/Referrals";
 import WelcomeSection from "../components/WelcomeSection";
 import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
+import EnrolledCourses from "../components/courses/EnrolledCourses";
 
 const Learn = () => {
   return (
     <div className="px-2 md:px-0">
       <WelcomeSection />
       <div className="flex flex-col md:flex-row justify-between mt-6 gap-6">
-        <div className="flex flex-col justify-between w-full space-y-6">
+        <div className="flex flex-col w-full gap-8">
           <TimeTrackingDashboard />
-
-          <div className="space-y-2">
-            <EnrolledCourse />
-            <CourseDetails />
-          </div>
+          <EnrolledCourses />
 
           <div className="space-y-2">
             <ContinueCourses />

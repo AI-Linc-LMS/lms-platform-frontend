@@ -8,9 +8,10 @@ import { login, LoginCredentials } from '../services/authApis';
 export const useAuth = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const clientId = import.meta.env.VITE_CLIENT_ID;
 
   const loginMutation = useMutation({
-    mutationFn: (credentials: LoginCredentials) => login(credentials),
+    mutationFn: (credentials: LoginCredentials) => login(credentials, clientId),
     onMutate: () => {
       dispatch(loginStart());
     },
