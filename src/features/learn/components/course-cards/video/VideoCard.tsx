@@ -33,7 +33,7 @@ interface CourseContentResponse {
 }
 
 // Define a sample Vimeo URL for testing
-// const SAMPLE_VIMEO_URL = "https://player.vimeo.com/video/1048123643?badge=0&autopause=0&player_id=0&app_id=58479";
+const SAMPLE_VIMEO_URL = "https://player.vimeo.com/video/1048123643?badge=0&autopause=0&player_id=0&app_id=58479";
 
 const VideoCard: React.FC<VideoCardProps> = ({
   currentWeek,
