@@ -308,16 +308,6 @@ const CourseTopicDetailPage: React.FC = () => {
     }
   };
 
-  // Add useEffect to log content changes
-  useEffect(() => {
-    console.log("Content Changed - Current Content:", {
-      id: submoduleData?.data?.[currentContentIndex]?.id,
-      type: submoduleData?.data?.[currentContentIndex]?.content_type,
-      title: submoduleData?.data?.[currentContentIndex]?.title,
-      index: currentContentIndex
-    });
-  }, [currentContentIndex, submoduleData]);
-
   if (isSubmoduleLoading) {
     return <div>Loading...</div>;
   }
@@ -401,7 +391,7 @@ const CourseTopicDetailPage: React.FC = () => {
         {!isMobile && !isSidebarContentOpen && (
           <button
             onClick={() => setIsSidebarContentOpen(true)}
-            className="absolute top-32 left-[142px] bg-white rounded-full shadow-md p-2 hover:bg-gray-100 transition z-10 cursor-pointer"
+            className="absolute top-20 left-[112px] bg-white rounded-full shadow-md p-2 hover:bg-gray-100 transition z-10 cursor-pointer"
             title="Expand Sidebar"
           >
             <img src={expandSidebarIcon} alt="Expand" className="w-5 h-5" />

@@ -54,9 +54,9 @@ axiosAuthInstance.interceptors.response.use(
   }
 );
 
-export const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
+export const login = async (credentials: LoginCredentials, clientId: number): Promise<LoginResponse> => {
   try {
-    const response = await axiosAuthInstance.post('/accounts/user/login/', credentials);
+    const response = await axiosAuthInstance.post(`/accounts/clients/${clientId}/user/login/`, credentials);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
