@@ -1,5 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
-import {getSubmoduleById } from "../../../services/courses-content/courseContentApis";
 import DashboardContent from "./component/DashboardContent";
 import AllContent, { ContentType} from "./component/AllContent";
 import ArticleContent, { ArticleItem } from "./component/ArticleContent";
@@ -11,29 +9,8 @@ import DevelopmentContent from "./component/DevelopmentContent";
 import { developmentProjectsDummy } from "./component/data/mockDevelopmentData";
 import { useMediaQuery } from "../../../hooks/useMediaQuery";
 import SubjectiveContent, { AssignmentItem } from "./component/SubjectiveContent";
+import { SubmoduleContent, SubmoduleData } from "../../../features/learn/pages/CourseTopicDetailPage";
 
-interface SubmoduleContent {
-  content_type: ContentType;
-  duration_in_minutes: number;
-  id: number;
-  order: number;
-  title: string;
-  difficulty_level?: string;
-  description?: string;
-  status?: string;
-  marks?: number;
-  submissions?: number;
-  questions?: number;
-  accuracy?: number;
-}
-
-interface SubmoduleData {
-  data: SubmoduleContent[];
-  moduleName: string;
-  submoduleName: string;
-  submoduleId: number;
-  weekNo: number;
-}
 
 const contentTypeLabels = {
   Article: "Articles",
@@ -121,8 +98,7 @@ interface CourseSidebarContentProps {
   problemProps?: ProblemProps;
   developmentProps?: DevelopmentProps;
   subjectiveProps?: SubjectiveProps;
-  submoduleId?: number;
-  courseId?: number;
+  submoduleData: SubmoduleData;
   selectedContentId?: number;
   onContentSelect: (contentId: number, contentType: ContentType) => void;
 }
@@ -137,20 +113,11 @@ const CourseSidebarContent = ({
   problemProps,
   developmentProps,
   subjectiveProps,
-  submoduleId,
-  courseId,
   selectedContentId,
+  submoduleData,
   onContentSelect,
 }: CourseSidebarContentProps) => {
   const isMobile = useMediaQuery("(max-width: 768px)");
-
-  // Fetch submodule data by ID if provided
-  const { data: submoduleData } = useQuery<SubmoduleData | null>({
-    queryKey: ['submodule', submoduleId],
-    queryFn: () => submoduleId && courseId ? getSubmoduleById(1, courseId, submoduleId) : Promise.resolve(null),
-    enabled: !!submoduleId && !!courseId,
-  });
-
 
   console.log("submoduleData", submoduleData);
 
