@@ -13,18 +13,24 @@ import BackToPreviousPage from "../../../commonComponents/common-buttons/back-bu
 import SubjectiveCard from "../components/course-cards/subjective/SubjectiveCard";
 import DevelopmentCard from "../components/course-cards/development/DevelopmentCard";
 import useMediaQuery from "../../../hooks/useMediaQuery";
+import { ContentType } from "../../../commonComponents/sidebar/courseSidebar/component/AllContent";
 
-interface SubmoduleContent {
-  content_type: string;
+export interface SubmoduleContent {
+  content_type: ContentType;
   duration_in_minutes: number;
   id: number;
   order: number;
   title: string;
+  difficulty_level?: string;
   description?: string;
-  difficulty?: string;
+  status?: string;
+  marks?: number;
+  submissions?: number;
+  questions?: number;
+  accuracy?: number;
 }
 
-interface SubmoduleData {
+export interface SubmoduleData {
   data: SubmoduleContent[];
   moduleName: string;
   submoduleName: string;
@@ -43,11 +49,12 @@ const CourseTopicDetailPage: React.FC = () => {
   const [selectedProblemId, setSelectedProblemId] = useState<string | undefined>();
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<number>(0);
-  const [activeSidebarLabel, setActiveSidebarLabel] = useState<string>("Videos");
+  const [activeSidebarLabel, setActiveSidebarLabel] = useState<string>("All");
   const [isSidebarContentOpen, setIsSidebarContentOpen] = useState<boolean>(true);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [selectedContentId, setSelectedContentId] = useState<number | undefined>();
 
+  console.log("activeSidebarLabel", activeSidebarLabel);
   // Effect to close sidebar on mobile
   useEffect(() => {
     if (isMobile) {
@@ -67,13 +74,13 @@ const CourseTopicDetailPage: React.FC = () => {
   // Set default selected content when submodule data changes
   useEffect(() => {
     if (submoduleData?.data) {
-      // Find the first video
-      const firstVideo = submoduleData.data.find(content => content.content_type === 'VideoTutorial');
-      if (firstVideo) {
-        setSelectedVideoId(firstVideo.id.toString());
-        setCurrentContentIndex(submoduleData.data.indexOf(firstVideo));
-        setActiveSidebarLabel("Videos");  // Set Videos as active label
-        setIsSidebarContentOpen(true);    // Open the sidebar
+      // Only set the first video as selected if we're in the Videos section
+      if (activeSidebarLabel === "Videos") {
+        const firstVideo = submoduleData.data.find(content => content.content_type === 'VideoTutorial');
+        if (firstVideo) {
+          setSelectedVideoId(firstVideo.id.toString());
+          setCurrentContentIndex(submoduleData.data.indexOf(firstVideo));
+        }
       }
 
       // Find the first problem
@@ -106,7 +113,7 @@ const CourseTopicDetailPage: React.FC = () => {
         setSelectedProjectId(firstDevelopment.id.toString());
       }
     }
-  }, [submoduleData]);
+  }, [submoduleData, activeSidebarLabel]);
 
   // Props objects for each content type
   const videoProps = {
@@ -227,6 +234,8 @@ const CourseTopicDetailPage: React.FC = () => {
     // Find the first content of the selected type
     const firstContent = submoduleData?.data?.find(content => {
       switch (label) {
+        case "All":
+          return true;
         case "Videos":
           return content.content_type === "VideoTutorial";
         case "Problems":
@@ -347,8 +356,7 @@ const CourseTopicDetailPage: React.FC = () => {
             />
             {isSidebarContentOpen && (
               <CourseSidebarContent
-                submoduleId={parseInt(submoduleId || "0")}
-                courseId={parseInt(courseId || "0")}
+                submoduleData={submoduleData}
                 activeLabel={activeSidebarLabel}
                 onClose={() => setIsSidebarContentOpen(false)}
                 videoProps={videoProps}
@@ -373,8 +381,7 @@ const CourseTopicDetailPage: React.FC = () => {
             ></div>
             <div className="absolute right-0 top-0 h-full w-[90vw] max-w-[350px] z-50">
               <CourseSidebarContent
-                submoduleId={parseInt(submoduleId || "0")}
-                courseId={parseInt(courseId || "0")}
+                submoduleData={submoduleData}
                 activeLabel={activeSidebarLabel}
                 onClose={() => setIsSidebarContentOpen(false)}
                 videoProps={videoProps}
