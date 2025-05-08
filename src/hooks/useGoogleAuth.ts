@@ -10,13 +10,14 @@ export const useGoogleAuth = () => {
   const [error, setError] = useState<string | null>(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const clientId = import.meta.env.VITE_CLIENT_ID;
 
   const handleGoogleLogin = async (googleToken: string) => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const { access_token, refresh_token, user } = await googleLogin(googleToken);
+      const { access_token, refresh_token, user } = await googleLogin(googleToken, clientId);
 
       console.log('Google login response:', { access_token, refresh_token, user });
       
