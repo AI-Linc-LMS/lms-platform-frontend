@@ -66,10 +66,10 @@ export const login = async (credentials: LoginCredentials, clientId: number): Pr
   }
 };
 
-export const googleLogin = async (googleToken: string) => {
+export const googleLogin = async (googleToken: string, clientId: number) => {
   try {
     const response = await axiosAuthInstance.post(
-      '/accounts/user/login/google/',
+      `/accounts/clients/${clientId}/user/login/google/`,
       { token: googleToken }
     );
 
