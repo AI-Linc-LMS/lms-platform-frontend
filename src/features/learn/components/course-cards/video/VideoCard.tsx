@@ -13,8 +13,27 @@ interface VideoCardProps {
   getNextTopicTitle: () => string;
 }
 
-// Define the test Vimeo URL that works
-const TEST_VIMEO_URL = "https://player.vimeo.com/video/1048123643?badge=0&autopause=0&player_id=0&app_id=58479";
+// Define interface for the API response data
+interface CourseContentDetails {
+  id: number;
+  title: string;
+  description: string;
+  video_url: string;
+  difficulty_level: string;
+}
+
+interface CourseContentResponse {
+  id: number;
+  content_type: string;
+  content_title: string;
+  duration_in_minutes: number;
+  order: number;
+  status: string;
+  details: CourseContentDetails;
+}
+
+// Define a sample Vimeo URL for testing
+// const SAMPLE_VIMEO_URL = "https://player.vimeo.com/video/1048123643?badge=0&autopause=0&player_id=0&app_id=58479";
 
 const VideoCard: React.FC<VideoCardProps> = ({
   currentWeek,
@@ -25,16 +44,24 @@ const VideoCard: React.FC<VideoCardProps> = ({
   getNextTopicTitle,
 }) => {
   const [activeTab, setActiveTab] = useState<"description" | "comments">("description");
-  const [processedVideoUrl, setProcessedVideoUrl] = useState<string>(TEST_VIMEO_URL);
-  const [useTestVideo, setUseTestVideo] = useState(false);
-  
+  const [processedVideoUrl, setProcessedVideoUrl] = useState<string>("");
+  const [useDebugMode, setUseDebugMode] = useState(false);
+
   // Log component props for debugging
   useEffect(() => {
-    console.log('VideoCard - Component Props:', { 
-      contentId, 
+    console.log('VideoCard - Component Props:', {
+      contentId,
       courseId,
-      isQueryEnabled: !!contentId && !!courseId 
+      isQueryEnabled: !!contentId && !!courseId
     });
+
+    // Check for potential issues with the API parameters
+    if (contentId === undefined || contentId === null || contentId <= 0) {
+      console.error('VideoCard - Invalid contentId:', contentId);
+    }
+    if (courseId === undefined || courseId === null || courseId <= 0) {
+      console.error('VideoCard - Invalid courseId:', courseId);
+    }
   }, [contentId, courseId]);
 
   const { data, isLoading, error } = useQuery({
@@ -44,60 +71,72 @@ const VideoCard: React.FC<VideoCardProps> = ({
     retry: 3,
     retryDelay: 1000,
   });
-  
+
   // Process the video URL when data changes
   useEffect(() => {
-    // Always use test video if in test mode
-    if (useTestVideo) {
-      setProcessedVideoUrl(TEST_VIMEO_URL);
-      console.log('VideoCard - Using TEST Vimeo URL');
+    // If in debug mode, use sample URL
+    if (useDebugMode) {
+      setProcessedVideoUrl(SAMPLE_VIMEO_URL);
       return;
     }
-    
-    // If no data or error, fall back to test video
+
     if (!data) {
-      setProcessedVideoUrl(TEST_VIMEO_URL);
-      console.log('VideoCard - Falling back to test video URL (no data)');
+      console.log('VideoCard - No data returned from API');
       return;
     }
-    
+
+    // Log detailed info about response
+    console.log('VideoCard - Full API response:', data);
+    console.log('VideoCard - Response structure:', {
+      responseType: typeof data,
+      hasDetails: !!(data as CourseContentResponse).details,
+      hasVideoUrl: !!(data as CourseContentResponse).details?.video_url,
+      availableFields: Object.keys(data as CourseContentResponse)
+    });
+
     // Type assertion - we know the structure at this point
-    const responseData = data as any;
-    
-    // Process video URL from response data
-    if (!responseData.video_url) {
-      setProcessedVideoUrl(TEST_VIMEO_URL);
-      console.log('VideoCard - Falling back to test video URL (no video_url in data)');
+    const responseData = data as CourseContentResponse;
+
+    // Check if details object exists
+    if (!responseData.details) {
+      console.log('VideoCard - Missing details object in response data');
       return;
     }
-    
-    const videoUrl = String(responseData.video_url);
+
+    // Process video URL from response data
+    if (!responseData.details.video_url) {
+      console.log('VideoCard - Missing video_url in details object');
+      return;
+    }
+
+    const videoUrl = String(responseData.details.video_url);
     console.log('VideoCard - Original Video URL:', videoUrl);
-    
+
     // Process the URL
     let processedUrl = videoUrl;
-    
+
     // Clean HTML entities
     processedUrl = processedUrl.replace(/&amp;/g, '&');
-    
+
     // Handle Vimeo URLs
     if (processedUrl.includes('vimeo.com') && !processedUrl.includes('player.vimeo.com')) {
       const vimeoRegex = /vimeo.com\/(\d+)/;
       const match = processedUrl.match(vimeoRegex);
-      
+
       if (match && match[1]) {
         const videoId = match[1];
         processedUrl = `https://player.vimeo.com/video/${videoId}?badge=0&autopause=0&player_id=0&app_id=58479`;
         console.log('VideoCard - Converted to player URL:', processedUrl);
       }
     }
-    
+
     console.log('VideoCard - Final Processed URL:', processedUrl);
     setProcessedVideoUrl(processedUrl);
-    
-  }, [data, useTestVideo]);
-  
-  if (isLoading && !useTestVideo) {
+
+  }, [data, useDebugMode]);
+
+  // If loading, show loading state
+  if (isLoading && !useDebugMode) {
     return (
       <div className="animate-pulse">
         <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
@@ -110,39 +149,49 @@ const VideoCard: React.FC<VideoCardProps> = ({
     );
   }
 
-  if (error && !useTestVideo) {
+  // If API error, show error message with debug option
+  if (error && !useDebugMode) {
     console.error('VideoCard - Error loading data:', error);
     return (
       <div className="text-red-500 p-4">
-        Error loading video. Please try again later.
-        {/* Test button for development */}
-        <div className="mt-4 p-4 bg-gray-100 rounded-lg">
-          <p className="mb-2 font-medium">API Error - Try with test Vimeo URL?</p>
-          <button 
-            onClick={() => setUseTestVideo(true)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg"
-          >
-            Test with sample Vimeo video
-          </button>
-        </div>
+        <div>Error loading video: {String(error)}</div>
+        <button 
+          className="mt-4 px-3 py-1 bg-blue-500 text-white rounded"
+          onClick={() => setUseDebugMode(true)}
+        >
+          Try Debug Mode
+        </button>
       </div>
     );
   }
-  
-  // Get video title, with fallback
-  const videoTitle = useTestVideo 
-    ? 'Test Vimeo Video' 
-    : (data && (data as any).title) 
-      ? (data as any).title 
-      : currentTopic.title;
-  
-  // Get video description, with fallback
-  const videoDescription = useTestVideo
-    ? 'This is a test video.'
-    : (data && (data as any).description)
-      ? (data as any).description
-      : '';
-  
+
+  // If no data or missing video_url, show message with debug option
+  if ((!data || !(data as CourseContentResponse).details?.video_url) && !useDebugMode) {
+    return (
+      <div className="text-gray-500 p-4">
+        <div>No video content available.</div>
+        <div className="mt-2 text-xs text-gray-400">
+          Content ID: {contentId}, Course ID: {courseId}
+        </div>
+        <button 
+          className="mt-4 px-3 py-1 bg-blue-500 text-white rounded"
+          onClick={() => setUseDebugMode(true)}
+        >
+          Try Debug Mode
+        </button>
+      </div>
+    );
+  }
+
+  // Get video title and description (from data or use defaults)
+  const videoTitle = useDebugMode
+    ? 'Debug Video'
+    : ((data as CourseContentResponse)?.details?.title || currentTopic.title);
+    
+  const videoDescription = useDebugMode
+    ? 'This is a debug video to test the Vimeo player functionality.'
+    : ((data as CourseContentResponse)?.details?.description || '');
+
   return (
     <div className="flex-1 max-w-full">
       {/* Week and Topic Navigation */}
@@ -152,33 +201,17 @@ const VideoCard: React.FC<VideoCardProps> = ({
           <span className="text-gray-500">›</span>
           <span className="font-medium truncate">{currentTopic.title}</span>
           
-          {/* Test mode indicator and toggle */}
-          {useTestVideo && (
-            <span className="ml-auto flex items-center">
-              <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded mr-2">TEST MODE</span>
-              <button 
-                onClick={() => setUseTestVideo(false)}
-                className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded"
-              >
-                Exit Test
-              </button>
+          {useDebugMode && (
+            <span className="ml-auto bg-yellow-200 text-yellow-800 text-xs px-2 py-1 rounded">
+              DEBUG MODE
             </span>
-          )}
-          
-          {!useTestVideo && (
-            <button 
-              onClick={() => setUseTestVideo(true)}
-              className="ml-auto text-xs bg-blue-500 text-white px-2 py-1 rounded"
-            >
-              Try Test Video
-            </button>
           )}
         </div>
       </div>
 
       {/* Video Player Section */}
       <VideoPlayer
-        videoUrl={processedVideoUrl}
+        videoUrl={useDebugMode ? SAMPLE_VIMEO_URL : processedVideoUrl}
         title={videoTitle}
         onComplete={nextContent}
       />
@@ -269,21 +302,19 @@ const VideoCard: React.FC<VideoCardProps> = ({
         <nav className="-mb-px flex space-x-4 md:space-x-8 overflow-x-auto">
           <button
             onClick={() => setActiveTab("description")}
-            className={`whitespace-nowrap py-3 md:py-4 px-1 border-b-2 font-medium text-xs md:text-sm ${
-              activeTab === "description"
+            className={`whitespace-nowrap py-3 md:py-4 px-1 border-b-2 font-medium text-xs md:text-sm ${activeTab === "description"
                 ? "border-[#255C79] text-[#255C79]"
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
+              }`}
           >
             Description
           </button>
           <button
             onClick={() => setActiveTab("comments")}
-            className={`whitespace-nowrap py-3 md:py-4 px-1 border-b-2 font-medium text-xs md:text-sm ${
-              activeTab === "comments"
+            className={`whitespace-nowrap py-3 md:py-4 px-1 border-b-2 font-medium text-xs md:text-sm ${activeTab === "comments"
                 ? "border-[#255C79] text-[#255C79]"
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
+              }`}
           >
             Comments
           </button>
