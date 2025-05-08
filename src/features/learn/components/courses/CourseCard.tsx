@@ -66,7 +66,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
 
   return (
     <div
-      className={`w-full border border-[#80C9E0] p-3 md:p-4 rounded-2xl md:rounded-3xl bg-white flex flex-col h-full ${className}`}
+      className={`w-29/30 border border-[#80C9E0] p-3 md:p-4 rounded-2xl md:rounded-3xl bg-white flex flex-col h-full ${className}`}
     >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 md:gap-3 items-center">
         <div>
