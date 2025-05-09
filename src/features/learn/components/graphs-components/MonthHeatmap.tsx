@@ -5,10 +5,11 @@ interface ActivityData {
   date: string;
   level: number;
   value: number;
-  articles?: number;
-  videos?: number;
-  problems?: number;
-  quizzes?: number;
+  Article?: number;
+  VideoTutorial?: number;
+  CodingProblem?: number;
+  Assignment?: number;
+  Quiz?: number;
 }
 
 interface MonthHeatmapProps {
@@ -72,7 +73,7 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
   }, [allCells, weeksCount]);
 
   return (
-    <div className="flex flex-col space-y-1 w-full">
+    <div className="flex flex-col space-y-1 w-full px-2">
       <div className="flex space-x-1">
         {weeks.map((week, weekIndex) => (
           <div key={weekIndex} className="flex flex-col space-y-1">
@@ -106,28 +107,33 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
                   />
                   {isHovered && activity && (
                     <div
-                      className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-10 bg-white p-2 rounded shadow-md text-xs border border-gray-200 whitespace-nowrap pointer-events-none"
+                      className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-10 bg-white p-1 rounded shadow-md text-[10px] border border-gray-200 whitespace-nowrap pointer-events-none"
                       style={{ minWidth: "max-content" }}
                     >
                       <p className="font-medium">{format(date, "MMM d")}</p>
-                      {(activity?.articles ?? 0) > 0 && (
+                      {(activity?.Article ?? 0) > 0 && (
                         <p className="text-gray-700">
-                          Articles: {activity.articles}
+                          Articles: {activity.Article}
                         </p>
                       )}
-                      {(activity.videos ?? 0) > 0 && (
+                      {(activity.VideoTutorial ?? 0) > 0 && (
                         <p className="text-gray-700">
-                          Videos: {activity.videos ?? 0}
+                          Videos: {activity.VideoTutorial ?? 0}
                         </p>
                       )}
-                      {(activity.problems ?? 0) > 0 && (
+                      {(activity.CodingProblem ?? 0) > 0 && (
                         <p className="text-gray-700">
-                          Problems: {activity.problems ?? 0}
+                          Problems: {activity.CodingProblem ?? 0}
                         </p>
                       )}
-                      {(activity.quizzes ?? 0) > 0 && (
+                      {(activity.Assignment ?? 0) > 0 && (
                         <p className="text-gray-700">
-                          Quizzes: {activity.quizzes ?? 0}
+                          Assignment: {activity.Assignment ?? 0}
+                        </p>
+                      )}
+                      {(activity.Quiz ?? 0) > 0 && (
+                        <p className="text-gray-700">
+                          Quiz: {activity.Quiz ?? 0}
                         </p>
                       )}
                     </div>

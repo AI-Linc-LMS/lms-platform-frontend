@@ -19,6 +19,7 @@ const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
     gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
   });
 
+  console.log("data", data);
   // Extract active days from the streak data
   useEffect(() => {
     if (!data || !data.streak) return;
@@ -71,6 +72,7 @@ const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
   }
 
   const days = Array.from({ length: totalDays }, (_, i) => i + 1);
+  console.log("days", days);
 
   if (isLoading || error || !data || !data.streak || Object.keys(data.streak).length === 0) {
     return (
