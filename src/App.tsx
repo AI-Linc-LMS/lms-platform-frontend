@@ -34,37 +34,42 @@ const NotFound = () => {
   
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#F8F9FA]">
-      <div className={`relative ${animateNumber ? 'animate-bounce' : ''} transition-all duration-500`}>
-        <div className="text-9xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#1A5A7A] to-[#9F55FF]">
+      <div className="flex items-center space-x-2 mb-8">
+        <div className="text-6xl font-mono text-[#1A5A7A]">{'{'}</div>
+        <div className={`text-9xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#1A5A7A] to-[#9F55FF] ${animateNumber ? 'animate-bounce' : ''}`}>
           404
         </div>
-        <div className="absolute -top-6 -right-6 w-24 h-24 bg-[#9F55FF] rounded-full opacity-20 animate-ping"></div>
+        <div className="text-6xl font-mono text-[#1A5A7A]">{'}'}</div>
       </div>
       
-      <h1 className="text-3xl font-bold mt-6 mb-2 text-[#1A5A7A]">Oops! Page Not Found</h1>
-      <p className="text-gray-600 mb-8 text-center max-w-md">
-        The page you're looking for doesn't exist or has been moved.
-      </p>
+      <div className="text-center max-w-md mb-8">
+        <div className="font-mono text-[#1A5A7A] text-xl">
+          <span className="text-[#9F55FF]">error</span>: <span className="text-[#343A40]">Page</span>.<span className="text-[#1A5A7A]">NotFound</span>()
+        </div>
+        <p className="text-gray-600 mt-4 font-mono">
+          // The requested resource could not be located
+        </p>
+      </div>
       
       <div className="flex flex-col sm:flex-row gap-4 mt-4">
         <button 
           onClick={handleGoHome}
-          className="px-6 py-3 bg-[#255C79] rounded-xl text-white hover:bg-[#1E4A63] transition-all duration-300 shadow-lg hover:shadow-[#1A5A7A]/30 flex items-center justify-center hover:scale-95"
+          className="px-6 py-3 bg-[#255C79] rounded-xl text-white hover:bg-[#1E4A63] transition-all duration-300 shadow-lg hover:shadow-[#1A5A7A]/30 flex items-center justify-center hover:scale-95 font-mono"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
             <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
           </svg>
-          Go Home
+          return home()
         </button>
         
         <button 
           onClick={handleGoBack}
-          className="px-6 py-3 bg-[#E9ECEF] text-[#343A40] rounded-xl hover:bg-[#DDE2E6] transition-all duration-300 flex items-center justify-center hover:scale-95"
+          className="px-6 py-3 bg-[#E9ECEF] text-[#343A40] rounded-xl hover:bg-[#DDE2E6] transition-all duration-300 flex items-center justify-center hover:scale-95 font-mono"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
           </svg>
-          Go Back
+          goBack()
         </button>
       </div>
     </div>
