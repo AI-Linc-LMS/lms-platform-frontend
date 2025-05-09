@@ -10,7 +10,7 @@ const WelcomeSection = () => {
         Welcome{" "}
         <span className="inline-block group perspective-[1000px]">
           <span className="relative inline-block transition-transform duration-500 transform group-hover:rotate-y-180 text-[#2A8CB0]">
-            {user.full_name}
+            {user.full_name}.
           </span>
         </span>
       </h1>
