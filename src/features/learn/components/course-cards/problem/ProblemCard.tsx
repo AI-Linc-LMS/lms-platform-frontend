@@ -28,6 +28,13 @@ interface ProblemData {
   details: ProblemDetails;
 }
 
+interface TestCase {
+  input: string;
+  expectedOutput: string;
+  userOutput?: string;
+  status?: 'passed' | 'failed' | 'running';
+}
+
 const ProblemCard: React.FC<ProblemCardProps> = ({
   contentId,
   courseId,
@@ -50,6 +57,30 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("description");
+  const [isConsoleOpen, setIsConsoleOpen] = useState(true);
+  const [consoleHeight, setConsoleHeight] = useState(200);
+  const [activeConsoleTab, setActiveConsoleTab] = useState("testcases");
+  const [customInput, setCustomInput] = useState("");
+  const [testCases, setTestCases] = useState<TestCase[]>([]);
+  const [isResizing, setIsResizing] = useState(false);
+
+  // Mock test cases based on sample input/output from the problem
+  React.useEffect(() => {
+    if (data?.details) {
+      setTestCases([
+        {
+          input: data.details.sample_input,
+          expectedOutput: data.details.sample_output,
+          status: undefined
+        },
+        {
+          input: "Mock test case 2 input",
+          expectedOutput: "Mock test case 2 output",
+          status: undefined
+        }
+      ]);
+    }
+  }, [data]);
 
   if (isLoading) {
     return (
@@ -90,8 +121,21 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     setIsRunning(true);
     setResults(null);
     
+    // Update test case status to running
+    setTestCases(testCases.map(tc => ({
+      ...tc,
+      status: 'running'
+    })));
+    
     // Simulate code execution
     setTimeout(() => {
+      // Set results for each test case
+      setTestCases(testCases.map(tc => ({
+        ...tc,
+        userOutput: tc.expectedOutput, // In a real app, this would be the actual output
+        status: 'passed' // Simulate all passing for demo
+      })));
+      
       setResults({
         success: true,
         message: "All test cases passed!",
@@ -104,8 +148,15 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     setIsSubmitting(true);
     setResults(null);
     
-    // Simulate submission
+    // Simulate submission with test cases
     setTimeout(() => {
+      // Set results for each test case
+      setTestCases(testCases.map(tc => ({
+        ...tc,
+        userOutput: tc.expectedOutput, // In a real app, this would be the actual output
+        status: 'passed' // Simulate all passing for demo
+      })));
+      
       onSubmit(code);
       setResults({
         success: true,
@@ -130,6 +181,39 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     localStorage.setItem('ide-theme', newTheme ? 'dark' : 'light');
   };
 
+  // Handle console resize
+  const startResizing = (e: React.MouseEvent) => {
+    setIsResizing(true);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', stopResizing);
+    e.preventDefault();
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (isResizing) {
+      const container = document.querySelector('.code-editor-panel') as HTMLElement;
+      if (container) {
+        const containerRect = container.getBoundingClientRect();
+        const newHeight = containerRect.bottom - e.clientY;
+        
+        // Set minimum and maximum heights
+        if (newHeight >= 100 && newHeight <= containerRect.height - 100) {
+          setConsoleHeight(newHeight);
+        }
+      }
+    }
+  };
+
+  const stopResizing = () => {
+    setIsResizing(false);
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', stopResizing);
+  };
+
+  const toggleConsole = () => {
+    setIsConsoleOpen(!isConsoleOpen);
+  };
+
   return (
     <div className={`problem-card-container rounded-2xl ${isDarkTheme ? 'dark-mode' : ''}`}>
       <div className="problem-header rounded-2xl">
@@ -143,7 +227,53 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           >
             {data.details.difficulty_level}
           </span>
+          <div className="run-submit-buttons">
+                <button
+                  onClick={handleRunCode}
+                  disabled={isRunning}
+                  className={`run-button ${isRunning ? 'button-loading' : ''}`}
+                >
+                  {isRunning ? 'Running...' : 'Run'}
+                </button>
+                <button
+                  onClick={handleSubmitCode}
+                  disabled={isSubmitting}
+                  className={`submit-button ${isSubmitting ? 'button-loading' : ''}`}
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                </button>
+              </div>
+              <div className="editor-actions">
+              <div className="toggle-container">
+                <label className="toggle-label">
+                  <span>Autocomplete</span>
+                  <div className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={isAutocompleteEnabled}
+                      onChange={() => setIsAutocompleteEnabled(!isAutocompleteEnabled)}
+                    />
+                    <span className="toggle-slider"></span>
+                  </div>
+                </label>
+              </div>
+              
+              <div className="toggle-container">
+                <label className="toggle-label">
+                  <span>Dark Mode</span>
+                  <div className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={isDarkTheme}
+                      onChange={handleThemeChange}
+                    />
+                    <span className="toggle-slider"></span>
+                  </div>
+                </label>
+              </div>
+            </div>
         </div>
+        
       </div>
 
       <div className="leetcode-layout">
@@ -235,7 +365,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                 </select>
               </div>
               
-              <div className="run-submit-buttons">
+              {/* <div className="run-submit-buttons">
                 <button
                   onClick={handleRunCode}
                   disabled={isRunning}
@@ -250,10 +380,10 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                 >
                   {isSubmitting ? 'Submitting...' : 'Submit'}
                 </button>
-              </div>
+              </div> */}
             </div>
             
-            <div className="editor-actions">
+            {/* <div className="editor-actions">
               <div className="toggle-container">
                 <label className="toggle-label">
                   <span>Autocomplete</span>
@@ -281,10 +411,10 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                   </div>
                 </label>
               </div>
-            </div>
+            </div> */}
           </div>
 
-          <div className="monaco-editor-container">
+          <div className="monaco-editor-wrapper" style={{ height: isConsoleOpen ? `calc(100% - ${consoleHeight}px)` : "100%" }}>
             <Editor
               height="100%"
               language={selectedLanguage}
@@ -304,17 +434,126 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                 quickSuggestions: isAutocompleteEnabled,
               }}
             />
-            
-            <div className="editor-footer">
-              <div className="results-container">
-                {results && (
-                  <div className={`results ${results.success ? 'success' : 'error'}`}>
-                    {results.message}
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
+          
+          {/* Resizable console panel */}
+          <div className="console-toggle" onClick={toggleConsole}>
+            {isConsoleOpen ? "▼" : "▲"} Console
+          </div>
+          
+          {isConsoleOpen && (
+            <>
+              <div className="console-resize-handle" onMouseDown={startResizing}></div>
+              <div className="console-panel" style={{ height: `${consoleHeight}px` }}>
+                <div className="console-tabs">
+                  <button 
+                    className={`console-tab ${activeConsoleTab === 'testcases' ? 'active' : ''}`}
+                    onClick={() => setActiveConsoleTab('testcases')}
+                  >
+                    Test Cases
+                  </button>
+                  <button 
+                    className={`console-tab ${activeConsoleTab === 'customInput' ? 'active' : ''}`}
+                    onClick={() => setActiveConsoleTab('customInput')}
+                  >
+                    Custom Input
+                  </button>
+                  <button 
+                    className={`console-tab ${activeConsoleTab === 'console' ? 'active' : ''}`}
+                    onClick={() => setActiveConsoleTab('console')}
+                  >
+                    Console
+                  </button>
+                </div>
+                
+                <div className="console-content">
+                  {activeConsoleTab === 'testcases' && (
+                    <div className="testcases-content">
+                      {testCases.map((testCase, index) => (
+                        <div key={index} className={`testcase ${testCase.status}`}>
+                          <div className="testcase-header">
+                            <div className="testcase-title">
+                              Test Case {index + 1}
+                              {testCase.status && (
+                                <span className={`testcase-status ${testCase.status}`}>
+                                  {testCase.status === 'passed' ? '✓ Passed' : 
+                                   testCase.status === 'failed' ? '✗ Failed' : 
+                                   '⟳ Running'}
+                                </span>
+                              )}
+                            </div>
+                            <button className="testcase-expand">▼</button>
+                          </div>
+                          <div className="testcase-details">
+                            <div className="testcase-section">
+                              <div className="testcase-label">Input:</div>
+                              <pre className="testcase-value">{testCase.input}</pre>
+                            </div>
+                            <div className="testcase-section">
+                              <div className="testcase-label">Expected Output:</div>
+                              <pre className="testcase-value">{testCase.expectedOutput}</pre>
+                            </div>
+                            {testCase.userOutput && (
+                              <div className="testcase-section">
+                                <div className="testcase-label">Your Output:</div>
+                                <pre className="testcase-value">{testCase.userOutput}</pre>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {activeConsoleTab === 'customInput' && (
+                    <div className="custom-input-content">
+                      <div className="custom-input-wrapper">
+                        <textarea
+                          className="custom-input-textarea"
+                          value={customInput}
+                          onChange={(e) => setCustomInput(e.target.value)}
+                          placeholder="Enter your custom input here..."
+                        />
+                      </div>
+                      <div className="custom-input-actions">
+                        <button 
+                          className="custom-input-run"
+                          onClick={() => {
+                            // Simulate running with custom input
+                            setIsRunning(true);
+                            setTimeout(() => {
+                              setIsRunning(false);
+                              setResults({
+                                success: true,
+                                message: "Custom input test passed!",
+                              });
+                            }, 1000);
+                          }}
+                          disabled={isRunning}
+                        >
+                          Run
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {activeConsoleTab === 'console' && (
+                    <div className="console-output">
+                      {results && (
+                        <div className={`results ${results.success ? 'success' : 'error'}`}>
+                          {results.message}
+                        </div>
+                      )}
+                      <div className="console-log">
+                        {/* Console output would be displayed here */}
+                        {isRunning ? 'Executing code...' : '> Console output will appear here'}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
