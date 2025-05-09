@@ -54,7 +54,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
 
-  const monthsToShow = isMobile ? 3 : 5;
+  const monthsToShow = isMobile ? 5 : 5;
   const daysLimitDate = subDays(endOfToday(), 364);
 
   const ACTIVITY_WEIGHTS = {

@@ -10,6 +10,7 @@ export const useAuth = () => {
   const navigate = useNavigate();
   const clientId = import.meta.env.VITE_CLIENT_ID;
 
+
   const loginMutation = useMutation({
     mutationFn: (credentials: LoginCredentials) => login(credentials, clientId),
     onMutate: () => {

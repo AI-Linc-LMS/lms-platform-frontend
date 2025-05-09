@@ -325,7 +325,7 @@ const CourseTopicDetailPage: React.FC = () => {
       </div>
     );
   }
-
+ 
   // Find the current content item
   const currentContent = submoduleData.data[currentContentIndex];
   console.log("Current Content ID:", currentContent?.id);
@@ -391,7 +391,7 @@ const CourseTopicDetailPage: React.FC = () => {
         {!isMobile && !isSidebarContentOpen && (
           <button
             onClick={() => setIsSidebarContentOpen(true)}
-            className="absolute top-20 left-[112px] bg-white rounded-full shadow-md p-2 hover:bg-gray-100 transition z-10 cursor-pointer"
+            className="absolute top-5 left-[100px] bg-white rounded-full shadow-md p-2 hover:bg-gray-100 transition z-10 cursor-pointer"
             title="Expand Sidebar"
           >
             <img src={expandSidebarIcon} alt="Expand" className="w-5 h-5" />
@@ -427,7 +427,7 @@ const CourseTopicDetailPage: React.FC = () => {
           )}
           
           {/* Content display based on active tab */}
-          <div className="mb-20 md:mb-0">
+          <div className={`mb-20 md:mb-0 ${!isSidebarContentOpen ? "ml-12" : ""}`}>
             {currentContent?.content_type === "VideoTutorial" && (
               <VideoCard
                 currentWeek={{ title: `Week ${submoduleData.weekNo}` }}

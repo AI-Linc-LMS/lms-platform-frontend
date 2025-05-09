@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 
 interface ActivityData {
@@ -30,6 +30,19 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
   hoveredCell,
   setHoveredCell,
 }) => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkIfMobile();
+    window.addEventListener("resize", checkIfMobile);
+    return () => window.removeEventListener("resize", checkIfMobile);
+  }, []);
+  
+
   const daysInMonth = useMemo(() => {
     const days: Date[] = [];
     for (let d = 1; d <= daysCount; d++) {
@@ -68,7 +81,7 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
                 return (
                   <div
                     key={dateIndex}
-                    className="w-[8px] h-[8px] md:w-[10px] md:h-[10px] lg:w-[12px] lg:h-[12px] xl:w-[14px] xl:h-[14px] bg-transparent rounded-sm"
+                    className={`w-[8px] h-[8px] md:w-[10px] md:h-[10px] lg:w-[12px] lg:h-[12px] xl:w-[14px] xl:h-[14px] bg-transparent rounded-sm`}
                   />
                 );
               }
@@ -89,7 +102,7 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
                       activity
                         ? getActivityColor(activity.level)
                         : "bg-[#E9ECE9]"
-                    } ${isHovered ? "transform scale-110 shadow-md" : ""}`}
+                    } ${isHovered ? "transform scale-110 shadow-md" : ""} ${isMobile ? "w-[10px] h-[10px]" : ""}`}
                   />
                   {isHovered && activity && (
                     <div
