@@ -226,7 +226,7 @@ const CourseSidebarContent = ({
     <div 
       className={`relative bg-white ${
         isMobile 
-          ? 'h-full overflow-y-auto rounded-l-lg shadow-xl' 
+          ? 'h-full overflow-y-auto rounded-l-lg shadow-xl p-4' 
           : 'w-[500px] min-h-screen rounded-lg px-4 py-3 mt-5 shadow-xl'
       }`}
     >
