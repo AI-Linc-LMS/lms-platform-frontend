@@ -90,8 +90,22 @@ const InvalidRoute = () => {
       return;
     }
     
-    // Try to correct the URL to a valid parent route
+    // Get the current path
     const path = location.pathname;
+    
+    // First check if the current path is a valid route
+    // This will handle cases where user manually enters a URL like /learn/course/3
+    const isCurrentPathValid = routes.some(route => {
+      // Convert route path patterns (with :params) to regex patterns for matching
+      const routePattern = route.path.replace(/:[^/]+/g, '[^/]+');
+      const regex = new RegExp(`^${routePattern}$`);
+      return regex.test(path);
+    });
+    
+    // If current path is valid, don't redirect - let the router handle it
+    if (isCurrentPathValid) {
+      return;
+    }
     
     // For root level random paths, show 404 page
     if (path.split('/').length === 2 && path !== '/') {
@@ -108,39 +122,58 @@ const InvalidRoute = () => {
     }
     
     // Special handling for course routes like: /learn/course/3/3/690634646
-    // Valid pattern should be: /learn/course/:courseId/:submoduleId
     if (path.startsWith('/learn/course/')) {
       const segments = path.split('/');
       
-      // If we have more segments than expected in a course route (/learn/course/courseId/submoduleId)
-      if (segments.length > 5) {
-        // Keep only the first 5 segments (including the empty first segment)
-        const validPath = segments.slice(0, 5).join('/');
-        navigate(validPath, { replace: true });
-        return;
+      // Check if this could be a valid parent route by removing segments one by one
+      // and checking against routes
+      for (let i = segments.length - 1; i >= 3; i--) {
+        const possibleValidPath = segments.slice(0, i).join('/');
+        
+        // Check if this is a valid route
+        const isValidParentRoute = routes.some(route => {
+          const routePattern = route.path.replace(/:[^/]+/g, '[^/]+');
+          const regex = new RegExp(`^${routePattern}$`);
+          return regex.test(possibleValidPath);
+        });
+        
+        if (isValidParentRoute) {
+          // If we found a valid parent path, navigate to it
+          navigate(possibleValidPath, { replace: true });
+          return;
+        }
       }
+      
+      // If we've tried all parent paths and none are valid, show 404
+      setShowNotFound(true);
+      return;
     }
     
     // For other routes, try to find the closest matching valid route
-    const isValidRoute = routes.some(route => {
-      // Convert route path patterns (with :params) to regex patterns
-      const routePattern = route.path.replace(/:[^/]+/g, '[^/]+');
-      const regex = new RegExp(`^${routePattern}$`);
-      return regex.test(path);
-    });
-    
-    if (!isValidRoute) {
-      // If no valid route is found, try to find the parent path
+    if (path.split('/').length > 2) {
+      // Try to find a valid parent path by removing segments one by one
       const segments = path.split('/');
-      if (segments.length > 2) {
-        // Remove the last segment and redirect to parent path
-        const parentPath = segments.slice(0, -1).join('/') || '/';
-        navigate(parentPath, { replace: true });
-      } else {
-        // If it's a root level route that wasn't caught earlier, show 404
-        setShowNotFound(true);
+      
+      for (let i = segments.length - 1; i >= 2; i--) {
+        const possibleValidPath = segments.slice(0, i).join('/') || '/';
+        
+        // Check if this is a valid route
+        const isValidParentRoute = routes.some(route => {
+          const routePattern = route.path.replace(/:[^/]+/g, '[^/]+');
+          const regex = new RegExp(`^${routePattern}$`);
+          return regex.test(possibleValidPath);
+        });
+        
+        if (isValidParentRoute) {
+          // If we found a valid parent path, navigate to it
+          navigate(possibleValidPath, { replace: true });
+          return;
+        }
       }
     }
+    
+    // If we couldn't find any valid parent path, show 404
+    setShowNotFound(true);
   }, [navigate, user, location]);
 
   // Return 404 page if showNotFound is true
