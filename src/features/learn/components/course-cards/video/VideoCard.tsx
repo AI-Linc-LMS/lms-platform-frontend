@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import VideoPlayer from "../../video-player/VideoPlayer";
 import FloatingAIButton from "../../floating-ai-button/FloatingAIButton";
-import { useQuery } from "@tanstack/react-query";
-import { getCourseContent } from "../../../../../services/courses-content/courseContentApis";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getCourseContent, getCommentsByContentId, createComment } from "../../../../../services/courses-content/courseContentApis";
 
 interface VideoCardProps {
   currentWeek: { title: string };
@@ -32,6 +32,18 @@ interface CourseContentResponse {
   details: CourseContentDetails;
 }
 
+interface Comment {
+  id: number;
+  client: number;
+  content: number;
+  course: number;
+  created_at: string;
+  dislikes: number;
+  likes: number;
+  text: string;
+  user_profile: number;
+}
+
 // Define a sample Vimeo URL for testing
 const SAMPLE_VIMEO_URL = "https://player.vimeo.com/video/1048123643?badge=0&autopause=0&player_id=0&app_id=58479";
 
@@ -46,6 +58,9 @@ const VideoCard: React.FC<VideoCardProps> = ({
   const [activeTab, setActiveTab] = useState<"description" | "comments">("description");
   const [processedVideoUrl, setProcessedVideoUrl] = useState<string>("");
   const [useDebugMode, setUseDebugMode] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [visibleComments, setVisibleComments] = useState(4);
+  const queryClient = useQueryClient();
 
   // Log component props for debugging
   useEffect(() => {
@@ -135,6 +150,38 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
   }, [data, useDebugMode]);
 
+  // Fetch comments
+  const { data: commentsData, isLoading: isLoadingComments } = useQuery({
+    queryKey: ['comments', contentId],
+    queryFn: () => getCommentsByContentId(1, courseId, contentId),
+    enabled: !!contentId && !!courseId && activeTab === "comments",
+  });
+
+  // Create comment mutation
+  const createCommentMutation = useMutation({
+    mutationFn: (comment: string) => createComment(1, courseId, contentId, comment),
+    onSuccess: () => {
+      // Invalidate and refetch comments after successful post
+      queryClient.invalidateQueries({ queryKey: ['comments', contentId] });
+      setNewComment("");
+    },
+    onError: (error) => {
+      console.error('Failed to post comment:', error);
+      // You can add error handling here if needed
+    }
+  });
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newComment.trim()) {
+      try {
+        await createCommentMutation.mutateAsync(newComment.trim());
+      } catch (error) {
+        console.error('Error posting comment:', error);
+      }
+    }
+  };
+
   // If loading, show loading state
   if (isLoading && !useDebugMode) {
     return (
@@ -155,7 +202,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
     return (
       <div className="text-red-500 p-4">
         <div>Error loading video: {String(error)}</div>
-        <button 
+        <button
           className="mt-4 px-3 py-1 bg-blue-500 text-white rounded"
           onClick={() => setUseDebugMode(true)}
         >
@@ -173,7 +220,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
         <div className="mt-2 text-xs text-gray-400">
           Content ID: {contentId}, Course ID: {courseId}
         </div>
-        <button 
+        <button
           className="mt-4 px-3 py-1 bg-blue-500 text-white rounded"
           onClick={() => setUseDebugMode(true)}
         >
@@ -187,7 +234,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
   const videoTitle = useDebugMode
     ? 'Debug Video'
     : ((data as CourseContentResponse)?.details?.title || currentTopic.title);
-    
+
   const videoDescription = useDebugMode
     ? 'This is a debug video to test the Vimeo player functionality.'
     : ((data as CourseContentResponse)?.details?.description || '');
@@ -200,7 +247,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
           <span className="text-gray-500 whitespace-nowrap">{currentWeek.title}</span>
           <span className="text-gray-500">›</span>
           <span className="font-medium truncate">{currentTopic.title}</span>
-          
+
           {useDebugMode && (
             <span className="ml-auto bg-yellow-200 text-yellow-800 text-xs px-2 py-1 rounded">
               DEBUG MODE
@@ -303,8 +350,8 @@ const VideoCard: React.FC<VideoCardProps> = ({
           <button
             onClick={() => setActiveTab("description")}
             className={`whitespace-nowrap py-3 md:py-4 px-1 border-b-2 font-medium text-xs md:text-sm ${activeTab === "description"
-                ? "border-[#255C79] text-[#255C79]"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              ? "border-[#255C79] text-[#255C79]"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
           >
             Description
@@ -312,8 +359,8 @@ const VideoCard: React.FC<VideoCardProps> = ({
           <button
             onClick={() => setActiveTab("comments")}
             className={`whitespace-nowrap py-3 md:py-4 px-1 border-b-2 font-medium text-xs md:text-sm ${activeTab === "comments"
-                ? "border-[#255C79] text-[#255C79]"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              ? "border-[#255C79] text-[#255C79]"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
           >
             Comments
@@ -385,8 +432,88 @@ const VideoCard: React.FC<VideoCardProps> = ({
           </div>
         )}
         {activeTab === "comments" && (
-          <div className="text-center py-8 text-gray-500">
-            Comments will be available soon!
+          <div className="space-y-6">
+            {/* Add Comment Form */}
+            <form onSubmit={handleAddComment} className="space-y-4">
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Add a comment..."
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[border-gray-300] focus:border-transparent resize-none"
+                rows={3}
+              />
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={!newComment.trim() || createCommentMutation.isPending}
+                  className="px-4 py-2 bg-[#255C79] text-white rounded-lg hover:bg-[#1e4a61] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {createCommentMutation.isPending ? "Posting..." : "Post Comment"}
+                </button>
+              </div>
+            </form>
+
+            {/* Comments List */}
+            {isLoadingComments ? (
+              <div className="animate-pulse space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-gray-100 rounded-lg p-4">
+                    <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  </div>
+                ))}
+              </div>
+            ) : commentsData?.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>No comments yet. Be the first to comment!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {commentsData?.slice(0, visibleComments).map((comment: Comment) => (
+                  <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="mt-1 text-sm text-gray-700">{comment.text}</p>
+                          <span className="text-xs text-gray-500">
+                            {new Date(comment.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center space-x-4 mt-2">
+                          <button className="flex items-center text-gray-500 hover:text-blue-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                            </svg>
+                            <span className="text-xs">{comment.likes}</span>
+                          </button>
+                          <button className="flex items-center text-gray-500 hover:text-red-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+                            </svg>
+                            <span className="text-xs">{comment.dislikes}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {commentsData && commentsData.length > visibleComments && (
+                  <div className="flex justify-center mt-4">
+                    <button
+                      onClick={() => setVisibleComments(prev => prev + 4)}
+                      className="px-4 py-2 text-sm text-[#255C79] hover:text-[#1e4a61] font-medium flex items-center space-x-1"
+                    >
+                      <span>See more comments</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
