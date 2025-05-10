@@ -2,10 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { getCourseLeaderboard } from "../../../../services/courses-content/courseContentApis";
 import React from "react";
 
-const EnrolledLeaderBoard = () => {
+const EnrolledLeaderBoard = ({courseId}:{courseId:number}) => {
   const { data = [], isLoading, error } = useQuery<Array<{ rank: number; name: string; score: number }>>({
     queryKey: ["leaderboard"],
-    queryFn: () => getCourseLeaderboard(1, 3),
+    queryFn: () => getCourseLeaderboard(1, courseId),
   });
 
   const renderSkeleton = () => (
