@@ -1,0 +1,70 @@
+/* IDE Light Theme (default) */
+.ide-container {
+  --ide-bg: #ffffff;
+  --ide-text: #1a1a1a;
+  --ide-line-number: #6b7280;
+  --ide-line-number-bg: #f3f4f6;
+  --ide-cursor: #2563eb;
+  --ide-selection: #bfdbfe;
+  --ide-comment: #6b7280;
+  --ide-keyword: #2563eb;
+  --ide-string: #059669;
+  --ide-number: #9333ea;
+  --ide-function: #0369a1;
+  --ide-operator: #be123c;
+  --ide-border: #e5e7eb;
+}
+
+/* IDE Dark Theme */
+.ide-container.dark-theme {
+  --ide-bg: #1e1e1e;
+  --ide-text: #d4d4d4;
+  --ide-line-number: #6b7280;
+  --ide-line-number-bg: #2d2d2d;
+  --ide-cursor: #569cd6;
+  --ide-selection: #264f78;
+  --ide-comment: #6a9955;
+  --ide-keyword: #569cd6;
+  --ide-string: #ce9178;
+  --ide-number: #b5cea8;
+  --ide-function: #dcdcaa;
+  --ide-operator: #d4d4d4;
+  --ide-border: #404040;
+}
+
+/* IDE Container Styles */
+.ide-container {
+  background-color: var(--ide-bg);
+  color: var(--ide-text);
+  border: 1px solid var(--ide-border);
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+/* Line Numbers */
+.ide-container .line-numbers {
+  background-color: var(--ide-line-number-bg);
+  color: var(--ide-line-number);
+  border-right: 1px solid var(--ide-border);
+  padding: 0.5rem;
+  text-align: right;
+  user-select: none;
+}
+
+/* Code Syntax Highlighting */
+.ide-container .token.comment { color: var(--ide-comment); }
+.ide-container .token.keyword { color: var(--ide-keyword); }
+.ide-container .token.string { color: var(--ide-string); }
+.ide-container .token.number { color: var(--ide-number); }
+.ide-container .token.function { color: var(--ide-function); }
+.ide-container .token.operator { color: var(--ide-operator); }
+
+/* Selection */
+.ide-container ::selection {
+  background-color: var(--ide-selection);
+}
+
+/* Cursor */
+.ide-container .cursor {
+  background-color: var(--ide-cursor);
+} 

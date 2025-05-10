@@ -6,6 +6,7 @@ import Pic_3 from "../../../../assets/learn/based-learning/pic-3.jpeg";
 import Pic_4 from "../../../../assets/learn/based-learning/pic-4.jpeg";
 import Pic_5 from "../../../../assets/learn/based-learning/pic-5.jpeg";
 
+
 // Simple SVG icons as React components
 const ClockIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600">
@@ -53,7 +54,9 @@ const CourseCard = ({
     };
 
     return (
-        <div className="rounded-3xl border border-[#80C9E0] p-6 flex flex-col w-full bg-white">
+        
+        <div className="rounded-3xl border border-[#80C9E0] p-6 flex flex-col w-full bg-white min-h-[350px]">
+            
             <h2 className="text-2xl font-bold text-gray-800 mb-2">{title}</h2>
             <p className="text-gray-600 mb-6">{description}</p>
 
@@ -94,10 +97,10 @@ const CourseCard = ({
             </div>
 
             <div className="flex gap-4 mt-auto">
-                <PrimaryButton onClick={() => alert('Enrolled!')}>Enroll Now</PrimaryButton>
+                <PrimaryButton className="whitespace-nowrap text-sm" onClick={() => alert('Enrolled!')}>Enroll Now</PrimaryButton>
 
 
-                <SecondaryButton onClick={() => alert('Not Interested')} >Not Interested</SecondaryButton>
+                <SecondaryButton className="whitespace-nowrap text-sm" onClick={() => alert('Not Interested')} >Not Interested</SecondaryButton>
 
 
             </div>
@@ -147,7 +150,9 @@ const BasedLearningCourses = () => {
     ];
 
     return (
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mx-auto">
+            
             {courses.map(course => (
                 <CourseCard key={course.id} {...course} />
             ))}

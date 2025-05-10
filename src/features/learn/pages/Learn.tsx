@@ -4,44 +4,42 @@ import BasedLearning from "../components/based-learning/BasedLearning";
 import BasedLearningCourses from "../components/based-learning/BasedLearningCourses";
 import ContinueCourses from "../components/continue-learning/ContinueCourses";
 import ContinueCoursesDetails from "../components/continue-learning/ContinueCoursesDetails";
-import CourseDetails from "../components/courses/CoursesDetails";
-import EnrolledCourse from "../components/courses/EnrolledCourse";
 import Referrals from "../components/referrals/Referrals";
 import WelcomeSection from "../components/WelcomeSection";
-import { leaderboardData } from "../data/mockLeaderboardData";
-import DailyProgress from "../components/DailyProgessTable";
-import { dailyProgressData } from "../data/mockDailyProgressTable";
+import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
+import EnrolledCourses from "../components/courses/EnrolledCourses";
 
 const Learn = () => {
+
   return (
-    <div>
+    <div className="px-2 md:px-0">
       <WelcomeSection />
-      <div className="flex flex-row items-center justify-between w-full gap-4 ">
-        <TimeTrackingDashboard />
-        <Leaderboard data={leaderboardData} />
-      </div>
+      <div className="flex flex-col md:flex-row justify-between mt-6 gap-6">
+        <div className="flex flex-col w-full gap-8">
+          <TimeTrackingDashboard />
+          <EnrolledCourses />
 
-      <EnrolledCourse />
+          <div className="space-y-2">
+            <ContinueCourses />
+            <ContinueCoursesDetails />
+          </div>
+ 
+          <div className="space-y-2">
+            <BasedLearning />
+            <BasedLearningCourses />
+          </div>
+        </div>
 
-      <div className="flex gap-4 ">
-        <CourseDetails />
-        <DailyProgress data={dailyProgressData} progressMinutes={20} />
-      </div>
-
-      <ContinueCourses />
-      <div className="flex gap-4 w-full">
-        <ContinueCoursesDetails />
-        <StreakTable activeDays={[1, 2, 3, 12, 13, 15, 16, 17]} />
-      </div>
-
-      <BasedLearning />
-      <div className="flex flex-row items-center justify-between w-full gap-4 ">
-        <BasedLearningCourses />
-        <Referrals />
+        <div className="flex flex-col gap-6 w-full md:w-auto md:min-w-[300px] lg:min-w-[350px]">
+          <Leaderboard clientId={1} />
+          <DailyProgress clientId={1} />
+          <StreakTable clientId={1} />
+          <Referrals />
+        </div>
       </div>
     </div>
   );
-};
+}
 
 export default Learn;
