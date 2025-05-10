@@ -335,8 +335,7 @@
 }
 
 .run-button {
-  background-color: #f3f4f6;
-  color: #1f2937;
+  color: white;
 }
 
 .dark-mode .run-button {
@@ -353,8 +352,7 @@
 }
 
 .submit-button {
-  background-color: #2563eb;
-  color: white;
+  color: black;
 }
 
 .submit-button:hover {
@@ -386,7 +384,7 @@
 }
 
 .toggle-switch {
-  background-color: #9ca3af;
+  background-color: #eaedf1;
   border-radius: 0.75rem;
   display: inline-block;
   height: 1.25rem;
@@ -402,7 +400,7 @@
 }
 
 .toggle-switch input:checked + .toggle-slider {
-  background-color: #2563eb;
+  background-color: #3e76ee;
 }
 
 .toggle-slider {
