@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { store } from '../redux/store';
-import { logout } from '../redux/slices/authSlice';
+import { logout } from '../redux/slices/userSlice';
 
 export interface LoginCredentials {
   email: string;
@@ -44,15 +44,22 @@ axiosAuthInstance.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       console.log('Token expired or invalid. Logging out...');
       
-      // Clear user data from localStorage
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      // Avoid multiple redirects
+      if (window.location.pathname === '/login') {
+        return Promise.reject(error);
+      }
+      
+      // Clear all local storage
+      localStorage.clear();
       
       // Dispatch logout action
       store.dispatch(logout());
       
-      // Redirect to login page
-      window.location.href = '/login';
+      // Use direct page reload instead of setTimeout
+      window.history.replaceState(null, '', '/login');
+      window.location.reload();
+      
+      return Promise.reject(error);
     }
     
     return Promise.reject(error);
