@@ -57,6 +57,8 @@ const transformCourseData = (reduxCourse: EnrolledCourse): CardCourse => {
     id: reduxCourse.id,
     title: reduxCourse.title,
     description: reduxCourse.description,
+    course_title: reduxCourse.title,
+    course_description: reduxCourse.description,
     enrolled_students: reduxCourse.enrolled_students?.length || 0,
     is_certified: reduxCourse.certificate_available || false,
     updated_at: reduxCourse.updated_at,
