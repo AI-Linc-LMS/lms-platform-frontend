@@ -132,11 +132,13 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
           </thead>
           <tbody>
             {data?.map((item: LeaderboardItem, index: number) => {
-              const isLast = index === data?.length - 1;
+              // Check if this entry is the current user (name is "You")
+              const isCurrentUser = item.name === "You";
+              
               return (
                 <tr
                   key={index}
-                  className={`group relative transition-all duration-300 hover:bg-[#E9F7FA] ${isLast ? "bg-[#B4E0ED] text-[#264D64]" : ""}`}
+                  className={`group relative transition-all duration-300 hover:bg-[#E9F7FA] ${isCurrentUser ? "bg-blue-100 text-[#264D64]" : ""}`}
                 >
                   <td
                     className="border-b border-r border-gray-300 w-[70px] h-[50px] text-[12px]"
