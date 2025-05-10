@@ -22,6 +22,11 @@ export interface LoginResponse {
   user: UserData;
 }
 
+export interface RefreshTokenResponse {
+  access_token: string;
+  refresh_token: string;
+}
+
 const axiosAuthInstance = axios.create({
   baseURL: 'https://be-app.ailinc.com/', 
   headers: {
@@ -61,6 +66,20 @@ export const login = async (credentials: LoginCredentials, clientId: number): Pr
   } catch (error) {
     if (axios.isAxiosError(error)) {
       throw new Error(error.response?.data?.message || 'Login failed');
+    }
+    throw error;
+  }
+};
+
+export const refreshToken = async (refresh_token: string, clientId: number): Promise<RefreshTokenResponse> => {
+  try {
+    const response = await axiosAuthInstance.post(`/accounts/clients/${clientId}/user/refresh-token/`, {
+      refresh_token
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.response?.data?.message || 'Token refresh failed');
     }
     throw error;
   }
