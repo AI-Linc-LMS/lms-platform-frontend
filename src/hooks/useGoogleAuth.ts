@@ -24,9 +24,6 @@ export const useGoogleAuth = () => {
       // Store token in localStorage
       localStorage.setItem('token', access_token);
       
-      // Store the current timestamp for token expiration checks
-      localStorage.setItem('tokenTimestamp', Date.now().toString());
-
       // Update Redux store with user data
       dispatch(
         setUser({
@@ -42,35 +39,29 @@ export const useGoogleAuth = () => {
 
       // Redirect to home page
       navigate('/');
-    } catch (error: unknown) {
+    } catch (error) {
       console.error('Google login error:', error);
       
-      let errorMessage: string;
-      
-      if (axios.isAxiosError(error) && error.response) {
-        // Handle specific status codes
-        if (error.response.status === 500) {
-          errorMessage = 'Server error occurred with this Google account. Please try a different Google account or contact support.';
-        } else if (error.response.data?.message) {
-          errorMessage = error.response.data.message;
+      // Set a more user-friendly error message
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 400) {
+          setError('Invalid Google account or authorization. Please try again.');
+        } else if (error.response?.status === 500) {
+          setError('Server error. Please try again later or use a different account.');
+        } else if (error.message.includes('Network Error')) {
+          setError('Network error. Please check your internet connection and try again.');
         } else {
-          errorMessage = `Google login failed (${error.response.status}): ${error.message}`;
+          setError(error.response?.data?.message || error.response?.data?.detail || 'Failed to log in with Google. Please try again.');
         }
       } else if (error instanceof Error) {
-        errorMessage = error.message;
+        setError(error.message);
       } else {
-        errorMessage = 'An unexpected error occurred. Please try again.';
+        setError('An unexpected error occurred. Please try again.');
       }
       
-      setError(errorMessage);
-    } finally {
       setIsLoading(false);
     }
   };
 
-  return {
-    handleGoogleLogin,
-    isLoading,
-    error,
-  };
+  return { handleGoogleLogin, isLoading, error };
 }; 
