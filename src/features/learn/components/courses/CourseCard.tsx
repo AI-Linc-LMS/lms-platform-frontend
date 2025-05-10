@@ -4,6 +4,36 @@ import PrimaryButton from "../../../../commonComponents/common-buttons/primary-b
 import { useNavigate } from "react-router-dom";
 import { VideoIcon, DocumentIcon, CodeIcon, FAQIcon } from "../../../../commonComponents/icons/learnIcons/CourseIcons";
 
+// Add an AssignmentIcon component
+const AssignmentIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M3.83594 2C3.83594 1.72386 4.0598 1.5 4.33594 1.5H11.1693C11.3007 1.5 11.4267 1.55268 11.5205 1.64645L13.6897 3.81569C13.7835 3.90946 13.8359 4.03533 13.8359 4.16667V13.5C13.8359 13.7761 13.6121 14 13.3359 14H4.33594C4.0598 14 3.83594 13.7761 3.83594 13.5V2ZM4.83594 2.5V13H12.8359V4.33333L10.8359 2.33333H4.83594Z"
+      fill="#495057"
+    />
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M6.33594 6.5C6.33594 6.22386 6.5598 6 6.83594 6H10.3359C10.6121 6 10.8359 6.22386 10.8359 6.5C10.8359 6.77614 10.6121 7 10.3359 7H6.83594C6.5598 7 6.33594 6.77614 6.33594 6.5Z"
+      fill="#495057"
+    />
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M6.33594 9.5C6.33594 9.22386 6.5598 9 6.83594 9H10.3359C10.6121 9 10.8359 9.22386 10.8359 9.5C10.8359 9.77614 10.6121 10 10.3359 10H6.83594C6.5598 10 6.33594 9.77614 6.33594 9.5Z"
+      fill="#495057"
+    />
+  </svg>
+);
+
 interface CourseCardProps {
   course?: Course; 
   className?: string;
@@ -39,7 +69,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
   // Calculate total counts across all modules and submodules
   const calculateTotalCounts = (course?: Course) => {
     if (!course || !course.modules || !Array.isArray(course.modules)) {
-      return { videos: 0, articles: 0, problems: 0, quizzes: 0 };
+      return { videos: 0, articles: 0, problems: 0, quizzes: 0, assignments: 0 };
     }
     
     return course.modules.reduce((acc, module) => {
@@ -50,10 +80,11 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
           videos: subAcc.videos + (submodule.video_count || 0),
           articles: subAcc.articles + (submodule.article_count || 0),
           problems: subAcc.problems + (submodule.coding_problem_count || 0),
-          quizzes: subAcc.quizzes + (submodule.quiz_count || 0)
+          quizzes: subAcc.quizzes + (submodule.quiz_count || 0),
+          assignments: subAcc.assignments + (submodule.assignment_count || 0)
         };
       }, acc);
-    }, { videos: 0, articles: 0, problems: 0, quizzes: 0 });
+    }, { videos: 0, articles: 0, problems: 0, quizzes: 0, assignments: 0 });
   };
 
   const totalCounts = calculateTotalCounts(course);
@@ -69,8 +100,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
             <div className="h-5 md:h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
             <div className="h-3 md:h-4 bg-gray-200 rounded w-1/2"></div>
           </div>
-          <div className="grid grid-cols-4 gap-1">
-            {[...Array(4)].map((_, index) => (
+          <div className="grid grid-cols-5 gap-1">
+            {[...Array(5)].map((_, index) => (
               <div
                 key={index}
                 className="w-full aspect-square rounded-lg p-1 bg-gray-200 flex flex-col items-center justify-center"
@@ -112,7 +143,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
           <h1 className="font-bold font-sans text-lg md:text-xl text-[#343A40]">{course.title}</h1>
           <p className="text-[#6C757D] font-normal text-sm md:text-base mt-1">{course.description}</p>
         </div>
-        <div className="grid grid-cols-4 gap-2 md:gap-3 mt-3 lg:mt-0">
+        <div className="grid grid-cols-5 gap-2 md:gap-3 mt-3 lg:mt-0">
           <StatBlock 
             icon={<VideoIcon />} 
             count={totalCounts.videos} 
@@ -132,6 +163,11 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
             icon={<FAQIcon />} 
             count={totalCounts.quizzes} 
             label="Quizzes" 
+          />
+          <StatBlock 
+            icon={<AssignmentIcon />} 
+            count={totalCounts.assignments} 
+            label="Assignments" 
           />
         </div>
       </div>
