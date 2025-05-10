@@ -23,10 +23,11 @@ interface LessonsHeatmapCardProps {
 type ApiDataType = Record<
   string,
   {
-    articles: number;
-    videos: number;
-    problems: number;
-    quizzes: number;
+    Article: number;
+    Quiz: number;
+    Assignment: number;
+    CodingProblem: number;
+    VideoTutorial: number;
     total: number;
   }
 >;
@@ -39,7 +40,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
     queryKey: ["activityData"],
     queryFn: () => getUserActivityHeatmapData(1),
   });
-
+  console.log("apiData", apiData);
   const [monthOffset, setMonthOffset] = useState(0);
   const [year, setYear] = useState(getYear(new Date()));
   const [isMobile, setIsMobile] = useState(false);
@@ -54,36 +55,40 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
 
-  const monthsToShow = isMobile ? 3 : 5;
-  const daysLimitDate = subDays(endOfToday(), 364);
+  const monthsToShow = isMobile ? 5 : 5;
+  const daysLimitDate = subDays(endOfToday(), 300);
 
   const ACTIVITY_WEIGHTS = {
-    articles: 1,
-    videos: 1.2,
-    problems: 1.5,
-    quizzes: 2,
+    Article: 2,
+    Quiz: 2,
+    Assignment: 4,
+    CodingProblem: 3,
+    VideoTutorial: 2,
   };
 
   const calculateWeightedScore = (activities: {
-    articles: number;
-    videos: number;
-    problems: number;
-    quizzes: number;
+    Article: number;
+    Quiz: number;
+    Assignment: number;
+    CodingProblem: number;
+    VideoTutorial: number;
     total: number;
   }): number => {
     return (
-      activities.articles * ACTIVITY_WEIGHTS.articles +
-      activities.videos * ACTIVITY_WEIGHTS.videos +
-      activities.problems * ACTIVITY_WEIGHTS.problems +
-      activities.quizzes * ACTIVITY_WEIGHTS.quizzes
+      activities.Article * ACTIVITY_WEIGHTS.Article +
+      activities.Quiz * ACTIVITY_WEIGHTS.Quiz +
+      activities.Assignment * ACTIVITY_WEIGHTS.Assignment +
+      activities.CodingProblem * ACTIVITY_WEIGHTS.CodingProblem +
+      activities.VideoTutorial * ACTIVITY_WEIGHTS.VideoTutorial
     );
   };
 
   const calculateLevel = (activities: {
-    articles: number;
-    videos: number;
-    problems: number;
-    quizzes: number;
+    Article: number;
+    Quiz: number;
+    Assignment: number;
+    CodingProblem: number;
+    VideoTutorial: number;
     total: number;
   }): number => {
     const weightedScore = calculateWeightedScore(activities);
@@ -102,10 +107,11 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
       .filter(([dateStr]) => !isBefore(new Date(dateStr), daysLimitDate))
       .map(([date, value]) => {
         const activities = {
-          articles: value?.articles ?? 0,
-          videos: value.videos || 0,
-          problems: value.problems || 0,
-          quizzes: value.quizzes || 0,
+          Article: value?.Article ?? 0,
+          Quiz: value.Quiz || 0,
+          Assignment: value.Assignment || 0,
+          CodingProblem: value.CodingProblem || 0,
+          VideoTutorial: value.VideoTutorial || 0,
           total: value.total || 0,
         };
 
@@ -206,7 +212,6 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
       </div>
     );
   }
-
 
   return (
     <div className="flex flex-col w-full">

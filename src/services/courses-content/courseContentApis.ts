@@ -146,3 +146,45 @@ export const getSubmoduleById = async (clientId: number, courseId: number, submo
     );
   }
 }
+
+export const getCommentsByContentId = async (clientId: number, courseId: number, contentId: number) => {
+  try {
+    const res = await axiosInstance.get(`/lms/clients/${clientId}/courses/${courseId}/content/${contentId}/comment/`);
+    console.log("Comments By Content Id API response:", res.data);
+    return res.data;
+  } catch (error: any) {
+    console.error("Failed to fetch Comments By Content Id:", error);
+    console.error("Error details:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
+
+    throw new Error(
+      error?.response?.data?.detail ||
+        error?.message ||
+        "Failed to fetch Comments By Content Id"
+    );
+  }
+}
+
+export const createComment = async (clientId: number, courseId: number, contentId: number, comment: string) => {
+  try {
+    const res = await axiosInstance.post(`/lms/clients/${clientId}/courses/${courseId}/content/${contentId}/comment/`, { text : comment });
+    console.log("Create Comment API response:", res.data);
+    return res.data;
+  } catch (error: any) {
+    console.error("Failed to create Comment:", error);
+    console.error("Error details:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
+
+    throw new Error(
+      error?.response?.data?.detail ||
+        error?.message ||
+        "Failed to create Comment"
+    );
+  }
+}

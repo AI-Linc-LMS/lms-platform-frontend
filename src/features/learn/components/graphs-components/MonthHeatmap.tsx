@@ -1,14 +1,15 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 
 interface ActivityData {
   date: string;
   level: number;
   value: number;
-  articles?: number;
-  videos?: number;
-  problems?: number;
-  quizzes?: number;
+  Article?: number;
+  VideoTutorial?: number;
+  CodingProblem?: number;
+  Assignment?: number;
+  Quiz?: number;
 }
 
 interface MonthHeatmapProps {
@@ -30,6 +31,19 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
   hoveredCell,
   setHoveredCell,
 }) => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkIfMobile();
+    window.addEventListener("resize", checkIfMobile);
+    return () => window.removeEventListener("resize", checkIfMobile);
+  }, []);
+  
+
   const daysInMonth = useMemo(() => {
     const days: Date[] = [];
     for (let d = 1; d <= daysCount; d++) {
@@ -59,7 +73,7 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
   }, [allCells, weeksCount]);
 
   return (
-    <div className="flex flex-col space-y-1 w-full">
+    <div className="flex flex-col space-y-1 w-full px-2">
       <div className="flex space-x-1">
         {weeks.map((week, weekIndex) => (
           <div key={weekIndex} className="flex flex-col space-y-1">
@@ -68,7 +82,7 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
                 return (
                   <div
                     key={dateIndex}
-                    className="w-[8px] h-[8px] md:w-[10px] md:h-[10px] lg:w-[12px] lg:h-[12px] xl:w-[14px] xl:h-[14px] bg-transparent rounded-sm"
+                    className={`w-[8px] h-[8px] md:w-[10px] md:h-[10px] lg:w-[12px] lg:h-[12px] xl:w-[14px] xl:h-[14px] bg-transparent rounded-sm`}
                   />
                 );
               }
@@ -89,32 +103,37 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
                       activity
                         ? getActivityColor(activity.level)
                         : "bg-[#E9ECE9]"
-                    } ${isHovered ? "transform scale-110 shadow-md" : ""}`}
+                    } ${isHovered ? "transform scale-110 shadow-md" : ""} ${isMobile ? "w-[10px] h-[10px]" : ""}`}
                   />
                   {isHovered && activity && (
                     <div
-                      className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-10 bg-white p-2 rounded shadow-md text-xs border border-gray-200 whitespace-nowrap pointer-events-none"
+                      className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-10 bg-white p-1 rounded shadow-md text-[10px] border border-gray-200 whitespace-nowrap pointer-events-none"
                       style={{ minWidth: "max-content" }}
                     >
                       <p className="font-medium">{format(date, "MMM d")}</p>
-                      {(activity?.articles ?? 0) > 0 && (
+                      {(activity?.Article ?? 0) > 0 && (
                         <p className="text-gray-700">
-                          Articles: {activity.articles}
+                          Articles: {activity.Article}
                         </p>
                       )}
-                      {(activity.videos ?? 0) > 0 && (
+                      {(activity.VideoTutorial ?? 0) > 0 && (
                         <p className="text-gray-700">
-                          Videos: {activity.videos ?? 0}
+                          Videos: {activity.VideoTutorial ?? 0}
                         </p>
                       )}
-                      {(activity.problems ?? 0) > 0 && (
+                      {(activity.CodingProblem ?? 0) > 0 && (
                         <p className="text-gray-700">
-                          Problems: {activity.problems ?? 0}
+                          Problems: {activity.CodingProblem ?? 0}
                         </p>
                       )}
-                      {(activity.quizzes ?? 0) > 0 && (
+                      {(activity.Assignment ?? 0) > 0 && (
                         <p className="text-gray-700">
-                          Quizzes: {activity.quizzes ?? 0}
+                          Assignment: {activity.Assignment ?? 0}
+                        </p>
+                      )}
+                      {(activity.Quiz ?? 0) > 0 && (
+                        <p className="text-gray-700">
+                          Quiz: {activity.Quiz ?? 0}
                         </p>
                       )}
                     </div>
