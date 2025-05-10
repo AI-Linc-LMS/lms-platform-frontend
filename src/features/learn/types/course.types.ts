@@ -43,9 +43,10 @@ export interface Module {
 
 export interface Course {
   id: number;
+  course_id: number;
   title: string;
-  course_title: string;
   description: string;
+  course_title: string;
   course_description: string;
   enrolled_students: number;
   instructors: Instructor[];

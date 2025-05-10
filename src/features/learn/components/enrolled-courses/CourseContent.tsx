@@ -171,7 +171,7 @@ const CourseContent: React.FC<CourseContentProps> = ({course, isLoading, error})
           <CollapsibleCourseModule
             key={module.id}
             week={{
-              id: `${course.id}`,
+              id: `${course.course_id}`,
               weekNo: module.weekno,
               title: module.title,
               completed: module.completion_percentage,
