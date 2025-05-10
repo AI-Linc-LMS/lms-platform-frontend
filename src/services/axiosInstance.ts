@@ -1,7 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { store } from '../redux/store';
-import { logout } from '../redux/slices/authSlice';
-import { setUser } from '../redux/slices/userSlice';
+import { logout, setUser } from '../redux/slices/userSlice';
 import { refreshToken } from './authApis';
 
 // Create a flag to prevent multiple concurrent refresh attempts
@@ -218,10 +217,15 @@ axiosInstance.interceptors.response.use(
         // Process queued requests with error
         processQueue(refreshError as Error, null);
         
-        // Clear user data from localStorage
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('tokenTimestamp');
+        // Avoid multiple redirects
+        if (window.location.pathname === '/login') {
+          // Reset refreshing flag
+          isRefreshing = false;
+          return Promise.reject(refreshError);
+        }
+        
+        // Clear all local storage
+        localStorage.clear();
         
         // Dispatch logout action
         store.dispatch(logout());
@@ -229,8 +233,9 @@ axiosInstance.interceptors.response.use(
         // Reset refreshing flag
         isRefreshing = false;
         
-        // Redirect to login page
-        window.location.href = '/login';
+        // Use direct page reload instead of setTimeout
+        window.history.replaceState(null, '', '/login');
+        window.location.reload();
         
         return Promise.reject(refreshError);
       }

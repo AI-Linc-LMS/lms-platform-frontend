@@ -18,6 +18,7 @@ interface UserState {
 const initialState: UserState = persistedUser
   ? JSON.parse(persistedUser)
   : {
+      id: null,
       access_token: null,
       refresh_token: null,
       email: null,
@@ -45,12 +46,16 @@ const userSlice = createSlice({
       state.error = action.payload;
       state.loading = false;
     },
-    // logout: (state) => {
-    //   localStorage.removeItem('user');
-    //   return initialState;
-    // },
+    logout: () => {
+      localStorage.removeItem('user');
+      return {
+        ...initialState,
+        loading: false,
+        error: null
+      };
+    },
   },
 });
 
-export const { setUser, setLoading, setError } = userSlice.actions;
+export const { setUser, setLoading, setError, logout } = userSlice.actions;
 export default userSlice.reducer; 
