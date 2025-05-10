@@ -188,7 +188,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
           ))}
         </div>
       </div>
-      <div className="mt-auto pt-3">
+      <div className="mt-auto">
         <PrimaryButton 
           onClick={handleExploreClick} 
           className="w-full text-sm md:text-base py-2 md:py-3 rounded-xl"

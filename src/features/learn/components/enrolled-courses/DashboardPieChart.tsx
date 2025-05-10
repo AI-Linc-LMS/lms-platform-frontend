@@ -24,10 +24,10 @@ interface ApiResponse {
   [key: string]: number; // For any other fields that might be present
 }
 
-const DashboardPieChart = () => {
+const DashboardPieChart = ({courseId}:{courseId:number}) => {
   const { data, isLoading, error } = useQuery({
     queryKey: ["DashboardPieChart"],
-    queryFn: () => getCourseDashboard(1, 3),
+    queryFn: () => getCourseDashboard(1, courseId),
   });
 
   // Add console log to see the raw API response
