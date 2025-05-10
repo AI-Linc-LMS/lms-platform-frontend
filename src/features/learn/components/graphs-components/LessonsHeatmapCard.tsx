@@ -139,43 +139,43 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
   }[] => {
     const today = endOfToday();
     const startDate = subDays(today, 364);
-  
+
     const months: {
       monthName: string;
       month: number;
       year: number;
       daysCount: number;
     }[] = [];
-  
+
     let pointer = new Date(today.getFullYear(), today.getMonth(), 1); // Start of current month
-  
+
     while (isBefore(startDate, pointer) || format(startDate, "yyyy-MM") === format(pointer, "yyyy-MM")) {
       const year = pointer.getFullYear();
       const month = pointer.getMonth();
       const monthStart = new Date(year, month, 1);
       const monthEnd = new Date(year, month + 1, 0);
-  
+
       // If entire month is before the start date, skip it
       if (monthEnd < startDate) break;
-  
+
       // Determine valid day count
       const effectiveStart = isBefore(monthStart, startDate) ? startDate : monthStart;
       const effectiveEnd = monthEnd > today ? today : monthEnd;
       const daysCount = eachDayOfInterval({ start: effectiveStart, end: effectiveEnd }).length;
-  
+
       months.unshift({
         monthName: format(pointer, "MMM"),
         month,
         year,
         daysCount,
       });
-  
+
       pointer = subMonths(pointer, 1);
     }
-  
+
     return months;
   };
-  
+
 
   const validMonths = useMemo(getValidMonthsInPastYear, []);
   const visibleMonths = validMonths.slice(
@@ -238,9 +238,8 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
             <button
               onClick={handleNext}
               disabled={monthOffset === 0}
-              className={`w-8 h-8 flex items-center justify-center rounded-full ml-2 ${
-                monthOffset === 0 ? "bg-gray-200 cursor-not-allowed" : "bg-[#12293A]"
-              } shadow`}
+              className={`w-8 h-8 flex items-center justify-center rounded-full ml-2 ${monthOffset === 0 ? "bg-gray-200 cursor-not-allowed" : "bg-[#12293A]"
+                } shadow`}
             >
               <img src={rightArrow} alt="Next" className="w-3 h-3" />
             </button>
@@ -284,9 +283,8 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
           <button
             onClick={handleNext}
             disabled={monthOffset === 0}
-            className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full ${
-              monthOffset === 0 ? "bg-gray-200 cursor-not-allowed" : "bg-[#12293A]"
-            } shadow`}
+            className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full ${monthOffset === 0 ? "bg-gray-200 cursor-not-allowed" : "bg-[#12293A]"
+              } shadow`}
           >
             <img src={rightArrow} alt="Next" className="w-3 h-3 md:w-4 md:h-4" />
           </button>
