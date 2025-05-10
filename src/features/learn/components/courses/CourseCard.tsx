@@ -11,6 +11,22 @@ interface CourseCardProps {
   error?: Error | null;
 }
 
+// Stat block component with hover effect
+const StatBlock = ({ icon, count, label }: { icon: React.ReactNode, count: number, label: string }) => {
+  return (
+    <div className="bg-[#F8F9FA] hover:bg-[#E9ECEF] rounded-xl p-2 md:p-3 flex flex-col items-center justify-center relative group transition-all duration-200">
+      <div className="mb-1 md:mb-2">{icon}</div>
+      <span className="text-center text-[#495057] font-medium text-sm md:text-base">{count}</span>
+      
+      {/* Tooltip that appears on hover */}
+      <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[#343A40] text-white text-xs rounded pointer-events-none transition-opacity duration-200">
+        {label}
+        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#343A40]"></div>
+      </div>
+    </div>
+  );
+};
+
 const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoading = false, error = null }) => {
   const navigate = useNavigate();
 
@@ -97,22 +113,26 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
           <p className="text-[#6C757D] font-normal text-sm md:text-base mt-1">{course.description}</p>
         </div>
         <div className="grid grid-cols-4 gap-2 md:gap-3 mt-3 lg:mt-0">
-          <div className="bg-[#F8F9FA] rounded-xl p-2 md:p-3 flex flex-col items-center justify-center">
-            <div className="mb-1 md:mb-2"><VideoIcon /></div>
-            <span className="text-center text-[#495057] font-medium text-sm md:text-base">{totalCounts.videos}</span>
-          </div>
-          <div className="bg-[#F8F9FA] rounded-xl p-2 md:p-3 flex flex-col items-center justify-center">
-            <div className="mb-1 md:mb-2"><DocumentIcon /></div>
-            <span className="text-center text-[#495057] font-medium text-sm md:text-base">{totalCounts.articles}</span>
-          </div>
-          <div className="bg-[#F8F9FA] rounded-xl p-2 md:p-3 flex flex-col items-center justify-center">
-            <div className="mb-1 md:mb-2"><CodeIcon /></div>
-            <span className="text-center text-[#495057] font-medium text-sm md:text-base">{totalCounts.problems}</span>
-          </div>
-          <div className="bg-[#F8F9FA] rounded-xl p-2 md:p-3 flex flex-col items-center justify-center">
-            <div className="mb-1 md:mb-2"><FAQIcon /></div>
-            <span className="text-center text-[#495057] font-medium text-sm md:text-base">{totalCounts.quizzes}</span>
-          </div>
+          <StatBlock 
+            icon={<VideoIcon />} 
+            count={totalCounts.videos} 
+            label="Videos" 
+          />
+          <StatBlock 
+            icon={<DocumentIcon />} 
+            count={totalCounts.articles} 
+            label="Articles" 
+          />
+          <StatBlock 
+            icon={<CodeIcon />} 
+            count={totalCounts.problems} 
+            label="Coding Problems" 
+          />
+          <StatBlock 
+            icon={<FAQIcon />} 
+            count={totalCounts.quizzes} 
+            label="Quizzes" 
+          />
         </div>
       </div>
       <div className="w-full my-4 md:my-6">
