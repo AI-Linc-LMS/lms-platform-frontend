@@ -9,9 +9,14 @@ import WelcomeSection from "../components/WelcomeSection";
 import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
 import EnrolledCourses from "../components/courses/EnrolledCourses";
-
 const Learn = () => {
-
+  // useEffect(() => {
+  //   const fetchEnrolledCourses = async () => {
+  //     const response = await getCourseById(1,8);
+  //     console.log(response);
+  //   };
+  //   fetchEnrolledCourses();
+  // }, []);
   return (
     <div className="px-2 md:px-0">
       <WelcomeSection />
