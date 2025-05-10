@@ -2,6 +2,7 @@ import React from "react";
 import { Course } from "../../types/course.types";
 import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import { useNavigate } from "react-router-dom";
+import { VideoIcon, DocumentIcon, CodeIcon, FAQIcon } from "../../../../commonComponents/icons/learnIcons/CourseIcons";
 
 interface CourseCardProps {
   course?: Course; 
@@ -18,6 +19,28 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
       navigate(`/courses/${course.id}`);
     }
   };
+
+  // Calculate total counts across all modules and submodules
+  const calculateTotalCounts = (course?: Course) => {
+    if (!course || !course.modules || !Array.isArray(course.modules)) {
+      return { videos: 0, articles: 0, problems: 0, quizzes: 0 };
+    }
+    
+    return course.modules.reduce((acc, module) => {
+      if (!module.submodules || !Array.isArray(module.submodules)) return acc;
+      
+      return module.submodules.reduce((subAcc, submodule) => {
+        return {
+          videos: subAcc.videos + (submodule.video_count || 0),
+          articles: subAcc.articles + (submodule.article_count || 0),
+          problems: subAcc.problems + (submodule.coding_problem_count || 0),
+          quizzes: subAcc.quizzes + (submodule.quiz_count || 0)
+        };
+      }, acc);
+    }, { videos: 0, articles: 0, problems: 0, quizzes: 0 });
+  };
+
+  const totalCounts = calculateTotalCounts(course);
 
   if (isLoading || !course || error) {
     // Skeleton loader
@@ -66,19 +89,37 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
 
   return (
     <div
-      className={`w-29/30 border border-[#80C9E0] p-3 md:p-4 rounded-2xl md:rounded-3xl bg-white flex flex-col h-full ${className}`}
+      className={`w-full border border-[#80C9E0] p-4 md:p-6 rounded-2xl md:rounded-3xl bg-white flex flex-col h-full ${className}`}
     >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 md:gap-3 items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 items-center">
         <div>
-          <h1 className="font-bold font-sans text-[16px] md:text-[18px]">{course.title}</h1>
-          <p className="text-gray-600 font-normal text-[13px] md:text-[15px]">{course.description}</p>
+          <h1 className="font-bold font-sans text-lg md:text-xl text-[#343A40]">{course.title}</h1>
+          <p className="text-[#6C757D] font-normal text-sm md:text-base mt-1">{course.description}</p>
+        </div>
+        <div className="grid grid-cols-4 gap-2 md:gap-3 mt-3 lg:mt-0">
+          <div className="bg-[#F8F9FA] rounded-xl p-2 md:p-3 flex flex-col items-center justify-center">
+            <div className="mb-1 md:mb-2"><VideoIcon /></div>
+            <span className="text-center text-[#495057] font-medium text-sm md:text-base">{totalCounts.videos}</span>
+          </div>
+          <div className="bg-[#F8F9FA] rounded-xl p-2 md:p-3 flex flex-col items-center justify-center">
+            <div className="mb-1 md:mb-2"><DocumentIcon /></div>
+            <span className="text-center text-[#495057] font-medium text-sm md:text-base">{totalCounts.articles}</span>
+          </div>
+          <div className="bg-[#F8F9FA] rounded-xl p-2 md:p-3 flex flex-col items-center justify-center">
+            <div className="mb-1 md:mb-2"><CodeIcon /></div>
+            <span className="text-center text-[#495057] font-medium text-sm md:text-base">{totalCounts.problems}</span>
+          </div>
+          <div className="bg-[#F8F9FA] rounded-xl p-2 md:p-3 flex flex-col items-center justify-center">
+            <div className="mb-1 md:mb-2"><FAQIcon /></div>
+            <span className="text-center text-[#495057] font-medium text-sm md:text-base">{totalCounts.quizzes}</span>
+          </div>
         </div>
       </div>
-      <div className="w-full my-3 md:my-4">
-        <p className="text-gray-500 text-[13px] md:text-[15px]">{course.description}</p>
+      <div className="w-full my-4 md:my-6">
+        <p className="text-[#495057] text-sm md:text-base">{course.description}</p>
       </div>
-      <div className="flex flex-row gap-1 mb-3 items-center text-[13px] md:text-[15px]">
-        <h1>Instructors:</h1>
+      <div className="flex flex-row gap-2 mb-4 items-center text-sm md:text-base">
+        <h1 className="text-[#343A40] font-medium">Instructors:</h1>
         <div className="flex -space-x-2 mr-3">
           {course.instructors.slice(0, 5).map((instructor, index) => (
             <div key={index} className="w-6 md:w-8 h-6 md:h-8 rounded-full bg-gray-300 border-2 border-white overflow-hidden">
@@ -91,8 +132,11 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
           ))}
         </div>
       </div>
-      <div className="mt-auto pt-2">
-        <PrimaryButton onClick={handleExploreClick} className="text-[13px] md:text-[15px] py-1 md:py-2">
+      <div className="mt-auto pt-3">
+        <PrimaryButton 
+          onClick={handleExploreClick} 
+          className="w-full text-sm md:text-base py-2 md:py-3 rounded-xl"
+        >
           Explore More
         </PrimaryButton>
       </div>
