@@ -45,9 +45,15 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     queryFn: () => getCourseContent(1, courseId, contentId),
     enabled: !!contentId && !!courseId,
   });
+  const languageOptions = [
+    { value: "javascript", label: "JavaScript" },
+    { value: "typescript", label: "TypeScript" },
+    { value: "python", label: "Python" },
+    { value: "java", label: "Java" },
+    { value: "cpp", label: "C++" },
+  ];
 
   const [code, setCode] = useState("// Write your code here");
-  const [selectedLanguage, setSelectedLanguage] = useState("javascript");
   const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(true);
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
     const saved = localStorage.getItem('ide-theme');
@@ -63,6 +69,8 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const [customInput, setCustomInput] = useState("");
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [isResizing, setIsResizing] = useState(false);
+  const [isDropdownHovered, setIsDropdownHovered] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState(languageOptions[0].value);
 
   // Mock test cases based on sample input/output from the problem
   React.useEffect(() => {
@@ -120,13 +128,13 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const handleRunCode = () => {
     setIsRunning(true);
     setResults(null);
-    
+
     // Update test case status to running
     setTestCases(testCases.map(tc => ({
       ...tc,
       status: 'running'
     })));
-    
+
     // Simulate code execution
     setTimeout(() => {
       // Set results for each test case
@@ -135,7 +143,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         userOutput: tc.expectedOutput, // In a real app, this would be the actual output
         status: 'passed' // Simulate all passing for demo
       })));
-      
+
       setResults({
         success: true,
         message: "All test cases passed!",
@@ -147,7 +155,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const handleSubmitCode = () => {
     setIsSubmitting(true);
     setResults(null);
-    
+
     // Simulate submission with test cases
     setTimeout(() => {
       // Set results for each test case
@@ -156,7 +164,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         userOutput: tc.expectedOutput, // In a real app, this would be the actual output
         status: 'passed' // Simulate all passing for demo
       })));
-      
+
       onSubmit(code);
       setResults({
         success: true,
@@ -166,13 +174,6 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     }, 1500);
   };
 
-  const languageOptions = [
-    { value: "javascript", label: "JavaScript" },
-    { value: "typescript", label: "TypeScript" },
-    { value: "python", label: "Python" },
-    { value: "java", label: "Java" },
-    { value: "cpp", label: "C++" },
-  ];
 
   // Save theme preference
   const handleThemeChange = () => {
@@ -195,7 +196,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       if (container) {
         const containerRect = container.getBoundingClientRect();
         const newHeight = containerRect.bottom - e.clientY;
-        
+
         // Set minimum and maximum heights
         if (newHeight >= 100 && newHeight <= containerRect.height - 100) {
           setConsoleHeight(newHeight);
@@ -218,81 +219,83 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     <div className={`problem-card-container rounded-2xl ${isDarkTheme ? 'dark-mode' : ''}`}>
       <div className="problem-header rounded-2xl">
         <div className="problem-title-section">
-          <h1 className="problem-title">{data.details.title}</h1>
-          <span
-            className={`difficulty-badge ${
-              data.details.difficulty_level === "Easy" ? "easy" :
-              data.details.difficulty_level === "Medium" ? "medium" : "hard"
-            }`}
-          >
-            {data.details.difficulty_level}
-          </span>
+          <div className="flex">
+            <h1 className="problem-title">{data.details.title}</h1>
+            <span
+              className={`difficulty-badge ml-2 mt-2
+                ${data.details.difficulty_level === "Easy" ? "easy" :
+                data.details.difficulty_level === "Medium" ? "medium" : "hard"
+                }`}
+            >
+              {data.details.difficulty_level}
+            </span>
+          </div>
           <div className="run-submit-buttons">
-                <button
-                  onClick={handleRunCode}
-                  disabled={isRunning}
-                  className={`run-button ${isRunning ? 'button-loading' : ''}`}
-                >
-                  {isRunning ? 'Running...' : 'Run'}
-                </button>
-                <button
-                  onClick={handleSubmitCode}
-                  disabled={isSubmitting}
-                  className={`submit-button ${isSubmitting ? 'button-loading' : ''}`}
-                >
-                  {isSubmitting ? 'Submitting...' : 'Submit'}
-                </button>
-              </div>
-              <div className="editor-actions">
-              <div className="toggle-container">
-                <label className="toggle-label">
-                  <span>Autocomplete</span>
-                  <div className="toggle-switch">
-                    <input
-                      type="checkbox"
-                      checked={isAutocompleteEnabled}
-                      onChange={() => setIsAutocompleteEnabled(!isAutocompleteEnabled)}
-                    />
-                    <span className="toggle-slider"></span>
-                  </div>
-                </label>
-              </div>
-              
-              <div className="toggle-container">
-                <label className="toggle-label">
-                  <span>Dark Mode</span>
-                  <div className="toggle-switch">
-                    <input
-                      type="checkbox"
-                      checked={isDarkTheme}
-                      onChange={handleThemeChange}
-                    />
-                    <span className="toggle-slider"></span>
-                  </div>
-                </label>
-              </div>
+            <button
+              onClick={handleRunCode}
+              disabled={isRunning}
+              className={`run-button ${isRunning ? 'button-loading' : ''}`}
+            >
+              {isRunning ? 'Running...' : 'Run'}
+            </button>
+            <button
+              onClick={handleSubmitCode}
+              disabled={isSubmitting}
+              className={`submit-button ${isSubmitting ? 'button-loading' : ''}`}
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit'}
+            </button>
+          </div>
+          <div className="editor-actions">
+            <div className="toggle-container">
+              <label className="toggle-label">
+                <span>Autocomplete</span>
+                <div className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={isAutocompleteEnabled}
+                    onChange={() => setIsAutocompleteEnabled(!isAutocompleteEnabled)}
+                  />
+                  <span className="toggle-slider"></span>
+                </div>
+              </label>
             </div>
+
+            <div className="toggle-container">
+              <label className="toggle-label">
+                <span>Dark Mode</span>
+                <div className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={isDarkTheme}
+                    onChange={handleThemeChange}
+                  />
+                  <span className="toggle-slider"></span>
+                </div>
+              </label>
+            </div>
+          </div>
         </div>
-        
+
       </div>
 
       <div className="leetcode-layout">
         {/* Left panel with problem description */}
         <div className="description-panel">
           <div className="description-tabs">
-            <button 
+            <button
               className={`tab-button ${activeTab === 'description' ? 'active' : ''}`}
               onClick={() => setActiveTab('description')}
             >
               Description
             </button>
-            <button 
+            <button
               className={`tab-button ${activeTab === 'solutions' ? 'active' : ''}`}
               onClick={() => setActiveTab('solutions')}
             >
               Solutions
             </button>
-            <button 
+            <button
               className={`tab-button ${activeTab === 'discussion' ? 'active' : ''}`}
               onClick={() => setActiveTab('discussion')}
             >
@@ -351,20 +354,46 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         <div className="code-editor-panel">
           <div className="editor-header">
             <div className="header-top-row">
-              <div className="language-selector">
-                <select
-                  value={selectedLanguage}
-                  onChange={(e) => setSelectedLanguage(e.target.value)}
-                  className="language-select"
+              <div
+                className="relative inline-block text-sm"
+                onClick={() => setIsDropdownHovered(!isDropdownHovered)}
+              >
+                {/* Trigger */}
+                <div
+                  className={`border text-center px-2 py-1 cursor-pointer flex justify-between items-center w-25 rounded-md ${isDarkTheme
+                    ? "bg-gray-800 text-white border-gray-600"
+                    : "bg-white text-black border-gray-300"
+                    }`}
                 >
-                  {languageOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  <span>{languageOptions.find(opt => opt.value === selectedLanguage)?.label}</span>
+                  <span className="text-[13px]">{isDropdownHovered ? "▲" : "▼"}</span>
+                </div>
+
+                {/* Dropdown options */}
+                {isDropdownHovered && (
+                  <ul
+                    className={`absolute left-0 mt-1 w-40 rounded-md shadow-md z-10 border ${isDarkTheme
+                      ? "bg-gray-800 border-gray-600 text-white"
+                      : "bg-white border-gray-300 text-black"
+                      }`}
+                  >
+                    {languageOptions.map(option => (
+                      <li
+                        key={option.value}
+                        onClick={() => {
+                          setSelectedLanguage(option.value);
+                          setIsDropdownHovered(false);
+                        }}
+                        className={`px-3 py-1 cursor-pointer hover:bg-gray-100 ${isDarkTheme ? "hover:bg-gray-700" : ""
+                          }`}
+                      >
+                        {option.label}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-              
+
               {/* <div className="run-submit-buttons">
                 <button
                   onClick={handleRunCode}
@@ -382,7 +411,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                 </button>
               </div> */}
             </div>
-            
+
             {/* <div className="editor-actions">
               <div className="toggle-container">
                 <label className="toggle-label">
@@ -435,37 +464,37 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
               }}
             />
           </div>
-          
+
           {/* Resizable console panel */}
           <div className="console-toggle" onClick={toggleConsole}>
             {isConsoleOpen ? "▼" : "▲"} Console
           </div>
-          
+
           {isConsoleOpen && (
             <>
               <div className="console-resize-handle" onMouseDown={startResizing}></div>
               <div className="console-panel" style={{ height: `${consoleHeight}px` }}>
                 <div className="console-tabs">
-                  <button 
+                  <button
                     className={`console-tab ${activeConsoleTab === 'testcases' ? 'active' : ''}`}
                     onClick={() => setActiveConsoleTab('testcases')}
                   >
                     Test Cases
                   </button>
-                  <button 
+                  <button
                     className={`console-tab ${activeConsoleTab === 'customInput' ? 'active' : ''}`}
                     onClick={() => setActiveConsoleTab('customInput')}
                   >
                     Custom Input
                   </button>
-                  <button 
+                  <button
                     className={`console-tab ${activeConsoleTab === 'console' ? 'active' : ''}`}
                     onClick={() => setActiveConsoleTab('console')}
                   >
                     Console
                   </button>
                 </div>
-                
+
                 <div className="console-content">
                   {activeConsoleTab === 'testcases' && (
                     <div className="testcases-content">
@@ -476,9 +505,9 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                               Test Case {index + 1}
                               {testCase.status && (
                                 <span className={`testcase-status ${testCase.status}`}>
-                                  {testCase.status === 'passed' ? '✓ Passed' : 
-                                   testCase.status === 'failed' ? '✗ Failed' : 
-                                   '⟳ Running'}
+                                  {testCase.status === 'passed' ? '✓ Passed' :
+                                    testCase.status === 'failed' ? '✗ Failed' :
+                                      '⟳ Running'}
                                 </span>
                               )}
                             </div>
@@ -504,7 +533,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                       ))}
                     </div>
                   )}
-                  
+
                   {activeConsoleTab === 'customInput' && (
                     <div className="custom-input-content">
                       <div className="custom-input-wrapper">
@@ -516,7 +545,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                         />
                       </div>
                       <div className="custom-input-actions">
-                        <button 
+                        <button
                           className="custom-input-run"
                           onClick={() => {
                             // Simulate running with custom input
@@ -536,7 +565,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                       </div>
                     </div>
                   )}
-                  
+
                   {activeConsoleTab === 'console' && (
                     <div className="console-output">
                       {results && (
