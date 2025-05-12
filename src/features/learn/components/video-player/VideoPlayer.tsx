@@ -19,48 +19,48 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
   const videoRef = useRef<HTMLVideoElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const isMobile = useMediaQuery("(max-width: 768px)");
-  
+
   // Check for undefined videoUrl
   const hasValidUrl = !!videoUrl;
-  
+
   // Explicitly check for Vimeo URLs
   const isVimeoUrl = hasValidUrl && (
-    videoUrl.includes('vimeo.com') || 
+    videoUrl.includes('vimeo.com') ||
     videoUrl.includes('player.vimeo.com')
   );
 
   // Clean and prepare Vimeo URL
   const getProcessedVimeoUrl = () => {
     if (!hasValidUrl) return '';
-    
+
     console.log('VideoPlayer - Processing Vimeo URL:', videoUrl);
-    
+
     // First, decode HTML entities
     let processedUrl = videoUrl.replace(/&amp;/g, '&');
-    
+
     // If it's a regular Vimeo URL (not a player URL), convert it
     if (processedUrl.includes('vimeo.com') && !processedUrl.includes('player.vimeo.com')) {
       // Extract the video ID
       const vimeoRegex = /vimeo.com\/(\d+)/;
       const match = processedUrl.match(vimeoRegex);
-      
+
       if (match && match[1]) {
         const videoId = match[1];
         processedUrl = `https://player.vimeo.com/video/${videoId}`;
         console.log('VideoPlayer - Converted to player URL:', processedUrl);
       }
     }
-    
+
     // Add necessary parameters for embedding if they don't exist
     if (!processedUrl.includes('?')) {
       processedUrl += '?';
     } else if (!processedUrl.endsWith('&') && !processedUrl.endsWith('?')) {
       processedUrl += '&';
     }
-    
+
     // Add essential parameters for proper embedding
     processedUrl += 'dnt=1&app_id=122963&autoplay=1&title=0&byline=0&portrait=0';
-    
+
     console.log('VideoPlayer - Final processed Vimeo URL:', processedUrl);
     return processedUrl;
   };
@@ -83,9 +83,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
     console.log('VideoPlayer - Video URL:', videoUrl);
     console.log('VideoPlayer - Has valid URL:', hasValidUrl);
     console.log('VideoPlayer - Is Vimeo URL:', isVimeoUrl);
-    
+
     setIsVideoLoaded(false);
-    
+
     return () => {
       console.log('VideoPlayer - Component unmounting or videoUrl changing');
     };
@@ -95,17 +95,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
   useEffect(() => {
     if (isVimeoUrl && onComplete) {
       console.log('VideoPlayer - Setting up Vimeo message listener');
-      
+
       const handleVimeoMessage = (event: MessageEvent) => {
         if (!event.origin.includes('vimeo.com')) return;
-        
+
         try {
-          const data = typeof event.data === 'string' 
-            ? JSON.parse(event.data) 
+          const data = typeof event.data === 'string'
+            ? JSON.parse(event.data)
             : event.data;
-          
+
           console.log('VideoPlayer - Received message from Vimeo:', data);
-          
+
           // Check if the video ended
           if (data.event === 'ended' && onComplete) {
             console.log('VideoPlayer - Vimeo video ended, calling onComplete');
@@ -115,7 +115,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
           console.error('VideoPlayer - Error processing Vimeo message:', e);
         }
       };
-      
+
       window.addEventListener('message', handleVimeoMessage);
       return () => window.removeEventListener('message', handleVimeoMessage);
     }
@@ -126,7 +126,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
       try {
         // Set lock to prevent simultaneous play/pause operations
         setIsPlayInProgress(true);
-        
+
         if (isPlaying) {
           await videoRef.current.pause();
           setIsPlaying(false);
@@ -156,7 +156,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
   const handleTimeUpdate = () => {
     if (videoRef.current) {
       setCurrentTime(videoRef.current.currentTime);
-      
+
       // Check if video is complete (allowing for small rounding errors)
       if (videoRef.current.currentTime >= videoRef.current.duration - 0.5) {
         if (onComplete) {
@@ -200,9 +200,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
     if (isMobile) {
       return "relative w-full rounded-lg"; // Always full width on mobile
     }
-    
+
     const baseClasses = "relative mx-auto rounded-2xl";
-    
+
     switch (videoSize) {
       case 'small':
         return `${baseClasses} w-2/3`;
@@ -292,8 +292,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
             {/* Left Controls */}
             <div className="flex space-x-2 md:space-x-4 items-center">
               {/* Play/Pause Button */}
-              <button 
-                className="text-white cursor-pointer" 
+              <button
+                className="text-white cursor-pointer"
                 onClick={togglePlay}
                 disabled={isPlayInProgress}
               >
@@ -312,8 +312,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
               {/* Volume Control - hidden on mobile */}
               {!isMobile && (
                 <div className="relative">
-                  <button 
-                    className="text-white cursor-pointer" 
+                  <button
+                    className="text-white cursor-pointer"
                     onClick={() => setShowVolumeControl(!showVolumeControl)}
                     onMouseEnter={() => setShowVolumeControl(true)}
                     onMouseLeave={() => setShowVolumeControl(false)}
@@ -322,7 +322,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 010-7.072m12.728 0a9 9 0 010-12.728" />
                     </svg>
                   </button>
-                  
+
                   {showVolumeControl && (
                     <div className="absolute bottom-full left-0 mb-2 p-2 bg-gray-800 rounded-md" onMouseEnter={() => setShowVolumeControl(true)} onMouseLeave={() => setShowVolumeControl(false)}>
                       <input
@@ -357,39 +357,36 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
               {/* Video Size Controls - Hidden on mobile */}
               {!isMobile && (
                 <div className="flex space-x-1 mr-2">
-                  <button 
-                    onClick={() => setVideoSize('small')} 
-                    className={`text-xs px-2 py-1 rounded-md cursor-pointer ${
-                      videoSize === 'small' 
-                        ? 'bg-white text-black' 
+                  <button
+                    onClick={() => setVideoSize('small')}
+                    className={`text-xs px-2 py-1 rounded-md cursor-pointer ${videoSize === 'small'
+                        ? 'bg-white text-black'
                         : 'text-white hover:bg-gray-700'
-                    }`}
+                      }`}
                   >
                     S
                   </button>
-                  <button 
-                    onClick={() => setVideoSize('medium')} 
-                    className={`text-xs px-2 py-1 rounded-md cursor-pointer ${
-                      videoSize === 'medium' 
-                        ? 'bg-white text-black' 
+                  <button
+                    onClick={() => setVideoSize('medium')}
+                    className={`text-xs px-2 py-1 rounded-md cursor-pointer ${videoSize === 'medium'
+                        ? 'bg-white text-black'
                         : 'text-white hover:bg-gray-700'
-                    }`}
+                      }`}
                   >
                     M
                   </button>
-                  <button 
-                    onClick={() => setVideoSize('large')} 
-                    className={`text-xs px-2 py-1 rounded-md cursor-pointer ${
-                      videoSize === 'large' 
-                        ? 'bg-white text-black' 
+                  <button
+                    onClick={() => setVideoSize('large')}
+                    className={`text-xs px-2 py-1 rounded-md cursor-pointer ${videoSize === 'large'
+                        ? 'bg-white text-black'
                         : 'text-white hover:bg-gray-700'
-                    }`}
+                      }`}
                   >
                     L
                   </button>
                 </div>
               )}
-              
+
               {/* Download Button - Hidden on mobile */}
               {!isMobile && (
                 <button className="text-white cursor-pointer">
@@ -398,7 +395,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
                   </svg>
                 </button>
               )}
-              
+
               {/* Fullscreen Button */}
               <button className="text-white cursor-pointer" onClick={() => videoRef.current?.requestFullscreen()}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5 md:w-6 md:h-6">
