@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import  { useState, useEffect } from 'react';
 import DashboardContent from "./component/DashboardContent";
 import AllContent, { ContentType} from "./component/AllContent";
 import ArticleContent, { ArticleItem } from "./component/ArticleContent";
