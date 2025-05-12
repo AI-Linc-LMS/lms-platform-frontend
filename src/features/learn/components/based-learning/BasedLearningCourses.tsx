@@ -1,6 +1,5 @@
 import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import SecondaryButton from "../../../../commonComponents/common-buttons/secondary-button/SecondaryButton";
-import Pic_1 from "../../../../assets/learn/based-learning/pic-1.jpeg";
 import { useQuery } from "@tanstack/react-query";
 import { getAllRecommendedCourse } from '../../../../services/continue-course-learning/continueCourseApis';
 
@@ -108,7 +107,6 @@ const CourseCard = ({
     );
 };
 
-const DUMMY_AVATAR = Pic_1;
 
 const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
     // Fetch data using TanStack Query
@@ -175,8 +173,8 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
         level: course.difficulty_level,
         duration: course.duration_in_hours,
         certification: course.certificate_available,
-        enrolledStudents: course.enrolled_students.length,
-        studentAvatars: Array(Math.min(course.enrolled_students.length, 4)).fill(DUMMY_AVATAR),
+        enrolledStudents: course.enrolled_students.total || 0,
+        studentAvatars: course.enrolled_students.students_profile_pic || [],
         id: course.id, // for key
     }));
 
