@@ -88,10 +88,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [volume, setVolume] = useState(1);
   const [showVolumeControl, setShowVolumeControl] = useState(false);
   const [videoSize, setVideoSize] = useState<'small' | 'medium' | 'large'>('medium');
-  const [isPlayInProgress, setIsPlayInProgress] = useState(false); // Lock to prevent simultaneous operations
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [hasMarkedComplete, setHasMarkedComplete] = useState(false); // Track if video has been marked complete
   const [progressPercent, setProgressPercent] = useState(0); // Track progress percentage
+  const [lastKnownTime, setLastKnownTime] = useState(0); // Track the furthest watched point
   const videoRef = useRef<HTMLVideoElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -134,18 +134,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       processedUrl += '&';
     }
 
-    // Add essential parameters for proper embedding
-    // The autoplay, title, byline, portrait params control basic player appearance
-    processedUrl += 'dnt=1&app_id=122963&autoplay=1&title=0&byline=0&portrait=0&playsinline=1';
+    // Add essential parameters for proper embedding - always show controls
+    processedUrl += 'dnt=1&app_id=122963&title=0&byline=0&portrait=0&playsinline=1&controls=1';
     
-    // For first watch, add parameters that restrict seeking ahead
-    if (isFirstWatch) {
-      // Disable interactive mode to prevent scrubbing ahead
-      processedUrl += '&controls=0';
-    } else {
-      processedUrl += '&controls=1';
-    }
-
     console.log('VideoPlayer - Final processed Vimeo URL:', processedUrl);
     return processedUrl;
   };
@@ -156,9 +147,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setIsVideoLoaded(true);
     
     // Start Vimeo player API communication
-    if (isFirstWatch && iframeRef.current && iframeRef.current.contentWindow) {
+    if (iframeRef.current && iframeRef.current.contentWindow) {
       setTimeout(() => {
-        // Subscribe to events needed for tracking and restrictions
+        // Subscribe to events needed for tracking
         const events = ['play', 'pause', 'timeupdate', 'seeked', 'ended'];
         
         events.forEach(event => {
@@ -195,10 +186,69 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     };
   }, [videoUrl, hasValidUrl, isVimeoUrl, isFirstWatch]);
 
-  // Effect to handle onComplete for Vimeo videos and restrict seeking on first watch
+  // Effect to handle onComplete for Vimeo videos and apply CSS to disable seeking
   useEffect(() => {
     if (isVimeoUrl) {
-      console.log('VideoPlayer - Setting up Vimeo message listener and restrictions');
+      console.log('VideoPlayer - Setting up Vimeo message listener for progress tracking');
+      
+      // For first-time viewers, inject CSS to disable the seekbar
+      if (isFirstWatch && iframeRef.current) {
+        const disableSeekbar = () => {
+          try {
+            const iframe = iframeRef.current;
+            if (!iframe || !iframe.contentWindow) return;
+            
+            // Create a style element to inject
+            const styleEl = document.createElement('style');
+            styleEl.textContent = `
+              /* Hide the seek bar's handle to prevent clicking/dragging */
+              .vp-progress, .vp-progress-bar {
+                pointer-events: none !important;
+                cursor: not-allowed !important;
+              }
+              
+              /* Add a visual indicator that seeking is disabled */
+              .vp-controls::after {
+                content: "Seeking disabled for first viewing";
+                position: absolute;
+                bottom: 40px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0,0,0,0.7);
+                color: white;
+                padding: 5px 10px;
+                border-radius: 4px;
+                font-size: 12px;
+                z-index: 2;
+              }
+            `;
+            
+            // Wait for iframe to load and inject the style
+            const injectStyles = () => {
+              try {
+                if (iframe.contentDocument && iframe.contentDocument.head) {
+                  iframe.contentDocument.head.appendChild(styleEl);
+                  console.log('VideoPlayer - Injected CSS to disable seekbar');
+                }
+              } catch (err) {
+                console.error('VideoPlayer - Error injecting styles:', err);
+              }
+            };
+            
+            // Try immediately and also wait for load
+            injectStyles();
+            iframe.addEventListener('load', injectStyles);
+            
+            return () => {
+              iframe.removeEventListener('load', injectStyles);
+            };
+          } catch (err) {
+            console.error('VideoPlayer - Error setting up seekbar disabling:', err);
+          }
+        };
+        
+        disableSeekbar();
+      }
 
       const handleVimeoMessage = (event: MessageEvent) => {
         if (!event.origin.includes('vimeo.com')) return;
@@ -210,12 +260,28 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
           // For progress tracking, we need to handle both timeupdate and playProgress events
           if (data.event === 'playProgress' || data.event === 'timeupdate') {
-            // Extract percent from different event formats
+            // Extract percent and time from different event formats
             let percent = 0;
+            let currentTime = 0;
+            
             if (data.data && typeof data.data.percent === 'number') {
               percent = data.data.percent * 100;
+              
+              if (typeof data.data.seconds === 'number') {
+                currentTime = data.data.seconds;
+                // Update last known time for seek protection
+                if (currentTime > lastKnownTime) {
+                  setLastKnownTime(currentTime);
+                }
+              }
             } else if (data.data && typeof data.data.seconds === 'number' && typeof data.data.duration === 'number') {
-              percent = (data.data.seconds / data.data.duration) * 100;
+              currentTime = data.data.seconds;
+              percent = (currentTime / data.data.duration) * 100;
+              
+              // Update last known time for seek protection
+              if (currentTime > lastKnownTime) {
+                setLastKnownTime(currentTime);
+              }
             }
             
             if (percent > 0) {
@@ -243,35 +309,30 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             console.log('VideoPlayer - Received message from Vimeo:', data);
           }
 
-          // Rest of the Vimeo message handling as before
-          // ... existing code for play, seek, etc. events ...
-
-          // For first watch, listen to play events to send commands to restrict seeking
-          if (isFirstWatch && iframeRef.current && data.event === 'play') {
-            // Use Vimeo Player SDK postMessage to disable seeking
-            const restrictMessage = JSON.stringify({
-              method: 'addEventListener',
-              value: 'seeked'
-            });
-            iframeRef.current.contentWindow?.postMessage(restrictMessage, '*');
-          }
-          
-          // If this is first watch and user tries to seek ahead, reset to current position
-          if (isFirstWatch && data.data && data.data.seconds > 0 && data.event === 'seeked') {
-            console.log('VideoPlayer - Attempt to seek ahead on Vimeo video prevented');
-            const message = JSON.stringify({
-              method: 'setCurrentTime',
-              value: data.data.seconds // Go back to previous position
-            });
-            iframeRef.current?.contentWindow?.postMessage(message, '*');
+          // For first watch, prevent seeking ahead of the last watched point
+          if (isFirstWatch && data.event === 'seeked' && iframeRef.current && data.data) {
+            const seekedTo = data.data.seconds || 0;
+            
+            // If user tried to seek ahead of what they've watched
+            if (seekedTo > lastKnownTime + 2) { // Allow small buffer for seeking
+              console.log(`VideoPlayer - Detected seek ahead during first watch (to ${seekedTo}, max allowed: ${lastKnownTime})`);
+              
+              // Seek back to last known position
+              const seekBackMessage = JSON.stringify({
+                method: 'setCurrentTime',
+                value: lastKnownTime
+              });
+              iframeRef.current.contentWindow?.postMessage(seekBackMessage, '*');
+            }
           }
 
-          // Also keep the original end event for backward compatibility
+          // Also handle end event for backward compatibility
           if (data.event === 'ended' && onComplete && !hasMarkedComplete) {
             console.log('VideoPlayer - Vimeo video ended, calling onComplete');
             onComplete();
             setHasMarkedComplete(true);
             setProgressPercent(100);
+            setLastKnownTime(0); // Reset for next viewing
           }
         } catch (e) {
           console.error('VideoPlayer - Error processing Vimeo message:', e);
@@ -284,7 +345,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       if (iframeRef.current && iframeRef.current.contentWindow) {
         setTimeout(() => {
           // Initialize Vimeo Player API communication - request both timeupdate and progress events
-          ['timeupdate', 'progress', 'playProgress'].forEach(eventName => {
+          ['timeupdate', 'progress', 'playProgress', 'seeked'].forEach(eventName => {
             const message = JSON.stringify({
               method: 'addEventListener',
               value: eventName
@@ -302,47 +363,22 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       
       return () => window.removeEventListener('message', handleVimeoMessage);
     }
-  }, [isVimeoUrl, onComplete, activityCompletionThreshold, hasMarkedComplete, isFirstWatch, isVideoLoaded, onProgressUpdate]);
+  }, [isVimeoUrl, onComplete, activityCompletionThreshold, hasMarkedComplete, isVideoLoaded, onProgressUpdate, isFirstWatch, lastKnownTime]);
 
-  const togglePlay = async () => {
-    if (videoRef.current && !isPlayInProgress) {
-      try {
-        // Set lock to prevent simultaneous play/pause operations
-        setIsPlayInProgress(true);
-
-        if (isPlaying) {
-          await videoRef.current.pause();
-          setIsPlaying(false);
-        } else {
-          try {
-            await videoRef.current.play();
-            setIsPlaying(true);
-          } catch (playError: unknown) {
-            console.error('VideoPlayer - Error during play():', playError);
-            // If autoplay is blocked, don't change the UI state
-            if (playError instanceof Error && playError.name !== 'NotAllowedError') {
-              setIsPlaying(false);
-            }
-          }
-        }
-      } catch (err) {
-        console.error('VideoPlayer - Error in toggle play:', err);
-      } finally {
-        // Release the lock
-        setTimeout(() => {
-          setIsPlayInProgress(false);
-        }, 150); // Small delay to ensure operations complete
-      }
-    }
-  };
-
+  // Handle time update for regular videos
   const handleTimeUpdate = () => {
     if (videoRef.current && videoRef.current.duration > 0) {
       // Set current time for display
-      setCurrentTime(videoRef.current.currentTime);
+      const currentTime = videoRef.current.currentTime;
+      setCurrentTime(currentTime);
+
+      // Update last known time for seek protection
+      if (currentTime > lastKnownTime) {
+        setLastKnownTime(currentTime);
+      }
 
       // Calculate and update progress percentage
-      const calculatedProgress = (videoRef.current.currentTime / videoRef.current.duration) * 100;
+      const calculatedProgress = (currentTime / videoRef.current.duration) * 100;
       console.log('VideoPlayer - Progress update:', calculatedProgress.toFixed(1) + '%');
       setProgressPercent(calculatedProgress);
       
@@ -362,6 +398,31 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   };
 
+  // Toggle play/pause for regular videos
+  const togglePlay = async () => {
+    if (videoRef.current) {
+      try {
+        if (isPlaying) {
+          await videoRef.current.pause();
+          setIsPlaying(false);
+        } else {
+          try {
+            await videoRef.current.play();
+            setIsPlaying(true);
+          } catch (playError: unknown) {
+            console.error('VideoPlayer - Error during play():', playError);
+            // If autoplay is blocked, don't change the UI state
+            if (playError instanceof Error && playError.name !== 'NotAllowedError') {
+              setIsPlaying(false);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('VideoPlayer - Error in toggle play:', err);
+      }
+    }
+  };
+
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
@@ -373,14 +434,33 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const seekTime = parseFloat(e.target.value);
     
     if (videoRef.current) {
-      // If first watch, prevent seeking ahead of current time
-      if (isFirstWatch && seekTime > currentTime) {
-        console.log('VideoPlayer - Attempt to seek ahead on first watch prevented');
-        return;
+      // If first watch, prevent seeking ahead of the last watched position
+      if (isFirstWatch && seekTime > lastKnownTime + 2) { // Add small buffer
+        console.log(`VideoPlayer - Preventing seek ahead during first watch (to ${seekTime}, max allowed: ${lastKnownTime})`);
+        videoRef.current.currentTime = lastKnownTime;
+        setCurrentTime(lastKnownTime);
+        
+        // Show a message to the user
+        const videoContainer = videoRef.current.parentElement;
+        if (videoContainer) {
+          const seekBlockMessage = document.createElement('div');
+          seekBlockMessage.className = 'absolute bottom-4 left-0 right-0 text-center';
+          seekBlockMessage.innerHTML = `
+            <div class="inline-block bg-black bg-opacity-80 text-white text-sm px-4 py-2 rounded-full">
+              You cannot skip ahead on first watch
+            </div>
+          `;
+          
+          videoContainer.appendChild(seekBlockMessage);
+          setTimeout(() => {
+            videoContainer.removeChild(seekBlockMessage);
+          }, 3000);
+        }
+      } else {
+        // Normal seeking
+        videoRef.current.currentTime = seekTime;
+        setCurrentTime(seekTime);
       }
-      
-      videoRef.current.currentTime = seekTime;
-      setCurrentTime(seekTime);
     }
   };
 
@@ -497,20 +577,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {/* Video Controls - Only show for non-Vimeo videos */}
       {!isVimeoUrl && (
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2 md:p-4 rounded-lg md:rounded-3xl">
-          {/* Seek Bar */}
-          <div className="mb-1 md:mb-2">
-            <input
-              type="range"
-              min="0"
-              max={duration || 0}
-              value={currentTime}
-              onChange={handleSeek}
-              className={`w-full h-1 bg-gray-400 rounded-lg appearance-none ${isFirstWatch ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-            />
-            {isFirstWatch && (
-              <div className="text-xs text-white mt-1 text-center">Cannot skip ahead on first watch</div>
-            )}
-          </div>
+          {/* Seek Bar - Only show for returning viewers */}
+          {!isFirstWatch && (
+            <div className="mb-1 md:mb-2">
+              <input
+                type="range"
+                min="0"
+                max={duration || 0}
+                value={currentTime}
+                onChange={handleSeek}
+                className="w-full h-1 bg-gray-400 rounded-lg appearance-none cursor-pointer"
+              />
+            </div>
+          )}
 
           <div className="flex justify-between items-center">
             {/* Left Controls */}
@@ -519,7 +598,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               <button
                 className="text-white cursor-pointer"
                 onClick={togglePlay}
-                disabled={isPlayInProgress}
               >
                 {isPlaying ? (
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5 md:w-6 md:h-6">
@@ -627,15 +705,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 </svg>
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* First watch notice for Vimeo videos */}
-      {isVimeoUrl && isFirstWatch && (
-        <div className="absolute bottom-4 left-0 right-0 text-center">
-          <div className="inline-block bg-black bg-opacity-70 text-white text-xs px-3 py-1 rounded-full">
-            Cannot skip ahead on first watch
           </div>
         </div>
       )}
