@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getCourseLeaderboard } from "../../../../services/courses-content/courseContentApis";
+import { getCourseLeaderboard } from "../../../../services/enrolled-courses-content/courseContentApis";
 import React from "react";
 
 const EnrolledLeaderBoard = ({courseId}:{courseId:number}) => {

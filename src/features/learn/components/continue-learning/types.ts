@@ -10,9 +10,9 @@ export interface CourseData {
   title: string;
   description: string;
   category: string;
-  moduleNumber: number;
-  totalModules: number;
-  moduleName: string;
+  completed_modules: number;
+  num_modules: number;
+  //moduleName: string;
   iconData: CourseIconData[];
   onContinue: () => void;
 } 
