@@ -3,13 +3,16 @@ import { CodeIcon, DocumentIcon, FAQIcon, VideoIcon } from "../../../../commonCo
 import { getAllContinueCourseLearning } from "../../../../services/continue-course-learning/continueCourseApis";
 import CourseCard from "./CourseCard";
 import { CourseData, CourseIconData } from "./types";
+import { useNavigate } from "react-router-dom";
 
 const ContinueCoursesDetails = ({ clientId }: { clientId: number }) => {
+  const navigate = useNavigate();
   const { data: continueCourses, isLoading, error } = useQuery({
     queryKey: ["continueCourses"],
     queryFn: () => getAllContinueCourseLearning(clientId),
   });
 
+  console.log("continueCourses", continueCourses);
   const createIconData = (stats: any): CourseIconData[] => [
     { icon: <VideoIcon />, completed: stats.video.completed, total: stats.video.total },
     { icon: <DocumentIcon />, completed: stats.article.completed, total: stats.article.total },
@@ -59,7 +62,10 @@ const ContinueCoursesDetails = ({ clientId }: { clientId: number }) => {
     completed_modules: course.completed_modules,
     num_modules: course.num_modules,
     iconData: createIconData(course.stats),
-    onContinue: () => console.log("continue Button Clicked"),
+    onContinue: () => {
+      console.log("Go to course detail page");
+      navigate(`/courses/${course.id}`);
+    },
   }));
 
   return (

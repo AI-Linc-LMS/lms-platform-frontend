@@ -8,18 +8,12 @@ import WelcomeSection from "../components/WelcomeSection";
 import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
 import EnrolledCourses from "../components/courses/EnrolledCourses";
-import { getAllRecommendedCourse } from "../../../services/continue-course-learning/continueCourseApis";
-import { useEffect } from "react";
 
 
 const Learn = () => {
-  useEffect(() => {
-    const fetchEnrolledCourses = async () => {
-      const response = await getAllRecommendedCourse(1);
-      console.log(response);
-    };
-    fetchEnrolledCourses();
-  }, []);
+
+
+  const clientId = import.meta.env.VITE_CLIENT_ID;
   return (
     <div className="px-2 md:px-0">
       <WelcomeSection />
@@ -30,18 +24,18 @@ const Learn = () => {
 
           <div className="space-y-2">
             <ContinueCourses />
-            <ContinueCoursesDetails clientId={1} />
+            <ContinueCoursesDetails clientId={clientId} />
           </div>
  
           <div className="space-y-2">
-            <BasedLearningCourses clientId={1} />
+            <BasedLearningCourses clientId={clientId} />
           </div>
         </div>
 
         <div className="flex flex-col gap-6 w-full md:w-auto md:min-w-[300px] lg:min-w-[350px]">
-          <Leaderboard clientId={1} />
-          <DailyProgress clientId={1} />
-          <StreakTable clientId={1} />
+          <Leaderboard clientId={clientId} />
+          <DailyProgress clientId={clientId} />
+          <StreakTable clientId={clientId} />
           <Referrals />
         </div>
       </div>

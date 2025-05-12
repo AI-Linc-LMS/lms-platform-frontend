@@ -7,7 +7,6 @@ export const getEnrolledCourses = async (clientId: number) => {
       `/api/clients/${clientId}/student/enrolled-courses/`
     );
 
-    console.log("Enrolled Courses:", response.data); 
     return response.data;
   } catch (error: any) {
     // Log the error details

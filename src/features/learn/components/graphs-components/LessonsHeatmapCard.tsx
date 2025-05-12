@@ -40,7 +40,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
     queryKey: ["activityData"],
     queryFn: () => getUserActivityHeatmapData(1),
   });
-  console.log("apiData", apiData);
+  //console.log("apiData", apiData);
   const [monthOffset, setMonthOffset] = useState(0);
   const [year, setYear] = useState(getYear(new Date()));
   const [isMobile, setIsMobile] = useState(false);
@@ -59,11 +59,11 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
   const daysLimitDate = subDays(endOfToday(), 300);
 
   const ACTIVITY_WEIGHTS = {
-    Article: 2,
-    Quiz: 2,
-    Assignment: 4,
-    CodingProblem: 3,
-    VideoTutorial: 2,
+    Article: 1,
+    Quiz: 1,
+    Assignment: 1,
+    CodingProblem: 1,
+    VideoTutorial: 1,
   };
 
   const calculateWeightedScore = (activities: {
