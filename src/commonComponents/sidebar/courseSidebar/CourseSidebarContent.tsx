@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import DashboardContent from "./component/DashboardContent";
 import AllContent, { ContentType} from "./component/AllContent";
 import ArticleContent, { ArticleItem } from "./component/ArticleContent";
@@ -118,8 +119,25 @@ const CourseSidebarContent = ({
   onContentSelect,
 }: CourseSidebarContentProps) => {
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Listen for progress updates (for demo purposes - in a real app use state mgmt)
+  useEffect(() => {
+    const checkForProgressUpdates = () => {
+      const w = window as unknown as { temporarySubmoduleData?: SubmoduleData };
+      if (w.temporarySubmoduleData) {
+        console.log('Progress update detected - refreshing sidebar');
+        setRefreshTrigger(prev => prev + 1);
+      }
+    };
+
+    // Check every second for updates
+    const interval = setInterval(checkForProgressUpdates, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   console.log("submoduleData", submoduleData);
+  console.log("Refresh trigger:", refreshTrigger);
 
   const handleContentClick = (contentId: number, contentType: ContentType) => {
     onContentSelect(contentId, contentType);
@@ -153,22 +171,33 @@ const CourseSidebarContent = ({
     }
   };
 
+  // Get actual data to use - either from updated temp data or original
+  const w = window as unknown as { temporarySubmoduleData?: SubmoduleData };
+  const actualData = refreshTrigger > 0 && w.temporarySubmoduleData 
+    ? w.temporarySubmoduleData 
+    : submoduleData;
+
   // Transform submodule data into videos if available
-  const videos = submoduleData?.data
-    ? submoduleData.data
+  const videos = actualData?.data
+    ? actualData.data
         .filter((content: SubmoduleContent) => content.content_type === 'VideoTutorial')
         .map((content: SubmoduleContent) => ({
           id: content.id.toString(),
           title: content.title,
           duration: `${content.duration_in_minutes} min`,
           marks: content.marks || 10,
-          completed: false
+          completed: content.status === 'complete',
+          // Add progress information - if not complete, show a random progress between 10-80%
+          // In a real application, this would come from the API
+          progress: content.status === 'complete' ? 100 : 
+                   content.status === 'in_progress' ? 
+                   (content.progress_percentage || Math.floor(Math.random() * 70) + 10) : 0
         }))
     : [];
 
   // Transform submodule data into problems if available
-  const problems = submoduleData?.data
-    ? submoduleData.data
+  const problems = actualData?.data
+    ? actualData.data
         .filter((content: SubmoduleContent) => content.content_type === 'CodingProblem')
         .map((content: SubmoduleContent) => ({
           id: content.id.toString(),
@@ -181,8 +210,8 @@ const CourseSidebarContent = ({
     : [];
 
   // Transform submodule data into articles if available
-  const articles = submoduleData?.data
-    ? submoduleData.data
+  const articles = actualData?.data
+    ? actualData.data
         .filter((content: SubmoduleContent) => content.content_type === 'Article')
         .map((content: SubmoduleContent) => ({
           id: content.id,
@@ -194,8 +223,8 @@ const CourseSidebarContent = ({
     : [];
 
   // Transform submodule data into quizzes if available
-  const quizzes = submoduleData?.data
-    ? submoduleData.data
+  const quizzes = actualData?.data
+    ? actualData.data
         .filter((content: SubmoduleContent) => content.content_type === 'Quiz')
         .map((content: SubmoduleContent) => ({
           id: content.id,
@@ -209,8 +238,8 @@ const CourseSidebarContent = ({
     : [];
 
   // Transform submodule data into assignments if available
-  const assignments = submoduleData?.data
-    ? submoduleData.data
+  const assignments = actualData?.data
+    ? actualData.data
         .filter((content: SubmoduleContent) => content.content_type === 'Assignment')
         .map((content: SubmoduleContent) => ({
           id: content.id,
@@ -244,15 +273,15 @@ const CourseSidebarContent = ({
       <div className="text-sm text-gray-700">
         {activeLabel === "Dashboard" && (
           <DashboardContent
-            courseTitle={submoduleData?.moduleName || "Course"}
+            courseTitle={actualData?.moduleName || "Course"}
             courseType="Self pace"
-            stats={submoduleData?.data ? getDashboardStats(submoduleData.data) : []}
-            overallProgress={submoduleData?.data ? getOverallProgress(submoduleData.data) : 0}
+            stats={actualData?.data ? getDashboardStats(actualData.data) : []}
+            overallProgress={actualData?.data ? getOverallProgress(actualData.data) : 0}
           />
         )}
         {activeLabel === "All" && (
           <AllContent
-            contents={submoduleData?.data || []}
+            contents={actualData?.data || []}
             onContentClick={handleContentClick}
             selectedContentId={selectedContentId}
             activeLabel={activeLabel}
@@ -270,12 +299,20 @@ const CourseSidebarContent = ({
             videos={videos}
             selectedVideoId={videoProps.selectedVideoId || ""}
             onVideoClick={videoProps.onVideoClick}
-            topicNo={submoduleData?.weekNo || 1}
-            topicTitle={submoduleData?.submoduleName || "Topic 1"}
-            week={`Week ${submoduleData?.weekNo || 1}`}
+            topicNo={actualData?.weekNo || 1}
+            topicTitle={actualData?.submoduleName || "Topic 1"}
+            week={`Week ${actualData?.weekNo || 1}`}
             difficulty="Beginner"
-            completionPercentage={0}
-            totalDuration={`${submoduleData?.data?.reduce((acc: number, curr: SubmoduleContent) => acc + curr.duration_in_minutes, 0) || 0} min`}
+            completionPercentage={
+              videos.length > 0 
+                ? Math.round(
+                    (videos.reduce((sum, video) => 
+                      sum + (video.completed ? 100 : (video.progress || 0)), 0) / 
+                      (videos.length * 100)) * 100
+                  )
+                : 0
+            }
+            totalDuration={`${actualData?.data?.reduce((acc: number, curr: SubmoduleContent) => acc + curr.duration_in_minutes, 0) || 0} min`}
           />
         )}
         {activeLabel === "Problems" && problemProps && (
