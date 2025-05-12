@@ -5,9 +5,83 @@ interface VideoPlayerProps {
   videoUrl: string;
   title: string;
   onComplete?: () => void;
+  isFirstWatch?: boolean; // Add prop to indicate if this is the first watch
+  activityCompletionThreshold?: number; // Threshold percentage to mark as complete (default: 95%)
+  onProgressUpdate?: (progress: number) => void; // Add this callback
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }) => {
+// Circular progress component
+const CircularProgress = ({ progress, isComplete }: { progress: number, isComplete: boolean }) => {
+  // Circle properties
+  const size = 40;
+  const strokeWidth = 4;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+  return (
+    <div className="relative">
+      {/* SVG for circular progress */}
+      {!isComplete ? (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
+          {/* Background circle */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="#e6e6e6"
+            strokeWidth={strokeWidth}
+          />
+          {/* Progress circle */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="#5FA564"
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            style={{ transition: 'stroke-dashoffset 0.5s ease-in-out' }}
+          />
+        </svg>
+      ) : (
+        /* Completed checkmark */
+        <div className="w-10 h-10 rounded-full bg-[#5FA564] flex items-center justify-center">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path 
+              d="M5 12l5 5L20 7" 
+              stroke="white" 
+              strokeWidth="3" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+      )}
+      
+      {/* Percentage in center if not complete */}
+      {!isComplete && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-xs font-medium text-gray-700">
+            {Math.round(progress)}%
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const VideoPlayer: React.FC<VideoPlayerProps> = ({ 
+  videoUrl, 
+  title, 
+  onComplete, 
+  isFirstWatch = false,
+  activityCompletionThreshold = 95,
+  onProgressUpdate
+}) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -16,6 +90,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
   const [videoSize, setVideoSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [isPlayInProgress, setIsPlayInProgress] = useState(false); // Lock to prevent simultaneous operations
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [hasMarkedComplete, setHasMarkedComplete] = useState(false); // Track if video has been marked complete
+  const [progressPercent, setProgressPercent] = useState(0); // Track progress percentage
   const videoRef = useRef<HTMLVideoElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -59,7 +135,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
     }
 
     // Add essential parameters for proper embedding
-    processedUrl += 'dnt=1&app_id=122963&autoplay=1&title=0&byline=0&portrait=0';
+    // The autoplay, title, byline, portrait params control basic player appearance
+    processedUrl += 'dnt=1&app_id=122963&autoplay=1&title=0&byline=0&portrait=0&playsinline=1';
+    
+    // For first watch, add parameters that restrict seeking ahead
+    if (isFirstWatch) {
+      // Disable interactive mode to prevent scrubbing ahead
+      processedUrl += '&controls=0';
+    } else {
+      processedUrl += '&controls=1';
+    }
 
     console.log('VideoPlayer - Final processed Vimeo URL:', processedUrl);
     return processedUrl;
@@ -69,6 +154,22 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
   const handleIframeLoad = () => {
     console.log('VideoPlayer - Vimeo iframe loaded successfully');
     setIsVideoLoaded(true);
+    
+    // Start Vimeo player API communication
+    if (isFirstWatch && iframeRef.current && iframeRef.current.contentWindow) {
+      setTimeout(() => {
+        // Subscribe to events needed for tracking and restrictions
+        const events = ['play', 'pause', 'timeupdate', 'seeked', 'ended'];
+        
+        events.forEach(event => {
+          const message = JSON.stringify({
+            method: 'addEventListener',
+            value: event
+          });
+          iframeRef.current?.contentWindow?.postMessage(message, '*');
+        });
+      }, 500);
+    }
   };
 
   // Handle video load event
@@ -83,18 +184,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
     console.log('VideoPlayer - Video URL:', videoUrl);
     console.log('VideoPlayer - Has valid URL:', hasValidUrl);
     console.log('VideoPlayer - Is Vimeo URL:', isVimeoUrl);
+    console.log('VideoPlayer - Is first watch:', isFirstWatch);
 
     setIsVideoLoaded(false);
+    setHasMarkedComplete(false);
+    setProgressPercent(0);
 
     return () => {
       console.log('VideoPlayer - Component unmounting or videoUrl changing');
     };
-  }, [videoUrl, hasValidUrl, isVimeoUrl]);
+  }, [videoUrl, hasValidUrl, isVimeoUrl, isFirstWatch]);
 
-  // Effect to handle onComplete for Vimeo videos
+  // Effect to handle onComplete for Vimeo videos and restrict seeking on first watch
   useEffect(() => {
-    if (isVimeoUrl && onComplete) {
-      console.log('VideoPlayer - Setting up Vimeo message listener');
+    if (isVimeoUrl) {
+      console.log('VideoPlayer - Setting up Vimeo message listener and restrictions');
 
       const handleVimeoMessage = (event: MessageEvent) => {
         if (!event.origin.includes('vimeo.com')) return;
@@ -104,12 +208,70 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
             ? JSON.parse(event.data)
             : event.data;
 
-          console.log('VideoPlayer - Received message from Vimeo:', data);
+          // For progress tracking, we need to handle both timeupdate and playProgress events
+          if (data.event === 'playProgress' || data.event === 'timeupdate') {
+            // Extract percent from different event formats
+            let percent = 0;
+            if (data.data && typeof data.data.percent === 'number') {
+              percent = data.data.percent * 100;
+            } else if (data.data && typeof data.data.seconds === 'number' && typeof data.data.duration === 'number') {
+              percent = (data.data.seconds / data.data.duration) * 100;
+            }
+            
+            if (percent > 0) {
+              console.log('VideoPlayer - Progress update:', percent.toFixed(1) + '%');
+              setProgressPercent(percent);
+              
+              // Call onProgressUpdate callback if provided
+              if (onProgressUpdate) {
+                onProgressUpdate(percent);
+              }
+              
+              // Check if we've reached completion threshold
+              if (percent >= activityCompletionThreshold && !hasMarkedComplete) {
+                console.log(`VideoPlayer - Vimeo video reached ${activityCompletionThreshold}%, calling onComplete`);
+                if (onComplete) {
+                  onComplete();
+                  setHasMarkedComplete(true);
+                }
+              }
+            }
+          }
 
-          // Check if the video ended
-          if (data.event === 'ended' && onComplete) {
+          // Only log important events to avoid console spam
+          if (data.event !== 'playProgress') {
+            console.log('VideoPlayer - Received message from Vimeo:', data);
+          }
+
+          // Rest of the Vimeo message handling as before
+          // ... existing code for play, seek, etc. events ...
+
+          // For first watch, listen to play events to send commands to restrict seeking
+          if (isFirstWatch && iframeRef.current && data.event === 'play') {
+            // Use Vimeo Player SDK postMessage to disable seeking
+            const restrictMessage = JSON.stringify({
+              method: 'addEventListener',
+              value: 'seeked'
+            });
+            iframeRef.current.contentWindow?.postMessage(restrictMessage, '*');
+          }
+          
+          // If this is first watch and user tries to seek ahead, reset to current position
+          if (isFirstWatch && data.data && data.data.seconds > 0 && data.event === 'seeked') {
+            console.log('VideoPlayer - Attempt to seek ahead on Vimeo video prevented');
+            const message = JSON.stringify({
+              method: 'setCurrentTime',
+              value: data.data.seconds // Go back to previous position
+            });
+            iframeRef.current?.contentWindow?.postMessage(message, '*');
+          }
+
+          // Also keep the original end event for backward compatibility
+          if (data.event === 'ended' && onComplete && !hasMarkedComplete) {
             console.log('VideoPlayer - Vimeo video ended, calling onComplete');
             onComplete();
+            setHasMarkedComplete(true);
+            setProgressPercent(100);
           }
         } catch (e) {
           console.error('VideoPlayer - Error processing Vimeo message:', e);
@@ -117,9 +279,30 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
       };
 
       window.addEventListener('message', handleVimeoMessage);
+      
+      // After iframe is loaded, initialize communication with Vimeo player
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        setTimeout(() => {
+          // Initialize Vimeo Player API communication - request both timeupdate and progress events
+          ['timeupdate', 'progress', 'playProgress'].forEach(eventName => {
+            const message = JSON.stringify({
+              method: 'addEventListener',
+              value: eventName
+            });
+            iframeRef.current?.contentWindow?.postMessage(message, '*');
+          });
+          
+          // Also get the current time to initialize the progress
+          const getCurrentTime = JSON.stringify({
+            method: 'getCurrentTime'
+          });
+          iframeRef.current?.contentWindow?.postMessage(getCurrentTime, '*');
+        }, 1000); // Give the iframe time to load
+      }
+      
       return () => window.removeEventListener('message', handleVimeoMessage);
     }
-  }, [isVimeoUrl, onComplete]);
+  }, [isVimeoUrl, onComplete, activityCompletionThreshold, hasMarkedComplete, isFirstWatch, isVideoLoaded, onProgressUpdate]);
 
   const togglePlay = async () => {
     if (videoRef.current && !isPlayInProgress) {
@@ -154,13 +337,26 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
   };
 
   const handleTimeUpdate = () => {
-    if (videoRef.current) {
+    if (videoRef.current && videoRef.current.duration > 0) {
+      // Set current time for display
       setCurrentTime(videoRef.current.currentTime);
 
-      // Check if video is complete (allowing for small rounding errors)
-      if (videoRef.current.currentTime >= videoRef.current.duration - 0.5) {
+      // Calculate and update progress percentage
+      const calculatedProgress = (videoRef.current.currentTime / videoRef.current.duration) * 100;
+      console.log('VideoPlayer - Progress update:', calculatedProgress.toFixed(1) + '%');
+      setProgressPercent(calculatedProgress);
+      
+      // Call onProgressUpdate callback if provided
+      if (onProgressUpdate) {
+        onProgressUpdate(calculatedProgress);
+      }
+      
+      // Check if video has reached the completion threshold percentage
+      if (calculatedProgress >= activityCompletionThreshold && !hasMarkedComplete) {
+        console.log(`VideoPlayer - Regular video reached ${activityCompletionThreshold}%, calling onComplete`);
         if (onComplete) {
           onComplete();
+          setHasMarkedComplete(true);
         }
       }
     }
@@ -175,7 +371,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const seekTime = parseFloat(e.target.value);
+    
     if (videoRef.current) {
+      // If first watch, prevent seeking ahead of current time
+      if (isFirstWatch && seekTime > currentTime) {
+        console.log('VideoPlayer - Attempt to seek ahead on first watch prevented');
+        return;
+      }
+      
       videoRef.current.currentTime = seekTime;
       setCurrentTime(seekTime);
     }
@@ -249,21 +452,39 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
               title={title}
               onLoad={handleIframeLoad}
             ></iframe>
+            
+            {/* Progress indicator for Vimeo videos - positioned in top-right corner */}
+            <div className="absolute top-3 right-3 z-10">
+              <CircularProgress 
+                progress={progressPercent} 
+                isComplete={hasMarkedComplete || progressPercent >= 100} 
+              />
+            </div>
           </div>
         ) : (
           // Regular video element for direct video files
-          <video
-            ref={videoRef}
-            className="w-full bg-black aspect-video"
-            src={videoUrl}
-            onTimeUpdate={handleTimeUpdate}
-            onLoadedMetadata={handleLoadedMetadata}
-            onClick={togglePlay}
-            controls={false}
-            playsInline
-            preload="metadata"
-            onLoadedData={handleVideoLoad}
-          />
+          <div className="relative">
+            <video
+              ref={videoRef}
+              className="w-full bg-black aspect-video"
+              src={videoUrl}
+              onTimeUpdate={handleTimeUpdate}
+              onLoadedMetadata={handleLoadedMetadata}
+              onClick={togglePlay}
+              controls={false}
+              playsInline
+              preload="metadata"
+              onLoadedData={handleVideoLoad}
+            />
+            
+            {/* Progress indicator for regular videos - positioned in top-right corner */}
+            <div className="absolute top-3 right-3 z-10">
+              <CircularProgress 
+                progress={progressPercent} 
+                isComplete={hasMarkedComplete || progressPercent >= 100} 
+              />
+            </div>
+          </div>
         )}
       </div>
 
@@ -284,8 +505,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
               max={duration || 0}
               value={currentTime}
               onChange={handleSeek}
-              className="w-full h-1 bg-gray-400 rounded-lg appearance-none cursor-pointer"
+              className={`w-full h-1 bg-gray-400 rounded-lg appearance-none ${isFirstWatch ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             />
+            {isFirstWatch && (
+              <div className="text-xs text-white mt-1 text-center">Cannot skip ahead on first watch</div>
+            )}
           </div>
 
           <div className="flex justify-between items-center">
@@ -403,6 +627,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title, onComplete }
                 </svg>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* First watch notice for Vimeo videos */}
+      {isVimeoUrl && isFirstWatch && (
+        <div className="absolute bottom-4 left-0 right-0 text-center">
+          <div className="inline-block bg-black bg-opacity-70 text-white text-xs px-3 py-1 rounded-full">
+            Cannot skip ahead on first watch
           </div>
         </div>
       )}

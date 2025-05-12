@@ -11,6 +11,8 @@ interface VideoCardProps {
   courseId: number;
   nextContent: () => void;
   getNextTopicTitle: () => string;
+  onComplete?: () => void;
+  onProgressUpdate?: (videoId: string, progress: number) => void;
 }
 
 // Define interface for the API response data
@@ -54,6 +56,8 @@ const VideoCard: React.FC<VideoCardProps> = ({
   courseId,
   nextContent,
   getNextTopicTitle,
+  onComplete,
+  onProgressUpdate,
 }) => {
   const [activeTab, setActiveTab] = useState<"description" | "comments">("description");
   const [processedVideoUrl, setProcessedVideoUrl] = useState<string>("");
@@ -182,6 +186,32 @@ const VideoCard: React.FC<VideoCardProps> = ({
     }
   };
 
+  // Handle video progress updates
+  const handleProgressUpdate = (progress: number) => {
+    if (onProgressUpdate) {
+      onProgressUpdate(contentId.toString(), progress);
+    }
+  };
+
+  // Handle video completion
+  const handleVideoComplete = () => {
+    // Call the onComplete handler if provided
+    if (onComplete) {
+      onComplete();
+    }
+    
+    // Also update progress to 100%
+    if (onProgressUpdate) {
+      onProgressUpdate(contentId.toString(), 100);
+    }
+    
+    // Continue with existing completion logic
+    console.log('Video completed! Loading next video...');
+    setTimeout(() => {
+      nextContent();
+    }, 1500);
+  };
+
   // If loading, show loading state
   if (isLoading && !useDebugMode) {
     return (
@@ -260,7 +290,9 @@ const VideoCard: React.FC<VideoCardProps> = ({
       <VideoPlayer
         videoUrl={useDebugMode ? SAMPLE_VIMEO_URL : processedVideoUrl}
         title={videoTitle}
-        onComplete={nextContent}
+        onComplete={handleVideoComplete}
+        onProgressUpdate={handleProgressUpdate}
+        isFirstWatch={!(data as CourseContentResponse)?.status || (data as CourseContentResponse)?.status !== 'complete'}
       />
 
       {/* Next Button */}
