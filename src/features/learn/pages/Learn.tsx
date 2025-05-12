@@ -1,6 +1,5 @@
 import Leaderboard from "../components/LeaderboardTable";
 import TimeTrackingDashboard from "../components/graphs-components/TimeTrackingDashboard";
-import BasedLearning from "../components/based-learning/BasedLearning";
 import BasedLearningCourses from "../components/based-learning/BasedLearningCourses";
 import ContinueCourses from "../components/continue-learning/ContinueCourses";
 import ContinueCoursesDetails from "../components/continue-learning/ContinueCoursesDetails";
@@ -9,14 +8,18 @@ import WelcomeSection from "../components/WelcomeSection";
 import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
 import EnrolledCourses from "../components/courses/EnrolledCourses";
+import { getAllRecommendedCourse } from "../../../services/continue-course-learning/continueCourseApis";
+import { useEffect } from "react";
+
+
 const Learn = () => {
-  // useEffect(() => {
-  //   const fetchEnrolledCourses = async () => {
-  //     const response = await getCourseById(1,8);
-  //     console.log(response);
-  //   };
-  //   fetchEnrolledCourses();
-  // }, []);
+  useEffect(() => {
+    const fetchEnrolledCourses = async () => {
+      const response = await getAllRecommendedCourse(1);
+      console.log(response);
+    };
+    fetchEnrolledCourses();
+  }, []);
   return (
     <div className="px-2 md:px-0">
       <WelcomeSection />
@@ -27,12 +30,11 @@ const Learn = () => {
 
           <div className="space-y-2">
             <ContinueCourses />
-            <ContinueCoursesDetails />
+            <ContinueCoursesDetails clientId={1} />
           </div>
  
           <div className="space-y-2">
-            <BasedLearning />
-            <BasedLearningCourses />
+            <BasedLearningCourses clientId={1} />
           </div>
         </div>
 

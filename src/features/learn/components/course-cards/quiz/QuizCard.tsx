@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useQuery } from '@tanstack/react-query';
-import { getCourseContent } from '../../../../../services/courses-content/courseContentApis';
+import { getCourseContent } from '../../../../../services/enrolled-courses-content/courseContentApis';
 import { useMediaQuery } from '../../../../../hooks/useMediaQuery';
-import { submitContent } from "../../../../../services/courses-content/submitApis";
+import { submitContent } from "../../../../../services/enrolled-courses-content/submitApis";
 import { useNavigate } from "react-router-dom";
 
 interface MCQ {

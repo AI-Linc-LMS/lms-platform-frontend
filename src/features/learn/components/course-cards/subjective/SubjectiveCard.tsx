@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useQuery } from '@tanstack/react-query';
-import { getCourseContent } from '../../../../../services/courses-content/courseContentApis';
-import { submitContent } from "../../../../../services/courses-content/submitApis";
+import { getCourseContent } from '../../../../../services/enrolled-courses-content/courseContentApis';
+import { submitContent } from "../../../../../services/enrolled-courses-content/submitApis";
 import { useNavigate } from "react-router-dom";
 
 interface AssignmentData {

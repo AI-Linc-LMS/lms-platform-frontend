@@ -8,9 +8,8 @@ const CourseCard: React.FC<CourseData> = ({
   title,
   description,
   category,
-  moduleNumber,
-  totalModules,
-  moduleName,
+  completed_modules,
+  num_modules,
   iconData,
   onContinue,
 }) => {
@@ -37,9 +36,9 @@ const CourseCard: React.FC<CourseData> = ({
       
       <div className="my-4 md:my-5">
         <CourseProgress 
-          moduleNumber={moduleNumber}
-          totalModules={totalModules}
-          moduleName={moduleName}
+          moduleNumber={completed_modules}
+          totalModules={num_modules}
+          moduleName={`Module ${completed_modules + 1}`}
         />
       </div>
       

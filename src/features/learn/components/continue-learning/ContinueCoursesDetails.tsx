@@ -1,59 +1,66 @@
+import { useQuery } from "@tanstack/react-query";
 import { CodeIcon, DocumentIcon, FAQIcon, VideoIcon } from "../../../../commonComponents/icons/learnIcons/CourseIcons";
+import { getAllContinueCourseLearning } from "../../../../services/continue-course-learning/continueCourseApis";
 import CourseCard from "./CourseCard";
 import { CourseData, CourseIconData } from "./types";
 
-const ContinueCoursesDetails = () => {
-  // Common icons data setup
-  const createIconData = (): CourseIconData[] => [
-    { icon: <VideoIcon />, completed: 25, total: 52 },
-    { icon: <DocumentIcon />, completed: 25, total: 52 },
-    { icon: <CodeIcon />, completed: 25, total: 54 },
-    { icon: <FAQIcon />, completed: 25, total: 54 },
+const ContinueCoursesDetails = ({ clientId }: { clientId: number }) => {
+  const { data: continueCourses, isLoading, error } = useQuery({
+    queryKey: ["continueCourses"],
+    queryFn: () => getAllContinueCourseLearning(clientId),
+  });
+
+  const createIconData = (stats: any): CourseIconData[] => [
+    { icon: <VideoIcon />, completed: stats.video.completed, total: stats.video.total },
+    { icon: <DocumentIcon />, completed: stats.article.completed, total: stats.article.total },
+    { icon: <CodeIcon />, completed: stats.coding_problem.completed, total: stats.coding_problem.total },
+    { icon: <FAQIcon />, completed: stats.quiz.completed, total: stats.quiz.total },
   ];
-  
-  // Course data
-  const courses: CourseData[] = [
-    {
-      title: "Data Analytics",
-      description: "Lorem ipsum dolor sit amet.",
-      category: "Pro",
-      moduleNumber: 2,
-      totalModules: 28,
-      moduleName: "Introduction to data analytics",
-      iconData: createIconData(),
-      onContinue: () => console.log("continue Button Clicked"),
-    },
-    {
-      title: "Introduction to UI / UX",
-      description: "Lorem ipsum dolor sit amet.",
-      category: "Beginner",
-      moduleNumber: 5,
-      totalModules: 20,
-      moduleName: "UI Design principles",
-      iconData: createIconData(),
-      onContinue: () => console.log("continue Button Clicked"),
-    },
-    {
-      title: "Artificial Intelligence & Coding",
-      description: "Lorem ipsum dolor sit amet.",
-      category: "Beginner",
-      moduleNumber: 18, 
-      totalModules: 24,
-      moduleName: "Machine Learning basics",
-      iconData: createIconData(),
-      onContinue: () => console.log("continue Button Clicked"),
-    },
-    {
-      title: "Business Analytics & Planning",
-      description: "Lorem ipsum dolor sit amet.",
-      category: "Beginner",
-      moduleNumber: 3,
-      totalModules: 15,
-      moduleName: "Market research fundamentals",
-      iconData: createIconData(),
-      onContinue: () => console.log("continue Button Clicked"),
-    }
-  ];
+
+  if (isLoading || error) {
+    return (
+      <div>
+        {
+          error &&
+          <div className="text-red-500">
+            Error loading continue courses. Please try again later.
+          </div>
+        }
+        {
+          !continueCourses && <div className="text-center text-gray-500 p-4">
+            No courses to continue. Start learning something new!
+          </div>
+        }
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+          {[1, 2, 3, 4].map((index) => (
+            <div key={index} className="w-full border-[#80C9E0] rounded-[16px] md:rounded-[22px] border-[1px] bg-[#F8F9FA] p-3 md:p-4 mt-3 md:mt-4 flex flex-col min-h-[280px] md:min-h-[300px] animate-pulse">
+              <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+              <div className="grid grid-cols-4 gap-1 mb-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="w-full aspect-square rounded-lg bg-gray-200"></div>
+                ))}
+              </div>
+              <div className="h-10 bg-gray-200 rounded w-1/4 mb-4"></div>
+              <div className="h-12 bg-gray-200 rounded w-full mb-4"></div>
+              <div className="h-10 bg-gray-200 rounded w-1/3 mt-auto"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+
+  const courses: CourseData[] = continueCourses.map((course: any) => ({
+    title: course.title,
+    description: course.description,
+    category: course.difficulty_level,
+    completed_modules: course.completed_modules,
+    num_modules: course.num_modules,
+    iconData: createIconData(course.stats),
+    onContinue: () => console.log("continue Button Clicked"),
+  }));
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">

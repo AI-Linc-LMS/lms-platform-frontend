@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getCourseContent } from "../../../../../services/courses-content/courseContentApis";
+import { getCourseContent } from "../../../../../services/enrolled-courses-content/courseContentApis";
 import Editor from '@monaco-editor/react';
 import testcaseIcon from "../../../../../commonComponents/icons/enrolled-courses/testcaseIcon.png";
 import lightProblemIcon from "../../../../../commonComponents/icons/enrolled-courses/lightProblemIcon.png";
