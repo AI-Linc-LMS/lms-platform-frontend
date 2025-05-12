@@ -3,6 +3,7 @@ import VideoPlayer from "../../video-player/VideoPlayer";
 import FloatingAIButton from "../../floating-ai-button/FloatingAIButton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCourseContent, getCommentsByContentId, createComment } from "../../../../../services/courses-content/courseContentApis";
+import { submitContent } from "../../../../../services/courses-content/submitApis";
 
 interface VideoCardProps {
   currentWeek: { title: string };
@@ -59,6 +60,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
   onComplete,
   onProgressUpdate,
 }) => {
+  const clientId = import.meta.env.VITE_CLIENT_ID;
   const [activeTab, setActiveTab] = useState<"description" | "comments">("description");
   const [processedVideoUrl, setProcessedVideoUrl] = useState<string>("");
   const [useDebugMode, setUseDebugMode] = useState(false);
@@ -194,7 +196,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
   };
 
   // Handle video completion
-  const handleVideoComplete = () => {
+  const handleVideoComplete = async () => {
     // Call the onComplete handler if provided
     if (onComplete) {
       onComplete();
@@ -206,6 +208,15 @@ const VideoCard: React.FC<VideoCardProps> = ({
     }
     
     // Continue with existing completion logic
+    if (clientId && courseId && contentId) {
+      await submitContent(clientId, courseId, contentId, 'VideoTutorial', {})
+        .then(status => {
+          console.log('Video completion submitted successfully:', status);
+        })
+        .catch(error => {
+          console.error('Failed to submit video completion:', error);
+        });
+    }
     console.log('Video completed! Loading next video...');
     setTimeout(() => {
       nextContent();
