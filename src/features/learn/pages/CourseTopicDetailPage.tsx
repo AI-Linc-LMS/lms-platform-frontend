@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { getSubmoduleById } from "../../../services/courses-content/courseContentApis";
+import { getSubmoduleById } from "../../../services/enrolled-courses-content/courseContentApis";
 import CourseSidebar from "../../../commonComponents/sidebar/courseSidebar/CourseSidebar";
 import CourseSidebarContent from "../../../commonComponents/sidebar/courseSidebar/CourseSidebarContent";
 import VideoCard from "../components/course-cards/video/VideoCard";

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getCourseContent } from "../../../../../services/courses-content/courseContentApis";
+import { getCourseContent } from "../../../../../services/enrolled-courses-content/courseContentApis";
 import Editor from '@monaco-editor/react';
 import testcaseIcon from "../../../../../commonComponents/icons/enrolled-courses/testcaseIcon.png";
 import lightProblemIcon from "../../../../../commonComponents/icons/enrolled-courses/lightProblemIcon.png";
@@ -287,24 +287,25 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           <div className="flex flex-row text-[#264D64]">
             <button
               className={`px-4 py-2 rounded-t-md ${activeTab === 'description'
-                ? 'bg-[#D7EFF6] font-semibold shadow-inner'
-                : 'text-gray-500'}`}
+                ? `${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6]  text-black border-gray-300"} font-semibold shadow-inner`
+                : `text-gray-500`}
+              }`}
               onClick={() => setActiveTab('description')}
             >
               Description
             </button>
             <button
               className={`px-4 py-2 rounded-t-md ${activeTab === 'solutions'
-                ? 'bg-[#D7EFF6] font-semibold shadow-inner'
-                : 'text-gray-500'}`}
+                ? `${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6]  text-black border-gray-300"} bg-[#D7EFF6] font-semibold shadow-inner`
+                : 'text-gray-500 dark:text-gray-400'}`}
               onClick={() => setActiveTab('solutions')}
             >
               Solutions
             </button>
             <button
               className={`px-4 py-2 rounded-t-md ${activeTab === 'submission'
-                ? 'bg-[#D7EFF6] font-semibold shadow-inner'
-                : 'text-gray-500'}`}
+                ? `bg-[#D7EFF6] ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6] text-black border-gray-300"} font-semibold shadow-inner`
+                : 'text-gray-500 dark:text-gray-400'}`}
               onClick={() => setActiveTab('submission')}
             >
               Submission
@@ -397,14 +398,14 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
               <div className="flex flex-row gap-1">
                 {/* Language Dropdown */}
                 <div className="relative inline-block text-sm" onClick={() => setIsDropdownHovered(!isDropdownHovered)}>
-                  <div className={`border text-center px-2 py-1 text-gray-700 cursor-pointer flex justify-between items-center w-full rounded-md gap-1 h-9 ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-white text-black border-gray-300"}`}>
+                  <div className={`border text-center px-2 py-1 text-gray-700 text-xs cursor-pointer flex justify-between items-center w-full rounded-md gap-1 h-9 ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-white text-black border-gray-300"}`}>
                     <span>{languageOptions.find(opt => opt.value === selectedLanguage)?.label}</span>
                     <span className="text-[13px]">{isDropdownHovered ? "▲" : "▼"}</span>
                   </div>
 
                   {/* Dropdown options */}
                   {isDropdownHovered && (
-                    <ul className={`absolute left-0 mt-1 w-40 rounded-md shadow-md z-10 border ${isDarkTheme ? "bg-gray-800 border-gray-600 text-white" : "bg-white border-gray-300 text-black"}`}>
+                    <ul className={`absolute left-0 mt-1 w-40 rounded-md shadow-md z-10 text-xs border ${isDarkTheme ? "bg-gray-800 border-gray-600 text-white" : "bg-white border-gray-300 text-black"}`}>
                       {languageOptions.map(option => (
                         <li
                           key={option.value}
@@ -448,10 +449,10 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
               {/* Run and Submit Buttons */}
               <div className="flex gap-3">
-                <button onClick={handleRunCode} disabled={isRunning} className={`run-button bg-[#5FA564] h-9 ${isRunning ? 'button-loading' : ''}`}>
+                <button onClick={handleRunCode} disabled={isRunning} className={`run-button md:text-xs xl:text-md bg-[#5FA564] h-9 ${isRunning ? 'button-loading' : ''}`}>
                   {isRunning ? 'Running...' : 'Run Code'}
                 </button>
-                <button onClick={handleSubmitCode} disabled={isSubmitting} className={`submit-button bg-gray-200 h-9 ${isSubmitting ? 'button-loading' : ''}`}>
+                <button onClick={handleSubmitCode} disabled={isSubmitting} className={`submit-button md:text-xs xl:text-md bg-gray-200 h-9 ${isSubmitting ? 'button-loading' : ''}`}>
                   {isSubmitting ? 'Submitting...' : 'Submit'}
                 </button>
               </div>
@@ -488,25 +489,25 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           </div>
 
           {isConsoleOpen && (
-            <>
+            <div className={`mb-10 ${isDarkTheme ? "bg-[#252526]" : ""}`}>
               <div className="console-resize-handle" onMouseDown={startResizing}>
               </div>
               <div className="flex items-center text-center gap-2 p-4 text-xl font-semibold">
                 <img src={testcaseIcon} className="w-6 h-6 mt-1 font-bold" /> Testcase
               </div>
-              <div className="border-1 mx-2 border-gray-300 rounded-xl">
+              <div className={`border-1 mx-2 ${isDarkTheme ? "border-gray-600" : ""} rounded-xl`}>
                 {!testCases || testCases.length === 0 ? (
                   <div className="p-4 text-gray-500 italic">Loading test cases...</div>
                 ) : (
                   <>
-                    <div className="flex space-x-4 bg-gray-50 ">
+                    <div className={`flex space-x-4 ${isDarkTheme ? "bg-[#252526]" : "bg-gray-50"} rounded-t-xl `}>
                       {testCases.map((_, idx) => (
                         <button
                           key={idx}
                           onClick={() => setActiveTestCase(idx)}
-                          className={`px-4 py-2 rounded-t-md ${activeTestCase === idx
-                            ? 'bg-[#D7EFF6] font-semibold shadow-inner'
-                            : 'text-gray-500'
+                          className={`px-4 py-2 rounded-t-xl ${activeTestCase === idx
+                            ? ` ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6] text-black border-gray-300"} font-semibold shadow-inner`
+                            : `text-gray-500 '}`
                             }`}
                         >
                           Case {idx + 1}
@@ -515,7 +516,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                       <button
                         onClick={() => setActiveTestCase(-1)}
                         className={`px-4 py-2 rounded-t-md ${activeTestCase === -1
-                          ? 'bg-white font-semibold shadow-inner'
+                          ? `${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6] text-black border-gray-300"} font-semibold shadow-inner`
                           : 'text-gray-500'
                           }`}
                       >
@@ -528,17 +529,17 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                         <>
                           <h3 className="mb-2 font-medium">Case {activeTestCase + 1}</h3>
 
-                          <div className="text-sm text-gray-700 mb-1">
+                          <div className="text-sm text-gray-700 mb-1 ">
                             <strong>Input:</strong>
                           </div>
-                          <pre className="bg-gray-100 p-2 mt-2 rounded text-sm text-gray-800">
+                          <pre className={`p-2 mt-2 rounded text-sm ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-gray-200 text-black border-gray-300"}`}>
                             {testCases[activeTestCase]?.sample_input ?? 'Loading...'}
                           </pre>
 
                           <div className="text-sm text-gray-700 mt-4 mb-1">
                             <strong>Expected Output:</strong>
                           </div>
-                          <pre className="bg-gray-100 p-2 mt-2 rounded text-sm text-gray-800">
+                          <pre className={`p-2 mt-2 rounded text-sm ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-gray-200 text-black border-gray-300"} text-gray-800`}>
                             {testCases[activeTestCase]?.sample_output ?? 'Loading...'}
                           </pre>
                           {testCases[activeTestCase]?.status === 'passed' && (
@@ -579,7 +580,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                   </>
                 )}
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>

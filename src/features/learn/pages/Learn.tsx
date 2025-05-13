@@ -1,6 +1,5 @@
 import Leaderboard from "../components/LeaderboardTable";
 import TimeTrackingDashboard from "../components/graphs-components/TimeTrackingDashboard";
-import BasedLearning from "../components/based-learning/BasedLearning";
 import BasedLearningCourses from "../components/based-learning/BasedLearningCourses";
 import ContinueCourses from "../components/continue-learning/ContinueCourses";
 import ContinueCoursesDetails from "../components/continue-learning/ContinueCoursesDetails";
@@ -9,14 +8,12 @@ import WelcomeSection from "../components/WelcomeSection";
 import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
 import EnrolledCourses from "../components/courses/EnrolledCourses";
+
+
 const Learn = () => {
-  // useEffect(() => {
-  //   const fetchEnrolledCourses = async () => {
-  //     const response = await getCourseById(1,8);
-  //     console.log(response);
-  //   };
-  //   fetchEnrolledCourses();
-  // }, []);
+
+
+  const clientId = import.meta.env.VITE_CLIENT_ID;
   return (
     <div className="px-2 md:px-0">
       <WelcomeSection />
@@ -27,19 +24,18 @@ const Learn = () => {
 
           <div className="space-y-2">
             <ContinueCourses />
-            <ContinueCoursesDetails />
+            <ContinueCoursesDetails clientId={clientId} />
           </div>
  
           <div className="space-y-2">
-            <BasedLearning />
-            <BasedLearningCourses />
+            <BasedLearningCourses clientId={clientId} />
           </div>
         </div>
 
         <div className="flex flex-col gap-6 w-full md:w-auto md:min-w-[300px] lg:min-w-[350px]">
-          <Leaderboard clientId={1} />
-          <DailyProgress clientId={1} />
-          <StreakTable clientId={1} />
+          <Leaderboard clientId={clientId} />
+          <DailyProgress clientId={clientId} />
+          <StreakTable clientId={clientId} />
           <Referrals />
         </div>
       </div>
