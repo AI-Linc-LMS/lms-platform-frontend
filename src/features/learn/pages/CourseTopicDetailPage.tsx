@@ -627,6 +627,7 @@ const CourseTopicDetailPage: React.FC = () => {
             )}
             {currentContent?.content_type === "CodingProblem" && (
               <ProblemCard
+                isSidebarContentOpen={isSidebarContentOpen}
                 contentId={currentContent.id}
                 courseId={parseInt(courseId || "0")}
                 onSubmit={(code) => {
