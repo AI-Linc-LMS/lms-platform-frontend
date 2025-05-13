@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getCourseContent } from '../../../../../services/courses-content/courseContentApis';
-import { submitContent } from '../../../../../services/courses-content/submitApis';
+import { getCourseContent } from '../../../../../services/enrolled-courses-content/courseContentApis';
+import { submitContent } from '../../../../../services/enrolled-courses-content/submitApis';
 import FloatingAIButton from "../../floating-ai-button/FloatingAIButton";
 import completedIcon from "../../../../../commonComponents/icons/sidebarIcons/completedIcon.png";
 import { useNavigate } from 'react-router-dom';

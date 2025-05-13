@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import VideoPlayer from "../../video-player/VideoPlayer";
 import FloatingAIButton from "../../floating-ai-button/FloatingAIButton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getCourseContent, getCommentsByContentId, createComment } from "../../../../../services/courses-content/courseContentApis";
-import { submitContent } from "../../../../../services/courses-content/submitApis";
+import { getCourseContent, getCommentsByContentId, createComment } from "../../../../../services/enrolled-courses-content/courseContentApis";
 
 interface VideoCardProps {
   currentWeek: { title: string };
