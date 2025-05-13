@@ -42,9 +42,11 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const navigate = useNavigate();
-
+  
   // Helper function to navigate to topic detail page
   const navigateToTopicDetail = (courseId: string, submoduleId: string) => {
+    console.log("courseId", courseId);
+    console.log("submoduleId", submoduleId);
     navigate(`/learn/course/${courseId}/${submoduleId}`);
   };
 
