@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface CourseFormData {
   name: string;
@@ -7,6 +8,7 @@ interface CourseFormData {
 }
 
 const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState<CourseFormData>({
     name: '',
@@ -62,11 +64,23 @@ const AdminDashboard: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Creating new course:', formData);
-    // Here you would typically make an API call to create the course
+    
+    // In a real app, this would be an API call to create the course
+    // and then the server would return the new course ID
+    
+    // For demo purposes, we'll just generate a random ID
+    const newCourseId = Math.floor(Math.random() * 1000).toString();
     
     // Reset form and close modal
     setFormData({ name: '', level: '', description: '' });
     setIsModalOpen(false);
+    
+    // Navigate to the course detail page
+    navigate(`/admin/courses/${newCourseId}`);
+  };
+
+  const handleEditCourse = (courseId: string) => {
+    navigate(`/admin/courses/${courseId}`);
   };
 
   return (
@@ -94,7 +108,11 @@ const AdminDashboard: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.map((course) => (
-            <CourseCard key={course.id} course={course} />
+            <CourseCard 
+              key={course.id} 
+              course={course} 
+              onEditClick={() => handleEditCourse(course.id)}
+            />
           ))}
         </div>
       </div>
@@ -191,9 +209,10 @@ interface CourseCardProps {
     title: string;
     description: string;
   };
+  onEditClick: () => void;
 }
 
-const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
+const CourseCard: React.FC<CourseCardProps> = ({ course, onEditClick }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
       <div className="p-4">
@@ -242,7 +261,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
 
         <button 
           className="w-full bg-blue-50 text-blue-700 py-2 rounded-md flex items-center justify-center"
-          onClick={() => console.log('Edit course', course.id)}
+          onClick={onEditClick}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
