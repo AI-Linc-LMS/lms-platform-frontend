@@ -7,6 +7,7 @@ import CourseTopicDetailPage from "./features/learn/pages/CourseTopicDetailPage"
 import Login from "./features/auth/pages/Login";
 import ForgotPassword from "./features/auth/pages/ForgotPassword";
 import Signup from "./features/auth/pages/Signup";
+import AdminDashboard from "./features/admin/pages/AdminDashboard";
 
 export interface RouteConfig {
   path: string;
@@ -64,6 +65,11 @@ const routes: RouteConfig[] = [
   {
     path: "/learn/course/:courseId/:submoduleId",
     component: CourseTopicDetailPage,
+    isPrivate: true,
+  },
+  {
+    path: "/admin/courses",
+    component: AdminDashboard,
     isPrivate: true,
   },
 ];
