@@ -8,6 +8,7 @@ import Login from "./features/auth/pages/Login";
 import ForgotPassword from "./features/auth/pages/ForgotPassword";
 import Signup from "./features/auth/pages/Signup";
 import AdminDashboard from "./features/admin/pages/AdminDashboard";
+import AdminCourseDetailPage from "./features/admin/pages/CourseDetailPage";
 
 export interface RouteConfig {
   path: string;
@@ -70,6 +71,11 @@ const routes: RouteConfig[] = [
   {
     path: "/admin/courses",
     component: AdminDashboard,
+    isPrivate: true,
+  },
+  {
+    path: "/admin/courses/:courseId",
+    component: AdminCourseDetailPage,
     isPrivate: true,
   },
 ];
