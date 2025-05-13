@@ -343,24 +343,24 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         setIsSubmitSuccess(true);
         
         // Directly call submitContent to update the status
-        submitContent(
-          1, 
-          courseId, 
-          contentId, 
-          'CodingProblem', 
-          { status: 'complete' },
-          'updateStatus'
-        )
-        .then(statusCode => {
-          console.log("Status update response:", statusCode);
-          // Now call the onComplete callback for UI updates
-          onComplete();
-        })
-        .catch(error => {
-          console.error("Failed to update status:", error);
-          // Still call onComplete for UI updates
-          onComplete();
-        });
+        // submitContent(
+        //   1, 
+        //   courseId, 
+        //   contentId, 
+        //   'CodingProblem', 
+        //   { status: 'complete' },
+        //   'updateStatus'
+        // )
+        // .then(statusCode => {
+        //   console.log("Status update response:", statusCode);
+        //   // Now call the onComplete callback for UI updates
+        //   onComplete();
+        // })
+        // .catch(error => {
+        //   console.error("Failed to update status:", error);
+        //   // Still call onComplete for UI updates
+        //   onComplete();
+        // });
       } else {
         console.log(`Solution ${success ? 'accepted' : 'rejected'}, onComplete callback: ${onComplete ? 'provided' : 'not provided'}`);
       }
@@ -888,10 +888,10 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                   onClick={handleSubmitCode} 
                   disabled={isSubmitting} 
                   className={`submit-button md:text-xs xl:text-md ${isSubmitting ? 'button-loading opacity-70' : ''} ${
-                    results?.success ? 'bg-green-500 text-white' : 'bg-gray-200'
+                    'bg-gray-200'
                   } h-9`}
                 >
-                  {isSubmitting ? 'Submitting...' : results?.success ? 'Submitted ✓' : 'Submit'}
+                  {isSubmitting ? 'Submitting...' :'Submit'}
                 </button>
               </div>
             </div>
