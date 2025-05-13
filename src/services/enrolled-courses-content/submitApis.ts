@@ -255,4 +255,42 @@ export const submitCode = async (
 //   }
 // };
 
+// Define submission history interface
+export interface SubmissionHistoryItem {
+  id: number;
+  status: string;
+  submitted_at: string;
+  runtime: string;
+  memory: string;
+  language: string;
+  source_code: string;
+}
+
+// Add function to fetch submission history
+export const getSubmissionHistory = async (
+  clientId: number,
+  courseId: number,
+  contentId: number
+): Promise<SubmissionHistoryItem[]> => {
+  try {
+    const url = `/activity/clients/${clientId}/courses/${courseId}/content/${contentId}/submissions/?activity_type=CodingProblem`;
+    
+    console.log(`Fetching submission history from: ${url}`);
+    const response = await axiosInstance.get(url);
+    console.log("Submission history response:", response.data);
+    
+    return response.data.submissions || [];
+  } catch (error: unknown) {
+    console.error("Failed to fetch submission history:", error);
+    if (error instanceof AxiosError) {
+      throw new Error(
+        error?.response?.data?.detail ||
+        error?.message ||
+        "Failed to fetch submission history"
+      );
+    }
+    throw new Error("Failed to fetch submission history");
+  }
+};
+
 
