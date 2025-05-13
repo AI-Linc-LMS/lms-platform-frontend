@@ -5,7 +5,7 @@ import {
   runCode, 
   runCustomCode, 
   submitCode, 
-  submitContent,
+  // submitContent,
   getSubmissionHistory,
   LANGUAGE_ID_MAPPING,
   RunCodeResult,
