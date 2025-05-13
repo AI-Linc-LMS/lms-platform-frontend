@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useDispatch, useSelector } from "react-redux";
-import { getEnrolledCourses } from "../../../../services/courses-content/coursesApis";
+import { getEnrolledCourses } from "../../../../services/enrolled-courses-content/coursesApis";
 import { Course as ReduxCourse, setCourses } from "../../../../redux/slices/courseSlice";
 import { RootState } from "../../../../redux/store";
 import CourseCard from "./CourseCard";

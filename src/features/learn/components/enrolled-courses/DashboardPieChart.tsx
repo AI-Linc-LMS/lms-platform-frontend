@@ -1,7 +1,7 @@
 // import { useState, useEffect } from 'react';
 
 import { useQuery } from "@tanstack/react-query";
-import { getCourseDashboard } from "../../../../services/courses-content/courseContentApis";
+import { getCourseDashboard } from "../../../../services/enrolled-courses-content/courseContentApis";
 
 interface Category {
   name: string;

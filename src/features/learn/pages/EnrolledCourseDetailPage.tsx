@@ -5,7 +5,7 @@ import DashboardPieChart from "../components/enrolled-courses/DashboardPieChart"
 import BackToHomeButton from "../../../commonComponents/common-buttons/back-buttons/back-to-home-button/BackToHomeButton";
 import CourseContent from "../components/enrolled-courses/CourseContent";
 import EnrolledLeaderBoard from "../components/enrolled-courses/EnrolledLeader";
-import { getCourseById } from "../../../services/courses-content/courseContentApis";
+import { getCourseById } from "../../../services/enrolled-courses-content/courseContentApis";
 import { useQuery } from "@tanstack/react-query";
 
 
