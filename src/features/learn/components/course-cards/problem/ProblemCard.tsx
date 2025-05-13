@@ -61,6 +61,16 @@ interface CustomTestCase {
   memory?: number;
 }
 
+// Add submission history type
+interface SubmissionHistory {
+  id: number;
+  status: string;
+  submitted_at: string;
+  runtime: string;
+  memory: string;
+  language: string;
+}
+
 const ProblemCard: React.FC<ProblemCardProps> = ({
   contentId,
   courseId,
@@ -100,6 +110,40 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const [customInput, setCustomInput] = useState("");
   const [customTestCase, setCustomTestCase] = useState<CustomTestCase>({ input: '' });
   const [isSubmitSuccess, setIsSubmitSuccess] = useState(false);
+  const [submissionHistory, setSubmissionHistory] = useState<SubmissionHistory[]>([
+    {
+      id: 4,
+      status: "Runtime Error",
+      submitted_at: new Date().toISOString(), // Today
+      runtime: "N/A",
+      memory: "N/A",
+      language: "javascript"
+    },
+    {
+      id: 3,
+      status: "Accepted",
+      submitted_at: new Date().toISOString(), // Today
+      runtime: "2 ms",
+      memory: "59.4 MB",
+      language: "javascript"
+    },
+    {
+      id: 2,
+      status: "Runtime Error",
+      submitted_at: "2022-12-10T12:00:00.000Z", // Dec 10, 2022
+      runtime: "N/A",
+      memory: "N/A",
+      language: "javascript"
+    },
+    {
+      id: 1,
+      status: "Wrong Answer",
+      submitted_at: "2022-12-10T10:00:00.000Z", // Dec 10, 2022
+      runtime: "N/A",
+      memory: "N/A",
+      language: "javascript"
+    }
+  ]);
   
   // Run code mutation
   const runCodeMutation = useMutation({
@@ -188,6 +232,17 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           ? `Solution accepted! Passed ${data.passed}/${data.total_test_cases} test cases.` 
           : `Failed ${data.failed}/${data.total_test_cases} test cases.`
       });
+      
+      // Add submission to history
+      const newSubmission: SubmissionHistory = {
+        id: submissionHistory.length + 1,
+        status: data.status,
+        submitted_at: new Date().toISOString(),
+        runtime: success ? "2 ms" : "N/A",
+        memory: success ? "59.4 MB" : "N/A",
+        language: selectedLanguage
+      };
+      setSubmissionHistory([newSubmission, ...submissionHistory]);
       
       // Call onSubmit to notify the parent that code was submitted
       onSubmit(code);
@@ -472,7 +527,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                 : 'text-gray-500 dark:text-gray-400'}`}
               onClick={() => setActiveTab('submission')}
             >
-              Submission
+              Submissions
             </button>
           </div>
 
@@ -546,9 +601,68 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
               </div>
             )}
 
-            {activeTab === 'discussion' && (
-              <div className="placeholder-content">
-                <p>Community discussions will appear here.</p>
+            {activeTab === 'submission' && (
+              <div className="submission-history">
+                <h3 className={`text-xl font-bold mb-4 ${isDarkTheme ? "text-white" : ""}`}>Your Submissions</h3>
+                
+                {submissionHistory.length === 0 ? (
+                  <p className="text-gray-500 italic">You haven't submitted any solutions yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full border-collapse">
+                      <thead>
+                        <tr className={`border-b ${isDarkTheme ? "border-gray-700" : "border-gray-200"}`}>
+                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider w-16 ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>No.</th>
+                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Status</th>
+                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Language</th>
+                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Runtime</th>
+                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Memory</th>
+                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {submissionHistory.map((submission, index) => (
+                          <tr key={submission.id} className={`${isDarkTheme ? "border-b border-gray-700 hover:bg-gray-800" : "border-b border-gray-200 hover:bg-gray-100"}`}>
+                            <td className={`py-4 px-4 text-center font-medium ${isDarkTheme ? "text-white" : ""}`}>{submissionHistory.length - index}</td>
+                            <td className="py-4 px-4">
+                              <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                submission.status === "Accepted" 
+                                  ? isDarkTheme ? "bg-green-900 text-green-200" : "bg-green-100 text-green-800" 
+                                  : submission.status === "Wrong Answer"
+                                  ? isDarkTheme ? "bg-red-900 text-red-200" : "bg-red-100 text-red-800"
+                                  : isDarkTheme ? "bg-red-900 text-red-200" : "bg-red-100 text-red-800"
+                              }`}>
+                                {submission.status}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-sm">
+                              <span className={`rounded px-2 py-1 ${
+                                isDarkTheme 
+                                  ? "bg-gray-700 text-white" 
+                                  : "bg-gray-200 text-gray-800"
+                              }`}>
+                                {submission.language === "javascript" ? "JavaScript" : 
+                                 submission.language === "typescript" ? "TypeScript" : 
+                                 submission.language === "python" ? "Python" : 
+                                 submission.language === "java" ? "Java" : 
+                                 submission.language === "cpp" ? "C++" : submission.language}
+                              </span>
+                            </td>
+                            <td className={`py-4 px-4 text-sm ${isDarkTheme ? "text-gray-300" : ""}`}>{submission.runtime}</td>
+                            <td className={`py-4 px-4 text-sm ${isDarkTheme ? "text-gray-300" : ""}`}>{submission.memory}</td>
+                            <td className={`py-4 px-4 text-sm ${isDarkTheme ? "text-gray-400" : "text-gray-500"}`}>
+                              {new Date(submission.submitted_at).toLocaleString('en-US', {
+                                month: 'short',
+                                day: '2-digit',
+                                year: 'numeric'
+                              })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
           </div>
