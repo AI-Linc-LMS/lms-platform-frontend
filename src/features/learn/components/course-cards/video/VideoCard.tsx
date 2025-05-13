@@ -3,6 +3,7 @@ import VideoPlayer from "../../video-player/VideoPlayer";
 import FloatingAIButton from "../../floating-ai-button/FloatingAIButton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCourseContent, getCommentsByContentId, createComment } from "../../../../../services/enrolled-courses-content/courseContentApis";
+import { submitContent } from "../../../../../services/enrolled-courses-content/submitApis";
 
 interface VideoCardProps {
   currentWeek: { title: string };
