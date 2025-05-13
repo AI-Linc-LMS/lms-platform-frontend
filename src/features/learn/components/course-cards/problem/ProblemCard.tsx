@@ -1,6 +1,15 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { getCourseContent } from "../../../../../services/enrolled-courses-content/courseContentApis";
+import { 
+  runCode, 
+  runCustomCode, 
+  submitCode, 
+  LANGUAGE_ID_MAPPING,
+  RunCodeResult,
+  CustomRunCodeResult,
+  SubmitCodeResult
+} from "../../../../../services/enrolled-courses-content/submitApis";
 import Editor from '@monaco-editor/react';
 import testcaseIcon from "../../../../../commonComponents/icons/enrolled-courses/testcaseIcon.png";
 import lightProblemIcon from "../../../../../commonComponents/icons/enrolled-courses/lightProblemIcon.png";
@@ -33,10 +42,21 @@ interface ProblemData {
 }
 
 interface TestCase {
+  test_case?: number;
   sample_input: string;
   sample_output: string;
   userOutput?: string;
   status?: 'passed' | 'failed' | 'running';
+  time?: string;
+  memory?: number;
+}
+
+interface CustomTestCase {
+  input: string;
+  output?: string;
+  status?: 'passed' | 'failed' | 'running';
+  time?: string;
+  memory?: number;
 }
 
 const ProblemCard: React.FC<ProblemCardProps> = ({
@@ -74,23 +94,124 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const [isDropdownHovered, setIsDropdownHovered] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState(languageOptions[0].value);
   const [activeTestCase, setActiveTestCase] = useState<number>(0);
-  console.log(results);
+  const [customInput, setCustomInput] = useState("");
+  const [customTestCase, setCustomTestCase] = useState<CustomTestCase>({ input: '' });
+  
+  // Run code mutation
+  const runCodeMutation = useMutation({
+    mutationFn: () => runCode(
+      1, 
+      courseId, 
+      contentId, 
+      code, 
+      LANGUAGE_ID_MAPPING[selectedLanguage as keyof typeof LANGUAGE_ID_MAPPING]
+    ),
+    onSuccess: (data: RunCodeResult) => {
+      const updatedTestCases = data.results.map(result => ({
+        test_case: result.test_case,
+        sample_input: result.input,
+        sample_output: result.expected_output,
+        userOutput: result.actual_output,
+        status: result.status === "Accepted" ? "passed" : "failed",
+        time: result.time,
+        memory: result.memory
+      })) as TestCase[];
+      
+      setTestCases(updatedTestCases);
+      
+      const success = updatedTestCases.every(tc => tc.status === 'passed');
+      setResults({
+        success, 
+        message: success ? "All test cases passed!" : "Some test cases failed."
+      });
+      setIsRunning(false);
+    },
+    onError: (error) => {
+      console.error("Error running code:", error);
+      setResults({ 
+        success: false, 
+        message: "Error running code. Please try again."
+      });
+      setIsRunning(false);
+    }
+  });
+  
+  // Run custom code mutation
+  const runCustomCodeMutation = useMutation({
+    mutationFn: (input: string) => runCustomCode(
+      1, 
+      courseId, 
+      contentId, 
+      code, 
+      LANGUAGE_ID_MAPPING[selectedLanguage as keyof typeof LANGUAGE_ID_MAPPING],
+      input
+    ),
+    onSuccess: (data: CustomRunCodeResult) => {
+      setCustomTestCase({
+        input: data.input,
+        output: data.actual_output,
+        status: data.status === "Accepted" ? "passed" : "failed",
+        time: data.time,
+        memory: data.memory
+      });
+      setIsRunning(false);
+    },
+    onError: (error) => {
+      console.error("Error running custom code:", error);
+      setCustomTestCase({
+        input: customInput,
+        status: "failed",
+        output: "Error running code"
+      });
+      setIsRunning(false);
+    }
+  });
+  
+  // Submit code mutation
+  const submitCodeMutation = useMutation({
+    mutationFn: () => submitCode(
+      1, 
+      courseId, 
+      contentId, 
+      code, 
+      LANGUAGE_ID_MAPPING[selectedLanguage as keyof typeof LANGUAGE_ID_MAPPING]
+    ),
+    onSuccess: (data: SubmitCodeResult) => {
+      setResults({
+        success: data.status === "Accepted", 
+        message: data.status === "Accepted" 
+          ? `Solution accepted! Passed ${data.passed}/${data.total_test_cases} test cases.` 
+          : `Failed ${data.failed}/${data.total_test_cases} test cases.`
+      });
+      onSubmit(code);
+      setIsSubmitting(false);
+    },
+    onError: (error) => {
+      console.error("Error submitting code:", error);
+      setResults({ 
+        success: false, 
+        message: "Error submitting code. Please try again."
+      });
+      setIsSubmitting(false);
+    }
+  });
+  
   // Mock test cases based on sample input/output from the problem
   React.useEffect(() => {
     if (data?.details) {
       setTestCases([
         {
+          test_case: 1,
           sample_input: data.details.sample_input,
           sample_output: data.details.sample_output,
-        },
-        {
-          sample_input: "Mock test case 2 input",
-          sample_output: "Mock test case 2 output",
         }
       ]);
     }
   }, [data]);
 
+  // Log results for debugging
+  console.log("Results:", results);
+  console.log("Custom Test Case:", customTestCase);
   console.log("Coding Problem", data);
 
   if (isLoading) {
@@ -138,45 +259,33 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       status: 'running'
     })));
 
-    // Simulate code execution
-    setTimeout(() => {
-      // Set results for each test case
-      setTestCases(testCases.map(tc => ({
-        ...tc,
-        userOutput: tc.sample_output, // In a real app, this would be the actual output
-        status: 'passed' // Simulate all passing for demo
-      })));
+    // Run the code with the API
+    runCodeMutation.mutate();
+  };
 
+  const handleCustomRunCode = () => {
+    if (!customInput.trim()) {
       setResults({
-        success: true,
-        message: "All test cases passed!",
+        success: false,
+        message: "Please provide custom input"
       });
-      setIsRunning(false);
-    }, 1000);
+      return;
+    }
+
+    setIsRunning(true);
+    setResults(null);
+    
+    // Run the code with custom input
+    runCustomCodeMutation.mutate(customInput);
   };
 
   const handleSubmitCode = () => {
     setIsSubmitting(true);
     setResults(null);
 
-    // Simulate submission with test cases
-    setTimeout(() => {
-      // Set results for each test case
-      setTestCases(testCases.map(tc => ({
-        ...tc,
-        userOutput: tc.sample_output, // In a real app, this would be the actual output
-        status: 'passed' // Simulate all passing for demo
-      })));
-
-      onSubmit(code);
-      setResults({
-        success: true,
-        message: "Solution accepted! Your submission beats 85% of users in runtime.",
-      });
-      setIsSubmitting(false);
-    }, 1500);
+    // Submit the code with the API
+    submitCodeMutation.mutate();
   };
-
 
   // Save theme preference
   const handleThemeChange = () => {
@@ -459,8 +568,6 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
             </div>
           </div>
 
-
-
           <div className="monaco-editor-wrapper" style={{ height: isConsoleOpen ? `calc(100% - ${consoleHeight}px)` : "100%" }}>
             <Editor
               height="100%"
@@ -542,7 +649,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                           <pre className={`p-2 mt-2 rounded text-sm ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-gray-200 text-black border-gray-300"} text-gray-800`}>
                             {testCases[activeTestCase]?.sample_output ?? 'Loading...'}
                           </pre>
-                          {testCases[activeTestCase]?.status === 'passed' && (
+                          {testCases[activeTestCase]?.status && (
                             <div>
                               <div className="text-sm text-gray-700 mt-4 mb-1">
                                 <strong>Your Output:</strong>
@@ -571,10 +678,63 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                                   {testCases[activeTestCase]?.status || 'Not run'}
                                 </span>
                               </div>
+                              
+                              {testCases[activeTestCase]?.time && (
+                                <div className="mt-1 text-sm text-gray-600">
+                                  Time: {testCases[activeTestCase]?.time}s | 
+                                  Memory: {testCases[activeTestCase]?.memory} KB
+                                </div>
+                              )}
                             </div>)}
                         </>
                       ) : (
-                        <div className="text-gray-500 italic">Enter custom input...</div>
+                        <div>
+                          <h3 className="mb-2 font-medium">Custom Input</h3>
+                          <div className="text-sm text-gray-700 mb-1">
+                            <strong>Input:</strong>
+                          </div>
+                          <textarea 
+                            className={`p-2 mt-2 w-full h-24 rounded text-sm border ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-gray-100 text-black border-gray-300"}`}
+                            value={customInput}
+                            onChange={(e) => setCustomInput(e.target.value)}
+                            placeholder="Enter your custom input here..."
+                          />
+                          
+                          <div className="mt-3">
+                            <button 
+                              className={`run-button md:text-xs xl:text-md bg-[#5FA564] px-4 py-2 rounded ${isRunning ? 'button-loading opacity-70' : ''}`}
+                              onClick={handleCustomRunCode}
+                              disabled={isRunning}
+                            >
+                              {isRunning ? 'Running...' : 'Run with Custom Input'}
+                            </button>
+                          </div>
+                          
+                          {customTestCase.output && (
+                            <>
+                              <div className="text-sm text-gray-700 mt-4 mb-1">
+                                <strong>Output:</strong>
+                              </div>
+                              <pre
+                                className={`bg-gray-100 p-2 mt-2 rounded text-sm ${customTestCase.status === 'passed'
+                                  ? 'text-green-600'
+                                  : customTestCase.status === 'running'
+                                    ? 'text-yellow-600'
+                                    : 'text-red-600'
+                                  }`}
+                              >
+                                {customTestCase.output}
+                              </pre>
+                              
+                              {customTestCase.time && (
+                                <div className="mt-1 text-sm text-gray-600">
+                                  Time: {customTestCase.time}s | 
+                                  Memory: {customTestCase.memory} KB
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
                       )}
                     </div>
                   </>
@@ -584,7 +744,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           )}
         </div>
       </div>
-    </div >
+    </div>
   )
 };
 
