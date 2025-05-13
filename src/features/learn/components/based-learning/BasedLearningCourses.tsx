@@ -3,6 +3,31 @@ import SecondaryButton from "../../../../commonComponents/common-buttons/seconda
 import { useQuery } from "@tanstack/react-query";
 import { getAllRecommendedCourse } from '../../../../services/continue-course-learning/continueCourseApis';
 
+// Define the course data interface
+interface CourseData {
+    id: number;
+    title: string;
+    description: string;
+    difficulty_level: string;
+    duration_in_hours: string;
+    certificate_available: boolean;
+    enrolled_students: {
+        total: number;
+        students_profile_pic: string[];
+    };
+}
+
+// Define mapped course data interface
+interface MappedCourseData {
+    id: number;
+    title: string;
+    description: string;
+    level: string;
+    duration: string;
+    certification: boolean;
+    enrolledStudents: number;
+    studentAvatars: string[];
+}
 
 // Simple SVG icons as React components
 const ClockIcon = () => (
@@ -165,9 +190,42 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
         );
     }
 
+    // Check for empty courses
+    if (!courses || courses.length === 0) {
+        return (
+            <div>
+                <div className="flex flex-row items-center justify-between w-full my-3 md:my-8">
+                    <div>
+                        <h1 className="text-[#343A40] font-bold text-[18px] md:text-[22px] font-sans">
+                            Based On Your Learning
+                        </h1>
+                        <p className="text-[#6C757D] font-sans font-normal text-[14px] md:text-[18px]">
+                            Based on your learnings we think your might like this courses below.
+                        </p>
+                    </div>
+                    <div>
+                        <button className="w-[80px] md:w-[95px] h-[45px] md:h-[55px] rounded-xl border border-[#2A8CB0] text-[13px] md:text-[15px] font-medium font-sans text-[#2A8CB0] cursor-pointer transition-all duration-200 hover:bg-[#E9F7FA] hover:text-[#1E7A99] hover:scale-95">
+                            See all
+                        </button>
+                    </div>
+                </div>
+                <div className="text-center p-10 border border-dashed border-gray-300 rounded-xl bg-gray-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 mx-auto mb-4">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                    </svg>
+                    <h3 className="text-xl font-medium text-gray-700 mb-2">No courses available yet</h3>
+                    <p className="text-gray-500 mb-6">We couldn't find any recommended courses based on your learning history.</p>
+                    <PrimaryButton className="mx-auto" onClick={() => window.location.href = '/'}>
+                        Explore Courses
+                    </PrimaryButton>
+                </div>
+            </div>
+        );
+    }
 
     // Map backend data to UI props, use dummy avatars
-    const mappedCourses = courses.map((course: any) => ({
+    const mappedCourses = courses.map((course: CourseData): MappedCourseData => ({
         title: course.title,
         description: course.description,
         level: course.difficulty_level,
@@ -196,7 +254,7 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mx-auto">
-                {mappedCourses.map((course: any) => (
+                {mappedCourses.map((course: MappedCourseData) => (
                     <CourseCard key={course.id} {...course} />
                 ))}
             </div>
