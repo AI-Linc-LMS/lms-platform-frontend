@@ -5,6 +5,7 @@ import {
   runCode, 
   runCustomCode, 
   submitCode, 
+  submitContent,
   LANGUAGE_ID_MAPPING,
   RunCodeResult,
   CustomRunCodeResult,
@@ -21,6 +22,7 @@ interface ProblemCardProps {
   contentId: number;
   courseId: number;
   onSubmit: (code: string) => void;
+  onComplete?: () => void;
 }
 
 interface ProblemDetails {
@@ -63,6 +65,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   contentId,
   courseId,
   onSubmit,
+  onComplete,
 }) => {
   const { data, isLoading, error } = useQuery<ProblemData>({
     queryKey: ['problem', contentId],
@@ -96,6 +99,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const [activeTestCase, setActiveTestCase] = useState<number>(0);
   const [customInput, setCustomInput] = useState("");
   const [customTestCase, setCustomTestCase] = useState<CustomTestCase>({ input: '' });
+  const [isSubmitSuccess, setIsSubmitSuccess] = useState(false);
   
   // Run code mutation
   const runCodeMutation = useMutation({
@@ -177,13 +181,45 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       LANGUAGE_ID_MAPPING[selectedLanguage as keyof typeof LANGUAGE_ID_MAPPING]
     ),
     onSuccess: (data: SubmitCodeResult) => {
+      const success = data.status === "Accepted";
       setResults({
-        success: data.status === "Accepted", 
-        message: data.status === "Accepted" 
+        success,
+        message: success 
           ? `Solution accepted! Passed ${data.passed}/${data.total_test_cases} test cases.` 
           : `Failed ${data.failed}/${data.total_test_cases} test cases.`
       });
+      
+      // Call onSubmit to notify the parent that code was submitted
       onSubmit(code);
+      
+      // If the submission was successful, call onComplete to mark the problem as complete
+      if (success && onComplete) {
+        console.log("Solution was accepted! Calling onComplete callback");
+        setIsSubmitSuccess(true);
+        
+        // Directly call submitContent to update the status
+        submitContent(
+          1, 
+          courseId, 
+          contentId, 
+          'CodingProblem', 
+          { status: 'complete' },
+          'updateStatus'
+        )
+        .then(statusCode => {
+          console.log("Status update response:", statusCode);
+          // Now call the onComplete callback for UI updates
+          onComplete();
+        })
+        .catch(error => {
+          console.error("Failed to update status:", error);
+          // Still call onComplete for UI updates
+          onComplete();
+        });
+      } else {
+        console.log(`Solution ${success ? 'accepted' : 'rejected'}, onComplete callback: ${onComplete ? 'provided' : 'not provided'}`);
+      }
+      
       setIsSubmitting(false);
     },
     onError: (error) => {
@@ -390,6 +426,25 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         </div>
       </div>*/}
 
+      {isSubmitSuccess && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md">
+            <h3 className="text-xl font-bold text-green-600 mb-4">🎉 Problem Completed!</h3>
+            <p className="text-gray-700 mb-6">
+              Great job! Your solution has been accepted and the problem is marked as complete.
+            </p>
+            <div className="flex justify-center">
+              <button
+                onClick={() => setIsSubmitSuccess(false)}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="leetcode-layout">
         {/* Left panel with problem description */}
         <div className="description-panel">
@@ -558,11 +613,21 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
               {/* Run and Submit Buttons */}
               <div className="flex gap-3">
-                <button onClick={handleRunCode} disabled={isRunning} className={`run-button md:text-xs xl:text-md bg-[#5FA564] h-9 ${isRunning ? 'button-loading' : ''}`}>
+                <button 
+                  onClick={handleRunCode} 
+                  disabled={isRunning} 
+                  className={`run-button md:text-xs xl:text-md bg-[#5FA564] h-9 ${isRunning ? 'button-loading' : ''}`}
+                >
                   {isRunning ? 'Running...' : 'Run Code'}
                 </button>
-                <button onClick={handleSubmitCode} disabled={isSubmitting} className={`submit-button md:text-xs xl:text-md bg-gray-200 h-9 ${isSubmitting ? 'button-loading' : ''}`}>
-                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                <button 
+                  onClick={handleSubmitCode} 
+                  disabled={isSubmitting} 
+                  className={`submit-button md:text-xs xl:text-md ${isSubmitting ? 'button-loading opacity-70' : ''} ${
+                    results?.success ? 'bg-green-500 text-white' : 'bg-gray-200'
+                  } h-9`}
+                >
+                  {isSubmitting ? 'Submitting...' : results?.success ? 'Submitted ✓' : 'Submit'}
                 </button>
               </div>
             </div>
