@@ -4,6 +4,11 @@ import { getCourseContent } from '../../../../../services/enrolled-courses-conte
 import { useMediaQuery } from '../../../../../hooks/useMediaQuery';
 import { submitContent } from "../../../../../services/enrolled-courses-content/submitApis";
 import { useNavigate } from "react-router-dom";
+import topbg from "../../../../../commonComponents/icons/enrolled-courses/quiz/topbg.png";
+import leftbg from "../../../../../commonComponents/icons/enrolled-courses/quiz/leftbg.png";
+import tickicon from "../../../../../commonComponents/icons/enrolled-courses/quiz/doneicon.png";
+import trophy from "../../../../../commonComponents/icons/enrolled-courses/quiz/trophy.png";
+import challenge from "../../../../../commonComponents/icons/enrolled-courses/quiz/challenge.png";
 
 interface MCQ {
   id: number;
@@ -45,6 +50,7 @@ interface QuizCardProps {
   quizData?: QuizData;
   onSubmission?: (contentId: number) => void;
   onReset?: (contentId: number) => void;
+  onStartNextQuiz?: () => void;
 }
 
 const QuizCard: React.FC<QuizCardProps> = ({
@@ -53,7 +59,8 @@ const QuizCard: React.FC<QuizCardProps> = ({
   isSidebarContentOpen,
   quizData: injectedData,
   onSubmission,
-  onReset
+  onReset,
+  onStartNextQuiz
 }) => {
   const navigate = useNavigate();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -328,7 +335,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
               {currentQuestion.difficulty_level}
             </span>
           </div>
-          
+
           <h3 className="text-lg font-medium mb-6">
             {currentQuestion.question_text}
           </h3>
@@ -342,15 +349,14 @@ const QuizCard: React.FC<QuizCardProps> = ({
               return (
                 <div
                   key={idx}
-                  className={`border rounded-lg p-3 md:p-4 text-sm md:text-base ${
-                    isSelected && isCorrect
-                      ? "border-green-600 bg-green-50"
-                      : isSelected && !isCorrect
+                  className={`border rounded-lg p-3 md:p-4 text-sm md:text-base ${isSelected && isCorrect
+                    ? "border-green-600 bg-green-50"
+                    : isSelected && !isCorrect
                       ? "border-red-600 bg-red-50"
                       : isCorrect
                         ? "border-green-600 bg-green-50"
                         : "bg-white border-gray-200"
-                  }`}
+                    }`}
                 >
                   <span className="font-medium mr-2">{optionLetter}.</span> {option}
                   {isCorrect && <span className="ml-2 text-green-600">✓</span>}
@@ -421,36 +427,102 @@ const QuizCard: React.FC<QuizCardProps> = ({
 
   if (quizCompleted) {
     return (
-      <div className="p-4 md:p-8 bg-white rounded-lg shadow">
-        <div className="flex flex-col">
-          <div className="mb-6 md:mb-8">
-            <h2 className="text-xl md:text-2xl font-bold text-[#255C79] mb-2">Your Quiz Review</h2>
-            <div className="text-xs md:text-sm text-gray-500 flex gap-2 mb-4 md:mb-6">
-              <span>Your Score: {score}</span>
-              <span>|</span>
-              <span>{totalQuestions} Questions</span>
+      <div className="rounded-lg shadow p-0 md:p-0 mb-8">
+        {/* Top Banner */}
+        <div
+          className="flex flex-col items-center justify-center py-8 px-4 md:px-0 w-full rounded-3xl"
+          style={{
+            backgroundImage: `url(${topbg})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}
+        >
+          <div className="flex flex-col items-center">
+            <div>
+              <img src={tickicon} alt="tickicon" className="w-50 h-40" />
             </div>
+            <h2 className="text-2xl font-bold text-white mb-2 ">Quiz Submitted Successfully</h2>
+            <button className="mt-4 px-6 py-2 bg-white text-[#255C79] rounded-md font-medium text-sm md:text-base hover:bg-[#1a4a5f]">View Overall Results</button>
+          </div>
+        </div>
 
-            {/* Question blocks shown only in sidebar, not in main review area */}
-            {!isReviewing && (
-              <div className="grid grid-cols-4 md:grid-cols-6 gap-2 mb-6 md:mb-8">
-                {mcqs.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      setIsReviewing(true);
-                      navigateToQuestion(index);
-                    }}
-                    className={`py-2 rounded-md border text-xs md:text-sm ${getQuestionButtonStyle(index)}`}
-                  >
-                    {index + 1}
-                  </button>
-                ))}
-              </div>
-            )}
+        {/* Second Row: Score and Next Challenge */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 py-6 md:py-8">
+          {/* Score Section */}
+          <div className="relative bg-white/70 flex flex-row justify-between rounded-lg p-6 shadow overflow-hidden rounded-3xl">
+            {/* Rotated background layer */}
+            <div
+              className="absolute -left-10 -top-40 w-[150%] h-[300%] rotate-[-25deg] z-0 rounded-3xl"
+              style={{
+                backgroundImage: `url(${leftbg})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                opacity: 0.8, // Adjust this to control visibility
+              }}
+            ></div>
+
+            {/* Content */}
+            <div className="relative z-10 flex flex-col justify-between h-full">
+              <div className="text-3xl font-semibold text-[#12293A] mt-1">Your Score</div>
+
+              <div className="md:text-8xl font-bold text-[#2A8CB0]">
+                {score}
+                <span className="text-5xl text-[#12293A]"> out of {mcqs.length}</span> </div>
+            </div>
+            <div>
+              <img src={trophy} alt="trophy" className="relative w-60 h-50 rotate-[-30deg] top-[60px] left-[50px]" />
+            </div>
           </div>
 
-          {renderReviewContent()}
+          {/* Next Challenge Section */}
+          <div className="flex flex-row justify-between bg-[#D7EFF6] rounded-lg p-6 shadow">
+            <div className="flex flex-col justify-between">
+              <div className="md:text-3xl font-semibold text-[#12293A]">Ready for Your Next Challenge?</div>
+              <button
+                className="px-6 py-4 bg-[#255C79] text-white rounded-md font-medium text-sm md:text-base hover:bg-[#1a4a5f]"
+                onClick={onStartNextQuiz}
+              >
+                Start Next Quiz
+              </button>
+            </div>
+            <div>
+              <img src={challenge} alt="trophy" className="relative w-70 h-50 left-[40px]" />
+            </div>
+          </div>
+        </div>
+
+        {/* Existing Review/Result Section */}
+        <div className="p-4 md:p-8 bg-white rounded-lg shadow mt-6">
+          <div className="flex flex-col">
+            <div className="mb-6 md:mb-8">
+              <h2 className="text-xl md:text-2xl font-bold text-[#255C79] mb-2">Your Quiz Review</h2>
+              <div className="text-xs md:text-sm text-gray-500 flex gap-2 mb-4 md:mb-6">
+                <span>Your Score: {score}</span>
+                <span>|</span>
+                <span>{totalQuestions} Questions</span>
+              </div>
+              {/* Question blocks shown only in sidebar, not in main review area */}
+              {!isReviewing && (
+                <div className="grid grid-cols-4 md:grid-cols-6 gap-2 mb-6 md:mb-8">
+                  {mcqs.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        setIsReviewing(true);
+                        navigateToQuestion(index);
+                      }}
+                      className={`py-2 rounded-md border text-xs md:text-sm ${getQuestionButtonStyle(index)}`}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {renderReviewContent()}
+          </div>
         </div>
       </div>
     );
@@ -475,7 +547,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
             <span>{totalSubmissions} Submissions</span>
           </div>
         </div>
-        
+
         <div className="flex justify-between items-center mb-4">
           <span className="text-xs md:text-sm font-medium text-gray-700">
             Question {currentQuestionIndex + 1}
@@ -498,11 +570,10 @@ const QuizCard: React.FC<QuizCardProps> = ({
               <div
                 key={idx}
                 onClick={() => handleOptionSelect(optionLetter)}
-                className={`cursor-pointer border rounded-lg p-3 md:p-4 transition text-sm md:text-base ${
-                  isSelected
-                    ? "border-[#255C79] bg-blue-50"
-                    : "bg-white border-gray-200"
-                }`}
+                className={`cursor-pointer border rounded-lg p-3 md:p-4 transition text-sm md:text-base ${isSelected
+                  ? "border-[#255C79] bg-blue-50"
+                  : "bg-white border-gray-200"
+                  }`}
               >
                 <span className="font-medium mr-2">{optionLetter}.</span> {option}
               </div>
@@ -519,15 +590,14 @@ const QuizCard: React.FC<QuizCardProps> = ({
               Back
             </button>
           )}
-          
+
           <button
             onClick={handleNext}
             disabled={selectedOption === null}
-            className={`px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium ml-auto ${
-              selectedOption === null
-                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                : "bg-[#255C79] text-white hover:bg-[#1a4a5f]"
-            }`}
+            className={`px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium ml-auto ${selectedOption === null
+              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+              : "bg-[#255C79] text-white hover:bg-[#1a4a5f]"
+              }`}
           >
             {currentQuestionIndex < mcqs.length - 1 ? "Next" : "Finish Quiz"}
           </button>
