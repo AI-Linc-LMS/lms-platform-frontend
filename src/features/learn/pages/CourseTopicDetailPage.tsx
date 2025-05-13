@@ -28,6 +28,11 @@ export interface SubmoduleContent {
   submissions?: number;
   questions?: number;
   accuracy?: number;
+  progress_percentage?: number;
+  details?: {
+    url?: string;
+    video_url?: string;
+  };
 }
 
 export interface SubmoduleData {
@@ -308,6 +313,53 @@ const CourseTopicDetailPage: React.FC = () => {
     }
   };
 
+  // Function to update video progress
+  const updateVideoProgress = (videoId: string, progressPercent: number): void => {
+    if (submoduleData?.data) {
+      const updatedData = [...submoduleData.data];
+      const videoIndex = updatedData.findIndex(
+        content => content.content_type === 'VideoTutorial' && content.id.toString() === videoId
+      );
+      
+      if (videoIndex !== -1) {
+        // Mark as complete if progress ≥ 95%
+        if (progressPercent >= 95) {
+          updatedData[videoIndex] = {
+            ...updatedData[videoIndex],
+            status: 'complete'
+          };
+        } else if (progressPercent > 0) {
+          // Mark as in_progress with progress percentage
+          updatedData[videoIndex] = {
+            ...updatedData[videoIndex],
+            status: 'in_progress', 
+            progress_percentage: progressPercent
+          };
+        }
+        
+        // Update submodule data with new progress
+        // Note: In a real app, this would call an API to persist progress
+        // For this demo, we're just updating the local state
+        if (submoduleData) {
+          const newSubmoduleData: SubmoduleData = {
+            ...submoduleData,
+            data: updatedData
+          };
+          // This line would trigger a re-render of all components using submoduleData
+          // In a real app, you'd use a state management system or context API
+          const w = window as unknown as { temporarySubmoduleData: SubmoduleData };
+          w.temporarySubmoduleData = newSubmoduleData;
+          
+          // Force re-render sidebar components
+          setSelectedVideoId(prevId => {
+            if (prevId === videoId) return prevId; // No change to avoid unnecessary re-renders
+            return videoId; // Change to force re-render
+          });
+        }
+      }
+    }
+  };
+
   if (isSubmoduleLoading) {
     return <div>Loading...</div>;
   }
@@ -430,12 +482,18 @@ const CourseTopicDetailPage: React.FC = () => {
           <div className={`mb-20 md:mb-0 ${!isSidebarContentOpen ? "ml-12" : ""}`}>
             {currentContent?.content_type === "VideoTutorial" && (
               <VideoCard
-                currentWeek={{ title: `Week ${submoduleData.weekNo}` }}
+                currentWeek={{ title: `Week ${submoduleData?.weekNo || 1}` }}
                 currentTopic={{ title: currentContent.title }}
                 contentId={currentContent.id}
                 courseId={parseInt(courseId || "0")}
                 nextContent={nextContent}
                 getNextTopicTitle={getNextTopicTitle}
+                onComplete={() => {
+                  updateVideoProgress(currentContent.id.toString(), 100);
+                }}
+                onProgressUpdate={(videoId, progress) => {
+                  updateVideoProgress(videoId, progress);
+                }}
               />
             )}
             {currentContent?.content_type === "CodingProblem" && (

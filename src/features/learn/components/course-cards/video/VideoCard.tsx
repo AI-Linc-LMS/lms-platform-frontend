@@ -3,6 +3,7 @@ import VideoPlayer from "../../video-player/VideoPlayer";
 import FloatingAIButton from "../../floating-ai-button/FloatingAIButton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCourseContent, getCommentsByContentId, createComment } from "../../../../../services/enrolled-courses-content/courseContentApis";
+import { submitContent } from "../../../../../services/enrolled-courses-content/submitApis";
 
 interface VideoCardProps {
   currentWeek: { title: string };
@@ -11,6 +12,8 @@ interface VideoCardProps {
   courseId: number;
   nextContent: () => void;
   getNextTopicTitle: () => string;
+  onComplete?: () => void;
+  onProgressUpdate?: (videoId: string, progress: number) => void;
 }
 
 // Define interface for the API response data
@@ -54,7 +57,10 @@ const VideoCard: React.FC<VideoCardProps> = ({
   courseId,
   nextContent,
   getNextTopicTitle,
+  onComplete,
+  onProgressUpdate,
 }) => {
+  const clientId = import.meta.env.VITE_CLIENT_ID;
   const [activeTab, setActiveTab] = useState<"description" | "comments">("description");
   const [processedVideoUrl, setProcessedVideoUrl] = useState<string>("");
   const [useDebugMode, setUseDebugMode] = useState(false);
@@ -182,6 +188,41 @@ const VideoCard: React.FC<VideoCardProps> = ({
     }
   };
 
+  // Handle video progress updates
+  const handleProgressUpdate = (progress: number) => {
+    if (onProgressUpdate) {
+      onProgressUpdate(contentId.toString(), progress);
+    }
+  };
+
+  // Handle video completion
+  const handleVideoComplete = async () => {
+    // Call the onComplete handler if provided
+    if (onComplete) {
+      onComplete();
+    }
+    
+    // Also update progress to 100%
+    if (onProgressUpdate) {
+      onProgressUpdate(contentId.toString(), 100);
+    }
+    
+    // Continue with existing completion logic
+    if (clientId && courseId && contentId) {
+      await submitContent(clientId, courseId, contentId, 'VideoTutorial', {})
+        .then(status => {
+          console.log('Video completion submitted successfully:', status);
+        })
+        .catch(error => {
+          console.error('Failed to submit video completion:', error);
+        });
+    }
+    console.log('Video completed! Loading next video...');
+    setTimeout(() => {
+      nextContent();
+    }, 1500);
+  };
+
   // If loading, show loading state
   if (isLoading && !useDebugMode) {
     return (
@@ -260,7 +301,9 @@ const VideoCard: React.FC<VideoCardProps> = ({
       <VideoPlayer
         videoUrl={useDebugMode ? SAMPLE_VIMEO_URL : processedVideoUrl}
         title={videoTitle}
-        onComplete={nextContent}
+        onComplete={handleVideoComplete}
+        onProgressUpdate={handleProgressUpdate}
+        isFirstWatch={!(data as CourseContentResponse)?.status || (data as CourseContentResponse)?.status !== 'complete'}
       />
 
       {/* Next Button */}
@@ -498,7 +541,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
                     </div>
                   </div>
                 ))}
-                
+
                 {commentsData && commentsData.length > visibleComments && (
                   <div className="flex justify-center mt-4">
                     <button
