@@ -120,34 +120,6 @@ const CourseTopicDetailPage: React.FC = () => {
     }
   }, [submoduleData, activeSidebarLabel]);
 
-  // Add useEffect to fetch problems status
-  useEffect(() => {
-    if (submoduleData?.data) {
-      // Find all problems
-      const problems = submoduleData.data.filter(
-        content => content.content_type === 'CodingProblem'
-      );
-      
-      // Fetch status for each problem
-      // problems.forEach(problem => {
-      //   // getContentStatus(
-      //   //   1, // clientId
-      //   //   parseInt(courseId || "0"),
-      //   //   problem.id,
-      //   //   'CodingProblem'
-      //   // )
-      //   // .then(response => {
-      //   //   if (response && response.status) {
-      //   //     // Update problem status in memory
-      //   //     updateProblemStatus(problem.id.toString(), response.status, false);
-      //   //   }
-      //   // })
-      //   // .catch(error => {
-      //   //   console.error(`Error fetching status for problem ${problem.id}:`, error);
-      //   // });
-      // });
-    }
-  }, [submoduleData]);
 
   // Props objects for each content type
   const videoProps = {

@@ -4,8 +4,7 @@ import { getCourseContent } from "../../../../../services/enrolled-courses-conte
 import { 
   runCode, 
   runCustomCode, 
-  submitCode, 
-  submitContent,
+  submitCode,
   LANGUAGE_ID_MAPPING,
   RunCodeResult,
   CustomRunCodeResult,
