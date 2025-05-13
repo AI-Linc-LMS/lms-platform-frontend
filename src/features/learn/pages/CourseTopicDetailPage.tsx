@@ -121,34 +121,6 @@ const CourseTopicDetailPage: React.FC = () => {
     }
   }, [submoduleData, activeSidebarLabel]);
 
-  // Add useEffect to fetch problems status
-  useEffect(() => {
-    if (submoduleData?.data) {
-      // Find all problems
-      // const problems = submoduleData.data.filter(
-      //   content => content.content_type === 'CodingProblem'
-      // );
-      
-      // Fetch status for each problem
-      // problems.forEach(problem => {
-      //   // getContentStatus(
-      //   //   1, // clientId
-      //   //   parseInt(courseId || "0"),
-      //   //   problem.id,
-      //   //   'CodingProblem'
-      //   // )
-      //   // .then(response => {
-      //   //   if (response && response.status) {
-      //   //     // Update problem status in memory
-      //   //     updateProblemStatus(problem.id.toString(), response.status, false);
-      //   //   }
-      //   // })
-      //   // .catch(error => {
-      //   //   console.error(`Error fetching status for problem ${problem.id}:`, error);
-      //   // });
-      // });
-    }
-  }, [submoduleData]);
 
   // Props objects for each content type
   const videoProps = {
@@ -472,6 +444,51 @@ const CourseTopicDetailPage: React.FC = () => {
     }
   };
 
+  const handleStartNextQuiz = () => {
+    if (!submoduleData?.data) return;
+    // Get all quizzes sorted by order
+    const quizzes = submoduleData.data.filter(c => c.content_type === 'Quiz').sort((a, b) => a.order - b.order);
+    const currentQuizIdx = quizzes.findIndex(q => q.id === currentContent.id);
+
+    // Try to go to the next quiz
+    if (currentQuizIdx !== -1 && currentQuizIdx < quizzes.length - 1) {
+      const nextQuiz = quizzes[currentQuizIdx + 1];
+      setCurrentContentIndex(submoduleData.data.findIndex(c => c.id === nextQuiz.id));
+      setSelectedQuizId(nextQuiz.id);
+      return;
+    }
+
+    // If no next quiz, go to the next content (of any type)
+    const nextIndex = currentContentIndex + 1;
+    if (nextIndex < submoduleData.data.length) {
+      setCurrentContentIndex(nextIndex);
+      const nextContent = submoduleData.data[nextIndex];
+      // Optionally update the selected ID for the next content type
+      switch (nextContent.content_type) {
+        case "Quiz":
+          setSelectedQuizId(nextContent.id);
+          break;
+        case "VideoTutorial":
+          setSelectedVideoId(nextContent.id.toString());
+          break;
+        case "CodingProblem":
+          setSelectedProblemId(nextContent.id.toString());
+          break;
+        case "Development":
+          setSelectedProjectId(nextContent.id.toString());
+          break;
+        case "Assignment":
+          setSelectedAssignmentId(nextContent.id);
+          break;
+        case "Article":
+          setSelectedArticleId(nextContent.id);
+          break;
+      }
+    } else {
+      // Optionally, show a message: No more content
+    }
+  };
+
   if (isSubmoduleLoading) {
     return <div>Loading...</div>;
   }
@@ -610,6 +627,7 @@ const CourseTopicDetailPage: React.FC = () => {
             )}
             {currentContent?.content_type === "CodingProblem" && (
               <ProblemCard
+                isSidebarContentOpen={isSidebarContentOpen}
                 contentId={currentContent.id}
                 courseId={parseInt(courseId || "0")}
                 onSubmit={(code) => {
@@ -626,6 +644,7 @@ const CourseTopicDetailPage: React.FC = () => {
                 contentId={currentContent.id}
                 courseId={parseInt(courseId || "0")}
                 isSidebarContentOpen={isSidebarContentOpen}
+                onStartNextQuiz={handleStartNextQuiz}
               />
             )}
             {currentContent?.content_type === "Article" && (

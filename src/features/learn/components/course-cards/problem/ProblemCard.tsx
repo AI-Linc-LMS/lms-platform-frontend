@@ -25,6 +25,7 @@ interface ProblemCardProps {
   courseId: number;
   onSubmit: (code: string) => void;
   onComplete?: () => void;
+  isSidebarContentOpen: boolean;
 }
 
 interface ProblemDetails {
@@ -68,6 +69,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   courseId,
   onSubmit,
   onComplete,
+  isSidebarContentOpen
 }) => {
   const { data, isLoading, error } = useQuery<ProblemData>({
     queryKey: ['problem', contentId],
@@ -592,6 +594,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
       <div className="leetcode-layout">
         {/* Left panel with problem description */}
+        { !isSidebarContentOpen &&
         <div className="description-panel">
           <div className="flex flex-row text-[#264D64]">
             <button
@@ -816,7 +819,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
               </div>
             )}
           </div>
-        </div>
+        </div>}
 
         {/* Right panel with code editor */}
         <div className="code-editor-panel">
