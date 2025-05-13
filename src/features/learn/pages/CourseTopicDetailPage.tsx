@@ -2,11 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getSubmoduleById } from "../../../services/enrolled-courses-content/courseContentApis";
-import { 
-  updateContentStatus, 
-  getContentStatus, 
-  submitContent 
-} from "../../../services/enrolled-courses-content/submitApis";
 import CourseSidebar from "../../../commonComponents/sidebar/courseSidebar/CourseSidebar";
 import CourseSidebarContent from "../../../commonComponents/sidebar/courseSidebar/CourseSidebarContent";
 import VideoCard from "../components/course-cards/video/VideoCard";
@@ -134,23 +129,23 @@ const CourseTopicDetailPage: React.FC = () => {
       );
       
       // Fetch status for each problem
-      problems.forEach(problem => {
-        getContentStatus(
-          1, // clientId
-          parseInt(courseId || "0"),
-          problem.id,
-          'CodingProblem'
-        )
-        .then(response => {
-          if (response && response.status) {
-            // Update problem status in memory
-            updateProblemStatus(problem.id.toString(), response.status, false);
-          }
-        })
-        .catch(error => {
-          console.error(`Error fetching status for problem ${problem.id}:`, error);
-        });
-      });
+      // problems.forEach(problem => {
+      //   // getContentStatus(
+      //   //   1, // clientId
+      //   //   parseInt(courseId || "0"),
+      //   //   problem.id,
+      //   //   'CodingProblem'
+      //   // )
+      //   // .then(response => {
+      //   //   if (response && response.status) {
+      //   //     // Update problem status in memory
+      //   //     updateProblemStatus(problem.id.toString(), response.status, false);
+      //   //   }
+      //   // })
+      //   // .catch(error => {
+      //   //   console.error(`Error fetching status for problem ${problem.id}:`, error);
+      //   // });
+      // });
     }
   }, [submoduleData]);
 
@@ -436,36 +431,36 @@ const CourseTopicDetailPage: React.FC = () => {
             // Try both approaches to ensure one of them works
             
             // Approach 1: Use updateContentStatus
-            updateContentStatus(
-              1, // clientId 
-              parseInt(courseId || "0"), 
-              parseInt(problemId), 
-              status, 
-              'CodingProblem'
-            )
-            .then(success => {
-              console.log(`API call result (updateContentStatus): ${success ? 'Success' : 'Failed'}`);
-            })
-            .catch(error => {
-              console.error("Error with updateContentStatus:", error);
+            // updateContentStatus(
+            //   1, // clientId 
+            //   parseInt(courseId || "0"), 
+            //   parseInt(problemId), 
+            //   status, 
+            //   'CodingProblem'
+            // )
+            // .then(success => {
+            //   console.log(`API call result (updateContentStatus): ${success ? 'Success' : 'Failed'}`);
+            // })
+            // .catch(error => {
+            //   console.error("Error with updateContentStatus:", error);
               
               // If updateContentStatus fails, try submitContent directly
-              console.log("Trying alternative approach with submitContent");
-              submitContent(
-                1,
-                parseInt(courseId || "0"),
-                parseInt(problemId),
-                'CodingProblem',
-                { status },
-                'updateStatus'
-              )
-              .then(statusCode => {
-                console.log(`API call result (submitContent): Status code ${statusCode}`);
-              })
-              .catch(submitError => {
-                console.error("Error with submitContent:", submitError);
-              });
-            });
+              // console.log("Trying alternative approach with submitContent");
+              // submitContent(
+              //   1,
+              //   parseInt(courseId || "0"),
+              //   parseInt(problemId),
+              //   'CodingProblem',
+              //   { status },
+              //   'updateStatus'
+              // )
+              // .then(statusCode => {
+              //   console.log(`API call result (submitContent): Status code ${statusCode}`);
+              // })
+              // .catch(submitError => {
+              //   console.error("Error with submitContent:", submitError);
+              // });
+            //});
           }
         }
       } else {

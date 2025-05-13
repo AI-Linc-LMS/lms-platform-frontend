@@ -3,7 +3,7 @@ import { AxiosError } from "axios";
 
 // Define types for activity types and sub types
 export type ActivityType = 'Quiz' | 'Article' | 'Assignment' | 'CodingProblem' | 'VideoTutorial';
-export type SubType = 'runCode' | 'submitCode' | 'customRunCode' | 'updateStatus';
+export type SubType = 'runCode' | 'submitCode' | 'customRunCode';
 
 // Language ID mapping for Judge0
 export const LANGUAGE_ID_MAPPING = {
@@ -34,6 +34,7 @@ export const submitContent = async (
     
     console.log("submit content",res);
     return res.status;
+
   } catch (error: unknown) {
     console.error("Failed to submit content:", error);
     if (error instanceof AxiosError) {
@@ -154,7 +155,6 @@ export const submitCode = async (
     const data = {
       source_code,
       language_id,
-      mark_complete: true
     };
     
     console.log("Submitting code with data:", data);
@@ -163,8 +163,8 @@ export const submitCode = async (
     if (response.data && response.data.status === "Accepted") {
       try {
         console.log("Submission was successful, marking problem as complete");
-        const statusUpdateUrl = `/activity/clients/${clientId}/courses/${courseId}/content/${contentId}/?activity_type=CodingProblem&sub_type=updateStatus`;
-        await axiosInstance.post(statusUpdateUrl, { status: "complete" });
+        // const statusUpdateUrl = `/activity/clients/${clientId}/courses/${courseId}/content/${contentId}/?activity_type=CodingProblem&sub_type=updateStatus`;
+        // await axiosInstance.post(statusUpdateUrl, { status: "complete" });
       } catch (statusError) {
         console.error("Failed to automatically mark problem as complete:", statusError);
       }
@@ -185,74 +185,74 @@ export const submitCode = async (
 };
 
 // Add a new function to update content status
-export const updateContentStatus = async (
-  clientId: number,
-  courseId: number,
-  contentId: number,
-  status: string,
-  activityType: ActivityType
-): Promise<boolean> => {
-  try {
-    // Use the more generic submitContent function that we know works with different activity types
-    const result = await submitContent(
-      clientId,
-      courseId,
-      contentId,
-      activityType,
-      { status: status },
-      "updateStatus"
-    );
+// export const updateContentStatus = async (
+//   clientId: number,
+//   courseId: number,
+//   contentId: number,
+//   status: string,
+//   activityType: ActivityType
+// ): Promise<boolean> => {
+//   try {
+//     // Use the more generic submitContent function that we know works with different activity types
+//     const result = await submitContent(
+//       clientId,
+//       courseId,
+//       contentId,
+//       activityType,
+//       { status: status },
+//       "updateStatus"
+//     );
     
-    console.log("Update content status response:", result);
-    return result === 200 || result === 201;
-  } catch (error: unknown) {
-    console.error("Failed to update content status:", error);
-    if (error instanceof AxiosError) {
-      console.error("API Error Details:", {
-        response: error.response?.data,
-        status: error.response?.status,
-        message: error.message
-      });
-      throw new Error(
-        error?.response?.data?.detail ||
-        error?.message ||
-        "Failed to update content status"
-      );
-    }
-    throw new Error("Failed to update content status");
-  }
-};
+//     console.log("Update content status response:", result);
+//     return result === 200 || result === 201;
+//   } catch (error: unknown) {
+//     console.error("Failed to update content status:", error);
+//     if (error instanceof AxiosError) {
+//       console.error("API Error Details:", {
+//         response: error.response?.data,
+//         status: error.response?.status,
+//         message: error.message
+//       });
+//       throw new Error(
+//         error?.response?.data?.detail ||
+//         error?.message ||
+//         "Failed to update content status"
+//       );
+//     }
+//     throw new Error("Failed to update content status");
+//   }
+// };
 
-// Add a function to get content status
-export interface ContentStatusResponse {
-  status: string;
-  content_id: number;
-  activity_type: ActivityType;
-}
+// // Add a function to get content status
+// export interface ContentStatusResponse {
+//   status: string;
+//   content_id: number;
+//   activity_type: ActivityType;
+// }
 
-export const getContentStatus = async (
-  clientId: number,
-  courseId: number,
-  contentId: number,
-  activityType: ActivityType
-): Promise<ContentStatusResponse> => {
-  try {
-    const url = `/activity/clients/${clientId}/courses/${courseId}/content/${contentId}/status/?activity_type=${activityType}`;
+// export const getContentStatus = async (
+//   clientId: number,
+//   courseId: number,
+//   contentId: number,
+//   activityType: ActivityType
+// ): Promise<ContentStatusResponse> => {
+//   try {
+//     const url = `/activity/clients/${clientId}/courses/${courseId}/content/${contentId}/status/?activity_type=${activityType}`;
     
-    const response = await axiosInstance.get(url);
-    console.log("Get content status response:", response.data);
-    return response.data;
-  } catch (error: unknown) {
-    console.error("Failed to get content status:", error);
-    if (error instanceof AxiosError) {
-      throw new Error(
-        error?.response?.data?.detail ||
-        error?.message ||
-        "Failed to get content status"
-      );
-    }
-    throw new Error("Failed to get content status");
-  }
-};
+//     const response = await axiosInstance.get(url);
+//     console.log("Get content status response:", response.data);
+//     return response.data;
+//   } catch (error: unknown) {
+//     console.error("Failed to get content status:", error);
+//     if (error instanceof AxiosError) {
+//       throw new Error(
+//         error?.response?.data?.detail ||
+//         error?.message ||
+//         "Failed to get content status"
+//       );
+//     }
+//     throw new Error("Failed to get content status");
+//   }
+// };
 
 
