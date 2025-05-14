@@ -18,6 +18,7 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const progressContainerRef = useRef<HTMLDivElement>(null);
+  const seekControlRef = useRef<HTMLInputElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -27,6 +28,7 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
   const [lastKnownTime, setLastKnownTime] = useState(0);
   const [hasMarkedComplete, setHasMarkedComplete] = useState(false);
   const [showSeekBlockMessage, setShowSeekBlockMessage] = useState(false);
+  const [isFirstCompletion, setIsFirstCompletion] = useState(true);
 
   // Handle time update for regular videos
   const handleTimeUpdate = () => {
@@ -35,9 +37,17 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
       const currentTime = videoRef.current.currentTime;
       setCurrentTime(currentTime);
 
-      // Update last known time for seek protection
-      if (currentTime > lastKnownTime) {
+      // Update last known time for seek protection if progressing naturally
+      // Don't update if there's a significant jump (likely a seek attempt)
+      if (currentTime > lastKnownTime && currentTime < lastKnownTime + 2) {
         setLastKnownTime(currentTime);
+      } else if (isFirstWatch && currentTime > lastKnownTime + 2) {
+        // If there's a large jump and it's first watch, force back to last known time
+        videoRef.current.currentTime = lastKnownTime;
+        setCurrentTime(lastKnownTime);
+        setShowSeekBlockMessage(true);
+        setTimeout(() => setShowSeekBlockMessage(false), 3000);
+        return;
       }
 
       // Calculate and update progress percentage
@@ -50,10 +60,11 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
       }
       
       // Check if video has reached the completion threshold percentage
-      if (calculatedProgress >= activityCompletionThreshold && !hasMarkedComplete) {
+      if (calculatedProgress >= activityCompletionThreshold && !hasMarkedComplete && isFirstCompletion) {
         if (onComplete) {
           onComplete();
           setHasMarkedComplete(true);
+          setIsFirstCompletion(false);
         }
       }
     }
@@ -111,6 +122,43 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
     }
   };
 
+  // Prevent users from dragging the video to mark it complete
+  const handleSeekAttempt = (e: React.MouseEvent<HTMLInputElement>) => {
+    if (isFirstWatch) {
+      const inputEl = e.currentTarget as HTMLInputElement;
+      const rect = inputEl.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const percentClicked = (clickX / rect.width) * 100;
+      const clickedTime = (percentClicked / 100) * duration;
+      
+      // If clicking past the watched point
+      if (clickedTime > lastKnownTime + 2) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Show warning message
+        setShowSeekBlockMessage(true);
+        setTimeout(() => {
+          setShowSeekBlockMessage(false);
+        }, 3000);
+        
+        return false;
+      }
+    }
+  };
+
+  // Additional protection against seeking via video element directly
+  const handleVideoSeeking = () => {
+    if (isFirstWatch && videoRef.current) {
+      if (videoRef.current.currentTime > lastKnownTime + 2) {
+        videoRef.current.currentTime = lastKnownTime;
+        setCurrentTime(lastKnownTime);
+        setShowSeekBlockMessage(true);
+        setTimeout(() => setShowSeekBlockMessage(false), 3000);
+      }
+    }
+  };
+
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = parseFloat(e.target.value);
     if (videoRef.current) {
@@ -152,6 +200,7 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(false);
+    setIsFirstCompletion(true);
   }, [videoUrl]);
 
   // Effect to show "seek locked" message for first-time viewers on attempts to seek ahead
@@ -182,6 +231,7 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onClick={togglePlay}
+        onSeeking={handleVideoSeeking}
         controls={false}
         playsInline
         preload="metadata"
@@ -219,17 +269,21 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
               }}
             ></div>
             
-            {/* Interactive seek bar - only for returning viewers */}
-            {!isFirstWatch && (
-              <input
-                type="range"
-                min="0"
-                max={duration || 0}
-                value={currentTime}
-                onChange={handleSeek}
-                className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
-              />
-            )}
+            {/* Interactive seek bar - customized based on first watch status */}
+            <input
+              ref={seekControlRef}
+              type="range"
+              min="0"
+              max={duration || 0}
+              value={currentTime}
+              onChange={handleSeek}
+              onMouseDown={isFirstWatch ? handleSeekAttempt : undefined}
+              className={`absolute top-0 left-0 w-full h-full opacity-0 ${isFirstWatch ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+              style={{
+                pointerEvents: isFirstWatch ? 'auto' : 'auto',
+                /* For first-time viewers, we'll use the custom handler to block certain areas */
+              }}
+            />
           </div>
         </div>
 
