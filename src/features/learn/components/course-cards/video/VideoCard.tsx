@@ -18,6 +18,7 @@ interface VideoCardProps {
 
 // Define interface for the API response data
 interface CourseContentDetails {
+  video_id: string;
   id: number;
   title: string;
   description: string;
@@ -296,13 +297,13 @@ const VideoCard: React.FC<VideoCardProps> = ({
           )}
         </div>
       </div>
-
       {/* Video Player Section */}
       <VideoPlayer
         videoUrl={useDebugMode ? SAMPLE_VIMEO_URL : processedVideoUrl}
         title={videoTitle}
         onComplete={handleVideoComplete}
         onProgressUpdate={handleProgressUpdate}
+        videoId={useDebugMode ? "debug-video-id" : (data as CourseContentResponse)?.details?.video_id || ""}
         isFirstWatch={!(data as CourseContentResponse)?.status || (data as CourseContentResponse)?.status !== 'complete'}
       />
 
