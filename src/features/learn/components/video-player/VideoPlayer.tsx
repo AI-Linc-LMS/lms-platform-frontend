@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import  { useState, useCallback, useEffect } from 'react';
 import { VideoPlayerProps } from './types';
 import { isVimeoUrl } from './utils/formatters';
 import { StandardPlayer } from './components/StandardPlayer';
