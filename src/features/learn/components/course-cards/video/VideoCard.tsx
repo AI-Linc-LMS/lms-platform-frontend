@@ -201,12 +201,12 @@ const VideoCard: React.FC<VideoCardProps> = ({
     if (onComplete) {
       onComplete();
     }
-    
+
     // Also update progress to 100%
     if (onProgressUpdate) {
       onProgressUpdate(contentId.toString(), 100);
     }
-    
+
     // Continue with existing completion logic
     if (clientId && courseId && contentId) {
       await submitContent(clientId, courseId, contentId, 'VideoTutorial', {})
@@ -511,41 +511,38 @@ const VideoCard: React.FC<VideoCardProps> = ({
                 <p>No comments yet. Be the first to comment!</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {commentsData?.slice(0, visibleComments).map((comment: Comment) => (
-                  <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="mt-1 text-sm text-gray-700">{comment.text}</p>
-                          <span className="text-xs text-gray-500">
-                            {new Date(comment.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
+              <div className="space-y-4 max-h-140 overflow-y-auto pr-2">
+                {[...commentsData]
+                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                  .slice(0, visibleComments)
+                  .map((comment: any) => (
+                    <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <img
+                          src="https://randomuser.me/api/portraits/men/1.jpg"
+                          alt="User"
+                          className="w-8 h-8 rounded-full"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-sm">{comment.user_name || 'John Doe'}</span>
+                            <span className="text-xs text-gray-500">
+                              {new Date(comment.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-sm text-gray-700 break-words max-w-[300px]">
+                            {comment.text}
+                          </p>
 
-                        <div className="flex items-center space-x-4 mt-2">
-                          <button className="flex items-center text-gray-500 hover:text-blue-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
-                            </svg>
-                            <span className="text-xs">{comment.likes}</span>
-                          </button>
-                          <button className="flex items-center text-gray-500 hover:text-red-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
-                            </svg>
-                            <span className="text-xs">{comment.dislikes}</span>
-                          </button>
+
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-
+                  ))}
                 {commentsData && commentsData.length > visibleComments && (
                   <div className="flex justify-center mt-4">
                     <button
-                      onClick={() => setVisibleComments(prev => prev + 4)}
+                      onClick={() => setVisibleComments(prev => prev + 5)}
                       className="px-4 py-2 text-sm text-[#255C79] hover:text-[#1e4a61] font-medium flex items-center space-x-1"
                     >
                       <span>See more comments</span>
@@ -562,11 +559,11 @@ const VideoCard: React.FC<VideoCardProps> = ({
       </div>
 
       {/* Floating Ask AI Button */}
-      <FloatingAIButton
-        onClick={() => console.log("Floating AI Button clicked")}
-      />
-    </div>
-  );
+        <FloatingAIButton
+          onClick={() => console.log("Floating AI Button clicked")}
+        />
+      </div>
+      );
 };
 
-export default VideoCard;
+      export default VideoCard;
