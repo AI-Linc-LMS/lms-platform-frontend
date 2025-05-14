@@ -627,7 +627,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
 
           {currentQuestionIndex === mcqs.length - 1 && userAnswers.every(answer => answer.selectedOption !== null) && (
             <button
-              onClick={handleNext}
+              onClick={handleFinish}
               disabled={selectedOption === null}
               className={`px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium ml-auto ${selectedOption === null
                 ? "bg-gray-200 text-gray-500 cursor-not-allowed"
