@@ -824,7 +824,6 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         {/* Right panel with code editor */}
         <div className="code-editor-panel">
           <div className="flex flex-col px-3 w-full">
-            <h3 className="text-xl font-semibold py-2 text-gray-700">Code</h3>
             <div className="flex flex-row w-full justify-between">
               <div className="flex flex-row gap-1">
                 {/* Language Dropdown */}

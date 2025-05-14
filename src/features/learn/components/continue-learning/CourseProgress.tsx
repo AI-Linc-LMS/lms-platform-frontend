@@ -1,16 +1,26 @@
+import { CourseIconData } from "./types";
+
 interface CourseProgressProps {
   moduleNumber: number;
   totalModules: number;
   moduleName: string;
+  stats: CourseIconData[];
 }
 
 const CourseProgress: React.FC<CourseProgressProps> = ({
   moduleNumber,
   totalModules,
   moduleName,
+  stats,
 }) => {
   // Calculate progress percentage
-  const progressPercentage = totalModules === 0 ? 0 : Math.round((moduleNumber / totalModules) * 100);
+  const { completed, total } = stats.reduce((acc, curr) => {
+    acc.completed += curr.completed;
+    acc.total += curr.total;
+    return acc;
+  }, { completed: 0, total: 0 });
+
+  const progressPercentage = total === 0 ? 0 : Math.round((completed / total) * 100);
 
   return (
     <div className="w-full bg-[#e9eaec] rounded-xl h-[75px] flex flex-row items-center justify-between p-4 overflow-hidden">

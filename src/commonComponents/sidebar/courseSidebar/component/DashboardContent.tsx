@@ -12,14 +12,16 @@ interface Stat {
   }
   
   const ProgressCircle = ({ percent }: { percent: number }) => {
-    const strokeDashoffset = 100 - percent;
+    const radius = 16;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference * (1 - percent / 100);
   
     return (
       <svg width="54" height="54" viewBox="0 0 36 36">
         <circle
           cx="18"
           cy="18"
-          r="16"
+          r={radius}
           fill="none"
           stroke="#e6e6e6"
           strokeWidth="4"
@@ -27,13 +29,14 @@ interface Stat {
         <circle
           cx="18"
           cy="18"
-          r="16"
+          r={radius}
           fill="none"
           stroke="#4CAF50"
           strokeWidth="4"
-          strokeDasharray="100"
+          strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
           transform="rotate(-90 18 18)"
+          style={{ transition: 'stroke-dashoffset 0.35s' }}
         />
         <text
           x="18"
