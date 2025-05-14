@@ -39,6 +39,7 @@ const CourseCard: React.FC<CourseData> = ({
           moduleNumber={completed_modules}
           totalModules={num_modules}
           moduleName={`Module ${completed_modules + 1}`}
+          stats={iconData}
         />
       </div>
       
