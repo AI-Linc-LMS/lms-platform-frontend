@@ -18,6 +18,8 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
   const [lastKnownTime, setLastKnownTime] = useState(0);
   const [hasMarkedComplete, setHasMarkedComplete] = useState(false);
   const [showSeekWarning, setShowSeekWarning] = useState(false);
+  const [isFirstCompletion, setIsFirstCompletion] = useState(true);
+  const [videoDuration, setVideoDuration] = useState(0);
 
   // Handle iframe load event
   const handleIframeLoad = () => {
@@ -36,6 +38,12 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
           });
           iframeRef.current?.contentWindow?.postMessage(message, '*');
         });
+
+        // Get video duration
+        const getDuration = JSON.stringify({
+          method: 'getDuration'
+        });
+        iframeRef.current?.contentWindow?.postMessage(getDuration, '*');
       }, 500);
     }
   };
@@ -60,7 +68,7 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
             
             /* Add a visual indicator that seeking is disabled */
             .vp-controls::after {
-              content: "Seeking disabled for first viewing";
+              content: "${seekDisabledMessage}";
               position: absolute;
               bottom: 40px;
               left: 50%;
@@ -122,6 +130,11 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
           ? JSON.parse(event.data)
           : event.data;
 
+        // Store duration when we receive it
+        if (data.method === 'getDuration' && typeof data.value === 'number') {
+          setVideoDuration(data.value);
+        }
+
         // For progress tracking, we need to handle both timeupdate and playProgress events
         if (data.event === 'playProgress' || data.event === 'timeupdate') {
           // Extract percent and time from different event formats
@@ -133,8 +146,32 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
             
             if (typeof data.data.seconds === 'number') {
               currentTime = data.data.seconds;
-              // Update last known time for seek protection
-              if (currentTime > lastKnownTime) {
+              
+              // Prevent false progress updates in first-time view
+              if (isFirstWatch) {
+                // If there appears to be a big jump forward, it might be a seek attempt
+                const isSignificantJump = currentTime > lastKnownTime + 3;
+                
+                // Update last known time only if it's natural progression
+                if (currentTime > lastKnownTime && !isSignificantJump) {
+                  setLastKnownTime(currentTime);
+                } else if (isSignificantJump && iframeRef.current?.contentWindow) {
+                  // Revert back to last known position if there's a suspicious jump forward
+                  const seekBackMessage = JSON.stringify({
+                    method: 'setCurrentTime',
+                    value: lastKnownTime
+                  });
+                  iframeRef.current.contentWindow.postMessage(seekBackMessage, '*');
+                  
+                  // Show warning
+                  setShowSeekWarning(true);
+                  setTimeout(() => setShowSeekWarning(false), 3000);
+                  
+                  // Return early to prevent further processing of this suspicious timeupdate
+                  return;
+                }
+              } else {
+                // For returning viewers, just update normally
                 setLastKnownTime(currentTime);
               }
             }
@@ -142,8 +179,22 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
             currentTime = data.data.seconds;
             percent = (currentTime / data.data.duration) * 100;
             
-            // Update last known time for seek protection
-            if (currentTime > lastKnownTime) {
+            // Update last known time with the same logic as above
+            if (isFirstWatch) {
+              const isSignificantJump = currentTime > lastKnownTime + 3;
+              if (currentTime > lastKnownTime && !isSignificantJump) {
+                setLastKnownTime(currentTime);
+              } else if (isSignificantJump && iframeRef.current?.contentWindow) {
+                const seekBackMessage = JSON.stringify({
+                  method: 'setCurrentTime',
+                  value: lastKnownTime
+                });
+                iframeRef.current.contentWindow.postMessage(seekBackMessage, '*');
+                setShowSeekWarning(true);
+                setTimeout(() => setShowSeekWarning(false), 3000);
+                return;
+              }
+            } else {
               setLastKnownTime(currentTime);
             }
           }
@@ -156,11 +207,16 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
               onProgressUpdate(percent);
             }
             
-            // Check if we've reached completion threshold
-            if (percent >= activityCompletionThreshold && !hasMarkedComplete) {
+            // Check if video has reached the completion threshold percentage - prevent cheating by checking jump
+            const isNaturalCompletion = !isFirstWatch || 
+                                      (currentTime >= (videoDuration * activityCompletionThreshold / 100) && 
+                                       Math.abs(currentTime - lastKnownTime) < 3);
+            
+            if (percent >= activityCompletionThreshold && !hasMarkedComplete && isFirstCompletion && isNaturalCompletion) {
               if (onComplete) {
                 onComplete();
                 setHasMarkedComplete(true);
+                setIsFirstCompletion(false);
               }
             }
           }
@@ -186,9 +242,10 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
         }
 
         // Also handle end event for backward compatibility
-        if (data.event === 'ended' && onComplete && !hasMarkedComplete) {
+        if (data.event === 'ended' && onComplete && !hasMarkedComplete && isFirstCompletion) {
           onComplete();
           setHasMarkedComplete(true);
+          setIsFirstCompletion(false);
           setProgressPercent(100);
           setLastKnownTime(0); // Reset for next viewing
         }
@@ -216,11 +273,27 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
           method: 'getCurrentTime'
         });
         iframeRef.current?.contentWindow?.postMessage(getCurrentTime, '*');
+        
+        // And get video duration
+        const getDuration = JSON.stringify({
+          method: 'getDuration'
+        });
+        iframeRef.current?.contentWindow?.postMessage(getDuration, '*');
       }, 1000); // Give the iframe time to load
     }
     
     return () => window.removeEventListener('message', handleVimeoMessage);
-  }, [onComplete, activityCompletionThreshold, hasMarkedComplete, onProgressUpdate, isFirstWatch, lastKnownTime]);
+  }, [onComplete, activityCompletionThreshold, hasMarkedComplete, onProgressUpdate, isFirstWatch, lastKnownTime, seekDisabledMessage, isFirstCompletion, videoDuration]);
+
+  // Reset component state when video URL changes
+  useEffect(() => {
+    setProgressPercent(0);
+    setHasMarkedComplete(false);
+    setLastKnownTime(0);
+    setIsFirstCompletion(true);
+    setVideoDuration(0);
+    setShowSeekWarning(false);
+  }, [videoUrl]);
 
   return (
     <div className="w-full aspect-video bg-black relative">
