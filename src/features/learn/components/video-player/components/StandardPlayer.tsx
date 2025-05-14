@@ -14,7 +14,10 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
   videoSize,
   setVideoSize,
   isMobile,
-  seekDisabledMessage = "You cannot skip ahead on first watch"
+  seekDisabledMessage = "You cannot skip ahead on first watch",
+  savedProgress = 0,
+  videoId,
+  onSaveProgress
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const progressContainerRef = useRef<HTMLDivElement>(null);
@@ -29,6 +32,9 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
   const [hasMarkedComplete, setHasMarkedComplete] = useState(false);
   const [showSeekBlockMessage, setShowSeekBlockMessage] = useState(false);
   const [isFirstCompletion, setIsFirstCompletion] = useState(true);
+  const [hasAppliedSavedProgress, setHasAppliedSavedProgress] = useState(false);
+  const [showContinuePrompt, setShowContinuePrompt] = useState(false);
+  const progressSaveInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Handle time update for regular videos
   const handleTimeUpdate = () => {
@@ -58,6 +64,9 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
       if (onProgressUpdate) {
         onProgressUpdate(calculatedProgress);
       }
+
+      // Throttle saving to localStorage to avoid excessive writes
+      // We'll save every ~5 seconds of actual viewing via useEffect
       
       // Check if video has reached the completion threshold percentage
       if (calculatedProgress >= activityCompletionThreshold && !hasMarkedComplete && isFirstCompletion) {
@@ -69,6 +78,125 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
       }
     }
   };
+
+  // Effect to handle the saved progress
+  useEffect(() => {
+    // Make sure the video element and duration are loaded before applying saved progress
+    if (videoRef.current && videoRef.current.duration > 0 && savedProgress > 0 && !hasAppliedSavedProgress) {
+      console.log(`StandardPlayer: Handling saved progress ${savedProgress.toFixed(1)}% for ${videoId}`);
+      
+      // Only show continue prompt if there's significant progress (more than 5% and less than 95%)
+      if (savedProgress > 5 && savedProgress < 95) {
+        setShowContinuePrompt(true);
+      } else {
+        // If progress is minimal or nearly complete, just apply it directly
+        applyProgressAndStartPlayback(savedProgress);
+      }
+    }
+  }, [savedProgress, hasAppliedSavedProgress, activityCompletionThreshold, videoRef.current?.duration, videoId]);
+
+  // Also listen for loadedmetadata to apply saved progress
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      const duration = videoRef.current.duration;
+      setDuration(duration);
+      
+      // Apply saved progress once we have the duration
+      if (savedProgress > 0 && !hasAppliedSavedProgress && duration > 0) {
+        console.log(`StandardPlayer: loadedmetadata - Applying saved progress ${savedProgress.toFixed(1)}% (${videoId})`);
+        
+        if (savedProgress > 5 && savedProgress < 95) {
+          setShowContinuePrompt(true);
+        } else {
+          applyProgressAndStartPlayback(savedProgress);
+        }
+      }
+    }
+  };
+
+  // Apply saved progress and start playback
+  const applyProgressAndStartPlayback = (percent: number) => {
+    if (videoRef.current && videoRef.current.duration) {
+      const timeToSet = (videoRef.current.duration * percent) / 100;
+      
+      // For first watch, we should only restore progress if it's allowed
+      // (not jumping ahead of what they've seen)
+      if (!isFirstWatch || (isFirstWatch && percent < activityCompletionThreshold)) {
+        console.log(`StandardPlayer: Applying saved progress: ${percent.toFixed(1)}%, setting time to: ${timeToSet.toFixed(1)}s for ${videoId}`);
+        
+        // Set state variables first
+        setCurrentTime(timeToSet);
+        setLastKnownTime(timeToSet);
+        setHasAppliedSavedProgress(true);
+        
+        // Then set the video time
+        videoRef.current.currentTime = timeToSet;
+        
+        // Force double-check after a moment to ensure it actually applied
+        setTimeout(() => {
+          if (videoRef.current && Math.abs(videoRef.current.currentTime - timeToSet) > 1) {
+            console.log('StandardPlayer: Had to reapply progress, time wasn\'t set correctly');
+            videoRef.current.currentTime = timeToSet;
+          }
+        }, 300);
+        
+        // Start video playback
+        videoRef.current.play().catch(err => {
+          console.error('Failed to autoplay:', err);
+        });
+        
+        setIsPlaying(true);
+      }
+    }
+    // Close the prompt
+    setShowContinuePrompt(false);
+  };
+
+  // Effect to periodically save progress
+  useEffect(() => {
+    // Set up interval to save progress every 5 seconds
+    if (onSaveProgress && videoId && videoRef.current) {
+      // Save progress immediately on mount
+      if (lastKnownTime > 0 && duration > 0) {
+        const currentPercent = (lastKnownTime / duration) * 100;
+        if (currentPercent > 1 && currentPercent < 99) {
+          console.log(`StandardPlayer: Saving progress for ${videoId}: ${currentPercent.toFixed(1)}%`);
+          onSaveProgress(videoId, currentPercent);
+        }
+      }
+      
+      // Set up periodic saving
+      progressSaveInterval.current = setInterval(() => {
+        if (lastKnownTime > 0 && duration > 0 && videoRef.current) {
+          // Get the most up-to-date time
+          const currentTime = videoRef.current.currentTime;
+          const currentPercent = (currentTime / duration) * 100;
+          
+          // Only save if we have meaningful progress and it's less than completion threshold
+          if (currentPercent > 1 && currentPercent < 99) {
+            console.log(`StandardPlayer: Saving progress (interval) for ${videoId}: ${currentPercent.toFixed(1)}%`);
+            onSaveProgress(videoId, currentPercent);
+          }
+        }
+      }, 5000); // Save every 5 seconds
+    }
+
+    // Also save on component unmount
+    return () => {
+      if (progressSaveInterval.current) {
+        clearInterval(progressSaveInterval.current);
+      }
+      
+      // Save final progress when component unmounts
+      if (onSaveProgress && videoId && lastKnownTime > 0 && duration > 0 && !hasMarkedComplete) {
+        const finalPercent = (lastKnownTime / duration) * 100;
+        if (finalPercent > 1 && finalPercent < 99) {
+          console.log(`StandardPlayer: Saving final progress for ${videoId}: ${finalPercent.toFixed(1)}%`);
+          onSaveProgress(videoId, finalPercent);
+        }
+      }
+    };
+  }, [onSaveProgress, videoId, lastKnownTime, duration, hasMarkedComplete]);
 
   // Toggle play/pause for regular videos
   const togglePlay = async () => {
@@ -91,12 +219,6 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
       } catch (err) {
         console.error('VideoPlayer - Error in toggle play:', err);
       }
-    }
-  };
-
-  const handleLoadedMetadata = () => {
-    if (videoRef.current) {
-      setDuration(videoRef.current.duration);
     }
   };
 
@@ -201,6 +323,8 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
     setDuration(0);
     setIsPlaying(false);
     setIsFirstCompletion(true);
+    setHasAppliedSavedProgress(false);
+    setShowContinuePrompt(false);
   }, [videoUrl]);
 
   // Effect to show "seek locked" message for first-time viewers on attempts to seek ahead
@@ -249,6 +373,35 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
       {isFirstWatch && (
         <div className="absolute top-3 left-3 z-10 bg-yellow-600 text-white px-3 py-1 text-xs rounded-full">
           First Viewing
+        </div>
+      )}
+      
+      {/* Continue watching prompt */}
+      {showContinuePrompt && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 z-20">
+          <div className="bg-gray-800 p-6 rounded-lg max-w-md text-center">
+            <h3 className="text-white text-lg font-semibold mb-4">Continue Watching?</h3>
+            <p className="text-gray-200 mb-4">
+              You were at {savedProgress.toFixed(0)}% of this video. Would you like to continue from where you left off?
+            </p>
+            <div className="flex justify-center space-x-4">
+              <button 
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+                onClick={() => applyProgressAndStartPlayback(savedProgress)}
+              >
+                Continue
+              </button>
+              <button 
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md"
+                onClick={() => {
+                  setShowContinuePrompt(false);
+                  setHasAppliedSavedProgress(true);
+                }}
+              >
+                Start Over
+              </button>
+            </div>
+          </div>
         </div>
       )}
       
@@ -362,7 +515,7 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
           {/* Right Controls */}
           <div className="flex space-x-2 md:space-x-4 items-center">
             {/* Video Size Controls - Hidden on mobile */}
-            {!isMobile && (
+            {!isMobile && setVideoSize && (
               <div className="flex space-x-1 mr-2">
                 <button
                   onClick={() => setVideoSize('small')}
