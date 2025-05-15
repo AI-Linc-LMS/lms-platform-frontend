@@ -53,7 +53,7 @@ const transformCourseData = (reduxCourse: EnrolledCourse): CardCourse => {
       ]
     }
   ];
-  
+
   return {
     id: reduxCourse.id,
     title: reduxCourse.title,
@@ -86,8 +86,8 @@ const EmptyCoursesState = () => {
       <p className="text-[#6C757D] text-center max-w-md mb-8 font-sans text-[14px] md:text-[16px]">
         You haven't enrolled in any courses yet. Browse our catalog to find courses that match your interests and start your learning journey.
       </p>
-      <PrimaryButton 
-        onClick={() => window.location.href = '/'} 
+      <PrimaryButton
+        onClick={() => window.location.href = '/'}
         className="max-w-xs transition-all duration-200 transform hover:scale-95"
       >
         Browse Courses
@@ -125,7 +125,7 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({ className = "" }) => 
 
   if (isLoading) return <p>Loading courses...</p>;
   if (error) return <p>Error loading courses. Please try again later.</p>;
-  
+
   // Handle empty courses array
   const hasNoCourses = !Courses || Courses.length === 0;
 
