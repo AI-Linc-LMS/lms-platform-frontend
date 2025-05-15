@@ -9,7 +9,7 @@ import PrimaryButton from "../../../../commonComponents/common-buttons/primary-b
 // Empty state component
 const EmptyContinueState = () => {
   const navigate = useNavigate();
-  
+
   return (
     <div className="flex flex-col items-center justify-center py-12 px-6 bg-white rounded-3xl border border-[#80C9E0] shadow-sm transition-all duration-300 transform hover:scale-[1.01]">
       <svg className="w-20 h-20 text-[#2A8CB0] mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -19,8 +19,8 @@ const EmptyContinueState = () => {
       <p className="text-[#6C757D] text-center max-w-md mb-8 font-sans text-[14px] md:text-[16px]">
         You haven't started any courses yet. Explore our catalog to find a course that interests you and begin your learning journey.
       </p>
-      <PrimaryButton 
-        onClick={() => navigate('/')} 
+      <PrimaryButton
+        onClick={() => navigate('/')}
         className="max-w-xs transition-all duration-200 transform hover:scale-95"
       >
         Explore Courses
@@ -38,7 +38,7 @@ const ContinueCoursesDetails = ({ clientId }: { clientId: number }) => {
 
   // Remove console.log in production
   // console.log("continueCourses", continueCourses);
-  
+
   const createIconData = (stats: CourseStats): CourseIconData[] => [
     { icon: <VideoIcon />, completed: stats.video.completed, total: stats.video.total },
     { icon: <DocumentIcon />, completed: stats.article.completed, total: stats.article.total },
