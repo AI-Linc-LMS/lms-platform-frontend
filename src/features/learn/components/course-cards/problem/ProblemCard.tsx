@@ -357,25 +357,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         console.log("Solution was accepted! Calling onComplete callback");
         setIsSubmitSuccess(true);
 
-        // Directly call submitContent to update the status
-        // submitContent(
-        //   1, 
-        //   courseId, 
-        //   contentId, 
-        //   'CodingProblem', 
-        //   { status: 'complete' },
-        //   'updateStatus'
-        // )
-        // .then(statusCode => {
-        //   console.log("Status update response:", statusCode);
-        //   // Now call the onComplete callback for UI updates
-        //   onComplete();
-        // })
-        // .catch(error => {
-        //   console.error("Failed to update status:", error);
-        //   // Still call onComplete for UI updates
-        //   onComplete();
-        // });
+
       } else {
         console.log(`Solution ${success ? 'accepted' : 'rejected'}, onComplete callback: ${onComplete ? 'provided' : 'not provided'}`);
       }
@@ -545,66 +527,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
   return (
     <div className={`problem-card-container rounded-2xl ${isDarkTheme ? 'dark-mode' : ''}`}>
-      {/* <div className="problem-header rounded-2xl">
-        <div className="problem-title-section">
-          <div className="flex">
-            <h1 className="problem-title">{data.details.title}</h1>
-            <span
-              className={`difficulty-badge ml-2 mt-2
-                ${data.details.difficulty_level === "Easy" ? "easy" :
-                  data.details.difficulty_level === "Medium" ? "medium" : "hard"
-                }`}
-            >
-              {data.details.difficulty_level}
-            </span>
-          </div>
-          <div className="run-submit-buttons">
-            <button
-              onClick={handleRunCode}
-              disabled={isRunning}
-              className={`run-button ${isRunning ? 'button-loading' : ''}`}
-            >
-              {isRunning ? 'Running...' : 'Run'}
-            </button>
-            <button
-              onClick={handleSubmitCode}
-              disabled={isSubmitting}
-              className={`submit-button ${isSubmitting ? 'button-loading' : ''}`}
-            >
-              {isSubmitting ? 'Submitting...' : 'Submit'}
-            </button>
-          </div>
-          <div className="editor-actions">
-            <div className="toggle-container">
-              <label className="toggle-label">
-                <span>Autocomplete</span>
-                <div className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={isAutocompleteEnabled}
-                    onChange={() => setIsAutocompleteEnabled(!isAutocompleteEnabled)}
-                  />
-                  <span className="toggle-slider"></span>
-                </div>
-              </label>
-            </div>
 
-            <div className="toggle-container">
-              <label className="toggle-label">
-                <span>Dark Mode</span>
-                <div className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={isDarkTheme}
-                    onChange={handleThemeChange}
-                  />
-                  <span className="toggle-slider"></span>
-                </div>
-              </label>
-            </div> 
-          </div>
-        </div>
-      </div>*/}
 
       {isSubmitSuccess && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
@@ -665,14 +588,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                 <>
                   <div className="flex">
                     <h1 className="problem-title">{data.details.title}</h1>
-                    {/* <span
-                    className={`difficulty-badge ml-2 mt-2
-                ${data.details.difficulty_level === "Easy" ? "easy" :
-                        data.details.difficulty_level === "Medium" ? "medium" : "hard"
-                      }`}
-                  >
-                    {data.details.difficulty_level}
-                  </span> */}
+
                   </div>
 
                   <div className="flex gap-3">
