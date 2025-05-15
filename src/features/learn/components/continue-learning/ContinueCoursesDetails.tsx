@@ -18,6 +18,7 @@ const ContinueCoursesDetails = ({ clientId }: { clientId: number }) => {
     { icon: <DocumentIcon />, completed: stats.article.completed, total: stats.article.total },
     { icon: <CodeIcon />, completed: stats.coding_problem.completed, total: stats.coding_problem.total },
     { icon: <FAQIcon />, completed: stats.quiz.completed, total: stats.quiz.total },
+    { icon: <CodeIcon />, completed: stats.assignment.completed, total: stats.assignment.total },
   ];
 
   if (isLoading || error) {

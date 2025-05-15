@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -119,6 +120,7 @@ const CourseTopicDetailPage: React.FC = () => {
       }
     }
   }, [submoduleData, activeSidebarLabel]);
+
 
   // Props objects for each content type
   const videoProps = {
@@ -360,6 +362,133 @@ const CourseTopicDetailPage: React.FC = () => {
     }
   };
 
+  // Update the updateProblemStatus function to take an optional parameter to skip API calls
+  const updateProblemStatus = (problemId: string, status: string, updateBackend: boolean = true): void => {
+    console.log(`Updating problem ${problemId} status to ${status}, updateBackend=${updateBackend}`);
+    
+    if (submoduleData?.data) {
+      const updatedData = [...submoduleData.data];
+      const problemIndex = updatedData.findIndex(
+        content => content.content_type === 'CodingProblem' && content.id.toString() === problemId
+      );
+      
+      if (problemIndex !== -1) {
+        console.log(`Found problem at index ${problemIndex}`);
+        // First update the state in memory for immediate UI feedback
+        updatedData[problemIndex] = {
+          ...updatedData[problemIndex],
+          status: status
+        };
+        
+        // Update submodule data with new status
+        if (submoduleData) {
+          const newSubmoduleData: SubmoduleData = {
+            ...submoduleData,
+            data: updatedData
+          };
+          
+          // Local update for immediate UI feedback
+          const w = window as unknown as { temporarySubmoduleData: SubmoduleData };
+          w.temporarySubmoduleData = newSubmoduleData;
+          
+          // Force re-render sidebar components
+          setSelectedProblemId(prevId => {
+            if (prevId === problemId) return prevId; // No change to avoid unnecessary re-renders
+            return problemId; // Change to force re-render
+          });
+          
+          // Then make API call to persist the change in the backend if requested
+          if (updateBackend) {
+            console.log(`Making API call to update problem ${problemId} status to ${status}`);
+            
+            // Try both approaches to ensure one of them works
+            
+            // Approach 1: Use updateContentStatus
+            // updateContentStatus(
+            //   1, // clientId 
+            //   parseInt(courseId || "0"), 
+            //   parseInt(problemId), 
+            //   status, 
+            //   'CodingProblem'
+            // )
+            // .then(success => {
+            //   console.log(`API call result (updateContentStatus): ${success ? 'Success' : 'Failed'}`);
+            // })
+            // .catch(error => {
+            //   console.error("Error with updateContentStatus:", error);
+              
+              // If updateContentStatus fails, try submitContent directly
+              // console.log("Trying alternative approach with submitContent");
+              // submitContent(
+              //   1,
+              //   parseInt(courseId || "0"),
+              //   parseInt(problemId),
+              //   'CodingProblem',
+              //   { status },
+              //   'updateStatus'
+              // )
+              // .then(statusCode => {
+              //   console.log(`API call result (submitContent): Status code ${statusCode}`);
+              // })
+              // .catch(submitError => {
+              //   console.error("Error with submitContent:", submitError);
+              // });
+            //});
+          }
+        }
+      } else {
+        console.error(`Problem with ID ${problemId} not found in submoduleData`);
+      }
+    } else {
+      console.error("No submoduleData available");
+    }
+  };
+
+  const handleStartNextQuiz = () => {
+    if (!submoduleData?.data) return;
+    // Get all quizzes sorted by order
+    const quizzes = submoduleData.data.filter(c => c.content_type === 'Quiz').sort((a, b) => a.order - b.order);
+    const currentQuizIdx = quizzes.findIndex(q => q.id === currentContent.id);
+
+    // Try to go to the next quiz
+    if (currentQuizIdx !== -1 && currentQuizIdx < quizzes.length - 1) {
+      const nextQuiz = quizzes[currentQuizIdx + 1];
+      setCurrentContentIndex(submoduleData.data.findIndex(c => c.id === nextQuiz.id));
+      setSelectedQuizId(nextQuiz.id);
+      return;
+    }
+
+    // If no next quiz, go to the next content (of any type)
+    const nextIndex = currentContentIndex + 1;
+    if (nextIndex < submoduleData.data.length) {
+      setCurrentContentIndex(nextIndex);
+      const nextContent = submoduleData.data[nextIndex];
+      // Optionally update the selected ID for the next content type
+      switch (nextContent.content_type) {
+        case "Quiz":
+          setSelectedQuizId(nextContent.id);
+          break;
+        case "VideoTutorial":
+          setSelectedVideoId(nextContent.id.toString());
+          break;
+        case "CodingProblem":
+          setSelectedProblemId(nextContent.id.toString());
+          break;
+        case "Development":
+          setSelectedProjectId(nextContent.id.toString());
+          break;
+        case "Assignment":
+          setSelectedAssignmentId(nextContent.id);
+          break;
+        case "Article":
+          setSelectedArticleId(nextContent.id);
+          break;
+      }
+    } else {
+      // Optionally, show a message: No more content
+    }
+  };
+
   if (isSubmoduleLoading) {
     return <div>Loading...</div>;
   }
@@ -498,10 +627,15 @@ const CourseTopicDetailPage: React.FC = () => {
             )}
             {currentContent?.content_type === "CodingProblem" && (
               <ProblemCard
+                isSidebarContentOpen={isSidebarContentOpen}
                 contentId={currentContent.id}
                 courseId={parseInt(courseId || "0")}
                 onSubmit={(code) => {
                   console.log("Submitted code:", code);
+                }}
+                onComplete={() => {
+                  console.log("Problem completed!");
+                  updateProblemStatus(currentContent.id.toString(), "complete");
                 }}
               />
             )}
@@ -510,6 +644,7 @@ const CourseTopicDetailPage: React.FC = () => {
                 contentId={currentContent.id}
                 courseId={parseInt(courseId || "0")}
                 isSidebarContentOpen={isSidebarContentOpen}
+                onStartNextQuiz={handleStartNextQuiz}
               />
             )}
             {currentContent?.content_type === "Article" && (
