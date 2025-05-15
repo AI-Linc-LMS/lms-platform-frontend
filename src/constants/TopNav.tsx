@@ -4,7 +4,7 @@ import userImg from '../commonComponents/icons/nav/User Image.png';
 import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../redux/slices/userSlice';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 interface UserState {
   profile_picture?: string;
@@ -109,6 +109,13 @@ const TopNav: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-5">
+        {/* Admin Button - Visible to all users */}
+        <Link 
+          to="/admin/courses" 
+          className="bg-[#17627A] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#124F65] transition-colors"
+        >
+          Admin
+        </Link>
         <div className="bg-gray-100 p-2 rounded-md">
           <img src={sunIcon} alt="Loading" className="w-7 h-7" />
         </div>
