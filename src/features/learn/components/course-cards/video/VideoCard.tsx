@@ -36,7 +36,7 @@ interface CourseContentResponse {
   details: CourseContentDetails;
 }
 
-interface Comment {
+export interface Comment {
   id: number;
   client: number;
   content: number;
