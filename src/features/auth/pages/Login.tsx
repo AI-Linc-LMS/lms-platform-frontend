@@ -27,8 +27,17 @@ const Login: React.FC = () => {
   }, [isAuthenticated, navigate]);
 
   return (
-    <div className="flex h-screen bg-[#F8F9FA]">
-      {/* Left Section - Background Image */}
+    <div className="flex h-screen bg-[#F8F9FA] relative">
+      {/* Background Image for Mobile */}
+      <div className="absolute inset-0 md:hidden">
+        <img 
+          src={logimg} 
+          alt="Office workspace" 
+          className="w-full h-full object-cover opacity-50"
+        />
+      </div>
+      
+      {/* Left Section - Background Image (desktop only) */}
       <div className="hidden md:block md:w-1/2 h-full bg-gradient-to-r from-[#D7EFF6] to-[#E9F7FC]">
         <img 
           src={logimg} 
@@ -38,8 +47,8 @@ const Login: React.FC = () => {
       </div>
 
       {/* Right Section - Login Form */}
-      <div className="w-full md:w-1/2 flex items-center justify-center px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md space-y-8">
+      <div className="w-full md:w-1/2 flex items-center justify-center px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="w-full max-w-md space-y-8 bg-white md:bg-transparent p-6 rounded-3xl shadow-sm md:shadow-none">
           <div className="text-center">
             <div className="flex justify-center items-center">
               <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
