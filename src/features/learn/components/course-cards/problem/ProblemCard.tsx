@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getCourseContent } from "../../../../../services/enrolled-courses-content/courseContentApis";
-import { 
-  runCode, 
-  runCustomCode, 
-  submitCode, 
+import {
+  runCode,
+  runCustomCode,
+  submitCode,
   // submitContent,
   getSubmissionHistory,
   LANGUAGE_ID_MAPPING,
@@ -109,14 +109,14 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [selectedSubmissionCode, setSelectedSubmissionCode] = useState<string | null>(null);
   const [viewingSubmissionId, setViewingSubmissionId] = useState<number | null>(null);
-  
+
   // Run code mutation
   const runCodeMutation = useMutation({
     mutationFn: () => runCode(
-      1, 
-      courseId, 
-      contentId, 
-      code, 
+      1,
+      courseId,
+      contentId,
+      code,
       LANGUAGE_ID_MAPPING[selectedLanguage as keyof typeof LANGUAGE_ID_MAPPING]
     ),
     onSuccess: (data: RunCodeResult) => {
@@ -129,33 +129,33 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         time: result.time,
         memory: result.memory
       })) as TestCase[];
-      
+
       setTestCases(updatedTestCases);
-      
+
       const success = updatedTestCases.every(tc => tc.status === 'passed');
       setResults({
-        success, 
+        success,
         message: success ? "All test cases passed!" : "Some test cases failed."
       });
       setIsRunning(false);
     },
     onError: (error) => {
       console.error("Error running code:", error);
-      setResults({ 
-        success: false, 
+      setResults({
+        success: false,
         message: "Error running code. Please try again."
       });
       setIsRunning(false);
     }
   });
-  
+
   // Run custom code mutation
   const runCustomCodeMutation = useMutation({
     mutationFn: (input: string) => runCustomCode(
-      1, 
-      courseId, 
-      contentId, 
-      code, 
+      1,
+      courseId,
+      contentId,
+      code,
       LANGUAGE_ID_MAPPING[selectedLanguage as keyof typeof LANGUAGE_ID_MAPPING],
       input
     ),
@@ -179,13 +179,13 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       setIsRunning(false);
     }
   });
-  
+
   // Fetch submission history when the component loads or when a new submission is made
   useEffect(() => {
     const fetchSubmissionHistory = async () => {
       setIsLoadingHistory(true);
       setHistoryError(null);
-      
+
       try {
         // Try to fetch from API
         const history = await getSubmissionHistory(1, courseId, contentId);
@@ -194,7 +194,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         console.error("Error fetching submission history:", error);
         // API not available or error - use fallback data
         console.log("Using fallback submission history data");
-        
+
         // Create fallback data based on recent results
         if (results?.success !== undefined) {
           // If we have recent submission results, add that to our history
@@ -207,7 +207,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
             language: selectedLanguage,
             source_code: code
           };
-          
+
           // Create mock history with the recent submission
           const mockHistory: SubmissionHistoryItem[] = [
             newSubmission,
@@ -248,7 +248,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
               source_code: "// Old code with wrong answer"
             }
           ];
-          
+
           setSubmissionHistory(mockHistory);
         } else {
           // If no recent submission, use the default mock data
@@ -290,38 +290,38 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
               source_code: "// Old code with wrong output"
             }
           ];
-          
+
           setSubmissionHistory(mockHistory);
         }
-        
+
         // Don't show the error message since we have fallback data
         setHistoryError(null);
       } finally {
         setIsLoadingHistory(false);
       }
     };
-    
+
     fetchSubmissionHistory();
   }, [courseId, contentId, results, code, selectedLanguage]);
-  
+
   // Submit code mutation
   const submitCodeMutation = useMutation({
     mutationFn: () => submitCode(
-      1, 
-      courseId, 
-      contentId, 
-      code, 
+      1,
+      courseId,
+      contentId,
+      code,
       LANGUAGE_ID_MAPPING[selectedLanguage as keyof typeof LANGUAGE_ID_MAPPING]
     ),
     onSuccess: (data: SubmitCodeResult) => {
       const success = data.status === "Accepted";
       setResults({
         success,
-        message: success 
-          ? `Solution accepted! Passed ${data.passed}/${data.total_test_cases} test cases.` 
+        message: success
+          ? `Solution accepted! Passed ${data.passed}/${data.total_test_cases} test cases.`
           : `Failed ${data.failed}/${data.total_test_cases} test cases.`
       });
-      
+
       // Add the new submission to local history
       const newSubmission: SubmissionHistoryItem = {
         id: Date.now(),
@@ -332,53 +332,35 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         language: selectedLanguage,
         source_code: code
       };
-      
+
       // Update local history right away for immediate feedback
       setSubmissionHistory(prevHistory => [newSubmission, ...prevHistory]);
-      
+
       // Call onSubmit to notify the parent that code was submitted
       onSubmit(code);
-      
+
       // If the submission was successful, call onComplete to mark the problem as complete
       if (success && onComplete) {
         console.log("Solution was accepted! Calling onComplete callback");
         setIsSubmitSuccess(true);
-        
-        // Directly call submitContent to update the status
-        // submitContent(
-        //   1, 
-        //   courseId, 
-        //   contentId, 
-        //   'CodingProblem', 
-        //   { status: 'complete' },
-        //   'updateStatus'
-        // )
-        // .then(statusCode => {
-        //   console.log("Status update response:", statusCode);
-        //   // Now call the onComplete callback for UI updates
-        //   onComplete();
-        // })
-        // .catch(error => {
-        //   console.error("Failed to update status:", error);
-        //   // Still call onComplete for UI updates
-        //   onComplete();
-        // });
+
+
       } else {
         console.log(`Solution ${success ? 'accepted' : 'rejected'}, onComplete callback: ${onComplete ? 'provided' : 'not provided'}`);
       }
-      
+
       setIsSubmitting(false);
     },
     onError: (error) => {
       console.error("Error submitting code:", error);
-      setResults({ 
-        success: false, 
+      setResults({
+        success: false,
         message: "Error submitting code. Please try again."
       });
       setIsSubmitting(false);
     }
   });
-  
+
   // Mock test cases based on sample input/output from the problem
   React.useEffect(() => {
     if (data?.details) {
@@ -457,7 +439,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
     setIsRunning(true);
     setResults(null);
-    
+
     // Run the code with custom input
     runCustomCodeMutation.mutate(customInput);
   };
@@ -512,66 +494,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
   return (
     <div className={`problem-card-container rounded-2xl ${isDarkTheme ? 'dark-mode' : ''}`}>
-      {/* <div className="problem-header rounded-2xl">
-        <div className="problem-title-section">
-          <div className="flex">
-            <h1 className="problem-title">{data.details.title}</h1>
-            <span
-              className={`difficulty-badge ml-2 mt-2
-                ${data.details.difficulty_level === "Easy" ? "easy" :
-                  data.details.difficulty_level === "Medium" ? "medium" : "hard"
-                }`}
-            >
-              {data.details.difficulty_level}
-            </span>
-          </div>
-          <div className="run-submit-buttons">
-            <button
-              onClick={handleRunCode}
-              disabled={isRunning}
-              className={`run-button ${isRunning ? 'button-loading' : ''}`}
-            >
-              {isRunning ? 'Running...' : 'Run'}
-            </button>
-            <button
-              onClick={handleSubmitCode}
-              disabled={isSubmitting}
-              className={`submit-button ${isSubmitting ? 'button-loading' : ''}`}
-            >
-              {isSubmitting ? 'Submitting...' : 'Submit'}
-            </button>
-          </div>
-          <div className="editor-actions">
-            <div className="toggle-container">
-              <label className="toggle-label">
-                <span>Autocomplete</span>
-                <div className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={isAutocompleteEnabled}
-                    onChange={() => setIsAutocompleteEnabled(!isAutocompleteEnabled)}
-                  />
-                  <span className="toggle-slider"></span>
-                </div>
-              </label>
-            </div>
 
-            <div className="toggle-container">
-              <label className="toggle-label">
-                <span>Dark Mode</span>
-                <div className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={isDarkTheme}
-                    onChange={handleThemeChange}
-                  />
-                  <span className="toggle-slider"></span>
-                </div>
-              </label>
-            </div> 
-          </div>
-        </div>
-      </div>*/}
 
       {isSubmitSuccess && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
@@ -594,232 +517,221 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
       <div className="leetcode-layout">
         {/* Left panel with problem description */}
-        { !isSidebarContentOpen &&
-        <div className="description-panel">
-          <div className="flex flex-row text-[#264D64]">
-            <button
-              className={`px-4 py-2 rounded-t-md ${activeTab === 'description'
-                ? `${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6]  text-black border-gray-300"} font-semibold shadow-inner`
-                : `text-gray-500`}
+        {!isSidebarContentOpen &&
+          <div className="description-panel">
+            <div className="flex flex-row text-[#264D64]">
+              <button
+                className={`px-4 py-2 rounded-t-md ${activeTab === 'description'
+                  ? `${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6]  text-black border-gray-300"} font-semibold shadow-inner`
+                  : `text-gray-500`}
               }`}
-              onClick={() => setActiveTab('description')}
-            >
-              Description
-            </button>
-            <button
-              className={`px-4 py-2 rounded-t-md ${activeTab === 'solutions'
-                ? `${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6]  text-black border-gray-300"} bg-[#D7EFF6] font-semibold shadow-inner`
-                : 'text-gray-500 dark:text-gray-400'}`}
-              onClick={() => setActiveTab('solutions')}
-            >
-              Solutions
-            </button>
-            <button
-              className={`px-4 py-2 rounded-t-md ${activeTab === 'submission'
-                ? `bg-[#D7EFF6] ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6] text-black border-gray-300"} font-semibold shadow-inner`
-                : 'text-gray-500 dark:text-gray-400'}`}
-              onClick={() => setActiveTab('submission')}
-            >
-              Submissions
-            </button>
-          </div>
+                onClick={() => setActiveTab('description')}
+              >
+                Description
+              </button>
+              <button
+                className={`px-4 py-2 rounded-t-md ${activeTab === 'solutions'
+                  ? `${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6]  text-black border-gray-300"} bg-[#D7EFF6] font-semibold shadow-inner`
+                  : 'text-gray-500 dark:text-gray-400'}`}
+                onClick={() => setActiveTab('solutions')}
+              >
+                Solutions
+              </button>
+              <button
+                className={`px-4 py-2 rounded-t-md ${activeTab === 'submission'
+                  ? `bg-[#D7EFF6] ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6] text-black border-gray-300"} font-semibold shadow-inner`
+                  : 'text-gray-500 dark:text-gray-400'}`}
+                onClick={() => setActiveTab('submission')}
+              >
+                Submissions
+              </button>
+            </div>
 
-          <div className="description-content">
-            {activeTab === 'description' && (
-              <>
-                <div className="flex">
-                  <h1 className="problem-title">{data.details.title}</h1>
-                  {/* <span
-                    className={`difficulty-badge ml-2 mt-2
-                ${data.details.difficulty_level === "Easy" ? "easy" :
-                        data.details.difficulty_level === "Medium" ? "medium" : "hard"
-                      }`}
-                  >
-                    {data.details.difficulty_level}
-                  </span> */}
-                </div>
-
-                <div className="flex gap-3">
-                  {/* Difficulty Tag */}
-                  <div className="flex items-center text-center gap-1 px-2 py-1 rounded-md border-1 border-gray-400 text-gray-500 text-sm my-2">
-                    <img src={lightProblemIcon} className="w-3 h-3 font-bold" />
-                    <span className="text-gray-500 text-xs">{data.details.difficulty_level}</span>
+            <div className="description-content">
+              {activeTab === 'description' && (
+                <>
+                  <div className="flex">
+                    <h1 className="problem-title">{data.details.title}</h1>
                   </div>
 
-                  {/* Category Tag */}
-                  <div className="flex items-center text-center gap-1 px-2 py-1 rounded-md border text-gray-500 text-sm my-2">
-                    <img src={tagProblemIcon} className="w-3 h-3 mt-1 font-bold" />
-                    <span className="text-gray-500 text-xs">Algorithms</span>
+                  <div className="flex gap-3">
+                    {/* Difficulty Tag */}
+                    <div className="flex items-center text-center gap-1 px-2 py-1 rounded-md border-1 border-gray-400 text-gray-500 text-sm my-2">
+                      <img src={lightProblemIcon} className="w-3 h-3 font-bold" />
+                      <span className="text-gray-500 text-xs">{data.details.difficulty_level}</span>
+                    </div>
+
+                    {/* Category Tag */}
+                    <div className="flex items-center text-center gap-1 px-2 py-1 rounded-md border text-gray-500 text-sm my-2">
+                      <img src={tagProblemIcon} className="w-3 h-3 mt-1 font-bold" />
+                      <span className="text-gray-500 text-xs">Algorithms</span>
+                    </div>
+
+                    {/* Like Percentage Tag */}
+                    <div className="flex items-center text-center gap-1 px-2 py-1 rounded-md border text-gray-500 text-sm my-2">
+                      <img src={heartProblemIcon} className="w-3 h-3 mt-1 font-bold" />
+                      <span className="text-gray-500 text-xs">98.82%</span>
+                    </div>
+                  </div>
+                  <div className="problem-description mt-2" dangerouslySetInnerHTML={{ __html: data.details.problem_statement || "" }} />
+
+                  <div className="section">
+                    <h3 className="section-title">Input Format</h3>
+                    <div className="section-content" dangerouslySetInnerHTML={{ __html: data.details.input_format || "" }} />
                   </div>
 
-                  {/* Like Percentage Tag */}
-                  <div className="flex items-center text-center gap-1 px-2 py-1 rounded-md border text-gray-500 text-sm my-2">
-                    <img src={heartProblemIcon} className="w-3 h-3 mt-1 font-bold" />
-                    <span className="text-gray-500 text-xs">98.82%</span>
+                  <div className="section">
+                    <h3 className="section-title">Output Format</h3>
+                    <div className="section-content" dangerouslySetInnerHTML={{ __html: data.details.output_format || "" }} />
                   </div>
-                </div>
-                <div className="problem-description mt-2" dangerouslySetInnerHTML={{ __html: data.details.problem_statement || "" }} />
 
-                <div className="section">
-                  <h3 className="section-title">Input Format</h3>
-                  <div className="section-content" dangerouslySetInnerHTML={{ __html: data.details.input_format || "" }} />
-                </div>
-
-                <div className="section">
-                  <h3 className="section-title">Output Format</h3>
-                  <div className="section-content" dangerouslySetInnerHTML={{ __html: data.details.output_format || "" }} />
-                </div>
-
-                <div className="examples-section">
-                  <div className="example">
-                    <h3 className="example-title">Example 1:</h3>
-                    <div className="example-box">
-                      <div className="example-input">
-                        <span className="example-label">Input:</span>
-                        <pre className="example-code">{data.details.sample_input}</pre>
-                      </div>
-                      <div className="example-output">
-                        <span className="example-label">Output:</span>
-                        <pre className="example-code">{data.details.sample_output}</pre>
+                  <div className="examples-section">
+                    <div className="example">
+                      <h3 className="example-title">Example 1:</h3>
+                      <div className="example-box">
+                        <div className="example-input">
+                          <span className="example-label">Input:</span>
+                          <pre className="example-code">{data.details.sample_input}</pre>
+                        </div>
+                        <div className="example-output">
+                          <span className="example-label">Output:</span>
+                          <pre className="example-code">{data.details.sample_output}</pre>
+                        </div>
                       </div>
                     </div>
                   </div>
+                </>
+              )}
+
+              {activeTab === 'solutions' && (
+                <div className="placeholder-content">
+                  <p>Community solutions will appear here.</p>
                 </div>
-              </>
-            )}
+              )}
 
-            {activeTab === 'solutions' && (
-              <div className="placeholder-content">
-                <p>Community solutions will appear here.</p>
-              </div>
-            )}
+              {activeTab === 'submission' && (
+                <div className="submission-history">
+                  <h3 className={`text-xl font-bold mb-4 ${isDarkTheme ? "text-white" : ""}`}>Your Submissions</h3>
 
-            {activeTab === 'submission' && (
-              <div className="submission-history">
-                <h3 className={`text-xl font-bold mb-4 ${isDarkTheme ? "text-white" : ""}`}>Your Submissions</h3>
-                
-                {selectedSubmissionCode !== null && (
-                  <div className={`fixed inset-0 flex items-center justify-center z-50 ${isDarkTheme ? "bg-black bg-opacity-70" : "bg-black bg-opacity-50"}`}>
-                    <div className={`${isDarkTheme ? "bg-gray-800" : "bg-white"} p-6 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] flex flex-col`}>
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className={`text-xl font-bold ${isDarkTheme ? "text-white" : "text-gray-800"}`}>
-                          Submission Code - {submissionHistory.find(s => s.id === viewingSubmissionId)?.status}
-                        </h3>
-                        <button
-                          onClick={() => {
-                            setSelectedSubmissionCode(null);
-                            setViewingSubmissionId(null);
-                          }}
-                          className={`${isDarkTheme ? "text-gray-300 hover:text-white" : "text-gray-500 hover:text-gray-700"} text-2xl`}
-                        >
-                          &times;
-                        </button>
-                      </div>
-                      <div className="flex-grow overflow-auto">
-                        <Editor
-                          height="60vh"
-                          language={submissionHistory.find(s => s.id === viewingSubmissionId)?.language || "javascript"}
-                          value={selectedSubmissionCode}
-                          theme={isDarkTheme ? "vs-dark" : "light"}
-                          options={{
-                            readOnly: true,
-                            minimap: { enabled: false },
-                            fontSize: 14,
-                            scrollBeyondLastLine: false,
-                            automaticLayout: true,
-                            wordWrap: "on",
-                            lineNumbers: "on",
-                          }}
-                        />
+                  {selectedSubmissionCode !== null && (
+                    <div className={`fixed inset-0 flex items-center justify-center z-50 ${isDarkTheme ? "bg-black bg-opacity-70" : "bg-black bg-opacity-50"}`}>
+                      <div className={`${isDarkTheme ? "bg-gray-800" : "bg-white"} p-6 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] flex flex-col`}>
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className={`text-xl font-bold ${isDarkTheme ? "text-white" : "text-gray-800"}`}>
+                            Submission Code - {submissionHistory.find(s => s.id === viewingSubmissionId)?.status}
+                          </h3>
+                          <button
+                            onClick={() => {
+                              setSelectedSubmissionCode(null);
+                              setViewingSubmissionId(null);
+                            }}
+                            className={`${isDarkTheme ? "text-gray-300 hover:text-white" : "text-gray-500 hover:text-gray-700"} text-2xl`}
+                          >
+                            &times;
+                          </button>
+                        </div>
+                        <div className="flex-grow overflow-auto">
+                          <Editor
+                            height="60vh"
+                            language={submissionHistory.find(s => s.id === viewingSubmissionId)?.language || "javascript"}
+                            value={selectedSubmissionCode}
+                            theme={isDarkTheme ? "vs-dark" : "light"}
+                            options={{
+                              readOnly: true,
+                              minimap: { enabled: false },
+                              fontSize: 14,
+                              scrollBeyondLastLine: false,
+                              automaticLayout: true,
+                              wordWrap: "on",
+                              lineNumbers: "on",
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-                
-                {isLoadingHistory ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                  </div>
-                ) : historyError ? (
-                  <div className="text-red-500 py-4">{historyError}</div>
-                ) : submissionHistory.length === 0 ? (
-                  <p className="text-gray-500 italic">You haven't submitted any solutions yet.</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full border-collapse">
-                      <thead>
-                        <tr className={`border-b ${isDarkTheme ? "border-gray-700" : "border-gray-200"}`}>
-                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider w-16 ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>No.</th>
-                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Status</th>
-                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Language</th>
-                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Runtime</th>
-                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Memory</th>
-                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Date</th>
-                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {submissionHistory.map((submission, index) => (
-                          <tr key={submission.id} className={`${isDarkTheme ? "border-b border-gray-700 hover:bg-gray-800" : "border-b border-gray-200 hover:bg-gray-100"}`}>
-                            <td className={`py-4 px-4 text-center font-medium ${isDarkTheme ? "text-white" : ""}`}>{submissionHistory.length - index}</td>
-                            <td className="py-4 px-4">
-                              <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                submission.status === "Accepted" 
-                                  ? isDarkTheme ? "bg-green-900 text-green-200" : "bg-green-100 text-green-800" 
-                                  : submission.status === "Wrong Answer"
-                                  ? isDarkTheme ? "bg-red-900 text-red-200" : "bg-red-100 text-red-800"
-                                  : isDarkTheme ? "bg-red-900 text-red-200" : "bg-red-100 text-red-800"
-                              }`}>
-                                {submission.status}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-sm">
-                              <span className={`rounded px-2 py-1 ${
-                                isDarkTheme 
-                                  ? "bg-gray-700 text-white" 
-                                  : "bg-gray-200 text-gray-800"
-                              }`}>
-                                {submission.language === "javascript" ? "JavaScript" : 
-                                 submission.language === "typescript" ? "TypeScript" : 
-                                 submission.language === "python" ? "Python" : 
-                                 submission.language === "java" ? "Java" : 
-                                 submission.language === "cpp" ? "C++" : submission.language}
-                              </span>
-                            </td>
-                            <td className={`py-4 px-4 text-sm ${isDarkTheme ? "text-gray-300" : ""}`}>{submission.runtime || "N/A"}</td>
-                            <td className={`py-4 px-4 text-sm ${isDarkTheme ? "text-gray-300" : ""}`}>{submission.memory || "N/A"}</td>
-                            <td className={`py-4 px-4 text-sm ${isDarkTheme ? "text-gray-400" : "text-gray-500"}`}>
-                              {new Date(submission.submitted_at).toLocaleString('en-US', {
-                                month: 'short',
-                                day: '2-digit',
-                                year: 'numeric'
-                              })}
-                            </td>
-                            <td className="py-4 px-4 text-sm">
-                              <button
-                                onClick={() => {
-                                  setSelectedSubmissionCode(submission.source_code);
-                                  setViewingSubmissionId(submission.id);
-                                }}
-                                className={`px-3 py-1 rounded ${
-                                  isDarkTheme 
-                                    ? "bg-blue-700 text-white hover:bg-blue-600" 
-                                    : "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                                }`}
-                              >
-                                View Code
-                              </button>
-                            </td>
+                  )}
+
+                  {isLoadingHistory ? (
+                    <div className="flex justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    </div>
+                  ) : historyError ? (
+                    <div className="text-red-500 py-4">{historyError}</div>
+                  ) : submissionHistory.length === 0 ? (
+                    <p className="text-gray-500 italic">You haven't submitted any solutions yet.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full border-collapse">
+                        <thead>
+                          <tr className={`border-b ${isDarkTheme ? "border-gray-700" : "border-gray-200"}`}>
+                            <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider w-16 ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>No.</th>
+                            <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Status</th>
+                            <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Language</th>
+                            <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Runtime</th>
+                            <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Memory</th>
+                            <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Date</th>
+                            <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Action</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>}
+                        </thead>
+                        <tbody>
+                          {submissionHistory.map((submission, index) => (
+                            <tr key={submission.id} className={`${isDarkTheme ? "border-b border-gray-700 hover:bg-gray-800" : "border-b border-gray-200 hover:bg-gray-100"}`}>
+                              <td className={`py-4 px-4 text-center font-medium ${isDarkTheme ? "text-white" : ""}`}>{submissionHistory.length - index}</td>
+                              <td className="py-4 px-4">
+                                <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${submission.status === "Accepted"
+                                  ? isDarkTheme ? "bg-green-900 text-green-200" : "bg-green-100 text-green-800"
+                                  : submission.status === "Wrong Answer"
+                                    ? isDarkTheme ? "bg-red-900 text-red-200" : "bg-red-100 text-red-800"
+                                    : isDarkTheme ? "bg-red-900 text-red-200" : "bg-red-100 text-red-800"
+                                  }`}>
+                                  {submission.status}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-sm">
+                                <span className={`rounded px-2 py-1 ${isDarkTheme
+                                  ? "bg-gray-700 text-white"
+                                  : "bg-gray-200 text-gray-800"
+                                  }`}>
+                                  {submission.language === "javascript" ? "JavaScript" :
+                                    submission.language === "typescript" ? "TypeScript" :
+                                      submission.language === "python" ? "Python" :
+                                        submission.language === "java" ? "Java" :
+                                          submission.language === "cpp" ? "C++" : submission.language}
+                                </span>
+                              </td>
+                              <td className={`py-4 px-4 text-sm ${isDarkTheme ? "text-gray-300" : ""}`}>{submission.runtime || "N/A"}</td>
+                              <td className={`py-4 px-4 text-sm ${isDarkTheme ? "text-gray-300" : ""}`}>{submission.memory || "N/A"}</td>
+                              <td className={`py-4 px-4 text-sm ${isDarkTheme ? "text-gray-400" : "text-gray-500"}`}>
+                                {new Date(submission.submitted_at).toLocaleString('en-US', {
+                                  month: 'short',
+                                  day: '2-digit',
+                                  year: 'numeric'
+                                })}
+                              </td>
+                              <td className="py-4 px-4 text-sm">
+                                <button
+                                  onClick={() => {
+                                    setSelectedSubmissionCode(submission.source_code);
+                                    setViewingSubmissionId(submission.id);
+                                  }}
+                                  className={`px-3 py-1 rounded ${isDarkTheme
+                                    ? "bg-blue-700 text-white hover:bg-blue-600"
+                                    : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                                    }`}
+                                >
+                                  View Code
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>}
 
         {/* Right panel with code editor */}
         <div className="code-editor-panel">
@@ -879,21 +791,20 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
               {/* Run and Submit Buttons */}
               <div className="flex gap-3">
-                <button 
-                  onClick={handleRunCode} 
-                  disabled={isRunning} 
+                <button
+                  onClick={handleRunCode}
+                  disabled={isRunning}
                   className={`run-button md:text-xs xl:text-md bg-[#5FA564] h-9 ${isRunning ? 'button-loading' : ''}`}
                 >
                   {isRunning ? 'Running...' : 'Run Code'}
                 </button>
-                <button 
-                  onClick={handleSubmitCode} 
-                  disabled={isSubmitting} 
-                  className={`submit-button md:text-xs xl:text-md ${isSubmitting ? 'button-loading opacity-70' : ''} ${
-                    'bg-gray-200'
-                  } h-9`}
+                <button
+                  onClick={handleSubmitCode}
+                  disabled={isSubmitting}
+                  className={`submit-button md:text-xs xl:text-md ${isSubmitting ? 'button-loading opacity-70' : ''} ${'bg-gray-200'
+                    } h-9`}
                 >
-                  {isSubmitting ? 'Submitting...' :'Submit'}
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
                 </button>
               </div>
             </div>
@@ -1009,10 +920,10 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                                   {testCases[activeTestCase]?.status || 'Not run'}
                                 </span>
                               </div>
-                              
+
                               {testCases[activeTestCase]?.time && (
                                 <div className="mt-1 text-sm text-gray-600">
-                                  Time: {testCases[activeTestCase]?.time}s | 
+                                  Time: {testCases[activeTestCase]?.time}s |
                                   Memory: {testCases[activeTestCase]?.memory} KB
                                 </div>
                               )}
@@ -1024,15 +935,15 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                           <div className="text-sm text-gray-700 mb-1">
                             <strong>Input:</strong>
                           </div>
-                          <textarea 
+                          <textarea
                             className={`p-2 mt-2 w-full h-24 rounded text-sm border ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-gray-100 text-black border-gray-300"}`}
                             value={customInput}
                             onChange={(e) => setCustomInput(e.target.value)}
                             placeholder="Enter your custom input here..."
                           />
-                          
+
                           <div className="mt-3">
-                            <button 
+                            <button
                               className={`run-button md:text-xs xl:text-md bg-[#5FA564] px-4 py-2 rounded ${isRunning ? 'button-loading opacity-70' : ''}`}
                               onClick={handleCustomRunCode}
                               disabled={isRunning}
@@ -1040,7 +951,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                               {isRunning ? 'Running...' : 'Run with Custom Input'}
                             </button>
                           </div>
-                          
+
                           {customTestCase.output && (
                             <>
                               <div className="text-sm text-gray-700 mt-4 mb-1">
@@ -1056,10 +967,10 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                               >
                                 {customTestCase.output}
                               </pre>
-                              
+
                               {customTestCase.time && (
                                 <div className="mt-1 text-sm text-gray-600">
-                                  Time: {customTestCase.time}s | 
+                                  Time: {customTestCase.time}s |
                                   Memory: {customTestCase.memory} KB
                                 </div>
                               )}
