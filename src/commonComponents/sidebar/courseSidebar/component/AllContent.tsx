@@ -15,6 +15,7 @@ export interface ContentItem {
   order: number;
   duration_in_minutes: number;
   status?: string;
+  progress_percentage?: number;
 }
 
 interface AllContentProps {
@@ -23,6 +24,65 @@ interface AllContentProps {
   selectedContentId?: number;
   activeLabel: string;
 }
+
+// CircularProgress component for video content
+const CircularProgress = ({ progress, isComplete }: { progress: number, isComplete: boolean }) => {
+  const size = 26;
+  const strokeWidth = 2.5;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+  if (isComplete) {
+    return (
+      <div className="w-[26px] h-[26px] rounded-full bg-[#5FA564] flex items-center justify-center">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path 
+            d="M5 12l5 5L20 7" 
+            stroke="white" 
+            strokeWidth="2.5" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="relative">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="#e6e6e6"
+          strokeWidth={strokeWidth}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="#deeede"
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+        />
+      </svg>
+      
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="w-[18px] h-[18px] bg-white border border-gray-200 rounded-full flex items-center justify-center">
+          <div className="text-[9px] font-medium text-gray-500">
+            {Math.round(progress)}%
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const AllContent = ({ contents, onContentClick, selectedContentId, activeLabel }: AllContentProps) => {
   const sortedContents = [...contents].sort((a, b) => a.order - b.order);
@@ -90,12 +150,19 @@ const AllContent = ({ contents, onContentClick, selectedContentId, activeLabel }
               </div>
             </div>
 
-            <div className="w-5 h-5">
-              <img
-                src={item.status === "complete" ? completeTickIcon : tickIcon}
-                alt={item.status === "complete" ? "Completed" : "Pending"}
-                className="w-full h-full"
-              />
+            <div className="flex items-center justify-center w-5 h-5">
+              {item.content_type === "VideoTutorial" ? (
+                <CircularProgress 
+                  progress={item.status === "complete" ? 100 : (item.progress_percentage || 0)} 
+                  isComplete={item.status === "complete"} 
+                />
+              ) : (
+                <img
+                  src={item.status === "complete" ? completeTickIcon : tickIcon}
+                  alt={item.status === "complete" ? "Completed" : "Pending"}
+                  className="w-full h-full"
+                />
+              )}
             </div>
           </div>
         ))}
