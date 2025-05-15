@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { getCourseContent } from "../../../../../services/enrolled-courses-content/courseContentApis";
+import { getCourseContent, getCommentsByContentId, createComment } from "../../../../../services/enrolled-courses-content/courseContentApis";
 import {
   runCode,
   runCustomCode,
@@ -14,10 +14,13 @@ import {
   SubmissionHistoryItem
 } from "../../../../../services/enrolled-courses-content/submitApis";
 import Editor from '@monaco-editor/react';
-import testcaseIcon from "../../../../../commonComponents/icons/enrolled-courses/testcaseIcon.png";
-import lightProblemIcon from "../../../../../commonComponents/icons/enrolled-courses/lightProblemIcon.png";
-import tagProblemIcon from "../../../../../commonComponents/icons/enrolled-courses/tagProblemIcon.png";
-import heartProblemIcon from "../../../../../commonComponents/icons/enrolled-courses/heartProblemIcon.png";
+import testcaseIcon from "../../../../../commonComponents/icons/enrolled-courses/problem/testcaseIcon.png";
+import lightProblemIcon from "../../../../../commonComponents/icons/enrolled-courses/problem/lightProblemIcon.png";
+import tagProblemIcon from "../../../../../commonComponents/icons/enrolled-courses/problem/tagProblemIcon.png";
+import heartProblemIcon from "../../../../../commonComponents/icons/enrolled-courses/problem/heartProblemIcon.png";
+import descriptionIcon from "../../../../../commonComponents/icons/enrolled-courses/problem/descriptionIcon.svg";
+import commentsIcon from "../../../../../commonComponents/icons/enrolled-courses/problem/commentsIcon.svg";
+import submissionIcon from "../../../../../commonComponents/icons/enrolled-courses/problem/submissionIcon.svg";
 import './ProblemCard.css';
 
 interface ProblemCardProps {
@@ -109,6 +112,16 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [selectedSubmissionCode, setSelectedSubmissionCode] = useState<string | null>(null);
   const [viewingSubmissionId, setViewingSubmissionId] = useState<number | null>(null);
+  const [newComment, setNewComment] = useState("");
+  const [visibleComments, setVisibleComments] = useState(5);
+  const clientId = 1; // or from env/config if available
+
+  // Comments fetching
+  const { data: commentsData, isLoading: isLoadingComments, refetch: refetchComments } = useQuery({
+    queryKey: ['comments', contentId],
+    queryFn: () => getCommentsByContentId(clientId, courseId, contentId),
+    enabled: !!contentId && !!courseId && activeTab === "comments",
+  });
 
   // Run code mutation
   const runCodeMutation = useMutation({
@@ -379,6 +392,26 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   console.log("Custom Test Case:", customTestCase);
   console.log("Coding Problem", data);
 
+  // Create comment mutation
+  const createCommentMutation = useMutation({
+    mutationFn: (comment: string) => createComment(clientId, courseId, contentId, comment),
+    onSuccess: () => {
+      refetchComments();
+      setNewComment("");
+    },
+  });
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newComment.trim()) {
+      try {
+        await createCommentMutation.mutateAsync(newComment.trim());
+      } catch (error) {
+        // Optionally handle error
+      }
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="animate-pulse bg-white rounded-lg shadow-lg p-6">
@@ -519,31 +552,34 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         {/* Left panel with problem description */}
         {!isSidebarContentOpen &&
           <div className="description-panel">
-            <div className="flex flex-row text-[#264D64]">
+            <div className="flex flex-row text-[#264D64] text-sm">
               <button
-                className={`px-4 py-2 rounded-t-md ${activeTab === 'description'
-                  ? `${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6]  text-black border-gray-300"} font-semibold shadow-inner`
+                className={`flex flex-row items-center gap-2 px-4 py-2 rounded-t-md ${activeTab === 'description'
+                  ? `${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6]  text-gray-500 border-gray-300"} font-semibold shadow-inner`
                   : `text-gray-500`}
               }`}
                 onClick={() => setActiveTab('description')}
               >
+                <img src={descriptionIcon} className="w-4 h-4" />
                 Description
               </button>
               <button
-                className={`px-4 py-2 rounded-t-md ${activeTab === 'solutions'
-                  ? `${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6]  text-black border-gray-300"} bg-[#D7EFF6] font-semibold shadow-inner`
-                  : 'text-gray-500 dark:text-gray-400'}`}
-                onClick={() => setActiveTab('solutions')}
-              >
-                Solutions
-              </button>
-              <button
-                className={`px-4 py-2 rounded-t-md ${activeTab === 'submission'
-                  ? `bg-[#D7EFF6] ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6] text-black border-gray-300"} font-semibold shadow-inner`
+                className={`text-md flex flex-row items-center gap-2 px-4 py-2 rounded-t-md ${activeTab === 'submission'
+                  ? `${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6]  text-gray-500 border-gray-300"} bg-[#D7EFF6] font-semibold shadow-inner`
                   : 'text-gray-500 dark:text-gray-400'}`}
                 onClick={() => setActiveTab('submission')}
               >
+                <img src={submissionIcon} className="w-4 h-4" />
                 Submissions
+              </button>
+              <button
+                className={`flex flex-row items-center gap-2 px-4 py-2 rounded-t-md ${activeTab === 'comments'
+                  ? `bg-[#D7EFF6] ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6] text-gray-500 border-gray-300"} font-semibold shadow-inner`
+                  : 'text-gray-500 dark:text-gray-400'}`}
+                onClick={() => setActiveTab('comments')}
+              >
+                <img src={commentsIcon} className="w-4 h-4" />
+                Comments
               </button>
             </div>
 
@@ -552,6 +588,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                 <>
                   <div className="flex">
                     <h1 className="problem-title">{data.details.title}</h1>
+
                   </div>
 
                   <div className="flex gap-3">
@@ -603,15 +640,8 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                 </>
               )}
 
-              {activeTab === 'solutions' && (
-                <div className="placeholder-content">
-                  <p>Community solutions will appear here.</p>
-                </div>
-              )}
-
               {activeTab === 'submission' && (
                 <div className="submission-history">
-                  <h3 className={`text-xl font-bold mb-4 ${isDarkTheme ? "text-white" : ""}`}>Your Submissions</h3>
 
                   {selectedSubmissionCode !== null && (
                     <div className={`fixed inset-0 flex items-center justify-center z-50 ${isDarkTheme ? "bg-black bg-opacity-70" : "bg-black bg-opacity-50"}`}>
@@ -663,34 +693,45 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                     <div className="overflow-x-auto">
                       <table className="min-w-full border-collapse">
                         <thead>
-                          <tr className={`border-b ${isDarkTheme ? "border-gray-700" : "border-gray-200"}`}>
-                            <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider w-16 ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>No.</th>
-                            <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Status</th>
-                            <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Language</th>
-                            <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Runtime</th>
-                            <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Memory</th>
-                            <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Date</th>
-                            <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Action</th>
+                          <tr className={`text-sm font-extralight border-b ${isDarkTheme ? "border-gray-700" : "border-gray-200"}`}>
+                            <th className={`text-left py-3 px-4 capitalize  w-16 ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}></th>
+                            <th className={`text-left py-3 px-4 capitalize font-extralight ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Status</th>
+                            <th className={`text-left py-3 px-4 capitalize font-extralight ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Language</th>
+                            <th className={`text-left py-3 px-4 capitalize font-extralight ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Runtime</th>
+                            <th className={`text-left py-3 px-4 capitalize font-extralight ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Memory</th>
                           </tr>
                         </thead>
                         <tbody>
                           {submissionHistory.map((submission, index) => (
-                            <tr key={submission.id} className={`${isDarkTheme ? "border-b border-gray-700 hover:bg-gray-800" : "border-b border-gray-200 hover:bg-gray-100"}`}>
-                              <td className={`py-4 px-4 text-center font-medium ${isDarkTheme ? "text-white" : ""}`}>{submissionHistory.length - index}</td>
+                            <tr key={submission.id} className={`text-xs ${isDarkTheme ? "border-b border-gray-700 hover:bg-gray-800" : "border-b border-gray-200 hover:bg-gray-100"}`}>
+                              <td className={`py-4 px-4 text-center font-medium ${isDarkTheme ? "text-white" : "text-gray-500"}`}>{submissionHistory.length - index}</td>
                               <td className="py-4 px-4">
-                                <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${submission.status === "Accepted"
-                                  ? isDarkTheme ? "bg-green-900 text-green-200" : "bg-green-100 text-green-800"
-                                  : submission.status === "Wrong Answer"
-                                    ? isDarkTheme ? "bg-red-900 text-red-200" : "bg-red-100 text-red-800"
-                                    : isDarkTheme ? "bg-red-900 text-red-200" : "bg-red-100 text-red-800"
-                                  }`}>
-                                  {submission.status}
-                                </span>
+                                <div className="flex flex-col"
+                                  onClick={() => {
+                                    setSelectedSubmissionCode(submission.source_code);
+                                    setViewingSubmissionId(submission.id);
+                                  }}>
+                                  <span
+                                    className={`cursor-pointer font-semibold rounded-full ${submission.status === "Accepted"
+                                      ? "text-[#5FA564]"
+                                      : " text-[#EA4335]"
+                                      }`}>
+                                    {submission.status}
+                                  </span>
+                                  <span className="text-gray-500">
+                                    {new Date(submission.submitted_at).toLocaleString('en-US', {
+                                      month: 'short',
+                                      day: '2-digit',
+                                      year: 'numeric'
+                                    })}
+                                  </span>
+                                </div>
+
                               </td>
-                              <td className="py-4 px-4 text-sm">
+                              <td className="py-4 px-4 ">
                                 <span className={`rounded px-2 py-1 ${isDarkTheme
-                                  ? "bg-gray-700 text-white"
-                                  : "bg-gray-200 text-gray-800"
+                                  ? "bg-[#D7EFF6] text-[#264D64]"
+                                  : "bg-[#D7EFF6] text-[#264D64]"
                                   }`}>
                                   {submission.language === "javascript" ? "JavaScript" :
                                     submission.language === "typescript" ? "TypeScript" :
@@ -699,33 +740,95 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                                           submission.language === "cpp" ? "C++" : submission.language}
                                 </span>
                               </td>
-                              <td className={`py-4 px-4 text-sm ${isDarkTheme ? "text-gray-300" : ""}`}>{submission.runtime || "N/A"}</td>
-                              <td className={`py-4 px-4 text-sm ${isDarkTheme ? "text-gray-300" : ""}`}>{submission.memory || "N/A"}</td>
-                              <td className={`py-4 px-4 text-sm ${isDarkTheme ? "text-gray-400" : "text-gray-500"}`}>
-                                {new Date(submission.submitted_at).toLocaleString('en-US', {
-                                  month: 'short',
-                                  day: '2-digit',
-                                  year: 'numeric'
-                                })}
-                              </td>
-                              <td className="py-4 px-4 text-sm">
-                                <button
-                                  onClick={() => {
-                                    setSelectedSubmissionCode(submission.source_code);
-                                    setViewingSubmissionId(submission.id);
-                                  }}
-                                  className={`px-3 py-1 rounded ${isDarkTheme
-                                    ? "bg-blue-700 text-white hover:bg-blue-600"
-                                    : "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                                    }`}
-                                >
-                                  View Code
-                                </button>
-                              </td>
+                              <td className={`py-4 px-4  ${isDarkTheme ? "text-gray-300" : ""}`}>{submission.runtime || "N/A"}</td>
+                              <td className={`py-4 px-4 ${isDarkTheme ? "text-gray-300" : ""}`}>{submission.memory || "N/A"}</td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'comments' && (
+                <div className="space-y-6">
+                  {/* Add Comment Form */}
+                  <form onSubmit={handleAddComment} className="space-y-4">
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Add a comment..."
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[border-gray-300] focus:border-transparent resize-none"
+                      rows={3}
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        disabled={!newComment.trim() || createCommentMutation.isPending}
+                        className="px-4 py-2 bg-[#255C79] text-white rounded-lg hover:bg-[#1e4a61] disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {createCommentMutation.isPending ? "Posting..." : "Post Comment"}
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* Comments List */}
+                  {isLoadingComments ? (
+                    <div className="animate-pulse space-y-4">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="bg-gray-100 rounded-lg p-4">
+                          <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : commentsData?.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No comments yet. Be the first to comment!</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-140 overflow-y-auto pr-2">
+                      {[...commentsData]
+                        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                        .slice(0, visibleComments)
+                        .map((comment: any) => (
+                          <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
+                            <div className="flex items-start space-x-3">
+                              <img
+                                src="https://randomuser.me/api/portraits/men/1.jpg"
+                                alt="User"
+                                className="w-8 h-8 rounded-full"
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-semibold text-sm">{comment.user_name || 'John Doe'}</span>
+                                  <span className="text-xs text-gray-500">
+                                    {new Date(comment.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })}
+                                  </span>
+                                </div>
+                                <p className="mt-1 text-sm text-gray-700 break-words max-w-[300px]">
+                                  {comment.text}
+                                </p>
+
+
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      {commentsData && commentsData.length > visibleComments && (
+                        <div className="flex justify-center mt-4">
+                          <button
+                            onClick={() => setVisibleComments(prev => prev + 5)}
+                            className="px-4 py-2 text-sm text-[#255C79] hover:text-[#1e4a61] font-medium flex items-center space-x-1"
+                          >
+                            <span>See more comments</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
