@@ -1,28 +1,38 @@
+import { CourseIconData } from "./types";
+
 interface CourseProgressProps {
   moduleNumber: number;
   totalModules: number;
   moduleName: string;
+  stats: CourseIconData[];
 }
 
 const CourseProgress: React.FC<CourseProgressProps> = ({
   moduleNumber,
   totalModules,
   moduleName,
+  stats,
 }) => {
   // Calculate progress percentage
-  const progressPercentage = Math.round((moduleNumber / totalModules) * 100);
-  
+  const { completed, total } = stats.reduce((acc, curr) => {
+    acc.completed += curr.completed;
+    acc.total += curr.total;
+    return acc;
+  }, { completed: 0, total: 0 });
+
+  const progressPercentage = total === 0 ? 0 : Math.round((completed / total) * 100);
+
   return (
-    <div className="w-full bg-[#e9eaec] rounded-xl h-[75px] flex flex-row items-center justify-between p-4">
-      <div>
-        <h1 className="font-sans font-medium text-[13px] text-[#343A40]">
+    <div className="w-full bg-[#e9eaec] rounded-xl h-[75px] flex flex-row items-center justify-between p-4 overflow-hidden">
+      <div className="flex flex-col flex-1 min-w-0">
+        <h1 className="font-sans font-medium text-[13px] text-[#343A40] truncate">
           Module {moduleNumber}/{totalModules}
         </h1>
-        <p className="text-[13px] font-sans text-[#495057] font-normal">
+        <p className="text-[13px] font-sans text-[#495057] font-normal truncate">
           {moduleName}
         </p>
       </div>
-      <div>
+      <div className="mx-4 flex-shrink-0">
         <h1 className="font-sans font-medium text-[13px] text-[#343A40] mb-2">
           {progressPercentage}% completed
         </h1>
