@@ -187,12 +187,27 @@ const CourseSidebarContent = ({
           duration: `${content.duration_in_minutes} min`,
           marks: content.marks || 10,
           completed: content.status === 'complete',
-          // Add progress information - if not complete, show a random progress between 10-80%
-          // In a real application, this would come from the API
           progress: content.status === 'complete' ? 100 : 
                    content.status === 'in_progress' ? 
                    (content.progress_percentage || Math.floor(Math.random() * 70) + 10) : 0
         }))
+    : [];
+
+  // Transform submodule data for AllContent
+  const allContents = actualData?.data
+    ? actualData.data.map((content: SubmoduleContent) => ({
+        id: content.id,
+        title: content.title,
+        content_type: content.content_type,
+        order: content.order,
+        duration_in_minutes: content.duration_in_minutes,
+        status: content.status,
+        progress_percentage: content.content_type === 'VideoTutorial' 
+          ? (content.status === 'complete' ? 100 : 
+             content.status === 'in_progress' ? 
+             (content.progress_percentage || Math.floor(Math.random() * 70) + 10) : 0)
+          : undefined
+      }))
     : [];
 
   // Transform submodule data into problems if available
@@ -281,7 +296,7 @@ const CourseSidebarContent = ({
         )}
         {activeLabel === "All" && (
           <AllContent
-            contents={actualData?.data || []}
+            contents={allContents}
             onContentClick={handleContentClick}
             selectedContentId={selectedContentId}
             activeLabel={activeLabel}
