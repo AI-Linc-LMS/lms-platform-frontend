@@ -7,7 +7,6 @@ import {
   submitCode,
   // submitContent,
   getSubmissionHistory,
-  LANGUAGE_ID_MAPPING,
   RunCodeResult,
   CustomRunCodeResult,
   SubmitCodeResult,
@@ -40,6 +39,15 @@ interface ProblemDetails {
   sample_input: string;
   sample_output: string;
   title: string;
+  template_code: Array<{
+    language: string;
+    language_id: number;
+    template_code: string;
+  }>;
+  test_cases: Array<{
+    input: string;
+    expected_output: string;
+  }>;
 }
 
 interface ProblemData {
@@ -51,6 +59,8 @@ interface ProblemData {
 
 interface TestCase {
   test_case?: number;
+  input: string;
+  expected_output: string;
   sample_input: string;
   sample_output: string;
   userOutput?: string;
@@ -79,15 +89,15 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     queryFn: () => getCourseContent(1, courseId, contentId),
     enabled: !!contentId && !!courseId,
   });
-  const languageOptions = [
-    { value: "javascript", label: "JavaScript" },
-    { value: "typescript", label: "TypeScript" },
-    { value: "python", label: "Python" },
-    { value: "java", label: "Java" },
-    { value: "cpp", label: "C++" },
-  ];
 
-  const [code, setCode] = useState("// Write your code here");
+  // Get available languages from template codes
+  const availableLanguages = data?.details?.template_code?.map(tc => ({
+    value: tc.language.toLowerCase().replace(/\s+/g, ''),
+    label: tc.language,
+    language_id: tc.language_id
+  })) || [];
+
+  const [code, setCode] = useState("");
   const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(true);
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
     const saved = localStorage.getItem('ide-theme');
@@ -102,7 +112,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [isResizing, setIsResizing] = useState(false);
   const [isDropdownHovered, setIsDropdownHovered] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState(languageOptions[0].value);
+  const [selectedLanguage, setSelectedLanguage] = useState("");
   const [activeTestCase, setActiveTestCase] = useState<number>(0);
   const [customInput, setCustomInput] = useState("");
   const [customTestCase, setCustomTestCase] = useState<CustomTestCase>({ input: '' });
@@ -114,7 +124,46 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const [viewingSubmissionId, setViewingSubmissionId] = useState<number | null>(null);
   const [newComment, setNewComment] = useState("");
   const [visibleComments, setVisibleComments] = useState(5);
-  const clientId = 1; // or from env/config if available
+  const clientId = 1;
+
+  // Set default language when data is loaded
+  useEffect(() => {
+    if (data?.details?.template_code && data.details.template_code.length > 0) {
+      const defaultLanguage = data.details.template_code[0].language.toLowerCase().replace(/\s+/g, '');
+      setSelectedLanguage(defaultLanguage);
+    }
+  }, [data]);
+
+  // Initialize code with template when data is loaded or language changes
+  useEffect(() => {
+    if (data?.details?.template_code && selectedLanguage) {
+      const template = data.details.template_code.find(
+        tc => tc.language.toLowerCase().replace(/\s+/g, '') === selectedLanguage
+      );
+      if (template) {
+        setCode(template.template_code);
+      }
+    }
+  }, [data, selectedLanguage]);
+
+  // Initialize test cases when data is loaded
+  useEffect(() => {
+    if (data?.details?.test_cases) {
+      const formattedTestCases = data.details.test_cases.map((tc, index) => ({
+        test_case: index + 1,
+        sample_input: tc.input,
+        sample_output: tc.expected_output,
+        status: undefined,
+        userOutput: undefined,
+        time: undefined,
+        memory: undefined,
+        input: tc.input,
+        expected_output: tc.expected_output
+      }));
+      setTestCases(formattedTestCases);
+    }
+  }, [data]);
+  console.log('testCases', testCases);
 
   // Comments fetching
   const { data: commentsData, isLoading: isLoadingComments, refetch: refetchComments } = useQuery({
@@ -125,13 +174,18 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
   // Run code mutation
   const runCodeMutation = useMutation({
-    mutationFn: () => runCode(
-      1,
-      courseId,
-      contentId,
-      code,
-      LANGUAGE_ID_MAPPING[selectedLanguage as keyof typeof LANGUAGE_ID_MAPPING]
-    ),
+    mutationFn: () => {
+      const selectedTemplate = data?.details?.template_code?.find(
+        tc => tc.language.toLowerCase().replace(/\s+/g, '') === selectedLanguage
+      );
+      return runCode(
+        1,
+        courseId,
+        contentId,
+        code,
+        selectedTemplate?.language_id || 0
+      );
+    },
     onSuccess: (data: RunCodeResult) => {
       const updatedTestCases = data.results.map(result => ({
         test_case: result.test_case,
@@ -164,14 +218,19 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
   // Run custom code mutation
   const runCustomCodeMutation = useMutation({
-    mutationFn: (input: string) => runCustomCode(
-      1,
-      courseId,
-      contentId,
-      code,
-      LANGUAGE_ID_MAPPING[selectedLanguage as keyof typeof LANGUAGE_ID_MAPPING],
-      input
-    ),
+    mutationFn: (input: string) => {
+      const selectedTemplate = data?.details?.template_code?.find(
+        tc => tc.language.toLowerCase().replace(/\s+/g, '') === selectedLanguage
+      );
+      return runCustomCode(
+        1,
+        courseId,
+        contentId,
+        code,
+        selectedTemplate?.language_id || 0,
+        input
+      );
+    },
     onSuccess: (data: CustomRunCodeResult) => {
       setCustomTestCase({
         input: data.input,
@@ -319,13 +378,18 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
   // Submit code mutation
   const submitCodeMutation = useMutation({
-    mutationFn: () => submitCode(
-      1,
-      courseId,
-      contentId,
-      code,
-      LANGUAGE_ID_MAPPING[selectedLanguage as keyof typeof LANGUAGE_ID_MAPPING]
-    ),
+    mutationFn: () => {
+      const selectedTemplate = data?.details?.template_code?.find(
+        tc => tc.language.toLowerCase().replace(/\s+/g, '') === selectedLanguage
+      );
+      return submitCode(
+        1,
+        courseId,
+        contentId,
+        code,
+        selectedTemplate?.language_id || 0
+      );
+    },
     onSuccess: (data: SubmitCodeResult) => {
       const success = data.status === "Accepted";
       setResults({
@@ -375,17 +439,17 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   });
 
   // Mock test cases based on sample input/output from the problem
-  React.useEffect(() => {
-    if (data?.details) {
-      setTestCases([
-        {
-          test_case: 1,
-          sample_input: data.details.sample_input,
-          sample_output: data.details.sample_output,
-        }
-      ]);
-    }
-  }, [data]);
+  // React.useEffect(() => {
+  //   if (data?.details) {
+  //     setTestCases([
+  //       {
+  //         test_case: 1,
+  //         sample_input: data.details.sample_input,
+  //         sample_output: data.details.sample_output,
+  //       }
+  //     ]);
+  //   }
+  // }, [data]);
 
   // Log results for debugging
   console.log("Results:", results);
@@ -844,14 +908,14 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                 {/* Language Dropdown */}
                 <div className="relative inline-block text-sm" onClick={() => setIsDropdownHovered(!isDropdownHovered)}>
                   <div className={`border text-center px-2 py-1 text-gray-700 text-xs cursor-pointer flex justify-between items-center w-full rounded-md gap-1 h-9 ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-white text-black border-gray-300"}`}>
-                    <span>{languageOptions.find(opt => opt.value === selectedLanguage)?.label}</span>
+                    <span>{availableLanguages.find(opt => opt.value === selectedLanguage)?.label || 'Select Language'}</span>
                     <span className="text-[13px]">{isDropdownHovered ? "▲" : "▼"}</span>
                   </div>
 
                   {/* Dropdown options */}
                   {isDropdownHovered && (
                     <ul className={`absolute left-0 mt-1 w-40 rounded-md shadow-md z-10 text-xs border ${isDarkTheme ? "bg-gray-800 border-gray-600 text-white" : "bg-white border-gray-300 text-black"}`}>
-                      {languageOptions.map(option => (
+                      {availableLanguages.map(option => (
                         <li
                           key={option.value}
                           onClick={() => {
@@ -985,14 +1049,14 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                             <strong>Input:</strong>
                           </div>
                           <pre className={`p-2 mt-2 rounded text-sm ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-gray-200 text-black border-gray-300"}`}>
-                            {testCases[activeTestCase]?.sample_input ?? 'Loading...'}
+                            {testCases[activeTestCase]?.sample_input}
                           </pre>
 
                           <div className="text-sm text-gray-700 mt-4 mb-1">
                             <strong>Expected Output:</strong>
                           </div>
                           <pre className={`p-2 mt-2 rounded text-sm ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-gray-200 text-black border-gray-300"} text-gray-800`}>
-                            {testCases[activeTestCase]?.sample_output ?? 'Loading...'}
+                            {testCases[activeTestCase]?.sample_output}
                           </pre>
                           {testCases[activeTestCase]?.status && (
                             <div>
@@ -1030,7 +1094,8 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                                   Memory: {testCases[activeTestCase]?.memory} KB
                                 </div>
                               )}
-                            </div>)}
+                            </div>
+                          )}
                         </>
                       ) : (
                         <div>
