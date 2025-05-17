@@ -860,22 +860,45 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                           <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
                             <div className="flex items-start space-x-3">
                               <img
-                                src="https://randomuser.me/api/portraits/men/1.jpg"
-                                alt="User"
-                                className="w-8 h-8 rounded-full"
+                                src={comment.user_profile?.profile_pic_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.user_profile?.user_name || 'User')}&background=0D8ABC&color=fff&size=128&rounded=true`}
+                                alt={comment.user_profile?.user_name || 'User'}
+                                className="w-8 h-8 rounded-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.user_profile?.user_name || 'User')}&background=0D8ABC&color=fff&size=128&rounded=true`;
+                                }}
                               />
                               <div className="flex-1">
                                 <div className="flex items-center justify-between">
-                                  <span className="font-semibold text-sm">{comment.user_name || 'John Doe'}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-sm">{comment.user_profile?.user_name || 'Anonymous User'}</span>
+                                    {comment.user_profile?.role && (
+                                      <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
+                                        {comment.user_profile.role}
+                                      </span>
+                                    )}
+                                  </div>
                                   <span className="text-xs text-gray-500">
                                     {new Date(comment.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })}
                                   </span>
                                 </div>
-                                <p className="mt-1 text-sm text-gray-700 break-words max-w-[300px]">
+                                <p className="mt-1 text-sm text-gray-700 break-words max-w-[450px]">
                                   {comment.text}
                                 </p>
-
-
+                                <div className="flex items-center gap-4 mt-2">
+                                  <button className="flex items-center text-gray-500 hover:text-blue-500 text-xs">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                                    </svg>
+                                    {comment.likes || 0}
+                                  </button>
+                                  <button className="flex items-center text-gray-500 hover:text-red-500 text-xs">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+                                    </svg>
+                                    {comment.dislikes || 0}
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1084,7 +1107,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                                       : 'text-red-700'
                                     }`}
                                 >
-                                  {testCases[activeTestCase]?.status || 'Not run'}
+                                  {testCases[activeTestCase]?.status || 'failed'}
                                 </span>
                               </div>
 
