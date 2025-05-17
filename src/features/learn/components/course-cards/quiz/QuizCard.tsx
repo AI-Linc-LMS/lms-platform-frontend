@@ -51,6 +51,7 @@ interface QuizCardProps {
   onSubmission?: (contentId: number) => void;
   onReset?: (contentId: number) => void;
   onStartNextQuiz?: () => void;
+  isVisible?: boolean;
 }
 
 const QuizCard: React.FC<QuizCardProps> = ({
@@ -60,7 +61,8 @@ const QuizCard: React.FC<QuizCardProps> = ({
   quizData: injectedData,
   onSubmission,
   onReset,
-  onStartNextQuiz
+  onStartNextQuiz,
+  isVisible = true
 }) => {
   const navigate = useNavigate();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -81,13 +83,13 @@ const QuizCard: React.FC<QuizCardProps> = ({
     enabled: !!contentId && !!courseId && !injectedData,
   });
 
-  console.log("quiz Data", fetchedData);
+  //console.log("quiz Data", fetchedData);
 
   // Use either injected data or fetched data
   const data = injectedData || fetchedData;
   const optionLetters = ['A', 'B', 'C', 'D'];
 
-  console.log("userAnswers", userAnswers);
+  //console.log("userAnswers", userAnswers);
   useEffect(() => {
     if (data?.details?.mcqs) {
       setTotalQuestions(data.details.mcqs.length);
@@ -102,23 +104,20 @@ const QuizCard: React.FC<QuizCardProps> = ({
   }, [data]);
 
   useEffect(() => {
-    if (data?.duration_in_minutes) {
-      let totalSeconds = data.duration_in_minutes * 60;
-
-      const interval = setInterval(() => {
-        if (totalSeconds > 0) {
-          totalSeconds -= 1;
-          const minutesLeft = Math.floor(totalSeconds / 60);
-          const secondsLeft = totalSeconds % 60;
-          setFormattedTime(`${minutesLeft.toString().padStart(2, '0')}:${secondsLeft.toString().padStart(2, '0')}`);
-        } else {
-          clearInterval(interval);
-        }
-      }, 1000);
-
-      return () => clearInterval(interval);
-    }
-  }, [data?.duration_in_minutes]);
+    if (!isVisible || !data?.duration_in_minutes) return;
+    let totalSeconds = data.duration_in_minutes * 60;
+    const interval = setInterval(() => {
+      if (totalSeconds > 0) {
+        totalSeconds -= 1;
+        const minutesLeft = Math.floor(totalSeconds / 60);
+        const secondsLeft = totalSeconds % 60;
+        setFormattedTime(`${minutesLeft.toString().padStart(2, '0')}:${secondsLeft.toString().padStart(2, '0')}`);
+      } else {
+        clearInterval(interval);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [data?.duration_in_minutes, isVisible]);
 
   if (isLoading && !injectedData) {
     return (
@@ -188,6 +187,23 @@ const QuizCard: React.FC<QuizCardProps> = ({
       finishQuiz();
     }
   };
+
+  const handleFinish = () => {
+    setSubmitted(true);
+    setTotalSubmissions(prev => prev + 1);
+
+    const isCorrect = selectedOption === currentQuestion.correct_option;
+
+    // Update userAnswers state with selection
+    updateUserAnswer(currentQuestionIndex, selectedOption!, isCorrect);
+
+    // Notify parent component about submission
+    if (onSubmission) {
+      onSubmission(contentId);
+    }
+
+    finishQuiz();
+  }
 
   const navigateToNext = () => {
     const nextIndex = currentQuestionIndex + 1;
@@ -325,6 +341,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
     );
   }
 
+
   function renderReviewContent() {
     if (isReviewing) {
       return (
@@ -440,7 +457,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
         >
           <div className="flex flex-col items-center">
             <div>
-              <img src={tickicon} alt="tickicon" className="w-50 h-40" />
+              <img src={tickicon} alt="tickicon" className="w-50 h-40" loading="lazy" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-2 ">Quiz Submitted Successfully</h2>
             <button className="mt-4 px-6 py-2 bg-white text-[#255C79] rounded-md font-medium text-sm md:text-base hover:bg-[#1a4a5f]">View Overall Results</button>
@@ -453,7 +470,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
           <div className="relative bg-white/70 flex flex-row justify-between rounded-lg p-6 shadow overflow-hidden rounded-3xl">
             {/* Rotated background layer */}
             <div
-              className="absolute -left-10 -top-40 w-[150%] h-[300%] rotate-[-25deg] z-0 rounded-3xl"
+              className="absolute -left-10 top-[-250px] w-[150%] h-[300%] rotate-[-25deg] z-0 rounded-3xl"
               style={{
                 backgroundImage: `url(${leftbg})`,
                 backgroundSize: 'cover',
@@ -463,7 +480,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
               }}
             ></div>
 
-            {/* Content */}
+            {/*left Content */}
             <div className="relative z-10 flex flex-col justify-between h-full">
               <div className="text-3xl font-semibold text-[#12293A] mt-1">Your Score</div>
 
@@ -472,7 +489,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
                 <span className="text-5xl text-[#12293A]"> out of {mcqs.length}</span> </div>
             </div>
             <div>
-              <img src={trophy} alt="trophy" className="relative w-60 h-50 rotate-[-30deg] top-[60px] left-[50px]" />
+              <img src={trophy} alt="trophy" className="relative w-60 h-50 rotate-[-30deg] top-[60px] left-[50px]" loading="lazy" />
             </div>
           </div>
 
@@ -488,7 +505,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
               </button>
             </div>
             <div>
-              <img src={challenge} alt="trophy" className="relative w-70 h-50 left-[40px]" />
+              <img src={challenge} alt="trophy" className="relative w-70 h-50 left-[40px]" loading="lazy" />
             </div>
           </div>
         </div>
@@ -591,16 +608,35 @@ const QuizCard: React.FC<QuizCardProps> = ({
             </button>
           )}
 
-          <button
-            onClick={handleNext}
-            disabled={selectedOption === null}
-            className={`px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium ml-auto ${selectedOption === null
-              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-              : "bg-[#255C79] text-white hover:bg-[#1a4a5f]"
-              }`}
-          >
-            {currentQuestionIndex < mcqs.length - 1 ? "Next" : "Finish Quiz"}
-          </button>
+          {currentQuestionIndex < mcqs.length - 1 && (
+            <button
+              onClick={handleNext}
+              disabled={selectedOption === null}
+              className={`px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium ml-auto ${selectedOption === null
+                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                : "bg-[#255C79] text-white hover:bg-[#1a4a5f]"
+                }`}
+            >
+              Next
+            </button>
+          )}
+
+          {currentQuestionIndex === mcqs.length - 1 && userAnswers.some(answer => answer.selectedOption === null) && (
+            <span className="ml-auto text-xs text-red-500 font-medium">Attempt all questions before finishing quiz</span>
+          )}
+
+          {currentQuestionIndex === mcqs.length - 1 && userAnswers.every(answer => answer.selectedOption !== null) && (
+            <button
+              onClick={handleFinish}
+              disabled={selectedOption === null}
+              className={`px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium ml-auto ${selectedOption === null
+                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                : "bg-[#255C79] text-white hover:bg-[#1a4a5f]"
+                }`}
+            >
+              Finish Quiz
+            </button>
+          )}
         </div>
 
         {/* Timer */}

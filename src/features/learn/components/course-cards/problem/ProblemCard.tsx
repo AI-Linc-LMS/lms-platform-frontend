@@ -1,23 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { getCourseContent } from "../../../../../services/enrolled-courses-content/courseContentApis";
-import { 
-  runCode, 
-  runCustomCode, 
-  submitCode, 
+import { getCourseContent, getCommentsByContentId, createComment } from "../../../../../services/enrolled-courses-content/courseContentApis";
+import {
+  runCode,
+  runCustomCode,
+  submitCode,
   // submitContent,
   getSubmissionHistory,
-  LANGUAGE_ID_MAPPING,
   RunCodeResult,
   CustomRunCodeResult,
   SubmitCodeResult,
   SubmissionHistoryItem
 } from "../../../../../services/enrolled-courses-content/submitApis";
 import Editor from '@monaco-editor/react';
-import testcaseIcon from "../../../../../commonComponents/icons/enrolled-courses/testcaseIcon.png";
-import lightProblemIcon from "../../../../../commonComponents/icons/enrolled-courses/lightProblemIcon.png";
-import tagProblemIcon from "../../../../../commonComponents/icons/enrolled-courses/tagProblemIcon.png";
-import heartProblemIcon from "../../../../../commonComponents/icons/enrolled-courses/heartProblemIcon.png";
+import testcaseIcon from "../../../../../commonComponents/icons/enrolled-courses/problem/testcaseIcon.png";
+import lightProblemIcon from "../../../../../commonComponents/icons/enrolled-courses/problem/lightProblemIcon.png";
+import tagProblemIcon from "../../../../../commonComponents/icons/enrolled-courses/problem/tagProblemIcon.png";
+import heartProblemIcon from "../../../../../commonComponents/icons/enrolled-courses/problem/heartProblemIcon.png";
+import descriptionIcon from "../../../../../commonComponents/icons/enrolled-courses/problem/descriptionIcon.svg";
+import commentsIcon from "../../../../../commonComponents/icons/enrolled-courses/problem/commentsIcon.svg";
+import submissionIcon from "../../../../../commonComponents/icons/enrolled-courses/problem/submissionIcon.svg";
 import './ProblemCard.css';
 
 interface ProblemCardProps {
@@ -37,6 +39,15 @@ interface ProblemDetails {
   sample_input: string;
   sample_output: string;
   title: string;
+  template_code: Array<{
+    language: string;
+    language_id: number;
+    template_code: string;
+  }>;
+  test_cases: Array<{
+    input: string;
+    expected_output: string;
+  }>;
 }
 
 interface ProblemData {
@@ -48,6 +59,8 @@ interface ProblemData {
 
 interface TestCase {
   test_case?: number;
+  input: string;
+  expected_output: string;
   sample_input: string;
   sample_output: string;
   userOutput?: string;
@@ -76,15 +89,15 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     queryFn: () => getCourseContent(1, courseId, contentId),
     enabled: !!contentId && !!courseId,
   });
-  const languageOptions = [
-    { value: "javascript", label: "JavaScript" },
-    { value: "typescript", label: "TypeScript" },
-    { value: "python", label: "Python" },
-    { value: "java", label: "Java" },
-    { value: "cpp", label: "C++" },
-  ];
 
-  const [code, setCode] = useState("// Write your code here");
+  // Get available languages from template codes
+  const availableLanguages = data?.details?.template_code?.map(tc => ({
+    value: tc.language.toLowerCase().replace(/\s+/g, ''),
+    label: tc.language,
+    language_id: tc.language_id
+  })) || [];
+
+  const [code, setCode] = useState("");
   const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(true);
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
     const saved = localStorage.getItem('ide-theme');
@@ -99,7 +112,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [isResizing, setIsResizing] = useState(false);
   const [isDropdownHovered, setIsDropdownHovered] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState(languageOptions[0].value);
+  const [selectedLanguage, setSelectedLanguage] = useState("");
   const [activeTestCase, setActiveTestCase] = useState<number>(0);
   const [customInput, setCustomInput] = useState("");
   const [customTestCase, setCustomTestCase] = useState<CustomTestCase>({ input: '' });
@@ -109,16 +122,70 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [selectedSubmissionCode, setSelectedSubmissionCode] = useState<string | null>(null);
   const [viewingSubmissionId, setViewingSubmissionId] = useState<number | null>(null);
-  
+  const [newComment, setNewComment] = useState("");
+  const [visibleComments, setVisibleComments] = useState(5);
+  const clientId = 1;
+
+  // Set default language when data is loaded
+  useEffect(() => {
+    if (data?.details?.template_code && data.details.template_code.length > 0) {
+      const defaultLanguage = data.details.template_code[0].language.toLowerCase().replace(/\s+/g, '');
+      setSelectedLanguage(defaultLanguage);
+    }
+  }, [data]);
+
+  // Initialize code with template when data is loaded or language changes
+  useEffect(() => {
+    if (data?.details?.template_code && selectedLanguage) {
+      const template = data.details.template_code.find(
+        tc => tc.language.toLowerCase().replace(/\s+/g, '') === selectedLanguage
+      );
+      if (template) {
+        setCode(template.template_code);
+      }
+    }
+  }, [data, selectedLanguage]);
+
+  // Initialize test cases when data is loaded
+  useEffect(() => {
+    if (data?.details?.test_cases) {
+      const formattedTestCases = data.details.test_cases.map((tc, index) => ({
+        test_case: index + 1,
+        sample_input: tc.input,
+        sample_output: tc.expected_output,
+        status: undefined,
+        userOutput: undefined,
+        time: undefined,
+        memory: undefined,
+        input: tc.input,
+        expected_output: tc.expected_output
+      }));
+      setTestCases(formattedTestCases);
+    }
+  }, [data]);
+  console.log('testCases', testCases);
+
+  // Comments fetching
+  const { data: commentsData, isLoading: isLoadingComments, refetch: refetchComments } = useQuery({
+    queryKey: ['comments', contentId],
+    queryFn: () => getCommentsByContentId(clientId, courseId, contentId),
+    enabled: !!contentId && !!courseId && activeTab === "comments",
+  });
+
   // Run code mutation
   const runCodeMutation = useMutation({
-    mutationFn: () => runCode(
-      1, 
-      courseId, 
-      contentId, 
-      code, 
-      LANGUAGE_ID_MAPPING[selectedLanguage as keyof typeof LANGUAGE_ID_MAPPING]
-    ),
+    mutationFn: () => {
+      const selectedTemplate = data?.details?.template_code?.find(
+        tc => tc.language.toLowerCase().replace(/\s+/g, '') === selectedLanguage
+      );
+      return runCode(
+        1,
+        courseId,
+        contentId,
+        code,
+        selectedTemplate?.language_id || 0
+      );
+    },
     onSuccess: (data: RunCodeResult) => {
       const updatedTestCases = data.results.map(result => ({
         test_case: result.test_case,
@@ -129,36 +196,41 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         time: result.time,
         memory: result.memory
       })) as TestCase[];
-      
+
       setTestCases(updatedTestCases);
-      
+
       const success = updatedTestCases.every(tc => tc.status === 'passed');
       setResults({
-        success, 
+        success,
         message: success ? "All test cases passed!" : "Some test cases failed."
       });
       setIsRunning(false);
     },
     onError: (error) => {
       console.error("Error running code:", error);
-      setResults({ 
-        success: false, 
+      setResults({
+        success: false,
         message: "Error running code. Please try again."
       });
       setIsRunning(false);
     }
   });
-  
+
   // Run custom code mutation
   const runCustomCodeMutation = useMutation({
-    mutationFn: (input: string) => runCustomCode(
-      1, 
-      courseId, 
-      contentId, 
-      code, 
-      LANGUAGE_ID_MAPPING[selectedLanguage as keyof typeof LANGUAGE_ID_MAPPING],
-      input
-    ),
+    mutationFn: (input: string) => {
+      const selectedTemplate = data?.details?.template_code?.find(
+        tc => tc.language.toLowerCase().replace(/\s+/g, '') === selectedLanguage
+      );
+      return runCustomCode(
+        1,
+        courseId,
+        contentId,
+        code,
+        selectedTemplate?.language_id || 0,
+        input
+      );
+    },
     onSuccess: (data: CustomRunCodeResult) => {
       setCustomTestCase({
         input: data.input,
@@ -179,13 +251,13 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       setIsRunning(false);
     }
   });
-  
+
   // Fetch submission history when the component loads or when a new submission is made
   useEffect(() => {
     const fetchSubmissionHistory = async () => {
       setIsLoadingHistory(true);
       setHistoryError(null);
-      
+
       try {
         // Try to fetch from API
         const history = await getSubmissionHistory(1, courseId, contentId);
@@ -194,7 +266,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         console.error("Error fetching submission history:", error);
         // API not available or error - use fallback data
         console.log("Using fallback submission history data");
-        
+
         // Create fallback data based on recent results
         if (results?.success !== undefined) {
           // If we have recent submission results, add that to our history
@@ -207,7 +279,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
             language: selectedLanguage,
             source_code: code
           };
-          
+
           // Create mock history with the recent submission
           const mockHistory: SubmissionHistoryItem[] = [
             newSubmission,
@@ -248,7 +320,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
               source_code: "// Old code with wrong answer"
             }
           ];
-          
+
           setSubmissionHistory(mockHistory);
         } else {
           // If no recent submission, use the default mock data
@@ -290,38 +362,43 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
               source_code: "// Old code with wrong output"
             }
           ];
-          
+
           setSubmissionHistory(mockHistory);
         }
-        
+
         // Don't show the error message since we have fallback data
         setHistoryError(null);
       } finally {
         setIsLoadingHistory(false);
       }
     };
-    
+
     fetchSubmissionHistory();
   }, [courseId, contentId, results, code, selectedLanguage]);
-  
+
   // Submit code mutation
   const submitCodeMutation = useMutation({
-    mutationFn: () => submitCode(
-      1, 
-      courseId, 
-      contentId, 
-      code, 
-      LANGUAGE_ID_MAPPING[selectedLanguage as keyof typeof LANGUAGE_ID_MAPPING]
-    ),
+    mutationFn: () => {
+      const selectedTemplate = data?.details?.template_code?.find(
+        tc => tc.language.toLowerCase().replace(/\s+/g, '') === selectedLanguage
+      );
+      return submitCode(
+        1,
+        courseId,
+        contentId,
+        code,
+        selectedTemplate?.language_id || 0
+      );
+    },
     onSuccess: (data: SubmitCodeResult) => {
       const success = data.status === "Accepted";
       setResults({
         success,
-        message: success 
-          ? `Solution accepted! Passed ${data.passed}/${data.total_test_cases} test cases.` 
+        message: success
+          ? `Solution accepted! Passed ${data.passed}/${data.total_test_cases} test cases.`
           : `Failed ${data.failed}/${data.total_test_cases} test cases.`
       });
-      
+
       // Add the new submission to local history
       const newSubmission: SubmissionHistoryItem = {
         id: Date.now(),
@@ -332,70 +409,72 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         language: selectedLanguage,
         source_code: code
       };
-      
+
       // Update local history right away for immediate feedback
       setSubmissionHistory(prevHistory => [newSubmission, ...prevHistory]);
-      
+
       // Call onSubmit to notify the parent that code was submitted
       onSubmit(code);
-      
+
       // If the submission was successful, call onComplete to mark the problem as complete
       if (success && onComplete) {
         console.log("Solution was accepted! Calling onComplete callback");
         setIsSubmitSuccess(true);
-        
-        // Directly call submitContent to update the status
-        // submitContent(
-        //   1, 
-        //   courseId, 
-        //   contentId, 
-        //   'CodingProblem', 
-        //   { status: 'complete' },
-        //   'updateStatus'
-        // )
-        // .then(statusCode => {
-        //   console.log("Status update response:", statusCode);
-        //   // Now call the onComplete callback for UI updates
-        //   onComplete();
-        // })
-        // .catch(error => {
-        //   console.error("Failed to update status:", error);
-        //   // Still call onComplete for UI updates
-        //   onComplete();
-        // });
+
+
       } else {
         console.log(`Solution ${success ? 'accepted' : 'rejected'}, onComplete callback: ${onComplete ? 'provided' : 'not provided'}`);
       }
-      
+
       setIsSubmitting(false);
     },
     onError: (error) => {
       console.error("Error submitting code:", error);
-      setResults({ 
-        success: false, 
+      setResults({
+        success: false,
         message: "Error submitting code. Please try again."
       });
       setIsSubmitting(false);
     }
   });
-  
+
   // Mock test cases based on sample input/output from the problem
-  React.useEffect(() => {
-    if (data?.details) {
-      setTestCases([
-        {
-          test_case: 1,
-          sample_input: data.details.sample_input,
-          sample_output: data.details.sample_output,
-        }
-      ]);
-    }
-  }, [data]);
+  // React.useEffect(() => {
+  //   if (data?.details) {
+  //     setTestCases([
+  //       {
+  //         test_case: 1,
+  //         sample_input: data.details.sample_input,
+  //         sample_output: data.details.sample_output,
+  //       }
+  //     ]);
+  //   }
+  // }, [data]);
 
   // Log results for debugging
   console.log("Results:", results);
   console.log("Custom Test Case:", customTestCase);
   console.log("Coding Problem", data);
+
+  // Create comment mutation
+  const createCommentMutation = useMutation({
+    mutationFn: (comment: string) => createComment(clientId, courseId, contentId, comment),
+    onSuccess: () => {
+      refetchComments();
+      setNewComment("");
+    },
+  });
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newComment.trim()) {
+      try {
+        await createCommentMutation.mutateAsync(newComment.trim());
+      } catch (error) {
+        // Optionally handle error
+      }
+    }
+  };
 
   if (isLoading) {
     return (
@@ -457,7 +536,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
     setIsRunning(true);
     setResults(null);
-    
+
     // Run the code with custom input
     runCustomCodeMutation.mutate(customInput);
   };
@@ -512,66 +591,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
   return (
     <div className={`problem-card-container rounded-2xl ${isDarkTheme ? 'dark-mode' : ''}`}>
-      {/* <div className="problem-header rounded-2xl">
-        <div className="problem-title-section">
-          <div className="flex">
-            <h1 className="problem-title">{data.details.title}</h1>
-            <span
-              className={`difficulty-badge ml-2 mt-2
-                ${data.details.difficulty_level === "Easy" ? "easy" :
-                  data.details.difficulty_level === "Medium" ? "medium" : "hard"
-                }`}
-            >
-              {data.details.difficulty_level}
-            </span>
-          </div>
-          <div className="run-submit-buttons">
-            <button
-              onClick={handleRunCode}
-              disabled={isRunning}
-              className={`run-button ${isRunning ? 'button-loading' : ''}`}
-            >
-              {isRunning ? 'Running...' : 'Run'}
-            </button>
-            <button
-              onClick={handleSubmitCode}
-              disabled={isSubmitting}
-              className={`submit-button ${isSubmitting ? 'button-loading' : ''}`}
-            >
-              {isSubmitting ? 'Submitting...' : 'Submit'}
-            </button>
-          </div>
-          <div className="editor-actions">
-            <div className="toggle-container">
-              <label className="toggle-label">
-                <span>Autocomplete</span>
-                <div className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={isAutocompleteEnabled}
-                    onChange={() => setIsAutocompleteEnabled(!isAutocompleteEnabled)}
-                  />
-                  <span className="toggle-slider"></span>
-                </div>
-              </label>
-            </div>
 
-            <div className="toggle-container">
-              <label className="toggle-label">
-                <span>Dark Mode</span>
-                <div className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={isDarkTheme}
-                    onChange={handleThemeChange}
-                  />
-                  <span className="toggle-slider"></span>
-                </div>
-              </label>
-            </div> 
-          </div>
-        </div>
-      </div>*/}
 
       {isSubmitSuccess && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
@@ -594,250 +614,308 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
       <div className="leetcode-layout">
         {/* Left panel with problem description */}
-        { !isSidebarContentOpen &&
-        <div className="description-panel">
-          <div className="flex flex-row text-[#264D64]">
-            <button
-              className={`px-4 py-2 rounded-t-md ${activeTab === 'description'
-                ? `${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6]  text-black border-gray-300"} font-semibold shadow-inner`
-                : `text-gray-500`}
+        {!isSidebarContentOpen &&
+          <div className="description-panel">
+            <div className="flex flex-row text-[#264D64] text-sm">
+              <button
+                className={`flex flex-row items-center gap-2 px-4 py-2 rounded-t-md ${activeTab === 'description'
+                  ? `${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6]  text-gray-500 border-gray-300"} font-semibold shadow-inner`
+                  : `text-gray-500`}
               }`}
-              onClick={() => setActiveTab('description')}
-            >
-              Description
-            </button>
-            <button
-              className={`px-4 py-2 rounded-t-md ${activeTab === 'solutions'
-                ? `${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6]  text-black border-gray-300"} bg-[#D7EFF6] font-semibold shadow-inner`
-                : 'text-gray-500 dark:text-gray-400'}`}
-              onClick={() => setActiveTab('solutions')}
-            >
-              Solutions
-            </button>
-            <button
-              className={`px-4 py-2 rounded-t-md ${activeTab === 'submission'
-                ? `bg-[#D7EFF6] ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6] text-black border-gray-300"} font-semibold shadow-inner`
-                : 'text-gray-500 dark:text-gray-400'}`}
-              onClick={() => setActiveTab('submission')}
-            >
-              Submissions
-            </button>
-          </div>
+                onClick={() => setActiveTab('description')}
+              >
+                <img src={descriptionIcon} className="w-4 h-4" />
+                Description
+              </button>
+              <button
+                className={`text-md flex flex-row items-center gap-2 px-4 py-2 rounded-t-md ${activeTab === 'submission'
+                  ? `${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6]  text-gray-500 border-gray-300"} bg-[#D7EFF6] font-semibold shadow-inner`
+                  : 'text-gray-500 dark:text-gray-400'}`}
+                onClick={() => setActiveTab('submission')}
+              >
+                <img src={submissionIcon} className="w-4 h-4" />
+                Submissions
+              </button>
+              <button
+                className={`flex flex-row items-center gap-2 px-4 py-2 rounded-t-md ${activeTab === 'comments'
+                  ? `bg-[#D7EFF6] ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6] text-gray-500 border-gray-300"} font-semibold shadow-inner`
+                  : 'text-gray-500 dark:text-gray-400'}`}
+                onClick={() => setActiveTab('comments')}
+              >
+                <img src={commentsIcon} className="w-4 h-4" />
+                Comments
+              </button>
+            </div>
 
-          <div className="description-content">
-            {activeTab === 'description' && (
-              <>
-                <div className="flex">
-                  <h1 className="problem-title">{data.details.title}</h1>
-                  {/* <span
-                    className={`difficulty-badge ml-2 mt-2
-                ${data.details.difficulty_level === "Easy" ? "easy" :
-                        data.details.difficulty_level === "Medium" ? "medium" : "hard"
-                      }`}
-                  >
-                    {data.details.difficulty_level}
-                  </span> */}
-                </div>
+            <div className="description-content">
+              {activeTab === 'description' && (
+                <>
+                  <div className="flex">
+                    <h1 className="problem-title">{data.details.title}</h1>
 
-                <div className="flex gap-3">
-                  {/* Difficulty Tag */}
-                  <div className="flex items-center text-center gap-1 px-2 py-1 rounded-md border-1 border-gray-400 text-gray-500 text-sm my-2">
-                    <img src={lightProblemIcon} className="w-3 h-3 font-bold" />
-                    <span className="text-gray-500 text-xs">{data.details.difficulty_level}</span>
                   </div>
 
-                  {/* Category Tag */}
-                  <div className="flex items-center text-center gap-1 px-2 py-1 rounded-md border text-gray-500 text-sm my-2">
-                    <img src={tagProblemIcon} className="w-3 h-3 mt-1 font-bold" />
-                    <span className="text-gray-500 text-xs">Algorithms</span>
+                  <div className="flex gap-3">
+                    {/* Difficulty Tag */}
+                    <div className="flex items-center text-center gap-1 px-2 py-1 rounded-md border-1 border-gray-400 text-gray-500 text-sm my-2">
+                      <img src={lightProblemIcon} className="w-3 h-3 font-bold" />
+                      <span className="text-gray-500 text-xs">{data.details.difficulty_level}</span>
+                    </div>
+
+                    {/* Category Tag */}
+                    <div className="flex items-center text-center gap-1 px-2 py-1 rounded-md border text-gray-500 text-sm my-2">
+                      <img src={tagProblemIcon} className="w-3 h-3 mt-1 font-bold" />
+                      <span className="text-gray-500 text-xs">Algorithms</span>
+                    </div>
+
+                    {/* Like Percentage Tag */}
+                    <div className="flex items-center text-center gap-1 px-2 py-1 rounded-md border text-gray-500 text-sm my-2">
+                      <img src={heartProblemIcon} className="w-3 h-3 mt-1 font-bold" />
+                      <span className="text-gray-500 text-xs">98.82%</span>
+                    </div>
+                  </div>
+                  <div className="problem-description mt-2" dangerouslySetInnerHTML={{ __html: data.details.problem_statement || "" }} />
+
+                  <div className="section">
+                    <h3 className="section-title">Input Format</h3>
+                    <div className="section-content" dangerouslySetInnerHTML={{ __html: data.details.input_format || "" }} />
                   </div>
 
-                  {/* Like Percentage Tag */}
-                  <div className="flex items-center text-center gap-1 px-2 py-1 rounded-md border text-gray-500 text-sm my-2">
-                    <img src={heartProblemIcon} className="w-3 h-3 mt-1 font-bold" />
-                    <span className="text-gray-500 text-xs">98.82%</span>
+                  <div className="section">
+                    <h3 className="section-title">Output Format</h3>
+                    <div className="section-content" dangerouslySetInnerHTML={{ __html: data.details.output_format || "" }} />
                   </div>
-                </div>
-                <div className="problem-description mt-2" dangerouslySetInnerHTML={{ __html: data.details.problem_statement || "" }} />
 
-                <div className="section">
-                  <h3 className="section-title">Input Format</h3>
-                  <div className="section-content" dangerouslySetInnerHTML={{ __html: data.details.input_format || "" }} />
-                </div>
-
-                <div className="section">
-                  <h3 className="section-title">Output Format</h3>
-                  <div className="section-content" dangerouslySetInnerHTML={{ __html: data.details.output_format || "" }} />
-                </div>
-
-                <div className="examples-section">
-                  <div className="example">
-                    <h3 className="example-title">Example 1:</h3>
-                    <div className="example-box">
-                      <div className="example-input">
-                        <span className="example-label">Input:</span>
-                        <pre className="example-code">{data.details.sample_input}</pre>
-                      </div>
-                      <div className="example-output">
-                        <span className="example-label">Output:</span>
-                        <pre className="example-code">{data.details.sample_output}</pre>
+                  <div className="examples-section">
+                    <div className="example">
+                      <h3 className="example-title">Example 1:</h3>
+                      <div className="example-box">
+                        <div className="example-input">
+                          <span className="example-label">Input:</span>
+                          <pre className="example-code">{data.details.sample_input}</pre>
+                        </div>
+                        <div className="example-output">
+                          <span className="example-label">Output:</span>
+                          <pre className="example-code">{data.details.sample_output}</pre>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </>
-            )}
+                </>
+              )}
 
-            {activeTab === 'solutions' && (
-              <div className="placeholder-content">
-                <p>Community solutions will appear here.</p>
-              </div>
-            )}
+              {activeTab === 'submission' && (
+                <div className="submission-history">
 
-            {activeTab === 'submission' && (
-              <div className="submission-history">
-                <h3 className={`text-xl font-bold mb-4 ${isDarkTheme ? "text-white" : ""}`}>Your Submissions</h3>
-                
-                {selectedSubmissionCode !== null && (
-                  <div className={`fixed inset-0 flex items-center justify-center z-50 ${isDarkTheme ? "bg-black bg-opacity-70" : "bg-black bg-opacity-50"}`}>
-                    <div className={`${isDarkTheme ? "bg-gray-800" : "bg-white"} p-6 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] flex flex-col`}>
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className={`text-xl font-bold ${isDarkTheme ? "text-white" : "text-gray-800"}`}>
-                          Submission Code - {submissionHistory.find(s => s.id === viewingSubmissionId)?.status}
-                        </h3>
-                        <button
-                          onClick={() => {
-                            setSelectedSubmissionCode(null);
-                            setViewingSubmissionId(null);
-                          }}
-                          className={`${isDarkTheme ? "text-gray-300 hover:text-white" : "text-gray-500 hover:text-gray-700"} text-2xl`}
-                        >
-                          &times;
-                        </button>
-                      </div>
-                      <div className="flex-grow overflow-auto">
-                        <Editor
-                          height="60vh"
-                          language={submissionHistory.find(s => s.id === viewingSubmissionId)?.language || "javascript"}
-                          value={selectedSubmissionCode}
-                          theme={isDarkTheme ? "vs-dark" : "light"}
-                          options={{
-                            readOnly: true,
-                            minimap: { enabled: false },
-                            fontSize: 14,
-                            scrollBeyondLastLine: false,
-                            automaticLayout: true,
-                            wordWrap: "on",
-                            lineNumbers: "on",
-                          }}
-                        />
+                  {selectedSubmissionCode !== null && (
+                    <div className={`fixed inset-0 flex items-center justify-center z-50 ${isDarkTheme ? "bg-black bg-opacity-70" : "bg-black bg-opacity-50"}`}>
+                      <div className={`${isDarkTheme ? "bg-gray-800" : "bg-white"} p-6 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] flex flex-col`}>
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className={`text-xl font-bold ${isDarkTheme ? "text-white" : "text-gray-800"}`}>
+                            Submission Code - {submissionHistory.find(s => s.id === viewingSubmissionId)?.status}
+                          </h3>
+                          <button
+                            onClick={() => {
+                              setSelectedSubmissionCode(null);
+                              setViewingSubmissionId(null);
+                            }}
+                            className={`${isDarkTheme ? "text-gray-300 hover:text-white" : "text-gray-500 hover:text-gray-700"} text-2xl`}
+                          >
+                            &times;
+                          </button>
+                        </div>
+                        <div className="flex-grow overflow-auto">
+                          <Editor
+                            height="60vh"
+                            language={submissionHistory.find(s => s.id === viewingSubmissionId)?.language || "javascript"}
+                            value={selectedSubmissionCode}
+                            theme={isDarkTheme ? "vs-dark" : "light"}
+                            options={{
+                              readOnly: true,
+                              minimap: { enabled: false },
+                              fontSize: 14,
+                              scrollBeyondLastLine: false,
+                              automaticLayout: true,
+                              wordWrap: "on",
+                              lineNumbers: "on",
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-                
-                {isLoadingHistory ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                  </div>
-                ) : historyError ? (
-                  <div className="text-red-500 py-4">{historyError}</div>
-                ) : submissionHistory.length === 0 ? (
-                  <p className="text-gray-500 italic">You haven't submitted any solutions yet.</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full border-collapse">
-                      <thead>
-                        <tr className={`border-b ${isDarkTheme ? "border-gray-700" : "border-gray-200"}`}>
-                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider w-16 ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>No.</th>
-                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Status</th>
-                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Language</th>
-                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Runtime</th>
-                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Memory</th>
-                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Date</th>
-                          <th className={`text-left py-3 px-4 font-medium uppercase tracking-wider ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {submissionHistory.map((submission, index) => (
-                          <tr key={submission.id} className={`${isDarkTheme ? "border-b border-gray-700 hover:bg-gray-800" : "border-b border-gray-200 hover:bg-gray-100"}`}>
-                            <td className={`py-4 px-4 text-center font-medium ${isDarkTheme ? "text-white" : ""}`}>{submissionHistory.length - index}</td>
-                            <td className="py-4 px-4">
-                              <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                submission.status === "Accepted" 
-                                  ? isDarkTheme ? "bg-green-900 text-green-200" : "bg-green-100 text-green-800" 
-                                  : submission.status === "Wrong Answer"
-                                  ? isDarkTheme ? "bg-red-900 text-red-200" : "bg-red-100 text-red-800"
-                                  : isDarkTheme ? "bg-red-900 text-red-200" : "bg-red-100 text-red-800"
-                              }`}>
-                                {submission.status}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-sm">
-                              <span className={`rounded px-2 py-1 ${
-                                isDarkTheme 
-                                  ? "bg-gray-700 text-white" 
-                                  : "bg-gray-200 text-gray-800"
-                              }`}>
-                                {submission.language === "javascript" ? "JavaScript" : 
-                                 submission.language === "typescript" ? "TypeScript" : 
-                                 submission.language === "python" ? "Python" : 
-                                 submission.language === "java" ? "Java" : 
-                                 submission.language === "cpp" ? "C++" : submission.language}
-                              </span>
-                            </td>
-                            <td className={`py-4 px-4 text-sm ${isDarkTheme ? "text-gray-300" : ""}`}>{submission.runtime || "N/A"}</td>
-                            <td className={`py-4 px-4 text-sm ${isDarkTheme ? "text-gray-300" : ""}`}>{submission.memory || "N/A"}</td>
-                            <td className={`py-4 px-4 text-sm ${isDarkTheme ? "text-gray-400" : "text-gray-500"}`}>
-                              {new Date(submission.submitted_at).toLocaleString('en-US', {
-                                month: 'short',
-                                day: '2-digit',
-                                year: 'numeric'
-                              })}
-                            </td>
-                            <td className="py-4 px-4 text-sm">
-                              <button
-                                onClick={() => {
-                                  setSelectedSubmissionCode(submission.source_code);
-                                  setViewingSubmissionId(submission.id);
-                                }}
-                                className={`px-3 py-1 rounded ${
-                                  isDarkTheme 
-                                    ? "bg-blue-700 text-white hover:bg-blue-600" 
-                                    : "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                                }`}
-                              >
-                                View Code
-                              </button>
-                            </td>
+                  )}
+
+                  {isLoadingHistory ? (
+                    <div className="flex justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    </div>
+                  ) : historyError ? (
+                    <div className="text-red-500 py-4">{historyError}</div>
+                  ) : submissionHistory.length === 0 ? (
+                    <p className="text-gray-500 italic">You haven't submitted any solutions yet.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full border-collapse">
+                        <thead>
+                          <tr className={`text-sm font-extralight border-b ${isDarkTheme ? "border-gray-700" : "border-gray-200"}`}>
+                            <th className={`text-left py-3 px-4 capitalize  w-16 ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}></th>
+                            <th className={`text-left py-3 px-4 capitalize font-extralight ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Status</th>
+                            <th className={`text-left py-3 px-4 capitalize font-extralight ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Language</th>
+                            <th className={`text-left py-3 px-4 capitalize font-extralight ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Runtime</th>
+                            <th className={`text-left py-3 px-4 capitalize font-extralight ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Memory</th>
                           </tr>
+                        </thead>
+                        <tbody>
+                          {submissionHistory.map((submission, index) => (
+                            <tr key={submission.id} className={`text-xs ${isDarkTheme ? "border-b border-gray-700 hover:bg-gray-800" : "border-b border-gray-200 hover:bg-gray-100"}`}>
+                              <td className={`py-4 px-4 text-center font-medium ${isDarkTheme ? "text-white" : "text-gray-500"}`}>{submissionHistory.length - index}</td>
+                              <td className="py-4 px-4">
+                                <div className="flex flex-col"
+                                  onClick={() => {
+                                    setSelectedSubmissionCode(submission.source_code);
+                                    setViewingSubmissionId(submission.id);
+                                  }}>
+                                  <span
+                                    className={`cursor-pointer font-semibold rounded-full ${submission.status === "Accepted"
+                                      ? "text-[#5FA564]"
+                                      : " text-[#EA4335]"
+                                      }`}>
+                                    {submission.status}
+                                  </span>
+                                  <span className="text-gray-500">
+                                    {new Date(submission.submitted_at).toLocaleString('en-US', {
+                                      month: 'short',
+                                      day: '2-digit',
+                                      year: 'numeric'
+                                    })}
+                                  </span>
+                                </div>
+
+                              </td>
+                              <td className="py-4 px-4 ">
+                                <span className={`rounded px-2 py-1 ${isDarkTheme
+                                  ? "bg-[#D7EFF6] text-[#264D64]"
+                                  : "bg-[#D7EFF6] text-[#264D64]"
+                                  }`}>
+                                  {submission.language === "javascript" ? "JavaScript" :
+                                    submission.language === "typescript" ? "TypeScript" :
+                                      submission.language === "python" ? "Python" :
+                                        submission.language === "java" ? "Java" :
+                                          submission.language === "cpp" ? "C++" : submission.language}
+                                </span>
+                              </td>
+                              <td className={`py-4 px-4  ${isDarkTheme ? "text-gray-300" : ""}`}>{submission.runtime || "N/A"}</td>
+                              <td className={`py-4 px-4 ${isDarkTheme ? "text-gray-300" : ""}`}>{submission.memory || "N/A"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'comments' && (
+                <div className="space-y-6">
+                  {/* Add Comment Form */}
+                  <form onSubmit={handleAddComment} className="space-y-4">
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Add a comment..."
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[border-gray-300] focus:border-transparent resize-none"
+                      rows={3}
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        disabled={!newComment.trim() || createCommentMutation.isPending}
+                        className="px-4 py-2 bg-[#255C79] text-white rounded-lg hover:bg-[#1e4a61] disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {createCommentMutation.isPending ? "Posting..." : "Post Comment"}
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* Comments List */}
+                  {isLoadingComments ? (
+                    <div className="animate-pulse space-y-4">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="bg-gray-100 rounded-lg p-4">
+                          <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : commentsData?.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No comments yet. Be the first to comment!</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-140 overflow-y-auto pr-2">
+                      {[...commentsData]
+                        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                        .slice(0, visibleComments)
+                        .map((comment: any) => (
+                          <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
+                            <div className="flex items-start space-x-3">
+                              <img
+                                src="https://randomuser.me/api/portraits/men/1.jpg"
+                                alt="User"
+                                className="w-8 h-8 rounded-full"
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-semibold text-sm">{comment.user_name || 'John Doe'}</span>
+                                  <span className="text-xs text-gray-500">
+                                    {new Date(comment.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })}
+                                  </span>
+                                </div>
+                                <p className="mt-1 text-sm text-gray-700 break-words max-w-[300px]">
+                                  {comment.text}
+                                </p>
+
+
+                              </div>
+                            </div>
+                          </div>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>}
+                      {commentsData && commentsData.length > visibleComments && (
+                        <div className="flex justify-center mt-4">
+                          <button
+                            onClick={() => setVisibleComments(prev => prev + 5)}
+                            className="px-4 py-2 text-sm text-[#255C79] hover:text-[#1e4a61] font-medium flex items-center space-x-1"
+                          >
+                            <span>See more comments</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>}
 
         {/* Right panel with code editor */}
         <div className="code-editor-panel">
           <div className="flex flex-col px-3 w-full">
-            <h3 className="text-xl font-semibold py-2 text-gray-700">Code</h3>
             <div className="flex flex-row w-full justify-between">
               <div className="flex flex-row gap-1">
                 {/* Language Dropdown */}
                 <div className="relative inline-block text-sm" onClick={() => setIsDropdownHovered(!isDropdownHovered)}>
                   <div className={`border text-center px-2 py-1 text-gray-700 text-xs cursor-pointer flex justify-between items-center w-full rounded-md gap-1 h-9 ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-white text-black border-gray-300"}`}>
-                    <span>{languageOptions.find(opt => opt.value === selectedLanguage)?.label}</span>
+                    <span>{availableLanguages.find(opt => opt.value === selectedLanguage)?.label || 'Select Language'}</span>
                     <span className="text-[13px]">{isDropdownHovered ? "▲" : "▼"}</span>
                   </div>
 
                   {/* Dropdown options */}
                   {isDropdownHovered && (
                     <ul className={`absolute left-0 mt-1 w-40 rounded-md shadow-md z-10 text-xs border ${isDarkTheme ? "bg-gray-800 border-gray-600 text-white" : "bg-white border-gray-300 text-black"}`}>
-                      {languageOptions.map(option => (
+                      {availableLanguages.map(option => (
                         <li
                           key={option.value}
                           onClick={() => {
@@ -880,21 +958,20 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
               {/* Run and Submit Buttons */}
               <div className="flex gap-3">
-                <button 
-                  onClick={handleRunCode} 
-                  disabled={isRunning} 
+                <button
+                  onClick={handleRunCode}
+                  disabled={isRunning}
                   className={`run-button md:text-xs xl:text-md bg-[#5FA564] h-9 ${isRunning ? 'button-loading' : ''}`}
                 >
                   {isRunning ? 'Running...' : 'Run Code'}
                 </button>
-                <button 
-                  onClick={handleSubmitCode} 
-                  disabled={isSubmitting} 
-                  className={`submit-button md:text-xs xl:text-md ${isSubmitting ? 'button-loading opacity-70' : ''} ${
-                    'bg-gray-200'
-                  } h-9`}
+                <button
+                  onClick={handleSubmitCode}
+                  disabled={isSubmitting}
+                  className={`submit-button md:text-xs xl:text-md ${isSubmitting ? 'button-loading opacity-70' : ''} ${'bg-gray-200'
+                    } h-9`}
                 >
-                  {isSubmitting ? 'Submitting...' :'Submit'}
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
                 </button>
               </div>
             </div>
@@ -972,14 +1049,14 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                             <strong>Input:</strong>
                           </div>
                           <pre className={`p-2 mt-2 rounded text-sm ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-gray-200 text-black border-gray-300"}`}>
-                            {testCases[activeTestCase]?.sample_input ?? 'Loading...'}
+                            {testCases[activeTestCase]?.sample_input}
                           </pre>
 
                           <div className="text-sm text-gray-700 mt-4 mb-1">
                             <strong>Expected Output:</strong>
                           </div>
                           <pre className={`p-2 mt-2 rounded text-sm ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-gray-200 text-black border-gray-300"} text-gray-800`}>
-                            {testCases[activeTestCase]?.sample_output ?? 'Loading...'}
+                            {testCases[activeTestCase]?.sample_output}
                           </pre>
                           {testCases[activeTestCase]?.status && (
                             <div>
@@ -1010,14 +1087,15 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                                   {testCases[activeTestCase]?.status || 'Not run'}
                                 </span>
                               </div>
-                              
+
                               {testCases[activeTestCase]?.time && (
                                 <div className="mt-1 text-sm text-gray-600">
-                                  Time: {testCases[activeTestCase]?.time}s | 
+                                  Time: {testCases[activeTestCase]?.time}s |
                                   Memory: {testCases[activeTestCase]?.memory} KB
                                 </div>
                               )}
-                            </div>)}
+                            </div>
+                          )}
                         </>
                       ) : (
                         <div>
@@ -1025,15 +1103,15 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                           <div className="text-sm text-gray-700 mb-1">
                             <strong>Input:</strong>
                           </div>
-                          <textarea 
+                          <textarea
                             className={`p-2 mt-2 w-full h-24 rounded text-sm border ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-gray-100 text-black border-gray-300"}`}
                             value={customInput}
                             onChange={(e) => setCustomInput(e.target.value)}
                             placeholder="Enter your custom input here..."
                           />
-                          
+
                           <div className="mt-3">
-                            <button 
+                            <button
                               className={`run-button md:text-xs xl:text-md bg-[#5FA564] px-4 py-2 rounded ${isRunning ? 'button-loading opacity-70' : ''}`}
                               onClick={handleCustomRunCode}
                               disabled={isRunning}
@@ -1041,7 +1119,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                               {isRunning ? 'Running...' : 'Run with Custom Input'}
                             </button>
                           </div>
-                          
+
                           {customTestCase.output && (
                             <>
                               <div className="text-sm text-gray-700 mt-4 mb-1">
@@ -1057,10 +1135,10 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                               >
                                 {customTestCase.output}
                               </pre>
-                              
+
                               {customTestCase.time && (
                                 <div className="mt-1 text-sm text-gray-600">
-                                  Time: {customTestCase.time}s | 
+                                  Time: {customTestCase.time}s |
                                   Memory: {customTestCase.memory} KB
                                 </div>
                               )}

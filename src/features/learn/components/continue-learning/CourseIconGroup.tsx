@@ -6,7 +6,7 @@ interface CourseIconGroupProps {
 
 const CourseIconGroup: React.FC<CourseIconGroupProps> = ({ iconData }) => {
   return (
-    <div className="grid grid-cols-4 gap-1">
+    <div className="grid grid-cols-5 gap-1">
       {iconData.map((item, index) => (
         <div 
           key={index} 
