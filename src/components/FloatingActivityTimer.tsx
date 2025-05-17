@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import useUserActivityTracking from '../hooks/useUserActivityTracking';
 import { calculateCurrentSessionDuration } from '../utils/userActivitySync';
 import { simulateActivityEvent, getActivityDebugEvents, clearActivityDebugEvents } from '../utils/activityDebugger';
+import { getSessionId, getDeviceInfo } from '../utils/deviceIdentifier';
 
 // New interface to track sync status
 interface SyncStatus {
@@ -18,11 +19,19 @@ const FloatingActivityTimer: React.FC = () => {
   const [showDebugging, setShowDebugging] = useState<boolean>(false);
   const [debugEvents, setDebugEvents] = useState<string[]>([]);
   const [recoveredTime, setRecoveredTime] = useState<number | null>(null);
+  const [sessionId, setSessionId] = useState<string>('');
+  const [deviceInfo, setDeviceInfo] = useState<{browser: string, os: string, deviceType: string} | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     lastSync: null,
     status: 'idle',
     message: 'No sync yet'
   });
+
+  // Get session ID and device info on mount
+  useEffect(() => {
+    setSessionId(getSessionId());
+    setDeviceInfo(getDeviceInfo());
+  }, []);
 
   // Update current session duration every second
   useEffect(() => {
@@ -163,59 +172,57 @@ const FloatingActivityTimer: React.FC = () => {
     // Prepare the data in the format required by the API
     const activityData = {
       date: formattedDate,
-      "time-spend": Math.round(totalTimeSpent / 60) // Convert seconds to minutes and round
+      "time-spend": Math.round(totalTimeSpent / 60), // Convert seconds to minutes and round
+      session_id: sessionId,
+      device_info: deviceInfo
     };
     
     console.log('DIRECT API CALL');
     console.log('Endpoint:', `${apiUrl}/activity/clients/${clientId}/activity-log/`);
     console.log('Data:', activityData);
     
-    // Direct API call with fetch
-    fetch(`${apiUrl}/activity/clients/${clientId}/activity-log/`, {
+    // Setup fetch options
+    const fetchOptions = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        // Add authorization if available
+        ...(localStorage.getItem('token') ? {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        } : {})
       },
       body: JSON.stringify(activityData)
-    })
-    .then(response => {
-      console.log('API Response Status:', response.status);
-      if (response.ok) {
+    };
+    
+    // Make the API call directly using Fetch API for better visibility in Network tab
+    fetch(`${apiUrl}/activity/clients/${clientId}/activity-log/`, fetchOptions)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`API responded with status ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('API Response:', data);
         setSyncStatus({
           lastSync: Date.now(),
           status: 'success',
           message: 'API call successful'
         });
-      } else {
+        
+        // Reset status after 3 seconds
+        setTimeout(() => {
+          setSyncStatus(prev => ({ ...prev, status: 'idle' }));
+        }, 3000);
+      })
+      .catch(e => {
+        console.error('API call failed:', e);
         setSyncStatus({
           lastSync: Date.now(),
           status: 'failed',
-          message: `Failed: ${response.status}`
+          message: `Failed: ${e.message}`
         });
-      }
-      return response.text();
-    })
-    .then(text => {
-      let responseData = text;
-      try {
-        if (text) {
-          responseData = JSON.parse(text);
-        }
-      } catch (e: unknown) {
-        // Keep as text if not JSON
-        console.log('Response is not JSON:', e);
-      }
-      console.log('API Response:', responseData);
-    })
-    .catch(error => {
-      console.error('API Error:', error);
-      setSyncStatus({
-        lastSync: Date.now(),
-        status: 'failed',
-        message: 'API error'
       });
-    });
   };
 
   // Handle recovery from localStorage
@@ -247,6 +254,101 @@ const FloatingActivityTimer: React.FC = () => {
         });
       }
     }, 500);
+  };
+
+  // JSX for debug panel with session info
+  const renderDebugPanel = () => {
+    if (!showDebugging) return null;
+
+    return (
+      <div className="border-t border-gray-200 bg-gray-50 p-3 text-xs overflow-auto" style={{ maxHeight: '300px' }}>
+        <div className="mb-3">
+          <h4 className="font-semibold text-gray-700 mb-2">Session Information</h4>
+          <div className="bg-white p-2 rounded border border-gray-300 mb-2">
+            <div className="flex justify-between mb-1">
+              <span className="text-gray-500">Session ID:</span>
+              <span className="text-gray-900 font-mono text-xs">{sessionId}</span>
+            </div>
+            {deviceInfo && (
+              <>
+                <div className="flex justify-between mb-1">
+                  <span className="text-gray-500">Browser:</span>
+                  <span className="text-gray-900">{deviceInfo.browser}</span>
+                </div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-gray-500">OS:</span>
+                  <span className="text-gray-900">{deviceInfo.os}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Device Type:</span>
+                  <span className="text-gray-900">{deviceInfo.deviceType}</span>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        <h4 className="font-semibold text-gray-700 mb-2">Test Controls</h4>
+        <div className="flex flex-wrap gap-1 mb-3">
+          <button 
+            onClick={() => handleSimulateEvent('focus')} 
+            className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded text-xs"
+          >
+            Focus
+          </button>
+          <button 
+            onClick={() => handleSimulateEvent('blur')} 
+            className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded text-xs"
+          >
+            Blur
+          </button>
+          <button 
+            onClick={() => handleSimulateEvent('visibility')} 
+            className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded text-xs"
+          >
+            Visibility
+          </button>
+          <button 
+            onClick={() => handleSimulateEvent('unload')} 
+            className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded text-xs"
+          >
+            Unload
+          </button>
+          <button 
+            onClick={handleForceSync} 
+            className="bg-green-100 hover:bg-green-200 text-green-800 px-2 py-1 rounded text-xs"
+          >
+            Force Sync
+          </button>
+          <button 
+            onClick={handleDirectApiCall} 
+            className="bg-green-100 hover:bg-green-200 text-green-800 px-2 py-1 rounded text-xs"
+          >
+            Direct API Call
+          </button>
+          <button 
+            onClick={handleRecoverFromLocalStorage} 
+            className="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 px-2 py-1 rounded text-xs"
+          >
+            Recover Data
+          </button>
+          <button 
+            onClick={handleClearLogs} 
+            className="bg-red-100 hover:bg-red-200 text-red-800 px-2 py-1 rounded text-xs"
+          >
+            Clear Logs
+          </button>
+        </div>
+        
+        <h4 className="font-semibold text-gray-700 mb-2">Activity Log</h4>
+        <div className="bg-black text-green-400 font-mono p-2 rounded h-40 overflow-y-auto">
+          {debugEvents.map((event, i) => (
+            <div key={i} className="text-xs mb-1">{event}</div>
+          ))}
+          {debugEvents.length === 0 && <div className="text-gray-500 italic">No events logged</div>}
+        </div>
+      </div>
+    );
   };
 
   if (isMinimized) {
@@ -284,7 +386,8 @@ const FloatingActivityTimer: React.FC = () => {
             </div>
           )}
         </div>
-        <div className="flex space-x-1">
+        
+        <div className="flex">
           <button 
             onClick={() => setShowDebugging(!showDebugging)} 
             className="text-white hover:text-blue-100 p-1"
@@ -380,107 +483,22 @@ const FloatingActivityTimer: React.FC = () => {
                     : 'Never'}
                 </span>
               </div>
+              {sessionId && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Device ID:</span>
+                  <span className="text-gray-800 font-mono text-xs" title={sessionId}>
+                    {sessionId.substring(0, 8)}...
+                  </span>
+                </div>
+              )}
               <div className="text-gray-500 text-center mt-1 border-t border-gray-200 pt-1">
                 <span className="text-xs italic">Activity tracking {isActive ? 'running' : 'paused'}</span>
               </div>
             </div>
           </div>
           
-          {showDebugging && (
-            <div className="border-t border-gray-200 p-2">
-              <div className="flex justify-between mb-2">
-                <h4 className="text-xs font-semibold text-gray-600">Test Controls</h4>
-                <button 
-                  onClick={handleClearLogs}
-                  className="text-xs text-red-500 hover:text-red-700"
-                >
-                  Clear Logs
-                </button>
-              </div>
-              
-              <div className="flex space-x-1 mb-2">
-                <button 
-                  onClick={() => handleSimulateEvent('focus')}
-                  className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs py-1 px-2 rounded transition-colors"
-                >
-                  Focus
-                </button>
-                <button 
-                  onClick={() => handleSimulateEvent('blur')}
-                  className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs py-1 px-2 rounded transition-colors"
-                >
-                  Blur
-                </button>
-                <button 
-                  onClick={() => handleSimulateEvent('visibility')}
-                  className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs py-1 px-2 rounded transition-colors"
-                >
-                  Visibility
-                </button>
-                <button 
-                  onClick={() => handleSimulateEvent('unload')}
-                  className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs py-1 px-2 rounded transition-colors"
-                >
-                  Unload
-                </button>
-              </div>
-              
-              <div className="mb-2 grid grid-cols-2 gap-2">
-                <button 
-                  onClick={handleForceSync}
-                  className="bg-green-50 hover:bg-green-100 text-green-800 text-xs py-1 px-2 rounded transition-colors flex items-center justify-center"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" className="mr-1" viewBox="0 0 16 16">
-                    <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/>
-                    <path fillRule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/>
-                  </svg>
-                  Send to Backend
-                </button>
-                
-                <button 
-                  onClick={handleDirectApiCall}
-                  className="bg-purple-50 hover:bg-purple-100 text-purple-800 text-xs py-1 px-2 rounded transition-colors flex items-center justify-center"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" className="mr-1" viewBox="0 0 16 16">
-                    <path d="M2.5 8a5.5 5.5 0 0 1 8.25-4.764.5.5 0 0 0 .5-.866A6.5 6.5 0 1 0 14.5 8a.5.5 0 0 0-1 0 5.5 5.5 0 1 1-11 0z"/>
-                    <path d="M15.354 3.354a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0l7-7z"/>
-                  </svg>
-                  Direct API Call
-                </button>
-                
-                <button 
-                  onClick={handleRecoverFromLocalStorage}
-                  className="bg-yellow-50 hover:bg-yellow-100 text-yellow-800 text-xs py-1 px-2 rounded transition-colors flex items-center justify-center col-span-2"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" className="mr-1" viewBox="0 0 16 16">
-                    <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
-                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
-                  </svg>
-                  Recover Data
-                </button>
-              </div>
-              
-              <h4 className="text-xs font-semibold text-gray-600 mb-1">Debug Logs</h4>
-              <div className="bg-gray-100 rounded p-1 text-xs font-mono h-32 overflow-y-auto">
-                {debugEvents.length === 0 ? (
-                  <div className="text-gray-500 italic text-center p-2">No logs yet</div>
-                ) : (
-                  debugEvents.slice().reverse().map((event, index) => (
-                    <div 
-                      key={index} 
-                      className={`text-[10px] whitespace-normal break-all mb-1 ${
-                        event.includes('success') || event.includes('Recovered') ? 'text-green-700' : 
-                        event.includes('failed') || event.includes('error') ? 'text-red-700' : 
-                        event.includes('sync') || event.includes('backup') ? 'text-blue-700' : 'text-gray-800'
-                      }`}
-                    >
-                      {event}
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
+          {/* Debug Panel */}
+          {renderDebugPanel()}
         </>
       )}
     </div>

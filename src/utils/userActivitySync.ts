@@ -1,5 +1,6 @@
 import { ActivitySession } from '../contexts/UserActivityContext';
 import { sendActivityData, storeActivityDataLocally, syncOfflineActivityData, ActivityData } from '../services/activityTrackingApi';
+import { getDeviceFingerprint } from './deviceIdentifier';
 
 /**
  * Attempts to send activity data to the backend
@@ -10,11 +11,16 @@ export const syncUserActivity = async (
   totalTimeSpent: number,
   activitySessions: ActivitySession[]
 ): Promise<void> => {
+  // Get device fingerprint info
+  const { session_id, device_info } = getDeviceFingerprint();
+  
   const activityData: ActivityData = {
     userId,
     totalTimeSpent,
     activitySessions,
     timestamp: Date.now(),
+    session_id,
+    device_info
   };
 
   // Check if online

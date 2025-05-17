@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { logActivityEvent } from '../utils/activityDebugger';
+import { getDeviceFingerprint } from '../utils/deviceIdentifier';
 
 interface UserActivityContextType {
   isActive: boolean;
@@ -314,147 +315,141 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
     }
   };
 
-  // Function to sync pending data that might be stored from previous sessions
-  const syncPendingData = async () => {
+  // Function to sync pending activity data to the backend
+  const syncPendingData = () => {
     try {
       const pendingDataStr = localStorage.getItem(STORAGE_KEYS.PENDING_ACTIVITY_DATA);
-      if (!pendingDataStr) return;
+      if (!pendingDataStr) {
+        return;
+      }
+
+      // Get a user identifier - using a placeholder here
+      // In a real app, this would get the actual user ID
+      const userId = localStorage.getItem('userId') || 'anonymous';
       
-      logActivityEvent('Attempting to sync pending activity data');
+      // Get device fingerprint for multi-device tracking
+      const { session_id, device_info } = getDeviceFingerprint();
       
-      const pendingData = JSON.parse(pendingDataStr);
+      // Format the date as the API expects
+      const today = new Date();
+      const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      
+      // Use the Fetch API rather than Beacon for better network tab visibility
       const clientId = import.meta.env.VITE_CLIENT_ID;
+      const apiUrl = import.meta.env.VITE_API_URL;
       
-      if (!clientId) {
-        logActivityEvent('Client ID not found, cannot sync pending data');
+      if (!clientId || !apiUrl) {
+        logActivityEvent('Missing client ID or API URL for sync');
         return;
       }
       
-      // If the pending data is in the old format, convert it to the new format
-      let dataToSend = pendingData;
+      // Parse the pending data
+      const pendingData = JSON.parse(pendingDataStr);
       
-      // Check if we need to convert from the old format to the new format
-      if (pendingData.totalTimeSpent !== undefined && !pendingData.date) {
-        // Format date in YYYY-MM-DD format
-        const today = new Date();
-        const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        
-        dataToSend = {
-          date: formattedDate,
-          "time-spend": Math.round(pendingData.totalTimeSpent / 60) // Convert seconds to minutes
-        };
-        
-        logActivityEvent('Converted pending data from old format to new format', { 
-          oldData: pendingData,
-          newData: dataToSend
-        });
-      }
+      // Format data for API
+      const syncData = {
+        date: formattedDate,
+        "time-spend": Math.round(pendingData.totalTimeSpent / 60), // Convert seconds to minutes
+        session_id: session_id,
+        device_info: device_info,
+        user_id: userId // Include user ID for server-side aggregation
+      };
       
-      // Send using fetch for pending data
-      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/activity/clients/${clientId}/activity-log/`, {
+      // Prepare the fetch request
+      fetch(`${apiUrl}/activity/clients/${clientId}/activity-log/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
         },
-        body: JSON.stringify(dataToSend)
+        body: JSON.stringify(syncData)
+      })
+      .then(response => {
+        if (response.ok) {
+          // Clear the pending data only after a successful sync
+          localStorage.removeItem(STORAGE_KEYS.PENDING_ACTIVITY_DATA);
+          logActivityEvent('Synced pending activity data successfully');
+        } else {
+          throw new Error(`Sync failed with status ${response.status}`);
+        }
+      })
+      .catch(error => {
+        logActivityEvent('Failed to sync pending data', { error: (error as Error).message });
       });
-      
-      if (response.ok) {
-        logActivityEvent('Successfully synced pending activity data', { data: dataToSend });
-        localStorage.removeItem(STORAGE_KEYS.PENDING_ACTIVITY_DATA);
-      } else {
-        logActivityEvent('Failed to sync pending data', { status: response.status });
-      }
     } catch (error) {
-      logActivityEvent('Error syncing pending data', { error: (error as Error).message });
+      logActivityEvent('Error processing pending data', { error: (error as Error).message });
     }
   };
 
   // Function to send data using regular fetch instead of Beacon API for better visibility
   const sendActivityDataUsingBeacon = () => {
     try {
-      // Get user data for client ID
-      const userData = localStorage.getItem('user');
-      if (!userData) return;
-      
       const clientId = import.meta.env.VITE_CLIENT_ID;
+      const apiUrl = import.meta.env.VITE_API_URL;
       
-      // End current session to update state correctly
-      if (activityState.currentSessionStart) {
-        endSession();
+      if (!clientId || !apiUrl) {
+        logActivityEvent('Missing client ID or API URL for beacon');
+        return;
       }
       
-      // Format date in YYYY-MM-DD format
+      // Get the activityState from localStorage as we can't access React state during beforeunload
+      let state = null;
+      try {
+        const stateStr = localStorage.getItem(STORAGE_KEYS.LAST_ACTIVITY_STATE);
+        if (stateStr) {
+          state = JSON.parse(stateStr);
+        }
+      } catch (err) {
+        logActivityEvent('Failed to parse state for beacon', { error: (err as Error).message });
+      }
+      
+      if (!state) {
+        logActivityEvent('No state to send via beacon');
+        return;
+      }
+      
+      // Format data for API
       const today = new Date();
       const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       
-      // Prepare the data in the format required by the API
-      const activityData = {
+      // Get device fingerprint for multi-device tracking
+      const { session_id, device_info } = getDeviceFingerprint();
+      
+      const beaconData = {
         date: formattedDate,
-        "time-spend": Math.round(activityState.totalTimeSpent / 60) // Convert seconds to minutes and round
+        "time-spend": Math.round(state.totalTimeSpent / 60), // Convert seconds to minutes
+        session_id: session_id,
+        device_info: device_info
       };
       
-      // Log the API call for debugging
-      console.log('Sending activity data to API:', activityData);
-      logActivityEvent('Sending activity data to API', { 
-        endpoint: `/activity/clients/${clientId}/activity-log/`,
-        data: activityData
-      });
+      // Use the Beacon API which is designed for exit events
+      const blob = new Blob([JSON.stringify(beaconData)], { type: 'application/json' });
+      navigator.sendBeacon(`${apiUrl}/activity/clients/${clientId}/activity-log/`, blob);
       
-      // Using regular fetch instead of beacon for better visibility in network tab during testing
-      const apiUrl = `${import.meta.env.VITE_API_URL || ''}/activity/clients/${clientId}/activity-log/`;
-      
-      // Use fetch for more reliable network tab visibility
-      fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        },
-        body: JSON.stringify(activityData),
-        // For testing purposes, use keepalive to help with visibility
-        keepalive: true
-      })
-      .then(response => {
-        if (response.ok) {
-          logActivityEvent('Successfully sent activity data', { data: activityData });
-        } else {
-          logActivityEvent('Failed to send activity data', { status: response.status });
-          // Store in localStorage as backup
-          localStorage.setItem(STORAGE_KEYS.PENDING_ACTIVITY_DATA, JSON.stringify(activityData));
-        }
-      })
-      .catch(error => {
-        logActivityEvent('Error sending activity data', { error: error.message });
-        // Store in localStorage as backup
-        localStorage.setItem(STORAGE_KEYS.PENDING_ACTIVITY_DATA, JSON.stringify(activityData));
-      });
-      
+      logActivityEvent('Sent activity data via beacon');
     } catch (error) {
-      logActivityEvent('Failed to send activity data', { error: (error as Error).message });
-      // Store in localStorage as backup
-      const backupData = {
-        totalTimeSpent: activityState.totalTimeSpent,
-        activityHistory: activityState.activityHistory,
-        lastSeen: Date.now()
-      };
-      localStorage.setItem(STORAGE_KEYS.PENDING_ACTIVITY_DATA, JSON.stringify(backupData));
+      logActivityEvent('Failed to send via beacon', { error: (error as Error).message });
     }
   };
 
   // Handle page unload (user closes the tab or navigates away)
   const handleBeforeUnload = () => {
-    logActivityEvent('Page unloading');
-    
-    // Use Beacon API to send data reliably during page unload
-    sendActivityDataUsingBeacon();
-    
-    // Also end the session normally
+    logActivityEvent('Before unload event');
     endSession();
-    
-    // Perform one final backup
+    sendActivityDataUsingBeacon();
+    // Also backup current state
     backupCurrentState();
+    
+    // Store data to be synced on next visit
+    try {
+      localStorage.setItem(STORAGE_KEYS.PENDING_ACTIVITY_DATA, JSON.stringify({
+        totalTimeSpent: activityState.totalTimeSpent,
+        timestamp: Date.now()
+      }));
+      logActivityEvent('Stored pending activity data for next visit');
+    } catch (error) {
+      logActivityEvent('Failed to store pending data', { error: (error as Error).message });
+    }
   };
 
   // Periodic sync every 3 minutes to reduce data loss in case of crashes
