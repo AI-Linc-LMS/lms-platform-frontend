@@ -11,7 +11,7 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { isAuthenticated } = useAppSelector((state) => state.auth);
   const navigate = useNavigate();
-  
+
   const { handleLogin, isLoading } = useAuth();
   const { error } = useAppSelector((state) => state.auth);
 
@@ -27,19 +27,28 @@ const Login: React.FC = () => {
   }, [isAuthenticated, navigate]);
 
   return (
-    <div className="flex h-screen bg-[#F8F9FA]">
-      {/* Left Section - Background Image */}
+    <div className="flex h-screen bg-[#F8F9FA] relative">
+      {/* Background Image for Mobile */}
+      <div className="absolute inset-0 md:hidden">
+        <img
+          src={logimg}
+          alt="Office workspace"
+          className="w-full h-full object-cover opacity-50"
+        />
+      </div>
+
+      {/* Left Section - Background Image (desktop only) */}
       <div className="hidden md:block md:w-1/2 h-full bg-gradient-to-r from-[#D7EFF6] to-[#E9F7FC]">
-        <img 
-          src={logimg} 
-          alt="Office workspace" 
+        <img
+          src={logimg}
+          alt="Office workspace"
           className="w-full h-full object-cover"
         />
       </div>
 
       {/* Right Section - Login Form */}
-      <div className="w-full md:w-1/2 flex items-center justify-center px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md space-y-8">
+      <div className="w-full md:w-1/2 flex items-center justify-center px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="w-full max-w-md space-y-8 bg-white md:bg-transparent p-6 rounded-3xl shadow-sm md:shadow-none">
           <div className="text-center">
             <div className="flex justify-center items-center">
               <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -51,14 +60,14 @@ const Login: React.FC = () => {
             </div>
             <h2 className="mt-6 text-3xl font-bold text-gray-900">Login to your account</h2>
           </div>
-          
+
           <form onSubmit={onSubmit} className="mt-8 space-y-6">
             {error && (
               <div className="p-4 text-sm text-red-700 bg-red-100 rounded-lg">
                 {error}
               </div>
             )}
-            
+
             <div className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
@@ -77,7 +86,7 @@ const Login: React.FC = () => {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <div className="flex items-center justify-between">
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
@@ -118,17 +127,17 @@ const Login: React.FC = () => {
 
             <div>
               <button type="submit" disabled={isLoading}
-              className={`w-full h-14 rounded-lg text-white py-4 px-6 bg-[#255C79] text-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:bg-[#1E4A63] hover:scale-95`}>
+                className={`w-full h-14 rounded-lg text-white py-4 px-6 bg-[#255C79] text-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:bg-[#1E4A63] hover:scale-95`}>
                 {isLoading ? 'Logging in...' : 'Login now'}
               </button>
             </div>
           </form>
-          
+
           {/* Google login button moved outside the form */}
           <div className="mt-6">
             <GoogleLoginButton />
           </div>
-          
+
           <div className="text-center text-sm">
             <span className="text-gray-500">Don't have an account? </span>
             <Link to="/signup" className="font-medium text-[#255C79]">
