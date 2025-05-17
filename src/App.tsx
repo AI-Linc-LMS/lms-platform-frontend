@@ -5,6 +5,9 @@ import Container from "./constants/Container";
 import { Outlet } from 'react-router-dom';
 import { useEffect, useState } from "react";
 import { useTokenExpirationHandler } from "./hooks/useTokenExpirationHandler";
+import useUserActivityTracking from "./hooks/useUserActivityTracking";
+import { setupActivitySyncListeners } from "./utils/userActivitySync";
+import FloatingActivityTimer from "./components/FloatingActivityTimer";
 
 function App() {
   return (
@@ -185,10 +188,33 @@ function AppContent() {
   const navigate = useNavigate();
   const user = localStorage.getItem("user");
   const isAuthenticated = user ? true : false;
-  console.log("user", user);
+  const { totalTimeSpent, activityHistory } = useUserActivityTracking();
   
   // Use the token expiration handler
   useTokenExpirationHandler();
+  
+  // Set up activity sync listeners
+  useEffect(() => {
+    if (isAuthenticated) {
+      setupActivitySyncListeners();
+    }
+  }, [isAuthenticated]);
+  
+  // Log activity data periodically
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const logInterval = setInterval(() => {
+      console.log('Current session stats:');
+      console.log('Total time spent:', totalTimeSpent, 'seconds');
+      console.log('Session history:', activityHistory);
+      
+      // In the future, this is where you would sync with backend
+      // syncUserActivity(userId, totalTimeSpent, activityHistory);
+    }, 60000); // Log every minute
+    
+    return () => clearInterval(logInterval);
+  }, [isAuthenticated, totalTimeSpent, activityHistory]);
   
   useEffect(() => {
     if (!isAuthenticated) {
@@ -197,36 +223,39 @@ function AppContent() {
   }, [isAuthenticated, navigate]);
   
   return (
-    <Routes>
-      {routes.map((route) => {
-        if (route.isPrivate) {
+    <>
+      {isAuthenticated && <FloatingActivityTimer />}
+      <Routes>
+        {routes.map((route) => {
+          if (route.isPrivate) {
+            return (
+              <Route
+                key={route.path}
+                path={route.path}
+                element={
+                  <Container>
+                    <Outlet />
+                  </Container>
+                }
+              >
+                <Route index element={<route.component />} />
+              </Route>
+            );
+          }
+
           return (
             <Route
               key={route.path}
               path={route.path}
-              element={
-                <Container>
-                  <Outlet />
-                </Container>
-              }
-            >
-              <Route index element={<route.component />} />
-            </Route>
+              element={<route.component />}
+            />
           );
-        }
-
-        return (
-          <Route
-            key={route.path}
-            path={route.path}
-            element={<route.component />}
-          />
-        );
-      })}
-      
-      {/* Handle unknown routes - keeps authenticated users on the app */}
-      <Route path="*" element={<InvalidRoute />} />
-    </Routes>
+        })}
+        
+        {/* Handle unknown routes - keeps authenticated users on the app */}
+        <Route path="*" element={<InvalidRoute />} />
+      </Routes>
+    </>
   );
 }
 
