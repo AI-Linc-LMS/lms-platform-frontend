@@ -32,6 +32,12 @@ export interface ActivityData {
   totalTimeSpent: number;
   activitySessions: ActivitySession[];
   timestamp: number;
+  session_id: string;
+  device_info: {
+    browser: string;
+    os: string;
+    deviceType: string;
+  };
 }
 
 /**
@@ -49,6 +55,24 @@ export const sendActivityData = async (data: ActivityData): Promise<void> => {
     
     // For now, just log the data that would be sent
     console.log('Activity data ready to send:', data);
+    
+    // Format API data for the current backend endpoint
+    const apiData = {
+      date: new Date(data.timestamp).toISOString().split('T')[0], // Format as YYYY-MM-DD
+      "time-spend": Math.round(data.totalTimeSpent / 60), // Convert seconds to minutes
+      session_id: data.session_id,
+      device_info: data.device_info
+    };
+    
+    const clientId = import.meta.env.VITE_CLIENT_ID;
+    const endpoint = `/activity/clients/${clientId}/activity-log/`;
+    
+    console.log('Sending to endpoint:', endpoint);
+    console.log('Formatted data:', apiData);
+    
+    // Send the actual API call
+    await activityTrackingInstance.post(endpoint, apiData);
+    console.log('Activity data sent successfully');
   } catch (error) {
     console.error('Failed to send activity data:', error);
     throw error;
@@ -89,17 +113,27 @@ export const syncOfflineActivityData = async (): Promise<void> => {
     const offlineData: ActivityData[] = JSON.parse(storedData);
     if (offlineData.length === 0) return;
     
-    // This is commented out for now since the backend endpoint is not ready
-    // When ready, uncomment this code and replace with the actual endpoint
-    /*
-    await activityTrackingInstance.post('/user-activity/batch', { activities: offlineData });
+    const clientId = import.meta.env.VITE_CLIENT_ID;
+    
+    // Process each offline activity record
+    const promises = offlineData.map(data => {
+      // Format API data for the current backend endpoint
+      const apiData = {
+        date: new Date(data.timestamp).toISOString().split('T')[0], // Format as YYYY-MM-DD
+        "time-spend": Math.round(data.totalTimeSpent / 60), // Convert seconds to minutes
+        session_id: data.session_id,
+        device_info: data.device_info
+      };
+      
+      // Send API call for each offline record
+      return activityTrackingInstance.post(`/activity/clients/${clientId}/activity-log/`, apiData);
+    });
+    
+    await Promise.all(promises);
     console.log('Offline activity data synced successfully');
-    */
     
     // Clear synced data
     localStorage.removeItem('offlineActivityData');
-    
-    console.log('Would sync offline data:', offlineData);
   } catch (error) {
     console.error('Failed to sync offline activity data:', error);
   }
