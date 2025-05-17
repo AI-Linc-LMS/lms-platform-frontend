@@ -277,9 +277,9 @@ const VideoCard: React.FC<VideoCardProps> = ({
     ? 'Debug Video'
     : ((data as CourseContentResponse)?.details?.title || currentTopic.title);
 
-  const videoDescription = useDebugMode
-    ? 'This is a debug video to test the Vimeo player functionality.'
-    : ((data as CourseContentResponse)?.details?.description || '');
+  // const videoDescription = useDebugMode
+  //   ? 'This is a debug video to test the Vimeo player functionality.'
+  //   : ((data as CourseContentResponse)?.details?.description || '');
 
   return (
     <div className="flex-1 max-w-full">
@@ -419,60 +419,13 @@ const VideoCard: React.FC<VideoCardProps> = ({
             <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4">
               {videoTitle}
             </h2>
-            <p className="mb-4 text-sm md:text-base">
-              {videoDescription}
-            </p>
+            {/* <div className="min-w-full">
 
-            <h3 className="text-md md:text-lg font-bold mt-4 md:mt-6 mb-2">What is an Array??</h3>
-            <p className="mb-4 text-sm md:text-base">
-              An array is a collection of items of the same data type stored at
-              contiguous memory locations...
-            </p>
-
-            <div className="border rounded-lg p-3 md:p-4 my-4 md:my-6 overflow-x-auto">
-              <h4 className="font-bold mb-2 text-sm md:text-base">Array Elements</h4>
-              <div className="flex justify-center">
-                <div className="flex">
-                  {[2, 4, 10, 5, 5, 3].map((num, i) => (
-                    <div
-                      key={i}
-                      className="w-8 h-8 md:w-12 md:h-12 bg-gray-200 flex items-center justify-center border border-gray-300 text-xs md:text-base"
-                    >
-                      {num}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="flex justify-center mt-2">
-                <div className="flex">
-                  {[1, 2, 3, 4, 5, 6].map((index, i) => (
-                    <div
-                      key={i}
-                      className="w-8 md:w-12 h-6 md:h-8 flex items-center justify-center text-xs md:text-base"
-                    >
-                      {index}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="text-center mt-2 text-xs md:text-sm">Array Indexes</div>
-            </div>
-
-            <h3 className="text-md md:text-lg font-bold mt-4 md:mt-6 mb-2">
-              This video will enlighten you with the following concepts:
-            </h3>
-            <ul className="list-disc pl-6 space-y-1 text-sm md:text-base">
-              <li>Introduction to the World of Arrays</li>
-              <li>What is an Array?</li>
-              <li>Use of an Array</li>
-              <li>Memory Allocation in Arrays</li>
-              <li>Advantages of using Array</li>
-              <li>Random Access</li>
-              <li>Cache Friendliness</li>
-              <li>Declaration and Initialization of an Array</li>
-              <li>In C++</li>
-              <li>In Java</li>
-            </ul>
+              <div
+                className="prose min-w-full text-sm md:text-base px-4 md:px-6 py-3"
+                dangerouslySetInnerHTML={{ __html: videoDescription }}
+              />
+            </div> */}
           </div>
         )}
         {activeTab === "comments" && (
@@ -520,22 +473,45 @@ const VideoCard: React.FC<VideoCardProps> = ({
                     <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-start space-x-3">
                         <img
-                          src="https://randomuser.me/api/portraits/men/1.jpg"
-                          alt="User"
-                          className="w-8 h-8 rounded-full"
+                          src={comment.user_profile?.profile_pic_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.user_profile?.user_name || 'User')}&background=0D8ABC&color=fff&size=128&rounded=true`}
+                          alt={comment.user_profile?.user_name || 'User'}
+                          className="w-8 h-8 rounded-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.user_profile?.user_name || 'User')}&background=0D8ABC&color=fff&size=128&rounded=true`;
+                          }}
                         />
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
-                            <span className="font-semibold text-sm">{comment.user_name || 'John Doe'}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-sm">{comment.user_profile?.user_name || 'Anonymous User'}</span>
+                              {comment.user_profile?.role && (
+                                <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
+                                  {comment.user_profile.role}
+                                </span>
+                              )}
+                            </div>
                             <span className="text-xs text-gray-500">
                               {new Date(comment.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })}
                             </span>
                           </div>
-                          <p className="mt-1 text-sm text-gray-700 break-words max-w-[300px]">
+                          <p className="mt-1 text-sm text-gray-700 break-words">
                             {comment.text}
                           </p>
-
-
+                          <div className="flex items-center gap-4 mt-2">
+                            <button className="flex items-center text-gray-500 hover:text-blue-500 text-xs">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                              </svg>
+                              {comment.likes || 0}
+                            </button>
+                            <button className="flex items-center text-gray-500 hover:text-red-500 text-xs">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+                              </svg>
+                              {comment.dislikes || 0}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -560,11 +536,11 @@ const VideoCard: React.FC<VideoCardProps> = ({
       </div>
 
       {/* Floating Ask AI Button */}
-        <FloatingAIButton
-          onClick={() => console.log("Floating AI Button clicked")}
-        />
-      </div>
-      );
+      <FloatingAIButton
+        onClick={() => console.log("Floating AI Button clicked")}
+      />
+    </div>
+  );
 };
 
-      export default VideoCard;
+export default VideoCard;
