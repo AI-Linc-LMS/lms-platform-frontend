@@ -99,6 +99,40 @@ Here's what happens when a user uses multiple devices:
    - If one device goes offline, data is cached locally and synced when it comes back online
    - If the user's clock is skewed across devices, the server normalizes timestamps
 
+## Pros and Cons of Our Architecture
+
+### Pros
+
+1. **Device Independence**: Sessions are tracked independently on each device, allowing for accurate activity recording even when users switch between devices.
+
+2. **Resilient to Network Issues**: The system gracefully handles offline scenarios by storing data locally and syncing when connectivity is restored.
+
+3. **Privacy-Friendly Fingerprinting**: Our device identification collects only non-invasive, non-personally identifiable information.
+
+4. **Accurate Time Tracking**: The system prevents double-counting of time when users are active on multiple devices simultaneously.
+
+5. **Debugging Capabilities**: The floating timer with debug panel makes it easy to diagnose issues and verify proper operation.
+
+6. **Multiple Backup Mechanisms**: Data is preserved through various mechanisms (localStorage, session backup, beacon API) to prevent loss.
+
+7. **Minimal Backend Requirements**: The architecture requires relatively simple server-side logic for data aggregation.
+
+### Cons
+
+1. **LocalStorage Limitations**: Reliance on localStorage means data can be lost if users clear their browser data or use private/incognito browsing.
+
+2. **Session Boundary Issues**: If a user rapidly switches between devices, the system might create many small sessions that could impact analytics.
+
+3. **Clock Synchronization Challenges**: Device time discrepancies can cause inaccurate session boundaries if server-side normalization isn't implemented properly.
+
+4. **No Real-time Awareness**: Each device operates independently without real-time knowledge of other active sessions from the same user.
+
+5. **UserAgent Detection Limitations**: Browser fingerprinting via userAgent has limitations and may become less reliable as browsers evolve.
+
+6. **Data Redundancy**: Sending multiple overlapping sessions creates some data redundancy that must be handled by the backend.
+
+7. **Backend Dependency**: Accurate multi-device experience depends on proper server-side implementation of aggregation logic.
+
 ## Testing
 
 The system includes built-in tools for testing multi-device scenarios:
