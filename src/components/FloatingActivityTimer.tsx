@@ -3,13 +3,26 @@ import useUserActivityTracking from '../hooks/useUserActivityTracking';
 import { calculateCurrentSessionDuration } from '../utils/userActivitySync';
 import { simulateActivityEvent, getActivityDebugEvents, clearActivityDebugEvents } from '../utils/activityDebugger';
 
+// New interface to track sync status
+interface SyncStatus {
+  lastSync: number | null;
+  status: 'idle' | 'syncing' | 'success' | 'failed';
+  message: string;
+}
+
 const FloatingActivityTimer: React.FC = () => {
-  const { isActive, totalTimeSpent, currentSessionStart, formatTime, activityHistory } = useUserActivityTracking();
+  const { isActive, totalTimeSpent, currentSessionStart, formatTime, activityHistory, recoverFromLocalStorage } = useUserActivityTracking();
   const [currentDuration, setCurrentDuration] = useState<number>(0);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
   const [showDebugging, setShowDebugging] = useState<boolean>(false);
   const [debugEvents, setDebugEvents] = useState<string[]>([]);
+  const [recoveredTime, setRecoveredTime] = useState<number | null>(null);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>({
+    lastSync: null,
+    status: 'idle',
+    message: 'No sync yet'
+  });
 
   // Update current session duration every second
   useEffect(() => {
@@ -22,12 +35,50 @@ const FloatingActivityTimer: React.FC = () => {
     return () => clearInterval(timer);
   }, [isActive, currentSessionStart]);
 
-  // Update debug logs periodically
+  // Update debug logs periodically and check for sync events
   useEffect(() => {
     if (!showDebugging) return;
     
     const debugTimer = setInterval(() => {
-      setDebugEvents(getActivityDebugEvents());
+      const events = getActivityDebugEvents();
+      setDebugEvents(events);
+      
+      // Check for sync-related events in the logs
+      const syncEvents = events.filter(event => 
+        event.includes('Sent activity data') || 
+        event.includes('Failed to send activity data') ||
+        event.includes('Periodic sync')
+      );
+      
+      if (syncEvents.length > 0) {
+        const latestSyncEvent = syncEvents[syncEvents.length - 1];
+        
+        // Update sync status
+        if (latestSyncEvent.includes('success')) {
+          setSyncStatus({
+            lastSync: Date.now(),
+            status: 'success',
+            message: 'Last sync successful'
+          });
+          
+          // Reset status after 3 seconds
+          setTimeout(() => {
+            setSyncStatus(prev => ({ ...prev, status: 'idle' }));
+          }, 3000);
+        } else if (latestSyncEvent.includes('failed')) {
+          setSyncStatus({
+            lastSync: Date.now(),
+            status: 'failed',
+            message: 'Sync failed'
+          });
+        } else if (latestSyncEvent.includes('Periodic sync')) {
+          setSyncStatus({
+            lastSync: Date.now(),
+            status: 'syncing',
+            message: 'Syncing...'
+          });
+        }
+      }
     }, 1000);
     
     return () => clearInterval(debugTimer);
@@ -42,6 +93,160 @@ const FloatingActivityTimer: React.FC = () => {
   const handleClearLogs = () => {
     clearActivityDebugEvents();
     setDebugEvents([]);
+  };
+
+  // Force manual sync for testing
+  const handleForceSync = () => {
+    setSyncStatus({
+      lastSync: Date.now(),
+      status: 'syncing',
+      message: 'Manual sync...'
+    });
+    
+    // Check environment variables
+    const apiUrl = import.meta.env.VITE_API_URL;
+    const clientId = import.meta.env.VITE_CLIENT_ID;
+    
+    console.log('API URL:', apiUrl);
+    console.log('Client ID:', clientId);
+    console.log('Current total time spent (seconds):', totalTimeSpent);
+    
+    // Format date in YYYY-MM-DD format for logging
+    const today = new Date();
+    const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    
+    // Log what would be sent
+    console.log('Data to be sent:', {
+      date: formattedDate,
+      "time-spend": Math.round(totalTimeSpent / 60)
+    });
+    
+    // Simulate closing/opening tab to trigger API call
+    simulateActivityEvent('blur');
+    setTimeout(() => simulateActivityEvent('focus'), 500);
+    
+    setTimeout(() => {
+      setDebugEvents(getActivityDebugEvents());
+      setSyncStatus({
+        lastSync: Date.now(),
+        status: 'success', 
+        message: 'Manual sync completed'
+      });
+    }, 1000);
+  };
+
+  // Direct API call for testing (bypasses simulation)
+  const handleDirectApiCall = () => {
+    setSyncStatus({
+      lastSync: Date.now(),
+      status: 'syncing',
+      message: 'Direct API call...'
+    });
+    
+    const apiUrl = import.meta.env.VITE_API_URL;
+    const clientId = import.meta.env.VITE_CLIENT_ID;
+    
+    if (!apiUrl || !clientId) {
+      console.error('Missing API URL or Client ID!');
+      setSyncStatus({
+        lastSync: Date.now(),
+        status: 'failed',
+        message: 'Missing API config'
+      });
+      return;
+    }
+    
+    // Format date in YYYY-MM-DD format
+    const today = new Date();
+    const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    
+    // Prepare the data in the format required by the API
+    const activityData = {
+      date: formattedDate,
+      "time-spend": Math.round(totalTimeSpent / 60) // Convert seconds to minutes and round
+    };
+    
+    console.log('DIRECT API CALL');
+    console.log('Endpoint:', `${apiUrl}/activity/clients/${clientId}/activity-log/`);
+    console.log('Data:', activityData);
+    
+    // Direct API call with fetch
+    fetch(`${apiUrl}/activity/clients/${clientId}/activity-log/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      },
+      body: JSON.stringify(activityData)
+    })
+    .then(response => {
+      console.log('API Response Status:', response.status);
+      if (response.ok) {
+        setSyncStatus({
+          lastSync: Date.now(),
+          status: 'success',
+          message: 'API call successful'
+        });
+      } else {
+        setSyncStatus({
+          lastSync: Date.now(),
+          status: 'failed',
+          message: `Failed: ${response.status}`
+        });
+      }
+      return response.text();
+    })
+    .then(text => {
+      let responseData = text;
+      try {
+        if (text) {
+          responseData = JSON.parse(text);
+        }
+      } catch (e: unknown) {
+        // Keep as text if not JSON
+        console.log('Response is not JSON:', e);
+      }
+      console.log('API Response:', responseData);
+    })
+    .catch(error => {
+      console.error('API Error:', error);
+      setSyncStatus({
+        lastSync: Date.now(),
+        status: 'failed',
+        message: 'API error'
+      });
+    });
+  };
+
+  // Handle recovery from localStorage
+  const handleRecoverFromLocalStorage = () => {
+    setSyncStatus({
+      lastSync: Date.now(),
+      status: 'syncing',
+      message: 'Recovering data...'
+    });
+    
+    setTimeout(() => {
+      try {
+        const recoveredTotalTime = recoverFromLocalStorage();
+        setRecoveredTime(recoveredTotalTime);
+        
+        setSyncStatus({
+          lastSync: Date.now(),
+          status: 'success',
+          message: recoveredTotalTime > 0 
+            ? `Recovered ${formatTime(recoveredTotalTime)}` 
+            : 'No data to recover'
+        });
+      } catch (error: unknown) {
+        console.error('Failed to recover data:', error);
+        setSyncStatus({
+          lastSync: Date.now(),
+          status: 'failed',
+          message: 'Recovery failed'
+        });
+      }
+    }, 500);
   };
 
   if (isMinimized) {
@@ -67,6 +272,17 @@ const FloatingActivityTimer: React.FC = () => {
         <div className="flex items-center">
           <div className={`w-2 h-2 rounded-full mr-2 ${isActive ? 'bg-green-300' : 'bg-red-300'} animate-pulse`}></div>
           <h3 className="text-sm font-medium">Activity Timer</h3>
+          
+          {/* Sync indicator */}
+          {syncStatus.status !== 'idle' && (
+            <div className="ml-2 flex items-center text-xs">
+              <div className={`w-1.5 h-1.5 rounded-full mr-1 ${
+                syncStatus.status === 'syncing' ? 'bg-yellow-300 animate-pulse' : 
+                syncStatus.status === 'success' ? 'bg-green-300' : 'bg-red-300'
+              }`}></div>
+              <span className="truncate max-w-[80px]">{syncStatus.message}</span>
+            </div>
+          )}
         </div>
         <div className="flex space-x-1">
           <button 
@@ -120,6 +336,17 @@ const FloatingActivityTimer: React.FC = () => {
             {formatTime(totalTimeSpent)}
           </div>
         </div>
+        
+        {/* Recovered time indicator */}
+        {recoveredTime !== null && (
+          <div className="mt-1 text-xs text-center">
+            <span className={recoveredTime > 0 ? "text-green-600" : "text-gray-500"}>
+              {recoveredTime > 0 
+                ? `Recovered backup: ${formatTime(recoveredTime)}`
+                : "No backup data found"}
+            </span>
+          </div>
+        )}
       </div>
       
       {/* Status info */}
@@ -145,6 +372,14 @@ const FloatingActivityTimer: React.FC = () => {
                 <span className="text-gray-500">Sessions:</span>
                 <span className="text-gray-800">{activityHistory.length}</span>
               </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Last sync:</span>
+                <span className="text-gray-800">
+                  {syncStatus.lastSync 
+                    ? new Date(syncStatus.lastSync).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+                    : 'Never'}
+                </span>
+              </div>
               <div className="text-gray-500 text-center mt-1 border-t border-gray-200 pt-1">
                 <span className="text-xs italic">Activity tracking {isActive ? 'running' : 'paused'}</span>
               </div>
@@ -163,7 +398,7 @@ const FloatingActivityTimer: React.FC = () => {
                 </button>
               </div>
               
-              <div className="flex space-x-1 mb-3">
+              <div className="flex space-x-1 mb-2">
                 <button 
                   onClick={() => handleSimulateEvent('focus')}
                   className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs py-1 px-2 rounded transition-colors"
@@ -190,13 +425,55 @@ const FloatingActivityTimer: React.FC = () => {
                 </button>
               </div>
               
+              <div className="mb-2 grid grid-cols-2 gap-2">
+                <button 
+                  onClick={handleForceSync}
+                  className="bg-green-50 hover:bg-green-100 text-green-800 text-xs py-1 px-2 rounded transition-colors flex items-center justify-center"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" className="mr-1" viewBox="0 0 16 16">
+                    <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/>
+                    <path fillRule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/>
+                  </svg>
+                  Send to Backend
+                </button>
+                
+                <button 
+                  onClick={handleDirectApiCall}
+                  className="bg-purple-50 hover:bg-purple-100 text-purple-800 text-xs py-1 px-2 rounded transition-colors flex items-center justify-center"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" className="mr-1" viewBox="0 0 16 16">
+                    <path d="M2.5 8a5.5 5.5 0 0 1 8.25-4.764.5.5 0 0 0 .5-.866A6.5 6.5 0 1 0 14.5 8a.5.5 0 0 0-1 0 5.5 5.5 0 1 1-11 0z"/>
+                    <path d="M15.354 3.354a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0l7-7z"/>
+                  </svg>
+                  Direct API Call
+                </button>
+                
+                <button 
+                  onClick={handleRecoverFromLocalStorage}
+                  className="bg-yellow-50 hover:bg-yellow-100 text-yellow-800 text-xs py-1 px-2 rounded transition-colors flex items-center justify-center col-span-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" className="mr-1" viewBox="0 0 16 16">
+                    <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+                  </svg>
+                  Recover Data
+                </button>
+              </div>
+              
               <h4 className="text-xs font-semibold text-gray-600 mb-1">Debug Logs</h4>
               <div className="bg-gray-100 rounded p-1 text-xs font-mono h-32 overflow-y-auto">
                 {debugEvents.length === 0 ? (
                   <div className="text-gray-500 italic text-center p-2">No logs yet</div>
                 ) : (
                   debugEvents.slice().reverse().map((event, index) => (
-                    <div key={index} className="text-gray-800 text-[10px] whitespace-normal break-all mb-1">
+                    <div 
+                      key={index} 
+                      className={`text-[10px] whitespace-normal break-all mb-1 ${
+                        event.includes('success') || event.includes('Recovered') ? 'text-green-700' : 
+                        event.includes('failed') || event.includes('error') ? 'text-red-700' : 
+                        event.includes('sync') || event.includes('backup') ? 'text-blue-700' : 'text-gray-800'
+                      }`}
+                    >
                       {event}
                     </div>
                   ))

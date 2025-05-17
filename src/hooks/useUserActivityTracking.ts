@@ -7,7 +7,16 @@ export interface UserActivityData {
   currentSessionStart: number | null;
   activityHistory: ActivitySession[];
   formatTime: (seconds: number) => string;
+  recoverFromLocalStorage: () => number;
 }
+
+// Local storage backup keys (must match those in UserActivityContext)
+const STORAGE_KEYS = {
+  LAST_ACTIVITY_STATE: 'lastActivityState',
+  PENDING_ACTIVITY_DATA: 'pendingActivityData',
+  SESSION_BACKUP: 'sessionBackup',
+  TOTAL_TIME_BACKUP: 'totalTimeBackup'
+};
 
 export const useUserActivityTracking = (): UserActivityData => {
   const activityContext = useContext(UserActivityContext);
@@ -30,9 +39,51 @@ export const useUserActivityTracking = (): UserActivityData => {
     return `${hours}h ${remainingMinutes}m`;
   };
 
+  // Function to attempt recovery of total time spent if the context value is unreliable
+  const recoverFromLocalStorage = (): number => {
+    try {
+      // First try the direct total time backup (most reliable)
+      const totalTimeStr = localStorage.getItem(STORAGE_KEYS.TOTAL_TIME_BACKUP);
+      if (totalTimeStr) {
+        const totalTime = parseInt(totalTimeStr, 10);
+        if (!isNaN(totalTime) && totalTime > 0) {
+          console.log(`Recovered total time from backup: ${totalTime}s`);
+          return totalTime;
+        }
+      }
+      
+      // Next try the session backup
+      const sessionBackupStr = localStorage.getItem(STORAGE_KEYS.SESSION_BACKUP);
+      if (sessionBackupStr) {
+        const sessionBackup = JSON.parse(sessionBackupStr);
+        if (sessionBackup && typeof sessionBackup.totalTimeSpent === 'number') {
+          console.log(`Recovered total time from session backup: ${sessionBackup.totalTimeSpent}s`);
+          return sessionBackup.totalTimeSpent;
+        }
+      }
+      
+      // Finally try the last activity state
+      const lastActivityStr = localStorage.getItem(STORAGE_KEYS.LAST_ACTIVITY_STATE);
+      if (lastActivityStr) {
+        const lastActivity = JSON.parse(lastActivityStr);
+        if (lastActivity && typeof lastActivity.totalTimeSpent === 'number') {
+          console.log(`Recovered total time from last activity: ${lastActivity.totalTimeSpent}s`);
+          return lastActivity.totalTimeSpent;
+        }
+      }
+      
+      // If we reach here, no valid data was found
+      return 0;
+    } catch (error) {
+      console.error('Error recovering activity data from localStorage', error);
+      return 0;
+    }
+  };
+
   return {
     ...activityContext,
     formatTime,
+    recoverFromLocalStorage,
   };
 };
 
