@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useQuery } from '@tanstack/react-query';
-import { getCourseContent } from '../../../../../services/enrolled-courses-content/courseContentApis';
+import { getCourseContent, pastSubmissions } from '../../../../../services/enrolled-courses-content/courseContentApis';
 import { useMediaQuery } from '../../../../../hooks/useMediaQuery';
 import { submitContent } from "../../../../../services/enrolled-courses-content/submitApis";
-import { useNavigate } from "react-router-dom";
 import topbg from "../../../../../commonComponents/icons/enrolled-courses/quiz/topbg.png";
 import leftbg from "../../../../../commonComponents/icons/enrolled-courses/quiz/leftbg.png";
 import tickicon from "../../../../../commonComponents/icons/enrolled-courses/quiz/doneicon.png";
@@ -15,6 +14,7 @@ interface MCQ {
   question_text: string;
   difficulty_level: string;
   options: string[];
+  explanation: string;
   correct_option: string;
 }
 
@@ -34,6 +34,7 @@ interface QuizData {
   duration_in_minutes: number;
   order: number;
   details: QuizDetails;
+  status: string;
 }
 
 interface UserAnswer {
@@ -60,22 +61,25 @@ const QuizCard: React.FC<QuizCardProps> = ({
   isSidebarContentOpen,
   quizData: injectedData,
   onSubmission,
-  onReset,
   onStartNextQuiz,
   isVisible = true
 }) => {
-  const navigate = useNavigate();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [alreadyCompleted, setAlreadyCompleted] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [formattedTime, setFormattedTime] = useState("00:00");
-  const [score, setScore] = useState(0);
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [totalSubmissions, setTotalSubmissions] = useState(0);
   const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
   const [isReviewing, setIsReviewing] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const [pastAttempts, setPastAttempts] = useState<any[]>([]);
+  const [selectedAttemptIndex, setSelectedAttemptIndex] = useState(0);
+  const [loadingAttempts, setLoadingAttempts] = useState(false);
+  const [attemptSwitchLoading, setAttemptSwitchLoading] = useState(false);
+  const [totalAttempts, setTotalAttempts] = useState(0);
 
   const { data: fetchedData, isLoading, error } = useQuery<QuizData>({
     queryKey: ['quiz', contentId],
@@ -83,7 +87,12 @@ const QuizCard: React.FC<QuizCardProps> = ({
     enabled: !!contentId && !!courseId && !injectedData,
   });
 
-  //console.log("quiz Data", fetchedData);
+  useEffect(() => {
+    console.log("fetchedData", fetchedData?.status);
+    if (fetchedData?.status === "complete") {
+      setAlreadyCompleted(true);
+    }
+  }, [fetchedData]);
 
   // Use either injected data or fetched data
   const data = injectedData || fetchedData;
@@ -119,13 +128,96 @@ const QuizCard: React.FC<QuizCardProps> = ({
     return () => clearInterval(interval);
   }, [data?.duration_in_minutes, isVisible]);
 
-  if (isLoading && !injectedData) {
+  // Fetch past submissions after quiz is completed
+  useEffect(() => {
+    if (quizCompleted || alreadyCompleted) {
+      setLoadingAttempts(true);
+      pastSubmissions(1, courseId, contentId)
+        .then((data) => {
+          // Sort by created_at descending, take first 8
+          const sorted = [...data].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          setTotalAttempts(sorted.length);
+          setPastAttempts(sorted.slice(0, 8));
+          setSelectedAttemptIndex(0); // latest
+        })
+        .catch(() => setPastAttempts([]))
+        .finally(() => setLoadingAttempts(false));
+    }
+  }, [quizCompleted, alreadyCompleted, courseId, contentId]);
+
+  // Use selected attempt's answers for review
+  const reviewUserAnswers = quizCompleted || alreadyCompleted ? pastAttempts[selectedAttemptIndex]?.custom_dimension?.userAnswers
+    : userAnswers;
+
+  if (isLoading || (alreadyCompleted && loadingAttempts)) {
     return (
-      <div className="animate-pulse">
-        <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
-        <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-5/6 mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-4/6 mb-2"></div>
+      <div className="rounded-lg shadow p-0 md:p-0 mb-8 animate-pulse">
+        {/* Header skeleton */}
+        <div className="flex items-center justify-between w-full bg-transparent py-4 px-2 md:px-6">
+          <div className="flex items-center gap-4">
+            <div className="h-8 w-32 bg-gray-200 rounded" />
+            <div className="h-6 w-32 bg-gray-200 rounded" />
+            <div className="h-6 w-32 bg-gray-200 rounded" />
+          </div>
+          <div className="h-10 w-48 bg-gray-200 rounded" />
+        </div>
+        {/* Score and Next Challenge skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 py-6 md:py-8">
+          <div className="relative bg-white/70 flex flex-row justify-between p-6 shadow overflow-hidden rounded-3xl">
+            <div className="flex-1 flex flex-col justify-between h-full">
+              <div className="h-8 w-32 bg-gray-200 rounded mb-4" />
+              <div className="h-16 w-40 bg-gray-200 rounded" />
+            </div>
+            <div className="h-24 w-24 bg-gray-200 rounded-full" />
+          </div>
+          <div className="flex flex-row justify-between bg-gray-100 rounded-lg p-6 shadow">
+            <div className="flex flex-col justify-between">
+              <div className="h-8 w-48 bg-gray-200 rounded mb-4" />
+              <div className="h-10 w-32 bg-gray-200 rounded" />
+            </div>
+            <div className="h-24 w-24 bg-gray-200 rounded-full" />
+          </div>
+        </div>
+        {/* Attempt Buttons skeleton */}
+        <div className="flex gap-4 px-4 pt-6 pb-2">
+          {Array.from({ length: 3 }).map((_, idx) => (
+            <div key={idx} className="h-12 w-32 bg-gray-200 rounded" />
+          ))}
+        </div>
+        {/* Review skeleton */}
+        <div className="p-4 md:p-4 bg-white rounded-lg shadow mt-3">
+          <div className="flex w-full">
+            <div className="w-1/3 min-w-[120px] bg-white rounded-lg md:mr-8 p-4">
+              <div className="h-6 w-2/3 bg-gray-200 rounded mb-4" />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {Array.from({ length: 8 }).map((_, idx) => (
+                  <div key={idx} className="h-8 w-full bg-gray-200 rounded" />
+                ))}
+              </div>
+            </div>
+            <div className="flex-1 bg-white rounded-lg p-6">
+              <div className="flex justify-between items-center mb-4">
+                <div className="h-4 w-24 bg-gray-200 rounded" />
+                <div className="h-4 w-16 bg-gray-200 rounded" />
+              </div>
+              <div className="h-6 w-2/3 bg-gray-200 rounded mb-6" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-8">
+                {Array.from({ length: 4 }).map((_, idx) => (
+                  <div key={idx} className="h-10 w-full bg-gray-200 rounded" />
+                ))}
+              </div>
+              <div className="mb-4 bg-gray-100 rounded-lg h-10 w-full" />
+              <div className="mb-4 p-4 bg-white border rounded-lg">
+                <div className="h-4 w-24 bg-gray-200 rounded mb-2" />
+                <div className="h-4 w-2/3 bg-gray-200 rounded" />
+              </div>
+              <div className="flex justify-between mt-6">
+                <div className="h-8 w-24 bg-gray-200 rounded" />
+                <div className="h-8 w-24 bg-gray-200 rounded" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -136,6 +228,19 @@ const QuizCard: React.FC<QuizCardProps> = ({
         Error loading quiz. Please try again later.
       </div>
     );
+  }
+
+  const handleRetryQuiz = () => {
+    setQuizCompleted(false);
+    setAlreadyCompleted(false);
+    setUserAnswers(data.details.mcqs.map((_, index) => ({
+      questionId: data.details.mcqs[index].id,
+      questionIndex: index,
+      selectedOption: null,
+      isCorrect: false
+    })));
+    setCurrentQuestionIndex(0);
+    setSelectedOption(null);
   }
 
   const mcqs = data.details.mcqs;
@@ -152,17 +257,11 @@ const QuizCard: React.FC<QuizCardProps> = ({
   };
 
   const handleOptionSelect = (option: string) => {
-    if (!submitted) {
-      setSelectedOption(option);
-
-      // Update userAnswers state
-      const updatedAnswers = [...userAnswers];
-      updatedAnswers[currentQuestionIndex] = {
-        ...updatedAnswers[currentQuestionIndex],
-        selectedOption: option
-      };
-      setUserAnswers(updatedAnswers);
-    }
+    setSelectedOption(option);
+    const isCorrect = option === currentQuestion.correct_option;
+    updateUserAnswer(currentQuestionIndex, option, isCorrect);
+    //console.log("option", option);
+    // Update userAnswers state
   };
 
   const handleNext = () => {
@@ -171,9 +270,13 @@ const QuizCard: React.FC<QuizCardProps> = ({
     setTotalSubmissions(prev => prev + 1);
 
     const isCorrect = selectedOption === currentQuestion.correct_option;
-
+    //console.log("isCorrect", isCorrect);
+    //console.log("selectedOption", selectedOption);
+    //console.log("currentQuestion", currentQuestion);
     // Update userAnswers state with selection
     updateUserAnswer(currentQuestionIndex, selectedOption!, isCorrect);
+
+    //console.log("userAnswers", userAnswers);
 
     // Notify parent component about submission
     if (onSubmission) {
@@ -191,7 +294,8 @@ const QuizCard: React.FC<QuizCardProps> = ({
   const handleFinish = () => {
     setSubmitted(true);
     setTotalSubmissions(prev => prev + 1);
-
+    //console.log("selectedOption", selectedOption);
+    //console.log("currentQuestion", currentQuestion);
     const isCorrect = selectedOption === currentQuestion.correct_option;
 
     // Update userAnswers state with selection
@@ -215,37 +319,11 @@ const QuizCard: React.FC<QuizCardProps> = ({
   const finishQuiz = async () => {
     // Calculate total score when quiz is completed
     const response = await submitContent(1, courseId, contentId, "Quiz", { userAnswers });
-    console.log("response", response);
+    //console.log("response", response);
     if (response === 201) {
-      const totalCorrect = userAnswers.filter(answer => answer.isCorrect).length;
-      setScore(totalCorrect);
       setQuizCompleted(true);
     } else {
-      console.log("error", response);
-    }
-  };
-
-  const resetQuiz = () => {
-    navigate(0);
-    setCurrentQuestionIndex(0);
-    setSelectedOption(null);
-    setSubmitted(false);
-    setScore(0);
-    setQuizCompleted(false);
-    setTotalSubmissions(0);
-    setIsReviewing(false);
-
-    // Reset userAnswers
-    setUserAnswers(mcqs.map((_, index) => ({
-      questionId: mcqs[index].id,
-      questionIndex: index,
-      selectedOption: null,
-      isCorrect: false
-    })));
-
-    // Notify parent component about reset
-    if (onReset) {
-      onReset(contentId);
+      //console.log("error", response);
     }
   };
 
@@ -265,17 +343,16 @@ const QuizCard: React.FC<QuizCardProps> = ({
     }
   };
 
-  const reviewAnswers = () => {
-    setIsReviewing(true);
-  };
 
   const getQuestionButtonStyle = (index: number) => {
     const answer = userAnswers[index];
-
+    if (!answer) {
+      // Return a default style if answer is undefined
+      return "bg-white border-gray-300 text-gray-600";
+    }
     if (index === currentQuestionIndex && !isReviewing) {
       return "bg-blue-50 border-[#007B9F] text-[#255C79]";
     }
-
     // Show correct/incorrect colors only after quiz is completed
     if (quizCompleted) {
       if (answer.selectedOption) {
@@ -289,7 +366,6 @@ const QuizCard: React.FC<QuizCardProps> = ({
         return "bg-[#2A8CB0] border-[#2A8CB0] text-white";
       }
     }
-
     return "bg-white border-gray-300 text-gray-600";
   };
 
@@ -341,32 +417,56 @@ const QuizCard: React.FC<QuizCardProps> = ({
     );
   }
 
-
-  function renderReviewContent() {
-    if (isReviewing) {
-      return (
-        <div className="border rounded-lg p-4 md:p-6">
+  function renderReviewContent(userAnswersArg = userAnswers) {
+    return (
+      <div className="flex w-full">
+        {/* Left Sidebar: Question Numbers */}
+        <div className="w-1/3 min-w-[120px] bg-white rounded-lg md:mr-8">
+          <h3 className="text-2xl font-semibold mb-4 text-[#255C79]">Your Quiz Review</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {userAnswersArg.map((answer, idx) => {
+              const isCurrent = idx === currentQuestionIndex;
+              let btnClass = '';
+              if (answer.selectedOption) {
+                btnClass = answer.isCorrect
+                  ? 'bg-green-100 border-green-500 text-green-700'
+                  : 'bg-red-100 border-red-500 text-red-700';
+              } else {
+                btnClass = 'bg-gray-100 border-gray-300 text-gray-400';
+              }
+              if (isCurrent) {
+                btnClass += ' ring-2 ring-[#255C79]';
+              }
+              return (
+                <button
+                  key={idx}
+                  onClick={() => navigateToQuestion(idx)}
+                  className={`w-full py-2 rounded-md border text-sm font-semibold transition ${btnClass}`}
+                >
+                  {idx + 1}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        {/* Right Panel: Question Review */}
+        <div className="flex-1 bg-white rounded-lg p-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-base md:text-lg font-semibold">Question {currentQuestionIndex + 1}</h3>
+            <span className="text-sm text-gray-500">Question {currentQuestionIndex + 1}</span>
             <span className="text-xs bg-blue-100 text-[#255C79] px-2 py-1 rounded">
               {currentQuestion.difficulty_level}
             </span>
           </div>
-
-          <h3 className="text-lg font-medium mb-6">
-            {currentQuestion.question_text}
-          </h3>
-
-          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'} gap-3 md:gap-4 mb-4 md:mb-6`}>
+          <h3 className="text-lg font-semibold mb-4">{currentQuestion.question_text}</h3>
+          <div className={`grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-8`}>
             {currentQuestion.options.map((option, idx) => {
               const optionLetter = optionLetters[idx];
-              const isSelected = userAnswers[currentQuestionIndex].selectedOption === optionLetter;
+              const isSelected = userAnswersArg[currentQuestionIndex].selectedOption === optionLetter;
               const isCorrect = optionLetter === currentQuestion.correct_option;
-
               return (
                 <div
                   key={idx}
-                  className={`border rounded-lg p-3 md:p-4 text-sm md:text-base ${isSelected && isCorrect
+                  className={`border rounded-lg p-3 md:p-4 text-sm md:text-base flex items-center ${isSelected && isCorrect
                     ? "border-green-600 bg-green-50"
                     : isSelected && !isCorrect
                       ? "border-red-600 bg-red-50"
@@ -377,21 +477,27 @@ const QuizCard: React.FC<QuizCardProps> = ({
                 >
                   <span className="font-medium mr-2">{optionLetter}.</span> {option}
                   {isCorrect && <span className="ml-2 text-green-600">✓</span>}
+                  {isSelected && !isCorrect && <span className="ml-2 text-red-600">✗</span>}
                 </div>
               );
             })}
           </div>
-
-          <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+          <div className="mb-4 bg-gray-50 rounded-lg">
             <div className="text-sm font-medium text-gray-700">
-              {userAnswers[currentQuestionIndex].isCorrect ?
+              {userAnswersArg[currentQuestionIndex].isCorrect ?
                 <span className="text-green-600">Your response was correct!</span> :
                 <span className="text-red-600">Your response was incorrect. The correct answer is {currentQuestion.correct_option}.</span>
               }
             </div>
           </div>
-
-          <div className="flex justify-between">
+          {/* Explanation Section */}
+          {currentQuestion.explanation && (
+            <div className="mb-4 p-4 bg-white border rounded-lg">
+              <div className="text-lg font-semibold text-gray-700 mb-1">Explanation</div>
+              <div className="text-md text-gray-700">{currentQuestion.explanation}</div>
+            </div>
+          )}
+          <div className="flex justify-between mt-6">
             <button
               onClick={handleBack}
               className="px-3 md:px-4 py-2 border border-[#255C79] text-[#255C79] rounded-md text-xs md:text-sm font-medium hover:bg-blue-50"
@@ -412,41 +518,42 @@ const QuizCard: React.FC<QuizCardProps> = ({
             </button>
           </div>
         </div>
-      );
-    } else {
-      return (
-        <div className="flex flex-col items-center justify-center border rounded-lg p-4 md:p-6">
-          <h3 className="text-lg md:text-xl font-semibold mb-4">Quiz Result</h3>
-          <p className="text-base md:text-lg mb-4 md:mb-6">
-            Your score: <span className="font-bold">{score}/{mcqs.length}</span> ({Math.round((score / mcqs.length) * 100)}%)
-          </p>
-          <p className="text-xs md:text-sm text-gray-600 mb-6 md:mb-8">
-            Your submitted response was correct.
-          </p>
-          <div className="flex gap-4">
-            <button
-              onClick={reviewAnswers}
-              className="px-3 md:px-4 py-2 border border-[#255C79] text-[#255C79] rounded-md text-xs md:text-sm font-medium hover:bg-blue-50"
-            >
-              Review
-            </button>
-            <button
-              onClick={resetQuiz}
-              className="px-3 md:px-4 py-2 bg-[#255C79] text-white rounded-md text-xs md:text-sm font-medium hover:bg-[#1a4a5f]"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      );
-    }
+      </div>
+    );
   }
 
-  if (quizCompleted) {
+  // Handler for switching attempts
+  const handleAttemptSwitch = (idx: number) => {
+    setAttemptSwitchLoading(true);
+    setTimeout(() => {
+      setSelectedAttemptIndex(idx);
+      setAttemptSwitchLoading(false);
+    }, 300); // 300ms delay for loading effect
+  };
+
+  if (quizCompleted || alreadyCompleted) {
+    // Calculate score for selected attempt
+    const selectedAttemptUserAnswers = reviewUserAnswers || [];
+    const selectedAttemptScore = selectedAttemptUserAnswers.filter((a: any) => a.isCorrect).length;
+    const selectedAttemptTotal = selectedAttemptUserAnswers.length;
+
     return (
-      <div className="rounded-lg shadow p-0 md:p-0 mb-8">
+      <div className="mb-8">
+        {alreadyCompleted && <div className="flex items-center justify-between w-full bg-transparent py-4">
+          <div className="flex items-center gap-4">
+            <span className="text-3xl font-bold text-[#222]">Quiz {data?.order || ''}</span>
+            <span className="px-8 py-1 border border-gray-500 rounded-lg text-sm text-gray-500 ">{mcqs.length} Questions</span>
+            <span className="px-8 py-1 border border-gray-500 rounded-lg text-sm text-gray-500 ">{totalAttempts} Submissions</span>
+          </div>
+          <button
+            className="md:px-28 py-3 bg-[#255C79] text-white rounded-lg font-semibold text-base hover:bg-[#1a4a5f] transition"
+            onClick={handleRetryQuiz}
+          >
+            Retry the Quiz
+          </button>
+        </div>}
         {/* Top Banner */}
-        <div
+        {quizCompleted && <div
           className="flex flex-col items-center justify-center py-8 px-4 md:px-0 w-full rounded-3xl"
           style={{
             backgroundImage: `url(${topbg})`,
@@ -462,12 +569,12 @@ const QuizCard: React.FC<QuizCardProps> = ({
             <h2 className="text-2xl font-bold text-white mb-2 ">Quiz Submitted Successfully</h2>
             <button className="mt-4 px-6 py-2 bg-white text-[#255C79] rounded-md font-medium text-sm md:text-base hover:bg-[#1a4a5f]">View Overall Results</button>
           </div>
-        </div>
+        </div>}
 
         {/* Second Row: Score and Next Challenge */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 py-6 md:py-8">
           {/* Score Section */}
-          <div className="relative bg-white/70 flex flex-row justify-between rounded-lg p-6 shadow overflow-hidden rounded-3xl">
+          <div className="relative bg-white/70 flex flex-row justify-between p-6 shadow overflow-hidden rounded-3xl">
             {/* Rotated background layer */}
             <div
               className="absolute -left-10 top-[-250px] w-[150%] h-[300%] rotate-[-25deg] z-0 rounded-3xl"
@@ -485,8 +592,8 @@ const QuizCard: React.FC<QuizCardProps> = ({
               <div className="text-3xl font-semibold text-[#12293A] mt-1">Your Score</div>
 
               <div className="md:text-8xl font-bold text-[#2A8CB0]">
-                {score}
-                <span className="text-5xl text-[#12293A]"> out of {mcqs.length}</span> </div>
+                {selectedAttemptScore}
+                <span className="text-5xl text-[#12293A]"> out of {selectedAttemptTotal}</span> </div>
             </div>
             <div>
               <img src={trophy} alt="trophy" className="relative w-60 h-50 rotate-[-30deg] top-[60px] left-[50px]" loading="lazy" />
@@ -510,36 +617,67 @@ const QuizCard: React.FC<QuizCardProps> = ({
           </div>
         </div>
 
+        {/* Attempt Buttons */}
+        <div className="flex gap-4 px-4 pt-6 pb-2">
+          {loadingAttempts ? (
+            <div className="text-gray-400 text-sm">Loading attempts...</div>
+          ) : (
+            pastAttempts.map((attempt, idx) => (
+              <button
+                key={attempt.id}
+                onClick={() => handleAttemptSwitch(idx)}
+                className={`border rounded-lg px-6 py-3 text-left transition font-semibold shadow-sm
+                  ${idx === selectedAttemptIndex
+                    ? 'border-blue-400 bg-blue-50 text-[#12293A] ring-2 ring-blue-200'
+                    : 'border-gray-200 bg-white text-gray-500 hover:border-blue-300'}
+                `}
+              >
+                <div className="text-base font-semibold">Attempt {idx + 1}</div>
+                <div className="text-xs text-gray-400">Date: {new Date(attempt.created_at).toLocaleDateString()}</div>
+              </button>
+            ))
+          )}
+        </div>
+
         {/* Existing Review/Result Section */}
-        <div className="p-4 md:p-8 bg-white rounded-lg shadow mt-6">
-          <div className="flex flex-col">
-            <div className="mb-6 md:mb-8">
-              <h2 className="text-xl md:text-2xl font-bold text-[#255C79] mb-2">Your Quiz Review</h2>
-              <div className="text-xs md:text-sm text-gray-500 flex gap-2 mb-4 md:mb-6">
-                <span>Your Score: {score}</span>
-                <span>|</span>
-                <span>{totalQuestions} Questions</span>
-              </div>
-              {/* Question blocks shown only in sidebar, not in main review area */}
-              {!isReviewing && (
-                <div className="grid grid-cols-4 md:grid-cols-6 gap-2 mb-6 md:mb-8">
-                  {mcqs.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        setIsReviewing(true);
-                        navigateToQuestion(index);
-                      }}
-                      className={`py-2 rounded-md border text-xs md:text-sm ${getQuestionButtonStyle(index)}`}
-                    >
-                      {index + 1}
-                    </button>
+        <div className="p-4 md:p-4 bg-white rounded-lg shadow mt-3">
+          {attemptSwitchLoading ? (
+            <div className="flex w-full animate-pulse">
+              {/* Sidebar Skeleton */}
+              <div className="w-1/3 min-w-[120px] bg-white rounded-lg md:mr-8 p-4">
+                <div className="h-6 w-2/3 bg-gray-200 rounded mb-4" />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {Array.from({ length: 8 }).map((_, idx) => (
+                    <div key={idx} className="h-8 w-full bg-gray-200 rounded" />
                   ))}
                 </div>
-              )}
+              </div>
+              {/* Main Content Skeleton */}
+              <div className="flex-1 bg-white rounded-lg p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <div className="h-4 w-24 bg-gray-200 rounded" />
+                  <div className="h-4 w-16 bg-gray-200 rounded" />
+                </div>
+                <div className="h-6 w-2/3 bg-gray-200 rounded mb-6" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-8">
+                  {Array.from({ length: 4 }).map((_, idx) => (
+                    <div key={idx} className="h-10 w-full bg-gray-200 rounded" />
+                  ))}
+                </div>
+                <div className="mb-4 bg-gray-100 rounded-lg h-10 w-full" />
+                <div className="mb-4 p-4 bg-white border rounded-lg">
+                  <div className="h-4 w-24 bg-gray-200 rounded mb-2" />
+                  <div className="h-4 w-2/3 bg-gray-200 rounded" />
+                </div>
+                <div className="flex justify-between mt-6">
+                  <div className="h-8 w-24 bg-gray-200 rounded" />
+                  <div className="h-8 w-24 bg-gray-200 rounded" />
+                </div>
+              </div>
             </div>
-            {renderReviewContent()}
-          </div>
+          ) : (
+            renderReviewContent(reviewUserAnswers)
+          )}
         </div>
       </div>
     );
