@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import useUserActivityTracking from '../hooks/useUserActivityTracking';
 import { calculateCurrentSessionDuration } from '../utils/userActivitySync';
-import { simulateActivityEvent, getActivityDebugEvents, clearActivityDebugEvents } from '../utils/activityDebugger';
+import { simulateActivityEvent, getActivityDebugEvents, clearActivityDebugEvents, simulateDailyReset } from '../utils/activityDebugger';
 import { getSessionId, getDeviceInfo } from '../utils/deviceIdentifier';
+import { getHistoricalActivity } from '../utils/dailyReset';
 
 // New interface to track sync status
 interface SyncStatus {
@@ -12,7 +13,7 @@ interface SyncStatus {
 }
 
 const FloatingActivityTimer: React.FC = () => {
-  const { isActive, totalTimeSpent, currentSessionStart, formatTime, activityHistory, recoverFromLocalStorage } = useUserActivityTracking();
+  const { isActive, totalTimeSpent, currentSessionStart, formatTime, activityHistory, recoverFromLocalStorage, lastResetDate } = useUserActivityTracking();
   const [currentDuration, setCurrentDuration] = useState<number>(0);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
@@ -21,6 +22,8 @@ const FloatingActivityTimer: React.FC = () => {
   const [recoveredTime, setRecoveredTime] = useState<number | null>(null);
   const [sessionId, setSessionId] = useState<string>('');
   const [deviceInfo, setDeviceInfo] = useState<{browser: string, os: string, deviceType: string} | null>(null);
+  const [historicalActivity, setHistoricalActivity] = useState<Record<string, number>>({});
+  const [showHistory, setShowHistory] = useState<boolean>(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     lastSync: null,
     status: 'idle',
@@ -31,7 +34,15 @@ const FloatingActivityTimer: React.FC = () => {
   useEffect(() => {
     setSessionId(getSessionId());
     setDeviceInfo(getDeviceInfo());
+    setHistoricalActivity(getHistoricalActivity());
   }, []);
+
+  // Update historical activity when the reset date changes
+  useEffect(() => {
+    if (lastResetDate) {
+      setHistoricalActivity(getHistoricalActivity());
+    }
+  }, [lastResetDate]);
 
   // Update current session duration every second
   useEffect(() => {
@@ -285,7 +296,55 @@ const FloatingActivityTimer: React.FC = () => {
                 </div>
               </>
             )}
+            {lastResetDate && (
+              <div className="flex justify-between mt-2 pt-2 border-t border-gray-200">
+                <span className="text-gray-500">Last Reset:</span>
+                <span className="text-gray-900 font-mono text-xs">
+                  {new Date(lastResetDate).toLocaleDateString()} {new Date(lastResetDate).toLocaleTimeString()}
+                </span>
+              </div>
+            )}
           </div>
+        </div>
+
+        {/* Historical Activity Section */}
+        <div className="mb-3">
+          <div className="flex justify-between items-center">
+            <h4 className="font-semibold text-gray-700 mb-2">Historical Activity</h4>
+            <button 
+              onClick={() => setShowHistory(!showHistory)}
+              className="text-xs text-blue-600 hover:text-blue-800"
+            >
+              {showHistory ? 'Hide' : 'Show'}
+            </button>
+          </div>
+          
+          {showHistory && Object.keys(historicalActivity).length > 0 ? (
+            <div className="bg-white p-2 rounded border border-gray-300 mb-2 h-40 overflow-y-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-1">Date</th>
+                    <th className="text-right py-1">Time Spent</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(historicalActivity)
+                    .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
+                    .map(([date, seconds]) => (
+                      <tr key={date} className="border-b border-gray-100">
+                        <td className="py-1">{date}</td>
+                        <td className="text-right py-1">{formatTime(seconds)}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          ) : showHistory ? (
+            <div className="bg-white p-2 rounded border border-gray-300 mb-2 text-center text-gray-500">
+              No historical data available
+            </div>
+          ) : null}
         </div>
 
         <h4 className="font-semibold text-gray-700 mb-2">Test Controls</h4>
@@ -331,6 +390,12 @@ const FloatingActivityTimer: React.FC = () => {
             className="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 px-2 py-1 rounded text-xs"
           >
             Recover Data
+          </button>
+          <button 
+            onClick={() => simulateDailyReset()} 
+            className="bg-purple-100 hover:bg-purple-200 text-purple-800 px-2 py-1 rounded text-xs"
+          >
+            Simulate Reset
           </button>
           <button 
             onClick={handleClearLogs} 
@@ -429,7 +494,7 @@ const FloatingActivityTimer: React.FC = () => {
       <div className="px-3 py-2">
         <div className="flex justify-between text-xs text-gray-500 mb-1">
           <span>Current Session</span>
-          <span>Total Time</span>
+          <span>Today's Total</span>
         </div>
         <div className="flex justify-between">
           <div className="text-gray-800 font-mono font-bold">
@@ -439,6 +504,15 @@ const FloatingActivityTimer: React.FC = () => {
             {formatTime(totalTimeSpent)}
           </div>
         </div>
+        
+        {/* Last reset info */}
+        {lastResetDate && isExpanded && (
+          <div className="mt-1 text-xs text-center">
+            <span className="text-gray-500">
+              Reset: {new Date(lastResetDate).toLocaleDateString()}
+            </span>
+          </div>
+        )}
         
         {/* Recovered time indicator */}
         {recoveredTime !== null && (

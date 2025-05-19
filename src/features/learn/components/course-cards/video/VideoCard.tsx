@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getCourseContent } from "../../../../../services/enrolled-courses-content/courseContentApis";
 import { submitContent } from "../../../../../services/enrolled-courses-content/submitApis";
 import Comments from "../../../../../commonComponents/components/Comments";
+import parse from "html-react-parser";
 
 interface VideoCardProps {
   currentWeek: { title: string };
@@ -46,7 +47,8 @@ export interface Comment {
   dislikes: number;
   likes: number;
   text: string;
-  user_profile: number;
+  user_profile: { user_name?: string; role?: string } | number;
+  user_name?: string; // Optional user name field
 }
 
 // Define a sample Vimeo URL for testing
@@ -65,8 +67,8 @@ const VideoCard: React.FC<VideoCardProps> = ({
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const [activeTab, setActiveTab] = useState<"description" | "comments">("description");
   const [processedVideoUrl, setProcessedVideoUrl] = useState<string>("");
+  const [useDirectHtml, setUseDirectHtml] = useState(true); 
   const [useDebugMode, setUseDebugMode] = useState(false);
-  const [isDarkTheme, setIsDarkTheme] = useState(false);
 
   // Log component props for debugging
   useEffect(() => {
@@ -195,6 +197,44 @@ const VideoCard: React.FC<VideoCardProps> = ({
     }, 1500);
   };
 
+  // Function to safely parse HTML content
+  const parseHtmlContent = (htmlContent: string) => {
+    if (!htmlContent) {
+      return null;
+    }
+
+    try {
+      // Create a wrapper around the content to avoid React rendering issues
+      const wrapWithDiv = (content: string) => `<div>${content}</div>`;
+      
+      let processedContent = htmlContent;
+      
+      // Check if we have HTML content
+      if (htmlContent.includes('<') && htmlContent.includes('>')) {
+        // Remove any style tags but keep other content
+        processedContent = htmlContent.replace(/<style[\s\S]*?<\/style>/gi, '');
+        
+        // Extract content from body tag if present
+        const bodyMatch = processedContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        if (bodyMatch && bodyMatch[1]) {
+          processedContent = bodyMatch[1].trim();
+        }
+      } 
+      
+      // For debugging
+      console.log('Processed content:', processedContent.substring(0, 100) + '...');
+
+      return parse(wrapWithDiv(processedContent));
+    } catch (error) {
+      console.error('Error parsing HTML content:', error);
+      return (
+        <div className="p-3 bg-red-100 border border-red-300 rounded text-red-700">
+          Error rendering content. Please try refreshing the page.
+        </div>
+      );
+    }
+  };
+
   // If loading, show loading state
   if (isLoading && !useDebugMode) {
     return (
@@ -248,9 +288,10 @@ const VideoCard: React.FC<VideoCardProps> = ({
     ? 'Debug Video'
     : ((data as CourseContentResponse)?.details?.title || currentTopic.title);
 
-  // const videoDescription = useDebugMode
-  //   ? 'This is a debug video to test the Vimeo player functionality.'
-  //   : ((data as CourseContentResponse)?.details?.description || '');
+  const videoDescription = useDebugMode
+    ? 'This is a debug video to test the Vimeo player functionality.'
+    : ((data as CourseContentResponse)?.details?.description || '');
+
 
   return (
     <div className="flex-1 max-w-full">
@@ -387,9 +428,84 @@ const VideoCard: React.FC<VideoCardProps> = ({
       <div className="py-4 md:py-6 px-2 md:px-0">
         {activeTab === "description" && (
           <div>
+            {/* We'll keep the title from the component data only, not duplicate it */}
             <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4">
               {videoTitle}
             </h2>
+            
+            {/* Toggle for HTML rendering approach */}
+            {useDebugMode && (
+              <div className="mb-3 flex items-center space-x-2">
+                <span className="text-xs">Render method:</span>
+                <button
+                  className={`px-2 py-1 text-xs rounded ${useDirectHtml ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                  onClick={() => setUseDirectHtml(true)}
+                >
+                  Direct HTML
+                </button>
+                <button
+                  className={`px-2 py-1 text-xs rounded ${!useDirectHtml ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                  onClick={() => setUseDirectHtml(false)}
+                >
+                  HTML Parser
+                </button>
+              </div>
+            )}
+            
+            {/* Reset any styles from the parent container */}
+            <div className="reset-container mb-4">
+              {useDirectHtml ? (
+                // Direct HTML rendering approach with clean styling
+                <div
+                  className="course-description rendered-html-content"
+                  dangerouslySetInnerHTML={{
+                    __html: videoDescription ? 
+                      // Keep only the content inside the body tag
+                      videoDescription.replace(/<body[^>]*>([\s\S]*?)<\/body>/i, '$1')
+                        // Remove all style tags
+                        .replace(/<style[\s\S]*?<\/style>/gi, '')
+                        // Remove the title as we're already showing it separately
+                        .replace(/<h1[^>]*>.*?<\/h1>/i, '')
+                      : ''
+                  }}
+                />
+              ) : (
+                // Parser-based approach
+                <div className="course-description">
+                  {videoDescription ? parseHtmlContent(videoDescription) : 
+                    <p className="text-gray-500 italic">No description available</p>
+                  }
+                </div>
+              )}
+            </div>
+            
+            {/* Debug toggle button */}
+            <div className="mt-2">
+              <button 
+                onClick={() => setUseDebugMode(prev => !prev)} 
+                className="text-xs px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+              >
+                {useDebugMode ? "Hide Debug Info" : "Show Debug Info"}
+              </button>
+            </div>
+            
+            {useDebugMode && (
+              <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
+                <p className="font-medium mb-1">Debug Info:</p>
+                <p>Content length: {videoDescription?.length || 0} characters</p>
+                <p>Content type: {typeof videoDescription}</p>
+                <p>Has HTML: {videoDescription?.includes('<') ? 'Yes' : 'No'}</p>
+                <p>Has body tag: {videoDescription?.includes('<body>') ? 'Yes' : 'No'}</p>
+                <p className="mb-2">First 200 chars: {videoDescription?.slice(0, 200)}...</p>
+                
+                <p className="font-medium mt-3 mb-1">Raw HTML Content:</p>
+                <div className="overflow-auto max-h-[300px] bg-white p-2 rounded border border-gray-300">
+                  <pre className="whitespace-pre-wrap text-xs break-all">
+                    {videoDescription || 'No content available'}
+                  </pre>
+                </div>
+              </div>
+            )}
             {/* <div className="min-w-full">
 
               <div
@@ -403,7 +519,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
           <Comments 
             contentId={contentId}
             courseId={courseId}
-            isDarkTheme={isDarkTheme}
+            isDarkTheme={false}
             clientId={Number(clientId)}
           />
         )}
@@ -417,4 +533,6 @@ const VideoCard: React.FC<VideoCardProps> = ({
   );
 };
 
-export default VideoCard;
+      export default VideoCard;
+
+
