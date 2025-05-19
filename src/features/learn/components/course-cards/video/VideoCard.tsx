@@ -600,7 +600,11 @@ const VideoCard: React.FC<VideoCardProps> = ({
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-sm">{comment.user_profile?.user_name || 'Anonymous User'}</span>
+                              <span className="font-semibold text-sm">
+                                {typeof comment.user_profile === 'object' && comment.user_profile?.user_name 
+                                  ? comment.user_profile.user_name 
+                                  : 'Anonymous User'}
+                              </span>
                               {typeof comment.user_profile === 'object' && comment.user_profile?.role && (
                                 <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
                                   {comment.user_profile.role}

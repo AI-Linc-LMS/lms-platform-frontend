@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getCourseContent, getCommentsByContentId, createComment } from "../../../../../services/enrolled-courses-content/courseContentApis";
@@ -145,7 +146,9 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   // Set default language when data is loaded
   useEffect(() => {
     if (data?.details?.template_code && data.details.template_code.length > 0) {
-      const defaultLanguage = data.details.template_code[0].language.toLowerCase().replace(/\s+/g, '');
+      const defaultLanguage = Array.isArray(data.details.template_code)
+        ? data.details.template_code[0].language.toLowerCase().replace(/\s+/g, '')
+        : Object.keys(data.details.template_code)[0]?.toLowerCase().replace(/\s+/g, '');
       setSelectedLanguage(defaultLanguage);
     }
   }, [data]);
@@ -895,7 +898,11 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                       {[...commentsData]
                         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
                         .slice(0, visibleComments)
-                        .map((comment: {id: number, text: string, user_name?: string, created_at: string}) => (
+                        .map((comment: {
+                          dislikes: number;
+                          likes: number;
+                          user_profile: any;id: number, text: string, user_name?: string, created_at: string
+}) => (
                           <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
                             <div className="flex items-start space-x-3">
                               <img
