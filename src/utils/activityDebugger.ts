@@ -24,17 +24,18 @@ export const logActivityEvent = (event: string, data?: unknown): void => {
 };
 
 /**
- * Get all stored debug events
+ * Get all activity debug events
  */
 export const getActivityDebugEvents = (): string[] => {
   return [...activeDebugEvents];
 };
 
 /**
- * Clear stored debug events
+ * Clear all activity debug events
  */
 export const clearActivityDebugEvents = (): void => {
   activeDebugEvents = [];
+  logActivityEvent('Debug events cleared');
 };
 
 /**
@@ -63,5 +64,30 @@ export const simulateActivityEvent = (eventType: 'focus' | 'blur' | 'visibility'
     case 'unload':
       window.dispatchEvent(new Event('beforeunload'));
       break;
+  }
+};
+
+/**
+ * Force a daily reset for testing purposes
+ * This simulates crossing the day boundary by manipulating the lastActivityResetDate in localStorage
+ */
+export const simulateDailyReset = (): void => {
+  try {
+    // Get yesterday's date
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    // Set the last reset date to yesterday to force a reset
+    localStorage.setItem('lastActivityResetDate', yesterday.toISOString());
+    
+    logActivityEvent('Simulated day boundary for testing daily reset', {
+      setLastResetDateTo: yesterday.toISOString()
+    });
+    
+    // For convenience, reload the page to trigger the reset immediately
+    // Alternatively, we could wait for the reset check interval
+    window.location.reload();
+  } catch (error) {
+    logActivityEvent('Error simulating daily reset', { error: (error as Error).message });
   }
 }; 
