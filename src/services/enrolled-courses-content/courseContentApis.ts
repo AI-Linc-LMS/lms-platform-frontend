@@ -188,3 +188,24 @@ export const createComment = async (clientId: number, courseId: number, contentI
     );
   }
 }
+
+export const pastSubmissions = async (clientId: number, courseId: number,contentId:number) => {
+  try {
+    const res = await axiosInstance.get(`/lms/clients/${clientId}/courses/${courseId}/content/${contentId}/past-submissions/`);
+    console.log("Past Submissions API response:", res.data);
+    return res.data;
+  } catch (error: any) {
+    console.error("Failed to fetch Past Submissions:", error);
+    console.error("Error details:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
+
+    throw new Error(
+      error?.response?.data?.detail ||
+        error?.message ||
+        "Failed to fetch Past Submissions"
+    );
+  }
+}
