@@ -43,10 +43,11 @@ interface ProblemDetails {
     language: string;
     language_id: number;
     template_code: string;
-  }>;
+  }> | Record<string, any>;
   test_cases: Array<{
     input: string;
-    expected_output: string;
+    expected_output?: string;
+    output?: string;
   }>;
 }
 
@@ -60,9 +61,9 @@ interface ProblemData {
 interface TestCase {
   test_case?: number;
   input: string;
-  expected_output: string;
+  expected_output?: string;
   sample_input: string;
-  sample_output: string;
+  sample_output?: string;
   userOutput?: string;
   status?: 'passed' | 'failed' | 'running';
   time?: string;
@@ -91,11 +92,26 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   });
 
   // Get available languages from template codes
-  const availableLanguages = data?.details?.template_code?.map(tc => ({
-    value: tc.language.toLowerCase().replace(/\s+/g, ''),
-    label: tc.language,
-    language_id: tc.language_id
-  })) || [];
+  const availableLanguages = React.useMemo(() => {
+    if (!data?.details?.template_code) return [];
+    
+    // Handle template_code as object
+    if (!Array.isArray(data.details.template_code)) {
+      return Object.entries(data.details.template_code).map(([language, details]: [string, any]) => ({
+        value: language.toLowerCase().replace(/\s+/g, ''),
+        label: language,
+        language_id: details.language_id || 0,
+        template: details.template || ""
+      }));
+    }
+    
+    // Handle template_code as array (original implementation)
+    return data.details.template_code.map((tc: { language: string; language_id: number }) => ({
+      value: tc.language.toLowerCase().replace(/\s+/g, ''),
+      label: tc.language,
+      language_id: tc.language_id
+    })) || [];
+  }, [data?.details?.template_code]);
 
   const [code, setCode] = useState("");
   const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(true);
@@ -137,11 +153,20 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   // Initialize code with template when data is loaded or language changes
   useEffect(() => {
     if (data?.details?.template_code && selectedLanguage) {
-      const template = data.details.template_code.find(
-        tc => tc.language.toLowerCase().replace(/\s+/g, '') === selectedLanguage
-      );
-      if (template) {
-        setCode(template.template_code);
+      if (Array.isArray(data.details.template_code)) {
+        const template = data.details.template_code.find(
+          (tc: { language: string }) => tc.language.toLowerCase().replace(/\s+/g, '') === selectedLanguage
+        );
+        if (template) {
+          setCode(template.template_code);
+        }
+      } else {
+        // Handle object structure
+        Object.entries(data.details.template_code).forEach(([language, details]) => {
+          if (language.toLowerCase().replace(/\s+/g, '') === selectedLanguage) {
+            setCode((details as any).template || "");
+          }
+        });
       }
     }
   }, [data, selectedLanguage]);
@@ -149,17 +174,20 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   // Initialize test cases when data is loaded
   useEffect(() => {
     if (data?.details?.test_cases) {
-      const formattedTestCases = data.details.test_cases.map((tc, index) => ({
-        test_case: index + 1,
-        sample_input: tc.input,
-        sample_output: tc.expected_output,
-        status: undefined,
-        userOutput: undefined,
-        time: undefined,
-        memory: undefined,
-        input: tc.input,
-        expected_output: tc.expected_output
-      }));
+      const formattedTestCases = data.details.test_cases.map((tc: { input: string; output?: string; expected_output?: string }, index) => {
+        const testCase: TestCase = {
+          test_case: index + 1,
+          sample_input: tc.input,
+          sample_output: tc.output || tc.expected_output,
+          status: undefined,
+          userOutput: undefined,
+          time: undefined,
+          memory: undefined,
+          input: tc.input,
+          expected_output: tc.output || tc.expected_output
+        };
+        return testCase;
+      });
       setTestCases(formattedTestCases);
     }
   }, [data]);
@@ -172,18 +200,35 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     enabled: !!contentId && !!courseId && activeTab === "comments",
   });
 
+  // For all mutation functions, use this helper function to get the language ID
+  const getSelectedLanguageId = () => {
+    if (!data?.details?.template_code || !selectedLanguage) return 0;
+    
+    if (Array.isArray(data.details.template_code)) {
+      const template = data.details.template_code.find(
+        (tc: { language: string }) => tc.language.toLowerCase().replace(/\s+/g, '') === selectedLanguage
+      );
+      return template?.language_id || 0;
+    } else {
+      // Handle object structure
+      for (const [language, details] of Object.entries(data.details.template_code)) {
+        if (language.toLowerCase().replace(/\s+/g, '') === selectedLanguage) {
+          return (details as any).language_id || 0;
+        }
+      }
+      return 0;
+    }
+  };
+
   // Run code mutation
   const runCodeMutation = useMutation({
     mutationFn: () => {
-      const selectedTemplate = data?.details?.template_code?.find(
-        tc => tc.language.toLowerCase().replace(/\s+/g, '') === selectedLanguage
-      );
       return runCode(
         1,
         courseId,
         contentId,
         code,
-        selectedTemplate?.language_id || 0
+        getSelectedLanguageId()
       );
     },
     onSuccess: (data: RunCodeResult) => {
@@ -219,15 +264,12 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   // Run custom code mutation
   const runCustomCodeMutation = useMutation({
     mutationFn: (input: string) => {
-      const selectedTemplate = data?.details?.template_code?.find(
-        tc => tc.language.toLowerCase().replace(/\s+/g, '') === selectedLanguage
-      );
       return runCustomCode(
         1,
         courseId,
         contentId,
         code,
-        selectedTemplate?.language_id || 0,
+        getSelectedLanguageId(),
         input
       );
     },
@@ -379,15 +421,12 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   // Submit code mutation
   const submitCodeMutation = useMutation({
     mutationFn: () => {
-      const selectedTemplate = data?.details?.template_code?.find(
-        tc => tc.language.toLowerCase().replace(/\s+/g, '') === selectedLanguage
-      );
       return submitCode(
         1,
         courseId,
         contentId,
         code,
-        selectedTemplate?.language_id || 0
+        getSelectedLanguageId()
       );
     },
     onSuccess: (data: SubmitCodeResult) => {
@@ -470,8 +509,8 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     if (newComment.trim()) {
       try {
         await createCommentMutation.mutateAsync(newComment.trim());
-      } catch (error) {
-        // Optionally handle error
+      } catch (_error) {
+        // Optionally handle error - using underscore prefix to avoid linter error
       }
     }
   };
@@ -856,7 +895,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                       {[...commentsData]
                         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
                         .slice(0, visibleComments)
-                        .map((comment: any) => (
+                        .map((comment: {id: number, text: string, user_name?: string, created_at: string}) => (
                           <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
                             <div className="flex items-start space-x-3">
                               <img
