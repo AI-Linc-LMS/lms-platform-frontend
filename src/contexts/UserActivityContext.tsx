@@ -1,12 +1,14 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { logActivityEvent } from '../utils/activityDebugger';
 import { getDeviceFingerprint } from '../utils/deviceIdentifier';
+import { shouldResetDailyActivity, performDailyReset, markDailyReset } from '../utils/dailyReset';
 
 interface UserActivityContextType {
   isActive: boolean;
   totalTimeSpent: number; // in seconds
   currentSessionStart: number | null;
   activityHistory: ActivitySession[];
+  lastResetDate: string | null;
 }
 
 export interface ActivitySession {
@@ -38,7 +40,9 @@ const STORAGE_KEYS = {
   LAST_ACTIVITY_STATE: 'lastActivityState',
   PENDING_ACTIVITY_DATA: 'pendingActivityData',
   SESSION_BACKUP: 'sessionBackup',
-  TOTAL_TIME_BACKUP: 'totalTimeBackup'
+  TOTAL_TIME_BACKUP: 'totalTimeBackup',
+  LAST_RESET_DATE: 'lastActivityResetDate',
+  ACTIVITY_HISTORY: 'activityHistory'
 };
 
 const initialState: UserActivityContextType = {
@@ -46,6 +50,7 @@ const initialState: UserActivityContextType = {
   totalTimeSpent: 0,
   currentSessionStart: null,
   activityHistory: [],
+  lastResetDate: null
 };
 
 export const UserActivityContext = createContext<UserActivityContextType>(initialState);
@@ -56,8 +61,34 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
   // Initialize state from localStorage if available
   const initializeFromStorage = (): UserActivityContextType => {
     try {
-      // Check for backup data
+      // Check if we need to reset the daily counter
+      if (shouldResetDailyActivity()) {
+        // Get the last stored total time before resetting
+        const totalTimeBackupStr = localStorage.getItem(STORAGE_KEYS.TOTAL_TIME_BACKUP);
+        let prevTotalTime = 0;
+        
+        if (totalTimeBackupStr) {
+          prevTotalTime = parseInt(totalTimeBackupStr, 10);
+          if (isNaN(prevTotalTime)) {
+            prevTotalTime = 0;
+          }
+        }
+        
+        // Perform the daily reset, storing the previous total and resetting to 0
+        performDailyReset(prevTotalTime);
+        
+        // Return a fresh state with zeroed total time
+        return {
+          ...initialState,
+          currentSessionStart: Date.now(),
+          lastResetDate: new Date().toISOString()
+        };
+      }
+      
+      // Regular initialization (no daily reset needed)
       const backupDataStr = localStorage.getItem(STORAGE_KEYS.SESSION_BACKUP);
+      const lastResetStr = localStorage.getItem(STORAGE_KEYS.LAST_RESET_DATE);
+      
       if (backupDataStr) {
         const backupData = JSON.parse(backupDataStr);
         logActivityEvent('Recovered state from backup', backupData);
@@ -66,6 +97,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
           totalTimeSpent: backupData.totalTimeSpent || 0,
           activityHistory: backupData.activityHistory || [],
           currentSessionStart: Date.now(), // Always start a new session
+          lastResetDate: lastResetStr
         };
       }
     } catch (error) {
@@ -75,10 +107,34 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
     return {
       ...initialState,
       currentSessionStart: Date.now(),
+      lastResetDate: localStorage.getItem(STORAGE_KEYS.LAST_RESET_DATE)
     };
   };
 
   const [activityState, setActivityState] = useState<UserActivityContextType>(initializeFromStorage);
+
+  // Check for daily reset at periodic intervals
+  useEffect(() => {
+    const checkDailyResetInterval = setInterval(() => {
+      // Check if we need to reset the daily counter
+      if (shouldResetDailyActivity()) {
+        logActivityEvent('Initiating daily reset check');
+        
+        setActivityState(prev => {
+          // Store the current total before resetting
+          const resetResult = performDailyReset(prev.totalTimeSpent);
+          
+          return {
+            ...prev,
+            totalTimeSpent: resetResult,
+            lastResetDate: new Date().toISOString()
+          };
+        });
+      }
+    }, 60000); // Check every minute
+    
+    return () => clearInterval(checkDailyResetInterval);
+  }, []);
 
   // Backup activity state to localStorage every 10 seconds
   useEffect(() => {
@@ -113,6 +169,15 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       }
     } catch (error) {
       logActivityEvent('Error checking for pending data', { error: (error as Error).message });
+    }
+    
+    // Ensure we have a reset date set (for initial app usage)
+    if (!localStorage.getItem(STORAGE_KEYS.LAST_RESET_DATE)) {
+      markDailyReset();
+      setActivityState(prev => ({
+        ...prev,
+        lastResetDate: new Date().toISOString()
+      }));
     }
     
     startSession();

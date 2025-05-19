@@ -2,7 +2,7 @@
 
 ## Overview
 
-This documentation explains the user activity tracking system implemented in our web application. The system monitors user engagement by tracking time spent within the application and handles various edge cases like browser closures, tab switching, network disconnections, and multi-device usage.
+This documentation explains the user activity tracking system implemented in our web application. The system monitors user engagement by tracking time spent within the application and handles various edge cases like browser closures, tab switching, network disconnections, and multi-device usage. Total activity time is automatically reset every 24 hours to provide daily tracking.
 
 ## Features
 
@@ -14,6 +14,8 @@ This documentation explains the user activity tracking system implemented in our
 - **Resilient to edge cases**: Handles browser closures, crashes, and network issues
 - **Multi-device support**: Aggregates activity across different devices and browsers
 - **Account-based tracking**: Consolidates activity data per user account regardless of access point
+- **Daily reset**: Automatically resets total time counter every 24 hours
+- **Historical tracking**: Maintains history of past days' activity times
 
 ## Technical Implementation
 
@@ -24,6 +26,7 @@ This documentation explains the user activity tracking system implemented in our
 - **FloatingActivityTimer**: UI component for monitoring and debugging
 - **ActivityTracking API Service**: Handles communication with the backend
 - **Device/Browser Identification**: Tracks unique session identifiers
+- **DailyReset**: Utility for handling 24-hour reset and historical tracking
 
 ### 2. Data Flow
 
@@ -33,6 +36,7 @@ This documentation explains the user activity tracking system implemented in our
 4. Data is sent to the backend API at regular intervals and on specific events
 5. If the API call fails, data is stored locally and retried later
 6. The backend aggregates activity data from multiple sources by user account
+7. Every 24 hours, the total time counter is reset and the previous day's total is stored in history
 
 ### 3. Edge Case Handling
 
@@ -48,33 +52,57 @@ This documentation explains the user activity tracking system implemented in our
 | Concurrent sessions | Session identification with timestamps to prevent double-counting |
 | Device clock skew | Server-side timestamp reconciliation |
 | Account switching | Session isolation by authentication state |
+| Day boundary crossed | Automatic detection and reset of total time |
+| Timezone changes | Date comparison uses local timezone consistently |
+| User active at reset time | Graceful handling with no data loss |
+| Disrupted reset | Safety mechanisms to prevent double resets or missed resets |
 
-### 4. Multi-Device & Multi-Browser Support
+### 4. Daily Reset Mechanism
+
+The system automatically resets the total time counter every 24 hours:
+
+#### 4.1 Reset Detection
+- Compares current date with the last recorded reset date
+- Checks for date changes (year, month, day) in the local timezone
+- Runs a verification check every minute to ensure resets are not missed
+
+#### 4.2 Historical Storage
+- Previous day's total time is stored in localStorage before reset
+- Historical data is retained as a JSON object with date keys
+- Provides ability to view past activity trends
+
+#### 4.3 Reset Edge Cases
+- If a user is active during the reset time, their current session is preserved
+- If multiple devices are in use, each will detect the reset and update accordingly
+- If reset fails on one device, other devices will still reset correctly
+- Date/time manipulation by users is mitigated by server-side verification
+
+### 5. Multi-Device & Multi-Browser Support
 
 The system handles users accessing their accounts from multiple devices or browsers through:
 
-#### 4.1 Session Identification
+#### 5.1 Session Identification
 - Each device/browser session generates a unique session ID
 - Session IDs are included in activity payloads
 - Backend associates all sessions with the user's account
 
-#### 4.2 Data Aggregation
+#### 5.2 Data Aggregation
 - Backend API consolidates activity data from all sources
 - Activity is grouped by date and user ID
 - Time calculations account for overlapping sessions
 
-#### 4.3 Conflict Resolution
+#### 5.3 Conflict Resolution
 - When concurrent sessions report overlapping time periods:
   - The server uses the maximum time value to avoid double-counting
   - Session start/end timestamps help resolve time conflicts
   - If sessions report activity in the same minute, it's counted only once
 
-#### 4.4 Device Fingerprinting
+#### 5.4 Device Fingerprinting
 - Optional device identification data is sent with activity logs
 - Helps identify unique access points for the same account
 - Can include browser type, OS, and other non-personally-identifiable information
 
-### 5. API Integration
+### 6. API Integration
 
 The system sends activity data to the backend API with the following details:
 
@@ -97,7 +125,7 @@ The system sends activity data to the backend API with the following details:
   }
   ```
 
-### 6. Environment Configuration
+### 7. Environment Configuration
 
 The following environment variables must be set for the system to work correctly:
 
@@ -106,7 +134,7 @@ VITE_API_URL=https://be-app.ailinc.com
 VITE_CLIENT_ID=1
 ```
 
-### 7. Local Storage Keys
+### 8. Local Storage Keys
 
 The system uses multiple localStorage keys for redundancy:
 
@@ -115,6 +143,8 @@ The system uses multiple localStorage keys for redundancy:
 - `lastActivityState`: State when the user last interacted
 - `pendingActivityData`: Data waiting to be sent to backend
 - `sessionId`: Unique identifier for the current browser session
+- `lastActivityResetDate`: Date of the last daily reset
+- `activityHistory`: Historical record of daily totals
 
 ## System Evaluation
 
@@ -140,6 +170,10 @@ The system uses multiple localStorage keys for redundancy:
 
 10. **Backend Flexibility**: Backend API structure allows for future extension and integration with analytics systems.
 
+11. **Daily Reset Automation**: Automatically resets counters for daily tracking without user intervention.
+
+12. **Historical Tracking**: Maintains previous activity data for trend analysis.
+
 ### Cons
 
 1. **Browser Limitations**: Depends on browser APIs (localStorage, Beacon API) that have varying levels of support across browsers.
@@ -162,6 +196,10 @@ The system uses multiple localStorage keys for redundancy:
 
 10. **No Default Conflict Resolution UX**: When conflicts occur between devices, there's no user-facing notification or resolution interface.
 
+11. **Timezone Dependency**: Daily reset relies on consistent device timezone; users changing timezones may experience irregular resets.
+
+12. **Historical Data Growth**: The historical data could grow large over time without a cleanup mechanism.
+
 ## Debugging and Testing
 
 ### Floating Activity Timer
@@ -176,6 +214,7 @@ The application includes a floating debug panel that can be used to monitor acti
 3. Use the "Direct API Call" button to manually trigger a data sync
 4. Use the "Recover Data" button to restore data from localStorage if needed
 5. The session ID is displayed to help identify the current browser session
+6. View historical activity records in the debug panel's "Historical Activity" section
 
 ### Console Debugging
 
@@ -186,6 +225,7 @@ The system logs detailed information to the browser console:
 - Backup operations
 - Session start/end events
 - Multi-device session information
+- Daily reset events and historical data storage
 
 ### Testing Multi-Device Scenarios
 
@@ -196,6 +236,15 @@ To test multi-device scenarios:
 3. Check the backend API for aggregated data
 4. Verify that activity time isn't double-counted
 5. Use the debug panel on each device to verify different session IDs
+
+### Testing Daily Reset
+
+To test the daily reset functionality:
+
+1. Monitor activity across a day boundary
+2. Verify that the counter resets at midnight local time
+3. Check that previous day's data is stored in the historical record
+4. Confirm that the activity continues to be tracked after reset
 
 ## Troubleshooting
 
@@ -234,6 +283,16 @@ If multi-device tracking isn't working correctly:
 2. Check that the backend is aggregating data by user ID correctly
 3. Ensure authentication is consistent across devices
 4. Check for clock synchronization issues between devices
+
+### Daily Reset Issues
+
+If the daily reset isn't working correctly:
+
+1. Check localStorage for the `lastActivityResetDate` value
+2. Verify that the current date comparison logic is working
+3. Check historical data storage in localStorage
+4. Monitor console logs for daily reset events
+5. Try clearing localStorage and refreshing if reset is stuck
 
 ## Best Practices
 
