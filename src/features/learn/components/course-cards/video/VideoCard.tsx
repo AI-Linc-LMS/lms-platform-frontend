@@ -4,6 +4,7 @@ import FloatingAIButton from "../../floating-ai-button/FloatingAIButton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCourseContent, getCommentsByContentId, createComment } from "../../../../../services/enrolled-courses-content/courseContentApis";
 import { submitContent } from "../../../../../services/enrolled-courses-content/submitApis";
+import parse from "html-react-parser";
 
 interface VideoCardProps {
   currentWeek: { title: string };
@@ -46,6 +47,7 @@ export interface Comment {
   likes: number;
   text: string;
   user_profile: number;
+  user_name?: string; // Optional user name field
 }
 
 // Define a sample Vimeo URL for testing
@@ -67,6 +69,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
   const [useDebugMode, setUseDebugMode] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [visibleComments, setVisibleComments] = useState(4);
+  const [useDirectHtml, setUseDirectHtml] = useState(true); // Use direct HTML rendering by default
   const queryClient = useQueryClient();
 
   // Log component props for debugging
@@ -222,6 +225,44 @@ const VideoCard: React.FC<VideoCardProps> = ({
     setTimeout(() => {
       nextContent();
     }, 1500);
+  };
+
+  // Function to safely parse HTML content
+  const parseHtmlContent = (htmlContent: string) => {
+    if (!htmlContent) {
+      return null;
+    }
+
+    try {
+      // Create a wrapper around the content to avoid React rendering issues
+      const wrapWithDiv = (content: string) => `<div>${content}</div>`;
+      
+      let processedContent = htmlContent;
+      
+      // Check if we have HTML content
+      if (htmlContent.includes('<') && htmlContent.includes('>')) {
+        // Remove any style tags but keep other content
+        processedContent = htmlContent.replace(/<style[\s\S]*?<\/style>/gi, '');
+        
+        // Extract content from body tag if present
+        const bodyMatch = processedContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        if (bodyMatch && bodyMatch[1]) {
+          processedContent = bodyMatch[1].trim();
+        }
+      } 
+      
+      // For debugging
+      console.log('Processed content:', processedContent.substring(0, 100) + '...');
+
+      return parse(wrapWithDiv(processedContent));
+    } catch (error) {
+      console.error('Error parsing HTML content:', error);
+      return (
+        <div className="p-3 bg-red-100 border border-red-300 rounded text-red-700">
+          Error rendering content. Please try refreshing the page.
+        </div>
+      );
+    }
   };
 
   // If loading, show loading state
@@ -416,63 +457,84 @@ const VideoCard: React.FC<VideoCardProps> = ({
       <div className="py-4 md:py-6 px-2 md:px-0">
         {activeTab === "description" && (
           <div>
+            {/* We'll keep the title from the component data only, not duplicate it */}
             <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4">
               {videoTitle}
             </h2>
-            <p className="mb-4 text-sm md:text-base">
-              {videoDescription}
-            </p>
-
-            <h3 className="text-md md:text-lg font-bold mt-4 md:mt-6 mb-2">What is an Array??</h3>
-            <p className="mb-4 text-sm md:text-base">
-              An array is a collection of items of the same data type stored at
-              contiguous memory locations...
-            </p>
-
-            <div className="border rounded-lg p-3 md:p-4 my-4 md:my-6 overflow-x-auto">
-              <h4 className="font-bold mb-2 text-sm md:text-base">Array Elements</h4>
-              <div className="flex justify-center">
-                <div className="flex">
-                  {[2, 4, 10, 5, 5, 3].map((num, i) => (
-                    <div
-                      key={i}
-                      className="w-8 h-8 md:w-12 md:h-12 bg-gray-200 flex items-center justify-center border border-gray-300 text-xs md:text-base"
-                    >
-                      {num}
-                    </div>
-                  ))}
-                </div>
+            
+            {/* Toggle for HTML rendering approach */}
+            {useDebugMode && (
+              <div className="mb-3 flex items-center space-x-2">
+                <span className="text-xs">Render method:</span>
+                <button
+                  className={`px-2 py-1 text-xs rounded ${useDirectHtml ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                  onClick={() => setUseDirectHtml(true)}
+                >
+                  Direct HTML
+                </button>
+                <button
+                  className={`px-2 py-1 text-xs rounded ${!useDirectHtml ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                  onClick={() => setUseDirectHtml(false)}
+                >
+                  HTML Parser
+                </button>
               </div>
-              <div className="flex justify-center mt-2">
-                <div className="flex">
-                  {[1, 2, 3, 4, 5, 6].map((index, i) => (
-                    <div
-                      key={i}
-                      className="w-8 md:w-12 h-6 md:h-8 flex items-center justify-center text-xs md:text-base"
-                    >
-                      {index}
-                    </div>
-                  ))}
+            )}
+            
+            {/* Reset any styles from the parent container */}
+            <div className="reset-container mb-4">
+              {useDirectHtml ? (
+                // Direct HTML rendering approach with clean styling
+                <div 
+                  className="course-description rendered-html-content"
+                  dangerouslySetInnerHTML={{ 
+                    __html: videoDescription ? 
+                      // Keep only the content inside the body tag
+                      videoDescription.replace(/<body[^>]*>([\s\S]*?)<\/body>/i, '$1')
+                        // Remove all style tags
+                        .replace(/<style[\s\S]*?<\/style>/gi, '')
+                        // Remove the title as we're already showing it separately
+                        .replace(/<h1[^>]*>.*?<\/h1>/i, '')
+                      : ''
+                  }}
+                />
+              ) : (
+                // Parser-based approach
+                <div className="course-description">
+                  {videoDescription ? parseHtmlContent(videoDescription) : 
+                    <p className="text-gray-500 italic">No description available</p>
+                  }
                 </div>
-              </div>
-              <div className="text-center mt-2 text-xs md:text-sm">Array Indexes</div>
+              )}
             </div>
-
-            <h3 className="text-md md:text-lg font-bold mt-4 md:mt-6 mb-2">
-              This video will enlighten you with the following concepts:
-            </h3>
-            <ul className="list-disc pl-6 space-y-1 text-sm md:text-base">
-              <li>Introduction to the World of Arrays</li>
-              <li>What is an Array?</li>
-              <li>Use of an Array</li>
-              <li>Memory Allocation in Arrays</li>
-              <li>Advantages of using Array</li>
-              <li>Random Access</li>
-              <li>Cache Friendliness</li>
-              <li>Declaration and Initialization of an Array</li>
-              <li>In C++</li>
-              <li>In Java</li>
-            </ul>
+            
+            {/* Debug toggle button */}
+            <div className="mt-2">
+              <button 
+                onClick={() => setUseDebugMode(prev => !prev)} 
+                className="text-xs px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+              >
+                {useDebugMode ? "Hide Debug Info" : "Show Debug Info"}
+              </button>
+            </div>
+            
+            {useDebugMode && (
+              <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
+                <p className="font-medium mb-1">Debug Info:</p>
+                <p>Content length: {videoDescription?.length || 0} characters</p>
+                <p>Content type: {typeof videoDescription}</p>
+                <p>Has HTML: {videoDescription?.includes('<') ? 'Yes' : 'No'}</p>
+                <p>Has body tag: {videoDescription?.includes('<body>') ? 'Yes' : 'No'}</p>
+                <p className="mb-2">First 200 chars: {videoDescription?.slice(0, 200)}...</p>
+                
+                <p className="font-medium mt-3 mb-1">Raw HTML Content:</p>
+                <div className="overflow-auto max-h-[300px] bg-white p-2 rounded border border-gray-300">
+                  <pre className="whitespace-pre-wrap text-xs break-all">
+                    {videoDescription || 'No content available'}
+                  </pre>
+                </div>
+              </div>
+            )}
           </div>
         )}
         {activeTab === "comments" && (
@@ -516,7 +578,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
                 {[...commentsData]
                   .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
                   .slice(0, visibleComments)
-                  .map((comment: any) => (
+                  .map((comment: Comment) => (
                     <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-start space-x-3">
                         <img
@@ -534,8 +596,6 @@ const VideoCard: React.FC<VideoCardProps> = ({
                           <p className="mt-1 text-sm text-gray-700 break-words max-w-[300px]">
                             {comment.text}
                           </p>
-
-
                         </div>
                       </div>
                     </div>
@@ -568,3 +628,4 @@ const VideoCard: React.FC<VideoCardProps> = ({
 };
 
       export default VideoCard;
+
