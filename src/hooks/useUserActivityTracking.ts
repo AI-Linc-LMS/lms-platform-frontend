@@ -8,6 +8,7 @@ export interface UserActivityData {
   activityHistory: ActivitySession[];
   formatTime: (seconds: number) => string;
   recoverFromLocalStorage: () => number;
+  lastResetDate: string | null;
 }
 
 // Local storage backup keys (must match those in UserActivityContext)
@@ -15,7 +16,8 @@ const STORAGE_KEYS = {
   LAST_ACTIVITY_STATE: 'lastActivityState',
   PENDING_ACTIVITY_DATA: 'pendingActivityData',
   SESSION_BACKUP: 'sessionBackup',
-  TOTAL_TIME_BACKUP: 'totalTimeBackup'
+  TOTAL_TIME_BACKUP: 'totalTimeBackup',
+  LAST_RESET_DATE: 'lastActivityResetDate'
 };
 
 export const useUserActivityTracking = (): UserActivityData => {
