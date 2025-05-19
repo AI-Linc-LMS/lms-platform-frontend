@@ -20,7 +20,7 @@ const CourseCard: React.FC<CourseData> = ({
           <h1 className="font-bold text-[#343A40] text-[16px] md:text-[18px] font-sans">
             {title}
           </h1>
-          <p className="font-sans font-normal text-[13px] md:text-[15px] text-[#495057]">
+          <p className="font-sans font-normal text-[13px] text-[#495057]">
             {description}
           </p>
         </div>
