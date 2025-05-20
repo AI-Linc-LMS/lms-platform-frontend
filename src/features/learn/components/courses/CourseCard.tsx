@@ -136,14 +136,14 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
 
   return (
     <div
-      className={`w-full border border-[#80C9E0] p-4 md:p-6 rounded-2xl md:rounded-3xl bg-white flex flex-col h-full ${className}`}
+      className={`w-full border border-[#80C9E0] p-4 rounded-2xl md:rounded-3xl bg-white flex flex-col h-full ${className}`}
     >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 items-center">
         <div>
-          <h1 className="font-bold font-sans text-lg md:text-xl text-[#343A40]">{course.title}</h1>
-          <p className="text-[#6C757D] font-normal text-sm md:text-base mt-1">{course.description}</p>
+          <h1 className="font-bold font-sans text-lg text-[#343A40]">{course.title}</h1>
+          <p className="text-[#6C757D] font-normal text-sm md:text-md mt-1">{course.description}</p>
         </div>
-        <div className="grid grid-cols-5 gap-2 md:gap-3 mt-3 lg:mt-0">
+        <div className="grid grid-cols-5 gap-2 mt-3 lg:mt-0">
           <StatBlock 
             icon={<VideoIcon />} 
             count={totalCounts.videos} 
@@ -191,7 +191,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
       <div className="mt-auto">
         <PrimaryButton 
           onClick={handleExploreClick} 
-          className="w-full text-sm md:text-base py-2 md:py-3 rounded-xl"
+          className="w-full text-sm md:text-base rounded-xl"
         >
           Explore More
         </PrimaryButton>
