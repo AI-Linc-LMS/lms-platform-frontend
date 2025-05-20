@@ -14,7 +14,7 @@ const ContentManager: React.FC<{ tabKey: TabKey }> = ({ tabKey }) => {
     setShowAddNew(false);
   }, [tabKey]);
   
-  const handleAddNew = (key: TabKey) => {
+  const handleAddNew = () => {
     setShowAddNew(true);
   };
 

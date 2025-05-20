@@ -2,9 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Topic, Subtopic, TabKey } from '../types/course';
 import SubtopicItem from './SubtopicItem';
 import BottomSheet from './BottomSheet';
-import AddVideoContent from './add-content/AddContent';
-import AddArticleContent from './add-content/AddVideoContent';
-import AddContent from './add-content/AddContent';
 import ContentManager from './add-content/ContentManager';
 
 interface TopicItemProps {
@@ -17,7 +14,6 @@ interface TopicItemProps {
 
 export const TopicItem: React.FC<TopicItemProps> = ({ topic, onDelete, onAddSubtopic }) => {
   const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
-  const [activeSubtopic, setActiveSubtopic] = useState<Subtopic | null>(null);
   const [activeTab, setActiveTab] = useState('videos');
 
   useEffect(() => {
@@ -35,13 +31,11 @@ export const TopicItem: React.FC<TopicItemProps> = ({ topic, onDelete, onAddSubt
     };
   }, [bottomSheetOpen]);
 
-  const handleAddContent = (subtopic: Subtopic) => {
-    setActiveSubtopic(subtopic);
+  const handleAddContent = () => {
     setBottomSheetOpen(true);
     setActiveTab('videos');
   };
   const handleCloseSheet = () => {
-    // Delay resetting state until after animation
     setBottomSheetOpen(false); // triggers slideDown
   };
 
@@ -112,7 +106,7 @@ export const TopicItem: React.FC<TopicItemProps> = ({ topic, onDelete, onAddSubt
                 stats={getStats(subtopic)}
                 onEdit={() => { }}
                 onDelete={() => { }}
-                onAddContent={() => handleAddContent(subtopic)}
+                onAddContent={() => handleAddContent()}
               />
             ))}
           </div>
