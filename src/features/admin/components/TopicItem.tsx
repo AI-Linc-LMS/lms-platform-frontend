@@ -1,5 +1,6 @@
 import React from 'react';
 import { Topic } from '../types/course';
+import SubtopicItem from './SubtopicItem';
 
 interface TopicItemProps {
   topic: Topic;
@@ -48,10 +49,14 @@ export const TopicItem: React.FC<TopicItemProps> = ({ topic, onDelete, onAddSubt
         {topic.subtopics.length > 0 ? (
           <div className="space-y-2">
             {topic.subtopics.map(subtopic => (
-              <div key={subtopic.id} className="bg-gray-50 p-2 rounded-md">
-                <h4 className="font-medium">{subtopic.title}</h4>
-                <p className="text-sm text-gray-600">{subtopic.description}</p>
-              </div>
+              <SubtopicItem
+                key={subtopic.id}
+                title={subtopic.title}
+                marks={(subtopic as any).marks || 0}
+                onEdit={() => {}}
+                onDelete={() => {}}
+                onAddContent={() => {}}
+              />
             ))}
           </div>
         ) : (

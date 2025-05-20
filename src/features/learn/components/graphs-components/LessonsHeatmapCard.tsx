@@ -55,7 +55,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
 
-  const monthsToShow = isMobile ? 5 : 5;
+  const monthsToShow = isMobile ? 5 : 4;
   const daysLimitDate = subDays(endOfToday(), 300);
 
   const ACTIVITY_WEIGHTS = {
@@ -247,7 +247,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
         )}
       </div>
 
-      <div className="flex justify-between items-start gap-3 overflow-x-auto pr-6 mb-2">
+      <div className="flex justify-between items-start gap-1 overflow-x-auto mb-2">
         {visibleMonths.map((monthData, monthIndex) => (
           <div key={monthIndex} className="flex flex-col items-center">
             <MonthHeatmap
