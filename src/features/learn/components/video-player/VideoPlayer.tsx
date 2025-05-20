@@ -31,6 +31,9 @@ export function VideoPlayer({
   // Video fingerprint - more reliable than just videoId
   const [videoFingerprint, setVideoFingerprint] = useState<string>('');
 
+  useEffect(() => {
+    setSavedProgress(0);
+  }, [videoUrl, videoId]);
   // Generate a stable identifier for the video that will work across sessions
   useEffect(() => {
     // Create a fingerprint based on videoId and URL
@@ -84,6 +87,7 @@ export function VideoPlayer({
   // Effect to load saved progress from localStorage or API
   useEffect(() => {
     const loadSavedProgress = async () => {
+      setSavedProgress(0);
       // Require a valid fingerprint to continue
       if (!videoFingerprint) {
         console.log('No video fingerprint available yet, waiting...');
@@ -97,6 +101,8 @@ export function VideoPlayer({
         const storageKey = getStorageKey(videoFingerprint);
         const localProgress = localStorage.getItem(storageKey);
         
+        console.log('storageKey', storageKey);
+        console.log('localProgress', localProgress);
         console.log(`Found progress in localStorage (${storageKey}):`, localProgress);
         
         if (localProgress) {
@@ -107,10 +113,13 @@ export function VideoPlayer({
           }
         } else {
           // For backward compatibility, try with videoId directly
+          console.log('videoId:', videoId);
           if (videoId) {
             // Check legacy format based on just videoId
             const legacyKey = getStorageKey(videoId);
             const legacyProgress = localStorage.getItem(legacyKey);
+            console.log('legacyKey', legacyKey);
+            console.log('legacyProgress', legacyProgress);
             
             if (legacyProgress) {
               const parsedProgress = parseFloat(legacyProgress);
