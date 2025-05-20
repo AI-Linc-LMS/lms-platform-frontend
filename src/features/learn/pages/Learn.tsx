@@ -9,15 +9,18 @@ import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
 import EnrolledCourses from "../components/courses/EnrolledCourses";
 
-
 const Learn = () => {
-
   const clientId = import.meta.env.VITE_CLIENT_ID;
+
   return (
-    <div className="px-2 md:px-0">
+    <div className="flex flex-col gap-6 w-full">
+      {/* Welcome Banner */}
       <WelcomeSection />
-      <div className="flex flex-col md:flex-row justify-between mt-6 gap-6">
-        <div className="flex flex-col w-full gap-8">
+
+      {/* Main Grid Content */}
+      <div className="flex flex-col md:flex-row flex-wrap gap-4 w-full">
+        {/* Left Column */}
+        <div className="flex-1  space-y-4 w-2/3">
           <TimeTrackingDashboard />
           <EnrolledCourses />
 
@@ -25,13 +28,14 @@ const Learn = () => {
             <ContinueCourses />
             <ContinueCoursesDetails clientId={clientId} />
           </div>
- 
+
           <div className="space-y-2">
             <BasedLearningCourses clientId={clientId} />
           </div>
         </div>
 
-        <div className="flex flex-col gap-6 w-full md:w-auto md:min-w-[300px] lg:min-w-[350px]">
+        {/* Right Column */}
+        <div className="flex-1 min-w-0 space-y-4 w-1/3">
           <Leaderboard clientId={clientId} />
           <DailyProgress clientId={clientId} />
           <StreakTable clientId={clientId} />
@@ -40,6 +44,6 @@ const Learn = () => {
       </div>
     </div>
   );
-}
+};
 
 export default Learn;
