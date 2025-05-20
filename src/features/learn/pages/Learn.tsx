@@ -66,6 +66,7 @@ const EnrollToCourseOverlay: React.FC<EnrollToCourseOverlayProps> = ({ title, ch
 };
 
 const Learn = () => {
+
   const clientId = import.meta.env.VITE_CLIENT_ID;
   // Get enrolled courses from Redux store
   const courses = useSelector((state: RootState) => state.courses.courses);

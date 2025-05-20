@@ -21,7 +21,8 @@ export const useSubtopicForm = (onSubmit: (subtopic: Subtopic) => void) => {
     const newSubtopic: Subtopic = {
       id: Date.now().toString(),
       title: formData.title,
-      description: formData.description
+      description: formData.description,
+      contents: []
     };
     
     onSubmit(newSubtopic);
