@@ -21,6 +21,11 @@ export interface Subtopic {
   id: string;
   title: string;
   description: string;
+  contents: Array<{
+    id: string;
+    type: 'videos' | 'articles' | 'problems' | 'quiz' | 'subjective' | 'development';
+    // add other fields as needed
+  }>;
 }
 
 export interface Course {
@@ -29,3 +34,11 @@ export interface Course {
   description: string;
   isPro: boolean;
 } 
+
+export type TabKey =
+  | "videos"
+  | "articles"
+  | "problems"
+  | "quiz"
+  | "subjective"
+  | "development";
