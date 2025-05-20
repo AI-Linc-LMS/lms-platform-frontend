@@ -12,7 +12,6 @@ import EnrolledCourses from "../components/courses/EnrolledCourses";
 
 const Learn = () => {
 
-
   const clientId = import.meta.env.VITE_CLIENT_ID;
   return (
     <div className="px-2 md:px-0">

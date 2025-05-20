@@ -1,6 +1,11 @@
-import React from 'react';
-import { Topic } from '../types/course';
+import React, { useEffect, useState } from 'react';
+import { Topic, Subtopic, TabKey } from '../types/course';
 import SubtopicItem from './SubtopicItem';
+import BottomSheet from './BottomSheet';
+import AddVideoContent from './add-content/AddContent';
+import AddArticleContent from './add-content/AddVideoContent';
+import AddContent from './add-content/AddContent';
+import ContentManager from './add-content/ContentManager';
 
 interface TopicItemProps {
   topic: Topic;
@@ -8,7 +13,58 @@ interface TopicItemProps {
   onAddSubtopic: (topicId: string) => void;
 }
 
+
+
 export const TopicItem: React.FC<TopicItemProps> = ({ topic, onDelete, onAddSubtopic }) => {
+  const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
+  const [activeSubtopic, setActiveSubtopic] = useState<Subtopic | null>(null);
+  const [activeTab, setActiveTab] = useState('videos');
+
+  useEffect(() => {
+    if (bottomSheetOpen) {
+      // Disable background scroll
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Enable scroll back
+      document.body.style.overflow = '';
+    }
+
+    // Cleanup on unmount to ensure scroll is enabled again
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [bottomSheetOpen]);
+
+  const handleAddContent = (subtopic: Subtopic) => {
+    setActiveSubtopic(subtopic);
+    setBottomSheetOpen(true);
+    setActiveTab('videos');
+  };
+  const handleCloseSheet = () => {
+    // Delay resetting state until after animation
+    setBottomSheetOpen(false); // triggers slideDown
+  };
+
+
+  const getStats = (subtopic: Subtopic) => {
+    const stats = {
+      videos: 0,
+      articles: 0,
+      problems: 0,
+      quiz: 0,
+      subjective: 0,
+      development: 0,
+    };
+    if (subtopic.contents) {
+      subtopic.contents.forEach((c) => {
+        if (stats.hasOwnProperty(c.type)) {
+          stats[c.type as keyof typeof stats]++;
+        }
+      });
+    }
+    return stats;
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
       <div className="p-4">
@@ -26,7 +82,7 @@ export const TopicItem: React.FC<TopicItemProps> = ({ topic, onDelete, onAddSubt
             <p className="text-sm text-gray-500 mt-1">Marks: -</p>
           </div>
           <div className="flex gap-2">
-            <button 
+            <button
               onClick={() => onDelete(topic.id)}
               className="text-red-400 hover:text-red-600 p-2 rounded-md"
             >
@@ -34,7 +90,7 @@ export const TopicItem: React.FC<TopicItemProps> = ({ topic, onDelete, onAddSubt
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </button>
-            <button 
+            <button
               onClick={() => onAddSubtopic(topic.id)}
               className="bg-[#17627A] text-white px-3 py-1 rounded-md flex items-center hover:bg-[#124F65] transition-colors"
             >
@@ -53,9 +109,10 @@ export const TopicItem: React.FC<TopicItemProps> = ({ topic, onDelete, onAddSubt
                 key={subtopic.id}
                 title={subtopic.title}
                 marks={(subtopic as any).marks || 0}
-                onEdit={() => {}}
-                onDelete={() => {}}
-                onAddContent={() => {}}
+                stats={getStats(subtopic)}
+                onEdit={() => { }}
+                onDelete={() => { }}
+                onAddContent={() => handleAddContent(subtopic)}
               />
             ))}
           </div>
@@ -67,7 +124,7 @@ export const TopicItem: React.FC<TopicItemProps> = ({ topic, onDelete, onAddSubt
               </svg>
             </div>
             <h4 className="text-[#17627A] font-medium mb-1">Add Subtopics</h4>
-            <button 
+            <button
               onClick={() => onAddSubtopic(topic.id)}
               className="bg-[#17627A] text-white px-4 py-1 rounded-md mt-2 text-sm hover:bg-[#124F65] transition-colors"
             >
@@ -76,6 +133,12 @@ export const TopicItem: React.FC<TopicItemProps> = ({ topic, onDelete, onAddSubt
           </div>
         )}
       </div>
+      {/* Bottom Sheet for Add Content */}
+      <BottomSheet open={bottomSheetOpen} onClose={handleCloseSheet} activeTab={activeTab} setActiveTab={setActiveTab}>
+        <ContentManager
+          tabKey={activeTab as TabKey}
+        />
+      </BottomSheet>
     </div>
   );
 }; 
