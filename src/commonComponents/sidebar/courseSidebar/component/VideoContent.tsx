@@ -1,5 +1,6 @@
 import React from "react";
 import videoIcon from "../../../../assets/course_sidebar_assets/video/vidoesIcon.png";
+import completeTickIcon from "../../../../assets/course_sidebar_assets/completeTickIcon.png";
 
 interface VideoItem {
   id: string;
@@ -150,7 +151,7 @@ const VideoContent: React.FC<VideoContentProps> = ({
 
               <div className="flex items-center">
                 {video.completed ? (
-                  <CircularProgress progress={100} isComplete={true} />
+                  <img src={completeTickIcon} alt="check" className="w-5 h-5" />
                 ) : (
                   <CircularProgress 
                     progress={video.progress || 0} 
