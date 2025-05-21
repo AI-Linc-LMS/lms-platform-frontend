@@ -42,16 +42,16 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
           <table className="w-full text-center border-collapse min-h-[450px]">
             <thead className="bg-gray-100">
               <tr>
-                <th className="border-b border-r border-gray-300 w-[80px] h-[50px] text-[12px] text-gray-600">
+                <th className="border-b border-r border-gray-300  h-[50px] text-[12px] text-gray-600">
                   Standing
                 </th>
-                <th className="border-b border-r border-gray-300 w-[80px] h-[50px] text-[12px] text-gray-600">
+                <th className="border-b border-r border-gray-300  h-[50px] text-[12px] text-gray-600">
                   Name
                 </th>
-                <th className="border-b border-r border-gray-300 w-[80px] h-[50px] text-[12px] text-gray-600">
+                <th className="border-b border-r border-gray-300  h-[50px] text-[12px] text-gray-600">
                   Course
                 </th>
-                <th className="border-b border-gray-300 w-[80px] h-[50px] text-[12px] text-gray-600">
+                <th className="border-b border-gray-300  h-[50px] text-[12px] text-gray-600">
                   Marks
                 </th>
               </tr>
@@ -104,7 +104,7 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
 
 
   return (
-    <div className="flex flex-col transition-all duration-300 p-4 rounded-3xl lg:min-w-[270px] xl:min-w-[350px]">
+    <div className="flex flex-col transition-all duration-300 p-4 rounded-3xl">
       <h2 className="text-xl font-semibold text-[#343A40] mb-3">
         Track Your Progress
       </h2>
@@ -112,20 +112,20 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
         Keep grinding and stay top on our leaderboard
       </p>
 
-      <div className="rounded-xl border border-gray-300 overflow-hidden">
-        <table className="w-full text-center border-collapse min-h-[450px]">
+      <div className="flex w-full border border-gray-300 rounded-xl overflow-hidden">
+        <table className="text-center border-collapse min-h-[450px] w-full">
           <thead className="bg-gray-100">
             <tr>
-              <th className="border-b border-r border-gray-300 w-[80px] h-[50px] text-[12px] text-gray-600">
+              <th className="border-b border-r border-gray-300  h-[50px] text-[12px] text-gray-600">
                 Standing
               </th>
-              <th className="border-b border-r border-gray-300 w-[80px] h-[50px] text-[12px] text-gray-600">
+              <th className="border-b border-r border-gray-300  h-[50px] text-[12px] text-gray-600">
                 Name
               </th>
-              <th className="border-b border-r border-gray-300 w-[80px] h-[50px] text-[12px] text-gray-600">
+              <th className="border-b border-r border-gray-300  h-[50px] text-[12px] text-gray-600">
                 Course
               </th>
-              <th className="border-b border-gray-300 w-[80px] h-[50px] text-[12px] text-gray-600">
+              <th className="border-b border-gray-300  h-[50px] text-[12px] text-gray-600">
                 Marks
               </th>
             </tr>
@@ -141,21 +141,21 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
                   className={`group relative transition-all duration-300 hover:bg-[#E9F7FA] ${isCurrentUser ? "bg-blue-100 text-[#264D64]" : ""}`}
                 >
                   <td
-                    className="border-b border-r border-gray-300 w-[70px] h-[50px] text-[12px]"
+                    className="border-b border-r border-gray-300  h-[50px] text-[12px]"
                   >
                     <span >
                       {item.rank}
                     </span>
                   </td>
                   <td
-                    className="border-b border-r border-gray-300 w-[120px] h-[50px] text-[12px]"
+                    className="border-b border-r border-gray-300  h-[50px] text-[12px]"
                   >
                     <span >
                       {item.name}
                     </span>
                   </td>
                   <td
-                    className="border-b border-r border-gray-300 w-[70px] h-[50px] text-[12px] p-1"
+                    className="border-b border-r border-gray-300  h-[50px] text-[12px] p-1"
                   >
                     <span >
                       {item.course_name.length > 13
@@ -164,7 +164,7 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
                     </span>
                   </td>
                   <td
-                    className="border-b border-gray-300 w-[70px] h-[50px] text-[12px]"
+                    className="border-b border-gray-300  h-[50px] text-[12px]"
                   >
                     <span className="">
                       {item.marks}

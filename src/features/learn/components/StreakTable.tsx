@@ -75,7 +75,7 @@ const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
 
   if (isLoading || error || !data || !data.streak || Object.keys(data.streak).length === 0) {
     return (
-      <div className="flex flex-col w-full lg:min-w-[270px] xl:min-w-[350px] transition-all duration-300 p-4 rounded-3xl mt-12">
+      <div className="flex flex-col w-full  transition-all duration-300 p-4 rounded-3xl mt-12">
         <h2 className="text-xl font-semibold text-gray-800 mb-3">
           Weekly Streaks
         </h2>

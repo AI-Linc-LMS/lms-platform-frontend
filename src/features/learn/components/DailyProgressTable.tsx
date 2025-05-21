@@ -50,7 +50,7 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
     leaderboardArray.length === 0
   ) {
     return (
-      <div className="flex flex-col w-full lg:min-w-[270px] xl:min-w-[350px] transition-all duration-300 bg-white p-4 rounded-3xl mt-10">
+      <div className="flex flex-col w-full transition-all duration-300 bg-white p-4 rounded-3xl mt-10">
         <h2 className="text-xl font-semibold text-[#343A40] mb-3">
           Daily Progress
         </h2>
