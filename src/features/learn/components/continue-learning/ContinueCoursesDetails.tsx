@@ -83,8 +83,8 @@ const ContinueCoursesDetails = ({ clientId }: { clientId: number }) => {
     return <EmptyContinueState />;
   }
 
-  // Courses available
-  const courses: CourseData[] = continueCourses.map((course: ContinueCourse) => ({
+  // Courses available - limit to 4 courses for the dashboard view
+  const courses: CourseData[] = continueCourses.slice(0, 4).map((course: ContinueCourse) => ({
     title: course.title,
     description: course.description,
     category: course.difficulty_level,
