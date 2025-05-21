@@ -127,9 +127,20 @@ const FloatingActivityTimer: React.FC = () => {
     const apiUrl = import.meta.env.VITE_API_URL;
     const clientId = import.meta.env.VITE_CLIENT_ID;
     
+    // Calculate current session duration if active
+    let currentSessionDuration = 0;
+    if (isActive && currentSessionStart) {
+      currentSessionDuration = calculateCurrentSessionDuration(isActive, currentSessionStart);
+    }
+    
+    // Total time including current session if active
+    const totalTimeInSeconds = totalTimeSpent + currentSessionDuration;
+    
     console.log('API URL:', apiUrl);
     console.log('Client ID:', clientId);
     console.log('Current total time spent (seconds):', totalTimeSpent);
+    console.log('Current session duration (seconds):', currentSessionDuration);
+    console.log('Total time incl. current session (seconds):', totalTimeInSeconds);
     
     // Format date in YYYY-MM-DD format for logging
     const today = new Date();
@@ -138,7 +149,8 @@ const FloatingActivityTimer: React.FC = () => {
     // Log what would be sent
     console.log('Data to be sent:', {
       date: formattedDate,
-      "time-spend": Math.round(totalTimeSpent / 60)
+      "time-spend-seconds": totalTimeInSeconds,
+      "time-spend": Math.round(totalTimeInSeconds / 60)
     });
     
     // Simulate closing/opening tab to trigger API call
@@ -180,17 +192,30 @@ const FloatingActivityTimer: React.FC = () => {
     const today = new Date();
     const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     
+    // Calculate current session duration if active
+    let currentSessionDuration = 0;
+    if (isActive && currentSessionStart) {
+      currentSessionDuration = calculateCurrentSessionDuration(isActive, currentSessionStart);
+    }
+    
+    // Total time including current session if active
+    const totalTimeInSeconds = totalTimeSpent + currentSessionDuration;
+    
     // Prepare the data in the format required by the API
     const activityData = {
       date: formattedDate,
-      "time-spend": Math.round(totalTimeSpent / 60), // Convert seconds to minutes and round
+      "time-spend-seconds": totalTimeInSeconds, // Send exact seconds for precision
+      "time-spend": Math.round(totalTimeInSeconds / 60), // Keep minutes for backward compatibility
       session_id: sessionId,
-      device_info: deviceInfo
+      device_info: deviceInfo,
+      current_session_duration: currentSessionDuration // Include current session separately for diagnostics
     };
     
     console.log('DIRECT API CALL');
     console.log('Endpoint:', `${apiUrl}/activity/clients/${clientId}/activity-log/`);
     console.log('Data:', activityData);
+    console.log('Current session duration (seconds):', currentSessionDuration);
+    console.log('Total time incl. current session (seconds):', totalTimeInSeconds);
     
     // Setup fetch options
     const fetchOptions = {
