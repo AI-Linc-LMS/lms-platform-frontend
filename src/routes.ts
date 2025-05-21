@@ -9,6 +9,7 @@ import ForgotPassword from "./features/auth/pages/ForgotPassword";
 import Signup from "./features/auth/pages/Signup";
 import AdminDashboard from "./features/admin/pages/AdminDashboard";
 import AdminCourseDetailPage from "./features/admin/pages/CourseDetailPage";
+import Courses from "./features/learn/pages/Courses";
 
 export interface RouteConfig {
   path: string;
@@ -41,6 +42,11 @@ const routes: RouteConfig[] = [
   {
     path: "/learn",
     component: Learn,
+    isPrivate: true,
+  },
+  {
+    path: "/courses",
+    component: Courses,
     isPrivate: true,
   },
   {
