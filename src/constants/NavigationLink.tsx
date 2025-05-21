@@ -2,17 +2,18 @@ import { SidebarLinkInfo } from "./typings";
 import LearnIconController from "../commonComponents/icons/sidebarIcons/LearnIconController";
 import LiveIconController from "../commonComponents/icons/sidebarIcons/LiveIconController";
 import JobsIconController from "../commonComponents/icons/sidebarIcons/JobsIconController";
+import DashboardController from "../commonComponents/icons/sidebarIcons/DashboardController";
 
 export const NavigationLinks: SidebarLinkInfo[] = [
   {
     id: 1,
-    title: "Learn",
+    title: "Dashboard",
     links: [
       {
         id: 1,
-        title: "Learn",
+        title: "Dashboard",
         href: "/",
-        icon: <LearnIconController />,
+        icon: <DashboardController />,
       },
     ],
   },
