@@ -50,7 +50,6 @@ const EnrollToCourseOverlay: React.FC<EnrollToCourseOverlayProps> = ({ title, ch
 };
 
 const Learn = () => {
-
   const clientId = import.meta.env.VITE_CLIENT_ID;
   // Get enrolled courses from Redux store
   const courses = useSelector((state: RootState) => state.courses.courses);
@@ -58,54 +57,48 @@ const Learn = () => {
   const hasNoCourses = !courses || courses.length === 0;
 
   return (
-    <div className="px-2 md:px-0">
-      <WelcomeSection />
-      <div className="flex flex-col md:flex-row justify-between mt-6 gap-6">
-        <div className="flex flex-col w-full gap-8">
-          {hasNoCourses ? (
-            <EnrollToCourseOverlay title="Enroll to a Course to Unlock Stats">
-              <TimeTrackingDashboard />
-            </EnrollToCourseOverlay>
-          ) : (
+    <div className="flex flex-col md:flex-row gap-4 w-full">
+      {/* Left Column */}
+      <div className="w-full md:w-2/3 space-y-4 gap-4">
+        <WelcomeSection />
+        {hasNoCourses ? (
+          <EnrollToCourseOverlay title="Enroll to a Course to Unlock Stats">
             <TimeTrackingDashboard />
-          )}
-
-          {/* EnrolledCourses and ContinueCourses always visible with their own empty states */}
-          <EnrolledCourses />
-
-          <div className="space-y-2">
-            <ContinueCourses />
-            <ContinueCoursesDetails clientId={clientId} />
-          </div>
-
-          <div className="space-y-2">
-            <BasedLearningCourses clientId={clientId} />
-          </div>
+          </EnrollToCourseOverlay>
+        ) : (
+          <TimeTrackingDashboard />
+        )}
+        <EnrolledCourses />
+        <div className="space-y-2">
+          <ContinueCourses />
+          <ContinueCoursesDetails clientId={clientId} />
         </div>
+        <div className="space-y-2">
+          <BasedLearningCourses clientId={clientId} />
+        </div>
+      </div>
 
-        <div className="flex flex-col gap-6 w-full md:w-auto md:min-w-[300px] lg:min-w-[350px]">
-          {hasNoCourses ? (
-            <EnrollToCourseOverlay title="Enroll to a Course to Unlock Weekly & Daily Progress" className="min-h-[600px]">
-              <div className="flex flex-col gap-6 w-full">
-                <Leaderboard clientId={clientId} />
-                <DailyProgress clientId={clientId} />
-                <StreakTable clientId={clientId} />
-              </div>
-            </EnrollToCourseOverlay>
-          ) : (
-            <>
+      {/* Right Column */}
+      <div className="w-full md:w-1/3 space-y-4 gap-4">
+        {hasNoCourses ? (
+          <EnrollToCourseOverlay title="Enroll to a Course to Unlock Weekly & Daily Progress" className="min-h-[600px]">
+            <div className="flex flex-col gap-6 w-full">
               <Leaderboard clientId={clientId} />
               <DailyProgress clientId={clientId} />
               <StreakTable clientId={clientId} />
-            </>
-          )}
-
-          {/* Referrals component is always visible */}
-          <Referrals />
-        </div>
+            </div>
+          </EnrollToCourseOverlay>
+        ) : (
+          <>
+            <Leaderboard clientId={clientId} />
+            <DailyProgress clientId={clientId} />
+            <StreakTable clientId={clientId} />
+          </>
+        )}
+        <Referrals />
       </div>
     </div>
   );
-}
+};
 
 export default Learn;
