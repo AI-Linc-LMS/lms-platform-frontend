@@ -354,12 +354,35 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
   // Utility function to backup current state
   const backupCurrentState = () => {
     try {
+      // Calculate current session duration if there's an active session
+      let currentTotalTime = activityState.totalTimeSpent;
+      let currentSessionDuration = 0;
+      
+      if (activityState.isActive && activityState.currentSessionStart) {
+        currentSessionDuration = Math.floor((Date.now() - activityState.currentSessionStart) / 1000);
+        currentTotalTime += currentSessionDuration;
+        logActivityEvent('Including active session in backup', { sessionDuration: currentSessionDuration });
+      }
+      
+      // Store the state including active session data
       localStorage.setItem(STORAGE_KEYS.LAST_ACTIVITY_STATE, JSON.stringify({
-        totalTimeSpent: activityState.totalTimeSpent,
+        totalTimeSpent: currentTotalTime,
         activityHistory: activityState.activityHistory,
-        lastSeen: Date.now()
+        lastSeen: Date.now(),
+        activeSessionDuration: currentSessionDuration > 0 ? currentSessionDuration : null
       }));
-      localStorage.setItem(STORAGE_KEYS.TOTAL_TIME_BACKUP, activityState.totalTimeSpent.toString());
+      
+      // Also store the current total time as a separate backup
+      localStorage.setItem(STORAGE_KEYS.TOTAL_TIME_BACKUP, currentTotalTime.toString());
+      
+      if (currentSessionDuration > 0) {
+        logActivityEvent('Backed up state with active session', { 
+          totalTime: currentTotalTime,
+          sessionDuration: currentSessionDuration
+        });
+      } else {
+        logActivityEvent('Backed up state', { totalTime: currentTotalTime });
+      }
     } catch (error) {
       logActivityEvent('Failed to backup current state', { error: (error as Error).message });
     }
@@ -414,7 +437,8 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       // Format data for API
       const syncData = {
         date: formattedDate,
-        "time-spend": Math.round(pendingData.totalTimeSpent / 60), // Convert seconds to minutes
+        "time-spend-seconds": pendingData.totalTimeSpent, // Send exact seconds for precision
+        "time-spend": Math.round(pendingData.totalTimeSpent / 60), // Keep minutes for backward compatibility
         session_id: session_id,
         device_info: device_info,
         user_id: userId // Include user ID for server-side aggregation
@@ -457,19 +481,40 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         return;
       }
       
-      // Get the activityState from localStorage as we can't access React state during beforeunload
-      let state = null;
-      try {
-        const stateStr = localStorage.getItem(STORAGE_KEYS.LAST_ACTIVITY_STATE);
-        if (stateStr) {
-          state = JSON.parse(stateStr);
+      // Calculate current total including active session if exists
+      let totalTimeToSend = 0;
+      let currentSessionDuration = 0;
+      
+      // First try to get the current state directly from React state
+      if (activityState.totalTimeSpent !== undefined) {
+        totalTimeToSend = activityState.totalTimeSpent;
+        
+        // Add current session if active
+        if (activityState.isActive && activityState.currentSessionStart) {
+          currentSessionDuration = Math.floor((Date.now() - activityState.currentSessionStart) / 1000);
+          totalTimeToSend += currentSessionDuration;
         }
-      } catch (err) {
-        logActivityEvent('Failed to parse state for beacon', { error: (err as Error).message });
+      } else {
+        // Fallback to localStorage if we can't access React state
+        try {
+          const stateStr = localStorage.getItem(STORAGE_KEYS.LAST_ACTIVITY_STATE);
+          if (stateStr) {
+            const state = JSON.parse(stateStr);
+            totalTimeToSend = state.totalTimeSpent || 0;
+          } else {
+            // Try backup
+            const backupStr = localStorage.getItem(STORAGE_KEYS.TOTAL_TIME_BACKUP);
+            if (backupStr) {
+              totalTimeToSend = parseInt(backupStr, 10) || 0;
+            }
+          }
+        } catch (err) {
+          logActivityEvent('Failed to parse state for beacon', { error: (err as Error).message });
+        }
       }
       
-      if (!state) {
-        logActivityEvent('No state to send via beacon');
+      if (totalTimeToSend === 0) {
+        logActivityEvent('No time data to send via beacon');
         return;
       }
       
@@ -482,16 +527,21 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       
       const beaconData = {
         date: formattedDate,
-        "time-spend": Math.round(state.totalTimeSpent / 60), // Convert seconds to minutes
+        "time-spend-seconds": totalTimeToSend, // Send exact seconds for precision
+        "time-spend": Math.round(totalTimeToSend / 60), // Keep minutes for backward compatibility
         session_id: session_id,
-        device_info: device_info
+        device_info: device_info,
+        current_session_duration: currentSessionDuration // Send current session separately for diagnostics
       };
       
       // Use the Beacon API which is designed for exit events
       const blob = new Blob([JSON.stringify(beaconData)], { type: 'application/json' });
       navigator.sendBeacon(`${apiUrl}/activity/clients/${clientId}/activity-log/`, blob);
       
-      logActivityEvent('Sent activity data via beacon');
+      logActivityEvent('Sent activity data via beacon', { 
+        totalSeconds: totalTimeToSend,
+        currentSessionSeconds: currentSessionDuration
+      });
     } catch (error) {
       logActivityEvent('Failed to send via beacon', { error: (error as Error).message });
     }
@@ -500,18 +550,33 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
   // Handle page unload (user closes the tab or navigates away)
   const handleBeforeUnload = () => {
     logActivityEvent('Before unload event');
+    
+    // End the current session if active
     endSession();
+    
+    // Try to send data using beacon API
     sendActivityDataUsingBeacon();
+    
     // Also backup current state
     backupCurrentState();
+    
+    // Calculate the most accurate total time
+    let accurateTotalTime = activityState.totalTimeSpent;
+    
+    // If there's still an active session (rare but possible due to event timing)
+    if (activityState.isActive && activityState.currentSessionStart) {
+      const currentSessionDuration = Math.floor((Date.now() - activityState.currentSessionStart) / 1000);
+      accurateTotalTime += currentSessionDuration;
+      logActivityEvent('Including active session in before unload', { sessionDuration: currentSessionDuration });
+    }
     
     // Store data to be synced on next visit
     try {
       localStorage.setItem(STORAGE_KEYS.PENDING_ACTIVITY_DATA, JSON.stringify({
-        totalTimeSpent: activityState.totalTimeSpent,
+        totalTimeSpent: accurateTotalTime,
         timestamp: Date.now()
       }));
-      logActivityEvent('Stored pending activity data for next visit');
+      logActivityEvent('Stored pending activity data for next visit', { totalTimeSpent: accurateTotalTime });
     } catch (error) {
       logActivityEvent('Failed to store pending data', { error: (error as Error).message });
     }
@@ -546,7 +611,11 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         // Prepare the data in the format required by the API
         const activityData = {
           date: formattedDate,
-          "time-spend": Math.round(totalTimeInSeconds / 60) // Convert seconds to minutes and round
+          "time-spend-seconds": totalTimeInSeconds, // Exact seconds for precision
+          "time-spend": Math.round(totalTimeInSeconds / 60), // Minutes for backward compatibility
+          current_session_duration: currentSessionDuration, // Include current session data for diagnostics
+          session_id: getDeviceFingerprint().session_id,
+          device_info: getDeviceFingerprint().device_info
         };
         
         // Also backup the state
@@ -560,13 +629,24 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
             'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
           },
           body: JSON.stringify(activityData)
-        }).then(() => {
-          logActivityEvent('Periodic sync successful', { data: activityData });
+        }).then(response => {
+          if (!response.ok) {
+            throw new Error(`API responded with status ${response.status}`);
+          }
+          return response.json();
+        }).then(data => {
+          logActivityEvent('Periodic sync successful', { 
+            data: activityData,
+            response: data
+          });
         }).catch(error => {
           logActivityEvent('Periodic sync failed', { error: error.message });
           
           // Store the data as pending if sync fails
-          localStorage.setItem(STORAGE_KEYS.PENDING_ACTIVITY_DATA, JSON.stringify(activityData));
+          localStorage.setItem(STORAGE_KEYS.PENDING_ACTIVITY_DATA, JSON.stringify({
+            totalTimeSpent: totalTimeInSeconds,
+            timestamp: Date.now()
+          }));
         });
         
       } catch (error) {

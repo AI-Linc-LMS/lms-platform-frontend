@@ -54,23 +54,30 @@ export const useUserActivityTracking = (): UserActivityData => {
         }
       }
       
-      // Next try the session backup
+      // Next try the last activity state which now includes active session duration
+      const lastActivityStr = localStorage.getItem(STORAGE_KEYS.LAST_ACTIVITY_STATE);
+      if (lastActivityStr) {
+        const lastActivity = JSON.parse(lastActivityStr);
+        if (lastActivity && typeof lastActivity.totalTimeSpent === 'number') {
+          // The totalTimeSpent here already includes any active session duration
+          console.log(`Recovered total time from last activity: ${lastActivity.totalTimeSpent}s`);
+          
+          // Log if there was an active session at the time of backup
+          if (lastActivity.activeSessionDuration) {
+            console.log(`Backup included active session of: ${lastActivity.activeSessionDuration}s`);
+          }
+          
+          return lastActivity.totalTimeSpent;
+        }
+      }
+      
+      // Finally try the session backup
       const sessionBackupStr = localStorage.getItem(STORAGE_KEYS.SESSION_BACKUP);
       if (sessionBackupStr) {
         const sessionBackup = JSON.parse(sessionBackupStr);
         if (sessionBackup && typeof sessionBackup.totalTimeSpent === 'number') {
           console.log(`Recovered total time from session backup: ${sessionBackup.totalTimeSpent}s`);
           return sessionBackup.totalTimeSpent;
-        }
-      }
-      
-      // Finally try the last activity state
-      const lastActivityStr = localStorage.getItem(STORAGE_KEYS.LAST_ACTIVITY_STATE);
-      if (lastActivityStr) {
-        const lastActivity = JSON.parse(lastActivityStr);
-        if (lastActivity && typeof lastActivity.totalTimeSpent === 'number') {
-          console.log(`Recovered total time from last activity: ${lastActivity.totalTimeSpent}s`);
-          return lastActivity.totalTimeSpent;
         }
       }
       
