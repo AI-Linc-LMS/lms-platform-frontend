@@ -1,8 +1,8 @@
 import { SidebarLinkInfo } from "./typings";
-import LearnIconController from "../commonComponents/icons/sidebarIcons/LearnIconController";
 import LiveIconController from "../commonComponents/icons/sidebarIcons/LiveIconController";
 import JobsIconController from "../commonComponents/icons/sidebarIcons/JobsIconController";
 import DashboardController from "../commonComponents/icons/sidebarIcons/DashboardController";
+import CoursesIconController from "../commonComponents/icons/sidebarIcons/CoursesIconController";
 
 export const NavigationLinks: SidebarLinkInfo[] = [
   {
@@ -14,6 +14,18 @@ export const NavigationLinks: SidebarLinkInfo[] = [
         title: "Dashboard",
         href: "/",
         icon: <DashboardController />,
+      },
+    ],
+  },
+  {
+    id: 4,
+    title: "Courses",
+    links: [
+      {
+        id: 1,
+        title: "Courses",
+        href: "/courses",
+        icon: <CoursesIconController />,
       },
     ],
   },
