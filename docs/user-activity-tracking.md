@@ -16,6 +16,7 @@ This documentation explains the user activity tracking system implemented in our
 - **Account-based tracking**: Consolidates activity data per user account regardless of access point
 - **Daily reset**: Automatically resets total time counter every 24 hours
 - **Historical tracking**: Maintains history of past days' activity times
+- **Precise timing**: Second-level accuracy in time tracking across all edge cases
 
 ## Technical Implementation
 
@@ -42,10 +43,10 @@ This documentation explains the user activity tracking system implemented in our
 
 | Edge Case | Handling Mechanism |
 |-----------|-------------------|
-| Browser closure | Beacon API + localStorage backup |
+| Browser closure | Beacon API + localStorage backup with active session inclusion |
 | Tab switching | visibilitychange event + session recording |
 | Network disconnection | Online/offline events + local storage |
-| Browser crash | Periodic localStorage backups (every 10s) |
+| Browser crash | Periodic localStorage backups (every 10s) with active session info |
 | Device shutdown | Multiple backup mechanisms with redundancy |
 | Multiple browsers | Server-side aggregation by user ID |
 | Multiple devices | Server-side aggregation by user ID + device tracking |
@@ -56,6 +57,7 @@ This documentation explains the user activity tracking system implemented in our
 | Timezone changes | Date comparison uses local timezone consistently |
 | User active at reset time | Graceful handling with no data loss |
 | Disrupted reset | Safety mechanisms to prevent double resets or missed resets |
+| Session interruption | Active session time always included in backups and sync operations |
 
 ### 4. Daily Reset Mechanism
 
@@ -102,7 +104,32 @@ The system handles users accessing their accounts from multiple devices or brows
 - Helps identify unique access points for the same account
 - Can include browser type, OS, and other non-personally-identifiable information
 
-### 6. API Integration
+### 6. Precise Time Tracking
+
+The system ensures accurate time tracking even across various edge cases:
+
+#### 6.1 Active Session Inclusion
+- All time calculations include the current active session
+- Backup procedures capture active session duration separately
+- Recovery functions prioritize the most accurate data source
+
+#### 6.2 Second-Level Precision
+- Time is tracked and reported at the second level rather than rounded minutes
+- API payload includes both seconds (precise) and minutes (for backward compatibility)
+- Diagnostic information includes separate current session duration data
+
+#### 6.3 Redundant Storage Mechanisms
+- Multiple backup locations with different update frequencies
+- Active session information stored separately from aggregate totals
+- Recovery prioritizes the most accurate and recent data sources
+
+#### 6.4 Edge Case Time Handling
+- Browser closing: active session time is captured and stored before the page unloads
+- Focus/blur events: session time is accurately recorded when switching tabs
+- Sleep/hibernate: power status changes trigger session management logic
+- Network disconnections: time continues tracking locally during offline periods
+
+### 7. API Integration
 
 The system sends activity data to the backend API with the following details:
 
@@ -115,7 +142,9 @@ The system sends activity data to the backend API with the following details:
   ```json
   {
     "date": "YYYY-MM-DD",
-    "time-spend": 30,  // minutes spent, rounded
+    "time-spend-seconds": 3720,  // exact seconds for precision
+    "time-spend": 62,  // minutes for backward compatibility
+    "current_session_duration": 120,  // current active session in seconds
     "session_id": "uuid-v4-string",
     "device_info": {
       "browser": "Chrome",
@@ -125,7 +154,7 @@ The system sends activity data to the backend API with the following details:
   }
   ```
 
-### 7. Environment Configuration
+### 8. Environment Configuration
 
 The following environment variables must be set for the system to work correctly:
 
@@ -134,13 +163,13 @@ VITE_API_URL=https://be-app.ailinc.com
 VITE_CLIENT_ID=1
 ```
 
-### 8. Local Storage Keys
+### 9. Local Storage Keys
 
 The system uses multiple localStorage keys for redundancy:
 
 - `sessionBackup`: Complete session data including history
 - `totalTimeBackup`: Just the total time as a separate backup
-- `lastActivityState`: State when the user last interacted
+- `lastActivityState`: State when the user last interacted, including active session
 - `pendingActivityData`: Data waiting to be sent to backend
 - `sessionId`: Unique identifier for the current browser session
 - `lastActivityResetDate`: Date of the last daily reset
@@ -173,6 +202,10 @@ The system uses multiple localStorage keys for redundancy:
 11. **Daily Reset Automation**: Automatically resets counters for daily tracking without user intervention.
 
 12. **Historical Tracking**: Maintains previous activity data for trend analysis.
+
+13. **Second-Level Accuracy**: Maintains precise timing data down to the second even across edge cases.
+
+14. **Active Session Tracking**: Ensures active sessions are always included in calculations and backups.
 
 ### Cons
 
@@ -212,9 +245,11 @@ The application includes a floating debug panel that can be used to monitor acti
    - Visibility: Simulate minimizing the browser
    - Unload: Simulate closing the browser
 3. Use the "Direct API Call" button to manually trigger a data sync
-4. Use the "Recover Data" button to restore data from localStorage if needed
-5. The session ID is displayed to help identify the current browser session
-6. View historical activity records in the debug panel's "Historical Activity" section
+4. Use the "Force Sync" button to simulate a natural sync with tab switching
+5. Use the "Recover Data" button to restore data from localStorage if needed
+6. Use the "Simulate Reset" button to test the daily reset functionality
+7. The session ID is displayed to help identify the current browser session
+8. View historical activity records in the debug panel's "Historical Activity" section
 
 ### Console Debugging
 
@@ -226,6 +261,23 @@ The system logs detailed information to the browser console:
 - Session start/end events
 - Multi-device session information
 - Daily reset events and historical data storage
+- Active session tracking and calculations
+
+### Testing Time Accuracy
+
+To verify time tracking accuracy:
+
+1. Use the debug panel's "Direct API Call" button to send current activity data
+2. Check the browser console for detailed timing information including:
+   - Base total time spent (excluding current session)
+   - Current session duration in seconds
+   - Combined total time in seconds
+3. Verify that the API payload includes both exact seconds and rounded minutes
+4. Test edge cases like:
+   - Closing and reopening the app
+   - Switching tabs and returning
+   - Simulating device sleep/wake
+5. Use the network tab to verify the data sent matches what's displayed
 
 ### Testing Multi-Device Scenarios
 
@@ -245,6 +297,7 @@ To test the daily reset functionality:
 2. Verify that the counter resets at midnight local time
 3. Check that previous day's data is stored in the historical record
 4. Confirm that the activity continues to be tracked after reset
+5. Use the "Simulate Reset" button to test without waiting for midnight
 
 ## Troubleshooting
 
@@ -294,6 +347,16 @@ If the daily reset isn't working correctly:
 4. Monitor console logs for daily reset events
 5. Try clearing localStorage and refreshing if reset is stuck
 
+### Time Tracking Accuracy Issues
+
+If time tracking seems inaccurate:
+
+1. Check the console logs for active session calculations
+2. Verify that the floating timer shows both current session and total time
+3. Use the Direct API Call feature to check what's being sent to the backend
+4. Look for any discrepancies between displayed time and API payload
+5. Check if any browser extensions might be interfering with tab focus events
+
 ## Best Practices
 
 1. **Do not modify** the storage keys used by the system
@@ -302,6 +365,9 @@ If the daily reset isn't working correctly:
 4. Check the Django admin panel to verify data is being received
 5. Ensure proper authentication across all devices
 6. Implement server-side validation to prevent manipulation of activity data
+7. When adding features, maintain the second-level accuracy of time tracking
+8. Always include active session time in total time calculations
+9. Test edge cases thoroughly when modifying timing-related code
 
 ## Django Admin Integration
 
@@ -309,5 +375,5 @@ The system integrates with Django admin, where you can view user activity logs:
 
 - Navigate to Home > Activity > User activity logs
 - Each entry shows the date, time spent, client information, and session details
-- Data is formatted as `{"date": "YYYY-MM-DD", "time-spend": minutes, "session_id": "uuid"}` 
+- Data is formatted as `{"date": "YYYY-MM-DD", "time-spend": minutes, "time-spend-seconds": seconds, "session_id": "uuid"}`
 - Admin interface can filter activity by user, date range, or device 
