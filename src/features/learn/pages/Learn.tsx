@@ -38,7 +38,7 @@ const EnrollToCourseOverlay: React.FC<EnrollToCourseOverlayProps> = ({ title, ch
           </div>
           <h3 className="text-lg font-bold text-gray-800 mb-2 text-center">{title}</h3>
           <button
-            onClick={() => window.location.href = '/'}
+            onClick={() => window.location.href = '/courses'}
             className="bg-[#17627A] text-white py-2 px-6 rounded-lg transition-all duration-200 hover:bg-[#12536A] text-center mt-4 font-medium text-sm"
           >
             View all Courses
