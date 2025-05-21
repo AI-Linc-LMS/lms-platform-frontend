@@ -533,6 +533,6 @@ const VideoCard: React.FC<VideoCardProps> = ({
   );
 };
 
-      export default VideoCard;
+export default VideoCard;
 
 

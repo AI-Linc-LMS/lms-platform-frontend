@@ -314,7 +314,7 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
     }
   }, [isFirstWatch]);
 
-  // Reset state when videoUrl changes
+  // Reset state when videoUrl or videoId changes
   useEffect(() => {
     setProgressPercent(0);
     setHasMarkedComplete(false);
@@ -325,7 +325,7 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
     setIsFirstCompletion(true);
     setHasAppliedSavedProgress(false);
     setShowContinuePrompt(false);
-  }, [videoUrl]);
+  }, [videoUrl, videoId]);
 
   // Effect to show "seek locked" message for first-time viewers on attempts to seek ahead
   useEffect(() => {

@@ -35,20 +35,30 @@ const CircularProgress = ({ progress, isComplete }: { progress: number, isComple
 
   if (isComplete) {
     return (
-      <div className="w-[26px] h-[26px] rounded-full bg-[#5FA564] flex items-center justify-center">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path 
-            d="M5 12l5 5L20 7" 
-            stroke="white" 
-            strokeWidth="2.5" 
-            strokeLinecap="round" 
+      <div
+        className="w-[18px] h-[18px] rounded-full bg-[#5FA564] flex items-center justify-center"
+        style={{ aspectRatio: "1 / 1", minWidth: "18px", minHeight: "18px" }}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="10"
+          height="10"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M5 12l5 5L20 7"
+            stroke="white"
+            strokeWidth="2.5"
+            strokeLinecap="round"
             strokeLinejoin="round"
           />
         </svg>
       </div>
+
     );
   }
-  
+
   return (
     <div className="relative">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
@@ -72,7 +82,7 @@ const CircularProgress = ({ progress, isComplete }: { progress: number, isComple
           strokeLinecap="round"
         />
       </svg>
-      
+
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="w-[18px] h-[18px] bg-white border border-gray-200 rounded-full flex items-center justify-center">
           <div className="text-[9px] font-medium text-gray-500">
@@ -108,7 +118,7 @@ const AllContent = ({ contents, onContentClick, selectedContentId, activeLabel }
       case "Quiz":
         return quizIcon;
       case "Assignment":
-        return articleIcon; 
+        return articleIcon;
       default:
         return articleIcon;
     }
@@ -128,9 +138,8 @@ const AllContent = ({ contents, onContentClick, selectedContentId, activeLabel }
           <div
             key={item.id}
             onClick={() => onContentClick(item.id, item.content_type)}
-            className={`border border-gray-300 rounded-lg p-2 flex justify-between items-center hover:shadow transition cursor-pointer ${
-              selectedContentId === item.id ? 'border-[#255C79] bg-blue-50' : ''
-            }`}
+            className={`border border-gray-300 rounded-lg p-2 flex justify-between items-center hover:shadow transition cursor-pointer ${selectedContentId === item.id ? 'border-[#255C79] bg-blue-50' : ''
+              }`}
           >
             <div className="flex items-start gap-3">
               <img
@@ -152,9 +161,9 @@ const AllContent = ({ contents, onContentClick, selectedContentId, activeLabel }
 
             <div className="flex items-center justify-center w-5 h-5">
               {item.content_type === "VideoTutorial" ? (
-                <CircularProgress 
-                  progress={item.status === "complete" ? 100 : (item.progress_percentage || 0)} 
-                  isComplete={item.status === "complete"} 
+                <CircularProgress
+                  progress={item.status === "complete" ? 100 : (item.progress_percentage || 0)}
+                  isComplete={item.status === "complete"}
                 />
               ) : (
                 <img
