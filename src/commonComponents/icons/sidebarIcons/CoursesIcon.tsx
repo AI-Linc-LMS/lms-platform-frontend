@@ -5,6 +5,7 @@ interface CoursesIconProps {
 }
 
 const CoursesIcon: React.FC<CoursesIconProps> = ({ isActive }) => {
+  console.log("isActive", isActive);
   if (isActive) {
     // Active state - white color
     return (
