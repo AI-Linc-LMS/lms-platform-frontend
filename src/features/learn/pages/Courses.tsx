@@ -164,6 +164,8 @@ const Courses = () => {
     queryFn: () => getAllCourse(clientId),
   });
 
+  console.log("courses:",courses);
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">

@@ -4,7 +4,7 @@ import CoursesIcon from './CoursesIcon';
 
 const CoursesIconController: React.FC = () => {
   const location = useLocation();
-  const isActive = location.pathname === '/courses';
+  const isActive = location.pathname === '/courses' || location.pathname.startsWith('/courses');
   
   return <CoursesIcon isActive={isActive} />;
 };
