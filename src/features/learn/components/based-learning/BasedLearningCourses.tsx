@@ -2,6 +2,7 @@ import PrimaryButton from "../../../../commonComponents/common-buttons/primary-b
 import SecondaryButton from "../../../../commonComponents/common-buttons/secondary-button/SecondaryButton";
 import { useQuery } from "@tanstack/react-query";
 import { getAllRecommendedCourse } from '../../../../services/continue-course-learning/continueCourseApis';
+import { useNavigate } from "react-router-dom";
 
 // Define the course data interface
 interface CourseData {
@@ -61,7 +62,8 @@ interface CourseCardProps {
     studentAvatars?: string[];
 }
 
-const CourseCard = ({
+// Export the CourseCard component to be used in the See All page
+export const CourseCard = ({
     title,
     description,
     level = "Beginner",
@@ -134,6 +136,7 @@ const CourseCard = ({
 
 
 const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
+    const navigate = useNavigate();
     // Fetch data using TanStack Query
     const { data: courses, isLoading, error } = useQuery({
         queryKey: ["basedLearningCourses", clientId],
@@ -154,7 +157,10 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
                         </p>
                     </div>
                     <div>
-                        <button className="w-[80px] md:w-[95px] h-[45px] md:h-[55px] rounded-xl border border-[#2A8CB0] text-[13px] md:text-[15px] font-medium font-sans text-[#2A8CB0] cursor-pointer transition-all duration-200 hover:bg-[#E9F7FA] hover:text-[#1E7A99] hover:scale-95">
+                        <button 
+                            onClick={() => navigate('/recommended-learning')}
+                            className="w-[80px] md:w-[95px] h-[45px] md:h-[55px] rounded-xl border border-[#2A8CB0] text-[13px] md:text-[15px] font-medium font-sans text-[#2A8CB0] cursor-pointer transition-all duration-200 hover:bg-[#E9F7FA] hover:text-[#1E7A99] hover:scale-95"
+                        >
                             See all
                         </button>
                     </div>
@@ -204,7 +210,10 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
                         </p>
                     </div>
                     <div>
-                        <button className="w-[80px] md:w-[95px] h-[45px] md:h-[55px] rounded-xl border border-[#2A8CB0] text-[13px] md:text-[15px] font-medium font-sans text-[#2A8CB0] cursor-pointer transition-all duration-200 hover:bg-[#E9F7FA] hover:text-[#1E7A99] hover:scale-95">
+                        <button 
+                            onClick={() => navigate('/recommended-learning')}
+                            className="w-[80px] md:w-[95px] h-[45px] md:h-[55px] rounded-xl border border-[#2A8CB0] text-[13px] md:text-[15px] font-medium font-sans text-[#2A8CB0] cursor-pointer transition-all duration-200 hover:bg-[#E9F7FA] hover:text-[#1E7A99] hover:scale-95"
+                        >
                             See all
                         </button>
                     </div>
@@ -236,6 +245,9 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
         id: course.id, // for key
     }));
 
+    // Only display up to 4 courses in the dashboard
+    const displayedCourses = mappedCourses.slice(0, 4);
+
     return (
         <div>
             <div className="flex flex-row items-center justify-between w-full my-3 md:my-8">
@@ -248,13 +260,16 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
                     </p>
                 </div>
                 <div>
-                    <button className="w-[80px] md:w-[95px] h-[45px] md:h-[55px] rounded-xl border border-[#2A8CB0] text-[13px] md:text-[15px] font-medium font-sans text-[#2A8CB0] cursor-pointer transition-all duration-200 hover:bg-[#E9F7FA] hover:text-[#1E7A99] hover:scale-95">
+                    <button 
+                        onClick={() => navigate('/recommended-learning')}
+                        className="w-[80px] md:w-[95px] h-[45px] md:h-[55px] rounded-xl border border-[#2A8CB0] text-[13px] md:text-[15px] font-medium font-sans text-[#2A8CB0] cursor-pointer transition-all duration-200 hover:bg-[#E9F7FA] hover:text-[#1E7A99] hover:scale-95"
+                    >
                         See all
                     </button>
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mx-auto">
-                {mappedCourses.map((course: MappedCourseData) => (
+                {displayedCourses.map((course: MappedCourseData) => (
                     <CourseCard key={course.id} {...course} />
                 ))}
             </div>

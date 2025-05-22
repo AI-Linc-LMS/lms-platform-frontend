@@ -10,6 +10,8 @@ import Signup from "./features/auth/pages/Signup";
 import AdminDashboard from "./features/admin/pages/AdminDashboard";
 import AdminCourseDetailPage from "./features/admin/pages/CourseDetailPage";
 import Courses from "./features/learn/pages/Courses";
+import ContinueLearningAll from "./features/learn/pages/ContinueLearningAll";
+import RecommendedLearningAll from "./features/learn/pages/RecommendedLearningAll";
 
 export interface RouteConfig {
   path: string;
@@ -82,6 +84,16 @@ const routes: RouteConfig[] = [
   {
     path: "/admin/courses/:courseId",
     component: AdminCourseDetailPage,
+    isPrivate: true,
+  },
+  {
+    path: "/continue-learning",
+    component: ContinueLearningAll,
+    isPrivate: true,
+  },
+  {
+    path: "/recommended-learning",
+    component: RecommendedLearningAll,
     isPrivate: true,
   },
 ];
