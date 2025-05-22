@@ -1,4 +1,8 @@
+import { useNavigate } from "react-router-dom";
+
 const ContinueCourses = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="flex flex-row items-center justify-between w-full">
       <div>
@@ -10,7 +14,10 @@ const ContinueCourses = () => {
         </p>
       </div>
       <div>
-        <button className="w-[80px] md:w-[95px] h-[45px] md:h-[55px] rounded-xl border border-[#2A8CB0] text-[13px] md:text-[15px] font-medium font-sans text-[#2A8CB0] cursor-pointer transition-all duration-200 hover:bg-[#E9F7FA] hover:text-[#1E7A99] hover:scale-95">
+        <button 
+          onClick={() => navigate('/continue-learning')}
+          className="w-[80px] md:w-[95px] h-[45px] md:h-[55px] rounded-xl border border-[#2A8CB0] text-[13px] md:text-[15px] font-medium font-sans text-[#2A8CB0] cursor-pointer transition-all duration-200 hover:bg-[#E9F7FA] hover:text-[#1E7A99] hover:scale-95"
+        >
           See all
         </button>
       </div>
