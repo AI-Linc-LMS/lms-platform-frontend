@@ -59,7 +59,7 @@ const Learn = () => {
   return (
     <div className="flex flex-col md:flex-row gap-4 w-full">
       {/* Left Column */}
-      <div className="w-full md:w-2/3 space-y-4 gap-4">
+      <div className="w-full md:w-3/4 space-y-4 gap-4">
         <WelcomeSection />
         {hasNoCourses ? (
           <EnrollToCourseOverlay title="Enroll to a Course to Unlock Stats">
@@ -79,7 +79,7 @@ const Learn = () => {
       </div>
 
       {/* Right Column */}
-      <div className="w-full md:w-1/3 space-y-4 gap-4">
+      <div className="w-full md:w-1/4 space-y-4 gap-4">
         {hasNoCourses ? (
           <EnrollToCourseOverlay title="Enroll to a Course to Unlock Weekly & Daily Progress" className="min-h-[600px]">
             <div className="flex flex-col gap-6 w-full">

@@ -106,6 +106,8 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({ className = "" }) => 
     queryFn: () => getEnrolledCourses(1),
   });
 
+  console.log("enrolled courses data:",data);
+
   useEffect(() => {
     if (data) {
       dispatch(setCourses(data));
