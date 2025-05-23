@@ -67,7 +67,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const [activeTab, setActiveTab] = useState<"description" | "comments">("description");
   const [processedVideoUrl, setProcessedVideoUrl] = useState<string>("");
-  const [useDirectHtml, setUseDirectHtml] = useState(true); 
+  const [useDirectHtml, setUseDirectHtml] = useState(true);
   const [useDebugMode, setUseDebugMode] = useState(false);
 
   // Log component props for debugging
@@ -158,9 +158,9 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
   }, [data, useDebugMode]);
 
-  
 
-  
+
+
 
   // Handle video progress updates
   const handleProgressUpdate = (progress: number) => {
@@ -206,21 +206,21 @@ const VideoCard: React.FC<VideoCardProps> = ({
     try {
       // Create a wrapper around the content to avoid React rendering issues
       const wrapWithDiv = (content: string) => `<div>${content}</div>`;
-      
+
       let processedContent = htmlContent;
-      
+
       // Check if we have HTML content
       if (htmlContent.includes('<') && htmlContent.includes('>')) {
         // Remove any style tags but keep other content
         processedContent = htmlContent.replace(/<style[\s\S]*?<\/style>/gi, '');
-        
+
         // Extract content from body tag if present
         const bodyMatch = processedContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
         if (bodyMatch && bodyMatch[1]) {
           processedContent = bodyMatch[1].trim();
         }
-      } 
-      
+      }
+
       // For debugging
       console.log('Processed content:', processedContent.substring(0, 100) + '...');
 
@@ -346,26 +346,19 @@ const VideoCard: React.FC<VideoCardProps> = ({
       {/* Likes and Report */}
       <div className="flex justify-between items-center my-4 px-2 md:px-0">
         <div className="flex items-center space-x-2">
-          <button className="flex items-center text-blue-500 cursor-pointer">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="w-5 h-5 mr-1"
-            >
-              <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
+          <button className="flex items-center text-[#343A40] cursor-pointer">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M20.2699 16.265L20.9754 12.1852C21.1516 11.1662 20.368 10.2342 19.335 10.2342H14.1539C13.6404 10.2342 13.2494 9.77328 13.3325 9.26598L13.9952 5.22142C14.1028 4.56435 14.0721 3.892 13.9049 3.24752C13.7664 2.71364 13.3545 2.28495 12.8128 2.11093L12.6678 2.06435C12.3404 1.95918 11.9831 1.98365 11.6744 2.13239C11.3347 2.29611 11.0861 2.59473 10.994 2.94989L10.5183 4.78374C10.3669 5.36723 10.1465 5.93045 9.86218 6.46262C9.44683 7.24017 8.80465 7.86246 8.13711 8.43769L6.69838 9.67749C6.29272 10.0271 6.07968 10.5506 6.12584 11.0844L6.93801 20.4771C7.0125 21.3386 7.7328 22 8.59658 22H13.2452C16.7265 22 19.6975 19.5744 20.2699 16.265Z" fill="#255C79" />
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M2.96767 9.48508C3.36893 9.46777 3.71261 9.76963 3.74721 10.1698L4.71881 21.4063C4.78122 22.1281 4.21268 22.7502 3.48671 22.7502C2.80289 22.7502 2.25 22.1954 2.25 21.5129V10.2344C2.25 9.83275 2.5664 9.5024 2.96767 9.48508Z" fill="#255C79" />
             </svg>
+
             <span className="text-sm md:text-base">368</span>
           </button>
           <button className="flex items-center text-gray-500 cursor-pointer">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="w-5 h-5 mr-1"
-            >
-              <path d="M18 9.5a1.5 1.5 0 11-3 0v-6a1.5 1.5 0 013 0v6zM14 9.667v-5.43a2 2 0 00-1.105-1.79l-.05-.025A4 4 0 0011.055 2H5.64a2 2 0 00-1.962 1.608l-1.2 6A2 2 0 004.44 12H8v4a2 2 0 002 2 1 1 0 001-1v-.667a4 4 0 01.8-2.4l1.4-1.866a4 4 0 00.8-2.4z" />
+            <svg className="mt-1.5" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M12.4382 21.2216C12.2931 21.2682 12.1345 21.2569 11.9998 21.192C11.8523 21.1209 11.7548 20.9968 11.7197 20.8618L11.244 19.0279C11.0777 18.3866 10.8354 17.768 10.5235 17.184C10.0392 16.2773 9.30632 15.58 8.62647 14.9942L7.18773 13.7544C6.96475 13.5622 6.8474 13.2742 6.87282 12.9802L7.68498 3.58754C7.72601 3.11303 8.12244 2.75 8.59635 2.75H13.245C16.3813 2.75 19.0238 4.93226 19.5306 7.86285L20.2361 11.9426C20.3332 12.5041 19.9014 13.0158 19.3348 13.0158H14.1537C13.1766 13.0158 12.4344 13.8924 12.5921 14.8553L13.2548 18.8998C13.3456 19.4539 13.3197 20.0208 13.1787 20.5642C13.1072 20.8399 12.8896 21.0766 12.5832 21.175L12.4382 21.2216L12.6676 21.9356L12.4382 21.2216ZM11.3486 22.5433C11.8312 22.7758 12.3873 22.8135 12.897 22.6497L13.042 22.6031L12.8126 21.8891L13.042 22.6031C13.819 22.3535 14.4252 21.7328 14.6307 20.9408C14.8241 20.1952 14.8596 19.4174 14.7351 18.6573L14.0724 14.6128C14.0639 14.561 14.1038 14.5158 14.1537 14.5158H19.3348C20.8341 14.5158 21.9695 13.1635 21.7142 11.687L21.0087 7.60725C20.3708 3.91896 17.0712 1.25 13.245 1.25H8.59635C7.3427 1.25 6.29852 2.20975 6.19056 3.45832L5.3784 12.851C5.31149 13.6247 5.62022 14.3837 6.20855 14.8907L7.64729 16.1305C8.3025 16.6951 8.85404 17.2423 9.20042 17.8908C9.45699 18.3711 9.65573 18.8789 9.79208 19.4046L10.2678 21.2384C10.417 21.8137 10.8166 22.2869 11.3486 22.5433ZM2.96767 14.5151C3.36893 14.5324 3.71261 14.2306 3.74721 13.8304L4.71881 2.59389C4.78122 1.8721 4.21268 1.25 3.48671 1.25C2.80289 1.25 2.25 1.80474 2.25 2.48726V13.7658C2.25 14.1674 2.5664 14.4978 2.96767 14.5151Z" fill="#255C79" />
             </svg>
+
           </button>
         </div>
         <div>
@@ -432,7 +425,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
             <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4">
               {videoTitle}
             </h2>
-            
+
             {/* Toggle for HTML rendering approach */}
             {useDebugMode && (
               <div className="mb-3 flex items-center space-x-2">
@@ -451,7 +444,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
                 </button>
               </div>
             )}
-            
+
             {/* Reset any styles from the parent container */}
             <div className="reset-container mb-4">
               {useDirectHtml ? (
@@ -459,7 +452,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
                 <div
                   className="course-description rendered-html-content"
                   dangerouslySetInnerHTML={{
-                    __html: videoDescription ? 
+                    __html: videoDescription ?
                       // Keep only the content inside the body tag
                       videoDescription.replace(/<body[^>]*>([\s\S]*?)<\/body>/i, '$1')
                         // Remove all style tags
@@ -472,23 +465,23 @@ const VideoCard: React.FC<VideoCardProps> = ({
               ) : (
                 // Parser-based approach
                 <div className="course-description">
-                  {videoDescription ? parseHtmlContent(videoDescription) : 
+                  {videoDescription ? parseHtmlContent(videoDescription) :
                     <p className="text-gray-500 italic">No description available</p>
                   }
                 </div>
               )}
             </div>
-            
+
             {/* Debug toggle button */}
             <div className="mt-2">
-              <button 
-                onClick={() => setUseDebugMode(prev => !prev)} 
+              <button
+                onClick={() => setUseDebugMode(prev => !prev)}
                 className="text-xs px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
               >
                 {useDebugMode ? "Hide Debug Info" : "Show Debug Info"}
               </button>
             </div>
-            
+
             {useDebugMode && (
               <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
                 <p className="font-medium mb-1">Debug Info:</p>
@@ -497,7 +490,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
                 <p>Has HTML: {videoDescription?.includes('<') ? 'Yes' : 'No'}</p>
                 <p>Has body tag: {videoDescription?.includes('<body>') ? 'Yes' : 'No'}</p>
                 <p className="mb-2">First 200 chars: {videoDescription?.slice(0, 200)}...</p>
-                
+
                 <p className="font-medium mt-3 mb-1">Raw HTML Content:</p>
                 <div className="overflow-auto max-h-[300px] bg-white p-2 rounded border border-gray-300">
                   <pre className="whitespace-pre-wrap text-xs break-all">
@@ -516,7 +509,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
           </div>
         )}
         {activeTab === "comments" && (
-          <Comments 
+          <Comments
             contentId={contentId}
             courseId={courseId}
             isDarkTheme={false}

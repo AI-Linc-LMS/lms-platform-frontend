@@ -9,9 +9,9 @@ interface CommentsProps {
   clientId?: number; // Make clientId optional with a default value
 }
 
-const Comments: React.FC<CommentsProps> = ({ 
-  contentId, 
-  courseId, 
+const Comments: React.FC<CommentsProps> = ({
+  contentId,
+  courseId,
   isDarkTheme,
   clientId = 1 // Default value for clientId
 }) => {
@@ -53,9 +53,8 @@ const Comments: React.FC<CommentsProps> = ({
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
           placeholder="Add a comment..."
-          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-[border-gray-300] focus:border-transparent resize-none ${
-            isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-white text-black border-gray-300"
-          }`}
+          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-[border-gray-300] focus:border-transparent resize-none ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-white text-black border-gray-300"
+            }`}
           rows={3}
         />
         <div className="flex justify-end">
@@ -94,36 +93,36 @@ const Comments: React.FC<CommentsProps> = ({
                   <img
                     src={comment.user_profile?.profile_pic_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.user_profile?.user_name || 'User')}&background=0D8ABC&color=fff&size=128&rounded=true`}
                     alt={comment.user_profile?.user_name || 'User'}
-                    className="w-8 h-8 rounded-full object-cover"
+                    className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.user_profile?.user_name || 'User')}&background=0D8ABC&color=fff&size=128&rounded=true`;
                     }}
                   />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className={`font-semibold text-sm ${isDarkTheme ? "text-white" : "text-gray-500"}`}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`font-semibold text-sm ${isDarkTheme ? "text-white" : "text-gray-500"} truncate`}>
                           {comment.user_profile?.user_name || 'Anonymous User'}
                         </span>
                         {comment.user_profile?.role && (
-                          <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
+                          <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full whitespace-nowrap">
                             {comment.user_profile.role}
                           </span>
                         )}
                       </div>
-                      <span className={`text-xs ${isDarkTheme ? "text-white" : "text-gray-500"}`}>
-                        {new Date(comment.created_at).toLocaleString('en-GB', { 
-                          day: '2-digit', 
-                          month: 'short', 
-                          year: '2-digit', 
-                          hour: '2-digit', 
-                          minute: '2-digit', 
-                          hour12: true 
+                      <span className={`text-xs ${isDarkTheme ? "text-white" : "text-gray-500"} whitespace-nowrap`}>
+                        {new Date(comment.created_at).toLocaleString('en-GB', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: true
                         })}
                       </span>
                     </div>
-                    <p className={`mt-1 text-sm ${isDarkTheme ? "text-white" : "text-gray-500"} break-words max-w-[450px]`}>
+                    <p className={`mt-1 text-sm ${isDarkTheme ? "text-white" : "text-gray-500"} break-words`}>
                       {comment.text}
                     </p>
                     <div className="flex items-center gap-4 mt-2">
@@ -148,10 +147,10 @@ const Comments: React.FC<CommentsProps> = ({
             <div className="flex justify-center mt-4">
               <button
                 onClick={() => setVisibleComments(prev => prev + 5)}
-                className="px-4 py-2 text-sm text-[#255C79] hover:text-[#1e4a61] font-medium flex items-center space-x-1"
+                className="w-full sm:w-auto px-4 py-2 text-sm text-[#255C79] hover:text-[#1e4a61] font-medium flex items-center justify-center rounded-lg border border-[#255C79] hover:bg-gray-50"
               >
                 <span>See more comments</span>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
