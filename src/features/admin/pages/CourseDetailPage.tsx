@@ -42,9 +42,9 @@ const CourseDetailPage: React.FC = () => {
   };
 
   const handleSubtopicSubmit = (newSubtopic: Subtopic) => {
-    setTopics(prev => 
-      prev.map(topic => 
-        topic.id === currentTopicId 
+    setTopics(prev =>
+      prev.map(topic =>
+        topic.id === currentTopicId
           ? { ...topic, subtopics: [...topic.subtopics, newSubtopic] }
           : topic
       )
@@ -65,6 +65,12 @@ const CourseDetailPage: React.FC = () => {
     }
   };
 
+  const handlePublish = () => {
+    console.log('Publishing course:', courseId);
+    // In a real app, you would make an API call to publish the course
+    navigate('/admin/courses'); // Redirect back to courses page
+  };
+
   const handleDeleteTopic = (topicId: string) => {
     if (window.confirm('Are you sure you want to delete this topic?')) {
       setTopics(prev => prev.filter(topic => topic.id !== topicId));
@@ -78,8 +84,8 @@ const CourseDetailPage: React.FC = () => {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-6">
-        <button 
-          onClick={handleGoBack} 
+        <button
+          onClick={handleGoBack}
           className="text-gray-600 hover:text-gray-800 flex items-center"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
@@ -102,7 +108,7 @@ const CourseDetailPage: React.FC = () => {
           <p className="text-gray-600 mt-1">{courseMockData.description}</p>
         </div>
         <div className="flex gap-3">
-          <button 
+          <button
             onClick={handleDeleteCourse}
             className="flex items-center bg-red-50 text-red-500 px-4 py-2 rounded-md hover:bg-red-100 transition-colors"
           >
@@ -111,7 +117,7 @@ const CourseDetailPage: React.FC = () => {
             </svg>
             Delete this Course
           </button>
-          <button 
+          <button
             onClick={() => setIsTopicModalOpen(true)}
             className="bg-[#17627A] text-white px-4 py-2 rounded-md flex items-center hover:bg-[#124F65] transition-colors"
           >
@@ -120,6 +126,12 @@ const CourseDetailPage: React.FC = () => {
             </svg>
             Add Topics
           </button>
+          <div className="flex justify-end">
+            <button className="px-4 py-2 bg-[#17627A] hover:bg-[#124F65] text-white rounded-md transition"
+              onClick={handlePublish}>
+              Publish
+            </button>
+          </div>
         </div>
       </div>
 
@@ -145,7 +157,7 @@ const CourseDetailPage: React.FC = () => {
               <p className="text-gray-500 text-center max-w-md mb-6">
                 Start adding topics to your course to organize your content
               </p>
-              <button 
+              <button
                 onClick={() => setIsTopicModalOpen(true)}
                 className="bg-[#17627A] text-white px-6 py-2 rounded-md hover:bg-[#124F65] transition-colors"
               >

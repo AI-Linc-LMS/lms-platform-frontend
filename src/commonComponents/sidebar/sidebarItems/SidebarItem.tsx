@@ -26,7 +26,7 @@ const SidebarItem = ({
                 {linkInfo.icon}
               </div>
               <span
-                className={`text-xl ${
+                className={`text-lg ${
                   isActive ? "text-white" : "text-black"
                 }`}
               >
