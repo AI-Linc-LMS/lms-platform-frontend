@@ -3,7 +3,7 @@ import useUserActivityTracking from '../hooks/useUserActivityTracking';
 import { calculateCurrentSessionDuration, calculateTotalTimeWithSession, createActivityPayload, formatDateForApi } from '../utils/userActivitySync';
 import { simulateActivityEvent, getActivityDebugEvents, clearActivityDebugEvents, simulateDailyReset } from '../utils/activityDebugger';
 import { getSessionId, getDeviceInfo } from '../utils/deviceIdentifier';
-import { getHistoricalActivity } from '../utils/dailyReset';
+import { getHistoricalActivity, getNextResetTime, getTimeUntilNextReset } from '../utils/dailyReset';
 
 // New interface to track sync status
 interface SyncStatus {
@@ -30,6 +30,8 @@ const FloatingActivityTimer: React.FC = () => {
   const [deviceInfo, setDeviceInfo] = useState<{browser: string, os: string, deviceType: string} | null>(null);
   const [historicalActivity, setHistoricalActivity] = useState<Record<string, number>>({});
   const [showHistory, setShowHistory] = useState<boolean>(false);
+  const [timeUntilReset, setTimeUntilReset] = useState<string>('');
+  const [nextResetTime, setNextResetTime] = useState<Date>(getNextResetTime());
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     lastSync: null,
     status: 'idle',
@@ -41,6 +43,17 @@ const FloatingActivityTimer: React.FC = () => {
     setSessionId(getSessionId());
     setDeviceInfo(getDeviceInfo());
     setHistoricalActivity(getHistoricalActivity());
+    setNextResetTime(getNextResetTime());
+    setTimeUntilReset(getTimeUntilNextReset());
+  }, []);
+
+  // Update time until reset every minute
+  useEffect(() => {
+    const resetTimer = setInterval(() => {
+      setTimeUntilReset(getTimeUntilNextReset());
+    }, 60000); // Update every minute
+    
+    return () => clearInterval(resetTimer);
   }, []);
 
   // Update historical activity when the reset date changes
@@ -329,6 +342,23 @@ const FloatingActivityTimer: React.FC = () => {
     }, 500);
   };
 
+  // Last reset info
+  const renderResetInfo = () => {
+    if (!lastResetDate) return null;
+    
+    return (
+      <div className="mt-1 text-xs text-center">
+        <div className="text-gray-500">
+          Last reset: {new Date(lastResetDate).toLocaleDateString()}
+        </div>
+        <div className="text-gray-500 mt-1">
+          Next reset: <span className="font-medium">{nextResetTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span> 
+          <span className="ml-1 text-blue-500">({timeUntilReset})</span>
+        </div>
+      </div>
+    );
+  };
+
   // JSX for debug panel with session info
   const renderDebugPanel = () => {
     if (!showDebugging) return null;
@@ -359,12 +389,26 @@ const FloatingActivityTimer: React.FC = () => {
               </>
             )}
             {lastResetDate && (
-              <div className="flex justify-between mt-2 pt-2 border-t border-gray-200">
-                <span className="text-gray-500">Last Reset:</span>
-                <span className="text-gray-900 font-mono text-xs">
-                  {new Date(lastResetDate).toLocaleDateString()} {new Date(lastResetDate).toLocaleTimeString()}
-                </span>
-              </div>
+              <>
+                <div className="flex justify-between mt-2 pt-2 border-t border-gray-200">
+                  <span className="text-gray-500">Last Reset:</span>
+                  <span className="text-gray-900 font-mono text-xs">
+                    {new Date(lastResetDate).toLocaleDateString()} {new Date(lastResetDate).toLocaleTimeString()}
+                  </span>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <span className="text-gray-500">Next Reset:</span>
+                  <span className="text-gray-900 font-mono text-xs">
+                    {nextResetTime.toLocaleDateString()} {nextResetTime.toLocaleTimeString()}
+                  </span>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <span className="text-gray-500">Time Until Reset:</span>
+                  <span className="text-blue-600 font-mono text-xs">
+                    {timeUntilReset}
+                  </span>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -454,7 +498,15 @@ const FloatingActivityTimer: React.FC = () => {
             Recover Data
           </button>
           <button 
-            onClick={() => simulateDailyReset()} 
+            onClick={() => {
+              simulateDailyReset();
+              // Update reset time after simulation
+              setTimeout(() => {
+                setHistoricalActivity(getHistoricalActivity());
+                setNextResetTime(getNextResetTime());
+                setTimeUntilReset(getTimeUntilNextReset());
+              }, 500);
+            }} 
             className="bg-purple-100 hover:bg-purple-200 text-purple-800 px-2 py-1 rounded text-xs"
           >
             Simulate Reset
@@ -567,14 +619,8 @@ const FloatingActivityTimer: React.FC = () => {
           </div>
         </div>
         
-        {/* Last reset info */}
-        {lastResetDate && isExpanded && (
-          <div className="mt-1 text-xs text-center">
-            <span className="text-gray-500">
-              Reset: {new Date(lastResetDate).toLocaleDateString()}
-            </span>
-          </div>
-        )}
+        {/* Last reset info with next reset time */}
+        {lastResetDate && isExpanded && renderResetInfo()}
         
         {/* Recovered time indicator */}
         {recoveredTime !== null && (
@@ -627,8 +673,9 @@ const FloatingActivityTimer: React.FC = () => {
                   </span>
                 </div>
               )}
-              <div className="text-gray-500 text-center mt-1 border-t border-gray-200 pt-1">
-                <span className="text-xs italic">Activity tracking {isActive ? 'running' : 'paused'}</span>
+              <div className="flex justify-between text-blue-600 border-t border-gray-200 pt-1 mt-1">
+                <span>Next reset:</span>
+                <span>{timeUntilReset} remaining</span>
               </div>
             </div>
           </div>
