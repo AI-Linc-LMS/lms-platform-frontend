@@ -17,6 +17,8 @@ This documentation explains the user activity tracking system implemented in our
 - **Daily reset**: Automatically resets total time counter every 24 hours
 - **Historical tracking**: Maintains history of past days' activity times
 - **Precise timing**: Second-level accuracy in time tracking across all edge cases
+- **Data validation**: Validates all time data before storage or transmission
+- **Enhanced device fingerprinting**: Detailed device identification for accurate session tracking
 
 ## Technical Implementation
 
@@ -28,6 +30,7 @@ This documentation explains the user activity tracking system implemented in our
 - **ActivityTracking API Service**: Handles communication with the backend
 - **Device/Browser Identification**: Tracks unique session identifiers
 - **DailyReset**: Utility for handling 24-hour reset and historical tracking
+- **UserActivitySync**: Utilities for accurate time calculations and validation
 
 ### 2. Data Flow
 
@@ -51,13 +54,16 @@ This documentation explains the user activity tracking system implemented in our
 | Multiple browsers | Server-side aggregation by user ID |
 | Multiple devices | Server-side aggregation by user ID + device tracking |
 | Concurrent sessions | Session identification with timestamps to prevent double-counting |
-| Device clock skew | Server-side timestamp reconciliation |
+| Device clock skew | Time validation checks + server-side timestamp reconciliation |
 | Account switching | Session isolation by authentication state |
 | Day boundary crossed | Automatic detection and reset of total time |
 | Timezone changes | Date comparison uses local timezone consistently |
 | User active at reset time | Graceful handling with no data loss |
 | Disrupted reset | Safety mechanisms to prevent double resets or missed resets |
 | Session interruption | Active session time always included in backups and sync operations |
+| Negative time values | Validation to prevent negative durations from clock skew |
+| Unreasonably long sessions | Automatic capping of session duration to 24 hours maximum |
+| Invalid data | Data validation before storage and transmission |
 
 ### 4. Daily Reset Mechanism
 
@@ -85,11 +91,12 @@ The system handles users accessing their accounts from multiple devices or brows
 
 #### 5.1 Session Identification
 - Each device/browser session generates a unique session ID
-- Session IDs are included in activity payloads
+- Persistent device IDs track the same device across multiple sessions
+- Session IDs and device IDs are included in activity payloads
 - Backend associates all sessions with the user's account
 
 #### 5.2 Data Aggregation
-- Backend API consolidates activity data from all sources
+- Backend API consolidates activity data from multiple sources
 - Activity is grouped by date and user ID
 - Time calculations account for overlapping sessions
 
@@ -99,10 +106,11 @@ The system handles users accessing their accounts from multiple devices or brows
   - Session start/end timestamps help resolve time conflicts
   - If sessions report activity in the same minute, it's counted only once
 
-#### 5.4 Device Fingerprinting
-- Optional device identification data is sent with activity logs
+#### 5.4 Enhanced Device Fingerprinting
+- Detailed device identification data is sent with activity logs
 - Helps identify unique access points for the same account
-- Can include browser type, OS, and other non-personally-identifiable information
+- Includes browser type, OS, device type, screen size, color depth, timezone, and language
+- Fallback mechanisms ensure device identification works even with limited browser support
 
 ### 6. Precise Time Tracking
 
@@ -123,11 +131,19 @@ The system ensures accurate time tracking even across various edge cases:
 - Active session information stored separately from aggregate totals
 - Recovery prioritizes the most accurate and recent data sources
 
-#### 6.4 Edge Case Time Handling
+#### 6.4 Time Validation and Safety Checks
+- Validation of all time values before storage or transmission
+- Prevention of negative durations from clock skew
+- Capping of unreasonably long sessions (>24 hours)
+- Type checking to prevent NaN or undefined values
+- Consistent handling of edge cases across all time calculations
+
+#### 6.5 Edge Case Time Handling
 - Browser closing: active session time is captured and stored before the page unloads
 - Focus/blur events: session time is accurately recorded when switching tabs
 - Sleep/hibernate: power status changes trigger session management logic
 - Network disconnections: time continues tracking locally during offline periods
+- Clock changes: validation prevents issues from system time changes
 
 ### 7. API Integration
 
@@ -145,12 +161,18 @@ The system sends activity data to the backend API with the following details:
     "time-spend-seconds": 3720,  // exact seconds for precision
     "time-spend": 62,  // minutes for backward compatibility
     "current_session_duration": 120,  // current active session in seconds
-    "session_id": "uuid-v4-string",
+    "session_id": "session-uuid-v4-string",
+    "device_id": "device-uuid-v4-string",
     "device_info": {
       "browser": "Chrome",
       "os": "Windows",
-      "device_type": "desktop"
-    }
+      "deviceType": "desktop",
+      "screenSize": "1920x1080",
+      "colorDepth": 24,
+      "timezone": "America/New_York",
+      "language": "en-US"
+    },
+    "timestamp": 1624512345678  // client timestamp for verification
   }
   ```
 
@@ -167,11 +189,12 @@ VITE_CLIENT_ID=1
 
 The system uses multiple localStorage keys for redundancy:
 
-- `sessionBackup`: Complete session data including history
+- `sessionBackup`: Complete session data including history and active session
 - `totalTimeBackup`: Just the total time as a separate backup
 - `lastActivityState`: State when the user last interacted, including active session
 - `pendingActivityData`: Data waiting to be sent to backend
 - `sessionId`: Unique identifier for the current browser session
+- `deviceId`: Persistent identifier for the device across sessions
 - `lastActivityResetDate`: Date of the last daily reset
 - `activityHistory`: Historical record of daily totals
 
@@ -207,6 +230,10 @@ The system uses multiple localStorage keys for redundancy:
 
 14. **Active Session Tracking**: Ensures active sessions are always included in calculations and backups.
 
+15. **Data Validation**: Validates all time data to prevent inaccurate reporting from edge cases.
+
+16. **Enhanced Device Fingerprinting**: Provides detailed device identification for accurate session tracking.
+
 ### Cons
 
 1. **Browser Limitations**: Depends on browser APIs (localStorage, Beacon API) that have varying levels of support across browsers.
@@ -217,7 +244,7 @@ The system uses multiple localStorage keys for redundancy:
 
 4. **JavaScript Dependency**: Requires JavaScript to be enabled; won't work if users disable JavaScript.
 
-5. **Device Clock Reliance**: Accurate timing depends on client device clocks, which can be incorrect or manipulated.
+5. **Device Clock Reliance**: Accurate timing depends on client device clocks, though validation helps mitigate issues.
 
 6. **Potential Data Duplication**: May send redundant data when resolving conflicts across multiple devices.
 
@@ -262,6 +289,8 @@ The system logs detailed information to the browser console:
 - Multi-device session information
 - Daily reset events and historical data storage
 - Active session tracking and calculations
+- Time validation and safety checks
+- Error handling and recovery operations
 
 ### Testing Time Accuracy
 
@@ -272,11 +301,13 @@ To verify time tracking accuracy:
    - Base total time spent (excluding current session)
    - Current session duration in seconds
    - Combined total time in seconds
+   - Validation checks and any corrections made
 3. Verify that the API payload includes both exact seconds and rounded minutes
 4. Test edge cases like:
    - Closing and reopening the app
    - Switching tabs and returning
    - Simulating device sleep/wake
+   - Changing system clock (the system should handle this gracefully)
 5. Use the network tab to verify the data sent matches what's displayed
 
 ### Testing Multi-Device Scenarios
@@ -287,7 +318,7 @@ To test multi-device scenarios:
 2. Perform activities on each device
 3. Check the backend API for aggregated data
 4. Verify that activity time isn't double-counted
-5. Use the debug panel on each device to verify different session IDs
+5. Use the debug panel on each device to verify different session IDs but consistent device IDs
 
 ### Testing Daily Reset
 
@@ -332,7 +363,7 @@ If user activity isn't being tracked correctly:
 
 If multi-device tracking isn't working correctly:
 
-1. Verify the session ID is being generated and sent with activity data
+1. Verify the session ID and device ID are being generated and sent with activity data
 2. Check that the backend is aggregating data by user ID correctly
 3. Ensure authentication is consistent across devices
 4. Check for clock synchronization issues between devices
@@ -351,11 +382,13 @@ If the daily reset isn't working correctly:
 
 If time tracking seems inaccurate:
 
-1. Check the console logs for active session calculations
+1. Check the console logs for active session calculations and validation messages
 2. Verify that the floating timer shows both current session and total time
 3. Use the Direct API Call feature to check what's being sent to the backend
 4. Look for any discrepancies between displayed time and API payload
 5. Check if any browser extensions might be interfering with tab focus events
+6. Verify that time validation is working correctly by checking console logs
+7. Test with different browsers to identify browser-specific issues
 
 ## Best Practices
 
@@ -368,6 +401,8 @@ If time tracking seems inaccurate:
 7. When adding features, maintain the second-level accuracy of time tracking
 8. Always include active session time in total time calculations
 9. Test edge cases thoroughly when modifying timing-related code
+10. Validate all time values before storage or transmission
+11. Use the provided utility functions for time calculations to ensure consistency
 
 ## Django Admin Integration
 
