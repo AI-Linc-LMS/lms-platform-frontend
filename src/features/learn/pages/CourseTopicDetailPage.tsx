@@ -415,39 +415,7 @@ const CourseTopicDetailPage: React.FC = () => {
           if (updateBackend) {
             console.log(`Making API call to update problem ${problemId} status to ${status}`);
 
-            // Try both approaches to ensure one of them works
 
-            // Approach 1: Use updateContentStatus
-            // updateContentStatus(
-            //   1, // clientId 
-            //   parseInt(courseId || "0"), 
-            //   parseInt(problemId), 
-            //   status, 
-            //   'CodingProblem'
-            // )
-            // .then(success => {
-            //   console.log(`API call result (updateContentStatus): ${success ? 'Success' : 'Failed'}`);
-            // })
-            // .catch(error => {
-            //   console.error("Error with updateContentStatus:", error);
-
-            // If updateContentStatus fails, try submitContent directly
-            // console.log("Trying alternative approach with submitContent");
-            // submitContent(
-            //   1,
-            //   parseInt(courseId || "0"),
-            //   parseInt(problemId),
-            //   'CodingProblem',
-            //   { status },
-            //   'updateStatus'
-            // )
-            // .then(statusCode => {
-            //   console.log(`API call result (submitContent): Status code ${statusCode}`);
-            // })
-            // .catch(submitError => {
-            //   console.error("Error with submitContent:", submitError);
-            // });
-            //});
           }
         }
       } else {
