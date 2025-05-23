@@ -65,6 +65,12 @@ const CourseDetailPage: React.FC = () => {
     }
   };
 
+  const handlePublish = () => {
+    console.log('Publishing course:', courseId);
+    // In a real app, you would make an API call to publish the course
+    navigate('/admin/courses'); // Redirect back to courses page
+  };
+
   const handleDeleteTopic = (topicId: string) => {
     if (window.confirm('Are you sure you want to delete this topic?')) {
       setTopics(prev => prev.filter(topic => topic.id !== topicId));
@@ -120,6 +126,12 @@ const CourseDetailPage: React.FC = () => {
             </svg>
             Add Topics
           </button>
+          <div className="flex justify-end">
+            <button className="px-4 py-2 bg-[#17627A] hover:bg-[#124F65] text-white rounded-md transition"
+              onClick={handlePublish}>
+              Publish
+            </button>
+          </div>
         </div>
       </div>
 
