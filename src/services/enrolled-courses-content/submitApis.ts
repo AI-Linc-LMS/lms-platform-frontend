@@ -79,6 +79,7 @@ export const runCode = async (
     };
     
     const response = await axiosInstance.post(url, data);
+    console.log("Run code response:", response);
     return response.data;
   } catch (error: unknown) {
     console.error("Failed to run code:", error);
@@ -121,6 +122,7 @@ export const runCustomCode = async (
     };
     
     const response = await axiosInstance.post(url, data);
+    console.log("Run custom code response:", response);
     return response.data;
   } catch (error: unknown) {
     console.error("Failed to run custom code:", error);
@@ -169,7 +171,7 @@ export const submitCode = async (
         console.error("Failed to automatically mark problem as complete:", statusError);
       }
     }
-    
+    console.log("Submit code response:", response);
     return response.data;
   } catch (error: unknown) {
     console.error("Failed to submit code:", error);

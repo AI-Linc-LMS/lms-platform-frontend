@@ -61,13 +61,13 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         // Use type assertion for the details object
         const detailsObj = details as Record<string, unknown>;
         const languageValue = language.toLowerCase().replace(/\s+/g, '');
-        
+
         return {
           value: languageValue,
           label: language,
           language_id: typeof detailsObj.language_id === 'number' ? detailsObj.language_id : 0,
-          template: typeof detailsObj.template_code === 'string' 
-            ? detailsObj.template_code 
+          template: typeof detailsObj.template_code === 'string'
+            ? detailsObj.template_code
             : (typeof detailsObj.template === 'string' ? detailsObj.template : "")
         };
       });
@@ -105,18 +105,19 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const [customInput, setCustomInput] = useState("");
   const [customTestCase, setCustomTestCase] = useState<CustomTestCase>({ input: '' });
   const [isSubmitSuccess, setIsSubmitSuccess] = useState(false);
+  const [submitResult, setSubmitResult] = useState<{ status: string; passed: number; failed: number; total_test_cases: number } | null>(null);
 
   // Set default language when data is loaded
   useEffect(() => {
     if (data?.details?.template_code) {
       let defaultLanguage;
-      
+
       if (Array.isArray(data.details.template_code)) {
         defaultLanguage = data.details.template_code[0]?.language.toLowerCase().replace(/\s+/g, '');
       } else {
         defaultLanguage = Object.keys(data.details.template_code)[0]?.toLowerCase().replace(/\s+/g, '');
       }
-      
+
       // Handle special cases for Python 3
       if (defaultLanguage === 'python3') {
         setSelectedLanguage('python3');
@@ -131,14 +132,14 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     if (data?.details?.template_code && selectedLanguage) {
       // Normalize language for lookups
       const lookupLanguage = selectedLanguage;
-      
+
       if (Array.isArray(data.details.template_code)) {
         const template = data.details.template_code.find(
           (tc: { language: string }) => {
             const tcLang = tc.language.toLowerCase().replace(/\s+/g, '');
             // Match Python 3 and Python interchangeably
-            if ((tcLang === 'python' || tcLang === 'python3') && 
-                (lookupLanguage === 'python' || lookupLanguage === 'python3')) {
+            if ((tcLang === 'python' || tcLang === 'python3') &&
+              (lookupLanguage === 'python' || lookupLanguage === 'python3')) {
               return true;
             }
             return tcLang === lookupLanguage;
@@ -151,18 +152,18 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         // Handle object structure
         Object.entries(data.details.template_code).forEach(([language, details]) => {
           const lang = language.toLowerCase().replace(/\s+/g, '');
-          
+
           // Match Python 3 and Python interchangeably
-          const isPythonMatch = (lang === 'python' || lang === 'python3') && 
-                               (lookupLanguage === 'python' || lookupLanguage === 'python3');
-          
+          const isPythonMatch = (lang === 'python' || lang === 'python3') &&
+            (lookupLanguage === 'python' || lookupLanguage === 'python3');
+
           if (lang === lookupLanguage || isPythonMatch) {
             // Use type assertion for details
             const detailsObj = details as Record<string, unknown>;
-            const templateCode = typeof detailsObj.template_code === 'string' 
-              ? detailsObj.template_code 
+            const templateCode = typeof detailsObj.template_code === 'string'
+              ? detailsObj.template_code
               : (typeof detailsObj.template === 'string' ? detailsObj.template : "");
-            
+
             setCode(templateCode);
           }
         });
@@ -194,7 +195,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
   const getSelectedLanguageId = () => {
     if (!data?.details?.template_code || !selectedLanguage) return 0;
-    
+
     // Normalize language for lookups
     const lookupLanguage = selectedLanguage;
 
@@ -203,8 +204,8 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         (tc: { language: string }) => {
           const tcLang = tc.language.toLowerCase().replace(/\s+/g, '');
           // Match Python 3 and Python interchangeably
-          if ((tcLang === 'python' || tcLang === 'python3') && 
-              (lookupLanguage === 'python' || lookupLanguage === 'python3')) {
+          if ((tcLang === 'python' || tcLang === 'python3') &&
+            (lookupLanguage === 'python' || lookupLanguage === 'python3')) {
             return true;
           }
           return tcLang === lookupLanguage;
@@ -215,11 +216,11 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       // Handle object structure
       for (const [language, details] of Object.entries(data.details.template_code)) {
         const lang = language.toLowerCase().replace(/\s+/g, '');
-        
+
         // Match Python 3 and Python interchangeably
-        const isPythonMatch = (lang === 'python' || lang === 'python3') && 
-                             (lookupLanguage === 'python' || lookupLanguage === 'python3');
-        
+        const isPythonMatch = (lang === 'python' || lang === 'python3') &&
+          (lookupLanguage === 'python' || lookupLanguage === 'python3');
+
         if (lang === lookupLanguage || isPythonMatch) {
           // Use type assertion for details
           const detailsObj = details as Record<string, unknown>;
@@ -332,10 +333,16 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         console.log("Solution was accepted! Calling onComplete callback");
         setIsSubmitSuccess(true);
       } else {
-        console.log(`Solution ${success ? 'accepted' : 'rejected'}, onComplete callback: ${onComplete ? 'provided' : 'not provided'}`);
+        setSubmitResult({
+          status: data.status,
+          passed: data.passed,
+          failed: data.failed,
+          total_test_cases: data.total_test_cases
+        });
       }
 
       setIsSubmitting(false);
+      setIsRunning(false);
     },
     onError: (error) => {
       console.error("Error submitting code:", error);
@@ -344,6 +351,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         message: "Error submitting code. Please try again."
       });
       setIsSubmitting(false);
+      setIsRunning(false);
     }
   });
 
@@ -417,12 +425,41 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     runCustomCodeMutation.mutate(customInput);
   };
 
-  const handleSubmitCode = () => {
+  const handleSubmitCode = async () => {
     setIsSubmitting(true);
     setResults(null);
 
-    // Submit the code with the API
-    submitCodeMutation.mutate();
+    // First run the code to check test cases
+    setIsRunning(true);
+
+    try {
+      // Run the code first using mutation
+      const runResult = await runCodeMutation.mutateAsync();
+
+      // Check if all test cases passed
+      const allTestsPassed = runResult.results.every(result => result.status === "Accepted");
+
+      if (allTestsPassed) {
+        // If all tests passed, proceed with submission
+        submitCodeMutation.mutate();
+      } else {
+        // If any test failed, show error and don't submit
+        setResults({
+          success: false,
+          message: "Please fix the failing test cases before submitting."
+        });
+        setIsSubmitting(false);
+        setIsRunning(false);
+      }
+    } catch (error) {
+      console.error("Error running code:", error);
+      setResults({
+        success: false,
+        message: "Error running code. Please try again."
+      });
+      setIsSubmitting(false);
+      setIsRunning(false);
+    }
   };
 
   // Save theme preference
@@ -467,10 +504,8 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
   return (
     <div className={`problem-card-container rounded-2xl ${isDarkTheme ? 'dark-mode' : ''}`}>
-
-
       {isSubmitSuccess && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+        <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-white/30">
           <div className="bg-white p-6 rounded-lg shadow-xl max-w-md">
             <h3 className="text-xl font-bold text-green-600 mb-4">🎉 Problem Completed!</h3>
             <p className="text-gray-700 mb-6">
@@ -484,6 +519,42 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                 Continue
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {submitResult && !isSubmitSuccess && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-white/30">
+          <div className="flex flex-col bg-white p-6 px-8 rounded-lg shadow-xl max-w-md w-[400px]">
+            <h3 className="text-xl font-bold text-red-600 mb-4">Submission Failed</h3>
+            <div className="flex flex-row justify-between text-gray-700 mb-6 ">
+              <div>
+                <p className="mb-2">Status: {submitResult.status}</p>
+                <p className="mb-2">Total Test Cases: {submitResult.total_test_cases}</p>
+              </div>
+              <div className="flex flex-col">
+                <p className="mb-2">Failed: {submitResult.failed}</p>
+                <p className="mb-2">Passed: {submitResult.passed}</p>
+              </div>
+            </div>
+            <div className="flex justify-center">
+              <button
+                onClick={() => setSubmitResult(null)}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading Overlay */}
+      {isSubmitting && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-white/30">
+          <div className="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-700">Submitting your solution...</p>
           </div>
         </div>
       )}
@@ -631,12 +702,12 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           <div className="monaco-editor-wrapper" style={{ height: isConsoleOpen ? `calc(100% - ${consoleHeight}px)` : "100%" }}>
             <Editor
               height="100%"
-              language={selectedLanguage === 'python' ? 'python' : 
-                       selectedLanguage === 'python3' ? 'python' :
-                       selectedLanguage === 'cpp' ? 'cpp' : 
-                       selectedLanguage === 'c++' ? 'cpp' :
-                       selectedLanguage === 'java' ? 'java' :
-                       selectedLanguage}
+              language={selectedLanguage === 'python' ? 'python' :
+                selectedLanguage === 'python3' ? 'python' :
+                  selectedLanguage === 'cpp' ? 'cpp' :
+                    selectedLanguage === 'c++' ? 'cpp' :
+                      selectedLanguage === 'java' ? 'java' :
+                        selectedLanguage}
               value={code}
               onChange={handleCodeChange}
               theme={isDarkTheme ? "vs-dark" : "light"}
