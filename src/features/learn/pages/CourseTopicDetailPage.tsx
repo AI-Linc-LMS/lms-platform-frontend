@@ -291,8 +291,15 @@ const CourseTopicDetailPage: React.FC = () => {
   };
 
   const handleContentSelect = (contentId: number, contentType: "VideoTutorial" | "CodingProblem" | "Development" | "Assignment" | "Article" | "Quiz") => {
-    // If the same content is clicked twice, close the sidebar - this applies to all tabs now
-    if (selectedContentId === contentId) {
+    // For "All" tab - only close sidebar on second click of the same content
+    // For other tabs - close sidebar on first click
+    if (activeSidebarLabel === "All") {
+      // Close sidebar on second click in "All" tab
+      if (selectedContentId === contentId) {
+        setIsSidebarContentOpen(false);
+      }
+    } else {
+      // Close sidebar on first click for all other tabs
       setIsSidebarContentOpen(false);
     }
 
