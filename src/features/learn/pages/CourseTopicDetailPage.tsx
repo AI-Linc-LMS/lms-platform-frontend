@@ -215,7 +215,7 @@ const CourseTopicDetailPage: React.FC = () => {
   // Handle navigation to next content item
   const nextContent = () => {
     if (!submoduleData?.data) return;
-    
+
     const nextIndex = currentContentIndex + 1;
     if (nextIndex < submoduleData.data.length) {
       setCurrentContentIndex(nextIndex);
@@ -236,6 +236,8 @@ const CourseTopicDetailPage: React.FC = () => {
     if (label !== activeSidebarLabel) {
       setActiveSidebarLabel(label);
     }
+
+    // Make sure the sidebar is open when switching tabs
     setIsSidebarContentOpen(true);
 
     // Find the first content of the selected type
@@ -289,9 +291,21 @@ const CourseTopicDetailPage: React.FC = () => {
   };
 
   const handleContentSelect = (contentId: number, contentType: "VideoTutorial" | "CodingProblem" | "Development" | "Assignment" | "Article" | "Quiz") => {
+    // For "All" tab - only close sidebar on second click of the same content
+    // For other tabs - close sidebar on first click
+    if (activeSidebarLabel === "All") {
+      // Close sidebar on second click in "All" tab
+      if (selectedContentId === contentId) {
+        setIsSidebarContentOpen(false);
+      }
+    } else {
+      // Close sidebar on first click for all other tabs
+      setIsSidebarContentOpen(false);
+    }
+
     setSelectedContentId(contentId);
     setCurrentContentIndex(submoduleData?.data?.findIndex(content => content.id === contentId) ?? 0);
-    
+
     // Update the selected ID based on the content type without changing activeSidebarLabel
     switch (contentType) {
       case "VideoTutorial":
@@ -322,7 +336,7 @@ const CourseTopicDetailPage: React.FC = () => {
       const videoIndex = updatedData.findIndex(
         content => content.content_type === 'VideoTutorial' && content.id.toString() === videoId
       );
-      
+
       if (videoIndex !== -1) {
         // Mark as complete if progress ≥ 95%
         if (progressPercent >= 95) {
@@ -334,11 +348,11 @@ const CourseTopicDetailPage: React.FC = () => {
           // Mark as in_progress with progress percentage
           updatedData[videoIndex] = {
             ...updatedData[videoIndex],
-            status: 'in_progress', 
+            status: 'in_progress',
             progress_percentage: progressPercent
           };
         }
-        
+
         // Update submodule data with new progress
         // Note: In a real app, this would call an API to persist progress
         // For this demo, we're just updating the local state
@@ -351,7 +365,7 @@ const CourseTopicDetailPage: React.FC = () => {
           // In a real app, you'd use a state management system or context API
           const w = window as unknown as { temporarySubmoduleData: SubmoduleData };
           w.temporarySubmoduleData = newSubmoduleData;
-          
+
           // Force re-render sidebar components
           setSelectedVideoId(prevId => {
             if (prevId === videoId) return prevId; // No change to avoid unnecessary re-renders
@@ -365,13 +379,13 @@ const CourseTopicDetailPage: React.FC = () => {
   // Update the updateProblemStatus function to take an optional parameter to skip API calls
   const updateProblemStatus = (problemId: string, status: string, updateBackend: boolean = true): void => {
     console.log(`Updating problem ${problemId} status to ${status}, updateBackend=${updateBackend}`);
-    
+
     if (submoduleData?.data) {
       const updatedData = [...submoduleData.data];
       const problemIndex = updatedData.findIndex(
         content => content.content_type === 'CodingProblem' && content.id.toString() === problemId
       );
-      
+
       if (problemIndex !== -1) {
         console.log(`Found problem at index ${problemIndex}`);
         // First update the state in memory for immediate UI feedback
@@ -379,61 +393,29 @@ const CourseTopicDetailPage: React.FC = () => {
           ...updatedData[problemIndex],
           status: status
         };
-        
+
         // Update submodule data with new status
         if (submoduleData) {
           const newSubmoduleData: SubmoduleData = {
             ...submoduleData,
             data: updatedData
           };
-          
+
           // Local update for immediate UI feedback
           const w = window as unknown as { temporarySubmoduleData: SubmoduleData };
           w.temporarySubmoduleData = newSubmoduleData;
-          
+
           // Force re-render sidebar components
           setSelectedProblemId(prevId => {
             if (prevId === problemId) return prevId; // No change to avoid unnecessary re-renders
             return problemId; // Change to force re-render
           });
-          
+
           // Then make API call to persist the change in the backend if requested
           if (updateBackend) {
             console.log(`Making API call to update problem ${problemId} status to ${status}`);
-            
-            // Try both approaches to ensure one of them works
-            
-            // Approach 1: Use updateContentStatus
-            // updateContentStatus(
-            //   1, // clientId 
-            //   parseInt(courseId || "0"), 
-            //   parseInt(problemId), 
-            //   status, 
-            //   'CodingProblem'
-            // )
-            // .then(success => {
-            //   console.log(`API call result (updateContentStatus): ${success ? 'Success' : 'Failed'}`);
-            // })
-            // .catch(error => {
-            //   console.error("Error with updateContentStatus:", error);
-              
-              // If updateContentStatus fails, try submitContent directly
-              // console.log("Trying alternative approach with submitContent");
-              // submitContent(
-              //   1,
-              //   parseInt(courseId || "0"),
-              //   parseInt(problemId),
-              //   'CodingProblem',
-              //   { status },
-              //   'updateStatus'
-              // )
-              // .then(statusCode => {
-              //   console.log(`API call result (submitContent): Status code ${statusCode}`);
-              // })
-              // .catch(submitError => {
-              //   console.error("Error with submitContent:", submitError);
-              // });
-            //});
+
+
           }
         }
       } else {
@@ -506,7 +488,7 @@ const CourseTopicDetailPage: React.FC = () => {
       </div>
     );
   }
- 
+
   // Find the current content item
   const currentContent = submoduleData.data[currentContentIndex];
   console.log("Current Content ID:", currentContent?.id);
@@ -546,7 +528,7 @@ const CourseTopicDetailPage: React.FC = () => {
         {/* Mobile sidebar content panel - shown as an overlay */}
         {isMobile && isSidebarContentOpen && (
           <div className="fixed inset-0 z-40">
-            <div 
+            <div
               className="absolute inset-0 bg-black/50"
               onClick={() => setIsSidebarContentOpen(false)}
             ></div>
@@ -580,7 +562,7 @@ const CourseTopicDetailPage: React.FC = () => {
         )}
 
         {/* Main Content */}
-        <div 
+        <div
           className={`flex-1 mt-6 px-4 md:px-0 ${isMobile ? 'w-full mb-4' : ''} ${isSidebarContentOpen && !isMobile ? "md:ml-12" : ""} overflow-hidden`}
         >
           {isMobile && (
@@ -593,7 +575,7 @@ const CourseTopicDetailPage: React.FC = () => {
               </div>
             </div>
           )}
-          
+
           {/* Floating button to open sidebar content on mobile */}
           {isMobile && (
             <button
@@ -606,7 +588,7 @@ const CourseTopicDetailPage: React.FC = () => {
               </svg>
             </button>
           )}
-          
+
           {/* Content display based on active tab */}
           <div className={`mb-20 md:mb-0 ${!isSidebarContentOpen ? "ml-12" : ""}`}>
             {currentContent?.content_type === "VideoTutorial" && (
