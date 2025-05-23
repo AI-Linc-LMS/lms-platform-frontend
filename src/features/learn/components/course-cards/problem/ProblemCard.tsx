@@ -54,23 +54,35 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   // Get available languages from template codes
   const availableLanguages = React.useMemo(() => {
     if (!data?.details?.template_code) return [];
-    
+
     // Handle template_code as object
     if (!Array.isArray(data.details.template_code)) {
-      return Object.entries(data.details.template_code).map(([language, details]: [string, any]) => ({
-        value: language.toLowerCase().replace(/\s+/g, ''),
-        label: language,
-        language_id: details.language_id || 0,
-        template: details.template || ""
-      }));
+      return Object.entries(data.details.template_code).map(([language, details]) => {
+        // Use type assertion for the details object
+        const detailsObj = details as Record<string, unknown>;
+        const languageValue = language.toLowerCase().replace(/\s+/g, '');
+        
+        return {
+          value: languageValue,
+          label: language,
+          language_id: typeof detailsObj.language_id === 'number' ? detailsObj.language_id : 0,
+          template: typeof detailsObj.template_code === 'string' 
+            ? detailsObj.template_code 
+            : (typeof detailsObj.template === 'string' ? detailsObj.template : "")
+        };
+      });
     }
-    
+
     // Handle template_code as array (original implementation)
-    return data.details.template_code.map((tc: { language: string; language_id: number }) => ({
-      value: tc.language.toLowerCase().replace(/\s+/g, ''),
-      label: tc.language,
-      language_id: tc.language_id
-    })) || [];
+    return data.details.template_code.map((tc: { language: string; language_id: number; template_code: string }) => {
+      const languageValue = tc.language.toLowerCase().replace(/\s+/g, '');
+      return {
+        value: languageValue,
+        label: tc.language,
+        language_id: tc.language_id,
+        template: tc.template_code
+      };
+    }) || [];
   }, [data?.details?.template_code]);
 
   const [code, setCode] = useState("");
@@ -96,20 +108,41 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
   // Set default language when data is loaded
   useEffect(() => {
-    if (data?.details?.template_code && data.details.template_code.length > 0) {
-      const defaultLanguage = Array.isArray(data.details.template_code)
-        ? data.details.template_code[0].language.toLowerCase().replace(/\s+/g, '')
-        : Object.keys(data.details.template_code)[0]?.toLowerCase().replace(/\s+/g, '');
-      setSelectedLanguage(defaultLanguage);
+    if (data?.details?.template_code) {
+      let defaultLanguage;
+      
+      if (Array.isArray(data.details.template_code)) {
+        defaultLanguage = data.details.template_code[0]?.language.toLowerCase().replace(/\s+/g, '');
+      } else {
+        defaultLanguage = Object.keys(data.details.template_code)[0]?.toLowerCase().replace(/\s+/g, '');
+      }
+      
+      // Handle special cases for Python 3
+      if (defaultLanguage === 'python3') {
+        setSelectedLanguage('python3');
+      } else {
+        setSelectedLanguage(defaultLanguage || '');
+      }
     }
   }, [data]);
 
   // Initialize code with template when data is loaded or language changes
   useEffect(() => {
     if (data?.details?.template_code && selectedLanguage) {
+      // Normalize language for lookups
+      const lookupLanguage = selectedLanguage;
+      
       if (Array.isArray(data.details.template_code)) {
         const template = data.details.template_code.find(
-          (tc: { language: string }) => tc.language.toLowerCase().replace(/\s+/g, '') === selectedLanguage
+          (tc: { language: string }) => {
+            const tcLang = tc.language.toLowerCase().replace(/\s+/g, '');
+            // Match Python 3 and Python interchangeably
+            if ((tcLang === 'python' || tcLang === 'python3') && 
+                (lookupLanguage === 'python' || lookupLanguage === 'python3')) {
+              return true;
+            }
+            return tcLang === lookupLanguage;
+          }
         );
         if (template) {
           setCode(template.template_code);
@@ -117,8 +150,20 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       } else {
         // Handle object structure
         Object.entries(data.details.template_code).forEach(([language, details]) => {
-          if (language.toLowerCase().replace(/\s+/g, '') === selectedLanguage) {
-            setCode((details as any).template || "");
+          const lang = language.toLowerCase().replace(/\s+/g, '');
+          
+          // Match Python 3 and Python interchangeably
+          const isPythonMatch = (lang === 'python' || lang === 'python3') && 
+                               (lookupLanguage === 'python' || lookupLanguage === 'python3');
+          
+          if (lang === lookupLanguage || isPythonMatch) {
+            // Use type assertion for details
+            const detailsObj = details as Record<string, unknown>;
+            const templateCode = typeof detailsObj.template_code === 'string' 
+              ? detailsObj.template_code 
+              : (typeof detailsObj.template === 'string' ? detailsObj.template : "");
+            
+            setCode(templateCode);
           }
         });
       }
@@ -150,16 +195,35 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const getSelectedLanguageId = () => {
     if (!data?.details?.template_code || !selectedLanguage) return 0;
     
+    // Normalize language for lookups
+    const lookupLanguage = selectedLanguage;
+
     if (Array.isArray(data.details.template_code)) {
       const template = data.details.template_code.find(
-        (tc: { language: string }) => tc.language.toLowerCase().replace(/\s+/g, '') === selectedLanguage
+        (tc: { language: string }) => {
+          const tcLang = tc.language.toLowerCase().replace(/\s+/g, '');
+          // Match Python 3 and Python interchangeably
+          if ((tcLang === 'python' || tcLang === 'python3') && 
+              (lookupLanguage === 'python' || lookupLanguage === 'python3')) {
+            return true;
+          }
+          return tcLang === lookupLanguage;
+        }
       );
       return template?.language_id || 0;
     } else {
       // Handle object structure
       for (const [language, details] of Object.entries(data.details.template_code)) {
-        if (language.toLowerCase().replace(/\s+/g, '') === selectedLanguage) {
-          return (details as any).language_id || 0;
+        const lang = language.toLowerCase().replace(/\s+/g, '');
+        
+        // Match Python 3 and Python interchangeably
+        const isPythonMatch = (lang === 'python' || lang === 'python3') && 
+                             (lookupLanguage === 'python' || lookupLanguage === 'python3');
+        
+        if (lang === lookupLanguage || isPythonMatch) {
+          // Use type assertion for details
+          const detailsObj = details as Record<string, unknown>;
+          return typeof detailsObj.language_id === 'number' ? detailsObj.language_id : 0;
         }
       }
       return 0;
@@ -470,7 +534,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
               )}
 
               {activeTab === 'submission' && (
-                <Submissions 
+                <Submissions
                   contentId={contentId}
                   courseId={courseId}
                   isDarkTheme={isDarkTheme}
@@ -478,7 +542,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
               )}
 
               {activeTab === 'comments' && (
-                <Comments 
+                <Comments
                   contentId={contentId}
                   courseId={courseId}
                   isDarkTheme={isDarkTheme}
@@ -567,7 +631,12 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           <div className="monaco-editor-wrapper" style={{ height: isConsoleOpen ? `calc(100% - ${consoleHeight}px)` : "100%" }}>
             <Editor
               height="100%"
-              language={selectedLanguage}
+              language={selectedLanguage === 'python' ? 'python' : 
+                       selectedLanguage === 'python3' ? 'python' :
+                       selectedLanguage === 'cpp' ? 'cpp' : 
+                       selectedLanguage === 'c++' ? 'cpp' :
+                       selectedLanguage === 'java' ? 'java' :
+                       selectedLanguage}
               value={code}
               onChange={handleCodeChange}
               theme={isDarkTheme ? "vs-dark" : "light"}
