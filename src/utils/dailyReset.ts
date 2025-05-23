@@ -118,4 +118,38 @@ export const performDailyReset = (currentTotalTime: number): number => {
     // Return the current time in case of failure (don't reset)
     return currentTotalTime;
   }
+};
+
+/**
+ * Gets the next reset time (midnight in the user's local timezone)
+ * @returns Date object representing the next reset time
+ */
+export const getNextResetTime = (): Date => {
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+  return tomorrow;
+};
+
+/**
+ * Formats time until next reset in a human-readable format
+ * @returns String representing time until next reset (e.g., "3h 45m")
+ */
+export const getTimeUntilNextReset = (): string => {
+  const now = new Date();
+  const nextReset = getNextResetTime();
+  
+  // Calculate difference in milliseconds
+  const diffMs = nextReset.getTime() - now.getTime();
+  
+  // Convert to hours and minutes
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (diffHours > 0) {
+    return `${diffHours}h ${diffMinutes}m`;
+  } else {
+    return `${diffMinutes}m`;
+  }
 }; 
