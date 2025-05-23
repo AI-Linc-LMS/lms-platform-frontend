@@ -42,7 +42,53 @@ const STORAGE_KEYS = {
   SESSION_BACKUP: 'sessionBackup',
   TOTAL_TIME_BACKUP: 'totalTimeBackup',
   LAST_RESET_DATE: 'lastActivityResetDate',
-  ACTIVITY_HISTORY: 'activityHistory'
+  ACTIVITY_HISTORY: 'activityHistory',
+  LAST_SYNC_DATA: 'lastSyncData',
+  LAST_SYNC_TIME: 'lastSyncTime'
+};
+
+// Minimum time between syncs to prevent duplicates (in milliseconds)
+const MIN_SYNC_INTERVAL = 30000; // 30 seconds
+
+// Function to check if we should skip sync due to recent identical sync
+const shouldSkipDuplicateSync = (totalTimeInSeconds: number): boolean => {
+  try {
+    const lastSyncTimeStr = localStorage.getItem(STORAGE_KEYS.LAST_SYNC_TIME);
+    const lastSyncDataStr = localStorage.getItem(STORAGE_KEYS.LAST_SYNC_DATA);
+    
+    if (!lastSyncTimeStr || !lastSyncDataStr) {
+      return false;
+    }
+    
+    const lastSyncTime = parseInt(lastSyncTimeStr, 10);
+    const lastSyncData = parseInt(lastSyncDataStr, 10);
+    const now = Date.now();
+    
+    // If we synced the same data recently, skip this sync
+    if (now - lastSyncTime < MIN_SYNC_INTERVAL && lastSyncData === totalTimeInSeconds) {
+      logActivityEvent('Skipping duplicate sync', { 
+        timeSinceLastSync: now - lastSyncTime,
+        lastSyncData,
+        currentData: totalTimeInSeconds
+      });
+      return true;
+    }
+    
+    return false;
+  } catch {
+    // If there's any error in the deduplication logic, don't block the sync
+    return false;
+  }
+};
+
+// Function to record a successful sync for deduplication
+const recordSuccessfulSync = (totalTimeInSeconds: number): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.LAST_SYNC_TIME, Date.now().toString());
+    localStorage.setItem(STORAGE_KEYS.LAST_SYNC_DATA, totalTimeInSeconds.toString());
+  } catch {
+    logActivityEvent('Failed to record sync data');
+  }
 };
 
 const initialState: UserActivityContextType = {
@@ -66,17 +112,17 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         // Get the last stored total time before resetting
         const totalTimeBackupStr = localStorage.getItem(STORAGE_KEYS.TOTAL_TIME_BACKUP);
         let prevTotalTime = 0;
-        
+
         if (totalTimeBackupStr) {
           prevTotalTime = parseInt(totalTimeBackupStr, 10);
           if (isNaN(prevTotalTime)) {
             prevTotalTime = 0;
           }
         }
-        
+
         // Perform the daily reset, storing the previous total and resetting to 0
         performDailyReset(prevTotalTime);
-        
+
         // Return a fresh state with zeroed total time
         return {
           ...initialState,
@@ -84,11 +130,11 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
           lastResetDate: new Date().toISOString()
         };
       }
-      
+
       // Regular initialization (no daily reset needed)
       const backupDataStr = localStorage.getItem(STORAGE_KEYS.SESSION_BACKUP);
       const lastResetStr = localStorage.getItem(STORAGE_KEYS.LAST_RESET_DATE);
-      
+
       if (backupDataStr) {
         const backupData = JSON.parse(backupDataStr);
         logActivityEvent('Recovered state from backup', backupData);
@@ -119,11 +165,11 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       // Check if we need to reset the daily counter
       if (shouldResetDailyActivity()) {
         logActivityEvent('Initiating daily reset check');
-        
+
         setActivityState(prev => {
           // Store the current total before resetting
           const resetResult = performDailyReset(prev.totalTimeSpent);
-          
+
           return {
             ...prev,
             totalTimeSpent: resetResult,
@@ -132,7 +178,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         });
       }
     }, 60000); // Check every minute
-    
+
     return () => clearInterval(checkDailyResetInterval);
   }, []);
 
@@ -140,26 +186,46 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
   useEffect(() => {
     const backupInterval = setInterval(() => {
       try {
+        // Calculate current session duration if there's an active session
+        let currentTotalTime = activityState.totalTimeSpent;
+        let currentSessionDuration = 0;
+
+        if (activityState.isActive && activityState.currentSessionStart) {
+          currentSessionDuration = Math.floor((Date.now() - activityState.currentSessionStart) / 1000);
+          if (currentSessionDuration > 0) {
+            currentTotalTime += currentSessionDuration;
+          }
+        }
+
         localStorage.setItem(STORAGE_KEYS.SESSION_BACKUP, JSON.stringify({
-          totalTimeSpent: activityState.totalTimeSpent,
+          totalTimeSpent: currentTotalTime,
           activityHistory: activityState.activityHistory,
-          lastBackup: Date.now()
+          lastBackup: Date.now(),
+          activeSessionDuration: currentSessionDuration > 0 ? currentSessionDuration : null
         }));
-        
+
         // Also store just the total time as a separate item for extra redundancy
-        localStorage.setItem(STORAGE_KEYS.TOTAL_TIME_BACKUP, activityState.totalTimeSpent.toString());
+        localStorage.setItem(STORAGE_KEYS.TOTAL_TIME_BACKUP, currentTotalTime.toString());
+
+        // Log backup with active session info if applicable
+        if (currentSessionDuration > 0) {
+          logActivityEvent('Periodic backup with active session', {
+            totalTime: currentTotalTime,
+            sessionDuration: currentSessionDuration
+          });
+        }
       } catch (error) {
         logActivityEvent('Failed to backup state', { error: (error as Error).message });
       }
     }, 10000); // Every 10 seconds
-    
+
     return () => clearInterval(backupInterval);
-  }, [activityState.totalTimeSpent, activityState.activityHistory]);
+  }, [activityState.totalTimeSpent, activityState.activityHistory, activityState.isActive, activityState.currentSessionStart]);
 
   // Start session when component mounts
   useEffect(() => {
     logActivityEvent('UserActivityProvider mounted');
-    
+
     // Check for pending activity data that may not have been sent
     try {
       const pendingDataStr = localStorage.getItem(STORAGE_KEYS.PENDING_ACTIVITY_DATA);
@@ -170,7 +236,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
     } catch (error) {
       logActivityEvent('Error checking for pending data', { error: (error as Error).message });
     }
-    
+
     // Ensure we have a reset date set (for initial app usage)
     if (!localStorage.getItem(STORAGE_KEYS.LAST_RESET_DATE)) {
       markDailyReset();
@@ -179,7 +245,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         lastResetDate: new Date().toISOString()
       }));
     }
-    
+
     startSession();
 
     // Add event listeners for browser visibility and focus
@@ -187,7 +253,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
     window.addEventListener('focus', handleFocus);
     window.addEventListener('blur', handleBlur);
     window.addEventListener('beforeunload', handleBeforeUnload);
-    
+
     // Add additional events for power-related events (works in some browsers)
     const navigatorWithBattery = navigator as NavigatorWithBattery;
     if (navigatorWithBattery.getBattery) {
@@ -197,21 +263,21 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         logActivityEvent('Battery API not available', { error: err.message });
       });
     }
-    
+
     // Network status change
     window.addEventListener('online', handleNetworkChange);
     window.addEventListener('offline', handleNetworkChange);
-    
+
     // Additional browser-specific events that might indicate the user is leaving
     window.addEventListener('pagehide', handlePageHide);
     document.addEventListener('freeze', handlePageFreeze);
-    
+
     // Check network status immediately
     if (navigator.onLine) {
       // Try to send any pending data
       syncPendingData();
     }
-    
+
     logActivityEvent('Event listeners added');
 
     // Cleanup event listeners when component unmounts
@@ -225,7 +291,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       window.removeEventListener('offline', handleNetworkChange);
       window.removeEventListener('pagehide', handlePageHide);
       document.removeEventListener('freeze', handlePageFreeze);
-      
+
       const navigatorWithBattery = navigator as NavigatorWithBattery;
       if (navigatorWithBattery.getBattery) {
         navigatorWithBattery.getBattery().then((battery: BatteryManager) => {
@@ -234,7 +300,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
           // Silently fail if not available
         });
       }
-      
+
       // End the session when component unmounts
       endSession();
     };
@@ -244,7 +310,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
   const startSession = () => {
     const now = Date.now();
     logActivityEvent('Starting new session', { timestamp: now });
-    
+
     setActivityState(prev => ({
       ...prev,
       isActive: true,
@@ -259,22 +325,39 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         logActivityEvent('End session called but no active session found');
         return prev;
       }
-      
+
       const now = Date.now();
-      const sessionDuration = Math.floor((now - prev.currentSessionStart) / 1000);
-      
+      let sessionDuration = Math.floor((now - prev.currentSessionStart) / 1000);
+
+      // Safety check: ensure session duration is positive and reasonable
+      if (sessionDuration < 0) {
+        logActivityEvent('Negative session duration detected, using 0', {
+          startTime: prev.currentSessionStart,
+          endTime: now,
+          calculatedDuration: sessionDuration
+        });
+        sessionDuration = 0;
+      } else if (sessionDuration > 86400) { // More than 24 hours
+        logActivityEvent('Unreasonably long session detected, capping at 24 hours', {
+          startTime: prev.currentSessionStart,
+          endTime: now,
+          calculatedDuration: sessionDuration
+        });
+        sessionDuration = 86400;
+      }
+
       const newSession: ActivitySession = {
         startTime: prev.currentSessionStart,
         endTime: now,
         duration: sessionDuration,
       };
-      
-      logActivityEvent('Ending session', { 
+
+      logActivityEvent('Ending session', {
         startTime: new Date(prev.currentSessionStart).toISOString(),
         endTime: new Date(now).toISOString(),
         duration: sessionDuration
       });
-      
+
       const newState = {
         ...prev,
         isActive: false,
@@ -282,7 +365,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         totalTimeSpent: prev.totalTimeSpent + sessionDuration,
         activityHistory: [...prev.activityHistory, newSession],
       };
-      
+
       // Immediately backup the state after ending a session
       try {
         localStorage.setItem(STORAGE_KEYS.SESSION_BACKUP, JSON.stringify({
@@ -294,7 +377,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       } catch (error) {
         logActivityEvent('Failed to backup state after session end', { error: (error as Error).message });
       }
-      
+
       return newState;
     });
   };
@@ -302,7 +385,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
   // Handle document visibility change (user switches tabs or minimizes window)
   const handleVisibilityChange = () => {
     logActivityEvent('Visibility changed', { visibilityState: document.visibilityState });
-    
+
     if (document.visibilityState === 'visible') {
       startSession();
     } else {
@@ -357,13 +440,13 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       // Calculate current session duration if there's an active session
       let currentTotalTime = activityState.totalTimeSpent;
       let currentSessionDuration = 0;
-      
+
       if (activityState.isActive && activityState.currentSessionStart) {
         currentSessionDuration = Math.floor((Date.now() - activityState.currentSessionStart) / 1000);
         currentTotalTime += currentSessionDuration;
         logActivityEvent('Including active session in backup', { sessionDuration: currentSessionDuration });
       }
-      
+
       // Store the state including active session data
       localStorage.setItem(STORAGE_KEYS.LAST_ACTIVITY_STATE, JSON.stringify({
         totalTimeSpent: currentTotalTime,
@@ -371,12 +454,12 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         lastSeen: Date.now(),
         activeSessionDuration: currentSessionDuration > 0 ? currentSessionDuration : null
       }));
-      
+
       // Also store the current total time as a separate backup
       localStorage.setItem(STORAGE_KEYS.TOTAL_TIME_BACKUP, currentTotalTime.toString());
-      
+
       if (currentSessionDuration > 0) {
-        logActivityEvent('Backed up state with active session', { 
+        logActivityEvent('Backed up state with active session', {
           totalTime: currentTotalTime,
           sessionDuration: currentSessionDuration
         });
@@ -392,7 +475,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
   const handleNetworkChange = () => {
     const isOnline = navigator.onLine;
     logActivityEvent('Network status changed', { online: isOnline });
-    
+
     if (!isOnline) {
       // Save state to local storage when going offline
       backupCurrentState();
@@ -434,6 +517,20 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       // Parse the pending data
       const pendingData = JSON.parse(pendingDataStr);
       
+      // Validate the data before sending
+      if (typeof pendingData.totalTimeSpent !== 'number' || pendingData.totalTimeSpent < 0) {
+        logActivityEvent('Invalid pending data detected', { pendingData });
+        localStorage.removeItem(STORAGE_KEYS.PENDING_ACTIVITY_DATA);
+        return;
+      }
+      
+      // Check for duplicate sync
+      if (shouldSkipDuplicateSync(pendingData.totalTimeSpent)) {
+        localStorage.removeItem(STORAGE_KEYS.PENDING_ACTIVITY_DATA);
+        logActivityEvent('Skipped duplicate pending data sync');
+        return;
+      }
+      
       // Format data for API
       const syncData = {
         date: formattedDate,
@@ -441,8 +538,14 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         "time-spend": Math.round(pendingData.totalTimeSpent / 60), // Keep minutes for backward compatibility
         session_id: session_id,
         device_info: device_info,
-        user_id: userId // Include user ID for server-side aggregation
+        user_id: userId, // Include user ID for server-side aggregation
+        timestamp: Date.now() // Include client timestamp for verification
       };
+      
+      logActivityEvent('Syncing pending data', { 
+        totalSeconds: pendingData.totalTimeSpent,
+        apiUrl: `${apiUrl}/activity/clients/${clientId}/activity-log/`
+      });
       
       // Prepare the fetch request
       fetch(`${apiUrl}/activity/clients/${clientId}/activity-log/`, {
@@ -453,18 +556,26 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         },
         body: JSON.stringify(syncData)
       })
-      .then(response => {
-        if (response.ok) {
-          // Clear the pending data only after a successful sync
-          localStorage.removeItem(STORAGE_KEYS.PENDING_ACTIVITY_DATA);
-          logActivityEvent('Synced pending activity data successfully');
-        } else {
-          throw new Error(`Sync failed with status ${response.status}`);
-        }
-      })
-      .catch(error => {
-        logActivityEvent('Failed to sync pending data', { error: (error as Error).message });
-      });
+        .then(response => {
+          if (response.ok) {
+            // Clear the pending data only after a successful sync
+            localStorage.removeItem(STORAGE_KEYS.PENDING_ACTIVITY_DATA);
+            logActivityEvent('Synced pending activity data successfully');
+            
+            // Record this sync to prevent duplicates
+            recordSuccessfulSync(pendingData.totalTimeSpent);
+            
+            return response.json();
+          } else {
+            throw new Error(`Sync failed with status ${response.status}`);
+          }
+        })
+        .then(data => {
+          logActivityEvent('Sync response received', { response: data });
+        })
+        .catch(error => {
+          logActivityEvent('Failed to sync pending data', { error: (error as Error).message });
+        });
     } catch (error) {
       logActivityEvent('Error processing pending data', { error: (error as Error).message });
     }
@@ -518,6 +629,12 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         return;
       }
       
+      // Check for duplicate sync
+      if (shouldSkipDuplicateSync(totalTimeToSend)) {
+        logActivityEvent('Skipped duplicate beacon sync');
+        return;
+      }
+      
       // Format data for API
       const today = new Date();
       const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -531,16 +648,24 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         "time-spend": Math.round(totalTimeToSend / 60), // Keep minutes for backward compatibility
         session_id: session_id,
         device_info: device_info,
-        current_session_duration: currentSessionDuration // Send current session separately for diagnostics
+        current_session_duration: currentSessionDuration, // Send current session separately for diagnostics
+        user_id: localStorage.getItem('userId') || 'anonymous',
+        timestamp: Date.now()
       };
       
       // Use the Beacon API which is designed for exit events
       const blob = new Blob([JSON.stringify(beaconData)], { type: 'application/json' });
-      navigator.sendBeacon(`${apiUrl}/activity/clients/${clientId}/activity-log/`, blob);
+      const success = navigator.sendBeacon(`${apiUrl}/activity/clients/${clientId}/activity-log/`, blob);
+      
+      if (success) {
+        // Record this sync to prevent duplicates
+        recordSuccessfulSync(totalTimeToSend);
+      }
       
       logActivityEvent('Sent activity data via beacon', { 
         totalSeconds: totalTimeToSend,
-        currentSessionSeconds: currentSessionDuration
+        currentSessionSeconds: currentSessionDuration,
+        success
       });
     } catch (error) {
       logActivityEvent('Failed to send via beacon', { error: (error as Error).message });
@@ -550,26 +675,26 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
   // Handle page unload (user closes the tab or navigates away)
   const handleBeforeUnload = () => {
     logActivityEvent('Before unload event');
-    
+
     // End the current session if active
     endSession();
-    
+
     // Try to send data using beacon API
     sendActivityDataUsingBeacon();
-    
+
     // Also backup current state
     backupCurrentState();
-    
+
     // Calculate the most accurate total time
     let accurateTotalTime = activityState.totalTimeSpent;
-    
+
     // If there's still an active session (rare but possible due to event timing)
     if (activityState.isActive && activityState.currentSessionStart) {
       const currentSessionDuration = Math.floor((Date.now() - activityState.currentSessionStart) / 1000);
       accurateTotalTime += currentSessionDuration;
       logActivityEvent('Including active session in before unload', { sessionDuration: currentSessionDuration });
     }
-    
+
     // Store data to be synced on next visit
     try {
       localStorage.setItem(STORAGE_KEYS.PENDING_ACTIVITY_DATA, JSON.stringify({
@@ -590,8 +715,10 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       // We don't end the session here, just send the current data
       try {
         const clientId = import.meta.env.VITE_CLIENT_ID;
-        if (!clientId) {
-          logActivityEvent('Client ID not found, cannot sync');
+        const apiUrl = import.meta.env.VITE_API_URL;
+        
+        if (!clientId || !apiUrl) {
+          logActivityEvent('Client ID or API URL not found, cannot sync');
           return;
         }
         
@@ -599,10 +726,22 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         let currentSessionDuration = 0;
         if (activityState.isActive && activityState.currentSessionStart) {
           currentSessionDuration = Math.floor((Date.now() - activityState.currentSessionStart) / 1000);
+          
+          // Safety check for negative duration (clock skew)
+          if (currentSessionDuration < 0) {
+            logActivityEvent('Negative session duration detected in periodic sync, using 0');
+            currentSessionDuration = 0;
+          }
         }
         
         // Total time in seconds, including current session if active
         const totalTimeInSeconds = activityState.totalTimeSpent + currentSessionDuration;
+        
+        // Check for duplicate sync
+        if (shouldSkipDuplicateSync(totalTimeInSeconds)) {
+          logActivityEvent('Skipped duplicate periodic sync');
+          return;
+        }
         
         // Format date in YYYY-MM-DD format
         const today = new Date();
@@ -615,14 +754,22 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
           "time-spend": Math.round(totalTimeInSeconds / 60), // Minutes for backward compatibility
           current_session_duration: currentSessionDuration, // Include current session data for diagnostics
           session_id: getDeviceFingerprint().session_id,
-          device_info: getDeviceFingerprint().device_info
+          device_info: getDeviceFingerprint().device_info,
+          user_id: localStorage.getItem('userId') || 'anonymous',
+          timestamp: Date.now() // Include client timestamp for verification
         };
         
         // Also backup the state
         backupCurrentState();
         
+        logActivityEvent('Sending periodic sync data', { 
+          totalSeconds: totalTimeInSeconds,
+          sessionDuration: currentSessionDuration,
+          apiUrl: `${apiUrl}/activity/clients/${clientId}/activity-log/`
+        });
+        
         // Send using fetch instead of beacon for periodic updates
-        fetch(`${import.meta.env.VITE_API_URL || ''}/activity/clients/${clientId}/activity-log/`, {
+        fetch(`${apiUrl}/activity/clients/${clientId}/activity-log/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -633,6 +780,10 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
           if (!response.ok) {
             throw new Error(`API responded with status ${response.status}`);
           }
+          
+          // Record this sync to prevent duplicates
+          recordSuccessfulSync(totalTimeInSeconds);
+          
           return response.json();
         }).then(data => {
           logActivityEvent('Periodic sync successful', { 
@@ -662,7 +813,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
     const quickBackupInterval = setInterval(() => {
       backupCurrentState();
     }, 30 * 1000); // Every 30 seconds
-    
+
     return () => clearInterval(quickBackupInterval);
   }, [activityState]);
 
@@ -671,7 +822,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
     logActivityEvent('Activity state updated', {
       isActive: activityState.isActive,
       totalTimeSpent: activityState.totalTimeSpent,
-      currentSessionStart: activityState.currentSessionStart ? 
+      currentSessionStart: activityState.currentSessionStart ?
         new Date(activityState.currentSessionStart).toISOString() : null,
       sessionsCount: activityState.activityHistory.length
     });

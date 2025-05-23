@@ -3,115 +3,172 @@
  * Provides functions to generate unique session IDs and collect device information
  */
 
-// Using a fallback UUID generator if uuid package is not installed
-const generateUUID = (): string => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-};
+import { v4 as uuidv4 } from 'uuid';
 
-// Storage key for persistent session ID
-const SESSION_ID_KEY = 'activity_session_id';
-
-/**
- * Generate or retrieve a session ID for the current browser session
- * This ID persists through the current browser session and allows
- * the backend to identify concurrent sessions from the same user account
- */
-export const getSessionId = (): string => {
-  const sessionId = localStorage.getItem(SESSION_ID_KEY);
-  
-  if (!sessionId) {
-    const newSessionId = generateUUID();
-    localStorage.setItem(SESSION_ID_KEY, newSessionId);
-    return newSessionId;
-  }
-  
-  return sessionId;
-};
-
-/**
- * Get basic information about the current browser and device
- * This is non-invasive information that helps identify sessions
- * without collecting personally identifiable information
- */
-export const getDeviceInfo = (): { 
+// Interface for device information
+export interface DeviceInfo {
   browser: string;
   os: string;
   deviceType: string;
-} => {
-  const userAgent = navigator.userAgent;
-  
-  // Detect browser
-  let browser = 'Unknown';
-  if (userAgent.indexOf('Firefox') > -1) {
-    browser = 'Firefox';
-  } else if (userAgent.indexOf('SamsungBrowser') > -1) {
-    browser = 'Samsung Browser';
-  } else if (userAgent.indexOf('Opera') > -1 || userAgent.indexOf('OPR') > -1) {
-    browser = 'Opera';
-  } else if (userAgent.indexOf('Trident') > -1) {
-    browser = 'Internet Explorer';
-  } else if (userAgent.indexOf('Edge') > -1) {
-    browser = 'Edge';
-  } else if (userAgent.indexOf('Chrome') > -1) {
-    browser = 'Chrome';
-  } else if (userAgent.indexOf('Safari') > -1) {
-    browser = 'Safari';
-  }
-  
-  // Detect OS
-  let os = 'Unknown';
-  if (userAgent.indexOf('Windows NT 10.0') > -1) {
-    os = 'Windows 10';
-  } else if (userAgent.indexOf('Windows NT 6.2') > -1) {
-    os = 'Windows 8';
-  } else if (userAgent.indexOf('Windows NT 6.1') > -1) {
-    os = 'Windows 7';
-  } else if (userAgent.indexOf('Windows NT 6.0') > -1) {
-    os = 'Windows Vista';
-  } else if (userAgent.indexOf('Windows NT 5.1') > -1) {
-    os = 'Windows XP';
-  } else if (userAgent.indexOf('Windows NT 5.0') > -1) {
-    os = 'Windows 2000';
-  } else if (userAgent.indexOf('Mac') > -1) {
-    os = 'MacOS';
-  } else if (userAgent.indexOf('X11') > -1) {
-    os = 'UNIX';
-  } else if (userAgent.indexOf('Linux') > -1) {
-    os = 'Linux';
-  } else if (userAgent.indexOf('Android') > -1) {
-    os = 'Android';
-  } else if (userAgent.indexOf('like Mac') > -1) {
-    os = 'iOS';
-  }
-  
-  // Detect device type
-  let deviceType = 'desktop';
-  if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent)) {
-    deviceType = 'mobile';
+  screenSize?: string;
+  colorDepth?: number;
+  timezone?: string;
+  language?: string;
+}
+
+// Storage key for the session ID
+const SESSION_ID_KEY = 'sessionId';
+const DEVICE_ID_KEY = 'deviceId';
+
+/**
+ * Generates a unique session ID for the current browser session
+ * or retrieves the existing one from localStorage
+ * @returns Session ID string
+ */
+export const getSessionId = (): string => {
+  try {
+    // Try to get existing session ID
+    let sessionId = localStorage.getItem(SESSION_ID_KEY);
     
-    if (userAgent.indexOf('iPad') > -1 || 
-        (userAgent.indexOf('Macintosh') > -1 && 'ontouchend' in document)) {
-      deviceType = 'tablet';
+    // If no session ID exists, create a new one
+    if (!sessionId) {
+      sessionId = `session-${uuidv4()}`;
+      localStorage.setItem(SESSION_ID_KEY, sessionId);
     }
+    
+    return sessionId;
+  } catch (error) {
+    // Fallback if localStorage is not available
+    console.error('Failed to get/create session ID:', error);
+    return `session-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
   }
-  
-  return {
-    browser,
-    os,
-    deviceType
-  };
 };
 
 /**
- * Get a complete device fingerprint object to send with activity data
+ * Generates or retrieves a persistent device ID that survives across sessions
+ * @returns Device ID string
+ */
+export const getDeviceId = (): string => {
+  try {
+    // Try to get existing device ID
+    let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+    
+    // If no device ID exists, create a new one
+    if (!deviceId) {
+      deviceId = `device-${uuidv4()}`;
+      localStorage.setItem(DEVICE_ID_KEY, deviceId);
+    }
+    
+    return deviceId;
+  } catch (error) {
+    // Fallback if localStorage is not available
+    console.error('Failed to get/create device ID:', error);
+    return `device-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+  }
+};
+
+/**
+ * Detects the user's browser
+ * @returns Browser name and version if available
+ */
+export const detectBrowser = (): string => {
+  const userAgent = navigator.userAgent;
+  
+  // Detect common browsers
+  if (userAgent.indexOf('Firefox') > -1) {
+    return 'Firefox';
+  } else if (userAgent.indexOf('SamsungBrowser') > -1) {
+    return 'Samsung Browser';
+  } else if (userAgent.indexOf('Opera') > -1 || userAgent.indexOf('OPR') > -1) {
+    return 'Opera';
+  } else if (userAgent.indexOf('Trident') > -1) {
+    return 'Internet Explorer';
+  } else if (userAgent.indexOf('Edge') > -1 || userAgent.indexOf('Edg') > -1) {
+    return 'Edge';
+  } else if (userAgent.indexOf('Chrome') > -1) {
+    return 'Chrome';
+  } else if (userAgent.indexOf('Safari') > -1) {
+    return 'Safari';
+  } else {
+    return 'Unknown';
+  }
+};
+
+/**
+ * Detects the user's operating system
+ * @returns Operating system name
+ */
+export const detectOS = (): string => {
+  const userAgent = navigator.userAgent;
+  
+  // Detect common operating systems
+  if (userAgent.indexOf('Windows') > -1) {
+    return 'Windows';
+  } else if (userAgent.indexOf('Mac') > -1) {
+    return 'MacOS';
+  } else if (userAgent.indexOf('Linux') > -1) {
+    return 'Linux';
+  } else if (userAgent.indexOf('Android') > -1) {
+    return 'Android';
+  } else if (userAgent.indexOf('iOS') > -1 || userAgent.indexOf('iPhone') > -1 || userAgent.indexOf('iPad') > -1) {
+    return 'iOS';
+  } else {
+    return 'Unknown';
+  }
+};
+
+/**
+ * Detects the user's device type
+ * @returns Device type (desktop, mobile, tablet)
+ */
+export const detectDeviceType = (): string => {
+  const userAgent = navigator.userAgent;
+  
+  // Check for mobile or tablet
+  if (/(tablet|ipad|playbook|silk)|(android(?!.*mobile))/i.test(userAgent)) {
+    return 'tablet';
+  } else if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(userAgent)) {
+    return 'mobile';
+  } else {
+    return 'desktop';
+  }
+};
+
+/**
+ * Gets information about the user's device
+ * @returns Device information object
+ */
+export const getDeviceInfo = (): DeviceInfo => {
+  try {
+    const screenSize = `${window.screen.width}x${window.screen.height}`;
+    
+    return {
+      browser: detectBrowser(),
+      os: detectOS(),
+      deviceType: detectDeviceType(),
+      screenSize,
+      colorDepth: window.screen.colorDepth,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      language: navigator.language
+    };
+  } catch (error) {
+    console.error('Failed to get device info:', error);
+    return {
+      browser: 'unknown',
+      os: 'unknown',
+      deviceType: 'unknown'
+    };
+  }
+};
+
+/**
+ * Gets a complete device fingerprint including session ID and device info
+ * @returns Object containing session_id and device_info
  */
 export const getDeviceFingerprint = () => {
   return {
     session_id: getSessionId(),
+    device_id: getDeviceId(),
     device_info: getDeviceInfo()
   };
 }; 

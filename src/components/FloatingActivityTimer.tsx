@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import useUserActivityTracking from '../hooks/useUserActivityTracking';
-import { calculateCurrentSessionDuration } from '../utils/userActivitySync';
+import { calculateCurrentSessionDuration, calculateTotalTimeWithSession, createActivityPayload, formatDateForApi } from '../utils/userActivitySync';
 import { simulateActivityEvent, getActivityDebugEvents, clearActivityDebugEvents, simulateDailyReset } from '../utils/activityDebugger';
 import { getSessionId, getDeviceInfo } from '../utils/deviceIdentifier';
 import { getHistoricalActivity } from '../utils/dailyReset';
@@ -11,6 +11,12 @@ interface SyncStatus {
   status: 'idle' | 'syncing' | 'success' | 'failed';
   message: string;
 }
+
+// Storage keys for deduplication (must match UserActivityContext)
+const STORAGE_KEYS = {
+  LAST_SYNC_DATA: 'lastSyncData',
+  LAST_SYNC_TIME: 'lastSyncTime'
+};
 
 const FloatingActivityTimer: React.FC = () => {
   const { isActive, totalTimeSpent, currentSessionStart, formatTime, activityHistory, recoverFromLocalStorage, lastResetDate } = useUserActivityTracking();
@@ -115,58 +121,6 @@ const FloatingActivityTimer: React.FC = () => {
     setDebugEvents([]);
   };
 
-  // Force manual sync for testing
-  const handleForceSync = () => {
-    setSyncStatus({
-      lastSync: Date.now(),
-      status: 'syncing',
-      message: 'Manual sync...'
-    });
-    
-    // Check environment variables
-    const apiUrl = import.meta.env.VITE_API_URL;
-    const clientId = import.meta.env.VITE_CLIENT_ID;
-    
-    // Calculate current session duration if active
-    let currentSessionDuration = 0;
-    if (isActive && currentSessionStart) {
-      currentSessionDuration = calculateCurrentSessionDuration(isActive, currentSessionStart);
-    }
-    
-    // Total time including current session if active
-    const totalTimeInSeconds = totalTimeSpent + currentSessionDuration;
-    
-    console.log('API URL:', apiUrl);
-    console.log('Client ID:', clientId);
-    console.log('Current total time spent (seconds):', totalTimeSpent);
-    console.log('Current session duration (seconds):', currentSessionDuration);
-    console.log('Total time incl. current session (seconds):', totalTimeInSeconds);
-    
-    // Format date in YYYY-MM-DD format for logging
-    const today = new Date();
-    const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    
-    // Log what would be sent
-    console.log('Data to be sent:', {
-      date: formattedDate,
-      "time-spend-seconds": totalTimeInSeconds,
-      "time-spend": Math.round(totalTimeInSeconds / 60)
-    });
-    
-    // Simulate closing/opening tab to trigger API call
-    simulateActivityEvent('blur');
-    setTimeout(() => simulateActivityEvent('focus'), 500);
-    
-    setTimeout(() => {
-      setDebugEvents(getActivityDebugEvents());
-      setSyncStatus({
-        lastSync: Date.now(),
-        status: 'success', 
-        message: 'Manual sync completed'
-      });
-    }, 1000);
-  };
-
   // Direct API call for testing (bypasses simulation)
   const handleDirectApiCall = () => {
     setSyncStatus({
@@ -188,34 +142,53 @@ const FloatingActivityTimer: React.FC = () => {
       return;
     }
     
-    // Format date in YYYY-MM-DD format
-    const today = new Date();
-    const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    // Calculate accurate total time including current session
+    const totalTimeInSeconds = calculateTotalTimeWithSession(
+      totalTimeSpent,
+      isActive,
+      currentSessionStart
+    );
     
     // Calculate current session duration if active
-    let currentSessionDuration = 0;
-    if (isActive && currentSessionStart) {
-      currentSessionDuration = calculateCurrentSessionDuration(isActive, currentSessionStart);
+    const currentSessionDuration = calculateCurrentSessionDuration(
+      isActive, 
+      currentSessionStart
+    );
+    
+    // Check for duplicate sync (within last 30 seconds)
+    try {
+      const lastSyncTimeStr = localStorage.getItem(STORAGE_KEYS.LAST_SYNC_TIME);
+      const lastSyncDataStr = localStorage.getItem(STORAGE_KEYS.LAST_SYNC_DATA);
+      
+      if (lastSyncTimeStr && lastSyncDataStr) {
+        const lastSyncTime = parseInt(lastSyncTimeStr, 10);
+        const lastSyncData = parseInt(lastSyncDataStr, 10);
+        const now = Date.now();
+        
+        // If we synced the same data in the last 30 seconds, warn the user
+        if (now - lastSyncTime < 30000 && lastSyncData === totalTimeInSeconds) {
+          console.warn('Duplicate sync detected! The same data was sent less than 30 seconds ago.');
+          console.log('Proceeding anyway since this is a manual test call...');
+        }
+      }
+    } catch {
+      // Ignore errors in duplicate detection for manual calls
     }
     
-    // Total time including current session if active
-    const totalTimeInSeconds = totalTimeSpent + currentSessionDuration;
-    
-    // Prepare the data in the format required by the API
-    const activityData = {
-      date: formattedDate,
-      "time-spend-seconds": totalTimeInSeconds, // Send exact seconds for precision
-      "time-spend": Math.round(totalTimeInSeconds / 60), // Keep minutes for backward compatibility
-      session_id: sessionId,
-      device_info: deviceInfo,
-      current_session_duration: currentSessionDuration // Include current session separately for diagnostics
-    };
+    // Create standardized API payload
+    const activityData = createActivityPayload(
+      totalTimeInSeconds,
+      currentSessionDuration,
+      sessionId,
+      deviceInfo || { browser: 'unknown', os: 'unknown', deviceType: 'unknown' }
+    );
     
     console.log('DIRECT API CALL');
     console.log('Endpoint:', `${apiUrl}/activity/clients/${clientId}/activity-log/`);
     console.log('Data:', activityData);
     console.log('Current session duration (seconds):', currentSessionDuration);
     console.log('Total time incl. current session (seconds):', totalTimeInSeconds);
+    console.log('User ID:', activityData.user_id);
     
     // Setup fetch options
     const fetchOptions = {
@@ -240,6 +213,15 @@ const FloatingActivityTimer: React.FC = () => {
       })
       .then(data => {
         console.log('API Response:', data);
+        
+        // Record this sync to prevent duplicates in automatic syncs
+        try {
+          localStorage.setItem(STORAGE_KEYS.LAST_SYNC_TIME, Date.now().toString());
+          localStorage.setItem(STORAGE_KEYS.LAST_SYNC_DATA, totalTimeInSeconds.toString());
+        } catch {
+          console.log('Failed to record sync data');
+        }
+        
         setSyncStatus({
           lastSync: Date.now(),
           status: 'success',
@@ -259,6 +241,61 @@ const FloatingActivityTimer: React.FC = () => {
           message: `Failed: ${e.message}`
         });
       });
+  };
+
+  // Force manual sync for testing
+  const handleForceSync = () => {
+    setSyncStatus({
+      lastSync: Date.now(),
+      status: 'syncing',
+      message: 'Manual sync...'
+    });
+    
+    // Check environment variables
+    const apiUrl = import.meta.env.VITE_API_URL;
+    const clientId = import.meta.env.VITE_CLIENT_ID;
+    
+    // Calculate accurate total time including current session
+    const totalTimeInSeconds = calculateTotalTimeWithSession(
+      totalTimeSpent,
+      isActive,
+      currentSessionStart
+    );
+    
+    // Calculate current session duration if active
+    const currentSessionDuration = calculateCurrentSessionDuration(
+      isActive, 
+      currentSessionStart
+    );
+    
+    console.log('API URL:', apiUrl);
+    console.log('Client ID:', clientId);
+    console.log('Current total time spent (seconds):', totalTimeSpent);
+    console.log('Current session duration (seconds):', currentSessionDuration);
+    console.log('Total time incl. current session (seconds):', totalTimeInSeconds);
+    
+    // Format date in YYYY-MM-DD format for logging
+    const formattedDate = formatDateForApi();
+    
+    // Log what would be sent
+    console.log('Data to be sent:', {
+      date: formattedDate,
+      "time-spend-seconds": totalTimeInSeconds,
+      "time-spend": Math.round(totalTimeInSeconds / 60)
+    });
+    
+    // Simulate closing/opening tab to trigger API call
+    simulateActivityEvent('blur');
+    setTimeout(() => simulateActivityEvent('focus'), 500);
+    
+    setTimeout(() => {
+      setDebugEvents(getActivityDebugEvents());
+      setSyncStatus({
+        lastSync: Date.now(),
+        status: 'success', 
+        message: 'Manual sync completed'
+      });
+    }, 1000);
   };
 
   // Handle recovery from localStorage
