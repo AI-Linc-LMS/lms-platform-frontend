@@ -101,11 +101,14 @@ const AllContent = ({ contents, onContentClick, selectedContentId, activeLabel }
   // Select first content only when All tab is first opened
   useEffect(() => {
     if (sortedContents.length > 0 && activeLabel === "All" && isFirstRender.current) {
-      const firstContent = sortedContents[0];
-      onContentClick(firstContent.id, firstContent.content_type);
+      // Only auto-select if no content is currently selected
+      if (!selectedContentId) {
+        const firstContent = sortedContents[0];
+        onContentClick(firstContent.id, firstContent.content_type);
+      }
       isFirstRender.current = false;
     }
-  }, [sortedContents, activeLabel, onContentClick]);
+  }, [sortedContents, activeLabel, onContentClick, selectedContentId]);
 
   const getIconByType = (type: ContentType) => {
     switch (type) {

@@ -236,6 +236,8 @@ const CourseTopicDetailPage: React.FC = () => {
     if (label !== activeSidebarLabel) {
       setActiveSidebarLabel(label);
     }
+    
+    // Make sure the sidebar is open when switching tabs
     setIsSidebarContentOpen(true);
 
     // Find the first content of the selected type
@@ -289,9 +291,14 @@ const CourseTopicDetailPage: React.FC = () => {
   };
 
   const handleContentSelect = (contentId: number, contentType: "VideoTutorial" | "CodingProblem" | "Development" | "Assignment" | "Article" | "Quiz") => {
+    // If the same content is clicked twice, close the sidebar - this applies to all tabs now
+    if (selectedContentId === contentId) {
+      setIsSidebarContentOpen(false);
+    }
+
     setSelectedContentId(contentId);
     setCurrentContentIndex(submoduleData?.data?.findIndex(content => content.id === contentId) ?? 0);
-
+    
     // Update the selected ID based on the content type without changing activeSidebarLabel
     switch (contentType) {
       case "VideoTutorial":
