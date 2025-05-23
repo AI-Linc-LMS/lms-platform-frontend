@@ -573,7 +573,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                             setSelectedLanguage(option.value);
                             setIsDropdownHovered(false);
                           }}
-                          className={`px-3 py-1 cursor-pointer hover:bg-gray-100 text-gray-700 ${isDarkTheme ? "hover:bg-gray-700" : ""}`}
+                          className={`px-3 py-1 cursor-pointer hover:bg-gray-100  ${isDarkTheme ? "hover:bg-gray-700" : ""}`}
                         >
                           {option.label}
                         </li>
