@@ -214,56 +214,74 @@ interface CourseCardProps {
 
 const CourseCard: React.FC<CourseCardProps> = ({ course, onEditClick }) => {
   return (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
-      <div className="p-4">
-        <div className="bg-blue-50 p-2 rounded-md mb-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">{course.title}</h3>
-            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-md">Pro</span>
+    <div className="bg-white rounded-lg border border-[#80C9E0] overflow-hidden max-w-[500px]">
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-semibold">{course.title}</h3>
+          <span className="bg-blue-50 text-blue-800 text-sm px-3 py-1 rounded-full">Pro</span>
+        </div>
+        <p className="text-gray-600 mb-8">{course.description}</p>
+
+        <div className="grid grid-cols-6 gap-2 mb-8">
+          <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+            </svg>
+            <span className="text-sm font-medium">86</span>
           </div>
-          <p className="text-sm text-gray-600 mt-1">{course.description}</p>
+          <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+              <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+            </svg>
+            <span className="text-sm font-medium">86</span>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+            </svg>
+            <span className="text-sm font-medium">86</span>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+              <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm9 1a1 1 0 00-1 1v6a1 1 0 002 0V7a1 1 0 00-1-1zm-5 1a1 1 0 00-1 1v6a1 1 0 002 0V7a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <span className="text-sm font-medium">86</span>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+            </svg>
+            <span className="text-sm font-medium">86</span>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+            <span className="text-sm font-medium">86</span>
+          </div>
         </div>
 
-        <div className="grid grid-cols-6 gap-2 mb-4">
-          <div className="bg-gray-100 rounded-md p-2 flex items-center justify-center">
-            <span className="text-sm">86</span>
-          </div>
-          <div className="bg-gray-100 rounded-md p-2 flex items-center justify-center">
-            <span className="text-sm">86</span>
-          </div>
-          <div className="bg-gray-100 rounded-md p-2 flex items-center justify-center">
-            <span className="text-sm">86</span>
-          </div>
-          <div className="bg-gray-100 rounded-md p-2 flex items-center justify-center">
-            <span className="text-sm">86</span>
-          </div>
-          <div className="bg-gray-100 rounded-md p-2 flex items-center justify-center">
-            <span className="text-sm">86</span>
-          </div>
-          <div className="bg-gray-100 rounded-md p-2 flex items-center justify-center">
-            <span className="text-sm">86</span>
-          </div>
-        </div>
-
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-gray-600 mb-8">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut et massa mi. Aliquam in hendrerit urna.
         </p>
 
-        <div className="mb-4">
+        <div className="mb-8">
           <div className="text-sm text-gray-600 mb-2">Trusted by:</div>
-          <div className="flex space-x-1">
-            <div className="w-6 h-6 rounded-full bg-red-400"></div>
-            <div className="w-6 h-6 rounded-full bg-blue-400"></div>
-            <div className="w-6 h-6 rounded-full bg-yellow-400"></div>
-            <div className="w-6 h-6 rounded-full bg-gray-400"></div>
+          <div className="flex space-x-2">
+            <img src="https://via.placeholder.com/24" alt="Google" className="w-6 h-6 rounded-full" />
+            <img src="https://via.placeholder.com/24" alt="Microsoft" className="w-6 h-6 rounded-full" />
+            <img src="https://via.placeholder.com/24" alt="TCS" className="w-6 h-6 rounded-full" />
+            <img src="https://via.placeholder.com/24" alt="Wipro" className="w-6 h-6 rounded-full" />
           </div>
         </div>
 
         <button 
-          className="w-full bg-blue-50 text-blue-700 py-2 rounded-md flex items-center justify-center"
+          className="w-full bg-[#D7EFF6] text-[#264D64] border border-[#80C9E0] py-3 rounded-md flex items-center justify-center"
           onClick={onEditClick}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
           </svg>
           Edit Course
