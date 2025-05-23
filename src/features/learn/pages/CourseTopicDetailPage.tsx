@@ -236,7 +236,7 @@ const CourseTopicDetailPage: React.FC = () => {
     if (label !== activeSidebarLabel) {
       setActiveSidebarLabel(label);
     }
-    
+
     // Make sure the sidebar is open when switching tabs
     setIsSidebarContentOpen(true);
 
@@ -305,7 +305,7 @@ const CourseTopicDetailPage: React.FC = () => {
 
     setSelectedContentId(contentId);
     setCurrentContentIndex(submoduleData?.data?.findIndex(content => content.id === contentId) ?? 0);
-    
+
     // Update the selected ID based on the content type without changing activeSidebarLabel
     switch (contentType) {
       case "VideoTutorial":
