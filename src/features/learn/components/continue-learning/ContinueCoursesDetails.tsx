@@ -50,14 +50,14 @@ const ContinueCoursesDetails = ({ clientId }: { clientId: number }) => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {[1, 2, 3, 4].map((index) => (
-          <div key={index} className="w-full border-[#80C9E0] rounded-[16px] md:rounded-[22px] border-[1px] bg-[#F8F9FA] p-3 md:p-4 mt-3 md:mt-4 flex flex-col min-h-[280px] md:min-h-[300px] animate-pulse">
+          <div key={index} className="w-full border-[#80C9E0] rounded-[16px] md:rounded-[22px] border-[1px] bg-[#F8F9FA] p-4 flex flex-col min-h-[280px] md:min-h-[300px] animate-pulse">
             <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
             <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-            <div className="grid grid-cols-4 gap-1 mb-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="w-full aspect-square rounded-lg bg-gray-200"></div>
+            <div className="flex gap-1 mb-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-gray-200"></div>
               ))}
             </div>
             <div className="h-10 bg-gray-200 rounded w-1/4 mb-4"></div>
@@ -98,7 +98,7 @@ const ContinueCoursesDetails = ({ clientId }: { clientId: number }) => {
   }));
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {courses.map((course, index) => (
         <CourseCard
           key={index}

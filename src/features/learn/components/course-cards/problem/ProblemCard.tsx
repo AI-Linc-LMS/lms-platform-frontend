@@ -61,13 +61,13 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         // Use type assertion for the details object
         const detailsObj = details as Record<string, unknown>;
         const languageValue = language.toLowerCase().replace(/\s+/g, '');
-        
+
         return {
           value: languageValue,
           label: language,
           language_id: typeof detailsObj.language_id === 'number' ? detailsObj.language_id : 0,
-          template: typeof detailsObj.template_code === 'string' 
-            ? detailsObj.template_code 
+          template: typeof detailsObj.template_code === 'string'
+            ? detailsObj.template_code
             : (typeof detailsObj.template === 'string' ? detailsObj.template : "")
         };
       });
@@ -110,13 +110,13 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   useEffect(() => {
     if (data?.details?.template_code) {
       let defaultLanguage;
-      
+
       if (Array.isArray(data.details.template_code)) {
         defaultLanguage = data.details.template_code[0]?.language.toLowerCase().replace(/\s+/g, '');
       } else {
         defaultLanguage = Object.keys(data.details.template_code)[0]?.toLowerCase().replace(/\s+/g, '');
       }
-      
+
       // Handle special cases for Python 3
       if (defaultLanguage === 'python3') {
         setSelectedLanguage('python3');
@@ -131,14 +131,14 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     if (data?.details?.template_code && selectedLanguage) {
       // Normalize language for lookups
       const lookupLanguage = selectedLanguage;
-      
+
       if (Array.isArray(data.details.template_code)) {
         const template = data.details.template_code.find(
           (tc: { language: string }) => {
             const tcLang = tc.language.toLowerCase().replace(/\s+/g, '');
             // Match Python 3 and Python interchangeably
-            if ((tcLang === 'python' || tcLang === 'python3') && 
-                (lookupLanguage === 'python' || lookupLanguage === 'python3')) {
+            if ((tcLang === 'python' || tcLang === 'python3') &&
+              (lookupLanguage === 'python' || lookupLanguage === 'python3')) {
               return true;
             }
             return tcLang === lookupLanguage;
@@ -151,18 +151,18 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         // Handle object structure
         Object.entries(data.details.template_code).forEach(([language, details]) => {
           const lang = language.toLowerCase().replace(/\s+/g, '');
-          
+
           // Match Python 3 and Python interchangeably
-          const isPythonMatch = (lang === 'python' || lang === 'python3') && 
-                               (lookupLanguage === 'python' || lookupLanguage === 'python3');
-          
+          const isPythonMatch = (lang === 'python' || lang === 'python3') &&
+            (lookupLanguage === 'python' || lookupLanguage === 'python3');
+
           if (lang === lookupLanguage || isPythonMatch) {
             // Use type assertion for details
             const detailsObj = details as Record<string, unknown>;
-            const templateCode = typeof detailsObj.template_code === 'string' 
-              ? detailsObj.template_code 
+            const templateCode = typeof detailsObj.template_code === 'string'
+              ? detailsObj.template_code
               : (typeof detailsObj.template === 'string' ? detailsObj.template : "");
-            
+
             setCode(templateCode);
           }
         });
@@ -194,7 +194,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
   const getSelectedLanguageId = () => {
     if (!data?.details?.template_code || !selectedLanguage) return 0;
-    
+
     // Normalize language for lookups
     const lookupLanguage = selectedLanguage;
 
@@ -203,8 +203,8 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         (tc: { language: string }) => {
           const tcLang = tc.language.toLowerCase().replace(/\s+/g, '');
           // Match Python 3 and Python interchangeably
-          if ((tcLang === 'python' || tcLang === 'python3') && 
-              (lookupLanguage === 'python' || lookupLanguage === 'python3')) {
+          if ((tcLang === 'python' || tcLang === 'python3') &&
+            (lookupLanguage === 'python' || lookupLanguage === 'python3')) {
             return true;
           }
           return tcLang === lookupLanguage;
@@ -215,11 +215,11 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       // Handle object structure
       for (const [language, details] of Object.entries(data.details.template_code)) {
         const lang = language.toLowerCase().replace(/\s+/g, '');
-        
+
         // Match Python 3 and Python interchangeably
-        const isPythonMatch = (lang === 'python' || lang === 'python3') && 
-                             (lookupLanguage === 'python' || lookupLanguage === 'python3');
-        
+        const isPythonMatch = (lang === 'python' || lang === 'python3') &&
+          (lookupLanguage === 'python' || lookupLanguage === 'python3');
+
         if (lang === lookupLanguage || isPythonMatch) {
           // Use type assertion for details
           const detailsObj = details as Record<string, unknown>;
@@ -573,7 +573,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                             setSelectedLanguage(option.value);
                             setIsDropdownHovered(false);
                           }}
-                          className={`px-3 py-1 cursor-pointer hover:bg-gray-100 text-gray-700 ${isDarkTheme ? "hover:bg-gray-700" : ""}`}
+                          className={`px-3 py-1 cursor-pointer hover:bg-gray-100  ${isDarkTheme ? "hover:bg-gray-700" : ""}`}
                         >
                           {option.label}
                         </li>
@@ -631,12 +631,12 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           <div className="monaco-editor-wrapper" style={{ height: isConsoleOpen ? `calc(100% - ${consoleHeight}px)` : "100%" }}>
             <Editor
               height="100%"
-              language={selectedLanguage === 'python' ? 'python' : 
-                       selectedLanguage === 'python3' ? 'python' :
-                       selectedLanguage === 'cpp' ? 'cpp' : 
-                       selectedLanguage === 'c++' ? 'cpp' :
-                       selectedLanguage === 'java' ? 'java' :
-                       selectedLanguage}
+              language={selectedLanguage === 'python' ? 'python' :
+                selectedLanguage === 'python3' ? 'python' :
+                  selectedLanguage === 'cpp' ? 'cpp' :
+                    selectedLanguage === 'c++' ? 'cpp' :
+                      selectedLanguage === 'java' ? 'java' :
+                        selectedLanguage}
               value={code}
               onChange={handleCodeChange}
               theme={isDarkTheme ? "vs-dark" : "light"}

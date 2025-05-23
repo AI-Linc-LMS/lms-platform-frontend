@@ -306,14 +306,18 @@ const CourseSidebarContent = ({
           <ArticleContent
             articles={articles}
             selectedArticleId={articleProps.selectedArticleId}
-            onArticleClick={articleProps.onArticleClick}
+            onArticleClick={(id) => {
+              handleContentClick(id, "Article");
+            }}
           />
         )}
         {activeLabel === "Videos" && (
           <VideoContent
             videos={videos}
             selectedVideoId={videoProps.selectedVideoId || ""}
-            onVideoClick={videoProps.onVideoClick}
+            onVideoClick={(id) => {
+              handleContentClick(parseInt(id), "VideoTutorial");
+            }}
             topicNo={actualData?.weekNo || 1}
             topicTitle={actualData?.submoduleName || "Topic 1"}
             week={`Week ${actualData?.weekNo || 1}`}
@@ -334,21 +338,27 @@ const CourseSidebarContent = ({
           <ProblemContent
             problems={problems}
             selectedProblemId={problemProps.selectedProblemId}
-            onSelect={problemProps.onProblemSelect}
+            onSelect={(id) => {
+              handleContentClick(parseInt(id), "CodingProblem");
+            }}
           />
         )}
         {activeLabel === "Quiz" && (
           <QuizContent
             quizzes={quizzes}
             selectedQuizId={quizProps.selectedQuizId}
-            onSelect={quizProps.onSelectQuiz}
+            onSelect={(id) => {
+              handleContentClick(id, "Quiz");
+            }}
           />
         )}
         {activeLabel === "Development" && developmentProps && (
           <DevelopmentContent
             projects={developmentProjectsDummy}
             selectedProjectId={developmentProps.selectedProjectId}
-            onProjectSelect={developmentProps.onProjectSelect}
+            onProjectSelect={(id) => {
+              handleContentClick(parseInt(id), "Development");
+            }}
           />
         )}
         {activeLabel === "Subjective" && (
