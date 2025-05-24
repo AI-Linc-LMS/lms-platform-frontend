@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { getAllCourse } from '../../../services/enrolled-courses-content/courseContentApis';
@@ -46,31 +46,39 @@ interface Course {
   id: number;
   title: string;
   description: string;
-  video_count?: number;
-  article_count?: number;
-  coding_problem_count?: number;
-  quiz_count?: number;
-  assignment_count?: number;
+  stats: {
+    video: { total: number };
+    article: { total: number };
+    coding_problem: { total: number };
+    quiz: { total: number };
+    assignment: { total: number };
+  };
   instructors?: Instructor[];
   enrolled_students?: number;
 }
 
 // Stats block for showing counts of different content types
-const StatBlock = ({ icon, count, label }: { icon: React.ReactNode, count: number, label: string }) => (
-  <div className="bg-[#F8F9FA] hover:bg-[#E9ECEF] rounded-xl p-2 md:p-3 flex flex-col items-center justify-center relative group transition-all duration-200">
-    <div className="mb-1 md:mb-2">{icon}</div>
-    <span className="text-center text-[#495057] font-medium text-sm md:text-base">{count}</span>
-    
-    {/* Tooltip that appears on hover */}
-    <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[#343A40] text-white text-xs rounded pointer-events-none transition-opacity duration-200">
-      {label}
-      <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#343A40]"></div>
+const StatBlock = ({ icon, count, label }: { icon: React.ReactNode, count: number, label: string }) => {
+  // Ensure count is a number
+  const displayCount = typeof count === 'object' ? 0 : Number(count) || 0;
+  
+  return (
+    <div className="bg-[#F8F9FA] hover:bg-[#E9ECEF] rounded-xl p-2 md:p-3 flex flex-col items-center justify-center relative group transition-all duration-200">
+      <div className="mb-1 md:mb-2">{icon}</div>
+      <span className="text-center text-[#495057] font-medium text-sm md:text-base">{displayCount}</span>
+
+      {/* Tooltip that appears on hover */}
+      <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[#343A40] text-white text-xs rounded pointer-events-none transition-opacity duration-200">
+        {label}
+        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#343A40]"></div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Course card component
 const CourseCard = ({ course }: { course: Course }) => {
+  console.log("course", course);
   const navigate = useNavigate();
 
   const handleEnrollClick = () => {
@@ -79,11 +87,11 @@ const CourseCard = ({ course }: { course: Course }) => {
 
   // Placeholder for stats counts
   const totalCounts = {
-    videos: course.video_count || 0,
-    articles: course.article_count || 0,
-    problems: course.coding_problem_count || 0,
-    quizzes: course.quiz_count || 0,
-    assignments: course.assignment_count || 0
+    videos: course.stats?.video?.total || 0,
+    articles: course.stats?.article?.total || 0,
+    problems: course.stats?.coding_problem?.total || 0,
+    quizzes: course.stats?.quiz?.total || 0,
+    assignments: course.stats?.assignment?.total || 0
   };
 
   return (
@@ -101,11 +109,11 @@ const CourseCard = ({ course }: { course: Course }) => {
           <StatBlock icon={<AssignmentIcon />} count={totalCounts.assignments} label="Assignments" />
         </div>
       </div>
-      
+
       <div className="w-full my-4">
         <p className="text-[#495057] text-sm md:text-base">{course.description}</p>
       </div>
-      
+
       <div className="mt-auto pt-3 border-t border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
@@ -113,10 +121,10 @@ const CourseCard = ({ course }: { course: Course }) => {
               <>
                 <div className="flex -space-x-2">
                   {course.instructors.slice(0, 3).map((instructor: Instructor, idx: number) => (
-                    <img 
+                    <img
                       key={idx}
-                      src={instructor.profile_pic || 'https://via.placeholder.com/30'} 
-                      alt={instructor.name || 'Instructor'} 
+                      src={instructor.profile_pic || 'https://via.placeholder.com/30'}
+                      alt={instructor.name || 'Instructor'}
                       className="w-8 h-8 rounded-full border-2 border-white object-cover"
                       title={instructor.name}
                     />
@@ -128,8 +136,8 @@ const CourseCard = ({ course }: { course: Course }) => {
               </>
             )}
           </div>
-          <PrimaryButton 
-            onClick={handleEnrollClick} 
+          <PrimaryButton
+            onClick={handleEnrollClick}
             className="text-sm rounded-xl"
           >
             Enroll Now
@@ -158,12 +166,12 @@ const EmptyCoursesState = () => {
 // Main component
 const Courses = () => {
   const clientId = Number(import.meta.env.VITE_CLIENT_ID) || 1;
-  
+
   const { data: courses, isLoading, error } = useQuery({
     queryKey: ['all-courses'],
     queryFn: () => getAllCourse(clientId),
   });
-
+  
 
   if (isLoading) {
     return (
@@ -196,9 +204,9 @@ const Courses = () => {
           {hasNoCourses ? "No courses available at the moment" : "Here's the List of all our Courses"}
         </p>
       </div>
-      
+
       {hasNoCourses ? (
-        <EmptyCoursesState />
+        <EmptyCoursesState /> 
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.map((course: Course) => (
