@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { getCourseContent, pastSubmissions } from "../../../../../services/enrolled-courses-content/courseContentApis";
+import { getCourseContent} from "../../../../../services/enrolled-courses-content/courseContentApis";
 import {
   runCode,
   runCustomCode,
