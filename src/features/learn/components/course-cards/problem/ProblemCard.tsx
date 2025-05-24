@@ -43,14 +43,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     enabled: !!contentId && !!courseId,
   });
 
-  // Fetch past submissions, but destructure only if needed in the component
-  const pastSubmissionsQuery = useQuery<any>({
-    queryKey: ['pastSubmissions', contentId],
-    queryFn: () => pastSubmissions(1, courseId, contentId),
-    enabled: !!contentId && !!courseId,
-  });
-
-  console.log('pastSubmissionsQuery', pastSubmissionsQuery.data);
+  
   // Get available languages from template codes
   const availableLanguages = React.useMemo(() => {
     if (!data?.details?.template_code) return [];
