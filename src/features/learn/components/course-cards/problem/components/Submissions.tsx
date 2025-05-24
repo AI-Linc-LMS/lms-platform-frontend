@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { getSubmissionHistory } from "../../../../../../services/enrolled-courses-content/submitApis";
+import { useQuery } from '@tanstack/react-query';
+import { pastSubmissions } from '../../../../../../services/enrolled-courses-content/courseContentApis';
 import Editor from '@monaco-editor/react';
 
 interface SubmissionsProps {
@@ -10,85 +11,41 @@ interface SubmissionsProps {
 
 interface SubmissionHistoryItem {
   id: number;
-  status: string;
-  submitted_at: string;
-  runtime: string;
-  memory: string;
-  language: string;
-  source_code: string;
+  custom_dimension: {
+    status: string;
+    time: number;
+    memory: number;
+    language_id: number;
+    source_code: string;
+    passed: number;
+    failed: number;
+    total_test_cases: number;
+  }
+  created_at: string;
+  result: string;
 }
 
 const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTheme }) => {
   const [selectedSubmissionCode, setSelectedSubmissionCode] = useState<string | null>(null);
   const [viewingSubmissionId, setViewingSubmissionId] = useState<number | null>(null);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [historyError, setHistoryError] = useState<string | null>(null);
-  const [submissionHistory, setSubmissionHistory] = useState<SubmissionHistoryItem[]>([]);
 
-  // Fetch submission history when the component loads
-  React.useEffect(() => {
-    const fetchSubmissionHistory = async () => {
-      setIsLoadingHistory(true);
-      setHistoryError(null);
+  const { data: submissionHistory, isLoading: isLoadingHistory, error: historyError } = useQuery({
+    queryKey: ['submissions', courseId, contentId],
+    queryFn: () => pastSubmissions(1, courseId, contentId)
+  });
 
-      try {
-        // Try to fetch from API
-        const history = await getSubmissionHistory(1, courseId, contentId);
-        setSubmissionHistory(history);
-      } catch (error) {
-        console.error("Error fetching submission history:", error);
-        // API not available or error - use fallback data
-        console.log("Using fallback submission history data");
-
-        // Create fallback data
-        const mockHistory: SubmissionHistoryItem[] = [
-          {
-            id: 4,
-            status: "Runtime Error",
-            submitted_at: new Date().toISOString(),
-            runtime: "N/A",
-            memory: "N/A",
-            language: "javascript",
-            source_code: "// Code with runtime error"
-          },
-          {
-            id: 3,
-            status: "Accepted",
-            submitted_at: new Date().toISOString(),
-            runtime: "2 ms",
-            memory: "59.4 MB",
-            language: "javascript",
-            source_code: "// Accepted solution"
-          },
-          {
-            id: 2,
-            status: "Runtime Error",
-            submitted_at: "2022-12-10T12:00:00.000Z",
-            runtime: "N/A",
-            memory: "N/A",
-            language: "javascript",
-            source_code: "// Old code with error"
-          },
-          {
-            id: 1,
-            status: "Wrong Answer",
-            submitted_at: "2022-12-10T10:00:00.000Z",
-            runtime: "N/A",
-            memory: "N/A",
-            language: "javascript",
-            source_code: "// Old code with wrong output"
-          }
-        ];
-
-        setSubmissionHistory(mockHistory);
-        setHistoryError(null);
-      } finally {
-        setIsLoadingHistory(false);
-      }
-    };
-
-    fetchSubmissionHistory();
-  }, [courseId, contentId]);
+  console.log("submissionHistory", submissionHistory);
+  // Function to get language name from language ID
+  const getLanguageName = (languageId: number) => {
+    switch (languageId) {
+      case 63: return "JavaScript";
+      case 74: return "TypeScript";
+      case 71: return "Python";
+      case 62: return "Java";
+      case 54: return "C++";
+      default: return "Unknown";
+    }
+  };
 
   return (
     <div className="submission-history">
@@ -97,7 +54,7 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
           <div className={`${isDarkTheme ? "bg-gray-800" : "bg-white"} p-6 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] flex flex-col`}>
             <div className="flex justify-between items-center mb-4">
               <h3 className={`text-xl font-bold ${isDarkTheme ? "text-white" : "text-gray-800"}`}>
-                Submission Code - {submissionHistory.find(s => s.id === viewingSubmissionId)?.status}
+                Submission Code - {submissionHistory?.find((s: SubmissionHistoryItem) => s.id === viewingSubmissionId)?.status}
               </h3>
               <button
                 onClick={() => {
@@ -112,7 +69,7 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
             <div className="flex-grow overflow-auto">
               <Editor
                 height="60vh"
-                language={submissionHistory.find(s => s.id === viewingSubmissionId)?.language || "javascript"}
+                language={getLanguageName(submissionHistory?.find((s: SubmissionHistoryItem) => s.id === viewingSubmissionId)?.language_id || 71)}
                 value={selectedSubmissionCode}
                 theme={isDarkTheme ? "vs-dark" : "light"}
                 options={{
@@ -135,8 +92,8 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
         </div>
       ) : historyError ? (
-        <div className="text-red-500 py-4">{historyError}</div>
-      ) : submissionHistory.length === 0 ? (
+        <div className="text-red-500 py-4">{historyError instanceof Error ? historyError.message : "Failed to load submissions"}</div>
+      ) : !submissionHistory || submissionHistory.length === 0 ? (
         <p className="text-gray-500 italic">You haven't submitted any solutions yet.</p>
       ) : (
         <div className="overflow-x-auto">
@@ -151,24 +108,24 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
               </tr>
             </thead>
             <tbody>
-              {submissionHistory.map((submission, index) => (
+              {submissionHistory.map((submission: SubmissionHistoryItem, index: number) => (
                 <tr key={submission.id} className={`text-xs ${isDarkTheme ? "border-b border-gray-700 hover:bg-gray-800" : "border-b border-gray-200 hover:bg-gray-100"}`}>
                   <td className={`py-4 px-4 text-center font-medium ${isDarkTheme ? "text-white" : "text-gray-500"}`}>{submissionHistory.length - index}</td>
                   <td className="py-4 px-4">
                     <div className="flex flex-col"
                       onClick={() => {
-                        setSelectedSubmissionCode(submission.source_code);
+                        setSelectedSubmissionCode(submission.custom_dimension.source_code);
                         setViewingSubmissionId(submission.id);
                       }}>
                       <span
-                        className={`cursor-pointer font-semibold rounded-full ${submission.status === "Accepted"
+                        className={`cursor-pointer font-semibold rounded-full ${submission.custom_dimension.status === "Accepted"
                           ? "text-[#5FA564]"
                           : " text-[#EA4335]"
                           }`}>
-                        {submission.status}
+                        {submission.custom_dimension.status}
                       </span>
                       <span className="text-gray-500">
-                        {new Date(submission.submitted_at).toLocaleString('en-US', {
+                        {new Date(submission.created_at).toLocaleString('en-US', {
                           month: 'short',
                           day: '2-digit',
                           year: 'numeric'
@@ -181,15 +138,11 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
                       ? "bg-[#D7EFF6] text-[#264D64]"
                       : "bg-[#D7EFF6] text-[#264D64]"
                       }`}>
-                      {submission.language === "javascript" ? "JavaScript" :
-                        submission.language === "typescript" ? "TypeScript" :
-                          submission.language === "python" ? "Python" :
-                            submission.language === "java" ? "Java" :
-                              submission.language === "cpp" ? "C++" : submission.language}
+                      {getLanguageName(submission.custom_dimension.language_id)}
                     </span>
                   </td>
-                  <td className={`py-4 px-4  ${isDarkTheme ? "text-gray-300" : ""}`}>{submission.runtime || "N/A"}</td>
-                  <td className={`py-4 px-4 ${isDarkTheme ? "text-gray-300" : ""}`}>{submission.memory || "N/A"}</td>
+                  <td className={`py-4 px-4  ${isDarkTheme ? "text-gray-300" : ""}`}>{submission.custom_dimension.time ? `${submission.custom_dimension.time.toFixed(3)} ms` : "N/A"}</td>
+                  <td className={`py-4 px-4 ${isDarkTheme ? "text-gray-300" : ""}`}>{submission.custom_dimension.memory ? `${(submission.custom_dimension.memory / 1024).toFixed(1)} MB` : "N/A"}</td>
                 </tr>
               ))}
             </tbody>

@@ -164,7 +164,6 @@ const Courses = () => {
     queryFn: () => getAllCourse(clientId),
   });
 
-  console.log("courses:",courses);
 
   if (isLoading) {
     return (
