@@ -3,29 +3,42 @@ import { Topic, Subtopic, TabKey } from '../types/course';
 import SubtopicItem from './SubtopicItem';
 import BottomSheet from './BottomSheet';
 import ContentManager from './add-content/ContentManager';
+import { useQuery } from '@tanstack/react-query';
+import { getCourseSubmodules } from '../../../services/admin/courseApis';
 
 interface TopicItemProps {
+  courseId: string;
   topic: Topic;
   onDelete: (topicId: string) => void;
   onAddSubtopic: (topicId: string) => void;
 }
 
+interface SubmoduleData {
+  id: number;
+  title: string;
+  description: string;
+  order: number;
+  course: number;
+  module: number;
+}
 
+export const TopicItem: React.FC<TopicItemProps> = ({ courseId, topic, onDelete, onAddSubtopic }) => {
+  const clientId = import.meta.env.VITE_CLIENT_ID;
+  const { data: submoduleData, isLoading, error } = useQuery({
+    queryKey: ['course', topic.id],
+    queryFn: () => getCourseSubmodules(clientId, Number(courseId), Number(topic.id)),
+  });
 
-export const TopicItem: React.FC<TopicItemProps> = ({ topic, onDelete, onAddSubtopic }) => {
   const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('videos');
 
   useEffect(() => {
     if (bottomSheetOpen) {
-      // Disable background scroll
       document.body.style.overflow = 'hidden';
     } else {
-      // Enable scroll back
       document.body.style.overflow = '';
     }
 
-    // Cleanup on unmount to ensure scroll is enabled again
     return () => {
       document.body.style.overflow = '';
     };
@@ -35,10 +48,10 @@ export const TopicItem: React.FC<TopicItemProps> = ({ topic, onDelete, onAddSubt
     setBottomSheetOpen(true);
     setActiveTab('videos');
   };
-  const handleCloseSheet = () => {
-    setBottomSheetOpen(false); // triggers slideDown
-  };
 
+  const handleCloseSheet = () => {
+    setBottomSheetOpen(false);
+  };
 
   const getStats = (subtopic: Subtopic) => {
     const stats = {
@@ -57,6 +70,71 @@ export const TopicItem: React.FC<TopicItemProps> = ({ topic, onDelete, onAddSubt
       });
     }
     return stats;
+  };
+
+  const renderSubtopics = () => {
+    if (isLoading) {
+      return (
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="animate-pulse">
+              <div className="bg-white rounded-md border border-gray-200 px-4 py-2 mb-2">
+                <div className="h-4 w-48 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 w-32 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <p className="text-red-600 text-sm">Failed to load subtopics. Please try again later.</p>
+        </div>
+      );
+    }
+
+    if (!submoduleData || submoduleData.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-10 bg-gray-50 rounded-md">
+          <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[#17627A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </div>
+          <h4 className="text-[#17627A] font-medium mb-1">Add Subtopics</h4>
+          <button
+            onClick={() => onAddSubtopic(topic.id)}
+            className="bg-[#17627A] text-white px-4 py-1 rounded-md mt-2 text-sm hover:bg-[#124F65] transition-colors"
+          >
+            Add Subtopics
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        {submoduleData.map((submodule: SubmoduleData) => (
+          <SubtopicItem
+            key={submodule.id}
+            title={submodule.title}
+            marks={0}
+            stats={getStats({
+              id: submodule.id.toString(),
+              title: submodule.title,
+              description: submodule.description,
+              contents: []
+            })}
+            onEdit={() => { }}
+            onDelete={() => { }}
+            onAddContent={() => handleAddContent()}
+          />
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -96,36 +174,7 @@ export const TopicItem: React.FC<TopicItemProps> = ({ topic, onDelete, onAddSubt
           </div>
         </div>
 
-        {topic.subtopics.length > 0 ? (
-          <div className="space-y-2">
-            {topic.subtopics.map(subtopic => (
-              <SubtopicItem
-                key={subtopic.id}
-                title={subtopic.title}
-                marks={(subtopic as any).marks || 0}
-                stats={getStats(subtopic)}
-                onEdit={() => { }}
-                onDelete={() => { }}
-                onAddContent={() => handleAddContent()}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-10 bg-gray-50 rounded-md">
-            <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[#17627A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </div>
-            <h4 className="text-[#17627A] font-medium mb-1">Add Subtopics</h4>
-            <button
-              onClick={() => onAddSubtopic(topic.id)}
-              className="bg-[#17627A] text-white px-4 py-1 rounded-md mt-2 text-sm hover:bg-[#124F65] transition-colors"
-            >
-              Add Subtopics
-            </button>
-          </div>
-        )}
+        {renderSubtopics()}
       </div>
       {/* Bottom Sheet for Add Content */}
       <BottomSheet open={bottomSheetOpen} onClose={handleCloseSheet} activeTab={activeTab} setActiveTab={setActiveTab}>
