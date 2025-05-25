@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { SearchIcon } from './CourseIcons';
 import SortDropdown from './SortDropdown';
 

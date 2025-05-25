@@ -1,5 +1,5 @@
 import React from "react";
-import { Course, Instructor } from "../../types/course.types";
+import { Course } from "../../types/course.types";
 import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import { useNavigate } from "react-router-dom";
 import { VideoIcon, DocumentIcon, CodeIcon, FAQIcon } from "../../../../commonComponents/icons/learnIcons/CourseIcons";
@@ -137,7 +137,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
       <div className="flex flex-row gap-2 mb-4 items-center text-sm md:text-base">
         <h1 className="text-[#343A40] font-medium">Instructors:</h1>
         <div className="flex -space-x-2 mr-3">
-          {course.instructors.slice(0, 5).map((instructor, index) => (
+          {course.instructors?.slice(0, 5).map((instructor, index) => (
             <div key={index} className="w-6 md:w-8 h-6 md:h-8 rounded-full bg-gray-300 border-2 border-white overflow-hidden">
               <img
                 src={instructor.profile_pic_url}
