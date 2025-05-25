@@ -241,7 +241,7 @@ const SortDropdown = ({ selectedSort, setSelectedSort }: { selectedSort: string,
       </button>
       
       {isOpen && (
-        <div className="absolute right-0 mt-1 bg-white border border-[#DEE2E6] rounded-lg shadow-lg py-1 z-10 w-56">
+        <div className="absolute right-0 mt-1 bg-white border border-[#DEE2E6] rounded-lg shadow-lg py-1 z-10 w-56 sm:right-0 sm:left-auto left-0 sm:origin-top-right origin-top-left">
           {sortOptions.map((option) => (
             <div 
               key={option.value}
@@ -375,9 +375,6 @@ const Courses = () => {
     { id: '3_up', label: '3 and up' }
   ];
   
-  const hasActiveFilters = selectedCategories.length > 0 || selectedLevels.length > 0 || 
-                         selectedPrices.length > 0 || selectedRatings.length > 0;
-  
   const toggleFilters = () => {
     setIsFilterOpen(!isFilterOpen);
   };
@@ -440,22 +437,18 @@ const Courses = () => {
         </p>
       </div>
       
-      {/* Mobile Filter Toggle Button */}
-      <div className="md:hidden mb-4">
-        <button 
-          className="flex items-center justify-between w-full p-3 bg-white border border-[#DEE2E6] rounded-lg text-[#343A40] shadow-sm"
-          onClick={toggleFilters}
-        >
-          <div className="flex items-center space-x-2">
-            <FilterIcon />
-            <span className="font-medium">Filters</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            {hasActiveFilters && (
-              <span className="flex items-center justify-center w-5 h-5 bg-[#17627A] text-white text-xs font-medium rounded-full">
-                {selectedCategories.length + selectedLevels.length + selectedPrices.length + selectedRatings.length}
-              </span>
-            )}
+      {/* Mobile-only UI */}
+      <div className="md:hidden">
+        {/* Filters Button - Mobile UI */}
+        <div className="mb-4">
+          <button 
+            className="flex items-center justify-between w-full p-3 bg-white border border-[#DEE2E6] rounded-lg text-[#343A40] shadow-sm"
+            onClick={toggleFilters}
+          >
+            <div className="flex items-center space-x-2">
+              <FilterIcon />
+              <span className="font-medium">Filters</span>
+            </div>
             <svg 
               className={`w-4 h-4 transition-transform duration-300 ${isFilterOpen ? 'rotate-180' : ''}`} 
               fill="none" 
@@ -465,13 +458,11 @@ const Courses = () => {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
             </svg>
-          </div>
-        </button>
-      </div>
-      
-      <div className="flex flex-col md:flex-row gap-6 mb-8">
-        {/* Filter Section - Hidden on mobile by default, shown on larger screens */}
-        <div className={`${isFilterOpen ? 'max-h-[1500px] opacity-100 mb-6' : 'max-h-0 opacity-0 overflow-hidden'} md:max-h-[1500px] md:opacity-100 md:overflow-visible w-full md:w-1/4 lg:w-1/5 transition-all duration-500 ease-in-out`}>
+          </button>
+        </div>
+        
+        {/* Filter Panel - Collapsible for Mobile */}
+        <div className={`${isFilterOpen ? 'max-h-[1500px] opacity-100 mb-6' : 'max-h-0 opacity-0 overflow-hidden'} transition-all duration-500 ease-in-out`}>
           <div className="bg-white rounded-xl p-4 border border-[#DEE2E6]">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold text-[#343A40]">Filter By</h2>
@@ -517,37 +508,123 @@ const Courses = () => {
           </div>
         </div>
         
-        {/* Courses Section */}
-        <div className="w-full md:w-3/4 lg:w-4/5">
-          {/* Search and Sort */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <div className="relative w-full sm:w-auto flex-1 max-w-md">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <SearchIcon />
+        {/* Search Input - Mobile */}
+        <div className="mb-4 w-full">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <SearchIcon />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by courses"
+              className="w-full py-3 pl-10 pr-4 border border-[#DEE2E6] rounded-lg text-[#495057] focus:outline-none focus:ring-2 focus:ring-[#17627A] focus:border-transparent"
+            />
+          </div>
+        </div>
+        
+        {/* Sort Dropdown - Mobile */}
+        <div className="mb-6">
+          <SortDropdown selectedSort={sortBy} setSelectedSort={setSortBy} />
+        </div>
+      </div>
+      
+      {/* Desktop UI - Original Layout */}
+      <div className="hidden md:block">
+        <div className="flex flex-col md:flex-row gap-6 mb-8">
+          {/* Filter Section - Desktop */}
+          <div className="w-full md:w-1/4 lg:w-1/5">
+            <div className="bg-white rounded-xl p-4 border border-[#DEE2E6]">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-bold text-[#343A40]">Filter By</h2>
+                <button 
+                  onClick={clearAllFilters}
+                  className="text-sm text-[#17627A] hover:underline"
+                >
+                  Clear All
+                </button>
               </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by courses"
-                className="w-full py-2 pl-10 pr-4 border border-[#DEE2E6] rounded-lg text-[#495057] focus:outline-none focus:ring-2 focus:ring-[#17627A] focus:border-transparent"
+              
+              {/* Categories */}
+              <FilterCategory 
+                title="Categories" 
+                options={categoryOptions} 
+                selectedOptions={selectedCategories} 
+                setSelectedOptions={setSelectedCategories} 
+              />
+              
+              {/* Level/Difficulty */}
+              <FilterCategory 
+                title="Level/Difficulty" 
+                options={levelOptions} 
+                selectedOptions={selectedLevels} 
+                setSelectedOptions={setSelectedLevels} 
+              />
+              
+              {/* Price */}
+              <FilterCategory 
+                title="Price" 
+                options={priceOptions} 
+                selectedOptions={selectedPrices} 
+                setSelectedOptions={setSelectedPrices} 
+              />
+              
+              {/* Rating */}
+              <FilterCategory 
+                title="Rating" 
+                options={ratingOptions} 
+                selectedOptions={selectedRatings} 
+                setSelectedOptions={setSelectedRatings} 
               />
             </div>
-            
-            <SortDropdown selectedSort={sortBy} setSelectedSort={setSortBy} />
           </div>
           
-          {/* Course Cards */}
-          {hasNoCourses ? (
-            <EmptyCoursesState /> 
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {filteredCourses.map((course: Course) => (
-                <CourseCard key={course.id} course={course} />
-              ))}
+          {/* Courses Section - Desktop */}
+          <div className="w-full md:w-3/4 lg:w-4/5">
+            {/* Search and Sort - Desktop */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <div className="relative w-full sm:w-auto flex-1 max-w-md">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <SearchIcon />
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by courses"
+                  className="w-full py-2 pl-10 pr-4 border border-[#DEE2E6] rounded-lg text-[#495057] focus:outline-none focus:ring-2 focus:ring-[#17627A] focus:border-transparent"
+                />
+              </div>
+              
+              <SortDropdown selectedSort={sortBy} setSelectedSort={setSortBy} />
             </div>
-          )}
+            
+            {/* Course Cards */}
+            {hasNoCourses ? (
+              <EmptyCoursesState /> 
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {filteredCourses.map((course: Course) => (
+                  <CourseCard key={course.id} course={course} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+      </div>
+      
+      {/* Course Cards - Mobile only */}
+      <div className="md:hidden">
+        {hasNoCourses ? (
+          <EmptyCoursesState /> 
+        ) : (
+          <div className="grid grid-cols-1 gap-6">
+            {filteredCourses.map((course: Course) => (
+              <CourseCard key={course.id} course={course} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
