@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { useQuery } from '@tanstack/react-query';
 import { getAllCourse } from '../../../services/enrolled-courses-content/courseContentApis';
 import CourseCard from '../components/courses/CourseCard';
@@ -8,16 +8,20 @@ import DesktopFilters from '../components/courses/DesktopFilters';
 import DesktopSearch from '../components/courses/DesktopSearch';
 import { useCourseFilters } from '../hooks/useCourseFilters';
 import { categoryOptions, levelOptions, priceOptions, ratingOptions } from '../components/courses/FilterOptions';
+import { adaptCourses } from '../utils/courseAdapter';
 
 // Main component
 const Courses = () => {
   const clientId = Number(import.meta.env.VITE_CLIENT_ID) || 1;
 
-  const { data: courses, isLoading, error } = useQuery({
+  const { data: apiCourses, isLoading, error } = useQuery({
     queryKey: ['all-courses'],
     queryFn: () => getAllCourse(clientId),
   });
-  
+
+  // Adapt API data to include fields needed for filtering
+  const courses = adaptCourses(apiCourses || []);
+
   const {
     searchQuery,
     setSearchQuery,
@@ -68,9 +72,9 @@ const Courses = () => {
           {hasNoCourses ? "No courses available at the moment" : "Here's the List of all our Courses"}
         </p>
       </div>
-      
+
       {/* Mobile Filters */}
-      <MobileFilters 
+      <MobileFilters
         isFilterOpen={isFilterOpen}
         toggleFilters={toggleFilters}
         searchQuery={searchQuery}
@@ -91,11 +95,11 @@ const Courses = () => {
         priceOptions={priceOptions}
         ratingOptions={ratingOptions}
       />
-      
+
       {/* Desktop Layout */}
       <div className="hidden md:flex flex-col md:flex-row gap-6 mb-8">
         {/* Desktop Filters Sidebar */}
-        <DesktopFilters 
+        <DesktopFilters
           selectedCategories={selectedCategories}
           setSelectedCategories={setSelectedCategories}
           selectedLevels={selectedLevels}
@@ -110,20 +114,20 @@ const Courses = () => {
           priceOptions={priceOptions}
           ratingOptions={ratingOptions}
         />
-        
+
         {/* Main Content Area */}
         <div className="w-full md:w-3/4 lg:w-4/5">
           {/* Desktop Search and Sort */}
-          <DesktopSearch 
+          <DesktopSearch
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             sortBy={sortBy}
             setSortBy={setSortBy}
           />
-          
+
           {/* Course Cards for Desktop */}
           {hasNoCourses ? (
-            <EmptyCoursesState /> 
+            <EmptyCoursesState />
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {filteredCourses.map((course) => (
@@ -133,11 +137,11 @@ const Courses = () => {
           )}
         </div>
       </div>
-      
+
       {/* Mobile Course Cards */}
       <div className="md:hidden">
         {hasNoCourses ? (
-          <EmptyCoursesState /> 
+          <EmptyCoursesState />
         ) : (
           <div className="grid grid-cols-1 gap-6">
             {filteredCourses.map((course) => (

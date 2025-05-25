@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 // Assignment Icon 
 export const AssignmentIcon = () => (

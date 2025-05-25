@@ -54,6 +54,11 @@ export interface Course {
   is_certified?: boolean;
   modules?: Module[];
   updated_at?: string;
+  created_at?: string;
+  price?: number;
+  rating?: number;
+  level?: string;
+  categories?: string[];
   stats?: {
     video: { total: number };
     article: { total: number };
