@@ -1,5 +1,32 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getCourses } from '../../../services/admin/courseApis';
+import { useQuery } from '@tanstack/react-query';
+
+interface Course {
+  id: number;
+  title: string;
+  subtitle: string;
+  description: string;
+  difficulty_level: string;
+  language: string;
+  price: string;
+  is_free: boolean;
+  published: boolean;
+  enrolled_students: {
+    total: number;
+    students_profile_pic: string[];
+  };
+  stats: {
+    video: { total: number };
+    article: { total: number };
+    quiz: { total: number };
+    assignment: { total: number };
+    coding_problem: { total: number };
+  };
+  trusted_by: string[];
+  thumbnail: string | null;
+}
 
 interface CourseFormData {
   name: string;
@@ -7,7 +34,42 @@ interface CourseFormData {
   description: string;
 }
 
+const CourseCardSkeleton: React.FC = () => {
+  return (
+    <div className="bg-white rounded-lg border border-[#80C9E0] overflow-hidden max-w-[500px] animate-pulse">
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-4">
+          <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-6 bg-gray-200 rounded w-16"></div>
+        </div>
+        <div className="h-4 bg-gray-200 rounded w-full mb-8"></div>
+
+        <div className="grid grid-cols-6 gap-2 mb-8">
+          {[...Array(6)].map((_, index) => (
+            <div key={index} className="bg-gray-200 rounded-lg p-2 flex flex-col items-center justify-center">
+              <div className="h-5 w-5 bg-gray-300 rounded-full mb-1"></div>
+              <div className="h-4 bg-gray-300 rounded w-8"></div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mb-8">
+          <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+          <div className="flex space-x-2">
+            {[...Array(4)].map((_, index) => (
+              <div key={index} className="h-6 w-6 bg-gray-200 rounded-full"></div>
+            ))}
+          </div>
+        </div>
+
+        <div className="h-10 bg-gray-200 rounded w-full"></div>
+      </div>
+    </div>
+  );
+};
+
 const AdminDashboard: React.FC = () => {
+  const clientId = import.meta.env.VITE_CLIENT_ID;
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState<CourseFormData>({
@@ -16,6 +78,11 @@ const AdminDashboard: React.FC = () => {
     description: ''
   });
   const modalRef = useRef<HTMLDivElement>(null);
+
+  const { data: coursesData, isLoading, error } = useQuery({
+    queryKey: ['courses'],
+    queryFn: () => getCourses(clientId)
+  });
 
   // Close modal when clicking outside
   useEffect(() => {
@@ -33,25 +100,6 @@ const AdminDashboard: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isModalOpen]);
-
-  // Mock course data
-  const courses = [
-    {
-      id: '1',
-      title: 'Deployment In ML',
-      description: 'Lorem ipsum dolor sit amet.',
-    },
-    {
-      id: '2',
-      title: 'Deployment In ML',
-      description: 'Lorem ipsum dolor sit amet.',
-    },
-    {
-      id: '3',
-      title: 'Deployment In ML',
-      description: 'Lorem ipsum dolor sit amet.',
-    }
-  ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -79,9 +127,68 @@ const AdminDashboard: React.FC = () => {
     navigate(`/admin/courses/${newCourseId}`);
   };
 
-  const handleEditCourse = (courseId: string) => {
+  const handleEditCourse = (courseId: number) => {
     navigate(`/admin/courses/${courseId}`);
   };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <div className="h-8 bg-gray-200 rounded w-48 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-64"></div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <div className="h-6 bg-gray-200 rounded w-32 mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-48"></div>
+            </div>
+            <div className="h-10 bg-gray-200 rounded w-32"></div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(8)].map((_, index) => (
+              <CourseCardSkeleton key={index} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <p className='text-red-600 text-xl mb-4'>Some Error Occured !!</p>
+            <div className="h-8 bg-gray-200 rounded w-48 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-64"></div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <div className="h-6 bg-gray-200 rounded w-32 mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-48"></div>
+            </div>
+            <div className="h-10 bg-gray-200 rounded w-32"></div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, index) => (
+              <CourseCardSkeleton key={index} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -107,7 +214,7 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((course) => (
+          {coursesData?.map((course: Course) => (
             <CourseCard 
               key={course.id} 
               course={course} 
@@ -204,11 +311,7 @@ const AdminDashboard: React.FC = () => {
 };
 
 interface CourseCardProps {
-  course: {
-    id: string;
-    title: string;
-    description: string;
-  };
+  course: Course;
   onEditClick: () => void;
 }
 
@@ -218,67 +321,77 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEditClick }) => {
       <div className="p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold">{course.title}</h3>
-          <span className="bg-blue-50 text-blue-800 text-sm px-3 py-1 rounded-full">Pro</span>
+          <span className={`${course.is_free ? 'bg-green-50 text-green-800' : 'bg-blue-50 text-blue-800'} text-sm px-3 py-1 rounded-full`}>
+            {course.is_free ? 'Free' : 'Pro'}
+          </span>
         </div>
-        <p className="text-gray-600 mb-8">{course.description}</p>
+        <p className="text-gray-600 mb-8">{course.description || 'No description available'}</p>
 
         <div className="grid grid-cols-6 gap-2 mb-8">
           <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
             </svg>
-            <span className="text-sm font-medium">86</span>
+            <span className="text-sm font-medium">{course.enrolled_students?.total || 0}</span>
           </div>
           <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
               <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
               <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
             </svg>
-            <span className="text-sm font-medium">86</span>
+            <span className="text-sm font-medium">{course.stats?.article?.total || 0}</span>
           </div>
           <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
             </svg>
-            <span className="text-sm font-medium">86</span>
+            <span className="text-sm font-medium">{course.stats?.quiz?.total || 0}</span>
           </div>
           <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
               <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
               <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm9 1a1 1 0 00-1 1v6a1 1 0 002 0V7a1 1 0 00-1-1zm-5 1a1 1 0 00-1 1v6a1 1 0 002 0V7a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
-            <span className="text-sm font-medium">86</span>
+            <span className="text-sm font-medium">{course.stats?.assignment?.total || 0}</span>
           </div>
           <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
             </svg>
-            <span className="text-sm font-medium">86</span>
+            <span className="text-sm font-medium">{course.stats?.coding_problem?.total || 0}</span>
           </div>
           <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
-            <span className="text-sm font-medium">86</span>
+            <span className="text-sm font-medium">{course.stats?.video?.total || 0}</span>
           </div>
         </div>
-
-        <p className="text-gray-600 mb-8">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut et massa mi. Aliquam in hendrerit urna.
-        </p>
 
         <div className="mb-8">
           <div className="text-sm text-gray-600 mb-2">Trusted by:</div>
           <div className="flex space-x-2">
-            <img src="https://via.placeholder.com/24" alt="Google" className="w-6 h-6 rounded-full" />
-            <img src="https://via.placeholder.com/24" alt="Microsoft" className="w-6 h-6 rounded-full" />
-            <img src="https://via.placeholder.com/24" alt="TCS" className="w-6 h-6 rounded-full" />
-            <img src="https://via.placeholder.com/24" alt="Wipro" className="w-6 h-6 rounded-full" />
+            {course.trusted_by && course.trusted_by.length > 0 ? (
+              course.trusted_by.map((company, index) => (
+                <img 
+                  key={index}
+                  src={company} 
+                  alt={`Company ${index + 1}`} 
+                  className="w-6 h-6 rounded-full"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = 'https://via.placeholder.com/24';
+                  }}
+                />
+              ))
+            ) : (
+              <span className="text-gray-500 text-sm">No companies listed</span>
+            )}
           </div>
         </div>
 
         <button 
-          className="w-full bg-[#D7EFF6] text-[#264D64] border border-[#80C9E0] py-3 rounded-md flex items-center justify-center"
+          className="w-full bg-[#D7EFF6] text-[#264D64] border border-[#80C9E0] py-3 rounded-md flex items-center justify-center "
           onClick={onEditClick}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

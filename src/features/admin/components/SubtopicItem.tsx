@@ -40,6 +40,7 @@ export const SubtopicItem: React.FC<SubtopicItemProps> = ({
   onDelete,
   onAddContent,
 }) => {
+  
   return (
     <div className="flex items-center justify-between bg-white rounded-md border border-gray-200 px-4 py-2 mb-2">
       <div className="flex flex-col">

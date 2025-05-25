@@ -1,40 +1,57 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Topic, Subtopic, Course } from '../types/course';
+import { Topic, Subtopic} from '../types/course';
 import { AddTopicModal } from '../components/AddTopicModal';
 import { AddSubtopicModal } from '../components/AddSubtopicModal';
 import { TopicItem } from '../components/TopicItem';
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getCourseModules, deleteCourse } from '../../../services/admin/courseApis';
+
+interface Module {
+  id: number;
+  weekno: number;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  submodules: Submodule[];
+}
+
+interface Submodule {
+  id: number;
+  title: string;
+  description?: string;
+  duration?: string;
+}
 
 const CourseDetailPage: React.FC = () => {
+  const clientId = import.meta.env.VITE_CLIENT_ID;
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const { data: courseData, isLoading, error } = useQuery({
+    queryKey: ['course', courseId],
+    queryFn: () => getCourseModules(clientId, Number(courseId)),
+  });
+
+  const deleteCourseMutation = useMutation({
+    mutationFn: () => deleteCourse(clientId, Number(courseId)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      navigate('/admin/courses');
+    },
+    onError: (error: Error) => {
+      console.error('Failed to delete course:', error);
+      // You might want to show an error toast here
+    }
+  });
+
   const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
   const [isSubtopicModalOpen, setIsSubtopicModalOpen] = useState(false);
   const [currentTopicId, setCurrentTopicId] = useState<string>('');
-  const [topics, setTopics] = useState<Topic[]>([
-    {
-      id: '1',
-      title: 'Lorem Ipsum Topic 1',
-      week: '1',
-      description: 'Description for topic 1',
-      subtopics: []
-    },
-    {
-      id: '2',
-      title: 'Lorem Ipsum Topic 1',
-      week: '1',
-      description: 'Description for topic 2',
-      subtopics: []
-    }
-  ]);
-
-  // Mock course data - in a real app, this would be fetched from an API
-  const courseMockData: Course = {
-    id: courseId || '1',
-    title: 'Lorem Ipsum',
-    description: 'Here is a glimpse of your overall progress.',
-    isPro: true
-  };
+  const [topics, setTopics] = useState<Topic[]>([]);
 
   const handleTopicSubmit = (newTopic: Topic) => {
     setTopics(prev => [...prev, newTopic]);
@@ -58,11 +75,12 @@ const CourseDetailPage: React.FC = () => {
   };
 
   const handleDeleteCourse = () => {
-    if (window.confirm('Are you sure you want to delete this course?')) {
-      console.log('Deleting course:', courseId);
-      // In a real app, you would make an API call to delete the course
-      navigate('/admin/courses'); // Redirect back to courses page
-    }
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    deleteCourseMutation.mutate();
+    setIsDeleteModalOpen(false);
   };
 
   const handlePublish = () => {
@@ -81,6 +99,47 @@ const CourseDetailPage: React.FC = () => {
     navigate('/admin/courses');
   };
 
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="animate-pulse">
+          <div className="h-8 w-32 bg-gray-200 rounded mb-6"></div>
+          <div className="flex justify-between items-start mb-8">
+            <div>
+              <div className="h-8 w-64 bg-gray-200 rounded mb-2"></div>
+              <div className="h-4 w-96 bg-gray-200 rounded"></div>
+            </div>
+            <div className="flex gap-3">
+              <div className="h-10 w-32 bg-gray-200 rounded"></div>
+              <div className="h-10 w-32 bg-gray-200 rounded"></div>
+              <div className="h-10 w-32 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+          <div className="space-y-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white p-6 rounded-lg shadow-md">
+                <div className="h-6 w-48 bg-gray-200 rounded mb-4"></div>
+                <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
+                <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <h2 className="text-red-800 font-semibold">Error loading course</h2>
+          <p className="text-red-600">Please try again later</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-6">
@@ -97,15 +156,15 @@ const CourseDetailPage: React.FC = () => {
       <div className="flex justify-between items-start mb-8">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">{courseMockData.title}</h1>
-            <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-md">Pro</div>
+            <h1 className="text-2xl font-bold">Python for Data Science</h1>
+            <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-md">Certified</div>
             <button className="text-gray-500">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
             </button>
           </div>
-          <p className="text-gray-600 mt-1">{courseMockData.description}</p>
+          <p className="text-gray-600 mt-1">Comprehensive course on Python for Data Science</p>
         </div>
         <div className="flex gap-3">
           <button
@@ -136,11 +195,23 @@ const CourseDetailPage: React.FC = () => {
       </div>
 
       <div className="space-y-6">
-        {topics.length > 0 ? (
-          topics.map(topic => (
+        {courseData && courseData.length > 0 ? (
+          courseData.map((module: Module) => (
             <TopicItem
-              key={topic.id}
-              topic={topic}
+              key={module.id}
+              courseId={courseId as string}
+              topic={{
+                id: module.id?.toString() ?? '',
+                title: module.title ?? '',
+                week: module.weekno?.toString() ?? '',
+                description: `Week ${module.weekno}`,
+                subtopics: module.submodules?.map((submodule: Submodule) => ({
+                  id: submodule.id?.toString() ?? '',
+                  title: submodule.title ?? '',
+                  description: submodule.description ?? '',
+                  contents: []
+                })) ?? []
+              }}
               onDelete={handleDeleteTopic}
               onAddSubtopic={openSubtopicModal}
             />
@@ -167,6 +238,15 @@ const CourseDetailPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Course"
+        message="Are you sure you want to delete this course? This action cannot be undone."
+        isLoading={deleteCourseMutation.isPending}
+      />
 
       <AddTopicModal
         isOpen={isTopicModalOpen}
