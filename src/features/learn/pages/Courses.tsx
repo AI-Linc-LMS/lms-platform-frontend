@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { getAllCourse } from '../../../services/enrolled-courses-content/courseContentApis';
@@ -78,7 +78,6 @@ const StatBlock = ({ icon, count, label }: { icon: React.ReactNode, count: numbe
 
 // Course card component
 const CourseCard = ({ course }: { course: Course }) => {
-  console.log("course", course);
   const navigate = useNavigate();
 
   const handleEnrollClick = () => {
@@ -163,14 +162,212 @@ const EmptyCoursesState = () => {
   );
 };
 
+// Search Icon Component
+const SearchIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M7.33333 12.6667C10.2789 12.6667 12.6667 10.2789 12.6667 7.33333C12.6667 4.38781 10.2789 2 7.33333 2C4.38781 2 2 4.38781 2 7.33333C2 10.2789 4.38781 12.6667 7.33333 12.6667Z"
+      stroke="#6C757D"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M14 14L11.1 11.1"
+      stroke="#6C757D"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+// Sort Icon Component
+const SortIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M2 4H14"
+      stroke="#343A40"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+    <path
+      d="M4 8H12"
+      stroke="#343A40"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+    <path
+      d="M6 12H10"
+      stroke="#343A40"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+// Dropdown Component for Sort Menu
+const SortDropdown = ({ selectedSort, setSelectedSort }: { selectedSort: string, setSelectedSort: (sort: string) => void }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const sortOptions = [
+    { value: 'most_popular', label: 'Most Popular' },
+    { value: 'highest_rated', label: 'Highest Rated' },
+    { value: 'newest', label: 'Newest / Recently Added' },
+    { value: 'price_low_high', label: 'Price - Low to High' },
+    { value: 'price_high_low', label: 'Price - High to Low' }
+  ];
+  
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center space-x-2 px-3 py-2 border border-[#DEE2E6] rounded-lg bg-white text-[#343A40] text-sm"
+      >
+        <SortIcon />
+        <span>Sort</span>
+      </button>
+      
+      {isOpen && (
+        <div className="absolute right-0 mt-1 bg-white border border-[#DEE2E6] rounded-lg shadow-lg py-1 z-10 w-56">
+          {sortOptions.map((option) => (
+            <div 
+              key={option.value}
+              className={`px-4 py-2 text-sm cursor-pointer hover:bg-[#F8F9FA] flex items-center ${selectedSort === option.value ? 'text-[#343A40] font-medium' : 'text-[#495057]'}`}
+              onClick={() => {
+                setSelectedSort(option.value);
+                setIsOpen(false);
+              }}
+            >
+              {selectedSort === option.value && (
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              )}
+              {option.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Filter Category Component
+const FilterCategory = ({ 
+  title, 
+  options, 
+  selectedOptions, 
+  setSelectedOptions 
+}: { 
+  title: string, 
+  options: { id: string, label: string }[], 
+  selectedOptions: string[],
+  setSelectedOptions: (options: string[]) => void 
+}) => {
+  return (
+    <div className="mb-5">
+      <h3 className="font-medium text-[#343A40] mb-3">{title}</h3>
+      <div className="space-y-2">
+        {options.map((option) => (
+          <div key={option.id} className="flex items-center">
+            <input
+              type="checkbox"
+              id={option.id}
+              checked={selectedOptions.includes(option.id)}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setSelectedOptions([...selectedOptions, option.id]);
+                } else {
+                  setSelectedOptions(selectedOptions.filter(id => id !== option.id));
+                }
+              }}
+              className="w-4 h-4 text-[#17627A] bg-gray-100 border-gray-300 rounded focus:ring-[#17627A] focus:ring-2"
+            />
+            <label htmlFor={option.id} className="ml-2 text-sm font-medium text-[#495057]">
+              {option.label}
+            </label>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // Main component
 const Courses = () => {
   const clientId = Number(import.meta.env.VITE_CLIENT_ID) || 1;
-
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('most_popular');
+  
+  // Filter states
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
+  const [selectedPrices, setSelectedPrices] = useState<string[]>([]);
+  const [selectedRatings, setSelectedRatings] = useState<string[]>([]);
+  
+  const categoryOptions = [
+    { id: 'full_stack', label: 'Full Stack Development' },
+    { id: 'front_end', label: 'Front-End Development' },
+    { id: 'back_end', label: 'Back-End Development' },
+    { id: 'ui_ux', label: 'UI/UX Design' },
+    { id: 'data_science', label: 'Data Science & Analytics' },
+    { id: 'marketing', label: 'Marketing' },
+    { id: 'business', label: 'Business' },
+  ];
+  
+  const levelOptions = [
+    { id: 'beginner', label: 'Beginner' },
+    { id: 'intermediate', label: 'Intermediate' },
+    { id: 'pro', label: 'Pro' }
+  ];
+  
+  const priceOptions = [
+    { id: 'free', label: 'Free' },
+    { id: 'paid', label: 'Paid' }
+  ];
+  
+  const ratingOptions = [
+    { id: '4_up', label: '4 and up' },
+    { id: '3_up', label: '3 and up' }
+  ];
+  
+  const clearAllFilters = () => {
+    setSelectedCategories([]);
+    setSelectedLevels([]);
+    setSelectedPrices([]);
+    setSelectedRatings([]);
+    setSearchQuery('');
+  };
+  
   const { data: courses, isLoading, error } = useQuery({
     queryKey: ['all-courses'],
     queryFn: () => getAllCourse(clientId),
   });
+  
+  // Filter courses based on selected filters and search query
+  const filteredCourses = courses ? courses.filter((course: Course) => {
+    // Search filter
+    if (searchQuery && !course.title.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+    
+    // Apply other filters if implemented in the future
+    
+    return true;
+  }) : [];
   
 
   if (isLoading) {
@@ -192,7 +389,7 @@ const Courses = () => {
     );
   }
 
-  const hasNoCourses = !courses || courses.length === 0;
+  const hasNoCourses = !filteredCourses || filteredCourses.length === 0;
 
   return (
     <div className="px-4 md:px-6 py-6">
@@ -204,16 +401,87 @@ const Courses = () => {
           {hasNoCourses ? "No courses available at the moment" : "Here's the List of all our Courses"}
         </p>
       </div>
-
-      {hasNoCourses ? (
-        <EmptyCoursesState /> 
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((course: Course) => (
-            <CourseCard key={course.id} course={course} />
-          ))}
+      
+      <div className="flex flex-col md:flex-row gap-6 mb-8">
+        {/* Filter Section */}
+        <div className="w-full md:w-1/4 lg:w-1/5">
+          <div className="bg-white rounded-xl p-4 border border-[#DEE2E6]">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-[#343A40]">Filter By</h2>
+              <button 
+                onClick={clearAllFilters}
+                className="text-sm text-[#17627A] hover:underline"
+              >
+                Clear All
+              </button>
+            </div>
+            
+            {/* Categories */}
+            <FilterCategory 
+              title="Categories" 
+              options={categoryOptions} 
+              selectedOptions={selectedCategories} 
+              setSelectedOptions={setSelectedCategories} 
+            />
+            
+            {/* Level/Difficulty */}
+            <FilterCategory 
+              title="Level/Difficulty" 
+              options={levelOptions} 
+              selectedOptions={selectedLevels} 
+              setSelectedOptions={setSelectedLevels} 
+            />
+            
+            {/* Price */}
+            <FilterCategory 
+              title="Price" 
+              options={priceOptions} 
+              selectedOptions={selectedPrices} 
+              setSelectedOptions={setSelectedPrices} 
+            />
+            
+            {/* Rating */}
+            <FilterCategory 
+              title="Rating" 
+              options={ratingOptions} 
+              selectedOptions={selectedRatings} 
+              setSelectedOptions={setSelectedRatings} 
+            />
+          </div>
         </div>
-      )}
+        
+        {/* Courses Section */}
+        <div className="w-full md:w-3/4 lg:w-4/5">
+          {/* Search and Sort */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div className="relative w-full sm:w-auto flex-1 max-w-md">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <SearchIcon />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by courses"
+                className="w-full py-2 pl-10 pr-4 border border-[#DEE2E6] rounded-lg text-[#495057] focus:outline-none focus:ring-2 focus:ring-[#17627A] focus:border-transparent"
+              />
+            </div>
+            
+            <SortDropdown selectedSort={sortBy} setSelectedSort={setSortBy} />
+          </div>
+          
+          {/* Course Cards */}
+          {hasNoCourses ? (
+            <EmptyCoursesState /> 
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {filteredCourses.map((course: Course) => (
+                <CourseCard key={course.id} course={course} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
