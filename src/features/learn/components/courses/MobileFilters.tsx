@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { FilterIcon } from './CourseIcons';
 import { SearchIcon } from './CourseIcons';
 import FilterCategory from './FilterCategory';

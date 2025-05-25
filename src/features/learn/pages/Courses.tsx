@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { useQuery } from '@tanstack/react-query';
 import { getAllCourse } from '../../../services/enrolled-courses-content/courseContentApis';
 import CourseCard from '../components/courses/CourseCard';

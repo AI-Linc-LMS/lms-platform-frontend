@@ -1,4 +1,4 @@
-import React from 'react';
+
 import FilterCategory from './FilterCategory';
 import { FilterOption } from './FilterOptions';
 
