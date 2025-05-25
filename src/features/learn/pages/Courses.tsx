@@ -8,15 +8,19 @@ import DesktopFilters from '../components/courses/DesktopFilters';
 import DesktopSearch from '../components/courses/DesktopSearch';
 import { useCourseFilters } from '../hooks/useCourseFilters';
 import { categoryOptions, levelOptions, priceOptions, ratingOptions } from '../components/courses/FilterOptions';
+import { adaptCourses } from '../utils/courseAdapter';
 
 // Main component
 const Courses = () => {
   const clientId = Number(import.meta.env.VITE_CLIENT_ID) || 1;
 
-  const { data: courses, isLoading, error } = useQuery({
+  const { data: apiCourses, isLoading, error } = useQuery({
     queryKey: ['all-courses'],
     queryFn: () => getAllCourse(clientId),
   });
+  
+  // Adapt API data to include fields needed for filtering
+  const courses = adaptCourses(apiCourses || []);
   
   const {
     searchQuery,
