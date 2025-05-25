@@ -306,11 +306,42 @@ const FilterCategory = ({
   );
 };
 
+// Filter Toggle Icon Component
+const FilterIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 18 18"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M7.5 13.5H10.5"
+      stroke="#343A40"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+    <path
+      d="M4.5 9H13.5"
+      stroke="#343A40"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+    <path
+      d="M2.25 4.5H15.75"
+      stroke="#343A40"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
 // Main component
 const Courses = () => {
   const clientId = Number(import.meta.env.VITE_CLIENT_ID) || 1;
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('most_popular');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   
   // Filter states
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -343,6 +374,13 @@ const Courses = () => {
     { id: '4_up', label: '4 and up' },
     { id: '3_up', label: '3 and up' }
   ];
+  
+  const hasActiveFilters = selectedCategories.length > 0 || selectedLevels.length > 0 || 
+                         selectedPrices.length > 0 || selectedRatings.length > 0;
+  
+  const toggleFilters = () => {
+    setIsFilterOpen(!isFilterOpen);
+  };
   
   const clearAllFilters = () => {
     setSelectedCategories([]);
@@ -402,9 +440,38 @@ const Courses = () => {
         </p>
       </div>
       
+      {/* Mobile Filter Toggle Button */}
+      <div className="md:hidden mb-4">
+        <button 
+          className="flex items-center justify-between w-full p-3 bg-white border border-[#DEE2E6] rounded-lg text-[#343A40] shadow-sm"
+          onClick={toggleFilters}
+        >
+          <div className="flex items-center space-x-2">
+            <FilterIcon />
+            <span className="font-medium">Filters</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            {hasActiveFilters && (
+              <span className="flex items-center justify-center w-5 h-5 bg-[#17627A] text-white text-xs font-medium rounded-full">
+                {selectedCategories.length + selectedLevels.length + selectedPrices.length + selectedRatings.length}
+              </span>
+            )}
+            <svg 
+              className={`w-4 h-4 transition-transform duration-300 ${isFilterOpen ? 'rotate-180' : ''}`} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24" 
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </div>
+        </button>
+      </div>
+      
       <div className="flex flex-col md:flex-row gap-6 mb-8">
-        {/* Filter Section */}
-        <div className="w-full md:w-1/4 lg:w-1/5">
+        {/* Filter Section - Hidden on mobile by default, shown on larger screens */}
+        <div className={`${isFilterOpen ? 'max-h-[1500px] opacity-100 mb-6' : 'max-h-0 opacity-0 overflow-hidden'} md:max-h-[1500px] md:opacity-100 md:overflow-visible w-full md:w-1/4 lg:w-1/5 transition-all duration-500 ease-in-out`}>
           <div className="bg-white rounded-xl p-4 border border-[#DEE2E6]">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold text-[#343A40]">Filter By</h2>
