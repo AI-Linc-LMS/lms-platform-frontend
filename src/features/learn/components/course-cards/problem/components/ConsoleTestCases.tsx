@@ -1,4 +1,4 @@
-import React from 'react';
+import { useEffect, useRef } from 'react';
 import testcaseIcon from "../../../../../../commonComponents/icons/enrolled-courses/problem/testcaseIcon.png";
 
 interface TestCase {
@@ -8,7 +8,7 @@ interface TestCase {
   sample_input: string;
   sample_output: string;
   userOutput?: string;
-  status?: 'passed' | 'failed' | 'running';
+  status?: 'passed' | 'failed' | 'running' | undefined;
   time?: string;
   memory?: number;
 }
@@ -16,7 +16,7 @@ interface TestCase {
 interface CustomTestCase {
   input: string;
   output?: string;
-  status?: 'passed' | 'failed' | 'running';
+  status?: 'passed' | 'failed' | 'running' | undefined;
   time?: string;
   memory?: number;
 }
@@ -46,8 +46,33 @@ const ConsoleTestCases: React.FC<ConsoleTestCasesProps> = ({
   isDarkTheme,
   startResizing
 }) => {
+  const consoleRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to console when test cases are running
+  useEffect(() => {
+    if (isRunning && consoleRef.current) {
+      consoleRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [isRunning]);
+
+  const renderTestCaseSkeleton = () => (
+    <div className="animate-pulse">
+      <div className="h-4 w-24 bg-gray-200 rounded mb-4"></div>
+      <div className="space-y-3">
+        <div>
+          <div className="h-3 w-16 bg-gray-200 rounded mb-2"></div>
+          <div className="h-20 bg-gray-200 rounded"></div>
+        </div>
+        <div>
+          <div className="h-3 w-32 bg-gray-200 rounded mb-2"></div>
+          <div className="h-20 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className={`mb-10 ${isDarkTheme ? "bg-[#252526]" : ""}`}>
+    <div className={`mb-10 ${isDarkTheme ? "bg-[#252526]" : ""}`} ref={consoleRef}>
       <div className="console-resize-handle" onMouseDown={startResizing}>
       </div>
       <div className="flex items-center text-center gap-2 p-4 text-xl font-semibold">
@@ -101,7 +126,9 @@ const ConsoleTestCases: React.FC<ConsoleTestCasesProps> = ({
                     ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-gray-200 text-black border-gray-300"} `}>
                     {testCases[activeTestCase]?.sample_output}
                   </pre>
-                  {testCases[activeTestCase]?.status && (
+                  {testCases[activeTestCase]?.status === 'running' ? (
+                    renderTestCaseSkeleton()
+                  ) : testCases[activeTestCase]?.status && (
                     <div>
                       <div className="text-sm text-gray-700 mt-4 mb-1">
                         <strong>Your Output:</strong>
@@ -109,9 +136,9 @@ const ConsoleTestCases: React.FC<ConsoleTestCasesProps> = ({
                       <pre
                         className={`p-2 mt-2 rounded text-sm ${testCases[activeTestCase]?.status === 'passed'
                           ? 'text-green-600'
-                          : testCases[activeTestCase]?.status === 'running'
-                            ? 'text-yellow-600'
-                            : 'text-red-600'
+                          : testCases[activeTestCase]?.status === 'failed'
+                            ? 'text-red-600'
+                            : 'text-yellow-600'
                           }`}
                       >
                         {testCases[activeTestCase]?.userOutput || ' '}
@@ -122,9 +149,9 @@ const ConsoleTestCases: React.FC<ConsoleTestCasesProps> = ({
                         <span
                           className={`${testCases[activeTestCase]?.status === 'passed'
                             ? 'text-green-700'
-                            : testCases[activeTestCase]?.status === 'running'
-                              ? 'text-yellow-600'
-                              : 'text-red-700'
+                            : testCases[activeTestCase]?.status === 'failed'
+                              ? 'text-red-700'
+                              : 'text-yellow-600'
                             }`}
                         >
                           {testCases[activeTestCase]?.status || 'failed'}
@@ -163,7 +190,9 @@ const ConsoleTestCases: React.FC<ConsoleTestCasesProps> = ({
                     </button>
                   </div>
 
-                  {customTestCase.output && (
+                  {customTestCase.status === 'running' ? (
+                    renderTestCaseSkeleton()
+                  ) : customTestCase.output && (
                     <>
                       <div className="text-sm text-gray-700 mt-4 mb-1">
                         <strong>Output:</strong>
@@ -171,9 +200,9 @@ const ConsoleTestCases: React.FC<ConsoleTestCasesProps> = ({
                       <pre
                         className={`bg-gray-100 p-2 mt-2 rounded text-sm ${customTestCase.status === 'passed'
                           ? 'text-green-600'
-                          : customTestCase.status === 'running'
-                            ? 'text-yellow-600'
-                            : 'text-red-600'
+                          : customTestCase.status === 'failed'
+                            ? 'text-red-600'
+                            : 'text-yellow-600'
                           }`}
                       >
                         {customTestCase.output}

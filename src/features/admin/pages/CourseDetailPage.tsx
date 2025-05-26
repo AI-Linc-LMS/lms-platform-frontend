@@ -12,7 +12,8 @@ import {
   updateCourse,
   createCourseModule,
   createCourseSubmodule,
-  viewCourseDetails
+  viewCourseDetails,
+  deleteCourseModule
 } from '../../../services/admin/courseApis';
 
 interface Module {
@@ -40,6 +41,8 @@ const CourseDetailPage: React.FC = () => {
   const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
   const [isSubtopicModalOpen, setIsSubtopicModalOpen] = useState(false);
   const [currentModuleId, setCurrentModuleId] = useState<number>(0);
+  const [isDeleteTopicModalOpen, setIsDeleteTopicModalOpen] = useState(false);
+  const [topicToDelete, setTopicToDelete] = useState<string>('');
 
   // Get course details
   const { data: courseDetails } = useQuery({
@@ -118,12 +121,27 @@ const CourseDetailPage: React.FC = () => {
       return createCourseSubmodule(clientId, Number(courseId), currentModuleId, submoduleData);
     },
     onSuccess: () => {
+      // Invalidate both the course modules and the specific topic's subtopics
       queryClient.invalidateQueries({ queryKey: ['courseModules', courseId] });
+      queryClient.invalidateQueries({ queryKey: ['course', currentModuleId.toString()] });
       setIsSubtopicModalOpen(false);
     },
     onError: (error: Error) => {
       console.error('Failed to create submodule:', error);
       // Show error message
+    }
+  });
+
+  // Delete module mutation
+  const deleteModuleMutation = useMutation({
+    mutationFn: (moduleId: number) => deleteCourseModule(clientId, Number(courseId), moduleId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courseModules', courseId] });
+      setIsDeleteTopicModalOpen(false);
+    },
+    onError: (error: Error) => {
+      console.error('Failed to delete module:', error);
+      alert('Failed to delete topic. Please try again.');
     }
   });
 
@@ -180,8 +198,14 @@ const CourseDetailPage: React.FC = () => {
   };
 
   const handleDeleteTopic = (topicId: string) => {
-    console.log('Delete topic:', topicId);
-    // In a real app, this would call an API to delete the topic
+    setTopicToDelete(topicId);
+    setIsDeleteTopicModalOpen(true);
+  };
+
+  const handleConfirmDeleteTopic = () => {
+    if (topicToDelete) {
+      deleteModuleMutation.mutate(Number(topicToDelete));
+    }
   };
 
   if (isLoading) {
@@ -195,7 +219,18 @@ const CourseDetailPage: React.FC = () => {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">{courseDetails?.title || 'Course Details'}</h1>
+        <div className="flex flex-col items-center gap-4">
+          <button
+            onClick={() => navigate('/admin/courses')}
+            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Dashboard
+          </button>
+          <h1 className="text-3xl font-bold">{courseDetails?.title || 'Course Details'}</h1>
+        </div>
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
@@ -293,6 +328,14 @@ const CourseDetailPage: React.FC = () => {
         onConfirm={handleConfirmDelete}
         title="Delete Course"
         message="Are you sure you want to delete this course? This action cannot be undone."
+      />
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteTopicModalOpen}
+        onClose={() => setIsDeleteTopicModalOpen(false)}
+        onConfirm={handleConfirmDeleteTopic}
+        title="Delete Topic"
+        message="Are you sure you want to delete this topic? This will also delete all subtopics and content associated with it. This action cannot be undone."
       />
     </div>
   );
