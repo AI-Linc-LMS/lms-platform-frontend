@@ -424,8 +424,8 @@ interface CourseCardProps {
 
 const CourseCard: React.FC<CourseCardProps> = ({ course, onEditClick }) => {
   return (
-    <div className="bg-white rounded-lg border border-[#80C9E0] overflow-hidden max-w-[500px]">
-      <div className="p-6">
+    <div className="bg-white rounded-lg border border-[#80C9E0] overflow-hidden max-w-[500px] flex flex-col h-full">
+      <div className="p-6 flex flex-col flex-1">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold">{course.title}</h3>
           <span className={`${course.is_free ? 'bg-green-50 text-green-800' : 'bg-blue-50 text-blue-800'} text-sm px-3 py-1 rounded-full`}>
@@ -497,15 +497,17 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEditClick }) => {
           </div>
         </div>
 
-        <button 
-          className="w-full bg-[#D7EFF6] text-[#264D64] border border-[#80C9E0] py-3 rounded-md flex items-center justify-center "
-          onClick={onEditClick}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-          </svg>
-          Edit Course
-        </button>
+        <div className="mt-auto pt-4">
+          <button 
+            className="w-full bg-[#D7EFF6] text-[#264D64] border border-[#80C9E0] py-3 rounded-md flex items-center justify-center "
+            onClick={onEditClick}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+            Edit Course
+          </button>
+        </div>
       </div>
     </div>
   );
