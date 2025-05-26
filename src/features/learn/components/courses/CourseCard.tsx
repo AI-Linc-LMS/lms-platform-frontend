@@ -3,50 +3,17 @@ import { Course } from "../../types/course.types";
 import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import { useNavigate } from "react-router-dom";
 import { VideoIcon, DocumentIcon, CodeIcon, FAQIcon } from "../../../../commonComponents/icons/learnIcons/CourseIcons";
+import { AssignmentIcon } from './CourseIcons';
 
-// Add an AssignmentIcon component
-const AssignmentIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 16 16"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      fillRule="evenodd"
-      clipRule="evenodd"
-      d="M3.83594 2C3.83594 1.72386 4.0598 1.5 4.33594 1.5H11.1693C11.3007 1.5 11.4267 1.55268 11.5205 1.64645L13.6897 3.81569C13.7835 3.90946 13.8359 4.03533 13.8359 4.16667V13.5C13.8359 13.7761 13.6121 14 13.3359 14H4.33594C4.0598 14 3.83594 13.7761 3.83594 13.5V2ZM4.83594 2.5V13H12.8359V4.33333L10.8359 2.33333H4.83594Z"
-      fill="#495057"
-    />
-    <path
-      fillRule="evenodd"
-      clipRule="evenodd"
-      d="M6.33594 6.5C6.33594 6.22386 6.5598 6 6.83594 6H10.3359C10.6121 6 10.8359 6.22386 10.8359 6.5C10.8359 6.77614 10.6121 7 10.3359 7H6.83594C6.5598 7 6.33594 6.77614 6.33594 6.5Z"
-      fill="#495057"
-    />
-    <path
-      fillRule="evenodd"
-      clipRule="evenodd"
-      d="M6.33594 9.5C6.33594 9.22386 6.5598 9 6.83594 9H10.3359C10.6121 9 10.8359 9.22386 10.8359 9.5C10.8359 9.77614 10.6121 10 10.3359 10H6.83594C6.5598 10 6.33594 9.77614 6.33594 9.5Z"
-      fill="#495057"
-    />
-  </svg>
-);
-
-interface CourseCardProps {
-  course?: Course; 
-  className?: string;
-  isLoading?: boolean; 
-  error?: Error | null;
-}
-
-// Stat block component with hover effect
+// Stats block for showing counts of different content types
 const StatBlock = ({ icon, count, label }: { icon: React.ReactNode, count: number, label: string }) => {
+  // Ensure count is a number
+  const displayCount = typeof count === 'object' ? 0 : Number(count) || 0;
+  
   return (
     <div className="bg-[#F8F9FA] hover:bg-[#E9ECEF] rounded-xl p-2 md:p-3 flex flex-col items-center justify-center relative group transition-all duration-200">
       <div className="mb-1 md:mb-2">{icon}</div>
-      <span className="text-center text-[#495057] font-medium text-sm md:text-base">{count}</span>
+      <span className="text-center text-[#495057] font-medium text-sm md:text-base">{displayCount}</span>
       
       {/* Tooltip that appears on hover */}
       <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[#343A40] text-white text-xs rounded pointer-events-none transition-opacity duration-200">
@@ -57,6 +24,13 @@ const StatBlock = ({ icon, count, label }: { icon: React.ReactNode, count: numbe
   );
 };
 
+interface CourseCardProps {
+  course?: Course; 
+  className?: string;
+  isLoading?: boolean; 
+  error?: Error | null;
+}
+
 const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoading = false, error = null }) => {
   const navigate = useNavigate();
 
@@ -66,28 +40,14 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
     }
   };
 
-  // Calculate total counts across all modules and submodules
-  const calculateTotalCounts = (course?: Course) => {
-    if (!course || !course.modules || !Array.isArray(course.modules)) {
-      return { videos: 0, articles: 0, problems: 0, quizzes: 0, assignments: 0 };
-    }
-    
-    return course.modules.reduce((acc, module) => {
-      if (!module.submodules || !Array.isArray(module.submodules)) return acc;
-      
-      return module.submodules.reduce((subAcc, submodule) => {
-        return {
-          videos: subAcc.videos + (submodule.video_count || 0),
-          articles: subAcc.articles + (submodule.article_count || 0),
-          problems: subAcc.problems + (submodule.coding_problem_count || 0),
-          quizzes: subAcc.quizzes + (submodule.quiz_count || 0),
-          assignments: subAcc.assignments + (submodule.assignment_count || 0)
-        };
-      }, acc);
-    }, { videos: 0, articles: 0, problems: 0, quizzes: 0, assignments: 0 });
+  // Placeholder for stats counts
+  const totalCounts = {
+    videos: course?.stats?.video?.total || 0,
+    articles: course?.stats?.article?.total || 0,
+    problems: course?.stats?.coding_problem?.total || 0,
+    quizzes: course?.stats?.quiz?.total || 0,
+    assignments: course?.stats?.assignment?.total || 0
   };
-
-  const totalCounts = calculateTotalCounts(course);
 
   if (isLoading || !course || error) {
     // Skeleton loader
@@ -177,7 +137,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
       <div className="flex flex-row gap-2 mb-4 items-center text-sm md:text-base">
         <h1 className="text-[#343A40] font-medium">Instructors:</h1>
         <div className="flex -space-x-2 mr-3">
-          {course.instructors.slice(0, 5).map((instructor, index) => (
+          {course.instructors?.slice(0, 5).map((instructor, index) => (
             <div key={index} className="w-6 md:w-8 h-6 md:h-8 rounded-full bg-gray-300 border-2 border-white overflow-hidden">
               <img
                 src={instructor.profile_pic_url}
