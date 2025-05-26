@@ -3,8 +3,9 @@ import { Topic, Subtopic, TabKey } from '../types/course';
 import SubtopicItem from './SubtopicItem';
 import BottomSheet from './BottomSheet';
 import ContentManager from './add-content/ContentManager';
-import { useQuery } from '@tanstack/react-query';
-import { getCourseSubmodules } from '../../../services/admin/courseApis';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { getCourseSubmodules, deleteCourseSubmodule } from '../../../services/admin/courseApis';
+import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 
 interface TopicItemProps {
   courseId: string;
@@ -24,6 +25,7 @@ interface SubmoduleData {
 
 export const TopicItem: React.FC<TopicItemProps> = ({ courseId, topic, onDelete, onAddSubtopic }) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const queryClient = useQueryClient();
   const { data: submoduleData, isLoading, error } = useQuery({
     queryKey: ['course', topic.id],
     queryFn: () => getCourseSubmodules(clientId, Number(courseId), Number(topic.id)),
@@ -31,6 +33,22 @@ export const TopicItem: React.FC<TopicItemProps> = ({ courseId, topic, onDelete,
 
   const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('videos');
+  const [isDeleteSubtopicModalOpen, setIsDeleteSubtopicModalOpen] = useState(false);
+  const [subtopicToDelete, setSubtopicToDelete] = useState<number | null>(null);
+
+  // Delete subtopic mutation
+  const deleteSubtopicMutation = useMutation({
+    mutationFn: (subtopicId: number) => 
+      deleteCourseSubmodule(clientId, Number(courseId), Number(topic.id), subtopicId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['course', topic.id] });
+      setIsDeleteSubtopicModalOpen(false);
+    },
+    onError: (error: Error) => {
+      console.error('Failed to delete subtopic:', error);
+      alert('Failed to delete subtopic. Please try again.');
+    }
+  });
 
   useEffect(() => {
     if (bottomSheetOpen) {
@@ -51,6 +69,18 @@ export const TopicItem: React.FC<TopicItemProps> = ({ courseId, topic, onDelete,
 
   const handleCloseSheet = () => {
     setBottomSheetOpen(false);
+    queryClient.invalidateQueries({ queryKey: ['course', topic.id] });
+  };
+
+  const handleDeleteSubtopic = (subtopicId: number) => {
+    setSubtopicToDelete(subtopicId);
+    setIsDeleteSubtopicModalOpen(true);
+  };
+
+  const handleConfirmDeleteSubtopic = () => {
+    if (subtopicToDelete) {
+      deleteSubtopicMutation.mutate(subtopicToDelete);
+    }
   };
 
   const getStats = (subtopic: Subtopic) => {
@@ -129,7 +159,7 @@ export const TopicItem: React.FC<TopicItemProps> = ({ courseId, topic, onDelete,
               contents: []
             })}
             onEdit={() => { }}
-            onDelete={() => { }}
+            onDelete={() => handleDeleteSubtopic(submodule.id)}
             onAddContent={() => handleAddContent()}
           />
         ))}
@@ -182,6 +212,15 @@ export const TopicItem: React.FC<TopicItemProps> = ({ courseId, topic, onDelete,
           tabKey={activeTab as TabKey}
         />
       </BottomSheet>
+
+      {/* Delete Subtopic Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={isDeleteSubtopicModalOpen}
+        onClose={() => setIsDeleteSubtopicModalOpen(false)}
+        onConfirm={handleConfirmDeleteSubtopic}
+        title="Delete Subtopic"
+        message="Are you sure you want to delete this subtopic? This will also delete all content associated with it. This action cannot be undone."
+      />
     </div>
   );
 }; 
