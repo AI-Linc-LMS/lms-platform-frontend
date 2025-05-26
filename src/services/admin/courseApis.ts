@@ -90,7 +90,7 @@ export const updateCourse = async (
   courseData: CourseData
 ) => {
   try {
-    const res = await axiosInstance.put(
+    const res = await axiosInstance.patch(
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/`,
       courseData
     );
@@ -195,7 +195,7 @@ export const updateCourseModule = async (
   moduleData: ModuleData
 ) => {
   try {
-    const res = await axiosInstance.put(
+    const res = await axiosInstance.patch(
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/modules/${moduleId}/`,
       moduleData
     );
@@ -308,7 +308,7 @@ export const updateCourseSubmodule = async (
   submoduleData: SubmoduleData
 ) => {
   try {
-    const res = await axiosInstance.put(
+    const res = await axiosInstance.patch(
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/modules/${moduleId}/submodules/${submoduleId}/`,
       submoduleData
     );
