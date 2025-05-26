@@ -377,15 +377,9 @@ const AdminDashboard: React.FC = () => {
                     required
                   >
                     <option value="">Choose a level</option>
-                    <option value="easy">Beginner (Easy)</option>
-                    <option value="medium">Intermediate (Medium)</option>
-                    <option value="hard">Advanced (Hard)</option>
                     <option value="Easy">Easy</option>
                     <option value="Medium">Medium</option>
                     <option value="Hard">Hard</option>
-                    <option value="Beginner">Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
