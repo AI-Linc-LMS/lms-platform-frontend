@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCourses } from '../../../services/admin/courseApis';
-import { useQuery } from '@tanstack/react-query';
+import { getCourses, createCourse } from '../../../services/admin/courseApis';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Course {
   id: number;
@@ -71,6 +71,7 @@ const CourseCardSkeleton: React.FC = () => {
 const AdminDashboard: React.FC = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState<CourseFormData>({
     name: '',
@@ -82,6 +83,107 @@ const AdminDashboard: React.FC = () => {
   const { data: coursesData, isLoading, error } = useQuery({
     queryKey: ['courses'],
     queryFn: () => getCourses(clientId)
+  });
+
+  // Log difficulty levels of existing courses to discover valid values
+  useEffect(() => {
+    if (coursesData && coursesData.length > 0) {
+      console.log('Analyzing existing courses for valid difficulty levels...');
+      const difficultyLevels = coursesData.map((course: Course) => course.difficulty_level);
+      const uniqueDifficultyLevels = [...new Set(difficultyLevels)];
+      console.log('Found difficulty levels:', uniqueDifficultyLevels);
+      
+      // If there are valid difficulty levels, automatically update the dropdown options
+      if (uniqueDifficultyLevels.length > 0) {
+        console.log('Found valid difficulty levels in existing courses:', uniqueDifficultyLevels);
+      }
+    }
+  }, [coursesData]);
+
+  const createCourseMutation = useMutation({
+    mutationFn: (data: CourseFormData) => {
+      // Transform form data to match API requirements
+      const courseData = {
+        title: data.name,
+        description: data.description,
+        // Generate a slug from the title (lowercase, replace spaces with hyphens)
+        slug: data.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+        // Only include difficulty_level if a valid option was selected
+        ...(data.level && { difficulty_level: data.level })
+      };
+      
+      console.log('Sending course data to API:', courseData);
+      return createCourse(clientId, courseData);
+    },
+    onSuccess: (data) => {
+      // Invalidate and refetch courses query
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      
+      // Navigate to the new course's detail page
+      navigate(`/admin/courses/${data.id}`);
+    },
+    onError: (error: Error) => {
+      console.error('Failed to create course:', error);
+      
+      // Log the complete error object for debugging
+      console.log('Complete error object:', JSON.stringify(error, null, 2));
+      
+      // Extract error details if available
+      let errorMessage = error.message;
+      
+      // Try to parse and format the error message for better readability
+      try {
+        if (error.message.includes('{')) {
+          const errorJson = JSON.parse(error.message.substring(error.message.indexOf('{')));
+          console.log('Parsed error JSON:', errorJson);
+          
+          // Special handling for difficulty_level errors
+          if (errorJson.difficulty_level) {
+            console.log('Difficulty level error details:', errorJson.difficulty_level);
+            
+            // Check if the error message contains hints about valid choices
+            const errorText = errorJson.difficulty_level[0];
+            if (typeof errorText === 'string') {
+              console.log('Error text:', errorText);
+              
+              // Try different regex patterns to extract choices
+              let validChoices = null;
+              
+              // Pattern 1: "X is not a valid choice. Valid choices are: [a, b, c]"
+              const pattern1 = /valid choice[s]?[.\s]*[^[]*\[(.*?)\]/i;
+              const match1 = errorText.match(pattern1);
+              if (match1 && match1[1]) {
+                validChoices = match1[1].split(',').map(c => c.trim());
+                console.log('Extracted choices (pattern 1):', validChoices);
+              }
+              
+              // Pattern 2: Look for quoted values in the error message
+              const pattern2 = /"([^"]+)"/g;
+              const matches2 = [...errorText.matchAll(pattern2)];
+              if (matches2.length > 1) { // First match is usually the invalid choice
+                validChoices = matches2.map(m => m[1]);
+                console.log('Extracted choices (pattern 2):', validChoices);
+              }
+              
+              if (validChoices) {
+                console.log('*** IMPORTANT: Valid choices for difficulty_level appear to be:', validChoices);
+                console.log('Please update your form to use these values.');
+              }
+            }
+          }
+          
+          const formattedError = Object.entries(errorJson)
+            .map(([field, errors]) => `${field}: ${errors}`)
+            .join('\n');
+          errorMessage = formattedError;
+        }
+      } catch (e) {
+        // If parsing fails, use the original error message
+        console.log('Error parsing error message:', e);
+      }
+      
+      alert(`Failed to create course:\n${errorMessage}\n\nPlease check the console for more details.`);
+    }
   });
 
   // Close modal when clicking outside
@@ -109,22 +211,27 @@ const AdminDashboard: React.FC = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Creating new course:', formData);
     
-    // In a real app, this would be an API call to create the course
-    // and then the server would return the new course ID
+    // Check if a course with this title might already exist
+    if (coursesData) {
+      const similarTitles = coursesData.filter((course: Course) => 
+        course.title.toLowerCase() === formData.name.toLowerCase()
+      );
+      
+      if (similarTitles.length > 0) {
+        if (!confirm(`A course with a similar title already exists. Create anyway?`)) {
+          return;
+        }
+      }
+    }
     
-    // For demo purposes, we'll just generate a random ID
-    const newCourseId = Math.floor(Math.random() * 1000).toString();
+    createCourseMutation.mutate(formData);
     
     // Reset form and close modal
     setFormData({ name: '', level: '', description: '' });
     setIsModalOpen(false);
-    
-    // Navigate to the course detail page
-    navigate(`/admin/courses/${newCourseId}`);
   };
 
   const handleEditCourse = (courseId: number) => {
@@ -270,9 +377,9 @@ const AdminDashboard: React.FC = () => {
                     required
                   >
                     <option value="">Choose a level</option>
-                    <option value="beginner">Beginner</option>
-                    <option value="intermediate">Intermediate</option>
-                    <option value="advanced">Advanced</option>
+                    <option value="Easy">Easy</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Hard">Hard</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
