@@ -52,6 +52,7 @@ const CourseDetailPage: React.FC = () => {
   const [isSubtopicModalOpen, setIsSubtopicModalOpen] = useState(false);
   const [currentTopicId, setCurrentTopicId] = useState<string>('');
   const [topics, setTopics] = useState<Topic[]>([]);
+  console.log(topics);
 
   const handleTopicSubmit = (newTopic: Topic) => {
     setTopics(prev => [...prev, newTopic]);
