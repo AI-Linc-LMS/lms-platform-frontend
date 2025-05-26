@@ -127,7 +127,7 @@ const CourseContent: React.FC<CourseContentProps> = ({course, isLoading, error})
 
       {/* Avatars */}
       <div className="flex -space-x-2 mr-3 my-3 md:my-4 overflow-x-auto">
-        {course.instructors.map((instructor: Instructor, index: number) => (
+        {course?.instructors?.map((instructor: Instructor, index: number) => (
           <div
             key={instructor.id}
             className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-300 border-2 border-white overflow-hidden cursor-pointer transition-transform hover:z-10 flex-shrink-0"
@@ -142,9 +142,8 @@ const CourseContent: React.FC<CourseContentProps> = ({course, isLoading, error})
           </div>
         ))}
       </div>
-
       {/* Tooltip bubble */}
-      {tooltipInfo.visible && course.instructors[tooltipInfo.index] && (
+      {tooltipInfo.visible && course?.instructors?.[tooltipInfo.index] && (
         <div
           className="absolute z-50 pointer-events-none transform -translate-x-1/2"
           style={{
@@ -154,20 +153,20 @@ const CourseContent: React.FC<CourseContentProps> = ({course, isLoading, error})
         >
           <div className="custom-tooltip-bubble px-4 md:px-6 py-3 md:py-4 text-white shadow-xl min-w-[120px]">
             <p className="font-semibold text-base md:text-[12px] leading-none">
-              {course.instructors[tooltipInfo.index].name}
+              {course?.instructors?.[tooltipInfo.index]?.name}
             </p>
             <p className="text-[#D1DBE8] text-xs md:text-[12px] mt-2 leading-tight">
-              {course.instructors[tooltipInfo.index].bio}
+              {course?.instructors?.[tooltipInfo.index]?.bio}
             </p>
           </div>
-        </div>
+          </div>
+       
       )}
 
       <CourseStatistics course={course} />
       <CourseActions />
-
       <div className="mt-4 md:mt-8">
-        {course.modules.map((module: Module) => (
+        {course?.modules?.map((module: Module) => (
           <CollapsibleCourseModule
             key={module.id}
             week={{
