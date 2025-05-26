@@ -92,7 +92,7 @@ const AdminDashboard: React.FC = () => {
       const difficultyLevels = coursesData.map((course: Course) => course.difficulty_level);
       const uniqueDifficultyLevels = [...new Set(difficultyLevels)];
       console.log('Found difficulty levels:', uniqueDifficultyLevels);
-      
+
       // If there are valid difficulty levels, automatically update the dropdown options
       if (uniqueDifficultyLevels.length > 0) {
         console.log('Found valid difficulty levels in existing courses:', uniqueDifficultyLevels);
@@ -111,44 +111,44 @@ const AdminDashboard: React.FC = () => {
         // Only include difficulty_level if a valid option was selected
         ...(data.level && { difficulty_level: data.level })
       };
-      
+
       console.log('Sending course data to API:', courseData);
       return createCourse(clientId, courseData);
     },
     onSuccess: (data) => {
       // Invalidate and refetch courses query
       queryClient.invalidateQueries({ queryKey: ['courses'] });
-      
+
       // Navigate to the new course's detail page
       navigate(`/admin/courses/${data.id}`);
     },
     onError: (error: Error) => {
       console.error('Failed to create course:', error);
-      
+
       // Log the complete error object for debugging
       console.log('Complete error object:', JSON.stringify(error, null, 2));
-      
+
       // Extract error details if available
       let errorMessage = error.message;
-      
+
       // Try to parse and format the error message for better readability
       try {
         if (error.message.includes('{')) {
           const errorJson = JSON.parse(error.message.substring(error.message.indexOf('{')));
           console.log('Parsed error JSON:', errorJson);
-          
+
           // Special handling for difficulty_level errors
           if (errorJson.difficulty_level) {
             console.log('Difficulty level error details:', errorJson.difficulty_level);
-            
+
             // Check if the error message contains hints about valid choices
             const errorText = errorJson.difficulty_level[0];
             if (typeof errorText === 'string') {
               console.log('Error text:', errorText);
-              
+
               // Try different regex patterns to extract choices
               let validChoices = null;
-              
+
               // Pattern 1: "X is not a valid choice. Valid choices are: [a, b, c]"
               const pattern1 = /valid choice[s]?[.\s]*[^[]*\[(.*?)\]/i;
               const match1 = errorText.match(pattern1);
@@ -156,7 +156,7 @@ const AdminDashboard: React.FC = () => {
                 validChoices = match1[1].split(',').map(c => c.trim());
                 console.log('Extracted choices (pattern 1):', validChoices);
               }
-              
+
               // Pattern 2: Look for quoted values in the error message
               const pattern2 = /"([^"]+)"/g;
               const matches2 = [...errorText.matchAll(pattern2)];
@@ -164,14 +164,14 @@ const AdminDashboard: React.FC = () => {
                 validChoices = matches2.map(m => m[1]);
                 console.log('Extracted choices (pattern 2):', validChoices);
               }
-              
+
               if (validChoices) {
                 console.log('*** IMPORTANT: Valid choices for difficulty_level appear to be:', validChoices);
                 console.log('Please update your form to use these values.');
               }
             }
           }
-          
+
           const formattedError = Object.entries(errorJson)
             .map(([field, errors]) => `${field}: ${errors}`)
             .join('\n');
@@ -181,7 +181,7 @@ const AdminDashboard: React.FC = () => {
         // If parsing fails, use the original error message
         console.log('Error parsing error message:', e);
       }
-      
+
       alert(`Failed to create course:\n${errorMessage}\n\nPlease check the console for more details.`);
     }
   });
@@ -197,7 +197,7 @@ const AdminDashboard: React.FC = () => {
     if (isModalOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
-    
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
@@ -213,22 +213,22 @@ const AdminDashboard: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Check if a course with this title might already exist
     if (coursesData) {
-      const similarTitles = coursesData.filter((course: Course) => 
+      const similarTitles = coursesData.filter((course: Course) =>
         course.title.toLowerCase() === formData.name.toLowerCase()
       );
-      
+
       if (similarTitles.length > 0) {
         if (!confirm(`A course with a similar title already exists. Create anyway?`)) {
           return;
         }
       }
     }
-    
+
     createCourseMutation.mutate(formData);
-    
+
     // Reset form and close modal
     setFormData({ name: '', level: '', description: '' });
     setIsModalOpen(false);
@@ -312,7 +312,7 @@ const AdminDashboard: React.FC = () => {
             <h2 className="text-2xl font-bold">All Courses</h2>
             <p className="text-gray-600">Here is a glimpse of your overall progress.</p>
           </div>
-          <button 
+          <button
             className="bg-[#17627A] text-white px-4 py-2 rounded-md flex items-center"
             onClick={() => setIsModalOpen(true)}
           >
@@ -322,9 +322,9 @@ const AdminDashboard: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {coursesData?.map((course: Course) => (
-            <CourseCard 
-              key={course.id} 
-              course={course} 
+            <CourseCard
+              key={course.id}
+              course={course}
               onEditClick={() => handleEditCourse(course.id)}
             />
           ))}
@@ -337,7 +337,7 @@ const AdminDashboard: React.FC = () => {
           <div ref={modalRef} className="bg-white rounded-lg w-full max-w-md shadow-xl">
             <div className="flex justify-between items-center px-6 pt-6 pb-4">
               <h2 className="text-xl font-bold">Add New Course</h2>
-              <button 
+              <button
                 onClick={() => setIsModalOpen(false)}
                 className="text-gray-500 hover:text-gray-700 transition-colors"
                 aria-label="Close modal"
@@ -347,7 +347,7 @@ const AdminDashboard: React.FC = () => {
                 </svg>
               </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="px-6 pb-6">
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -403,7 +403,7 @@ const AdminDashboard: React.FC = () => {
                 />
               </div>
 
-              <button 
+              <button
                 type="submit"
                 className="w-full bg-[#17627A] text-white py-3 rounded-md font-medium hover:bg-[#124F65] transition-colors"
               >
@@ -435,43 +435,67 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEditClick }) => {
         <p className="text-gray-600 mb-8">{course.description || 'No description available'}</p>
 
         <div className="grid grid-cols-6 gap-2 mb-8">
-          <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
+          <div className="bg-gray-50 hover:bg-gray-100 rounded-lg p-2 flex flex-col items-center justify-center relative group transition-all duration-200">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
             </svg>
             <span className="text-sm font-medium">{course.enrolled_students?.total || 0}</span>
+            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[#343A40] text-white text-xs rounded pointer-events-none transition-opacity duration-200">
+              Students
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#343A40]"></div>
+            </div>
           </div>
-          <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
+          <div className="bg-gray-50 hover:bg-gray-100 rounded-lg p-2 flex flex-col items-center justify-center relative group transition-all duration-200">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
               <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
               <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
             </svg>
             <span className="text-sm font-medium">{course.stats?.article?.total || 0}</span>
+            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[#343A40] text-white text-xs rounded pointer-events-none transition-opacity duration-200">
+              Articles
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#343A40]"></div>
+            </div>
           </div>
-          <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
+          <div className="bg-gray-50 hover:bg-gray-100 rounded-lg p-2 flex flex-col items-center justify-center relative group transition-all duration-200">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
             </svg>
             <span className="text-sm font-medium">{course.stats?.quiz?.total || 0}</span>
+            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[#343A40] text-white text-xs rounded pointer-events-none transition-opacity duration-200">
+              Quizzes
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#343A40]"></div>
+            </div>
           </div>
-          <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
+          <div className="bg-gray-50 hover:bg-gray-100 rounded-lg p-2 flex flex-col items-center justify-center relative group transition-all duration-200">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
               <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
               <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm9 1a1 1 0 00-1 1v6a1 1 0 002 0V7a1 1 0 00-1-1zm-5 1a1 1 0 00-1 1v6a1 1 0 002 0V7a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
             <span className="text-sm font-medium">{course.stats?.assignment?.total || 0}</span>
+            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[#343A40] text-white text-xs rounded pointer-events-none transition-opacity duration-200">
+              Assignments
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#343A40]"></div>
+            </div>
           </div>
-          <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
+          <div className="bg-gray-50 hover:bg-gray-100 rounded-lg p-2 flex flex-col items-center justify-center relative group transition-all duration-200">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
             </svg>
             <span className="text-sm font-medium">{course.stats?.coding_problem?.total || 0}</span>
+            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[#343A40] text-white text-xs rounded pointer-events-none transition-opacity duration-200">
+              Coding Problems
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#343A40]"></div>
+            </div>
           </div>
-          <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
+          <div className="bg-gray-50 hover:bg-gray-100 rounded-lg p-2 flex flex-col items-center justify-center relative group transition-all duration-200">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
             <span className="text-sm font-medium">{course.stats?.video?.total || 0}</span>
+            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[#343A40] text-white text-xs rounded pointer-events-none transition-opacity duration-200">
+              Videos
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#343A40]"></div>
+            </div>
           </div>
         </div>
 
@@ -480,10 +504,10 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEditClick }) => {
           <div className="flex space-x-2">
             {course.trusted_by && course.trusted_by.length > 0 ? (
               course.trusted_by.map((company, index) => (
-                <img 
+                <img
                   key={index}
-                  src={company} 
-                  alt={`Company ${index + 1}`} 
+                  src={company}
+                  alt={`Company ${index + 1}`}
                   className="w-6 h-6 rounded-full"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
@@ -498,8 +522,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEditClick }) => {
         </div>
 
         <div className="mt-auto pt-4">
-          <button 
-            className="w-full bg-[#D7EFF6] text-[#264D64] border border-[#80C9E0] py-3 rounded-md flex items-center justify-center "
+          <button
+            className="w-full bg-[#D7EFF6] text-[#264D64] border border-[#80C9E0] py-3 rounded-md flex items-center justify-center hover:bg-[#C4E5F0] transition-colors"
             onClick={onEditClick}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
