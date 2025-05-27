@@ -21,11 +21,13 @@ export interface Subtopic {
   id: string;
   title: string;
   description: string;
-  contents: Array<{
-    id: string;
-    type: 'videos' | 'articles' | 'problems' | 'quiz' | 'subjective' | 'development';
-    // add other fields as needed
-  }>;
+  contents: any[];
+  video_count?: number;
+  article_count?: number;
+  quiz_count?: number;
+  assignment_count?: number;
+  coding_problem_count?: number;
+  order?: number;
 }
 
 export interface Course {
