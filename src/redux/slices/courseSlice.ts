@@ -32,6 +32,13 @@ export interface Course {
   tags: string[];
   client: number;
   enrolled_students: number[];
+  stats: {
+    video: { total: number };
+    article: { total: number };
+    coding_problem: { total: number };
+    quiz: { total: number };
+    assignment: { total: number };
+  };
 }
 
 interface CoursesState {

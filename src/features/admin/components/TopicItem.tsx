@@ -3,8 +3,8 @@ import { Topic, Subtopic, TabKey } from '../types/course';
 import SubtopicItem from './SubtopicItem';
 import BottomSheet from './BottomSheet';
 import ContentManager from './add-content/ContentManager';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { getCourseSubmodules, deleteCourseSubmodule } from '../../../services/admin/courseApis';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { deleteCourseSubmodule } from '../../../services/admin/courseApis';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 
 interface TopicItemProps {
@@ -12,25 +12,21 @@ interface TopicItemProps {
   topic: Topic;
   onDelete: (topicId: string) => void;
   onAddSubtopic: (topicId: string) => void;
+  isLoading?: boolean;
+  error?: Error | null;
 }
 
-interface SubmoduleData {
-  id: number;
-  title: string;
-  description: string;
-  order: number;
-  course: number;
-  module: number;
-}
 
-export const TopicItem: React.FC<TopicItemProps> = ({ courseId, topic, onDelete, onAddSubtopic }) => {
+export const TopicItem: React.FC<TopicItemProps> = ({
+  courseId,
+  topic,
+  onDelete,
+  onAddSubtopic,
+  isLoading = false,
+  error = null
+}) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const queryClient = useQueryClient();
-  const { data: submoduleData, isLoading, error } = useQuery({
-    queryKey: ['course', topic.id],
-    queryFn: () => getCourseSubmodules(clientId, Number(courseId), Number(topic.id)),
-  });
-
   const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('videos');
   const [isDeleteSubtopicModalOpen, setIsDeleteSubtopicModalOpen] = useState(false);
@@ -38,10 +34,10 @@ export const TopicItem: React.FC<TopicItemProps> = ({ courseId, topic, onDelete,
 
   // Delete subtopic mutation
   const deleteSubtopicMutation = useMutation({
-    mutationFn: (subtopicId: number) => 
+    mutationFn: (subtopicId: number) =>
       deleteCourseSubmodule(clientId, Number(courseId), Number(topic.id), subtopicId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['course', topic.id] });
+      queryClient.invalidateQueries({ queryKey: ['courseDetails', courseId] });
       setIsDeleteSubtopicModalOpen(false);
     },
     onError: (error: Error) => {
@@ -69,7 +65,7 @@ export const TopicItem: React.FC<TopicItemProps> = ({ courseId, topic, onDelete,
 
   const handleCloseSheet = () => {
     setBottomSheetOpen(false);
-    queryClient.invalidateQueries({ queryKey: ['course', topic.id] });
+    queryClient.invalidateQueries({ queryKey: ['courseDetails', courseId] });
   };
 
   const handleDeleteSubtopic = (subtopicId: number) => {
@@ -84,22 +80,14 @@ export const TopicItem: React.FC<TopicItemProps> = ({ courseId, topic, onDelete,
   };
 
   const getStats = (subtopic: Subtopic) => {
-    const stats = {
-      videos: 0,
-      articles: 0,
-      problems: 0,
-      quiz: 0,
-      subjective: 0,
-      development: 0,
+    return {
+      videos: subtopic.video_count,
+      articles: subtopic.article_count,
+      problems: subtopic.coding_problem_count,
+      quiz: subtopic.quiz_count,
+      subjective: subtopic.assignment_count,
+      development: 0, // This seems to be a custom stat not in the API
     };
-    if (subtopic.contents) {
-      subtopic.contents.forEach((c) => {
-        if (stats.hasOwnProperty(c.type)) {
-          stats[c.type as keyof typeof stats]++;
-        }
-      });
-    }
-    return stats;
   };
 
   const renderSubtopics = () => {
@@ -126,7 +114,7 @@ export const TopicItem: React.FC<TopicItemProps> = ({ courseId, topic, onDelete,
       );
     }
 
-    if (!submoduleData || submoduleData.length === 0) {
+    if (!topic.subtopics || topic.subtopics.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-10 bg-gray-50 rounded-md">
           <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-2">
@@ -147,19 +135,21 @@ export const TopicItem: React.FC<TopicItemProps> = ({ courseId, topic, onDelete,
 
     return (
       <div className="space-y-2">
-        {submoduleData.map((submodule: SubmoduleData) => (
+        {topic.subtopics.map((subtopic) => (
           <SubtopicItem
-            key={submodule.id}
-            title={submodule.title}
+            key={subtopic.id}
+            title={subtopic.title}
             marks={0}
-            stats={getStats({
-              id: submodule.id.toString(),
-              title: submodule.title,
-              description: submodule.description,
-              contents: []
-            })}
+            stats={{
+              videos: getStats(subtopic).videos ?? 0,
+              articles: getStats(subtopic).articles ?? 0,
+              problems: getStats(subtopic).problems ?? 0,
+              quiz: getStats(subtopic).quiz ?? 0,
+              subjective: getStats(subtopic).subjective ?? 0,
+              development: getStats(subtopic).development ?? 0,
+            }}
             onEdit={() => { }}
-            onDelete={() => handleDeleteSubtopic(submodule.id)}
+            onDelete={() => handleDeleteSubtopic(Number(subtopic.id))}
             onAddContent={() => handleAddContent()}
           />
         ))}

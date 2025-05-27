@@ -14,18 +14,16 @@ interface EnrolledCoursesProps {
   className?: string;
 }
 
-// Define the stats structure based on the API response
-interface CourseStats {
-  article?: { completed: number; total: number };
-  assignment?: { completed: number; total: number };
-  coding_problem?: { completed: number; total: number };
-  quiz?: { completed: number; total: number };
-  video?: { completed: number; total: number };
-}
 
-// Extend ReduxCourse type to include stats
+// Extend ReduxCourse type to include stats, ensuring 'stats' is always defined to match Course interface
 interface EnrolledCourse extends ReduxCourse {
-  stats?: CourseStats;
+  stats: {
+    video: { total: number };
+    article: { total: number };
+    coding_problem: { total: number };
+    quiz: { total: number };
+    assignment: { total: number };
+  };
 }
 
 // Helper function to transform the Redux course type to the CourseCard expected type
@@ -71,6 +69,15 @@ const transformCourseData = (reduxCourse: EnrolledCourse): CardCourse => {
       linkedin: instructor.linkedin,
       profile_pic_url: instructor.profile_pic_url
     })) || [],
+    stats: reduxCourse.stats
+      ? {
+          video: { total: reduxCourse.stats.video?.total || 0 },
+          article: { total: reduxCourse.stats.article?.total || 0 },
+          coding_problem: { total: reduxCourse.stats.coding_problem?.total || 0 },
+          quiz: { total: reduxCourse.stats.quiz?.total || 0 },
+          assignment: { total: reduxCourse.stats.assignment?.total || 0 }
+        }
+      : undefined,
     modules: mockModules // Use modules with stats from API
   };
 };
