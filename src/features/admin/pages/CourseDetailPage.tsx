@@ -47,11 +47,13 @@ const CourseDetailPage: React.FC = () => {
   const [isDeleteTopicModalOpen, setIsDeleteTopicModalOpen] = useState(false);
   const [topicToDelete, setTopicToDelete] = useState<string>('');
 
+
   // Get course details
   const { data: courseDetails, isLoading, error } = useQuery({
     queryKey: ['courseDetails', courseId],
     queryFn: () => viewCourseDetails(clientId, Number(courseId)),
   });
+  const [isPublished, setIsPublished] = useState<boolean>(courseDetails?.published || false);
 
   console.log("courseDetails", courseDetails);
 
@@ -89,8 +91,15 @@ const CourseDetailPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courseDetails', courseId] });
-      // Optionally show success message
+      if (isPublished) {
+        alert('Course unpublished successfully');
+        setIsPublished(false);
+      } else {
+        
       alert('Course published successfully');
+        setIsPublished(true);
+      }
+      // Optionally show success message
     },
     onError: (error: Error) => {
       console.error('Failed to update course:', error);
@@ -193,7 +202,7 @@ const CourseDetailPage: React.FC = () => {
   };
 
   const handlePublish = () => {
-    updateCourseMutation.mutate({ published: true });
+    updateCourseMutation.mutate({ published: !isPublished });
   };
 
   const handleDeleteTopic = (topicId: string) => {
@@ -260,7 +269,7 @@ const CourseDetailPage: React.FC = () => {
             <div className="flex justify-end">
               <button className="px-4 py-2 bg-[#17627A] hover:bg-[#124F65] text-white rounded-md transition"
                 onClick={handlePublish}>
-                Publish
+                {isPublished ? "Published" : "Publish"}
               </button>
             </div>
           </div>
