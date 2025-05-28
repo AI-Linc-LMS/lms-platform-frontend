@@ -16,6 +16,7 @@ interface SubmissionHistoryItem {
     time: number;
     memory: number;
     language_id: number;
+    language_name?: string;
     source_code: string;
     passed: number;
     failed: number;
@@ -33,6 +34,7 @@ const DEFAULT_SUBMISSION: SubmissionHistoryItem = {
     time: 0,
     memory: 0,
     language_id: 71, // Default to Python
+    language_name: "Python",
     source_code: "// No code available",
     passed: 0,
     failed: 0,
@@ -53,8 +55,15 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
     staleTime: 30000, // Consider data fresh for 30 seconds
   });
 
-  // Function to get language name from language ID
-  const getLanguageName = (languageId: number) => {
+  // Function to get language name - use backend language_name if available, otherwise fallback to mapping
+  const getLanguageName = (customDimension: SubmissionHistoryItem['custom_dimension']) => {
+    // First try to use the language_name from backend if available
+    if (customDimension?.language_name) {
+      return customDimension.language_name;
+    }
+    
+    // Fallback to language ID mapping
+    const languageId = customDimension?.language_id;
     switch (languageId) {
       case 63: return "JavaScript";
       case 74: return "TypeScript";
@@ -62,6 +71,30 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
       case 62: return "Java";
       case 54: return "C++";
       default: return "Unknown";
+    }
+  };
+
+  // Function to get Monaco Editor language for syntax highlighting
+  const getMonacoLanguage = (customDimension: SubmissionHistoryItem['custom_dimension']) => {
+    // Use language_name from backend if available
+    if (customDimension?.language_name) {
+      const langName = customDimension.language_name.toLowerCase();
+      if (langName.includes('python')) return 'python';
+      if (langName.includes('java')) return 'java';
+      if (langName.includes('c++') || langName.includes('cpp')) return 'cpp';
+      if (langName.includes('javascript')) return 'javascript';
+      if (langName.includes('typescript')) return 'typescript';
+    }
+    
+    // Fallback to language ID mapping
+    const languageId = customDimension?.language_id;
+    switch (languageId) {
+      case 63: return "javascript";
+      case 74: return "typescript";
+      case 71: return "python";
+      case 62: return "java";
+      case 54: return "cpp";
+      default: return "plaintext";
     }
   };
 
@@ -90,7 +123,7 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
         day: '2-digit',
         year: 'numeric'
       });
-    } catch (error) {
+    } catch {
       return "Invalid Date";
     }
   };
@@ -129,7 +162,7 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
             <div className="flex-grow overflow-auto">
               <Editor
                 height="60vh"
-                language={getLanguageName(submissionHistory?.find((s: SubmissionHistoryItem) => s.id === viewingSubmissionId)?.custom_dimension?.language_id || 71)}
+                language={getMonacoLanguage(submissionHistory?.find((s: SubmissionHistoryItem) => s.id === viewingSubmissionId)?.custom_dimension)}
                 value={selectedSubmissionCode}
                 theme={isDarkTheme ? "vs-dark" : "light"}
                 options={{
@@ -201,7 +234,7 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
                         ? "bg-[#D7EFF6] text-[#264D64]"
                         : "bg-[#D7EFF6] text-[#264D64]"
                         }`}>
-                        {getLanguageName(customDimension.language_id)}
+                        {getLanguageName(customDimension)}
                       </span>
                     </td>
                     <td className={`py-4 px-4 ${isDarkTheme ? "text-gray-300" : ""}`}>
