@@ -5,6 +5,7 @@ import { submitContent } from '../../../../../services/enrolled-courses-content/
 import FloatingAIButton from "../../floating-ai-button/FloatingAIButton";
 import completedIcon from "../../../../../commonComponents/icons/sidebarIcons/completedIcon.png";
 import { useNavigate } from 'react-router-dom';
+import parse from "html-react-parser";
 
 interface ArticleCardProps {
   contentId: number;
@@ -80,6 +81,44 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
     }
   };
 
+  // Function to safely parse HTML content (same as VideoCard)
+  const parseHtmlContent = (htmlContent: string) => {
+    if (!htmlContent) {
+      return null;
+    }
+
+    try {
+      // Create a wrapper around the content to avoid React rendering issues
+      const wrapWithDiv = (content: string) => `<div>${content}</div>`;
+
+      let processedContent = htmlContent;
+
+      // Check if we have HTML content
+      if (htmlContent.includes('<') && htmlContent.includes('>')) {
+        // Remove any style tags but keep other content
+        processedContent = htmlContent.replace(/<style[\s\S]*?<\/style>/gi, '');
+
+        // Extract content from body tag if present
+        const bodyMatch = processedContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        if (bodyMatch && bodyMatch[1]) {
+          processedContent = bodyMatch[1].trim();
+        }
+      }
+
+      // For debugging
+      console.log('Processed article content:', processedContent.substring(0, 100) + '...');
+
+      return parse(wrapWithDiv(processedContent));
+    } catch (error) {
+      console.error('Error parsing HTML content:', error);
+      return (
+        <div className="p-3 bg-red-100 border border-red-300 rounded text-red-700">
+          Error rendering content. Please try refreshing the page.
+        </div>
+      );
+    }
+  };
+
   if (isLoading || error) {
     return (
       <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm animate-pulse">
@@ -126,8 +165,10 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
         </div>
       </div>
 
-      <div className="prose max-w-none text-lg">
-        <div dangerouslySetInnerHTML={{ __html: articleData.details.content }} />
+      <div className="course-description">
+        {articleData.details.content ? parseHtmlContent(articleData.details.content) :
+          <p className="text-gray-500 italic">No content available</p>
+        }
       </div>
 
       {/* Floating Ask AI Button */}
