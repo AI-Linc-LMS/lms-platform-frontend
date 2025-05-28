@@ -7,7 +7,6 @@ import { TopicItem } from '../components/TopicItem';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  getCourseModules,
   deleteCourse,
   updateCourse,
   createCourseModule,
@@ -20,8 +19,7 @@ interface Module {
   id: number;
   weekno: number;
   title: string;
-  created_at: string;
-  updated_at: string;
+  completion_percentage: number;
   submodules: Submodule[];
 }
 
@@ -30,6 +28,11 @@ interface Submodule {
   title: string;
   description: string;
   order: number;
+  video_count: number;
+  article_count: number;
+  quiz_count: number;
+  assignment_count: number;
+  coding_problem_count: number;
 }
 
 const CourseDetailPage: React.FC = () => {
@@ -44,17 +47,15 @@ const CourseDetailPage: React.FC = () => {
   const [isDeleteTopicModalOpen, setIsDeleteTopicModalOpen] = useState(false);
   const [topicToDelete, setTopicToDelete] = useState<string>('');
 
+
   // Get course details
-  const { data: courseDetails } = useQuery({
+  const { data: courseDetails, isLoading, error } = useQuery({
     queryKey: ['courseDetails', courseId],
     queryFn: () => viewCourseDetails(clientId, Number(courseId)),
   });
+  const [isPublished, setIsPublished] = useState<boolean>(courseDetails?.published || false);
 
-  // Get course modules
-  const { data: courseModules, isLoading, error } = useQuery({
-    queryKey: ['courseModules', courseId],
-    queryFn: () => getCourseModules(clientId, Number(courseId)),
-  });
+  console.log("courseDetails", courseDetails);
 
   // Delete course mutation
   const deleteCourseMutation = useMutation({
@@ -90,8 +91,15 @@ const CourseDetailPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courseDetails', courseId] });
-      // Optionally show success message
+      if (isPublished) {
+        alert('Course unpublished successfully');
+        setIsPublished(false);
+      } else {
+        
       alert('Course published successfully');
+        setIsPublished(true);
+      }
+      // Optionally show success message
     },
     onError: (error: Error) => {
       console.error('Failed to update course:', error);
@@ -106,7 +114,7 @@ const CourseDetailPage: React.FC = () => {
       return createCourseModule(clientId, Number(courseId), moduleData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['courseModules', courseId] });
+      queryClient.invalidateQueries({ queryKey: ['courseDetails', courseId] });
       setIsTopicModalOpen(false);
     },
     onError: (error: Error) => {
@@ -122,7 +130,7 @@ const CourseDetailPage: React.FC = () => {
     },
     onSuccess: () => {
       // Invalidate both the course modules and the specific topic's subtopics
-      queryClient.invalidateQueries({ queryKey: ['courseModules', courseId] });
+      queryClient.invalidateQueries({ queryKey: ['courseDetails', courseId] });
       queryClient.invalidateQueries({ queryKey: ['course', currentModuleId.toString()] });
       setIsSubtopicModalOpen(false);
     },
@@ -136,7 +144,7 @@ const CourseDetailPage: React.FC = () => {
   const deleteModuleMutation = useMutation({
     mutationFn: (moduleId: number) => deleteCourseModule(clientId, Number(courseId), moduleId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['courseModules', courseId] });
+      queryClient.invalidateQueries({ queryKey: ['courseDetails', courseId] });
       setIsDeleteTopicModalOpen(false);
     },
     onError: (error: Error) => {
@@ -194,7 +202,7 @@ const CourseDetailPage: React.FC = () => {
   };
 
   const handlePublish = () => {
-    updateCourseMutation.mutate({ published: true });
+    updateCourseMutation.mutate({ published: !isPublished });
   };
 
   const handleDeleteTopic = (topicId: string) => {
@@ -229,7 +237,7 @@ const CourseDetailPage: React.FC = () => {
             </svg>
             Back to Dashboard
           </button>
-          <h1 className="text-3xl font-bold">{courseDetails?.title || 'Course Details'}</h1>
+          <h1 className="text-3xl font-bold">{courseDetails?.course_title || 'Course Details'}</h1>
         </div>
       </div>
 
@@ -261,15 +269,15 @@ const CourseDetailPage: React.FC = () => {
             <div className="flex justify-end">
               <button className="px-4 py-2 bg-[#17627A] hover:bg-[#124F65] text-white rounded-md transition"
                 onClick={handlePublish}>
-                Publish
+                {isPublished ? "Published" : "Publish"}
               </button>
             </div>
           </div>
         </div>
 
         <div className="space-y-6">
-          {courseModules && courseModules.length > 0 ? (
-            courseModules.map((module: Module) => (
+          {courseDetails?.modules && courseDetails.modules.length > 0 ? (
+            courseDetails.modules.map((module: Module) => (
               <TopicItem
                 key={module.id}
                 courseId={courseId || ''}
@@ -278,10 +286,23 @@ const CourseDetailPage: React.FC = () => {
                   title: module.title,
                   week: module.weekno.toString(),
                   description: '',
-                  subtopics: []
+                  subtopics: module.submodules.map((sub: Submodule) => ({
+                    id: sub.id.toString(),
+                    title: sub.title,
+                    description: sub.description,
+                    contents: [],
+                    video_count: sub.video_count,
+                    article_count: sub.article_count,
+                    quiz_count: sub.quiz_count,
+                    assignment_count: sub.assignment_count,
+                    coding_problem_count: sub.coding_problem_count,
+                    order: sub.order
+                  }))
                 }}
                 onDelete={handleDeleteTopic}
                 onAddSubtopic={handleAddSubtopic}
+                isLoading={isLoading}
+                error={error || null}
               />
             ))
           ) : (
