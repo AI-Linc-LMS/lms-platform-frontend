@@ -59,9 +59,12 @@ export const sendActivityData = async (data: ActivityData): Promise<void> => {
     // Format API data for the current backend endpoint
     const apiData = {
       date: new Date(data.timestamp).toISOString().split('T')[0], // Format as YYYY-MM-DD
-      "time-spend": Math.round(data.totalTimeSpent / 60), // Convert seconds to minutes
+      "time-spend-seconds": data.totalTimeSpent, // Send exact seconds for precision
+      "time-spend": Math.floor(data.totalTimeSpent / 60), // Use floor instead of round to avoid inflating time
       session_id: data.session_id,
-      device_info: data.device_info
+      device_info: data.device_info,
+      user_id: data.userId, // Include user ID for server-side aggregation
+      timestamp: data.timestamp // Include client timestamp for verification
     };
     
     const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -120,9 +123,12 @@ export const syncOfflineActivityData = async (): Promise<void> => {
       // Format API data for the current backend endpoint
       const apiData = {
         date: new Date(data.timestamp).toISOString().split('T')[0], // Format as YYYY-MM-DD
-        "time-spend": Math.round(data.totalTimeSpent / 60), // Convert seconds to minutes
+        "time-spend-seconds": data.totalTimeSpent, // Send exact seconds for precision
+        "time-spend": Math.floor(data.totalTimeSpent / 60), // Use floor instead of round to avoid inflating time
         session_id: data.session_id,
-        device_info: data.device_info
+        device_info: data.device_info,
+        user_id: data.userId, // Include user ID for server-side aggregation
+        timestamp: data.timestamp // Include client timestamp for verification
       };
       
       // Send API call for each offline record

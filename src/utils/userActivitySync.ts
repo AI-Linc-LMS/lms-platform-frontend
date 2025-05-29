@@ -30,13 +30,21 @@ export const syncUserActivity = async (
       await sendActivityData(activityData);
       // Also try to sync any offline data we may have
       await syncOfflineActivityData();
+      
+      logActivityEvent('Activity data synced successfully', {
+        totalTimeSpent,
+        sessionId: session_id,
+        timestamp: activityData.timestamp
+      });
     } catch (error) {
       console.error('Failed to sync activity data:', error);
+      logActivityEvent('Failed to sync activity data, storing locally', { error: (error as Error).message });
       // If online but API call failed, store locally
       storeActivityDataLocally(activityData);
     }
   } else {
     // If offline, store locally for later sync
+    logActivityEvent('Offline: storing activity data locally', { totalTimeSpent });
     storeActivityDataLocally(activityData);
   }
 };
@@ -183,11 +191,52 @@ export const createActivityPayload = (
   return {
     date: formatDateForApi(),
     "time-spend-seconds": validatedTotalTime,
-    "time-spend": Math.round(validatedTotalTime / 60),
+    "time-spend": Math.floor(validatedTotalTime / 60),
     current_session_duration: validatedSessionDuration,
     session_id: sessionId,
     device_info: deviceInfo,
     user_id: userId,
     timestamp: Date.now()
+  };
+};
+
+/**
+ * Creates a standardized activity payload for API with exact time recording
+ * This ensures consistent time precision across all API calls
+ * @param totalTimeSpent Total time spent in seconds
+ * @param currentSessionDuration Current session duration in seconds
+ * @param sessionId Session identifier
+ * @param deviceInfo Device information
+ * @param userId User identifier
+ * @param customTimestamp Optional custom timestamp (defaults to current time)
+ * @returns Formatted payload object with exact time precision
+ */
+export const createPreciseActivityPayload = (
+  totalTimeSpent: number,
+  currentSessionDuration: number,
+  sessionId: string,
+  deviceInfo: { browser: string; os: string; deviceType: string },
+  userId?: string,
+  customTimestamp?: number
+) => {
+  // Validate time values
+  const validatedTotalTime = validateTimeValue(totalTimeSpent);
+  const validatedSessionDuration = validateTimeValue(currentSessionDuration);
+  
+  // Get user ID (anonymous if not logged in)
+  const finalUserId = userId || localStorage.getItem('userId') || 'anonymous';
+  
+  // Use provided timestamp or current time
+  const timestamp = customTimestamp || Date.now();
+  
+  return {
+    date: formatDateForApi(new Date(timestamp)),
+    "time-spend-seconds": validatedTotalTime, // Exact seconds for precision
+    "time-spend": Math.floor(validatedTotalTime / 60), // Use floor to avoid inflating time
+    current_session_duration: validatedSessionDuration, // Current session data for diagnostics
+    session_id: sessionId,
+    device_info: deviceInfo,
+    user_id: finalUserId,
+    timestamp: timestamp // Client timestamp for verification
   };
 }; 

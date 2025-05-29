@@ -535,7 +535,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       const syncData = {
         date: formattedDate,
         "time-spend-seconds": pendingData.totalTimeSpent, // Send exact seconds for precision
-        "time-spend": Math.round(pendingData.totalTimeSpent / 60), // Keep minutes for backward compatibility
+        "time-spend": Math.floor(pendingData.totalTimeSpent / 60), // Use floor to avoid inflating time
         session_id: session_id,
         device_info: device_info,
         user_id: userId, // Include user ID for server-side aggregation
@@ -645,7 +645,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       const beaconData = {
         date: formattedDate,
         "time-spend-seconds": totalTimeToSend, // Send exact seconds for precision
-        "time-spend": Math.round(totalTimeToSend / 60), // Keep minutes for backward compatibility
+        "time-spend": Math.floor(totalTimeToSend / 60), // Use floor to avoid inflating time
         session_id: session_id,
         device_info: device_info,
         current_session_duration: currentSessionDuration, // Send current session separately for diagnostics
@@ -751,7 +751,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         const activityData = {
           date: formattedDate,
           "time-spend-seconds": totalTimeInSeconds, // Exact seconds for precision
-          "time-spend": Math.round(totalTimeInSeconds / 60), // Minutes for backward compatibility
+          "time-spend": Math.floor(totalTimeInSeconds / 60), // Use floor to avoid inflating time
           current_session_duration: currentSessionDuration, // Include current session data for diagnostics
           session_id: getDeviceFingerprint().session_id,
           device_info: getDeviceFingerprint().device_info,
