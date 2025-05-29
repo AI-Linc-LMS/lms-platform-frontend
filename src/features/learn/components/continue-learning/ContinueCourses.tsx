@@ -4,7 +4,7 @@ const ContinueCourses = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-row items-center justify-between w-full">
+    <div className="flex flex-row items-center justify-between w-full pt-12">
       <div>
         <h1 className="text-[#343A40] font-bold text-[18px] md:text-[22px] font-sans">
           Continue Learning
