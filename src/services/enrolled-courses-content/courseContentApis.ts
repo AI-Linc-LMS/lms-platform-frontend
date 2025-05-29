@@ -91,7 +91,10 @@ export const getCourseContent = async (
 
     // You can throw a custom error if you want
       throw new Error(
-        (axiosError.response?.data?.detail as string) ||
+        (typeof (axiosError.response?.data) === 'object' && axiosError.response?.data && 'detail' in axiosError.response.data
+          ? (axiosError.response.data.detail as string)
+          : undefined
+        ) ||
         axiosError.message ||
         "Failed to fetch Course Content"
       );
