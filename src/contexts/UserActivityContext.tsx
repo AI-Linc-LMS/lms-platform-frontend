@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { logActivityEvent } from '../utils/activityDebugger';
 import { getDeviceFingerprint } from '../utils/deviceIdentifier';
 import { shouldResetDailyActivity, performDailyReset, markDailyReset } from '../utils/dailyReset';
+import { sendSessionEndData, sendSessionEndDataViaBeacon } from '../utils/userActivitySync';
 
 interface UserActivityContextType {
   isActive: boolean;
@@ -319,7 +320,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
   };
 
   // Function to end current session
-  const endSession = () => {
+  const endSession = async () => {
     setActivityState(prev => {
       if (!prev.currentSessionStart) {
         logActivityEvent('End session called but no active session found');
@@ -378,6 +379,29 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         logActivityEvent('Failed to backup state after session end', { error: (error as Error).message });
       }
 
+      // Immediately send session-end data to backend with exact timing
+      if (sessionDuration > 0) { // Only send if there was actual activity
+        const { session_id, device_info } = getDeviceFingerprint();
+        const userId = localStorage.getItem('userId') || 'anonymous';
+        
+        // Send session-end data immediately (async, don't block state update)
+        sendSessionEndData(
+          prev.currentSessionStart,
+          now,
+          sessionDuration,
+          newState.totalTimeSpent,
+          session_id,
+          device_info,
+          userId
+        ).catch(error => {
+          logActivityEvent('Failed to send immediate session-end data', { 
+            error: error.message,
+            sessionDuration,
+            totalTime: newState.totalTimeSpent
+          });
+        });
+      }
+
       return newState;
     });
   };
@@ -412,8 +436,8 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
   // Handle power/charging change
   const handlePowerChange = () => {
     logActivityEvent('Power status changed');
-    // Capture current session data just in case
-    sendActivityDataUsingBeacon();
+    // End current session and send data immediately
+    endSession();
     // Also backup when power status changes
     backupCurrentState();
   };
@@ -421,16 +445,62 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
   // Handle pagehide event (mobile browsers, some desktop browsers)
   const handlePageHide = () => {
     logActivityEvent('Page hide event');
+    
+    // Calculate session data before ending
+    if (activityState.isActive && activityState.currentSessionStart) {
+      const now = Date.now();
+      const sessionDuration = Math.floor((now - activityState.currentSessionStart) / 1000);
+      const totalTimeWithSession = activityState.totalTimeSpent + sessionDuration;
+      
+      if (sessionDuration > 0) {
+        const { session_id, device_info } = getDeviceFingerprint();
+        const userId = localStorage.getItem('userId') || 'anonymous';
+        
+        // Use beacon for guaranteed delivery during page hide
+        sendSessionEndDataViaBeacon(
+          activityState.currentSessionStart,
+          now,
+          sessionDuration,
+          totalTimeWithSession,
+          session_id,
+          device_info,
+          userId
+        );
+      }
+    }
+    
     endSession();
-    sendActivityDataUsingBeacon();
     backupCurrentState();
   };
 
   // Handle page freeze (Chrome on mobile when tab is inactive)
   const handlePageFreeze = () => {
     logActivityEvent('Page freeze event');
+    
+    // Calculate session data before ending
+    if (activityState.isActive && activityState.currentSessionStart) {
+      const now = Date.now();
+      const sessionDuration = Math.floor((now - activityState.currentSessionStart) / 1000);
+      const totalTimeWithSession = activityState.totalTimeSpent + sessionDuration;
+      
+      if (sessionDuration > 0) {
+        const { session_id, device_info } = getDeviceFingerprint();
+        const userId = localStorage.getItem('userId') || 'anonymous';
+        
+        // Use beacon for guaranteed delivery during page freeze
+        sendSessionEndDataViaBeacon(
+          activityState.currentSessionStart,
+          now,
+          sessionDuration,
+          totalTimeWithSession,
+          session_id,
+          device_info,
+          userId
+        );
+      }
+    }
+    
     endSession();
-    sendActivityDataUsingBeacon();
     backupCurrentState();
   };
 
@@ -535,7 +605,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       const syncData = {
         date: formattedDate,
         "time-spend-seconds": pendingData.totalTimeSpent, // Send exact seconds for precision
-        "time-spend": Math.round(pendingData.totalTimeSpent / 60), // Keep minutes for backward compatibility
+        "time-spend": Math.floor(pendingData.totalTimeSpent / 60), // Use floor to avoid inflating time
         session_id: session_id,
         device_info: device_info,
         user_id: userId, // Include user ID for server-side aggregation
@@ -645,7 +715,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       const beaconData = {
         date: formattedDate,
         "time-spend-seconds": totalTimeToSend, // Send exact seconds for precision
-        "time-spend": Math.round(totalTimeToSend / 60), // Keep minutes for backward compatibility
+        "time-spend": Math.floor(totalTimeToSend / 60), // Use floor to avoid inflating time
         session_id: session_id,
         device_info: device_info,
         current_session_duration: currentSessionDuration, // Send current session separately for diagnostics
@@ -676,11 +746,31 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
   const handleBeforeUnload = () => {
     logActivityEvent('Before unload event');
 
+    // Calculate session data before ending for beacon
+    if (activityState.isActive && activityState.currentSessionStart) {
+      const now = Date.now();
+      const sessionDuration = Math.floor((now - activityState.currentSessionStart) / 1000);
+      const totalTimeWithSession = activityState.totalTimeSpent + sessionDuration;
+      
+      if (sessionDuration > 0) {
+        const { session_id, device_info } = getDeviceFingerprint();
+        const userId = localStorage.getItem('userId') || 'anonymous';
+        
+        // Use beacon for guaranteed delivery during unload
+        sendSessionEndDataViaBeacon(
+          activityState.currentSessionStart,
+          now,
+          sessionDuration,
+          totalTimeWithSession,
+          session_id,
+          device_info,
+          userId
+        );
+      }
+    }
+
     // End the current session if active
     endSession();
-
-    // Try to send data using beacon API
-    sendActivityDataUsingBeacon();
 
     // Also backup current state
     backupCurrentState();
@@ -751,7 +841,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         const activityData = {
           date: formattedDate,
           "time-spend-seconds": totalTimeInSeconds, // Exact seconds for precision
-          "time-spend": Math.round(totalTimeInSeconds / 60), // Minutes for backward compatibility
+          "time-spend": Math.floor(totalTimeInSeconds / 60), // Use floor to avoid inflating time
           current_session_duration: currentSessionDuration, // Include current session data for diagnostics
           session_id: getDeviceFingerprint().session_id,
           device_info: getDeviceFingerprint().device_info,

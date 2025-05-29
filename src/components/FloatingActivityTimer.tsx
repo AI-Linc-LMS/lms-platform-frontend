@@ -203,6 +203,16 @@ const FloatingActivityTimer: React.FC = () => {
     console.log('Total time incl. current session (seconds):', totalTimeInSeconds);
     console.log('User ID:', activityData.user_id);
     
+    // Format date in YYYY-MM-DD format for logging
+    const formattedDate = formatDateForApi();
+    
+    // Log what would be sent
+    console.log('Data to be sent:', {
+      date: formattedDate,
+      "time-spend-seconds": totalTimeInSeconds,
+      "time-spend": Math.floor(totalTimeInSeconds / 60)
+    });
+    
     // Setup fetch options
     const fetchOptions = {
       method: 'POST',
@@ -294,7 +304,7 @@ const FloatingActivityTimer: React.FC = () => {
     console.log('Data to be sent:', {
       date: formattedDate,
       "time-spend-seconds": totalTimeInSeconds,
-      "time-spend": Math.round(totalTimeInSeconds / 60)
+      "time-spend": Math.floor(totalTimeInSeconds / 60)
     });
     
     // Simulate closing/opening tab to trigger API call
