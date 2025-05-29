@@ -10,9 +10,9 @@ import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
 import EnrolledCourses from "../components/courses/EnrolledCourses";
 import { RootState } from "../../../redux/store";
-import React, { ReactNode } from "react";
+import React, { ReactNode, useEffect } from "react";
 import LockSvg from "../../../commonComponents/icons/empty-state-handel/LockSvg";
-
+import { getContent } from "../../../services/admin/contentApis";
 // Props type for the overlay card component
 interface EnrollToCourseOverlayProps {
   title: string;
@@ -22,6 +22,15 @@ interface EnrollToCourseOverlayProps {
 
 // Overlay card component to show over sections when no courses enrolled
 const EnrollToCourseOverlay: React.FC<EnrollToCourseOverlayProps> = ({ title, children, className = "" }) => {
+  useEffect(() => {
+    const fetchCourses = async () => {
+      const content = await getContent(1, "articles");
+      console.log("--------------------------------");
+      console.log("content", content);
+      console.log("--------------------------------");
+    };
+    fetchCourses();
+  }, []);
   return (
     <div className={`relative ${className}`}>
       {/* Blurred original content */}

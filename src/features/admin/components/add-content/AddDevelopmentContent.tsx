@@ -216,7 +216,7 @@ const AddDevelopmentContent: React.FC<AddDevelopmentContentProps> = ({ onBack })
                     <div className="relative">
                         <div
                             ref={editorRef}
-                            className="w-full p-4 min-h-[200px] focus:outline-none text-gray-700 overflow-auto"
+                            className="w-full p-4 min-h-[150px] focus:outline-none text-gray-700 overflow-auto"
                             contentEditable
                             onInput={handleInput}
                             onFocus={() => setShowPlaceholder(false)}
