@@ -1,5 +1,5 @@
 import axiosInstance from "../axiosInstance";
-import { ContentIdType, contentType } from "./contentApis";
+import { ContentIdType} from "./contentApis";
 
 // Define interfaces for course-related data
 export interface CourseData {
@@ -441,10 +441,3 @@ export const getSubmoduleContent = async (clientId: number, courseId: number, su
 // PATCH is for partial updates to a resource
 // This API seems to use PUT for updates, which is common in many REST APIs
 
-const tabToContentField: Record<string, string> = {
-  videos: "video_content",
-  quizzes: "quiz_content",
-  articles: "article_content",
-  problems: "coding_problem_content",
-  subjective: "assignment_content",
-};

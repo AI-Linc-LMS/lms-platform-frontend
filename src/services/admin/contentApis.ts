@@ -1,5 +1,4 @@
 import axiosInstance from "../axiosInstance";
-
 export type ContentIdType = "video_content" | "quiz_content" | "article_content" | "coding_problem_content" | "assignment_content";
 export type contentType =
   | "articles"
