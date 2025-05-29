@@ -3,6 +3,22 @@ import { sendActivityData, storeActivityDataLocally, syncOfflineActivityData, Ac
 import { getDeviceFingerprint } from './deviceIdentifier';
 import { logActivityEvent } from './activityDebugger';
 
+// Storage keys for deduplication (must match UserActivityContext)
+const STORAGE_KEYS = {
+  LAST_SYNC_DATA: 'lastSyncData',
+  LAST_SYNC_TIME: 'lastSyncTime'
+};
+
+// Function to record a successful sync for deduplication
+const recordSuccessfulSync = (totalTimeInSeconds: number): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.LAST_SYNC_TIME, Date.now().toString());
+    localStorage.setItem(STORAGE_KEYS.LAST_SYNC_DATA, totalTimeInSeconds.toString());
+  } catch {
+    logActivityEvent('Failed to record sync data');
+  }
+};
+
 /**
  * Attempts to send activity data to the backend
  * Falls back to local storage if offline
@@ -239,4 +255,211 @@ export const createPreciseActivityPayload = (
     user_id: finalUserId,
     timestamp: timestamp // Client timestamp for verification
   };
+};
+
+/**
+ * Immediately sends session-end data to the backend with exact timing
+ * This ensures no time loss and includes session-end information
+ * @param sessionStartTime When the session started (timestamp)
+ * @param sessionEndTime When the session ended (timestamp)
+ * @param sessionDuration Duration of the session in seconds
+ * @param totalTimeSpent Total time spent including this session
+ * @param sessionId Session identifier
+ * @param deviceInfo Device information
+ * @param userId User identifier
+ * @returns Promise that resolves when data is sent
+ */
+export const sendSessionEndData = async (
+  sessionStartTime: number,
+  sessionEndTime: number,
+  sessionDuration: number,
+  totalTimeSpent: number,
+  sessionId: string,
+  deviceInfo: { browser: string; os: string; deviceType: string },
+  userId?: string
+): Promise<void> => {
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL;
+    const clientId = import.meta.env.VITE_CLIENT_ID;
+    
+    if (!apiUrl || !clientId) {
+      logActivityEvent('Missing API URL or Client ID for session-end sync');
+      return;
+    }
+    
+    // Validate time values
+    const validatedSessionDuration = validateTimeValue(sessionDuration);
+    const validatedTotalTime = validateTimeValue(totalTimeSpent);
+    
+    // Get user ID (anonymous if not logged in)
+    const finalUserId = userId || localStorage.getItem('userId') || 'anonymous';
+    
+    // Create session-end payload with exact timing
+    const sessionEndPayload = {
+      date: formatDateForApi(new Date(sessionEndTime)),
+      "time-spend-seconds": validatedTotalTime, // Total time including this session
+      "time-spend": Math.floor(validatedTotalTime / 60), // Total minutes (no inflation)
+      session_id: sessionId,
+      device_info: deviceInfo,
+      user_id: finalUserId,
+      timestamp: sessionEndTime, // Exact end time
+      
+      // Session-specific information
+      session_start_time: sessionStartTime,
+      session_end_time: sessionEndTime,
+      session_duration_seconds: validatedSessionDuration,
+      event_type: "session-end", // Mark this as a session-end event
+      
+      // Additional context
+      client_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      session_end_reason: "user_inactive" // Could be extended for different reasons
+    };
+    
+    logActivityEvent('Sending immediate session-end data', {
+      sessionDuration: validatedSessionDuration,
+      totalTime: validatedTotalTime,
+      sessionStartTime: new Date(sessionStartTime).toISOString(),
+      sessionEndTime: new Date(sessionEndTime).toISOString(),
+      endpoint: `${apiUrl}/activity/clients/${clientId}/activity-log/`
+    });
+    
+    // Use fetch for immediate sending (not beacon, for better error handling)
+    const response = await fetch(`${apiUrl}/activity/clients/${clientId}/activity-log/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(localStorage.getItem('token') ? {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        } : {})
+      },
+      body: JSON.stringify(sessionEndPayload)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Session-end API call failed with status ${response.status}`);
+    }
+    
+    const responseData = await response.json();
+    
+    logActivityEvent('Session-end data sent successfully', {
+      sessionDuration: validatedSessionDuration,
+      totalTime: validatedTotalTime,
+      response: responseData
+    });
+    
+    // Record this sync to prevent duplicates
+    recordSuccessfulSync(validatedTotalTime);
+    
+  } catch (error) {
+    logActivityEvent('Failed to send session-end data', { 
+      error: (error as Error).message,
+      sessionDuration,
+      totalTimeSpent
+    });
+    
+    // Store as pending data if immediate send fails
+    try {
+      const pendingData = {
+        totalTimeSpent,
+        sessionStartTime,
+        sessionEndTime,
+        sessionDuration,
+        timestamp: sessionEndTime,
+        eventType: 'session-end'
+      };
+      
+      localStorage.setItem('pendingSessionEndData', JSON.stringify(pendingData));
+      logActivityEvent('Stored session-end data as pending for later sync');
+    } catch (storageError) {
+      logActivityEvent('Failed to store pending session-end data', { 
+        error: (storageError as Error).message 
+      });
+    }
+    
+    throw error; // Re-throw to allow caller to handle
+  }
+};
+
+/**
+ * Sends session-end data using Beacon API for critical exit events
+ * This is used when the page is unloading and we need guaranteed delivery
+ * @param sessionStartTime When the session started (timestamp)
+ * @param sessionEndTime When the session ended (timestamp)
+ * @param sessionDuration Duration of the session in seconds
+ * @param totalTimeSpent Total time spent including this session
+ * @param sessionId Session identifier
+ * @param deviceInfo Device information
+ * @param userId User identifier
+ * @returns Boolean indicating if beacon was successfully queued
+ */
+export const sendSessionEndDataViaBeacon = (
+  sessionStartTime: number,
+  sessionEndTime: number,
+  sessionDuration: number,
+  totalTimeSpent: number,
+  sessionId: string,
+  deviceInfo: { browser: string; os: string; deviceType: string },
+  userId?: string
+): boolean => {
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL;
+    const clientId = import.meta.env.VITE_CLIENT_ID;
+    
+    if (!apiUrl || !clientId) {
+      logActivityEvent('Missing API URL or Client ID for beacon session-end');
+      return false;
+    }
+    
+    // Validate time values
+    const validatedSessionDuration = validateTimeValue(sessionDuration);
+    const validatedTotalTime = validateTimeValue(totalTimeSpent);
+    
+    // Get user ID (anonymous if not logged in)
+    const finalUserId = userId || localStorage.getItem('userId') || 'anonymous';
+    
+    // Create session-end payload with exact timing
+    const sessionEndPayload = {
+      date: formatDateForApi(new Date(sessionEndTime)),
+      "time-spend-seconds": validatedTotalTime,
+      "time-spend": Math.floor(validatedTotalTime / 60),
+      session_id: sessionId,
+      device_info: deviceInfo,
+      user_id: finalUserId,
+      timestamp: sessionEndTime,
+      
+      // Session-specific information
+      session_start_time: sessionStartTime,
+      session_end_time: sessionEndTime,
+      session_duration_seconds: validatedSessionDuration,
+      event_type: "session-end-beacon", // Mark this as a beacon session-end event
+      
+      // Additional context
+      client_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      session_end_reason: "page_unload"
+    };
+    
+    // Use Beacon API for guaranteed delivery during page unload
+    const blob = new Blob([JSON.stringify(sessionEndPayload)], { type: 'application/json' });
+    const success = navigator.sendBeacon(`${apiUrl}/activity/clients/${clientId}/activity-log/`, blob);
+    
+    logActivityEvent('Sent session-end data via beacon', {
+      sessionDuration: validatedSessionDuration,
+      totalTime: validatedTotalTime,
+      sessionStartTime: new Date(sessionStartTime).toISOString(),
+      sessionEndTime: new Date(sessionEndTime).toISOString(),
+      success
+    });
+    
+    if (success) {
+      // Record this sync to prevent duplicates
+      recordSuccessfulSync(validatedTotalTime);
+    }
+    
+    return success;
+  } catch (error) {
+    logActivityEvent('Failed to send session-end data via beacon', { 
+      error: (error as Error).message 
+    });
+    return false;
+  }
 }; 
