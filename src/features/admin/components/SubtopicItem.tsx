@@ -8,6 +8,7 @@ import DevelopmentIcon from "../../../commonComponents/icons/admin/content/Devel
 
 
 interface SubtopicItemProps {
+  key: string;
   title: string;
   marks: number;
   stats: {
@@ -20,7 +21,7 @@ interface SubtopicItemProps {
   };
   onEdit: () => void;
   onDelete: () => void;
-  onAddContent: () => void;
+  onAddContent: (subtopicId: number) => void;
 }
 
 const statIcons = [
@@ -33,6 +34,7 @@ const statIcons = [
 ];
 
 export const SubtopicItem: React.FC<SubtopicItemProps> = ({
+  key,
   title,
   marks,
   stats,
@@ -40,7 +42,9 @@ export const SubtopicItem: React.FC<SubtopicItemProps> = ({
   onDelete,
   onAddContent,
 }) => {
-  
+  const handleAddContent = (key: number) => {
+    onAddContent(key);
+  };
   return (
     <div className="flex items-center justify-between bg-white rounded-md border border-gray-200 px-4 py-2 mb-2">
       <div className="flex flex-col">
@@ -66,7 +70,7 @@ export const SubtopicItem: React.FC<SubtopicItemProps> = ({
         <button onClick={onDelete} className="ml-2 text-red-500 border border-red-200 hover:bg-red-100 rounded-md px-2 py-2 flex items-center">
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
         </button>
-        <button onClick={onAddContent} className="ml-2 border border-blue-200 bg-white text-[#17627A] hover:bg-blue-50 rounded-md px-4 py-2 text-sm font-medium">
+        <button onClick={() => handleAddContent(Number(key))} className="ml-2 border border-blue-200 bg-white text-[#17627A] hover:bg-blue-50 rounded-md px-4 py-2 text-sm font-medium">
           + Content
         </button>
       </div>
