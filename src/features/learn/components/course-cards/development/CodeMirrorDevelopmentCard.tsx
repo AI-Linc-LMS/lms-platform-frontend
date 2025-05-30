@@ -36,7 +36,7 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
   const [isLightTheme, setIsLightTheme] = useState(true);
   const [showHint, setShowHint] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Reference for the iframe
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -76,19 +76,19 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
           </body>
         </html>
       `;
-      
+
       // Revoke previous URL if exists
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl);
       }
-      
+
       const blob = new Blob([content], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
-      
+
       // Set the preview URL and open preview
       setPreviewUrl(url);
       setIsPreviewOpen(true);
-      
+
       // Open in a new tab/window
       window.open(url, '_blank');
       setError(null);
@@ -115,7 +115,7 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
             </body>
           </html>
         `;
-        
+
         iframeRef.current.contentWindow.document.open();
         iframeRef.current.contentWindow.document.write(content);
         iframeRef.current.contentWindow.document.close();
@@ -133,7 +133,7 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
         updateLivePreview();
       }
     }, 500); // 500ms debounce
-    
+
     return () => clearTimeout(timer);
   }, [html, css, js, isPreviewOpen]);
 
@@ -158,7 +158,7 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
 }`;
       }
     }
-    
+
     return "Try using the problem description as a guide to complete this project.";
   };
 
@@ -222,7 +222,7 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
   };
 
   return (
-    <div 
+    <div
       className="development-card bg-white rounded-lg shadow-md p-4 md:p-6"
       onKeyDown={handleKeyDown}
       tabIndex={0}
@@ -230,16 +230,15 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
       <div className="header mb-4 md:mb-6">
         <div className="flex flex-col md:flex-row md:justify-between md:items-start">
           <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-2 md:mb-0">{title}</h1>
-          <span className={`px-3 py-1 text-xs md:text-sm rounded-full mb-2 md:mb-0 self-start md:self-auto ${
-            difficulty === "Easy" ? "bg-green-100 text-green-800" :
-            difficulty === "Medium" ? "bg-yellow-100 text-yellow-800" :
-            "bg-red-100 text-red-800"
-          }`}>
+          <span className={`px-3 py-1 text-xs md:text-sm rounded-full mb-2 md:mb-0 self-start md:self-auto ${difficulty === "Easy" ? "bg-green-100 text-green-800" :
+              difficulty === "Medium" ? "bg-yellow-100 text-yellow-800" :
+                "bg-red-100 text-red-800"
+            }`}>
             {difficulty}
           </span>
         </div>
         <p className="text-gray-600 mt-2 text-sm md:text-base">{description}</p>
-        
+
         <div className="flex flex-wrap mt-2 gap-2">
           <button
             onClick={toggleHint}
@@ -247,7 +246,7 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
           >
             {showHint ? "Hide Hint" : "Show Hint"}
           </button>
-          
+
           <button
             onClick={() => {
               // Reset to initial code
@@ -260,7 +259,7 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
             Reset Code
           </button>
         </div>
-        
+
         {showHint && (
           <div className="mt-2 p-2 md:p-3 bg-blue-50 border border-blue-200 rounded-md">
             <h3 className="text-xs md:text-sm font-medium text-blue-800 mb-1">Hint:</h3>
@@ -269,7 +268,7 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
             </pre>
           </div>
         )}
-        
+
         {error && (
           <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-md">
             <p className="text-xs text-red-600">{error}</p>
@@ -279,25 +278,25 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
 
       <div className="editor-container border border-gray-200 rounded-lg">
         <div className="editor-tabs flex flex-wrap border-b border-gray-200">
-          <button 
+          <button
             className={`px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm font-medium ${activeTab === "html" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
             onClick={() => setActiveTab("html")}
           >
             HTML
           </button>
-          <button 
+          <button
             className={`px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm font-medium ${activeTab === "css" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
             onClick={() => setActiveTab("css")}
           >
             CSS
           </button>
-          <button 
+          <button
             className={`px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm font-medium ${activeTab === "js" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
             onClick={() => setActiveTab("js")}
           >
             JS
           </button>
-          
+
           <div className="ml-auto flex items-center pr-2 md:pr-4">
             <div className="flex items-center">
               <span className="text-xs md:text-sm text-gray-600 mr-1 md:mr-2">Theme</span>
@@ -320,7 +319,7 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
             </div>
           </div>
         </div>
-        
+
         <div className="editor-content" style={{ height: "350px" }}>
           <CodeMirror
             value={getCurrentCode()}
@@ -353,7 +352,7 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
           />
         </div>
       </div>
-      
+
       <div className="actions mt-4 flex flex-col md:flex-row justify-between gap-2 md:gap-0">
         <div className="flex flex-col md:flex-row gap-2">
           <button
@@ -362,7 +361,7 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
           >
             <span className="mr-1">▶</span> Preview in New Tab
           </button>
-          
+
           <button
             onClick={() => {
               setIsPreviewOpen(!isPreviewOpen);
@@ -376,7 +375,7 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
             {isPreviewOpen ? "Hide Preview" : "Show Preview"}
           </button>
         </div>
-        
+
         <button
           onClick={handleSubmit}
           className="bg-green-500 hover:bg-green-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-md text-xs md:text-sm font-medium cursor-pointer"
@@ -384,12 +383,12 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
           Submit
         </button>
       </div>
-      
+
       {isPreviewOpen && (
         <div className="preview-container mt-4 md:mt-6">
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-base md:text-lg font-semibold">Live Preview</h3>
-            <button 
+            <button
               onClick={() => setIsPreviewOpen(false)}
               className="text-gray-500 hover:text-gray-700"
             >
@@ -397,9 +396,9 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
             </button>
           </div>
           <div className="preview-frame border border-gray-200 rounded">
-            <iframe 
+            <iframe
               ref={iframeRef}
-              title="Preview" 
+              title="Preview"
               className="w-full"
               style={{ height: "250px" }}
               sandbox="allow-scripts"
@@ -407,7 +406,7 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
           </div>
         </div>
       )}
-      
+
       <div className="mt-3 text-xs text-gray-500">
         <p>Keyboard shortcuts: Ctrl+S to submit, Ctrl+P to preview</p>
       </div>

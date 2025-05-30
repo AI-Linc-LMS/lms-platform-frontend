@@ -98,7 +98,7 @@ const DevelopmentCard: React.FC<DevelopmentCardProps> = ({
 }`;
       }
     }
-    
+
     return "Try using the problem description as a guide to complete this project.";
   };
 
@@ -110,21 +110,20 @@ const DevelopmentCard: React.FC<DevelopmentCardProps> = ({
 
   return (
     <div className="w-full">
-      <SwitchToDesktopModal 
-        isOpen={showDesktopModal} 
-        onClose={() => setShowDesktopModal(false)} 
+      <SwitchToDesktopModal
+        isOpen={showDesktopModal}
+        onClose={() => setShowDesktopModal(false)}
       />
-      
+
       <div className={`development-card ${themeClass} bg-white rounded-lg shadow-md p-4 md:p-6`}>
         <div className="header mb-4 md:mb-6">
           <div className="flex flex-col md:flex-row md:justify-between md:items-start">
             <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-2 md:mb-0">{title}</h1>
             <div className="flex gap-2 items-center">
-              <span className={`px-3 py-1 text-xs md:text-sm rounded-full mb-2 md:mb-0 self-start md:self-auto ${
-                difficulty === "Easy" ? "bg-green-100 text-green-800" :
-                difficulty === "Medium" ? "bg-yellow-100 text-yellow-800" :
-                "bg-red-100 text-red-800"
-              }`}>
+              <span className={`px-3 py-1 text-xs md:text-sm rounded-full mb-2 md:mb-0 self-start md:self-auto ${difficulty === "Easy" ? "bg-green-100 text-green-800" :
+                  difficulty === "Medium" ? "bg-yellow-100 text-yellow-800" :
+                    "bg-red-100 text-red-800"
+                }`}>
                 {difficulty}
               </span>
               <button
@@ -136,7 +135,7 @@ const DevelopmentCard: React.FC<DevelopmentCardProps> = ({
             </div>
           </div>
           <p className="text-gray-600 mt-2 text-sm md:text-base">{description}</p>
-          
+
           <div className="flex flex-wrap mt-2 gap-2">
             <button
               onClick={toggleHint}
@@ -144,7 +143,7 @@ const DevelopmentCard: React.FC<DevelopmentCardProps> = ({
             >
               {showHint ? "Hide Hint" : "Show Hint"}
             </button>
-            
+
             <button
               onClick={() => {
                 // Reset to initial code
@@ -157,7 +156,7 @@ const DevelopmentCard: React.FC<DevelopmentCardProps> = ({
               Reset Code
             </button>
           </div>
-          
+
           {showHint && (
             <div className={`mt-2 p-2 md:p-3 rounded-md hint-container ${isDarkTheme ? 'bg-blue-900 border border-blue-700' : 'bg-blue-50 border border-blue-200'}`}>
               <h3 className="text-xs md:text-sm font-medium mb-1">Hint:</h3>
@@ -170,26 +169,26 @@ const DevelopmentCard: React.FC<DevelopmentCardProps> = ({
 
         <div className="editor-container border border-gray-200 rounded-lg">
           <div className="editor-tabs flex flex-wrap border-b border-gray-200">
-            <button 
+            <button
               className={`px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm font-medium ${activeTab === "html" ? "border-b-2 border-blue-500 active" : ""}`}
               onClick={() => setActiveTab("html")}
             >
               HTML
             </button>
-            <button 
+            <button
               className={`px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm font-medium ${activeTab === "css" ? "border-b-2 border-blue-500 active" : ""}`}
               onClick={() => setActiveTab("css")}
             >
               CSS
             </button>
-            <button 
+            <button
               className={`px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm font-medium ${activeTab === "js" ? "border-b-2 border-blue-500 active" : ""}`}
               onClick={() => setActiveTab("js")}
             >
               JS
             </button>
           </div>
-          
+
           <div className="editor-content">
             {activeTab === "html" && (
               <textarea
@@ -200,7 +199,7 @@ const DevelopmentCard: React.FC<DevelopmentCardProps> = ({
                 spellCheck="false"
               />
             )}
-            
+
             {activeTab === "css" && (
               <textarea
                 className="w-full p-4 font-mono text-sm focus:outline-none border-none"
@@ -210,7 +209,7 @@ const DevelopmentCard: React.FC<DevelopmentCardProps> = ({
                 spellCheck="false"
               />
             )}
-            
+
             {activeTab === "js" && (
               <textarea
                 className="w-full p-4 font-mono text-sm focus:outline-none border-none"
@@ -222,7 +221,7 @@ const DevelopmentCard: React.FC<DevelopmentCardProps> = ({
             )}
           </div>
         </div>
-        
+
         <div className="actions mt-4 flex flex-col md:flex-row justify-between gap-2 md:gap-0">
           <div className="flex flex-col md:flex-row gap-2">
             <button
@@ -231,7 +230,7 @@ const DevelopmentCard: React.FC<DevelopmentCardProps> = ({
             >
               <span className="mr-1">▶</span> Preview in New Tab
             </button>
-            
+
             <button
               onClick={() => setIsPreviewOpen(!isPreviewOpen)}
               className="bg-gray-500 hover:bg-gray-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-md text-xs md:text-sm font-medium cursor-pointer"
@@ -239,7 +238,7 @@ const DevelopmentCard: React.FC<DevelopmentCardProps> = ({
               {isPreviewOpen ? "Hide Preview" : "Show Preview"}
             </button>
           </div>
-          
+
           <button
             onClick={handleSubmit}
             className="bg-green-500 hover:bg-green-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-md text-xs md:text-sm font-medium cursor-pointer"
@@ -247,12 +246,12 @@ const DevelopmentCard: React.FC<DevelopmentCardProps> = ({
             Submit
           </button>
         </div>
-        
+
         {isPreviewOpen && (
           <div className="preview-container mt-4 md:mt-6">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-base md:text-lg font-semibold">Live Preview</h3>
-              <button 
+              <button
                 onClick={() => setIsPreviewOpen(false)}
                 className="text-gray-500 hover:text-gray-700"
               >
@@ -260,16 +259,16 @@ const DevelopmentCard: React.FC<DevelopmentCardProps> = ({
               </button>
             </div>
             <div className="preview-frame border border-gray-200 rounded">
-              <iframe 
+              <iframe
                 srcDoc={previewContent}
-                title="Preview" 
+                title="Preview"
                 className="w-full"
                 sandbox="allow-scripts"
               ></iframe>
             </div>
           </div>
         )}
-        
+
         <div className="mt-3 text-xs text-gray-500">
           <p>Tip: Use the Preview button to see your changes in a new tab</p>
         </div>

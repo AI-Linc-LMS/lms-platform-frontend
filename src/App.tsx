@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { useTokenExpirationHandler } from "./hooks/useTokenExpirationHandler";
 import useUserActivityTracking from "./hooks/useUserActivityTracking";
 import { setupActivitySyncListeners } from "./utils/userActivitySync";
-import FloatingActivityTimer from "./components/FloatingActivityTimer";
+// import FloatingActivityTimer from "./components/FloatingActivityTimer";
 
 function App() {
   return (
@@ -21,20 +21,20 @@ function App() {
 const NotFound = () => {
   const navigate = useNavigate();
   const [animateNumber, setAnimateNumber] = useState(false);
-  
+
   useEffect(() => {
     // Add animation after component mounts
     setTimeout(() => setAnimateNumber(true), 300);
   }, []);
-  
+
   const handleGoHome = () => {
     navigate('/', { replace: true });
   };
-  
+
   const handleGoBack = () => {
     window.history.back();
   };
-  
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#F8F9FA]">
       <div className="flex items-center space-x-2 mb-8">
@@ -44,7 +44,7 @@ const NotFound = () => {
         </div>
         <div className="text-6xl font-mono text-[#1A5A7A]">{'}'}</div>
       </div>
-      
+
       <div className="text-center max-w-md mb-8">
         <div className="font-mono text-[#1A5A7A] text-xl">
           <span className="text-[#9F55FF]">error</span>: <span className="text-[#343A40]">Page</span>.<span className="text-[#1A5A7A]">NotFound</span>()
@@ -53,9 +53,9 @@ const NotFound = () => {
           // The requested resource could not be located
         </p>
       </div>
-      
+
       <div className="flex flex-col sm:flex-row gap-4 mt-4">
-        <button 
+        <button
           onClick={handleGoHome}
           className="px-6 py-3 bg-[#255C79] rounded-xl text-white hover:bg-[#1E4A63] transition-all duration-300 shadow-lg hover:shadow-[#1A5A7A]/30 flex items-center justify-center hover:scale-95 font-mono"
         >
@@ -64,8 +64,8 @@ const NotFound = () => {
           </svg>
           return home()
         </button>
-        
-        <button 
+
+        <button
           onClick={handleGoBack}
           className="px-6 py-3 bg-[#E9ECEF] text-[#343A40] rounded-xl hover:bg-[#DDE2E6] transition-all duration-300 flex items-center justify-center hover:scale-95 font-mono"
         >
@@ -85,17 +85,17 @@ const InvalidRoute = () => {
   const location = useLocation();
   const user = localStorage.getItem("user");
   const [showNotFound, setShowNotFound] = useState(false);
-  
+
   useEffect(() => {
     // If user is not authenticated, redirect to login
     if (!user) {
       navigate("/login", { replace: true });
       return;
     }
-    
+
     // Get the current path
     const path = location.pathname;
-    
+
     // First check if the current path is a valid route
     // This will handle cases where user manually enters a URL like /learn/course/3
     const isCurrentPathValid = routes.some(route => {
@@ -104,12 +104,12 @@ const InvalidRoute = () => {
       const regex = new RegExp(`^${routePattern}$`);
       return regex.test(path);
     });
-    
+
     // If current path is valid, don't redirect - let the router handle it
     if (isCurrentPathValid) {
       return;
     }
-    
+
     // For root level random paths, show 404 page
     if (path.split('/').length === 2 && path !== '/') {
       // This is a root level path like /unknown
@@ -117,56 +117,56 @@ const InvalidRoute = () => {
         const routeSegments = route.path.split('/');
         return routeSegments.length === 2 && routeSegments[1] === path.substring(1);
       });
-      
+
       if (!isKnownRootPath) {
         setShowNotFound(true);
         return;
       }
     }
-    
+
     // Special handling for course routes like: /learn/course/3/3/690634646
     if (path.startsWith('/learn/course/')) {
       const segments = path.split('/');
-      
+
       // Check if this could be a valid parent route by removing segments one by one
       // and checking against routes
       for (let i = segments.length - 1; i >= 3; i--) {
         const possibleValidPath = segments.slice(0, i).join('/');
-        
+
         // Check if this is a valid route
         const isValidParentRoute = routes.some(route => {
           const routePattern = route.path.replace(/:[^/]+/g, '[^/]+');
           const regex = new RegExp(`^${routePattern}$`);
           return regex.test(possibleValidPath);
         });
-        
+
         if (isValidParentRoute) {
           // If we found a valid parent path, navigate to it
           navigate(possibleValidPath, { replace: true });
           return;
         }
       }
-      
+
       // If we've tried all parent paths and none are valid, show 404
       setShowNotFound(true);
       return;
     }
-    
+
     // For other routes, try to find the closest matching valid route
     if (path.split('/').length > 2) {
       // Try to find a valid parent path by removing segments one by one
       const segments = path.split('/');
-      
+
       for (let i = segments.length - 1; i >= 2; i--) {
         const possibleValidPath = segments.slice(0, i).join('/') || '/';
-        
+
         // Check if this is a valid route
         const isValidParentRoute = routes.some(route => {
           const routePattern = route.path.replace(/:[^/]+/g, '[^/]+');
           const regex = new RegExp(`^${routePattern}$`);
           return regex.test(possibleValidPath);
         });
-        
+
         if (isValidParentRoute) {
           // If we found a valid parent path, navigate to it
           navigate(possibleValidPath, { replace: true });
@@ -174,7 +174,7 @@ const InvalidRoute = () => {
         }
       }
     }
-    
+
     // If we couldn't find any valid parent path, show 404
     setShowNotFound(true);
   }, [navigate, user, location]);
@@ -189,42 +189,43 @@ function AppContent() {
   const user = localStorage.getItem("user");
   const isAuthenticated = user ? true : false;
   const { totalTimeSpent, activityHistory } = useUserActivityTracking();
-  
+
   // Use the token expiration handler
   useTokenExpirationHandler();
-  
+
   // Set up activity sync listeners
   useEffect(() => {
     if (isAuthenticated) {
       setupActivitySyncListeners();
     }
   }, [isAuthenticated]);
-  
+
   // Log activity data periodically
   useEffect(() => {
     if (!isAuthenticated) return;
-    
+
     const logInterval = setInterval(() => {
       console.log('Current session stats:');
       console.log('Total time spent:', totalTimeSpent, 'seconds');
       console.log('Session history:', activityHistory);
-      
+
       // In the future, this is where you would sync with backend
       // syncUserActivity(userId, totalTimeSpent, activityHistory);
     }, 60000); // Log every minute
-    
+
     return () => clearInterval(logInterval);
   }, [isAuthenticated, totalTimeSpent, activityHistory]);
-  
+
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login");
     }
   }, [isAuthenticated, navigate]);
-  
+
   return (
     <>
-      {isAuthenticated && <FloatingActivityTimer />}
+    {/* {isAuthenticated && <FloatingActivityTimer />} */}
+      {isAuthenticated }
       <Routes>
         {routes.map((route) => {
           if (route.isPrivate) {
@@ -251,7 +252,7 @@ function AppContent() {
             />
           );
         })}
-        
+
         {/* Handle unknown routes - keeps authenticated users on the app */}
         <Route path="*" element={<InvalidRoute />} />
       </Routes>

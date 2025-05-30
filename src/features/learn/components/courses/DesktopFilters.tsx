@@ -38,44 +38,44 @@ const DesktopFilters = ({
       <div className="bg-white rounded-xl p-4 border border-[#DEE2E6]">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-bold text-[#343A40]">Filter By</h2>
-          <button 
+          <button
             onClick={clearAllFilters}
             className="text-sm text-[#17627A] hover:underline"
           >
             Clear All
           </button>
         </div>
-        
+
         {/* Categories */}
-        <FilterCategory 
-          title="Categories" 
-          options={categoryOptions} 
-          selectedOptions={selectedCategories} 
-          setSelectedOptions={setSelectedCategories} 
+        <FilterCategory
+          title="Categories"
+          options={categoryOptions}
+          selectedOptions={selectedCategories}
+          setSelectedOptions={setSelectedCategories}
         />
-        
+
         {/* Level/Difficulty */}
-        <FilterCategory 
-          title="Level/Difficulty" 
-          options={levelOptions} 
-          selectedOptions={selectedLevels} 
-          setSelectedOptions={setSelectedLevels} 
+        <FilterCategory
+          title="Level/Difficulty"
+          options={levelOptions}
+          selectedOptions={selectedLevels}
+          setSelectedOptions={setSelectedLevels}
         />
-        
+
         {/* Price */}
-        <FilterCategory 
-          title="Price" 
-          options={priceOptions} 
-          selectedOptions={selectedPrices} 
-          setSelectedOptions={setSelectedPrices} 
+        <FilterCategory
+          title="Price"
+          options={priceOptions}
+          selectedOptions={selectedPrices}
+          setSelectedOptions={setSelectedPrices}
         />
-        
+
         {/* Rating */}
-        <FilterCategory 
-          title="Rating" 
-          options={ratingOptions} 
-          selectedOptions={selectedRatings} 
-          setSelectedOptions={setSelectedRatings} 
+        <FilterCategory
+          title="Rating"
+          options={ratingOptions}
+          selectedOptions={selectedRatings}
+          setSelectedOptions={setSelectedRatings}
         />
       </div>
     </div>
