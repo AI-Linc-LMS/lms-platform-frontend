@@ -1,6 +1,6 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-const persistedUser = localStorage.getItem('user');
+const persistedUser = localStorage.getItem("user");
 
 interface UserState {
   id: string | null;
@@ -31,12 +31,17 @@ const initialState: UserState = persistedUser
     };
 
 const userSlice = createSlice({
-  name: 'user',
+  name: "user",
   initialState,
   reducers: {
     setUser: (state, action: PayloadAction<Partial<UserState>>) => {
-      const newState = { ...state, ...action.payload, loading: false, error: null };
-      localStorage.setItem('user', JSON.stringify(newState));
+      const newState = {
+        ...state,
+        ...action.payload,
+        loading: false,
+        error: null,
+      };
+      localStorage.setItem("user", JSON.stringify(newState));
       return newState;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
@@ -47,15 +52,15 @@ const userSlice = createSlice({
       state.loading = false;
     },
     logout: () => {
-      localStorage.removeItem('user');
+      localStorage.removeItem("user");
       return {
         ...initialState,
         loading: false,
-        error: null
+        error: null,
       };
     },
   },
 });
 
 export const { setUser, setLoading, setError, logout } = userSlice.actions;
-export default userSlice.reducer; 
+export default userSlice.reducer;

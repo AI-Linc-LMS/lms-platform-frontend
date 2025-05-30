@@ -35,7 +35,7 @@ const ContinueLearningAll = () => {
   return (
     <div className="w-full">
       <div className="flex items-center mb-6">
-        <button 
+        <button
           onClick={() => navigate('/learn')}
           className="mr-4 p-2 rounded-full hover:bg-gray-100"
         >

@@ -6,7 +6,7 @@ import { getDailyLeaderboard, getUserDailyTimeSpentData, LeaderboardData } from 
 const goalMinutes = 30; // Default goal
 
 const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
-  
+
   const { data: leaderboardData, isLoading: isLeaderboardLoading, error: leaderboardError } = useQuery({
     queryKey: ["dailyLeaderboard", clientId],
     queryFn: () => getDailyLeaderboard(clientId),
@@ -25,7 +25,7 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
 
 
   const leaderboardArray = leaderboardData?.leaderboard || [];
-  const timeSpent = dailyTimeSpentData?.timespent ?? 0; 
+  const timeSpent = dailyTimeSpentData?.timespent ?? 0;
 
   // Map leaderboard data to table format
   const tableData = leaderboardArray.map((item: LeaderboardData, idx: number) => ({
@@ -38,7 +38,7 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
   }));
 
   // Calculate progress percentage for the progress bar
-  const progressMinutes = timeSpent; 
+  const progressMinutes = timeSpent;
   const progressPercent = Math.min((progressMinutes / goalMinutes) * 100, 100);
 
   if (
@@ -144,23 +144,20 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
                   className={`group relative transition-all duration-300 hover:bg-[#E9F7FA]`}
                 >
                   <td
-                    className={`px-2 py-2 text-xs border-gray-300 ${
-                      isLast ? "" : "border-b"
-                    }`}
+                    className={`px-2 py-2 text-xs border-gray-300 ${isLast ? "" : "border-b"
+                      }`}
                   >
                     <span>{item.standing}</span>
                   </td>
                   <td
-                    className={`px-2 py-2 text-xs border-l border-gray-300 ${
-                      isLast ? "" : "border-b"
-                    }`}
+                    className={`px-2 py-2 text-xs border-l border-gray-300 ${isLast ? "" : "border-b"
+                      }`}
                   >
                     <span>{item.name}</span>
                   </td>
                   <td
-                    className={`px-2 py-2 text-xs border-l border-gray-300 ${
-                      isLast ? "" : "border-b"
-                    }`}
+                    className={`px-2 py-2 text-xs border-l border-gray-300 ${isLast ? "" : "border-b"
+                      }`}
                   >
                     <span>{item.time}</span>
                   </td>

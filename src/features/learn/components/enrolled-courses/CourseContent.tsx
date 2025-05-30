@@ -10,7 +10,7 @@ interface CourseContentProps {
   error: Error | null;
 }
 
-const CourseContent: React.FC<CourseContentProps> = ({course, isLoading, error}) => {
+const CourseContent: React.FC<CourseContentProps> = ({ course, isLoading, error }) => {
   const [tooltipInfo, setTooltipInfo] = useState<{
     visible: boolean;
     index: number;
@@ -23,7 +23,7 @@ const CourseContent: React.FC<CourseContentProps> = ({course, isLoading, error})
     y: 0,
   });
 
-  
+
 
   const handleMouseEnter = (index: number, e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -159,8 +159,8 @@ const CourseContent: React.FC<CourseContentProps> = ({course, isLoading, error})
               {course?.instructors?.[tooltipInfo.index]?.bio}
             </p>
           </div>
-          </div>
-       
+        </div>
+
       )}
 
       <CourseStatistics course={course} />

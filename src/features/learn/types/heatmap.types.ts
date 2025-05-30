@@ -7,4 +7,4 @@ export interface HeatmapData {
   total: number;
   level?: number;
   value?: number;
-} 
+}

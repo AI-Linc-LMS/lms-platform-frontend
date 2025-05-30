@@ -46,7 +46,7 @@ const HoursSpentCard = ({
     }));
   }, [data]);
 
-  
+
   // Calculate max hours for Y-axis
   const maxHours = useMemo(() => {
     if (!data?.hours_spent?.length) return 24;
@@ -147,7 +147,7 @@ const HoursSpentCard = ({
               axisLine={false}
               tickLine={false}
               tick={{ fill: "#6B7280", fontSize: 10 }}
-              ticks={[0, error ? 12 : Math.floor(maxHours/2), error ? 24 : maxHours]}
+              ticks={[0, error ? 12 : Math.floor(maxHours / 2), error ? 24 : maxHours]}
               tickMargin={5}
             />
 

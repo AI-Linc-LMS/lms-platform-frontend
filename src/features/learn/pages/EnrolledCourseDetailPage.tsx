@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 const EnrolledCourseDetailPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
-  
+
   const { data: course, isLoading, error } = useQuery({
     queryKey: ["course", courseId],
     queryFn: () => getCourseById(1, parseInt(courseId!)),
@@ -20,11 +20,11 @@ const EnrolledCourseDetailPage: React.FC = () => {
 
   console.log("course", course);
   // Check if course data is empty or missing required fields
-  const isCourseDataEmpty = !course || 
-    !course.course_title || 
-    !course.course_description || 
-    !course.instructors || 
-    !course.modules || 
+  const isCourseDataEmpty = !course ||
+    !course.course_title ||
+    !course.course_description ||
+    !course.instructors ||
+    !course.modules ||
     course.modules.length === 0;
 
   if (!courseId) {
@@ -37,7 +37,7 @@ const EnrolledCourseDetailPage: React.FC = () => {
       </div>
     );
   }
-  
+
   if (error?.message === "Request failed with status code 403") {
     return (
       <>

@@ -1,4 +1,4 @@
-import { useState} from "react";
+import { useState } from "react";
 import HoursSpentCard from "./HoursSpentCard";
 import LessonsHeatmapCard from "./LessonsHeatmapCard";
 

@@ -42,7 +42,7 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const navigate = useNavigate();
-  
+
   // Helper function to navigate to topic detail page
   const navigateToTopicDetail = (courseId: string, submoduleId: string) => {
     console.log("courseId", courseId);
@@ -138,10 +138,9 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
         </div>
 
         {/* Collapsible Content */}
-        <div 
-          className={`transition-all duration-500 ease-in-out transform origin-top overflow-hidden ${
-            isOpen ? 'max-h-[2000px] opacity-100 scale-100' : 'max-h-0 opacity-0 scale-98'
-          }`}
+        <div
+          className={`transition-all duration-500 ease-in-out transform origin-top overflow-hidden ${isOpen ? 'max-h-[2000px] opacity-100 scale-100' : 'max-h-0 opacity-0 scale-98'
+            }`}
         >
           <div className="px-3 md:px-4 pb-3 md:pb-4">
             {week.modules.map((module) => (

@@ -8,7 +8,7 @@ const WelcomeSection = () => {
 
   const getTimeBasedGreeting = () => {
     const hour = new Date().getHours();
-    
+
     if (hour >= 5 && hour < 12) {
       return "Good morning";
     } else if (hour >= 12 && hour < 17) {
@@ -23,7 +23,7 @@ const WelcomeSection = () => {
   useEffect(() => {
     // Set initial greeting
     setGreeting(getTimeBasedGreeting());
-    
+
     // Update greeting every minute
     const interval = setInterval(() => {
       setGreeting(getTimeBasedGreeting());

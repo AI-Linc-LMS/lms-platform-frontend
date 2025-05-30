@@ -46,7 +46,7 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
     window.addEventListener("resize", checkIfMobile);
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
-  
+
 
   const daysInMonth = useMemo(() => {
     const days: Date[] = [];
@@ -116,11 +116,10 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
                   }}
                 >
                   <div
-                    className={`w-[8px] h-[8px] md:w-[10px] md:h-[10px] lg:w-[12px] lg:h-[12px] xl:w-[14px] xl:h-[14px] rounded-sm ${
-                      activity
+                    className={`w-[8px] h-[8px] md:w-[10px] md:h-[10px] lg:w-[12px] lg:h-[12px] xl:w-[14px] xl:h-[14px] rounded-sm ${activity
                         ? getActivityColor(activity.level)
                         : "bg-[#E9ECE9]"
-                    } ${isHovered ? "transform scale-110 shadow-md" : ""} ${isMobile ? "w-[10px] h-[10px]" : ""}`}
+                      } ${isHovered ? "transform scale-110 shadow-md" : ""} ${isMobile ? "w-[10px] h-[10px]" : ""}`}
                   />
                 </div>
               );

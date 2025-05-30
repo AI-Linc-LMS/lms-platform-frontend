@@ -24,7 +24,7 @@ interface ApiResponse {
   [key: string]: number; // For any other fields that might be present
 }
 
-const DashboardPieChart = ({courseId}:{courseId:number}) => {
+const DashboardPieChart = ({ courseId }: { courseId: number }) => {
   const { data, isLoading, error } = useQuery({
     queryKey: ["DashboardPieChart"],
     queryFn: () => getCourseDashboard(1, courseId),
@@ -38,12 +38,12 @@ const DashboardPieChart = ({courseId}:{courseId:number}) => {
     // Extract progress values from API response
     const {
       article_progress = 0,
-      video_progress = 0, 
+      video_progress = 0,
       coding_problem_progress = 0,
       quiz_progress = 0,
       total_progress = 0
     } = apiData || {};
-    
+
     return {
       totalCompletion: total_progress,
       categories: [

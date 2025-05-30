@@ -66,4 +66,4 @@ export interface Course {
     quiz: { total: number };
     assignment: { total: number };
   };
-} 
+}

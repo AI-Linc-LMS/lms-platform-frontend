@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 // Define types for the course data structure
 interface Instructor {
@@ -56,7 +56,7 @@ const initialState: CoursesState = {
 };
 
 const coursesSlice = createSlice({
-  name: 'courses',
+  name: "courses",
   initialState,
   reducers: {
     setCourses: (state, action: PayloadAction<Course[]>) => {
@@ -80,7 +80,9 @@ const coursesSlice = createSlice({
       state.courses.push(action.payload);
     },
     updateCourse: (state, action: PayloadAction<Course>) => {
-      const index = state.courses.findIndex(course => course.id === action.payload.id);
+      const index = state.courses.findIndex(
+        (course) => course.id === action.payload.id
+      );
       if (index !== -1) {
         state.courses[index] = action.payload;
       }
@@ -89,33 +91,61 @@ const coursesSlice = createSlice({
       }
     },
     deleteCourse: (state, action: PayloadAction<number>) => {
-      state.courses = state.courses.filter(course => course.id !== action.payload);
+      state.courses = state.courses.filter(
+        (course) => course.id !== action.payload
+      );
       if (state.currentCourse && state.currentCourse.id === action.payload) {
         state.currentCourse = null;
       }
     },
-    enrollStudent: (state, action: PayloadAction<{ courseId: number, studentId: number }>) => {
-      const course = state.courses.find(course => course.id === action.payload.courseId);
-      if (course && !course.enrolled_students.includes(action.payload.studentId)) {
+    enrollStudent: (
+      state,
+      action: PayloadAction<{ courseId: number; studentId: number }>
+    ) => {
+      const course = state.courses.find(
+        (course) => course.id === action.payload.courseId
+      );
+      if (
+        course &&
+        !course.enrolled_students.includes(action.payload.studentId)
+      ) {
         course.enrolled_students.push(action.payload.studentId);
       }
-      
-      if (state.currentCourse && state.currentCourse.id === action.payload.courseId) {
-        if (!state.currentCourse.enrolled_students.includes(action.payload.studentId)) {
+
+      if (
+        state.currentCourse &&
+        state.currentCourse.id === action.payload.courseId
+      ) {
+        if (
+          !state.currentCourse.enrolled_students.includes(
+            action.payload.studentId
+          )
+        ) {
           state.currentCourse.enrolled_students.push(action.payload.studentId);
         }
       }
     },
-    unenrollStudent: (state, action: PayloadAction<{ courseId: number, studentId: number }>) => {
-      const course = state.courses.find(course => course.id === action.payload.courseId);
+    unenrollStudent: (
+      state,
+      action: PayloadAction<{ courseId: number; studentId: number }>
+    ) => {
+      const course = state.courses.find(
+        (course) => course.id === action.payload.courseId
+      );
       if (course) {
-        course.enrolled_students = course.enrolled_students.filter(id => id !== action.payload.studentId);
-      }
-      
-      if (state.currentCourse && state.currentCourse.id === action.payload.courseId) {
-        state.currentCourse.enrolled_students = state.currentCourse.enrolled_students.filter(
-          id => id !== action.payload.studentId
+        course.enrolled_students = course.enrolled_students.filter(
+          (id) => id !== action.payload.studentId
         );
+      }
+
+      if (
+        state.currentCourse &&
+        state.currentCourse.id === action.payload.courseId
+      ) {
+        state.currentCourse.enrolled_students =
+          state.currentCourse.enrolled_students.filter(
+            (id) => id !== action.payload.studentId
+          );
       }
     },
   },

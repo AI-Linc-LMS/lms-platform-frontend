@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getCourseLeaderboard } from "../../../../services/enrolled-courses-content/courseContentApis";
 import React from "react";
 
-const EnrolledLeaderBoard = ({courseId}:{courseId:number}) => {
+const EnrolledLeaderBoard = ({ courseId }: { courseId: number }) => {
   const { data = [], isLoading, error } = useQuery<Array<{ rank: number; name: string; score: number }>>({
     queryKey: ["leaderboard"],
     queryFn: () => getCourseLeaderboard(1, courseId),
@@ -61,7 +61,7 @@ const EnrolledLeaderBoard = ({courseId}:{courseId:number}) => {
               ))
             ) : (
               data?.map((entry: { rank: number; name: string; score: number }) => (
-                <tr 
+                <tr
                   key={entry.rank}
                   className={`${entry.name === 'You' ? 'bg-blue-50' : ''}`}
                 >

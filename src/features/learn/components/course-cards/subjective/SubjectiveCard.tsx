@@ -94,19 +94,19 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
       // Save selection
       const selection = window.getSelection();
       const range = selection?.getRangeAt(0);
-      
+
       // Focus on editor
       editorRef.current.focus();
-      
+
       // Restore selection if it exists
       if (selection && range) {
         selection.removeAllRanges();
         selection.addRange(range);
       }
-      
+
       // Execute command
       document.execCommand(command, false, value);
-      
+
       // Update answer state with new content
       setAnswer(editorRef.current.innerHTML);
       setShowPlaceholder(false);
@@ -133,7 +133,7 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
   const focusEditor = () => {
     if (editorRef.current) {
       editorRef.current.focus();
-      
+
       // Set cursor at the end
       const range = document.createRange();
       const selection = window.getSelection();
@@ -200,9 +200,9 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
     const content = e.currentTarget.innerHTML;
     setAnswer(content);
-    const isEmpty = content.trim() === '' || 
-      content === '<br>' || 
-      content === '<div></div>' || 
+    const isEmpty = content.trim() === '' ||
+      content === '<br>' ||
+      content === '<div></div>' ||
       content === '<p></p>';
     setShowPlaceholder(isEmpty);
   };
@@ -217,8 +217,8 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
         <div className="flex items-center gap-4 mt-4">
           <div className="inline-flex items-center px-3 py-1 rounded-full bg-gray-100">
             <span className={`material-icons text-sm mr-1 ${data.details.difficulty_level === 'Easy' ? 'text-green-800' :
-                data.details.difficulty_level === 'Medium' ? 'text-yellow-800' :
-                  'text-red-800'
+              data.details.difficulty_level === 'Medium' ? 'text-yellow-800' :
+                'text-red-800'
               }`}>bolt</span>
             <span className="text-sm">{data.details.difficulty_level}</span>
           </div>
@@ -359,9 +359,9 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
                 onFocus={() => setShowPlaceholder(false)}
                 onBlur={() => {
                   const content = editorRef.current?.innerHTML || '';
-                  const isEmpty = content.trim() === '' || 
-                    content === '<br>' || 
-                    content === '<div></div>' || 
+                  const isEmpty = content.trim() === '' ||
+                    content === '<br>' ||
+                    content === '<div></div>' ||
                     content === '<p></p>';
                   setShowPlaceholder(isEmpty);
                 }}
@@ -370,7 +370,7 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
                 onClick={focusEditor}
               ></div>
               {showPlaceholder && (
-                <div 
+                <div
                   className="absolute top-4 left-4 text-gray-400 cursor-text"
                   onClick={focusEditor}
                 >
@@ -383,8 +383,8 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({ contentId, courseId }) 
           <div className="flex justify-end mt-4">
             <button
               className={`px-12 py-3 rounded-lg font-medium ${!answer.trim()
-                  ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-[#255C79] text-white hover:bg-[#1a4a5f] transition-colors'
+                ? 'bg-gray-300 cursor-not-allowed'
+                : 'bg-[#255C79] text-white hover:bg-[#1a4a5f] transition-colors'
                 }`}
               onClick={handleSubmit}
               disabled={!answer.trim()}

@@ -134,7 +134,7 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
             {data?.map((item: LeaderboardItem, index: number) => {
               // Check if this entry is the current user (name is "You")
               const isCurrentUser = item.name === "You";
-              
+
               return (
                 <tr
                   key={index}
