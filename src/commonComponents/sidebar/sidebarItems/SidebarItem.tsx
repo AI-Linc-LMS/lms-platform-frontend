@@ -17,12 +17,16 @@ const SidebarItem = ({
           <div
             className={`flex relative font-medium w-full h-[66px] transition-all duration-300 ease-in-out items-center justify-start hover-element rounded-2xl ${
               isActive ? "bg-[#12293A]" : ""
-            } `}
+            }`}
           >
-            <div className="flex flex-row items-center px-3 gap-4">
-              <div className="w-[18px] h-[18px] mt-[-6px]">{linkInfo.icon}</div>
+            <div className="flex flex-row items-center px-4 gap-4">
+              <div className={`w-[26px] h-[20px] flex items-center justify-center ${
+                isActive ? "text-white" : "text-black"
+              }`}>
+                {linkInfo.icon}
+              </div>
               <span
-                className={`ml-2 text-xl ${
+                className={`text-lg ${
                   isActive ? "text-white" : "text-black"
                 }`}
               >
@@ -32,11 +36,15 @@ const SidebarItem = ({
           </div>
         ) : (
           <div
-            className={`mx-auto w-full h-[66px] pr-2 transition-all grid place-items-center duration-300 ease-in-out hover-element rounded-2xl ${
+            className={`flex items-center justify-center w-full h-[66px] transition-all duration-300 ease-in-out hover-element rounded-2xl ${
               isActive ? "bg-[#12293A]" : ""
-            }  `}
+            }`}
           >
-            <div className="w-4 h-4 mt-[-8px] mx-auto">{linkInfo.icon}</div>
+            <div className={`w-[26px] h-[20px] flex items-center justify-center ${
+              isActive ? "text-white" : "text-black"
+            }`}>
+              {linkInfo.icon}
+            </div>
           </div>
         )}
       </Link>

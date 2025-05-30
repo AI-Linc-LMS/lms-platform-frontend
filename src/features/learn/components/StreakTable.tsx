@@ -1,17 +1,54 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getStreakTableData, StreakData } from "../../../services/dashboardApis";
 
-interface StreakTablesProps {
-  activeDays: number[]; // e.g. [1, 2, 3, 4, 9, 10, 11]
+interface StreakTableProps {
+  clientId: number;
 }
 
-const StreakTable: React.FC<StreakTablesProps> = ({ activeDays }) => {
+const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
+  const [activeDays, setActiveDays] = useState<number[]>([]);
+
+  const { data, isLoading, error } = useQuery<StreakData>({
+    queryKey: ['streakTable', clientId],
+    queryFn: () => getStreakTableData(clientId),
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
+  });
+
+  // Extract active days from the streak data
+  useEffect(() => {
+    if (!data || !data.streak) return;
+
+    // Convert the streak object to an array of active days
+    const days: number[] = [];
+
+    // Loop through the streak object
+    Object.entries(data.streak).forEach(([date, isActive]) => {
+      // Skip the 'month' and 'year' properties
+      if (date === 'month' || date === 'year') return;
+
+      // Extract the day from the date string (e.g., "2025-04-01" -> 1)
+      const day = parseInt(date.split('-')[2]);
+
+      // If the day is active, add it to the array
+      if (isActive === true) {
+        days.push(day);
+      }
+    });
+
+    setActiveDays(days);
+  }, [data]);
+
   const today = new Date();
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth();
   const todayDate = today.getDate();
   const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
 
-  // Build streak state from today backwards
   let missedDayFound = false;
   const dayStyles: Record<number, string> = {};
 
@@ -34,25 +71,68 @@ const StreakTable: React.FC<StreakTablesProps> = ({ activeDays }) => {
   }
 
   const days = Array.from({ length: totalDays }, (_, i) => i + 1);
+  //console.log("days", days);
+
+  if (isLoading || error || !data || !data.streak || Object.keys(data.streak).length === 0) {
+    return (
+      <div className="flex flex-col w-full  transition-all duration-300 p-4 rounded-3xl mt-12">
+        <h2 className="text-xl font-semibold text-gray-800 mb-3">
+          Weekly Streaks
+        </h2>
+
+        {
+          (!data || !data.streak || Object.keys(data.streak).length === 0) ?
+            <p className="text-[14px] text-[#495057] mb-8">
+              No Streak data available
+            </p> : <p className="text-[14px] text-gray-500 mb-6">
+              Study everyday to build your streak 💪
+            </p>
+        }
+        <div className="grid grid-cols-5 gap-4">
+          {[...Array(30)].map((_, index) => (
+            <div
+              key={index}
+              className="w-10 h-10 rounded-full bg-gray-200 animate-pulse"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col w-full max-w-[300px] transition-all duration-300">
-      <h2 className="text-xl font-semibold text-gray-800 mb-2">
+    <div className="flex flex-col w-full lg:min-w-[270px] xl:min-w-[350px] transition-all duration-300 p-4 rounded-3xl mt-12">
+      <h2 className="text-xl font-semibold text-gray-800 mb-3">
         Weekly Streaks
       </h2>
-      <p className="text-xs text-gray-500 mb-4">
+      <p className="text-[14px] text-gray-500 mb-6">
         Study everyday to build your streak 💪
       </p>
 
-      <div className="grid grid-cols-7 gap-2">
-        {days.map((day) => (
-          <div
-            key={day}
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${dayStyles[day]}`}
-          >
-            {day}
-          </div>
-        ))}
+      <div className="grid grid-cols-5 gap-4">
+        {days.map((day) => {
+          const tooltipText = dayStyles[day].includes("border-[#AE0606]")
+            ? "Missed day"
+            : dayStyles[day].includes("bg-[#CDE5CE]")
+              ? "Past streak"
+              : dayStyles[day].includes("bg-[#417845]")
+                ? "Current streak"
+                : "";
+
+          return (
+            <div
+              key={day}
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm ${dayStyles[day]} group transition-transform duration-300 hover:scale-110`}
+            >
+              {tooltipText && (
+                <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 bg-gray-100 text-black text-xs rounded-md px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  {tooltipText}
+                </div>
+              )}
+              {day}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
