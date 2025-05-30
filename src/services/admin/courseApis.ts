@@ -1,4 +1,5 @@
 import axiosInstance from "../axiosInstance";
+import { ContentIdType} from "./contentApis";
 
 // Define interfaces for course-related data
 export interface CourseData {
@@ -380,8 +381,63 @@ export const viewCourseDetails = async (clientId: number, courseId: number) => {
     );
   }
 };
+export interface ContentData {
+  title: string;
+  content_type: ContentIdType;
+  contentId: number;
+  order: number;
+  duration_in_minutes: number;
+}
+
+export const addSubmoduleContent = async (clientId: number, courseId: number, submoduleId: number,contentData:ContentData) => {
+  try {
+    const res = await axiosInstance.post(
+      `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/submodules/${submoduleId}/contents/`,
+      contentData
+    );
+    console.log("add admin Submodule content:", res);
+    return res.data;
+  } catch (error: unknown) {
+    const apiError = error as ApiError;
+    console.error("Failed to add submodule content:", apiError);
+    console.error("Error details:", {
+      message: apiError.message,
+      response: apiError.response?.data,
+      status: apiError.response?.status,
+    });
+    throw new Error(
+      apiError.response?.data?.detail ||
+        apiError.message ||
+        "Failed to add submodule content"
+    );
+  }
+};
+
+export const getSubmoduleContent = async (clientId: number, courseId: number, submoduleId: number) => {
+  try {
+    const res = await axiosInstance.get(
+      `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/submodules/${submoduleId}/contents/`
+    );
+    console.log("get admin Submodule content:", res);
+    return res.data;
+  } catch (error: unknown) {
+    const apiError = error as ApiError;
+    console.error("Failed to fetch submodule content:", apiError);
+    console.error("Error details:", {
+      message: apiError.message,
+      response: apiError.response?.data,
+      status: apiError.response?.status,
+    });
+    throw new Error(
+      apiError.response?.data?.detail ||
+        apiError.message ||
+        "Failed to fetch submodule content"
+    );
+  }
+}
 
 // Note: PUT and PATCH are not exactly the same
 // PUT is for complete replacement of a resource
 // PATCH is for partial updates to a resource
 // This API seems to use PUT for updates, which is common in many REST APIs
+
