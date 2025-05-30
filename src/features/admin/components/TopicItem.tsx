@@ -330,11 +330,12 @@ const SubtopicContentList: React.FC<{
     queryFn: () => getSubmoduleContent(clientId, courseId, submoduleId),
     enabled: !!submoduleId,
   });
+  console.log("contents", contents);
 
   if (isLoading) return <div className="pl-8">Loading...</div>;
   if (!contents || contents.length === 0)
     return (
-      <div className="pl-8 text-gray-400 text-sm">No content available.</div>
+      <div></div>
     );
 
   return (

@@ -95,7 +95,6 @@ const metaData: Record<
 
 const AddContent: React.FC<AddContentProps> = ({
   tabKey,
-  onSave,
   onAddNew,
   clientId,
   onContentSelect,
@@ -118,7 +117,6 @@ const AddContent: React.FC<AddContentProps> = ({
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
   });
 
-
   const handleContentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedContent(e.target.value);
   };
@@ -136,17 +134,16 @@ const AddContent: React.FC<AddContentProps> = ({
   };
 
   const handleSave = async () => {
-    if (onSave) {
-      // Ensure type match: item.id may be number, selectedContent is string
-      const selected = contentItems.find(
-        (item) => String(item.id) === String(selectedContent)
-      );
-      console.log("selected", selected);
-      if (selected) {
-        onContentSelect(selected);
-      }
-      onSave();
-      // Refresh content after saving
+    // Ensure type match: item.id may be number, selectedContent is string
+    const selected = contentItems.find(
+      (item) => String(item.id) === String(selectedContent)
+    );
+    console.log("selected", selected);
+    if (selected) {
+      // First set the content
+      onContentSelect(selected);
+
+      // Finally refresh content
       await queryClient.invalidateQueries({
         queryKey: ["content", clientId, contentType],
         refetchType: "all",

@@ -19,10 +19,10 @@ interface ContentItemProps {
 const iconMap: Record<string, string> = {
   article: ArticleIcon,
   video: VideosIcon,
-  problem: ProblemIcon,
+  codingproblem: ProblemIcon,
   quiz: QuizIcon,
   subjective: SubjectiveIcon,
-  development: DevelopmentIcon,
+  assignment: DevelopmentIcon,
 };
 
 const ContentItem: React.FC<ContentItemProps> = ({
@@ -33,6 +33,7 @@ const ContentItem: React.FC<ContentItemProps> = ({
   onEdit,
   onDelete,
 }) => {
+  console.log("marks", marks);
   const icon = iconMap[contentType.toLowerCase()] || ArticleIcon;
   return (
     <div className="flex items-center justify-between border-b border-gray-200 py-2">
@@ -40,8 +41,13 @@ const ContentItem: React.FC<ContentItemProps> = ({
         <img src={icon} alt={contentType} className="w-5 h-5" />
         <div>
           <div className="text-sm font-medium text-[#255C79]">{title}</div>
-          {marks !== undefined && (
+          {/* {marks !== undefined && (
             <div className="text-xs text-gray-500">{marks} Marks</div>
+          )} */}
+          {contentType !== undefined && (
+            <div className="text-xs text-gray-500">
+              {contentType}
+            </div>
           )}
         </div>
       </div>
