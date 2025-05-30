@@ -29,20 +29,20 @@ const CourseCard: React.FC<CourseData> = ({
           <CourseIconGroup iconData={iconData} />
         </div>
       </div>
-      
+
       <div>
         <CategoryBadge category={category} />
       </div>
-      
+
       <div className="mt-1">
-        <CourseProgress 
+        <CourseProgress
           moduleNumber={completed_modules}
           totalModules={num_modules}
           moduleName={`Module ${completed_modules + 1}`}
           stats={iconData}
         />
       </div>
-      
+
       <div className="mt-auto pt-2 w-full">
         <PrimaryButton onClick={onContinue} className="text-[13px] md:text-[15px] py-2 w-full ">
           Continue

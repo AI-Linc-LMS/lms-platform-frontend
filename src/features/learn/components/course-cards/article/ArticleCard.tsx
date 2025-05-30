@@ -6,12 +6,12 @@ import FloatingAIButton from "../../floating-ai-button/FloatingAIButton";
 import completedIcon from "../../../../../commonComponents/icons/sidebarIcons/completedIcon.png";
 import { useNavigate } from 'react-router-dom';
 import parse from "html-react-parser";
-import { 
-  ArticleLayoutConfig, 
-  ARTICLE_LAYOUT_TEMPLATES, 
-  getLayoutTemplate, 
+import {
+  ArticleLayoutConfig,
+  ARTICLE_LAYOUT_TEMPLATES,
+  getLayoutTemplate,
   mergeLayoutConfigs,
-  validateLayoutConfig 
+  validateLayoutConfig
 } from './ArticleLayoutUtils';
 
 interface ArticleCardProps {
@@ -108,7 +108,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
       if (htmlContent.includes('<') && htmlContent.includes('>')) {
         // Remove any style tags but keep other content
         processedContent = htmlContent.replace(/<style[\s\S]*?<\/style>/gi, '');
-        
+
         // Remove script tags for security
         processedContent = processedContent.replace(/<script[\s\S]*?<\/script>/gi, '');
 
@@ -176,7 +176,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
   // Render loading state with configurable layout
   const renderLoadingState = () => {
     const layoutConfig = getLayoutConfig();
-    
+
     return (
       <div className={`${layoutConfig.container?.className || ''} animate-pulse`} style={layoutConfig.container?.style}>
         <div className={layoutConfig.header?.className || ''}>
@@ -235,7 +235,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
     const contentConfig = layoutConfig.content;
     if (!contentConfig) return null;
 
-    const contentElement = articleData!.details.content ? 
+    const contentElement = articleData!.details.content ?
       parseHtmlContent(articleData!.details.content) :
       <p className="text-gray-500 italic">No content available</p>;
 
@@ -296,7 +296,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
     <div className={layoutConfig.container?.className || ''} style={layoutConfig.container?.style}>
       {renderHeader(layoutConfig)}
       {renderContent(layoutConfig)}
-      
+
       {/* Floating Ask AI Button - always rendered */}
       <FloatingAIButton
         onClick={() => console.log("Floating AI Button clicked")}
