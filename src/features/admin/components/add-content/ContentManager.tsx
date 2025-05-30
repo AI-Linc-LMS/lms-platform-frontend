@@ -22,14 +22,13 @@ const contentIdFieldMap: Record<TabKey, ContentIdType | undefined> = {
 };
 
 const contentTypeMap: Record<TabKey, string> = {
-  videos: "Video Tutorial",
+  videos: "VideoTutorial",
   articles: "Article",
-  problems: "Coding Problem",
+  problems: "CodingProblem",
   quizzes: "Quiz",
   subjective: "Assignment",
   development: "Development",
-}
-
+};
 
 const ContentManager: React.FC<{
   tabKey: TabKey;
@@ -38,6 +37,7 @@ const ContentManager: React.FC<{
 }> = ({ tabKey, courseId, submoduleId }) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const [showAddNew, setShowAddNew] = useState(false);
+  const [autoTriggerSave, setAutoTriggerSave] = useState(false);
   const [selectedContentId, setSelectedContentId] = useState<number | null>(
     null
   );
@@ -86,14 +86,19 @@ const ContentManager: React.FC<{
     setShowAddNew(false);
   };
 
-  const handleContentSelect = (content: {
-    id: number;
-    title: string;
-  }) => {
+  const handleContentSelect = (content: { id: number; title: string }) => {
     console.log("content", content);
     setSelectedContentId(content.id);
     setSelectedContent(content);
+    setAutoTriggerSave(true);
   };
+
+  useEffect(() => {
+    if (autoTriggerSave) {
+      handleSave();
+      setAutoTriggerSave(false); // Reset the trigger
+    }
+  }, [autoTriggerSave]);
 
   if (showAddNew) {
     switch (tabKey) {
@@ -119,7 +124,6 @@ const ContentManager: React.FC<{
       tabKey={tabKey}
       onAddNew={handleAddNew}
       clientId={clientId}
-      onSave={handleSave}
       onContentSelect={handleContentSelect}
     />
   );
