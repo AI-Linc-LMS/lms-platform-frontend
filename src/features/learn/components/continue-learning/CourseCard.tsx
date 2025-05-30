@@ -8,42 +8,46 @@ const CourseCard: React.FC<CourseData> = ({
   title,
   description,
   category,
-  moduleNumber,
-  totalModules,
-  moduleName,
+  completed_modules,
+  num_modules,
   iconData,
   onContinue,
 }) => {
   return (
-    <div className="w-full border-[#80C9E0] rounded-[22px] border-[1px] bg-[#F8F9FA] p-4 mt-4">
-      <div className="flex flex-row gap-4 items-center justify-between">
-        <div>
-          <h1 className="font-bold text-[#343A40] text-[22px] font-sans">
+    <div className="w-full border-[#80C9E0] rounded-[16px] md:rounded-[22px] border-[1px] bg-[#F8F9FA] p-4 flex flex-col gap-3 min-h-[280px] md:min-h-[300px]">
+      <div className="flex flex-col sm:flex-row justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <h1 className="font-bold text-[#343A40] text-[16px] md:text-[18px] font-sans line-clamp-1">
             {title}
           </h1>
-          <p className="font-sans font-normal text-[18px] text-[#495057]">
+          <p className="font-sans font-normal text-[13px] text-[#495057] line-clamp-1">
             {description}
           </p>
         </div>
 
-        <CourseIconGroup iconData={iconData} />
+        <div className="flex-shrink-0">
+          <CourseIconGroup iconData={iconData} />
+        </div>
       </div>
-      
-      <div className="my-4">
+
+      <div>
         <CategoryBadge category={category} />
       </div>
-      
-      <div className="my-5">
-        <CourseProgress 
-          moduleNumber={moduleNumber}
-          totalModules={totalModules}
-          moduleName={moduleName}
+
+      <div className="mt-1">
+        <CourseProgress
+          moduleNumber={completed_modules}
+          totalModules={num_modules}
+          moduleName={`Module ${completed_modules + 1}`}
+          stats={iconData}
         />
       </div>
-      
-      <PrimaryButton onClick={onContinue}>
-        Continue
-      </PrimaryButton>
+
+      <div className="mt-auto pt-2 w-full">
+        <PrimaryButton onClick={onContinue} className="text-[13px] md:text-[15px] py-2 w-full ">
+          Continue
+        </PrimaryButton>
+      </div>
     </div>
   );
 };

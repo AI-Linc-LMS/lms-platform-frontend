@@ -53,6 +53,188 @@ export default tseslint.config({
 })
 ```
 
+# Video Player Component Documentation
+
+## Overview
+
+The VideoPlayer component is a feature-rich, custom video player implementation that supports both standard HTML5 video and Vimeo videos. It includes advanced features like progress tracking, first-time viewing restrictions, and seamless progress saving that persists across sessions, even after logout and login.
+
+## Key Features
+
+- **Multi-format support**: Works with both standard videos (MP4, WebM) and Vimeo embeds
+- **Persistent progress tracking**: Automatically saves and restores viewing progress
+- **First-time viewing protection**: Prevents users from skipping ahead on first watch
+- **Responsive design**: Adapts to different screen sizes with multiple size options
+- **Continue watching prompts**: Offers users the option to resume from where they left off
+- **Completion tracking**: Marks videos as complete when a threshold percentage is viewed
+- **Accessibility features**: Keyboard controls and visual indicators
+
+## Implementation Files
+
+The VideoPlayer is implemented across several files:
+
+- `src/features/learn/components/video-player/VideoPlayer.tsx` - Main component
+- `src/features/learn/components/video-player/components/StandardPlayer.tsx` - HTML5 video player
+- `src/features/learn/components/video-player/components/VimeoPlayer.tsx` - Vimeo embed player
+- `src/features/learn/components/video-player/types.ts` - TypeScript types
+- `src/features/learn/components/video-player/utils/formatters.ts` - Utility functions
+
+## How to Use the VideoPlayer
+
+### Basic Usage
+
+```jsx
+import VideoPlayer from 'src/features/learn/components/video-player/VideoPlayer';
+
+function CourseLecture() {
+  return (
+    <VideoPlayer
+      videoUrl="https://example.com/video.mp4"
+      title="Introduction to React"
+      videoId="lecture-1"
+      isFirstWatch={true}
+    />
+  );
+}
+```
+
+### Required Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `videoUrl` | string | URL of the video file or Vimeo video |
+| `title` | string | Title of the video |
+| `videoId` | string | Unique identifier for the video |
+
+### Optional Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `isFirstWatch` | boolean | false | Whether this is the user's first time watching |
+| `activityCompletionThreshold` | number | 95 | Percentage required to mark as complete |
+| `onComplete` | function | - | Callback when video reaches completion threshold |
+| `onProgressUpdate` | function | - | Callback that receives progress percentage |
+| `onSaveProgress` | function | - | Callback to handle server-side progress saving |
+
+## Progress Tracking System
+
+The VideoPlayer implements a robust progress tracking system that:
+
+1. **Saves progress locally** using localStorage with versioned keys
+2. **Can sync with server** through the optional `onSaveProgress` callback
+3. **Persists across sessions** including after logout/login
+4. **Generates reliable video fingerprints** to ensure correct progress association
+5. **Saves progress at optimal times**:
+   - Every 5 seconds during playback
+   - When component unmounts (page navigation/refresh)
+   - When significant progress is made
+
+### Progress Storage Format
+
+Progress is stored in localStorage using the following key format:
+```
+video_progress_v1_[videoFingerprint]
+```
+
+The videoFingerprint combines the provided videoId with URL components to ensure reliable identification across sessions.
+
+## First-Time Viewing Restrictions
+
+For videos marked with `isFirstWatch={true}`, the player:
+
+1. Disables seeking ahead of the furthest watched position
+2. Shows visual indicators to communicate the restriction
+3. Reverts seek attempts back to the last legitimate position
+4. Still allows returning to earlier parts of the video
+
+This ensures that first-time viewers watch content in sequence.
+
+## Integration with Backend
+
+To integrate with a backend for server-side progress saving:
+
+```jsx
+function CourseVideo() {
+  const saveProgressToServer = async (videoId, progress) => {
+    try {
+      await fetch('/api/video-progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoId, progress })
+      });
+    } catch (error) {
+      console.error('Failed to save progress:', error);
+    }
+  };
+
+  return (
+    <VideoPlayer
+      videoUrl="https://example.com/video.mp4"
+      videoId="course-123-lecture-1"
+      title="React Fundamentals"
+      onSaveProgress={saveProgressToServer}
+    />
+  );
+}
+```
+
+## Performance Considerations
+
+The VideoPlayer is designed to be highly scalable:
+
+- Progress saving is throttled to minimize localStorage writes
+- All operations are client-side, with no load on the server unless `onSaveProgress` is implemented
+- Storage usage is minimal (a few bytes per video)
+- The component efficiently handles hundreds of videos per user
+
+## Browser Compatibility
+
+The VideoPlayer is compatible with all modern browsers:
+- Chrome, Firefox, Safari, Edge (latest versions)
+- Mobile browsers on iOS and Android
+
+## Technical Implementation Details
+
+### Progress Saving Algorithm
+
+1. The player generates a unique fingerprint for each video that combines:
+   - The provided videoId
+   - Unique parts of the video URL
+   
+2. Progress is saved to localStorage:
+   - At regular intervals (every 5 seconds)
+   - When the component unmounts
+   - When the user reaches significant progress points
+
+3. On return to the video:
+   - The fingerprint is regenerated and used to find saved progress
+   - If progress is found, user is prompted to continue (if significant progress exists)
+   - The video is positioned at the saved timestamp
+
+### Error Handling
+
+The implementation includes robust error handling:
+- Safe localStorage access with try/catch blocks
+- Fallbacks for when fingerprinting fails
+- Timeout mechanisms to prevent blocking UI
+- Multiple attempts to apply progress if initial attempt fails
+
+## Troubleshooting
+
+### Common Issues
+
+**Progress not saving:**
+- Ensure `videoId` prop is unique and consistent for each video
+- Check if localStorage is available (private browsing can block it)
+- Verify the video URL is accessible
+
+**Progress applies to wrong video:**
+- Ensure each video has a unique `videoId`
+- Check for duplicated videoId values across different videos
+
+**First-time restrictions not working:**
+- Confirm `isFirstWatch` prop is correctly set to `true`
+
 # Frontend Development Best Practices & Git Workflow
 
 ## 1. Coding Best Practices
