@@ -1,4 +1,4 @@
-import  { useState } from 'react';
+import { useState } from 'react';
 import { SortIcon } from './CourseIcons';
 
 interface SortOption {
@@ -13,7 +13,7 @@ interface SortDropdownProps {
 
 const SortDropdown = ({ selectedSort, setSelectedSort }: SortDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   const sortOptions: SortOption[] = [
     { value: 'most_popular', label: 'Most Popular' },
     { value: 'highest_rated', label: 'Highest Rated' },
@@ -21,7 +21,7 @@ const SortDropdown = ({ selectedSort, setSelectedSort }: SortDropdownProps) => {
     { value: 'price_low_high', label: 'Price - Low to High' },
     { value: 'price_high_low', label: 'Price - High to Low' }
   ];
-  
+
   return (
     <div className="relative">
       <button
@@ -31,11 +31,11 @@ const SortDropdown = ({ selectedSort, setSelectedSort }: SortDropdownProps) => {
         <SortIcon />
         <span>Sort</span>
       </button>
-      
+
       {isOpen && (
         <div className="absolute right-0 mt-1 bg-white border border-[#DEE2E6] rounded-lg shadow-lg py-1 z-10 w-56 sm:right-0 sm:left-auto left-0 sm:origin-top-right origin-top-left">
           {sortOptions.map((option) => (
-            <div 
+            <div
               key={option.value}
               className={`px-4 py-2 text-sm cursor-pointer hover:bg-[#F8F9FA] flex items-center ${selectedSort === option.value ? 'text-[#343A40] font-medium' : 'text-[#495057]'}`}
               onClick={() => {
