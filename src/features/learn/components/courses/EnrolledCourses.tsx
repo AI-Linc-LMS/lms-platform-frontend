@@ -139,7 +139,7 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({ className = "" }) => 
   const hasNoCourses = !Courses || Courses.length === 0;
 
   return (
-    <div>
+    <div className="overflow-visible">
       <div className="flex justify-between items-center">
         <div className="mb-4">
           <h1 className="text-[#343A40] font-bold text-[18px] md:text-[22px] font-sans">
@@ -172,13 +172,13 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({ className = "" }) => 
       ) : (
         <div
           ref={scrollContainerRef}
-          className={`flex overflow-x-auto scroll-smooth space-x-4 transition-all duration-300 ${className}`}
+          className={`flex overflow-x-auto overflow-y-visible scroll-smooth space-x-4 transition-all duration-300 pt-8 ${className}`}
           style={{ scrollSnapType: "x mandatory" }}
         >
           {Courses.map((course: EnrolledCourse) => (
             <div
               key={course.id}
-              className="flex-shrink-0 w-full md:w-1/2 scroll-snap-align-start transition-transform duration-300 "
+              className="flex-shrink-0 w-full md:w-1/2 scroll-snap-align-start transition-transform duration-300 overflow-visible"
               style={{ scrollSnapAlign: "start" }}
             >
               <CourseCard
