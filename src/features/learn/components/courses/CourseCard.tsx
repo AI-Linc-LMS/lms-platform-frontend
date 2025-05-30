@@ -11,12 +11,12 @@ const StatBlock = ({ icon, count, label }: { icon: React.ReactNode, count: numbe
   const displayCount = typeof count === 'object' ? 0 : Number(count) || 0;
   
   return (
-    <div className="bg-[#F8F9FA] hover:bg-[#E9ECEF] rounded-xl p-2 md:p-3 flex flex-col items-center justify-center relative group transition-all duration-200">
+    <div className="bg-[#F8F9FA] hover:bg-[#E9ECEF] rounded-xl p-2 md:p-3 flex flex-col items-center justify-center relative group transition-all duration-200 overflow-visible">
       <div className="mb-1 md:mb-2">{icon}</div>
       <span className="text-center text-[#495057] font-medium text-sm md:text-base">{displayCount}</span>
       
       {/* Tooltip that appears on hover */}
-      <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[#343A40] text-white text-xs rounded pointer-events-none transition-opacity duration-200">
+      <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-[#343A40] text-white text-xs rounded pointer-events-none transition-opacity duration-200 z-[99999] whitespace-nowrap">
         {label}
         <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#343A40]"></div>
       </div>
@@ -96,14 +96,14 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
 
   return (
     <div
-      className={`w-full border border-[#80C9E0] p-4 rounded-2xl md:rounded-3xl bg-white flex flex-col h-full ${className}`}
+      className={`w-full border border-[#80C9E0] p-4 rounded-2xl md:rounded-3xl bg-white flex flex-col h-full overflow-visible ${className}`}
     >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 items-center overflow-visible">
         <div>
           <h1 className="font-bold font-sans text-lg text-[#343A40]">{course.title}</h1>
           <p className="text-[#6C757D] font-normal text-sm md:text-md mt-1">{course.description}</p>
         </div>
-        <div className="grid grid-cols-5 gap-2 mt-3 lg:mt-0">
+        <div className="grid grid-cols-5 gap-2 mt-3 lg:mt-0 overflow-visible">
           <StatBlock 
             icon={<VideoIcon />} 
             count={totalCounts.videos} 

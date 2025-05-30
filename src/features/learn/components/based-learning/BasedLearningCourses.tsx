@@ -167,7 +167,7 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
                 </div>
                 {error && <div className="text-red-500">Error loading courses. Please try again later.</div>}
                 {!courses || courses.length === 0 && <div className="text-center text-gray-500 p-4">No courses found.</div>}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mx-auto pt-12">
                     {[1, 2].map((i) => (
                         <div key={i} className="rounded-3xl border border-[#80C9E0] p-6 flex flex-col w-full bg-white min-h-[350px] animate-pulse">
                             <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
@@ -250,7 +250,7 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
 
     return (
         <div>
-            <div className="flex flex-row items-center justify-between w-full my-3 md:my-8">
+            <div className="flex flex-row items-center justify-between w-full my-3 md:my-8 pt-12">
                 <div>
                     <h1 className="text-[#343A40] font-bold text-[18px] md:text-[22px] font-sans">
                         Based On Your Learning
@@ -268,7 +268,7 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
                     </button>
                 </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mx-auto pt-6">
                 {displayedCourses.map((course: MappedCourseData) => (
                     <CourseCard key={course.id} {...course} />
                 ))}
