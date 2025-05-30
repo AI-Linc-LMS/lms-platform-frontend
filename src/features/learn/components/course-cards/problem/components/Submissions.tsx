@@ -61,7 +61,7 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
     if (customDimension?.language_name) {
       return customDimension.language_name;
     }
-    
+
     // Fallback to language ID mapping
     const languageId = customDimension?.language_id;
     switch (languageId) {
@@ -85,7 +85,7 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
       if (langName.includes('javascript')) return 'javascript';
       if (langName.includes('typescript')) return 'typescript';
     }
-    
+
     // Fallback to language ID mapping
     const languageId = customDimension?.language_id;
     switch (languageId) {
@@ -210,7 +210,7 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
               {submissionHistory.map((submission: SubmissionHistoryItem, index: number) => {
                 const safeSubmission = { ...DEFAULT_SUBMISSION, ...submission };
                 const customDimension = safeSubmission.custom_dimension || DEFAULT_SUBMISSION.custom_dimension;
-                
+
                 return (
                   <tr key={submission.id} className={`text-xs ${isDarkTheme ? "border-b border-gray-700 hover:bg-gray-800" : "border-b border-gray-200 hover:bg-gray-100"}`}>
                     <td className={`py-4 px-4 text-center font-medium ${isDarkTheme ? "text-white" : "text-gray-500"}`}>{submissionHistory.length - index}</td>

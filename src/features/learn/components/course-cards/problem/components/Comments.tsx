@@ -120,13 +120,13 @@ const Comments: React.FC<CommentsProps> = ({ contentId, courseId, isDarkTheme })
                         )}
                       </div>
                       <span className={`text-xs ${isDarkTheme ? "text-white" : "text-gray-500"} whitespace-nowrap`}>
-                        {new Date(comment.created_at).toLocaleString('en-GB', { 
-                          day: '2-digit', 
-                          month: 'short', 
-                          year: '2-digit', 
-                          hour: '2-digit', 
-                          minute: '2-digit', 
-                          hour12: true 
+                        {new Date(comment.created_at).toLocaleString('en-GB', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: true
                         })}
                       </span>
                     </div>

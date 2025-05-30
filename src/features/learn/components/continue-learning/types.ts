@@ -33,4 +33,4 @@ export interface CourseData {
   //moduleName: string;
   iconData: CourseIconData[];
   onContinue: () => void;
-} 
+}
