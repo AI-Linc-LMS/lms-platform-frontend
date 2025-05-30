@@ -157,7 +157,7 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
                         </p>
                     </div>
                     <div>
-                        <button 
+                        <button
                             onClick={() => navigate('/recommended-learning')}
                             className="w-[80px] md:w-[95px] h-[45px] md:h-[55px] rounded-xl border border-[#2A8CB0] text-[13px] md:text-[15px] font-medium font-sans text-[#2A8CB0] cursor-pointer transition-all duration-200 hover:bg-[#E9F7FA] hover:text-[#1E7A99] hover:scale-95"
                         >
@@ -210,7 +210,7 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
                         </p>
                     </div>
                     <div>
-                        <button 
+                        <button
                             onClick={() => navigate('/recommended-learning')}
                             className="w-[80px] md:w-[95px] h-[45px] md:h-[55px] rounded-xl border border-[#2A8CB0] text-[13px] md:text-[15px] font-medium font-sans text-[#2A8CB0] cursor-pointer transition-all duration-200 hover:bg-[#E9F7FA] hover:text-[#1E7A99] hover:scale-95"
                         >
@@ -260,7 +260,7 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
                     </p>
                 </div>
                 <div>
-                    <button 
+                    <button
                         onClick={() => navigate('/recommended-learning')}
                         className="w-[80px] md:w-[95px] h-[45px] md:h-[55px] rounded-xl border border-[#2A8CB0] text-[13px] md:text-[15px] font-medium font-sans text-[#2A8CB0] cursor-pointer transition-all duration-200 hover:bg-[#E9F7FA] hover:text-[#1E7A99] hover:scale-95"
                     >

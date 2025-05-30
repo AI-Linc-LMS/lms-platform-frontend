@@ -8,8 +8,8 @@ const CourseIconGroup: React.FC<CourseIconGroupProps> = ({ iconData }) => {
   return (
     <div className="flex gap-1">
       {iconData.map((item, index) => (
-        <div 
-          key={index} 
+        <div
+          key={index}
           className="w-8 h-8 md:w-10 md:h-10 rounded-lg p-1 bg-gray-200 flex flex-col items-center justify-center text-center"
         >
           <div className="flex-shrink-0">

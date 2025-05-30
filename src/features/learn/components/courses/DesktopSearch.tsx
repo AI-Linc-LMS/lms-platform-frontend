@@ -29,7 +29,7 @@ const DesktopSearch = ({
           className="w-full py-2 pl-10 pr-4 border border-[#DEE2E6] rounded-lg text-[#495057] focus:outline-none focus:ring-2 focus:ring-[#17627A] focus:border-transparent"
         />
       </div>
-      
+
       <SortDropdown selectedSort={sortBy} setSelectedSort={setSortBy} />
     </div>
   );

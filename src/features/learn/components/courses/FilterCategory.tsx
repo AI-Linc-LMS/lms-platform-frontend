@@ -12,11 +12,11 @@ interface FilterCategoryProps {
   setSelectedOptions: (options: string[]) => void;
 }
 
-const FilterCategory = ({ 
-  title, 
-  options, 
-  selectedOptions, 
-  setSelectedOptions 
+const FilterCategory = ({
+  title,
+  options,
+  selectedOptions,
+  setSelectedOptions
 }: FilterCategoryProps) => {
   return (
     <div className="mb-5">

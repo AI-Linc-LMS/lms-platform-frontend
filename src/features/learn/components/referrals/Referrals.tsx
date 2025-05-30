@@ -8,7 +8,7 @@ const Referrals = () => {
             <div>
                 <Referralsicon />
             </div>
-            <button className="w-full h-[55px] bg-[#2A8CB0] rounded-2xl text-[16px] font-sans font-medium text-white mt-2 cursor-pointer">
+            <button className="w-full h-[55px] bg-[#2A8CB0] rounded-2xl text-[16px] font-sans font-medium text-white mt-2 cursor-pointer hover:scale-95 transition-transform duration-200 ease-in-out">
                 Copy Invitation Link
             </button>
 

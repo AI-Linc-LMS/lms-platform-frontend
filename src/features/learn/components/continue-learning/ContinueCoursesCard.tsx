@@ -39,23 +39,23 @@ const ContinueCoursesCard: React.FC<ContinueCoursesCardProps> = ({ course }) => 
           <CourseIconGroup iconData={iconData} />
         </div>
       </div>
-      
+
       <div className="my-3 md:my-4">
         <CategoryBadge category={course.difficulty_level} />
       </div>
-      
+
       <div className="my-4 md:my-5">
-        <CourseProgress 
+        <CourseProgress
           moduleNumber={course.completed_modules}
           totalModules={course.num_modules}
           moduleName={`Module ${course.completed_modules + 1}`}
           stats={iconData}
         />
       </div>
-      
+
       <div className="mt-auto">
-        <PrimaryButton 
-          onClick={() => navigate(`/courses/${course.id}`)} 
+        <PrimaryButton
+          onClick={() => navigate(`/courses/${course.id}`)}
           className="text-[13px] md:text-[15px] py-1 md:py-2"
         >
           Continue

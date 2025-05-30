@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { getCourseContent} from "../../../../../services/enrolled-courses-content/courseContentApis";
+import { getCourseContent } from "../../../../../services/enrolled-courses-content/courseContentApis";
 import {
   runCode,
   runCustomCode,
@@ -43,7 +43,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     enabled: !!contentId && !!courseId,
   });
 
-  
+
   // Get available languages from template codes
   const availableLanguages = React.useMemo(() => {
     if (!data?.details?.template_code) return [];
