@@ -41,6 +41,6 @@ export type TabKey =
   | "videos"
   | "articles"
   | "problems"
-  | "quiz"
+  | "quizzes"
   | "subjective"
   | "development";
