@@ -9,12 +9,12 @@ import { AssignmentIcon } from './CourseIcons';
 const StatBlock = ({ icon, count, label }: { icon: React.ReactNode, count: number, label: string }) => {
   // Ensure count is a number
   const displayCount = typeof count === 'object' ? 0 : Number(count) || 0;
-  
+
   return (
     <div className="bg-[#F8F9FA] hover:bg-[#E9ECEF] rounded-xl p-2 md:p-3 flex flex-col items-center justify-center relative group transition-all duration-200 overflow-visible">
       <div className="mb-1 md:mb-2">{icon}</div>
       <span className="text-center text-[#495057] font-medium text-sm md:text-base">{displayCount}</span>
-      
+
       {/* Tooltip that appears on hover */}
       <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-[#343A40] text-white text-xs rounded pointer-events-none transition-opacity duration-200 z-[99999] whitespace-nowrap">
         {label}
@@ -25,9 +25,9 @@ const StatBlock = ({ icon, count, label }: { icon: React.ReactNode, count: numbe
 };
 
 interface CourseCardProps {
-  course?: Course; 
+  course?: Course;
   className?: string;
-  isLoading?: boolean; 
+  isLoading?: boolean;
   error?: Error | null;
 }
 
@@ -104,30 +104,30 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
           <p className="text-[#6C757D] font-normal text-sm md:text-md mt-1">{course.description}</p>
         </div>
         <div className="grid grid-cols-5 gap-2 mt-3 lg:mt-0 overflow-visible">
-          <StatBlock 
-            icon={<VideoIcon />} 
-            count={totalCounts.videos} 
-            label="Videos" 
+          <StatBlock
+            icon={<VideoIcon />}
+            count={totalCounts.videos}
+            label="Videos"
           />
-          <StatBlock 
-            icon={<DocumentIcon />} 
-            count={totalCounts.articles} 
-            label="Articles" 
+          <StatBlock
+            icon={<DocumentIcon />}
+            count={totalCounts.articles}
+            label="Articles"
           />
-          <StatBlock 
-            icon={<CodeIcon />} 
-            count={totalCounts.problems} 
-            label="Coding Problems" 
+          <StatBlock
+            icon={<CodeIcon />}
+            count={totalCounts.problems}
+            label="Coding Problems"
           />
-          <StatBlock 
-            icon={<FAQIcon />} 
-            count={totalCounts.quizzes} 
-            label="Quizzes" 
+          <StatBlock
+            icon={<FAQIcon />}
+            count={totalCounts.quizzes}
+            label="Quizzes"
           />
-          <StatBlock 
-            icon={<AssignmentIcon />} 
-            count={totalCounts.assignments} 
-            label="Assignments" 
+          <StatBlock
+            icon={<AssignmentIcon />}
+            count={totalCounts.assignments}
+            label="Assignments"
           />
         </div>
       </div>
@@ -149,8 +149,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
         </div>
       </div>
       <div className="mt-auto">
-        <PrimaryButton 
-          onClick={handleExploreClick} 
+        <PrimaryButton
+          onClick={handleExploreClick}
           className="w-full text-sm md:text-base rounded-xl"
         >
           Explore More

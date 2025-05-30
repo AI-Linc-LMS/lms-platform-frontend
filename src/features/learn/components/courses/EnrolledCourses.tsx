@@ -71,12 +71,12 @@ const transformCourseData = (reduxCourse: EnrolledCourse): CardCourse => {
     })) || [],
     stats: reduxCourse.stats
       ? {
-          video: { total: reduxCourse.stats.video?.total || 0 },
-          article: { total: reduxCourse.stats.article?.total || 0 },
-          coding_problem: { total: reduxCourse.stats.coding_problem?.total || 0 },
-          quiz: { total: reduxCourse.stats.quiz?.total || 0 },
-          assignment: { total: reduxCourse.stats.assignment?.total || 0 }
-        }
+        video: { total: reduxCourse.stats.video?.total || 0 },
+        article: { total: reduxCourse.stats.article?.total || 0 },
+        coding_problem: { total: reduxCourse.stats.coding_problem?.total || 0 },
+        quiz: { total: reduxCourse.stats.quiz?.total || 0 },
+        assignment: { total: reduxCourse.stats.assignment?.total || 0 }
+      }
       : undefined,
     modules: mockModules // Use modules with stats from API
   };
@@ -113,7 +113,7 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({ className = "" }) => 
     queryFn: () => getEnrolledCourses(1),
   });
 
-  console.log("enrolled courses data:",data);
+  console.log("enrolled courses data:", data);
 
   useEffect(() => {
     if (data) {
