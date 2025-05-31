@@ -14,6 +14,7 @@ import {
   viewCourseDetails,
   deleteCourseModule
 } from '../../../services/admin/courseApis';
+import { useToast } from "../../../contexts/ToastContext";
 
 interface Module {
   id: number;
@@ -36,10 +37,11 @@ interface Submodule {
 }
 
 const CourseDetailPage: React.FC = () => {
-  const clientId = Number(import.meta.env.VITE_CLIENT_ID);
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { success, error: showError } = useToast();
+  const clientId = import.meta.env.VITE_CLIENT_ID;
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
   const [isSubtopicModalOpen, setIsSubtopicModalOpen] = useState(false);
@@ -92,19 +94,16 @@ const CourseDetailPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courseDetails', courseId] });
       if (isPublished) {
-        alert('Course unpublished successfully');
+        success('Course Unpublished', 'Course has been successfully unpublished.');
         setIsPublished(false);
       } else {
-        
-      alert('Course published successfully');
+        success('Course Published', 'Course has been successfully published.');
         setIsPublished(true);
       }
-      // Optionally show success message
     },
     onError: (error: Error) => {
       console.error('Failed to update course:', error);
-      // Show error message
-      alert(`Failed to publish course: ${error.message}`);
+      showError('Update Failed', `Failed to publish course: ${error.message}`);
     }
   });
 
@@ -116,10 +115,11 @@ const CourseDetailPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courseDetails', courseId] });
       setIsTopicModalOpen(false);
+      success('Topic Created', 'New topic has been successfully created.');
     },
     onError: (error: Error) => {
       console.error('Failed to create module:', error);
-      // Show error message
+      showError('Creation Failed', 'Failed to create topic. Please try again.');
     }
   });
 
@@ -133,10 +133,11 @@ const CourseDetailPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['courseDetails', courseId] });
       queryClient.invalidateQueries({ queryKey: ['course', currentModuleId.toString()] });
       setIsSubtopicModalOpen(false);
+      success('Subtopic Created', 'New subtopic has been successfully created.');
     },
     onError: (error: Error) => {
       console.error('Failed to create submodule:', error);
-      // Show error message
+      showError('Creation Failed', 'Failed to create subtopic. Please try again.');
     }
   });
 
@@ -146,10 +147,11 @@ const CourseDetailPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courseDetails', courseId] });
       setIsDeleteTopicModalOpen(false);
+      success('Topic Deleted', 'The topic has been successfully deleted.');
     },
     onError: (error: Error) => {
       console.error('Failed to delete module:', error);
-      alert('Failed to delete topic. Please try again.');
+      showError('Delete Failed', 'Failed to delete topic. Please try again.');
     }
   });
 
@@ -159,7 +161,7 @@ const CourseDetailPage: React.FC = () => {
       const weekno = parseInt(newTopic.week);
 
       if (isNaN(weekno) || weekno <= 0) {
-        alert("Week number must be a positive number");
+        showError('Invalid Input', 'Week number must be a positive number');
         return;
       }
 
@@ -172,7 +174,7 @@ const CourseDetailPage: React.FC = () => {
       createModuleMutation.mutate(moduleData);
     } catch (error) {
       console.error("Error processing topic data:", error);
-      alert("Failed to create topic. Please check your input and try again.");
+      showError('Processing Error', 'Failed to create topic. Please check your input and try again.');
     }
   };
 

@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCourses, createCourse } from '../../../services/admin/courseApis';
+import { getCourses, createCourse, CourseData } from '../../../services/admin/courseApis';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import articleIcon from '../../../commonComponents/icons/admin/content/ArticleIcon.png';
 import videoIcon from '../../../commonComponents/icons/admin/content/VideosIcon.png';
 import quizIcon from '../../../commonComponents/icons/admin/content/QuizIcon.png';
 import assignmentIcon from '../../../commonComponents/icons/admin/content/SubjectiveIcon.png';
 import codingProblemIcon from '../../../commonComponents/icons/admin/content/ProblemIcon.png';
+import { useToast } from '../../../contexts/ToastContext';
 
 interface Course {
   id: number;
@@ -74,10 +75,12 @@ const CourseCardSkeleton: React.FC = () => {
 };
 
 const AdminDashboard: React.FC = () => {
-  const clientId = import.meta.env.VITE_CLIENT_ID;
+  const clientId = Number(import.meta.env.VITE_CLIENT_ID);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { success, error: showError } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState<CourseFormData>({
     name: '',
     level: '',
@@ -89,6 +92,19 @@ const AdminDashboard: React.FC = () => {
     queryKey: ['courses'],
     queryFn: () => getCourses(clientId)
   });
+
+  // Filter courses based on search query
+  const filteredCourses = coursesData?.filter((course: Course) => {
+    if (!searchQuery.trim()) return true;
+
+    const query = searchQuery.toLowerCase();
+    return (
+      course.title.toLowerCase().includes(query) ||
+      course.description.toLowerCase().includes(query) ||
+      course.difficulty_level.toLowerCase().includes(query) ||
+      course.subtitle?.toLowerCase().includes(query)
+    );
+  }) || [];
 
   // Log difficulty levels of existing courses to discover valid values
   useEffect(() => {
@@ -106,26 +122,11 @@ const AdminDashboard: React.FC = () => {
   }, [coursesData]);
 
   const createCourseMutation = useMutation({
-    mutationFn: (data: CourseFormData) => {
-      // Transform form data to match API requirements
-      const courseData = {
-        title: data.name,
-        description: data.description,
-        // Generate a slug from the title (lowercase, replace spaces with hyphens)
-        slug: data.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-        // Only include difficulty_level if a valid option was selected
-        ...(data.level && { difficulty_level: data.level })
-      };
-
-      console.log('Sending course data to API:', courseData);
-      return createCourse(clientId, courseData);
-    },
-    onSuccess: (data) => {
-      // Invalidate and refetch courses query
-      queryClient.invalidateQueries({ queryKey: ['courses'] });
-
-      // Navigate to the new course's detail page
-      navigate(`/admin/courses/${data.id}`);
+    mutationFn: (courseData: CourseData) => createCourse(clientId, courseData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses', clientId] });
+      setIsModalOpen(false);
+      success('Course Created', 'New course has been successfully created.');
     },
     onError: (error: Error) => {
       console.error('Failed to create course:', error);
@@ -187,7 +188,7 @@ const AdminDashboard: React.FC = () => {
         console.log('Error parsing error message:', e);
       }
 
-      alert(`Failed to create course:\n${errorMessage}\n\nPlease check the console for more details.`);
+      showError('Course Creation Failed', errorMessage);
     }
   });
 
@@ -232,7 +233,12 @@ const AdminDashboard: React.FC = () => {
       }
     }
 
-    createCourseMutation.mutate(formData);
+    createCourseMutation.mutate({
+      title: formData.name,
+      description: formData.description,
+      slug: formData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+      ...(formData.level && { difficulty_level: formData.level })
+    });
 
     // Reset form and close modal
     setFormData({ name: '', level: '', description: '' });
@@ -241,6 +247,14 @@ const AdminDashboard: React.FC = () => {
 
   const handleEditCourse = (courseId: number) => {
     navigate(`/admin/courses/${courseId}`);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
   };
 
   if (isLoading) {
@@ -312,28 +326,116 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 gap-4">
           <div>
             <h2 className="text-2xl font-bold">All Courses</h2>
             <p className="text-gray-600">Here is a glimpse of your overall progress.</p>
           </div>
-          <button
-            className="bg-[#17627A] text-white px-4 py-2 rounded-md flex items-center"
-            onClick={() => setIsModalOpen(true)}
-          >
-            <span className="mr-1">+</span> Add New Course
-          </button>
+
+          {/* Search Box */}
+          <div className="flex flex-col sm:flex-row gap-4 lg:items-center">
+            <div className="relative flex-1 lg:w-80">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg
+                  className="h-5 w-5 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Search courses by title, description, or difficulty..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#17627A] focus:border-[#17627A] transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label="Clear search"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            <button
+              className="bg-[#17627A] text-white px-4 py-2 rounded-md flex items-center whitespace-nowrap hover:bg-[#124F65] transition-colors"
+              onClick={() => setIsModalOpen(true)}
+            >
+              <span className="mr-1">+</span> Add New Course
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {coursesData?.map((course: Course) => (
-            <CourseCard
-              key={course.id}
-              course={course}
-              onEditClick={() => handleEditCourse(course.id)}
-            />
-          ))}
-        </div>
+        {/* Search Results Info */}
+        {searchQuery && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-blue-800 text-sm">
+              {filteredCourses.length === 0 ? (
+                <>No courses found for "<span className="font-semibold">{searchQuery}</span>"</>
+              ) : (
+                <>
+                  Found {filteredCourses.length} course{filteredCourses.length !== 1 ? 's' : ''}
+                  {filteredCourses.length !== coursesData?.length && (
+                    <> out of {coursesData?.length} total</>
+                  )}
+                  for "<span className="font-semibold">{searchQuery}</span>"
+                </>
+              )}
+            </p>
+          </div>
+        )}
+
+        {/* Courses Grid */}
+        {filteredCourses.length === 0 && searchQuery ? (
+          <div className="text-center py-12">
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400 mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.47-.881-6.08-2.33"
+              />
+            </svg>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No courses found</h3>
+            <p className="text-gray-500 mb-4">
+              Try adjusting your search terms or browse all courses.
+            </p>
+            <button
+              onClick={clearSearch}
+              className="text-[#17627A] hover:text-[#124F65] font-medium transition-colors"
+            >
+              Clear search and view all courses
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCourses.map((course: Course) => (
+              <CourseCard
+                key={course.id}
+                course={course}
+                onEditClick={() => handleEditCourse(course.id)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Add New Course Modal */}

@@ -7,13 +7,18 @@ import { useEffect, useState } from "react";
 import { useTokenExpirationHandler } from "./hooks/useTokenExpirationHandler";
 import useUserActivityTracking from "./hooks/useUserActivityTracking";
 import { setupActivitySyncListeners } from "./utils/userActivitySync";
+import { ToastProvider } from "./contexts/ToastContext";
+import { ToastContainer } from "./components/ToastContainer";
 // import FloatingActivityTimer from "./components/FloatingActivityTimer";
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <ToastProvider>
+      <Router>
+        <AppContent />
+        <ToastContainer />
+      </Router>
+    </ToastProvider>
   );
 }
 
