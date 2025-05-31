@@ -1,5 +1,5 @@
 import axiosInstance from "../axiosInstance";
-import { ContentIdType} from "./contentApis";
+import { ContentIdType } from "./contentApis";
 
 // Define interfaces for course-related data
 export interface CourseData {
@@ -60,7 +60,10 @@ export const getCourses = async (clientId: number) => {
   }
 };
 
-export const createCourse = async (clientId: number, courseData: CourseData) => {
+export const createCourse = async (
+  clientId: number,
+  courseData: CourseData
+) => {
   try {
     const res = await axiosInstance.post(
       `/admin-dashboard/api/clients/${clientId}/courses/`,
@@ -389,7 +392,12 @@ export interface ContentData {
   duration_in_minutes: number;
 }
 
-export const addSubmoduleContent = async (clientId: number, courseId: number, submoduleId: number,contentData:ContentData) => {
+export const addSubmoduleContent = async (
+  clientId: number,
+  courseId: number,
+  submoduleId: number,
+  contentData: ContentData
+) => {
   try {
     const res = await axiosInstance.post(
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/submodules/${submoduleId}/contents/`,
@@ -413,7 +421,11 @@ export const addSubmoduleContent = async (clientId: number, courseId: number, su
   }
 };
 
-export const getSubmoduleContent = async (clientId: number, courseId: number, submoduleId: number) => {
+export const getSubmoduleContent = async (
+  clientId: number,
+  courseId: number,
+  submoduleId: number
+) => {
   try {
     const res = await axiosInstance.get(
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/submodules/${submoduleId}/contents/`
@@ -434,10 +446,37 @@ export const getSubmoduleContent = async (clientId: number, courseId: number, su
         "Failed to fetch submodule content"
     );
   }
-}
+};
+
+export const deleteSubmoduleContent = async (
+  clientId: number,
+  courseId: number,
+  submoduleId: number,
+  contentId: number
+) => {
+  try {
+    const res = await axiosInstance.delete(
+      `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/submodules/${submoduleId}/contents/${contentId}/`
+    );
+    console.log("delete submodule content:", res);
+    return res.data;
+  } catch (error: unknown) {
+    const apiError = error as ApiError;
+    console.error("Failed to delete submodule content:", apiError);
+    console.error("Error details:", {
+      message: apiError.message,
+      response: apiError.response?.data,
+      status: apiError.response?.status,
+    });
+    throw new Error(
+      apiError.response?.data?.detail ||
+        apiError.message ||
+        "Failed to delete submodule content"
+    );
+  }
+};
 
 // Note: PUT and PATCH are not exactly the same
 // PUT is for complete replacement of a resource
 // PATCH is for partial updates to a resource
 // This API seems to use PUT for updates, which is common in many REST APIs
-

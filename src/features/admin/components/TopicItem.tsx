@@ -7,6 +7,7 @@ import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import {
   deleteCourseSubmodule,
   getSubmoduleContent,
+  deleteSubmoduleContent,
 } from "../../../services/admin/courseApis";
 import { DeleteConfirmationModal } from "./DeleteConfirmationModal";
 import ContentItem from "./add-content/ContentItem";
@@ -319,17 +320,103 @@ const SubtopicContentList: React.FC<{
   courseId: number;
   submoduleId: number;
 }> = ({ clientId, courseId, submoduleId }) => {
+  const queryClient = useQueryClient();
+  const [isDeleteContentModalOpen, setIsDeleteContentModalOpen] = useState(false);
+  const [contentToDelete, setContentToDelete] = useState<{ id: number; type: string } | null>(null);
+
   interface SubmoduleContentItem {
     id: number;
     title: string;
     marks?: number;
     content_type: string;
   }
+
   const { data: contents = [], isLoading } = useQuery<SubmoduleContentItem[]>({
     queryKey: ["submodule-content", clientId, courseId, submoduleId],
     queryFn: () => getSubmoduleContent(clientId, courseId, submoduleId),
     enabled: !!submoduleId,
   });
+
+  // Add detailed logging when contents change
+  useEffect(() => {
+    if (contents && contents.length > 0) {
+      console.log("=== SUBMODULE CONTENT LOADED ===");
+      console.log("Client ID:", clientId);
+      console.log("Course ID:", courseId);
+      console.log("Submodule ID:", submoduleId);
+      console.log("Total contents:", contents.length);
+      console.log("Content details:");
+      contents.forEach((content, index) => {
+        console.log(`  ${index + 1}. ID: ${content.id}, Type: ${content.content_type}, Title: ${content.title}`);
+      });
+      console.log("Available Video Tutorial IDs:", contents.filter(c => c.content_type === 'VideoTutorial').map(c => c.id));
+      console.log("Available Article IDs:", contents.filter(c => c.content_type === 'Article').map(c => c.id));
+      console.log("=== END CONTENT LIST ===");
+    } else if (!isLoading) {
+      console.log("=== NO CONTENT FOUND ===");
+      console.log("Client ID:", clientId);
+      console.log("Course ID:", courseId);
+      console.log("Submodule ID:", submoduleId);
+      console.log("Contents array:", contents);
+    }
+  }, [contents, isLoading, clientId, courseId, submoduleId]);
+
+  // Delete content mutation - COMPLETELY REWRITTEN
+  const deleteContentMutation = useMutation({
+    mutationFn: ({ contentId }: { contentId: number }) => {
+      console.log("=== USING CORRECT DELETE API ===");
+      console.log("Deleting submodule content with ID:", contentId);
+      console.log("API URL:", `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/submodules/${submoduleId}/contents/${contentId}/`);
+      
+      return deleteSubmoduleContent(clientId, courseId, submoduleId, contentId);
+    },
+    onSuccess: () => {
+      console.log("✅ Content deleted successfully!");
+      queryClient.invalidateQueries({ queryKey: ["submodule-content", clientId, courseId, submoduleId] });
+      queryClient.invalidateQueries({ queryKey: ["courseDetails", courseId] });
+      setIsDeleteContentModalOpen(false);
+      setContentToDelete(null);
+    },
+    onError: (error: Error) => {
+      console.error("❌ Failed to delete content:", error);
+      alert("Failed to delete content. Please try again.");
+    },
+  });
+
+  const handleDeleteContent = (contentId: number, contentType: string) => {
+    console.log("=== DELETE CONTENT DEBUG ===");
+    console.log("Content ID:", contentId);
+    console.log("Content Type:", contentType);
+    console.log("Client ID:", clientId);
+    console.log("Available contents:", contents);
+    
+    const contentExists = contents.find(c => c.id === contentId);
+    console.log("Content to delete exists:", contentExists);
+    
+    if (!contentExists) {
+      console.error("❌ CONTENT NOT FOUND!");
+      console.error(`Content with ID ${contentId} does not exist in the current submodule.`);
+      console.error("Available content IDs:", contents.map(c => c.id));
+      alert(`Error: Content with ID ${contentId} not found. Please refresh the page and try again.`);
+      return;
+    }
+    
+    console.log("✅ Content validation passed - using correct submodule content API");
+    setContentToDelete({ id: contentId, type: contentType });
+    setIsDeleteContentModalOpen(true);
+  };
+
+  const handleConfirmDeleteContent = () => {
+    if (contentToDelete) {
+      console.log("=== CONFIRMING DELETE ===");
+      console.log("Deleting content:", contentToDelete);
+      
+      deleteContentMutation.mutate({
+        contentId: contentToDelete.id
+      });
+    }
+  };
+
   console.log("contents", contents);
 
   if (isLoading) return <div className="pl-8">Loading...</div>;
@@ -339,18 +426,33 @@ const SubtopicContentList: React.FC<{
     );
 
   return (
-    <div className="pl-8">
-      {contents.map((item) => (
-        <ContentItem
-          key={item.id}
-          id={item.id}
-          title={item.title}
-          marks={item.marks}
-          contentType={item.content_type}
-          onEdit={() => {}}
-          onDelete={() => {}}
-        />
-      ))}
-    </div>
+    <>
+      <div className="pl-8">
+        {contents.map((item) => (
+          <ContentItem
+            key={item.id}
+            id={item.id}
+            title={item.title}
+            marks={item.marks}
+            contentType={item.content_type}
+            onEdit={() => {}}
+            onDelete={(id) => handleDeleteContent(id, item.content_type)}
+          />
+        ))}
+      </div>
+
+      {/* Delete Content Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={isDeleteContentModalOpen}
+        onClose={() => {
+          setIsDeleteContentModalOpen(false);
+          setContentToDelete(null);
+        }}
+        onConfirm={handleConfirmDeleteContent}
+        title="Delete Content"
+        message={`Are you sure you want to delete this ${contentToDelete?.type === 'VideoTutorial' ? 'video tutorial' : contentToDelete?.type.toLowerCase()}? This action cannot be undone.`}
+        isLoading={deleteContentMutation.isPending}
+      />
+    </>
   );
 };
