@@ -12,6 +12,12 @@ import {
 import { DeleteConfirmationModal } from "./DeleteConfirmationModal";
 import ContentItem from "./add-content/ContentItem";
 import { useToast } from "../../../contexts/ToastContext";
+// Import edit components
+import EditVideoContent from "./add-content/EditVideoContent";
+import EditArticleContent from "./add-content/EditArticleContent";
+import EditQuizContent from "./add-content/EditQuizContent";
+import EditAssignmentContent from "./add-content/EditAssignmentContent";
+import EditCodingProblemContent from "./add-content/EditCodingProblemContent";
 
 interface TopicItemProps {
   courseId: string;
@@ -196,12 +202,12 @@ export const TopicItem: React.FC<TopicItemProps> = ({
               />
             </div>
             <div
-              className={`transition-all duration-300 ease-in-out overflow-hidden`}
+              className={`transition-all duration-300 ease-in-out`}
               style={{
-                maxHeight: expandedSubtopicId === Number(subtopic.id) ? 500 : 0,
                 opacity: expandedSubtopicId === Number(subtopic.id) ? 1 : 0,
                 pointerEvents:
                   expandedSubtopicId === Number(subtopic.id) ? "auto" : "none",
+                display: expandedSubtopicId === Number(subtopic.id) ? "block" : "none",
               }}
             >
               {expandedSubtopicId === Number(subtopic.id) && (
@@ -327,6 +333,10 @@ const SubtopicContentList: React.FC<{
   const { success, error: showError } = useToast();
   const [isDeleteContentModalOpen, setIsDeleteContentModalOpen] = useState(false);
   const [contentToDelete, setContentToDelete] = useState<{ id: number; type: string } | null>(null);
+  
+  // Add edit state management
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingContent, setEditingContent] = useState<{ id: number; type: string } | null>(null);
 
   interface SubmoduleContentItem {
     id: number;
@@ -422,7 +432,85 @@ const SubtopicContentList: React.FC<{
     }
   };
 
+  // Add edit handlers
+  const handleEditContent = (contentId: number, contentType: string) => {
+    console.log("=== EDIT CONTENT DEBUG ===");
+    console.log("Content ID:", contentId);
+    console.log("Content Type:", contentType);
+    console.log("Client ID:", clientId);
+    
+    const contentExists = contents.find(c => c.id === contentId);
+    console.log("Content to edit exists:", contentExists);
+    
+    if (!contentExists) {
+      console.error("❌ CONTENT NOT FOUND!");
+      console.error(`Content with ID ${contentId} does not exist in the current submodule.`);
+      console.error("Available content IDs:", contents.map(c => c.id));
+      showError("Content Not Found", `Content with ID ${contentId} not found. Please refresh the page and try again.`);
+      return;
+    }
+    
+    console.log("✅ Content validation passed - opening edit mode");
+    setEditingContent({ id: contentId, type: contentType });
+    setIsEditing(true);
+  };
+
+  const handleEditBack = () => {
+    setIsEditing(false);
+    setEditingContent(null);
+  };
+
+  const handleEditSuccess = () => {
+    console.log("✅ Content updated successfully!");
+    queryClient.invalidateQueries({ queryKey: ["submodule-content", clientId, courseId, submoduleId] });
+    queryClient.invalidateQueries({ queryKey: ["courseDetails", courseId] });
+    setIsEditing(false);
+    setEditingContent(null);
+  };
+
+  // Render edit component based on content type
+  const renderEditComponent = () => {
+    if (!editingContent) return null;
+
+    const commonProps = {
+      onBack: handleEditBack,
+      clientId,
+      courseId,
+      submoduleId,
+      contentId: editingContent.id,
+      onSuccess: handleEditSuccess,
+    };
+
+    switch (editingContent.type) {
+      case 'VideoTutorial':
+        return <EditVideoContent {...commonProps} />;
+      case 'Article':
+        return <EditArticleContent {...commonProps} />;
+      case 'Quiz':
+        return <EditQuizContent {...commonProps} />;
+      case 'Assignment':
+        return <EditAssignmentContent {...commonProps} />;
+      case 'CodingProblem':
+        return <EditCodingProblemContent {...commonProps} />;
+      default:
+        console.error("Unknown content type for editing:", editingContent.type);
+        showError("Edit Error", `Cannot edit content of type: ${editingContent.type}`);
+        setIsEditing(false);
+        setEditingContent(null);
+        return null;
+    }
+  };
+
   console.log("contents", contents);
+
+  // If editing, show the edit component
+  if (isEditing) {
+    return (
+      <div className="w-full min-h-screen bg-gray-50 p-4">
+        {renderEditComponent()}
+      </div>
+    );
+  }
 
   if (isLoading) return <div className="pl-8">Loading...</div>;
   if (!contents || contents.length === 0)
@@ -440,7 +528,7 @@ const SubtopicContentList: React.FC<{
             title={item.title}
             marks={item.marks}
             contentType={item.content_type}
-            onEdit={() => {}}
+            onEdit={(id) => handleEditContent(id, item.content_type)}
             onDelete={(id) => handleDeleteContent(id, item.content_type)}
           />
         ))}

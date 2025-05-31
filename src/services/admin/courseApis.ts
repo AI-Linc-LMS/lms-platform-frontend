@@ -476,6 +476,261 @@ export const deleteSubmoduleContent = async (
   }
 };
 
+// Define interfaces for content update data
+export interface VideoContentUpdateData {
+  title: string;
+  marks: number;
+  video_url: string;
+}
+
+export interface ArticleContentUpdateData {
+  title: string;
+  marks: number;
+  content: string;
+}
+
+export interface QuizQuestion {
+  id?: number;
+  question: string;
+  options: string[];
+  correct_answer: string;
+  explanation?: string;
+}
+
+export interface QuizContentUpdateData {
+  title: string;
+  marks: number;
+  questions: QuizQuestion[];
+}
+
+export interface AssignmentContentUpdateData {
+  title: string;
+  marks: number;
+  description: string;
+  due_date?: string;
+}
+
+export interface TestCase {
+  id?: number;
+  input: string;
+  expected_output: string;
+  is_hidden?: boolean;
+}
+
+export interface CodingProblemContentUpdateData {
+  title: string;
+  marks: number;
+  problem_statement: string;
+  test_cases: TestCase[];
+}
+
+// Union type for all content update data
+export type ContentUpdateData = 
+  | VideoContentUpdateData 
+  | ArticleContentUpdateData 
+  | QuizContentUpdateData 
+  | AssignmentContentUpdateData 
+  | CodingProblemContentUpdateData;
+
+export const getSubmoduleContentById = async (
+  clientId: number,
+  courseId: number,
+  submoduleId: number,
+  contentId: number
+) => {
+  try {
+    const res = await axiosInstance.get(
+      `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/submodules/${submoduleId}/contents/${contentId}/`
+    );
+    console.log("get submodule content by id:", res);
+    return res.data;
+  } catch (error: unknown) {
+    const apiError = error as ApiError;
+    console.error("Failed to fetch submodule content by id:", apiError);
+    console.error("Error details:", {
+      message: apiError.message,
+      response: apiError.response?.data,
+      status: apiError.response?.status,
+    });
+    throw new Error(
+      apiError.response?.data?.detail ||
+        apiError.message ||
+        "Failed to fetch submodule content by id"
+    );
+  }
+};
+
+export const updateSubmoduleContent = async (
+  clientId: number,
+  courseId: number,
+  submoduleId: number,
+  contentId: number,
+  contentData: ContentUpdateData
+) => {
+  try {
+    const res = await axiosInstance.patch(
+      `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/submodules/${submoduleId}/contents/${contentId}/`,
+      contentData
+    );
+    console.log("update submodule content:", res);
+    return res.data;
+  } catch (error: unknown) {
+    const apiError = error as ApiError;
+    console.error("Failed to update submodule content:", apiError);
+    console.error("Error details:", {
+      message: apiError.message,
+      response: apiError.response?.data,
+      status: apiError.response?.status,
+    });
+    throw new Error(
+      apiError.response?.data?.detail ||
+        apiError.message ||
+        "Failed to update submodule content"
+    );
+  }
+};
+
+// Specific update functions for each content type using the direct content API
+export const updateVideoContent = async (
+  clientId: number,
+  contentId: number,
+  contentData: VideoContentUpdateData
+) => {
+  try {
+    const res = await axiosInstance.patch(
+      `/admin-dashboard/api/clients/${clientId}/video-tutorials/${contentId}/`,
+      contentData
+    );
+    console.log("update video content:", res);
+    return res.data;
+  } catch (error: unknown) {
+    const apiError = error as ApiError;
+    console.error("Failed to update video content:", apiError);
+    console.error("Error details:", {
+      message: apiError.message,
+      response: apiError.response?.data,
+      status: apiError.response?.status,
+    });
+    throw new Error(
+      apiError.response?.data?.detail ||
+        apiError.message ||
+        "Failed to update video content"
+    );
+  }
+};
+
+export const updateArticleContent = async (
+  clientId: number,
+  contentId: number,
+  contentData: ArticleContentUpdateData
+) => {
+  try {
+    const res = await axiosInstance.patch(
+      `/admin-dashboard/api/clients/${clientId}/articles/${contentId}/`,
+      contentData
+    );
+    console.log("update article content:", res);
+    return res.data;
+  } catch (error: unknown) {
+    const apiError = error as ApiError;
+    console.error("Failed to update article content:", apiError);
+    console.error("Error details:", {
+      message: apiError.message,
+      response: apiError.response?.data,
+      status: apiError.response?.status,
+    });
+    throw new Error(
+      apiError.response?.data?.detail ||
+        apiError.message ||
+        "Failed to update article content"
+    );
+  }
+};
+
+export const updateQuizContent = async (
+  clientId: number,
+  contentId: number,
+  contentData: QuizContentUpdateData
+) => {
+  try {
+    const res = await axiosInstance.patch(
+      `/admin-dashboard/api/clients/${clientId}/quizzes/${contentId}/`,
+      contentData
+    );
+    console.log("update quiz content:", res);
+    return res.data;
+  } catch (error: unknown) {
+    const apiError = error as ApiError;
+    console.error("Failed to update quiz content:", apiError);
+    console.error("Error details:", {
+      message: apiError.message,
+      response: apiError.response?.data,
+      status: apiError.response?.status,
+    });
+    throw new Error(
+      apiError.response?.data?.detail ||
+        apiError.message ||
+        "Failed to update quiz content"
+    );
+  }
+};
+
+export const updateAssignmentContent = async (
+  clientId: number,
+  contentId: number,
+  contentData: AssignmentContentUpdateData
+) => {
+  try {
+    const res = await axiosInstance.patch(
+      `/admin-dashboard/api/clients/${clientId}/assignments/${contentId}/`,
+      contentData
+    );
+    console.log("update assignment content:", res);
+    return res.data;
+  } catch (error: unknown) {
+    const apiError = error as ApiError;
+    console.error("Failed to update assignment content:", apiError);
+    console.error("Error details:", {
+      message: apiError.message,
+      response: apiError.response?.data,
+      status: apiError.response?.status,
+    });
+    throw new Error(
+      apiError.response?.data?.detail ||
+        apiError.message ||
+        "Failed to update assignment content"
+    );
+  }
+};
+
+export const updateCodingProblemContent = async (
+  clientId: number,
+  contentId: number,
+  contentData: CodingProblemContentUpdateData
+) => {
+  try {
+    const res = await axiosInstance.patch(
+      `/admin-dashboard/api/clients/${clientId}/coding-problems/${contentId}/`,
+      contentData
+    );
+    console.log("update coding problem content:", res);
+    return res.data;
+  } catch (error: unknown) {
+    const apiError = error as ApiError;
+    console.error("Failed to update coding problem content:", apiError);
+    console.error("Error details:", {
+      message: apiError.message,
+      response: apiError.response?.data,
+      status: apiError.response?.status,
+    });
+    throw new Error(
+      apiError.response?.data?.detail ||
+        apiError.message ||
+        "Failed to update coding problem content"
+    );
+  }
+};
+
 // Note: PUT and PATCH are not exactly the same
 // PUT is for complete replacement of a resource
 // PATCH is for partial updates to a resource
