@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import backIcon from "../../../../commonComponents/icons/admin/content/backIcon.png";
 import { useMutation } from "@tanstack/react-query";
 import { uploadContent } from "../../../../services/admin/contentApis";
+import { useToast } from "../../../../contexts/ToastContext";
+
 interface AddVideoContentProps {
   onBack: () => void;
   clientId: number;
@@ -17,6 +19,7 @@ const AddVideoContent: React.FC<AddVideoContentProps> = ({
   onBack,
   clientId,
 }) => {
+  const { success, error: showError } = useToast();
   const [title, setTitle] = useState("");
   const [marks, setMarks] = useState("");
   const [video_url, setVideo_url] = useState("");
@@ -25,27 +28,27 @@ const AddVideoContent: React.FC<AddVideoContentProps> = ({
     mutationFn: (data: VideoContentData) =>
       uploadContent(clientId, "video-tutorials", data),
     onSuccess: () => {
-      alert("Video content uploaded successfully!");
+      success("Video Uploaded", "Video content uploaded successfully!");
       onBack();
     },
     onError: (error: Error) => {
-      alert(error.message || "Failed to upload video content");
+      showError("Upload Failed", error.message || "Failed to upload video content");
     },
   });
 
   const handleSave = () => {
     if (!title.trim()) {
-      alert("Please enter a title");
+      showError("Validation Error", "Please enter a title");
       return;
     }
 
     if (!video_url.trim()) {
-      alert("Please enter video_url");
+      showError("Validation Error", "Please enter video URL");
       return;
     }
 
     if (!marks.trim()) {
-      alert("Please enter marks");
+      showError("Validation Error", "Please enter marks");
       return;
     }
     console.log(title, marks, video_url);

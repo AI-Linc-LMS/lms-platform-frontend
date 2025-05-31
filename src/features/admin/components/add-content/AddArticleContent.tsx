@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import backIcon from "../../../../commonComponents/icons/admin/content/backIcon.png";
 import { useMutation } from "@tanstack/react-query";
 import { uploadContent } from "../../../../services/admin/contentApis";
+import { useToast } from "../../../../contexts/ToastContext";
 
 interface AddArticleContentProps {
   onBack: () => void;
@@ -20,6 +21,7 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
   onBack,
   clientId,
 }) => {
+  const { success, error: showError } = useToast();
   const [title, setTitle] = useState("");
   const [marks, setMarks] = useState("");
   const [difficultyLevel, setDifficultyLevel] = useState<
@@ -40,27 +42,27 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
     mutationFn: (data: ArticleContentData) =>
       uploadContent(clientId, "articles", data),
     onSuccess: () => {
-      alert("Article content uploaded successfully!");
+      success("Article Uploaded", "Article content uploaded successfully!");
       onBack();
     },
     onError: (error: Error) => {
-      alert(error.message || "Failed to upload article content");
+      showError("Upload Failed", error.message || "Failed to upload article content");
     },
   });
 
   const handleSave = () => {
     if (!title.trim()) {
-      alert("Please enter a title");
+      showError("Validation Error", "Please enter a title");
       return;
     }
 
     if (!answer.trim()) {
-      alert("Please enter content");
+      showError("Validation Error", "Please enter content");
       return;
     }
 
     if (!marks.trim()) {
-      alert("Please enter marks");
+      showError("Validation Error", "Please enter marks");
       return;
     }
 

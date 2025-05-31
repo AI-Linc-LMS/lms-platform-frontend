@@ -7,9 +7,17 @@ import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import {
   deleteCourseSubmodule,
   getSubmoduleContent,
+  deleteSubmoduleContent,
 } from "../../../services/admin/courseApis";
 import { DeleteConfirmationModal } from "./DeleteConfirmationModal";
 import ContentItem from "./add-content/ContentItem";
+import { useToast } from "../../../contexts/ToastContext";
+// Import edit components
+import EditVideoContent from "./add-content/EditVideoContent";
+import EditArticleContent from "./add-content/EditArticleContent";
+import EditQuizContent from "./add-content/EditQuizContent";
+import EditAssignmentContent from "./add-content/EditAssignmentContent";
+import EditCodingProblemContent from "./add-content/EditCodingProblemContent";
 
 interface TopicItemProps {
   courseId: string;
@@ -30,6 +38,7 @@ export const TopicItem: React.FC<TopicItemProps> = ({
 }) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const queryClient = useQueryClient();
+  const { success, error: showError } = useToast();
   const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("videos");
   const [selectedSubtopicId, setSelectedSubtopicId] = useState<number | null>(
@@ -54,10 +63,11 @@ export const TopicItem: React.FC<TopicItemProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["courseDetails", courseId] });
       setIsDeleteSubtopicModalOpen(false);
+      success("Subtopic Deleted", "The subtopic has been successfully deleted.");
     },
     onError: (error: Error) => {
       console.error("Failed to delete subtopic:", error);
-      alert("Failed to delete subtopic. Please try again.");
+      showError("Delete Failed", "Failed to delete subtopic. Please try again.");
     },
   });
 
@@ -192,12 +202,12 @@ export const TopicItem: React.FC<TopicItemProps> = ({
               />
             </div>
             <div
-              className={`transition-all duration-300 ease-in-out overflow-hidden`}
+              className={`transition-all duration-300 ease-in-out`}
               style={{
-                maxHeight: expandedSubtopicId === Number(subtopic.id) ? 500 : 0,
                 opacity: expandedSubtopicId === Number(subtopic.id) ? 1 : 0,
                 pointerEvents:
                   expandedSubtopicId === Number(subtopic.id) ? "auto" : "none",
+                display: expandedSubtopicId === Number(subtopic.id) ? "block" : "none",
               }}
             >
               {expandedSubtopicId === Number(subtopic.id) && (
@@ -319,18 +329,188 @@ const SubtopicContentList: React.FC<{
   courseId: number;
   submoduleId: number;
 }> = ({ clientId, courseId, submoduleId }) => {
+  const queryClient = useQueryClient();
+  const { success, error: showError } = useToast();
+  const [isDeleteContentModalOpen, setIsDeleteContentModalOpen] = useState(false);
+  const [contentToDelete, setContentToDelete] = useState<{ id: number; type: string } | null>(null);
+  
+  // Add edit state management
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingContent, setEditingContent] = useState<{ id: number; type: string } | null>(null);
+
   interface SubmoduleContentItem {
     id: number;
     title: string;
     marks?: number;
     content_type: string;
   }
+
   const { data: contents = [], isLoading } = useQuery<SubmoduleContentItem[]>({
     queryKey: ["submodule-content", clientId, courseId, submoduleId],
     queryFn: () => getSubmoduleContent(clientId, courseId, submoduleId),
     enabled: !!submoduleId,
   });
+
+  // Add detailed logging when contents change
+  useEffect(() => {
+    if (contents && contents.length > 0) {
+      console.log("=== SUBMODULE CONTENT LOADED ===");
+      console.log("Client ID:", clientId);
+      console.log("Course ID:", courseId);
+      console.log("Submodule ID:", submoduleId);
+      console.log("Total contents:", contents.length);
+      console.log("Content details:");
+      contents.forEach((content, index) => {
+        console.log(`  ${index + 1}. ID: ${content.id}, Type: ${content.content_type}, Title: ${content.title}`);
+      });
+      console.log("Available Video Tutorial IDs:", contents.filter(c => c.content_type === 'VideoTutorial').map(c => c.id));
+      console.log("Available Article IDs:", contents.filter(c => c.content_type === 'Article').map(c => c.id));
+      console.log("=== END CONTENT LIST ===");
+    } else if (!isLoading) {
+      console.log("=== NO CONTENT FOUND ===");
+      console.log("Client ID:", clientId);
+      console.log("Course ID:", courseId);
+      console.log("Submodule ID:", submoduleId);
+      console.log("Contents array:", contents);
+    }
+  }, [contents, isLoading, clientId, courseId, submoduleId]);
+
+  // Delete content mutation - COMPLETELY REWRITTEN
+  const deleteContentMutation = useMutation({
+    mutationFn: ({ contentId }: { contentId: number }) => {
+      console.log("=== USING CORRECT DELETE API ===");
+      console.log("Deleting submodule content with ID:", contentId);
+      console.log("API URL:", `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/submodules/${submoduleId}/contents/${contentId}/`);
+      
+      return deleteSubmoduleContent(clientId, courseId, submoduleId, contentId);
+    },
+    onSuccess: () => {
+      console.log("✅ Content deleted successfully!");
+      queryClient.invalidateQueries({ queryKey: ["submodule-content", clientId, courseId, submoduleId] });
+      queryClient.invalidateQueries({ queryKey: ["courseDetails", courseId] });
+      setIsDeleteContentModalOpen(false);
+      setContentToDelete(null);
+      success("Content Deleted", "The content has been successfully deleted.");
+    },
+    onError: (error: Error) => {
+      console.error("❌ Failed to delete content:", error);
+      showError("Delete Failed", "Failed to delete content. Please try again.");
+    },
+  });
+
+  const handleDeleteContent = (contentId: number, contentType: string) => {
+    console.log("=== DELETE CONTENT DEBUG ===");
+    console.log("Content ID:", contentId);
+    console.log("Content Type:", contentType);
+    console.log("Client ID:", clientId);
+    console.log("Available contents:", contents);
+    
+    const contentExists = contents.find(c => c.id === contentId);
+    console.log("Content to delete exists:", contentExists);
+    
+    if (!contentExists) {
+      console.error("❌ CONTENT NOT FOUND!");
+      console.error(`Content with ID ${contentId} does not exist in the current submodule.`);
+      console.error("Available content IDs:", contents.map(c => c.id));
+      showError("Content Not Found", `Content with ID ${contentId} not found. Please refresh the page and try again.`);
+      return;
+    }
+    
+    console.log("✅ Content validation passed - using correct submodule content API");
+    setContentToDelete({ id: contentId, type: contentType });
+    setIsDeleteContentModalOpen(true);
+  };
+
+  const handleConfirmDeleteContent = () => {
+    if (contentToDelete) {
+      console.log("=== CONFIRMING DELETE ===");
+      console.log("Deleting content:", contentToDelete);
+      
+      deleteContentMutation.mutate({
+        contentId: contentToDelete.id
+      });
+    }
+  };
+
+  // Add edit handlers
+  const handleEditContent = (contentId: number, contentType: string) => {
+    console.log("=== EDIT CONTENT DEBUG ===");
+    console.log("Content ID:", contentId);
+    console.log("Content Type:", contentType);
+    console.log("Client ID:", clientId);
+    
+    const contentExists = contents.find(c => c.id === contentId);
+    console.log("Content to edit exists:", contentExists);
+    
+    if (!contentExists) {
+      console.error("❌ CONTENT NOT FOUND!");
+      console.error(`Content with ID ${contentId} does not exist in the current submodule.`);
+      console.error("Available content IDs:", contents.map(c => c.id));
+      showError("Content Not Found", `Content with ID ${contentId} not found. Please refresh the page and try again.`);
+      return;
+    }
+    
+    console.log("✅ Content validation passed - opening edit mode");
+    setEditingContent({ id: contentId, type: contentType });
+    setIsEditing(true);
+  };
+
+  const handleEditBack = () => {
+    setIsEditing(false);
+    setEditingContent(null);
+  };
+
+  const handleEditSuccess = () => {
+    console.log("✅ Content updated successfully!");
+    queryClient.invalidateQueries({ queryKey: ["submodule-content", clientId, courseId, submoduleId] });
+    queryClient.invalidateQueries({ queryKey: ["courseDetails", courseId] });
+    setIsEditing(false);
+    setEditingContent(null);
+  };
+
+  // Render edit component based on content type
+  const renderEditComponent = () => {
+    if (!editingContent) return null;
+
+    const commonProps = {
+      onBack: handleEditBack,
+      clientId,
+      courseId,
+      submoduleId,
+      contentId: editingContent.id,
+      onSuccess: handleEditSuccess,
+    };
+
+    switch (editingContent.type) {
+      case 'VideoTutorial':
+        return <EditVideoContent {...commonProps} />;
+      case 'Article':
+        return <EditArticleContent {...commonProps} />;
+      case 'Quiz':
+        return <EditQuizContent {...commonProps} />;
+      case 'Assignment':
+        return <EditAssignmentContent {...commonProps} />;
+      case 'CodingProblem':
+        return <EditCodingProblemContent {...commonProps} />;
+      default:
+        console.error("Unknown content type for editing:", editingContent.type);
+        showError("Edit Error", `Cannot edit content of type: ${editingContent.type}`);
+        setIsEditing(false);
+        setEditingContent(null);
+        return null;
+    }
+  };
+
   console.log("contents", contents);
+
+  // If editing, show the edit component
+  if (isEditing) {
+    return (
+      <div className="w-full min-h-screen bg-gray-50 p-4">
+        {renderEditComponent()}
+      </div>
+    );
+  }
 
   if (isLoading) return <div className="pl-8">Loading...</div>;
   if (!contents || contents.length === 0)
@@ -339,18 +519,33 @@ const SubtopicContentList: React.FC<{
     );
 
   return (
-    <div className="pl-8">
-      {contents.map((item) => (
-        <ContentItem
-          key={item.id}
-          id={item.id}
-          title={item.title}
-          marks={item.marks}
-          contentType={item.content_type}
-          onEdit={() => {}}
-          onDelete={() => {}}
-        />
-      ))}
-    </div>
+    <>
+      <div className="pl-8">
+        {contents.map((item) => (
+          <ContentItem
+            key={item.id}
+            id={item.id}
+            title={item.title}
+            marks={item.marks}
+            contentType={item.content_type}
+            onEdit={(id) => handleEditContent(id, item.content_type)}
+            onDelete={(id) => handleDeleteContent(id, item.content_type)}
+          />
+        ))}
+      </div>
+
+      {/* Delete Content Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={isDeleteContentModalOpen}
+        onClose={() => {
+          setIsDeleteContentModalOpen(false);
+          setContentToDelete(null);
+        }}
+        onConfirm={handleConfirmDeleteContent}
+        title="Delete Content"
+        message={`Are you sure you want to delete this ${contentToDelete?.type === 'VideoTutorial' ? 'video tutorial' : contentToDelete?.type.toLowerCase()}? This action cannot be undone.`}
+        isLoading={deleteContentMutation.isPending}
+      />
+    </>
   );
 };
