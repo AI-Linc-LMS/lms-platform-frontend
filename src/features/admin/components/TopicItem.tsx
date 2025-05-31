@@ -11,6 +11,7 @@ import {
 } from "../../../services/admin/courseApis";
 import { DeleteConfirmationModal } from "./DeleteConfirmationModal";
 import ContentItem from "./add-content/ContentItem";
+import { useToast } from "../../../contexts/ToastContext";
 
 interface TopicItemProps {
   courseId: string;
@@ -31,6 +32,7 @@ export const TopicItem: React.FC<TopicItemProps> = ({
 }) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const queryClient = useQueryClient();
+  const { success, error: showError } = useToast();
   const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("videos");
   const [selectedSubtopicId, setSelectedSubtopicId] = useState<number | null>(
@@ -55,10 +57,11 @@ export const TopicItem: React.FC<TopicItemProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["courseDetails", courseId] });
       setIsDeleteSubtopicModalOpen(false);
+      success("Subtopic Deleted", "The subtopic has been successfully deleted.");
     },
     onError: (error: Error) => {
       console.error("Failed to delete subtopic:", error);
-      alert("Failed to delete subtopic. Please try again.");
+      showError("Delete Failed", "Failed to delete subtopic. Please try again.");
     },
   });
 
@@ -321,6 +324,7 @@ const SubtopicContentList: React.FC<{
   submoduleId: number;
 }> = ({ clientId, courseId, submoduleId }) => {
   const queryClient = useQueryClient();
+  const { success, error: showError } = useToast();
   const [isDeleteContentModalOpen, setIsDeleteContentModalOpen] = useState(false);
   const [contentToDelete, setContentToDelete] = useState<{ id: number; type: string } | null>(null);
 
@@ -376,10 +380,11 @@ const SubtopicContentList: React.FC<{
       queryClient.invalidateQueries({ queryKey: ["courseDetails", courseId] });
       setIsDeleteContentModalOpen(false);
       setContentToDelete(null);
+      success("Content Deleted", "The content has been successfully deleted.");
     },
     onError: (error: Error) => {
       console.error("❌ Failed to delete content:", error);
-      alert("Failed to delete content. Please try again.");
+      showError("Delete Failed", "Failed to delete content. Please try again.");
     },
   });
 
@@ -397,7 +402,7 @@ const SubtopicContentList: React.FC<{
       console.error("❌ CONTENT NOT FOUND!");
       console.error(`Content with ID ${contentId} does not exist in the current submodule.`);
       console.error("Available content IDs:", contents.map(c => c.id));
-      alert(`Error: Content with ID ${contentId} not found. Please refresh the page and try again.`);
+      showError("Content Not Found", `Content with ID ${contentId} not found. Please refresh the page and try again.`);
       return;
     }
     
