@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCourses, createCourse } from '../../../services/admin/courseApis';
+import { getCourses, createCourse, CourseData } from '../../../services/admin/courseApis';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import articleIcon from '../../../commonComponents/icons/admin/content/ArticleIcon.png';
 import videoIcon from '../../../commonComponents/icons/admin/content/VideosIcon.png';
 import quizIcon from '../../../commonComponents/icons/admin/content/QuizIcon.png';
 import assignmentIcon from '../../../commonComponents/icons/admin/content/SubjectiveIcon.png';
 import codingProblemIcon from '../../../commonComponents/icons/admin/content/ProblemIcon.png';
+import { useToast } from '../../../contexts/ToastContext';
 
 interface Course {
   id: number;
@@ -74,9 +75,10 @@ const CourseCardSkeleton: React.FC = () => {
 };
 
 const AdminDashboard: React.FC = () => {
-  const clientId = import.meta.env.VITE_CLIENT_ID;
+  const clientId = Number(import.meta.env.VITE_CLIENT_ID);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { success, error: showError } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState<CourseFormData>({
     name: '',
@@ -106,26 +108,11 @@ const AdminDashboard: React.FC = () => {
   }, [coursesData]);
 
   const createCourseMutation = useMutation({
-    mutationFn: (data: CourseFormData) => {
-      // Transform form data to match API requirements
-      const courseData = {
-        title: data.name,
-        description: data.description,
-        // Generate a slug from the title (lowercase, replace spaces with hyphens)
-        slug: data.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-        // Only include difficulty_level if a valid option was selected
-        ...(data.level && { difficulty_level: data.level })
-      };
-
-      console.log('Sending course data to API:', courseData);
-      return createCourse(clientId, courseData);
-    },
-    onSuccess: (data) => {
-      // Invalidate and refetch courses query
-      queryClient.invalidateQueries({ queryKey: ['courses'] });
-
-      // Navigate to the new course's detail page
-      navigate(`/admin/courses/${data.id}`);
+    mutationFn: (courseData: CourseData) => createCourse(clientId, courseData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses', clientId] });
+      setIsModalOpen(false);
+      success('Course Created', 'New course has been successfully created.');
     },
     onError: (error: Error) => {
       console.error('Failed to create course:', error);
@@ -187,7 +174,7 @@ const AdminDashboard: React.FC = () => {
         console.log('Error parsing error message:', e);
       }
 
-      alert(`Failed to create course:\n${errorMessage}\n\nPlease check the console for more details.`);
+      showError('Course Creation Failed', errorMessage);
     }
   });
 
@@ -232,7 +219,12 @@ const AdminDashboard: React.FC = () => {
       }
     }
 
-    createCourseMutation.mutate(formData);
+    createCourseMutation.mutate({
+      title: formData.name,
+      description: formData.description,
+      slug: formData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+      ...(formData.level && { difficulty_level: formData.level })
+    });
 
     // Reset form and close modal
     setFormData({ name: '', level: '', description: '' });
