@@ -3,6 +3,9 @@ import SecondaryButton from "../../../../commonComponents/common-buttons/seconda
 import { useQuery } from "@tanstack/react-query";
 import { getAllRecommendedCourse } from '../../../../services/continue-course-learning/continueCourseApis';
 import { useNavigate } from "react-router-dom";
+import { useEnrollment } from '../../hooks/useEnrollment';
+import { useState } from 'react';
+import Toast from '../../../../commonComponents/notifications/Toast';
 
 // Define the course data interface
 interface CourseData {
@@ -32,20 +35,20 @@ interface MappedCourseData {
 
 // Simple SVG icons as React components
 const ClockIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
         <circle cx="12" cy="12" r="10"></circle>
         <polyline points="12 6 12 12 16 14"></polyline>
     </svg>
 );
 
 const ZapIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
     </svg>
 );
 
 const AwardIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
         <circle cx="12" cy="8" r="7"></circle>
         <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
     </svg>
@@ -60,6 +63,12 @@ interface CourseCardProps {
     certification?: boolean;
     enrolledStudents?: number;
     studentAvatars?: string[];
+    id: number;
+    clientId: number;
+    onEnrollSuccess: () => void;
+    onEnrollError: (error: string) => void;
+    isEnrolling: boolean;
+    enrollingCourseId: number | null;
 }
 
 // Export the CourseCard component to be used in the See All page
@@ -70,36 +79,52 @@ export const CourseCard = ({
     duration = "3 hr 28 mins",
     certification = true,
     enrolledStudents = 3200,
-    studentAvatars = []
+    studentAvatars = [],
+    id,
+    clientId,
+    onEnrollSuccess,
+    onEnrollError,
+    isEnrolling,
+    enrollingCourseId
 }: CourseCardProps) => {
-    // Format number with k for thousands
+    const { enrollInCourse } = useEnrollment({
+        clientId,
+        onSuccess: onEnrollSuccess,
+        onError: onEnrollError
+    });
+
     const formatStudentCount = (count: number) => {
-        return count >= 1000 ? (count / 1000).toFixed(1) + 'k' : count;
+        if (count >= 1000) {
+            return `${(count / 1000).toFixed(1)}k`;
+        }
+        return count.toString();
     };
 
+    const handleEnroll = () => {
+        enrollInCourse(id);
+    };
+
+    const isCurrentlyEnrolling = isEnrolling && enrollingCourseId === id;
+
     return (
-        <div className="flex flex-col">
-
-            <div className="rounded-3xl border border-[#80C9E0] p-6 flex flex-col w-full bg-white min-h-[350px]">
-
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">{title}</h2>
-                <p className="text-gray-600 mb-6">{description}</p>
+        <div className="rounded-3xl border border-[#80C9E0] p-6 flex flex-col w-full bg-white min-h-[350px] transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg">
+            <div className="flex flex-col flex-1">
+                <h3 className="text-xl font-bold mb-2 text-gray-800">{title}</h3>
+                <p className="text-gray-600 mb-6 flex-1">{description}</p>
 
                 <div className="flex flex-wrap gap-4 mb-8">
-                    <div className="flex items-center gap-2 border border-[#DEE2E6] rounded-xl px-4 py-2">
+                    <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl">
                         <ZapIcon />
-                        <span className="text-sm">{level}</span>
+                        <span className="text-sm text-gray-700">{level}</span>
                     </div>
-
-                    <div className="flex items-center gap-2 border border-[#DEE2E6] rounded-xl  px-4 py-2">
+                    <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl">
                         <ClockIcon />
-                        <span className="text-sm">{duration} hours</span>
+                        <span className="text-sm text-gray-700">{duration}</span>
                     </div>
-
                     {certification && (
-                        <div className="flex items-center gap-2 border border-[#DEE2E6] rounded-xl  px-4 py-2">
+                        <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl">
                             <AwardIcon />
-                            <span className="text-sm">Certification Available</span>
+                            <span className="text-sm text-gray-700">Certificate</span>
                         </div>
                     )}
                 </div>
@@ -122,12 +147,16 @@ export const CourseCard = ({
                 </div>
 
                 <div className="flex gap-4 mt-auto">
-                    <PrimaryButton className="whitespace-nowrap text-sm" onClick={() => alert('Enrolled!')}>Enroll Now</PrimaryButton>
-
-
-                    <SecondaryButton className="whitespace-nowrap text-sm" onClick={() => alert('Not Interested')} >Not Interested</SecondaryButton>
-
-
+                    <PrimaryButton 
+                        className="whitespace-nowrap text-sm" 
+                        onClick={handleEnroll}
+                        disabled={isCurrentlyEnrolling}
+                    >
+                        {isCurrentlyEnrolling ? 'Enrolling...' : 'Enroll Now'}
+                    </PrimaryButton>
+                    <SecondaryButton className="whitespace-nowrap text-sm" onClick={() => alert('Not Interested')} >
+                        Not Interested
+                    </SecondaryButton>
                 </div>
             </div>
         </div>
@@ -137,11 +166,59 @@ export const CourseCard = ({
 
 const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
     const navigate = useNavigate();
+    const [toast, setToast] = useState<{
+        message: string;
+        type: 'success' | 'error' | 'info';
+        isVisible: boolean;
+    }>({
+        message: '',
+        type: 'success',
+        isVisible: false
+    });
+
+    const { isEnrolling, enrollingCourseId } = useEnrollment({
+        clientId,
+        onSuccess: () => {
+            setToast({
+                message: 'Successfully enrolled in the course! Check your enrolled courses.',
+                type: 'success',
+                isVisible: true
+            });
+        },
+        onError: (error) => {
+            setToast({
+                message: `Failed to enroll: ${error}`,
+                type: 'error',
+                isVisible: true
+            });
+        }
+    });
+
     // Fetch data using TanStack Query
     const { data: courses, isLoading, error } = useQuery({
         queryKey: ["basedLearningCourses", clientId],
         queryFn: () => getAllRecommendedCourse(clientId),
     });
+
+    const handleToastClose = () => {
+        setToast(prev => ({ ...prev, isVisible: false }));
+    };
+
+    const handleEnrollSuccess = () => {
+        setToast({
+            message: 'Successfully enrolled in the course! Check your enrolled courses.',
+            type: 'success',
+            isVisible: true
+        });
+    };
+
+    const handleEnrollError = (error: string) => {
+        setToast({
+            message: `Failed to enroll: ${error}`,
+            type: 'error',
+            isVisible: true
+        });
+    };
 
     // Skeleton loader and error
     if (isLoading || error) {
@@ -250,6 +327,13 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
 
     return (
         <div>
+            <Toast
+                message={toast.message}
+                type={toast.type}
+                isVisible={toast.isVisible}
+                onClose={handleToastClose}
+            />
+            
             <div className="flex flex-row items-center justify-between w-full my-3 md:my-8 pt-12">
                 <div>
                     <h1 className="text-[#343A40] font-bold text-[18px] md:text-[22px] font-sans">
@@ -270,7 +354,15 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mx-auto pt-6">
                 {displayedCourses.map((course: MappedCourseData) => (
-                    <CourseCard key={course.id} {...course} />
+                    <CourseCard 
+                        key={course.id} 
+                        {...course} 
+                        clientId={clientId}
+                        onEnrollSuccess={handleEnrollSuccess}
+                        onEnrollError={handleEnrollError}
+                        isEnrolling={isEnrolling}
+                        enrollingCourseId={enrollingCourseId}
+                    />
                 ))}
             </div>
         </div>
