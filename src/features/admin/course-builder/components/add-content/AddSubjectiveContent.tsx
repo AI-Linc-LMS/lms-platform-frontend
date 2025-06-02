@@ -1,27 +1,25 @@
 import React, { useRef, useState } from "react";
-import backIcon from "../../../../commonComponents/icons/admin/content/backIcon.png";
+import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
 import { useMutation } from "@tanstack/react-query";
-import { uploadContent } from "../../../../services/admin/contentApis";
-import { useToast } from "../../../../contexts/ToastContext";
+import { uploadContent } from "../../../../../services/admin/contentApis";
 
-interface AddArticleContentProps {
+interface AddSubjectiveContentProps {
   onBack: () => void;
   clientId: number;
 }
 
-interface ArticleContentData {
+interface SubjectiveContentData {
   title: string;
-  content: string;
   marks: number;
-  difficultyLevel: "Easy" | "Medium" | "Hard";
+  difficulty_level: "Easy" | "Medium" | "Hard";
   duration: number;
+  question: string;
 }
 
-const AddArticleContent: React.FC<AddArticleContentProps> = ({
+const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
   onBack,
   clientId,
 }) => {
-  const { success, error: showError } = useToast();
   const [title, setTitle] = useState("");
   const [marks, setMarks] = useState("");
   const [difficultyLevel, setDifficultyLevel] = useState<
@@ -33,48 +31,45 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
   const [fontSize, setFontSize] = useState<number>(14);
   const [textColor, setTextColor] = useState("#2D3748");
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const [answer, setAnswer] = useState("");
+  const [question, setQuestion] = useState("");
   const [showPlaceholder, setShowPlaceholder] = useState(true);
   const fontSizeDropdownRef = useRef<HTMLDivElement>(null);
   const colorPickerRef = useRef<HTMLDivElement>(null);
 
   const uploadMutation = useMutation({
-    mutationFn: (data: ArticleContentData) =>
-      uploadContent(clientId, "articles", data),
-    onSuccess: () => {
-      success("Article Uploaded", "Article content uploaded successfully!");
-      onBack();
-    },
-    onError: (error: Error) => {
-      showError("Upload Failed", error.message || "Failed to upload article content");
-    },
+    mutationFn: (data: SubjectiveContentData) =>
+      uploadContent(clientId, "assignments", data),
   });
 
   const handleSave = () => {
+    // Save logic here: send data to backend or store in state
     if (!title.trim()) {
-      showError("Validation Error", "Please enter a title");
+      alert("Please enter a title");
       return;
     }
 
-    if (!answer.trim()) {
-      showError("Validation Error", "Please enter content");
+    if (!question.trim()) {
+      alert("Please enter question");
       return;
     }
 
     if (!marks.trim()) {
-      showError("Validation Error", "Please enter marks");
+      alert("Please enter marks");
       return;
     }
-
-    const contentData: ArticleContentData = {
+    console.log(title, marks, question);
+    const contentData: SubjectiveContentData = {
       title: title.trim(),
-      content: answer.trim(),
       marks: parseInt(marks, 10),
-      difficultyLevel: "Medium",
-      duration: 10,
+      question: question.trim(),
+      difficulty_level: difficultyLevel,
+      duration: duration,
     };
 
+    console.log({ title, marks, question });
     uploadMutation.mutate(contentData);
+
+    alert("Content saved!");
   };
 
   const colorOptions = [
@@ -112,8 +107,8 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
       // Execute command
       document.execCommand(command, false, value);
 
-      // Update answer state with new content
-      setAnswer(editorRef.current.innerHTML);
+      // Update question state with new content
+      setQuestion(editorRef.current.innerHTML);
       setShowPlaceholder(false);
     }
   };
@@ -133,7 +128,7 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
   // Handle input in the contentEditable div
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
     const content = e.currentTarget.innerHTML;
-    setAnswer(content);
+    setQuestion(content);
     const isEmpty =
       content.trim() === "" ||
       content === "<br>" ||
@@ -174,7 +169,6 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
       <button
         onClick={onBack}
         className="text-sm font-medium mb-4 flex items-center"
-        disabled={uploadMutation.isPending}
       >
         <img src={backIcon} alt="Back" className="w-3 h-2 mr-2" />
         Back to Content Library
@@ -186,7 +180,7 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
           <div className="flex flex-col md:flex-row gap-4 w-full">
             <div className="flex-1">
               <label className="text-sm font-medium text-gray-700">
-                Article Title
+                Subjective Title
               </label>
               <input
                 type="text"
@@ -194,7 +188,6 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
-                disabled={uploadMutation.isPending}
               />
             </div>
             <div className="w-full md:w-1/3">
@@ -205,7 +198,6 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
                 value={marks}
                 onChange={(e) => setMarks(e.target.value)}
                 className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
-                disabled={uploadMutation.isPending}
               />
             </div>
           </div>
@@ -505,14 +497,13 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
               style={{ direction: "ltr" }}
               suppressContentEditableWarning={true}
               onClick={focusEditor}
-              {...(uploadMutation.isPending && { contentEditable: "false" })}
             ></div>
             {showPlaceholder && (
               <div
                 className="absolute top-4 left-4 text-gray-400 cursor-text"
                 onClick={focusEditor}
               >
-                Type your answers here...
+                Type your questions here...
               </div>
             )}
           </div>
@@ -522,10 +513,9 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
         <div style={{ textAlign: "right" }}>
           <button
             onClick={handleSave}
-            className="px-6 py-2 bg-[#255C79] text-white rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={uploadMutation.isPending}
+            className="px-6 py-2 bg-[#255C79] text-white rounded-xl transition"
           >
-            {uploadMutation.isPending ? "Saving..." : "Save Content"}
+            Save Content
           </button>
         </div>
       </div>
@@ -533,4 +523,4 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
   );
 };
 
-export default AddArticleContent;
+export default AddSubjectiveContent;

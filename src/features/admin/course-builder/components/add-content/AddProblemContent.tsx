@@ -1,10 +1,10 @@
 import React, { useRef, useState } from "react";
-import backIcon from "../../../../commonComponents/icons/admin/content/backIcon.png";
+import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
 import { useMutation } from "@tanstack/react-query";
-import { uploadContent } from "../../../../services/admin/contentApis";
+import { uploadContent } from "../../../../../services/admin/contentApis";
 
 interface AddProblemContentProps {
-    onBack: () => void;
+  onBack: () => void;
   clientId: number;
 }
 
@@ -26,22 +26,22 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
   onBack,
   clientId,
 }) => {
-    const [title, setTitle] = useState("");
-    const [level, setLevel] = useState("");
-    const [topic, setTopic] = useState("");
-    const [languages, setLanguages] = useState<string[]>([]);
+  const [title, setTitle] = useState("");
+  const [level, setLevel] = useState("");
+  const [topic, setTopic] = useState("");
+  const [languages, setLanguages] = useState<string[]>([]);
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [testCaseError, setTestCaseError] = useState<string>("");
-    const [marks, setMarks] = useState("");
-    const editorRef = useRef<HTMLDivElement>(null);
-    const [fontSizeDropdownOpen, setFontSizeDropdownOpen] = useState(false);
-    const [fontSize, setFontSize] = useState<number>(14);
-    const [textColor, setTextColor] = useState("#2D3748");
-    const [showColorPicker, setShowColorPicker] = useState(false);
-    const [statement, setStatement] = useState("");
-    const [showPlaceholder, setShowPlaceholder] = useState(true);
-    const fontSizeDropdownRef = useRef<HTMLDivElement>(null);
-    const colorPickerRef = useRef<HTMLDivElement>(null);
+  const [marks, setMarks] = useState("");
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [fontSizeDropdownOpen, setFontSizeDropdownOpen] = useState(false);
+  const [fontSize, setFontSize] = useState<number>(14);
+  const [textColor, setTextColor] = useState("#2D3748");
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [statement, setStatement] = useState("");
+  const [showPlaceholder, setShowPlaceholder] = useState(true);
+  const fontSizeDropdownRef = useRef<HTMLDivElement>(null);
+  const colorPickerRef = useRef<HTMLDivElement>(null);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const languageDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -111,7 +111,7 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
     },
   });
 
-    const handleSave = () => {
+  const handleSave = () => {
     if (testCaseError) {
       alert("Please fix the test cases format before saving");
       return;
@@ -138,9 +138,9 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
       testCases,
       problem_statement: statement,
     });
-    };
+  };
 
-    const colorOptions = [
+  const colorOptions = [
     "#2D3748",
     "#E53E3E",
     "#DD6B20",
@@ -151,133 +151,133 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
     "#805AD5",
     "#D53F8C",
     "#000000",
-    ];
-    const fontSizeOptions = [8, 10, 12, 14, 16, 18, 20, 24, 28, 32];
-    const levelOptions = ["Easy", "Medium", "Hard"];
-    const topicOptions = ["Arrays", "Strings", "Math", "Graphs", "DP"];
-    const languageOptions = ["Python", "JavaScript", "Java", "C++"];
+  ];
+  const fontSizeOptions = [8, 10, 12, 14, 16, 18, 20, 24, 28, 32];
+  const levelOptions = ["Easy", "Medium", "Hard"];
+  const topicOptions = ["Arrays", "Strings", "Math", "Graphs", "DP"];
+  const languageOptions = ["Python", "JavaScript", "Java", "C++"];
 
-    const execCommand = (command: string, value: string = "") => {
-        if (editorRef.current) {
-            const selection = window.getSelection();
-            const range = selection?.getRangeAt(0);
-            editorRef.current.focus();
-            if (selection && range) {
-                selection.removeAllRanges();
-                selection.addRange(range);
-            }
-            document.execCommand(command, false, value);
-            setStatement(editorRef.current.innerHTML);
-            setShowPlaceholder(false);
-        }
-    };
+  const execCommand = (command: string, value: string = "") => {
+    if (editorRef.current) {
+      const selection = window.getSelection();
+      const range = selection?.getRangeAt(0);
+      editorRef.current.focus();
+      if (selection && range) {
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+      document.execCommand(command, false, value);
+      setStatement(editorRef.current.innerHTML);
+      setShowPlaceholder(false);
+    }
+  };
 
-    const handleFontSizeChange = (size: number) => {
-        setFontSize(size);
-        execCommand("fontSize", (size / 4).toString());
-    };
+  const handleFontSizeChange = (size: number) => {
+    setFontSize(size);
+    execCommand("fontSize", (size / 4).toString());
+  };
 
-    const handleColorChange = (color: string) => {
-        setTextColor(color);
-        execCommand("foreColor", color);
-        setShowColorPicker(false);
-    };
+  const handleColorChange = (color: string) => {
+    setTextColor(color);
+    execCommand("foreColor", color);
+    setShowColorPicker(false);
+  };
 
-    const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
-        const content = e.currentTarget.innerHTML;
-        setStatement(content);
+  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
+    const content = e.currentTarget.innerHTML;
+    setStatement(content);
     const isEmpty =
       content.trim() === "" ||
       content === "<br>" ||
       content === "<div></div>" ||
       content === "<p></p>";
-        setShowPlaceholder(isEmpty);
-    };
+    setShowPlaceholder(isEmpty);
+  };
 
-    const focusEditor = () => {
-        if (editorRef.current) {
-            editorRef.current.focus();
-            const range = document.createRange();
-            const selection = window.getSelection();
-            if (selection) {
-                if (editorRef.current.childNodes.length > 0) {
-                    const lastNode = editorRef.current.lastChild;
-                    if (lastNode) {
-                        range.setStartAfter(lastNode);
-                    } else {
-                        range.setStart(editorRef.current, 0);
-                    }
-                } else {
-                    range.setStart(editorRef.current, 0);
-                }
-                range.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(range);
-            }
+  const focusEditor = () => {
+    if (editorRef.current) {
+      editorRef.current.focus();
+      const range = document.createRange();
+      const selection = window.getSelection();
+      if (selection) {
+        if (editorRef.current.childNodes.length > 0) {
+          const lastNode = editorRef.current.lastChild;
+          if (lastNode) {
+            range.setStartAfter(lastNode);
+          } else {
+            range.setStart(editorRef.current, 0);
+          }
+        } else {
+          range.setStart(editorRef.current, 0);
         }
-    };
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+  };
 
-    return (
-        <div className="w-full space-y-6">
-            {/* Back Button */}
-            <button
-                onClick={onBack}
-                className="text-sm font-medium mb-4 flex items-center"
-            >
-                <img src={backIcon} alt="Back" className="w-3 h-2 mr-2" />
-                Back to Content Library
-            </button>
+  return (
+    <div className="w-full space-y-6">
+      {/* Back Button */}
+      <button
+        onClick={onBack}
+        className="text-sm font-medium mb-4 flex items-center"
+      >
+        <img src={backIcon} alt="Back" className="w-3 h-2 mr-2" />
+        Back to Content Library
+      </button>
 
-            {/* Inputs */}
-            <div className="border border-gray-300 rounded-lg p-2 px-4 space-y-4">
-                <div className="flex flex-wrap gap-4 mb-4">
-                    <div className="flex-1 min-w-[220px]">
+      {/* Inputs */}
+      <div className="border border-gray-300 rounded-lg p-2 px-4 space-y-4">
+        <div className="flex flex-wrap gap-4 mb-4">
+          <div className="flex-1 min-w-[220px]">
             <label className="text-sm font-medium text-gray-700">
               Problem Title
             </label>
-                        <input
-                            type="text"
-                            placeholder="Enter title here"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
-                        />
-                    </div>
-                    <div className="flex-1 min-w-[180px]">
+            <input
+              type="text"
+              placeholder="Enter title here"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
+            />
+          </div>
+          <div className="flex-1 min-w-[180px]">
             <label className="text-sm font-medium text-gray-700">
               Level of Problem
             </label>
-                        <select
-                            value={level}
+            <select
+              value={level}
               onChange={(e) => setLevel(e.target.value)}
-                            className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
-                        >
-                            <option value="">Choose the level</option>
+              className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
+            >
+              <option value="">Choose the level</option>
               {levelOptions.map((l) => (
                 <option key={l} value={l}>
                   {l}
                 </option>
               ))}
-                        </select>
-                    </div>
-                    <div className="flex-1 min-w-[180px]">
-                        <label className="text-sm font-medium text-gray-700">Topic</label>
-                        <select
-                            value={topic}
+            </select>
+          </div>
+          <div className="flex-1 min-w-[180px]">
+            <label className="text-sm font-medium text-gray-700">Topic</label>
+            <select
+              value={topic}
               onChange={(e) => setTopic(e.target.value)}
-                            className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
-                        >
-                            <option value="">Choose Topic</option>
+              className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
+            >
+              <option value="">Choose Topic</option>
               {topicOptions.map((t) => (
                 <option key={t} value={t}>
                   {t}
                 </option>
               ))}
-                        </select>
-                    </div>
-                </div>
-                <div className="flex flex-wrap gap-4 mb-4">
-                    <div className="flex-1 min-w-[220px]">
+            </select>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-4 mb-4">
+          <div className="flex-1 min-w-[220px]">
             <label className="text-sm font-medium text-gray-700">
               Choose Code Languages
             </label>
@@ -368,37 +368,37 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
                 ))}
               </div>
             )}
-                    </div>
+          </div>
 
-                    <div className="flex-1 min-w-[120px]">
-                        <label className="text-sm font-medium text-gray-700">Marks</label>
-                        <input
-                            type="number"
-                            placeholder="Enter Marks"
-                            value={marks}
+          <div className="flex-1 min-w-[120px]">
+            <label className="text-sm font-medium text-gray-700">Marks</label>
+            <input
+              type="number"
+              placeholder="Enter Marks"
+              value={marks}
               onChange={(e) => setMarks(e.target.value)}
-                            className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
-                        />
-                    </div>
-                </div>
+              className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
+            />
+          </div>
+        </div>
 
         {/* Question and Test Cases Section */}
         <div className="flex gap-4">
           {/* Question Editor */}
           <div className="flex-1">
             <div className="border rounded-lg overflow-hidden">
-                    <div className="bg-[#D7EFF6] px-4 py-2 border-b flex items-center justify-between">
+              <div className="bg-[#D7EFF6] px-4 py-2 border-b flex items-center justify-between">
                 <div
                   className="flex items-center relative"
                   ref={fontSizeDropdownRef}
                 >
-                            <div
-                                className="text-sm flex items-center cursor-pointer"
+                  <div
+                    className="text-sm flex items-center cursor-pointer"
                     onClick={() =>
                       setFontSizeDropdownOpen(!fontSizeDropdownOpen)
                     }
-                            >
-                                <span>{fontSize}</span>
+                  >
+                    <span>{fontSize}</span>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-4 w-4 ml-1"
@@ -412,51 +412,51 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
                         strokeWidth={2}
                         d="M19 9l-7 7-7-7"
                       />
-                                </svg>
-                            </div>
-                            {fontSizeDropdownOpen && (
+                    </svg>
+                  </div>
+                  {fontSizeDropdownOpen && (
                     <div className="absolute top-full left-0 mt-1 bg-white shadow-lg rounded-md border overflow-y-auto z-10 max-h-32">
-                                    {fontSizeOptions.map((size) => (
-                                        <div
-                                            key={size}
-                                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                                            onClick={() => {
-                                                handleFontSizeChange(size);
-                                                setFontSizeDropdownOpen(false);
-                                            }}
-                                        >
-                                            {size}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                      {fontSizeOptions.map((size) => (
+                        <div
+                          key={size}
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => {
+                            handleFontSizeChange(size);
+                            setFontSizeDropdownOpen(false);
+                          }}
+                        >
+                          {size}
                         </div>
-                        <div className="flex items-center gap-4">
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-4">
                   <button
                     className="text-[#2D3748] font-bold cursor-pointer hover:bg-gray-200 p-1 rounded"
                     onClick={() => execCommand("formatBlock", "h1")}
                   >
                     T
                   </button>
-                            <div className="relative" ref={colorPickerRef}>
-                                <div
-                                    className="h-6 w-6 rounded-full cursor-pointer border border-gray-300"
-                                    style={{ backgroundColor: textColor }}
-                                    onClick={() => setShowColorPicker(!showColorPicker)}
-                                ></div>
-                                {showColorPicker && (
-                                    <div className="absolute top-full left-0 mt-1 bg-white shadow-lg rounded-md border p-2 z-10 grid grid-cols-5 gap-1">
-                                        {colorOptions.map((color) => (
-                                            <div
-                                                key={color}
-                                                className="h-5 w-5 rounded-full cursor-pointer border border-gray-300"
-                                                style={{ backgroundColor: color }}
-                                                onClick={() => handleColorChange(color)}
-                                            ></div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                  <div className="relative" ref={colorPickerRef}>
+                    <div
+                      className="h-6 w-6 rounded-full cursor-pointer border border-gray-300"
+                      style={{ backgroundColor: textColor }}
+                      onClick={() => setShowColorPicker(!showColorPicker)}
+                    ></div>
+                    {showColorPicker && (
+                      <div className="absolute top-full left-0 mt-1 bg-white shadow-lg rounded-md border p-2 z-10 grid grid-cols-5 gap-1">
+                        {colorOptions.map((color) => (
+                          <div
+                            key={color}
+                            className="h-5 w-5 rounded-full cursor-pointer border border-gray-300"
+                            style={{ backgroundColor: color }}
+                            onClick={() => handleColorChange(color)}
+                          ></div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <button
                     className="font-bold cursor-pointer hover:bg-gray-200 p-1 rounded"
                     onClick={() => execCommand("bold")}
@@ -481,7 +481,7 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
                   >
                     S
                   </button>
-                            <div className="h-4 border-r border-gray-300"></div>
+                  <div className="h-4 border-r border-gray-300"></div>
                   <button
                     className="cursor-pointer hover:bg-gray-200 p-1 rounded"
                     onClick={() => execCommand("justifyLeft")}
@@ -545,7 +545,7 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
                       />{" "}
                     </svg>{" "}
                   </button>
-                            <div className="h-4 border-r border-gray-300"></div>
+                  <div className="h-4 border-r border-gray-300"></div>
                   <button
                     className="cursor-pointer hover:bg-gray-200 p-1 rounded"
                     onClick={() => execCommand("insertOrderedList")}
@@ -615,38 +615,38 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
                       />{" "}
                     </svg>{" "}
                   </button>
-                        </div>
-                    </div>
-                    <div className="relative">
-                        <div
-                            ref={editorRef}
+                </div>
+              </div>
+              <div className="relative">
+                <div
+                  ref={editorRef}
                   className="w-full p-4 min-h-[150px] focus:outline-none text-gray-700 overflow-auto"
-                            contentEditable
-                            onInput={handleInput}
-                            onFocus={() => setShowPlaceholder(false)}
-                            onBlur={() => {
+                  contentEditable
+                  onInput={handleInput}
+                  onFocus={() => setShowPlaceholder(false)}
+                  onBlur={() => {
                     const content = editorRef.current?.innerHTML || "";
                     const isEmpty =
                       content.trim() === "" ||
                       content === "<br>" ||
                       content === "<div></div>" ||
                       content === "<p></p>";
-                                setShowPlaceholder(isEmpty);
-                            }}
-                            style={{ direction: "ltr" }}
-                            suppressContentEditableWarning={true}
-                            onClick={focusEditor}
-                        ></div>
-                        {showPlaceholder && (
-                            <div
-                                className="absolute top-4 left-4 text-gray-400 cursor-text"
-                                onClick={focusEditor}
-                            >
-                                Start typing here...
-                            </div>
-                        )}
-                    </div>
-                </div>
+                    setShowPlaceholder(isEmpty);
+                  }}
+                  style={{ direction: "ltr" }}
+                  suppressContentEditableWarning={true}
+                  onClick={focusEditor}
+                ></div>
+                {showPlaceholder && (
+                  <div
+                    className="absolute top-4 left-4 text-gray-400 cursor-text"
+                    onClick={focusEditor}
+                  >
+                    Start typing here...
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Test Cases Section */}
@@ -678,18 +678,18 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
           </div>
         </div>
 
-                {/* Save Button */}
+        {/* Save Button */}
         <div className="flex justify-end">
-                    <button
-                        onClick={handleSave}
-                        className="px-6 py-2 bg-[#255C79] text-white rounded-xl transition"
-                    >
-                        Save Content
-                    </button>
-                </div>
-            </div>
+          <button
+            onClick={handleSave}
+            className="px-6 py-2 bg-[#255C79] text-white rounded-xl transition"
+          >
+            Save Content
+          </button>
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
-export default AddProblemContent; 
+export default AddProblemContent;

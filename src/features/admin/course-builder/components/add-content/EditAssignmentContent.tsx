@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from "react";
-import backIcon from "../../../../commonComponents/icons/admin/content/backIcon.png";
+import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { updateSubmoduleContent, getSubmoduleContentById, VideoContentUpdateData } from "../../../../services/admin/courseApis";
-import { useToast } from "../../../../contexts/ToastContext";
+import {
+  updateSubmoduleContent,
+  getSubmoduleContentById,
+  AssignmentContentUpdateData,
+} from "../../../../../services/admin/courseApis";
+import { useToast } from "../../../../../contexts/ToastContext";
 
-interface EditVideoContentProps {
+interface EditAssignmentContentProps {
   onBack: () => void;
   clientId: number;
   courseId: number;
@@ -13,7 +17,7 @@ interface EditVideoContentProps {
   onSuccess?: () => void;
 }
 
-const EditVideoContent: React.FC<EditVideoContentProps> = ({
+const EditAssignmentContent: React.FC<EditAssignmentContentProps> = ({
   onBack,
   clientId,
   courseId,
@@ -24,114 +28,143 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
   const { success, error: showError } = useToast();
   const [title, setTitle] = useState("");
   const [marks, setMarks] = useState("");
-  const [videoUrl, setVideoUrl] = useState("");
+  const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState("");
 
-  // Fetch existing video data
-  const { data: videoData, isLoading: isLoadingVideo } = useQuery({
-    queryKey: ['submodule-content-detail', clientId, courseId, submoduleId, contentId],
+  // Fetch existing assignment data
+  const { data: assignmentData, isLoading: isLoadingAssignment } = useQuery({
+    queryKey: [
+      "submodule-content-detail",
+      clientId,
+      courseId,
+      submoduleId,
+      contentId,
+    ],
     queryFn: () => {
-      console.log("=== FETCHING VIDEO DATA FOR EDIT ===");
+      console.log("=== FETCHING ASSIGNMENT DATA FOR EDIT ===");
       console.log("Client ID:", clientId);
       console.log("Course ID:", courseId);
       console.log("Submodule ID:", submoduleId);
       console.log("Content ID:", contentId);
-      
-      return getSubmoduleContentById(clientId, courseId, submoduleId, contentId);
+
+      return getSubmoduleContentById(
+        clientId,
+        courseId,
+        submoduleId,
+        contentId
+      );
     },
     enabled: !!contentId && !!courseId && !!submoduleId,
   });
 
   // Populate form with existing data
   useEffect(() => {
-    if (videoData) {
-      console.log("=== LOADED VIDEO DATA FOR EDITING ===");
-      console.log("Video data:", videoData);
-      
-      const contentDetails = videoData.details || videoData;
-      
-      setTitle(contentDetails.title || videoData.title || "");
-      setMarks(contentDetails.marks?.toString() || videoData.marks?.toString() || "");
-      setVideoUrl(contentDetails.video_url || videoData.video_url || "");
-      
+    if (assignmentData) {
+      console.log("=== LOADED ASSIGNMENT DATA FOR EDITING ===");
+      console.log("Assignment data:", assignmentData);
+
+      const contentDetails = assignmentData.details || assignmentData;
+
+      setTitle(contentDetails.title || assignmentData.title || "");
+      setMarks(
+        contentDetails.marks?.toString() ||
+          assignmentData.marks?.toString() ||
+          ""
+      );
+      setDescription(
+        contentDetails.description || assignmentData.description || ""
+      );
+      setDueDate(contentDetails.due_date || assignmentData.due_date || "");
+
       console.log("Form populated with:", {
-        title: contentDetails.title || videoData.title,
-        marks: contentDetails.marks || videoData.marks,
-        video_url: contentDetails.video_url || videoData.video_url
+        title: contentDetails.title || assignmentData.title,
+        marks: contentDetails.marks || assignmentData.marks,
+        description: contentDetails.description || assignmentData.description,
+        due_date: contentDetails.due_date || assignmentData.due_date,
       });
     }
-  }, [videoData]);
+  }, [assignmentData]);
 
   const updateMutation = useMutation({
-    mutationFn: (data: VideoContentUpdateData) => {
-      console.log("=== UPDATING VIDEO ===");
+    mutationFn: (data: AssignmentContentUpdateData) => {
+      console.log("=== UPDATING ASSIGNMENT ===");
       console.log("Client ID:", clientId);
       console.log("Course ID:", courseId);
       console.log("Submodule ID:", submoduleId);
       console.log("Content ID:", contentId);
       console.log("Update data:", data);
-      
-      return updateSubmoduleContent(clientId, courseId, submoduleId, contentId, data);
+
+      return updateSubmoduleContent(
+        clientId,
+        courseId,
+        submoduleId,
+        contentId,
+        data
+      );
     },
     onSuccess: () => {
-      console.log("✅ Video updated successfully!");
-      success("Video Updated", "Video content updated successfully!");
+      console.log("✅ Assignment updated successfully!");
+      success("Assignment Updated", "Assignment content updated successfully!");
       if (onSuccess) {
         onSuccess();
       }
       onBack();
     },
     onError: (error: Error) => {
-      console.error("❌ Failed to update video:", error);
-      showError("Update Failed", error.message || "Failed to update video content");
+      console.error("❌ Failed to update assignment:", error);
+      showError(
+        "Update Failed",
+        error.message || "Failed to update assignment content"
+      );
     },
   });
 
   const handleSave = () => {
-    // Validation
     if (!title.trim()) {
-      showError("Validation Error", "Please enter a video title");
+      showError("Validation Error", "Please enter a title");
+      return;
+    }
+
+    if (!description.trim()) {
+      showError("Validation Error", "Please enter description");
       return;
     }
 
     if (!marks.trim()) {
-      showError("Validation Error", "Please enter marks for the video");
+      showError("Validation Error", "Please enter marks");
       return;
     }
 
-    if (!videoUrl.trim()) {
-      showError("Validation Error", "Please enter a video URL");
-      return;
-    }
-
-    const marksNumber = parseInt(marks);
+    const marksNumber = parseInt(marks, 10);
     if (isNaN(marksNumber) || marksNumber < 0) {
       showError("Validation Error", "Please enter a valid marks value");
       return;
     }
 
-    // Validate URL format (basic validation)
-    try {
-      new URL(videoUrl);
-    } catch {
-      showError("Validation Error", "Please enter a valid video URL");
-      return;
-    }
-
-    const contentData: VideoContentUpdateData = {
+    console.log("=== SAVING ASSIGNMENT UPDATE ===");
+    console.log("Form data:", {
       title: title.trim(),
       marks: marksNumber,
-      video_url: videoUrl.trim(),
+      description: description.trim(),
+      due_date: dueDate,
+    });
+
+    const contentData: AssignmentContentUpdateData = {
+      title: title.trim(),
+      marks: marksNumber,
+      description: description.trim(),
+      due_date: dueDate || undefined,
     };
-    
+
     updateMutation.mutate(contentData);
   };
 
-  if (isLoadingVideo) {
+  if (isLoadingAssignment) {
     return (
       <div className="w-full space-y-6">
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#255C79]"></div>
-          <span className="ml-2 text-gray-600">Loading video data...</span>
+          <span className="ml-2 text-gray-600">Loading assignment data...</span>
         </div>
       </div>
     );
@@ -151,18 +184,22 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
 
       {/* Header */}
       <div className="mb-4">
-        <h2 className="text-xl font-semibold text-gray-800">Edit Video Tutorial</h2>
-        <p className="text-sm text-gray-600">Update the video tutorial information</p>
+        <h2 className="text-xl font-semibold text-gray-800">Edit Assignment</h2>
+        <p className="text-sm text-gray-600">
+          Update the assignment information
+        </p>
       </div>
 
-      {/* Video Details */}
+      {/* Assignment Details */}
       <div className="border border-gray-300 rounded-lg p-4 space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
-            <label className="text-sm font-medium text-gray-700">Video Title</label>
+            <label className="text-sm font-medium text-gray-700">
+              Assignment Title
+            </label>
             <input
               type="text"
-              placeholder="Enter video title"
+              placeholder="Enter assignment title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
@@ -183,34 +220,30 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700">Video URL</label>
+          <label className="text-sm font-medium text-gray-700">
+            Due Date (Optional)
+          </label>
           <input
-            type="url"
-            placeholder="Enter video URL (YouTube, Vimeo, etc.)"
-            value={videoUrl}
-            onChange={(e) => setVideoUrl(e.target.value)}
+            type="datetime-local"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
             className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
             disabled={updateMutation.isPending}
           />
-          <p className="text-xs text-gray-500 mt-1">
-            Supported formats: YouTube, Vimeo, or direct video file URLs
-          </p>
         </div>
 
-        {/* OR Divider */}
-        <div className="flex items-center justify-center gap-2">
-          <hr className="w-full border-dashed border-gray-300" />
-          <span className="text-gray-500 text-sm">OR</span>
-          <hr className="w-full border-dashed border-gray-300" />
-        </div>
-
-        {/* Upload Box */}
-        <div className="border border-gray-300 rounded-lg flex flex-col items-center justify-center py-10 text-center">
-          <div className="bg-blue-100 w-12 h-12 rounded-full mb-2 flex items-center justify-center">
-            <span className="text-2xl font-bold text-[#255C79]">+</span>
-          </div>
-          <p className="text-sm font-medium">Drag or Upload the file</p>
-          <p className="text-xs text-gray-400">File Size Limit: 1GB</p>
+        <div>
+          <label className="text-sm font-medium text-gray-700">
+            Description
+          </label>
+          <textarea
+            placeholder="Enter assignment description and requirements"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
+            rows={8}
+            disabled={updateMutation.isPending}
+          />
         </div>
 
         {/* Action Buttons - Fixed positioning and styling */}
@@ -233,7 +266,7 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
                 Updating...
               </div>
             ) : (
-              "Update Video"
+              "Update Assignment"
             )}
           </button>
         </div>
@@ -242,4 +275,4 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
   );
 };
 
-export default EditVideoContent; 
+export default EditAssignmentContent;

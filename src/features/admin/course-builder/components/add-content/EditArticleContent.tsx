@@ -1,8 +1,12 @@
 import React, { useRef, useState, useEffect } from "react";
-import backIcon from "../../../../commonComponents/icons/admin/content/backIcon.png";
+import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { updateSubmoduleContent, getSubmoduleContentById, ArticleContentUpdateData } from "../../../../services/admin/courseApis";
-import { useToast } from "../../../../contexts/ToastContext";
+import {
+  updateSubmoduleContent,
+  getSubmoduleContentById,
+  ArticleContentUpdateData,
+} from "../../../../../services/admin/courseApis";
+import { useToast } from "../../../../../contexts/ToastContext";
 
 interface EditArticleContentProps {
   onBack: () => void;
@@ -36,15 +40,26 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
 
   // Fetch existing article data
   const { data: articleData, isLoading: isLoadingArticle } = useQuery({
-    queryKey: ['submodule-content-detail', clientId, courseId, submoduleId, contentId],
+    queryKey: [
+      "submodule-content-detail",
+      clientId,
+      courseId,
+      submoduleId,
+      contentId,
+    ],
     queryFn: () => {
       console.log("=== FETCHING ARTICLE DATA FOR EDIT ===");
       console.log("Client ID:", clientId);
       console.log("Course ID:", courseId);
       console.log("Submodule ID:", submoduleId);
       console.log("Content ID:", contentId);
-      
-      return getSubmoduleContentById(clientId, courseId, submoduleId, contentId);
+
+      return getSubmoduleContentById(
+        clientId,
+        courseId,
+        submoduleId,
+        contentId
+      );
     },
     enabled: !!contentId && !!courseId && !!submoduleId,
   });
@@ -54,25 +69,27 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
     if (articleData) {
       console.log("=== LOADED ARTICLE DATA FOR EDITING ===");
       console.log("Article data:", articleData);
-      
+
       const contentDetails = articleData.details || articleData;
-      
+
       setTitle(contentDetails.title || articleData.title || "");
-      setMarks(contentDetails.marks?.toString() || articleData.marks?.toString() || "");
-      
+      setMarks(
+        contentDetails.marks?.toString() || articleData.marks?.toString() || ""
+      );
+
       const content = contentDetails.content || articleData.content || "";
       setAnswer(content);
       setShowPlaceholder(!content.trim());
-      
+
       // Set content in editor
       if (editorRef.current && content) {
         editorRef.current.innerHTML = content;
       }
-      
+
       console.log("Form populated with:", {
         title: contentDetails.title || articleData.title,
         marks: contentDetails.marks || articleData.marks,
-        content: content
+        content: content,
       });
     }
   }, [articleData]);
@@ -85,8 +102,14 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
       console.log("Submodule ID:", submoduleId);
       console.log("Content ID:", contentId);
       console.log("Update data:", data);
-      
-      return updateSubmoduleContent(clientId, courseId, submoduleId, contentId, data);
+
+      return updateSubmoduleContent(
+        clientId,
+        courseId,
+        submoduleId,
+        contentId,
+        data
+      );
     },
     onSuccess: () => {
       console.log("✅ Article updated successfully!");
@@ -98,7 +121,10 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
     },
     onError: (error: Error) => {
       console.error("❌ Failed to update article:", error);
-      showError("Update Failed", error.message || "Failed to update article content");
+      showError(
+        "Update Failed",
+        error.message || "Failed to update article content"
+      );
     },
   });
 
@@ -125,14 +151,18 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
     }
 
     console.log("=== SAVING ARTICLE UPDATE ===");
-    console.log("Form data:", { title: title.trim(), marks: marksNumber, content: answer.trim() });
-    
+    console.log("Form data:", {
+      title: title.trim(),
+      marks: marksNumber,
+      content: answer.trim(),
+    });
+
     const contentData: ArticleContentUpdateData = {
       title: title.trim(),
       content: answer.trim(),
       marks: marksNumber,
     };
-    
+
     updateMutation.mutate(contentData);
   };
 
@@ -290,7 +320,7 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
         {/* Rich Text Editor */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-gray-700">Content</label>
-          
+
           {/* Toolbar */}
           <div className="flex flex-wrap items-center gap-2 p-2 border border-gray-300 rounded-t bg-gray-50">
             {/* Font Size Dropdown */}
@@ -302,11 +332,21 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
                 disabled={updateMutation.isPending}
               >
                 {fontSize}px
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </button>
-              
+
               {fontSizeDropdownOpen && (
                 <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 max-h-40 overflow-y-auto">
                   {fontSizeOptions.map((size) => (
@@ -335,13 +375,13 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
                 className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 flex items-center gap-1"
                 disabled={updateMutation.isPending}
               >
-                <div 
+                <div
                   className="w-4 h-4 border border-gray-300 rounded"
                   style={{ backgroundColor: textColor }}
                 ></div>
                 Color
               </button>
-              
+
               {showColorPicker && (
                 <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-2">
                   <div className="grid grid-cols-5 gap-1">
@@ -369,7 +409,7 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
             >
               B
             </button>
-            
+
             <button
               type="button"
               onClick={() => execCommand("italic")}
@@ -378,7 +418,7 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
             >
               I
             </button>
-            
+
             <button
               type="button"
               onClick={() => execCommand("underline")}
@@ -397,7 +437,7 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
             >
               ←
             </button>
-            
+
             <button
               type="button"
               onClick={() => execCommand("justifyCenter")}
@@ -406,7 +446,7 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
             >
               ↔
             </button>
-            
+
             <button
               type="button"
               onClick={() => execCommand("justifyRight")}
@@ -425,7 +465,7 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
             >
               • List
             </button>
-            
+
             <button
               type="button"
               onClick={() => execCommand("insertOrderedList")}
@@ -443,7 +483,9 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
               contentEditable={!updateMutation.isPending}
               onInput={handleInput}
               onClick={focusEditor}
-              className={`min-h-[200px] p-3 border border-gray-300 rounded-b focus:outline-none focus:ring-1 focus:ring-gray-500 bg-white ${updateMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`min-h-[200px] p-3 border border-gray-300 rounded-b focus:outline-none focus:ring-1 focus:ring-gray-500 bg-white ${
+                updateMutation.isPending ? "opacity-50 cursor-not-allowed" : ""
+              }`}
               style={{ fontSize: `${fontSize}px`, color: textColor }}
             />
             {showPlaceholder && (
@@ -486,4 +528,4 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
   );
 };
 
-export default EditArticleContent; 
+export default EditArticleContent;

@@ -8,9 +8,9 @@ import AddDevelopmentContent from "./AddDevelopmentContent";
 import AddSubjectiveContent from "./AddSubjectiveContent";
 import AddQuizContent from "./AddQuizContent";
 import { useMutation } from "@tanstack/react-query";
-import { ContentData } from "../../../../services/admin/courseApis";
-import { addSubmoduleContent } from "../../../../services/admin/courseApis";
-import { ContentIdType } from "../../../../services/admin/contentApis";
+import { ContentData } from "../../../../../services/admin/courseApis";
+import { addSubmoduleContent } from "../../../../../services/admin/courseApis";
+import { ContentIdType } from "../../../../../services/admin/contentApis";
 
 const contentIdFieldMap: Record<TabKey, ContentIdType | undefined> = {
   videos: "video_content",

@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
-import VideoIcon from "../../../../assets/course_sidebar_assets/video/vidoesIcon.png";
-import ArticleIcon from "../../../../assets/course_sidebar_assets/article/articleIcon.png";
-import ProblemIcon from "../../../../assets/course_sidebar_assets/problem/problemIcon.png";
-import QuizIcon from "../../../../assets/course_sidebar_assets/quiz/defaultQuizIcon.png";
-import AssignmentIcon from "../../../../assets/course_sidebar_assets/subjective/subjectiveicon.png";
-import DevelopmentIcon from "../../../../assets/course_sidebar_assets/development/developmenticon.png";
+import VideoIcon from "../../../../../assets/course_sidebar_assets/video/vidoesIcon.png";
+import ArticleIcon from "../../../../../assets/course_sidebar_assets/article/articleIcon.png";
+import ProblemIcon from "../../../../../assets/course_sidebar_assets/problem/problemIcon.png";
+import QuizIcon from "../../../../../assets/course_sidebar_assets/quiz/defaultQuizIcon.png";
+import AssignmentIcon from "../../../../../assets/course_sidebar_assets/subjective/subjectiveicon.png";
+import DevelopmentIcon from "../../../../../assets/course_sidebar_assets/development/developmenticon.png";
 import { TabKey } from "../../types/course";
-import { getContent } from "../../../../services/admin/contentApis";
+import { getContent } from "../../../../../services/admin/contentApis";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface ContentItem {
@@ -134,17 +134,20 @@ const AddContent: React.FC<AddContentProps> = ({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsDropdownOpen(false);
       }
     };
 
     if (isDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isDropdownOpen]);
 
@@ -211,20 +214,26 @@ const AddContent: React.FC<AddContentProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Choose {label}
             </label>
-            
+
             {/* Custom Searchable Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <div className="relative">
                 <input
                   type="text"
-                  placeholder={isLoading ? "Loading..." : error ? "Error loading content" : `Search ${label.toLowerCase()}s...`}
+                  placeholder={
+                    isLoading
+                      ? "Loading..."
+                      : error
+                      ? "Error loading content"
+                      : `Search ${label.toLowerCase()}s...`
+                  }
                   value={searchQuery}
                   onChange={handleSearchChange}
                   onFocus={handleInputFocus}
                   disabled={isLoading}
                   className="w-full border border-gray-300 rounded px-3 py-2 pr-10 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79] transition-colors"
                 />
-                
+
                 {/* Search Icon */}
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                   {selectedItem ? (
@@ -233,13 +242,33 @@ const AddContent: React.FC<AddContentProps> = ({
                       className="text-gray-400 hover:text-gray-600 transition-colors"
                       aria-label="Clear selection"
                     >
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
                       </svg>
                     </button>
                   ) : (
-                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    <svg
+                      className="h-4 w-4 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
                     </svg>
                   )}
                 </div>
@@ -250,20 +279,23 @@ const AddContent: React.FC<AddContentProps> = ({
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
                   {filteredItems.length === 0 ? (
                     <div className="px-3 py-2 text-sm text-gray-500">
-                      {searchQuery ? `No ${label.toLowerCase()}s found for "${searchQuery}"` : `No ${label.toLowerCase()}s available`}
+                      {searchQuery
+                        ? `No ${label.toLowerCase()}s found for "${searchQuery}"`
+                        : `No ${label.toLowerCase()}s available`}
                     </div>
                   ) : (
                     <>
                       {/* Search Results Info */}
                       {searchQuery && (
                         <div className="px-3 py-2 text-xs text-blue-600 bg-blue-50 border-b border-gray-200">
-                          Found {filteredItems.length} {label.toLowerCase()}{filteredItems.length !== 1 ? 's' : ''} 
+                          Found {filteredItems.length} {label.toLowerCase()}
+                          {filteredItems.length !== 1 ? "s" : ""}
                           {filteredItems.length !== contentItems.length && (
                             <> out of {contentItems.length} total</>
                           )}
                         </div>
                       )}
-                      
+
                       {/* Content Items */}
                       {filteredItems.map((item) => (
                         <button
@@ -272,14 +304,18 @@ const AddContent: React.FC<AddContentProps> = ({
                           className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors"
                         >
                           <div className="flex justify-between items-center">
-                            <span className="font-medium text-gray-900">{item.title}</span>
+                            <span className="font-medium text-gray-900">
+                              {item.title}
+                            </span>
                             <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                               {item.difficulty_level}
                             </span>
                           </div>
                           {item.content && (
                             <div className="text-xs text-gray-600 mt-1 truncate">
-                              {item.content.length > 100 ? `${item.content.substring(0, 100)}...` : item.content}
+                              {item.content.length > 100
+                                ? `${item.content.substring(0, 100)}...`
+                                : item.content}
                             </div>
                           )}
                         </button>
@@ -294,8 +330,12 @@ const AddContent: React.FC<AddContentProps> = ({
             {selectedItem && (
               <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-green-800 font-medium">Selected: {selectedItem.title}</span>
-                  <span className="text-green-600 text-xs">({selectedItem.difficulty_level})</span>
+                  <span className="text-green-800 font-medium">
+                    Selected: {selectedItem.title}
+                  </span>
+                  <span className="text-green-600 text-xs">
+                    ({selectedItem.difficulty_level})
+                  </span>
                 </div>
               </div>
             )}
@@ -306,7 +346,7 @@ const AddContent: React.FC<AddContentProps> = ({
               </p>
             )}
           </div>
-          
+
           <button
             onClick={handleSave}
             className="h-10 px-4 mt-2 md:mt-6 bg-[#255C79] text-white rounded-xl transition hover:bg-[#1e4a63] disabled:opacity-50 disabled:cursor-not-allowed"

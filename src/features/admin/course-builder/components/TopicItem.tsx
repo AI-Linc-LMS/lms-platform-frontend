@@ -8,10 +8,10 @@ import {
   deleteCourseSubmodule,
   getSubmoduleContent,
   deleteSubmoduleContent,
-} from "../../../services/admin/courseApis";
+} from "../../../../services/admin/courseApis";
 import { DeleteConfirmationModal } from "./DeleteConfirmationModal";
-import ContentItem from "./add-content/ContentItem";
-import { useToast } from "../../../contexts/ToastContext";
+import ContentItem from "./ContentItem";
+import { useToast } from "../../../../contexts/ToastContext";
 // Import edit components
 import EditVideoContent from "./add-content/EditVideoContent";
 import EditArticleContent from "./add-content/EditArticleContent";
@@ -63,11 +63,17 @@ export const TopicItem: React.FC<TopicItemProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["courseDetails", courseId] });
       setIsDeleteSubtopicModalOpen(false);
-      success("Subtopic Deleted", "The subtopic has been successfully deleted.");
+      success(
+        "Subtopic Deleted",
+        "The subtopic has been successfully deleted."
+      );
     },
     onError: (error: Error) => {
       console.error("Failed to delete subtopic:", error);
-      showError("Delete Failed", "Failed to delete subtopic. Please try again.");
+      showError(
+        "Delete Failed",
+        "Failed to delete subtopic. Please try again."
+      );
     },
   });
 
@@ -207,7 +213,8 @@ export const TopicItem: React.FC<TopicItemProps> = ({
                 opacity: expandedSubtopicId === Number(subtopic.id) ? 1 : 0,
                 pointerEvents:
                   expandedSubtopicId === Number(subtopic.id) ? "auto" : "none",
-                display: expandedSubtopicId === Number(subtopic.id) ? "block" : "none",
+                display:
+                  expandedSubtopicId === Number(subtopic.id) ? "block" : "none",
               }}
             >
               {expandedSubtopicId === Number(subtopic.id) && (
@@ -331,12 +338,19 @@ const SubtopicContentList: React.FC<{
 }> = ({ clientId, courseId, submoduleId }) => {
   const queryClient = useQueryClient();
   const { success, error: showError } = useToast();
-  const [isDeleteContentModalOpen, setIsDeleteContentModalOpen] = useState(false);
-  const [contentToDelete, setContentToDelete] = useState<{ id: number; type: string } | null>(null);
-  
+  const [isDeleteContentModalOpen, setIsDeleteContentModalOpen] =
+    useState(false);
+  const [contentToDelete, setContentToDelete] = useState<{
+    id: number;
+    type: string;
+  } | null>(null);
+
   // Add edit state management
   const [isEditing, setIsEditing] = useState(false);
-  const [editingContent, setEditingContent] = useState<{ id: number; type: string } | null>(null);
+  const [editingContent, setEditingContent] = useState<{
+    id: number;
+    type: string;
+  } | null>(null);
 
   interface SubmoduleContentItem {
     id: number;
@@ -361,10 +375,22 @@ const SubtopicContentList: React.FC<{
       console.log("Total contents:", contents.length);
       console.log("Content details:");
       contents.forEach((content, index) => {
-        console.log(`  ${index + 1}. ID: ${content.id}, Type: ${content.content_type}, Title: ${content.title}`);
+        console.log(
+          `  ${index + 1}. ID: ${content.id}, Type: ${
+            content.content_type
+          }, Title: ${content.title}`
+        );
       });
-      console.log("Available Video Tutorial IDs:", contents.filter(c => c.content_type === 'VideoTutorial').map(c => c.id));
-      console.log("Available Article IDs:", contents.filter(c => c.content_type === 'Article').map(c => c.id));
+      console.log(
+        "Available Video Tutorial IDs:",
+        contents
+          .filter((c) => c.content_type === "VideoTutorial")
+          .map((c) => c.id)
+      );
+      console.log(
+        "Available Article IDs:",
+        contents.filter((c) => c.content_type === "Article").map((c) => c.id)
+      );
       console.log("=== END CONTENT LIST ===");
     } else if (!isLoading) {
       console.log("=== NO CONTENT FOUND ===");
@@ -380,13 +406,18 @@ const SubtopicContentList: React.FC<{
     mutationFn: ({ contentId }: { contentId: number }) => {
       console.log("=== USING CORRECT DELETE API ===");
       console.log("Deleting submodule content with ID:", contentId);
-      console.log("API URL:", `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/submodules/${submoduleId}/contents/${contentId}/`);
-      
+      console.log(
+        "API URL:",
+        `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/submodules/${submoduleId}/contents/${contentId}/`
+      );
+
       return deleteSubmoduleContent(clientId, courseId, submoduleId, contentId);
     },
     onSuccess: () => {
       console.log("✅ Content deleted successfully!");
-      queryClient.invalidateQueries({ queryKey: ["submodule-content", clientId, courseId, submoduleId] });
+      queryClient.invalidateQueries({
+        queryKey: ["submodule-content", clientId, courseId, submoduleId],
+      });
       queryClient.invalidateQueries({ queryKey: ["courseDetails", courseId] });
       setIsDeleteContentModalOpen(false);
       setContentToDelete(null);
@@ -404,19 +435,29 @@ const SubtopicContentList: React.FC<{
     console.log("Content Type:", contentType);
     console.log("Client ID:", clientId);
     console.log("Available contents:", contents);
-    
-    const contentExists = contents.find(c => c.id === contentId);
+
+    const contentExists = contents.find((c) => c.id === contentId);
     console.log("Content to delete exists:", contentExists);
-    
+
     if (!contentExists) {
       console.error("❌ CONTENT NOT FOUND!");
-      console.error(`Content with ID ${contentId} does not exist in the current submodule.`);
-      console.error("Available content IDs:", contents.map(c => c.id));
-      showError("Content Not Found", `Content with ID ${contentId} not found. Please refresh the page and try again.`);
+      console.error(
+        `Content with ID ${contentId} does not exist in the current submodule.`
+      );
+      console.error(
+        "Available content IDs:",
+        contents.map((c) => c.id)
+      );
+      showError(
+        "Content Not Found",
+        `Content with ID ${contentId} not found. Please refresh the page and try again.`
+      );
       return;
     }
-    
-    console.log("✅ Content validation passed - using correct submodule content API");
+
+    console.log(
+      "✅ Content validation passed - using correct submodule content API"
+    );
     setContentToDelete({ id: contentId, type: contentType });
     setIsDeleteContentModalOpen(true);
   };
@@ -425,9 +466,9 @@ const SubtopicContentList: React.FC<{
     if (contentToDelete) {
       console.log("=== CONFIRMING DELETE ===");
       console.log("Deleting content:", contentToDelete);
-      
+
       deleteContentMutation.mutate({
-        contentId: contentToDelete.id
+        contentId: contentToDelete.id,
       });
     }
   };
@@ -438,18 +479,26 @@ const SubtopicContentList: React.FC<{
     console.log("Content ID:", contentId);
     console.log("Content Type:", contentType);
     console.log("Client ID:", clientId);
-    
-    const contentExists = contents.find(c => c.id === contentId);
+
+    const contentExists = contents.find((c) => c.id === contentId);
     console.log("Content to edit exists:", contentExists);
-    
+
     if (!contentExists) {
       console.error("❌ CONTENT NOT FOUND!");
-      console.error(`Content with ID ${contentId} does not exist in the current submodule.`);
-      console.error("Available content IDs:", contents.map(c => c.id));
-      showError("Content Not Found", `Content with ID ${contentId} not found. Please refresh the page and try again.`);
+      console.error(
+        `Content with ID ${contentId} does not exist in the current submodule.`
+      );
+      console.error(
+        "Available content IDs:",
+        contents.map((c) => c.id)
+      );
+      showError(
+        "Content Not Found",
+        `Content with ID ${contentId} not found. Please refresh the page and try again.`
+      );
       return;
     }
-    
+
     console.log("✅ Content validation passed - opening edit mode");
     setEditingContent({ id: contentId, type: contentType });
     setIsEditing(true);
@@ -462,7 +511,9 @@ const SubtopicContentList: React.FC<{
 
   const handleEditSuccess = () => {
     console.log("✅ Content updated successfully!");
-    queryClient.invalidateQueries({ queryKey: ["submodule-content", clientId, courseId, submoduleId] });
+    queryClient.invalidateQueries({
+      queryKey: ["submodule-content", clientId, courseId, submoduleId],
+    });
     queryClient.invalidateQueries({ queryKey: ["courseDetails", courseId] });
     setIsEditing(false);
     setEditingContent(null);
@@ -482,19 +533,22 @@ const SubtopicContentList: React.FC<{
     };
 
     switch (editingContent.type) {
-      case 'VideoTutorial':
+      case "VideoTutorial":
         return <EditVideoContent {...commonProps} />;
-      case 'Article':
+      case "Article":
         return <EditArticleContent {...commonProps} />;
-      case 'Quiz':
+      case "Quiz":
         return <EditQuizContent {...commonProps} />;
-      case 'Assignment':
+      case "Assignment":
         return <EditAssignmentContent {...commonProps} />;
-      case 'CodingProblem':
+      case "CodingProblem":
         return <EditCodingProblemContent {...commonProps} />;
       default:
         console.error("Unknown content type for editing:", editingContent.type);
-        showError("Edit Error", `Cannot edit content of type: ${editingContent.type}`);
+        showError(
+          "Edit Error",
+          `Cannot edit content of type: ${editingContent.type}`
+        );
         setIsEditing(false);
         setEditingContent(null);
         return null;
@@ -513,10 +567,7 @@ const SubtopicContentList: React.FC<{
   }
 
   if (isLoading) return <div className="pl-8">Loading...</div>;
-  if (!contents || contents.length === 0)
-    return (
-      <div></div>
-    );
+  if (!contents || contents.length === 0) return <div></div>;
 
   return (
     <>
@@ -543,7 +594,11 @@ const SubtopicContentList: React.FC<{
         }}
         onConfirm={handleConfirmDeleteContent}
         title="Delete Content"
-        message={`Are you sure you want to delete this ${contentToDelete?.type === 'VideoTutorial' ? 'video tutorial' : contentToDelete?.type.toLowerCase()}? This action cannot be undone.`}
+        message={`Are you sure you want to delete this ${
+          contentToDelete?.type === "VideoTutorial"
+            ? "video tutorial"
+            : contentToDelete?.type.toLowerCase()
+        }? This action cannot be undone.`}
         isLoading={deleteContentMutation.isPending}
       />
     </>

@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from "react";
-import backIcon from "../../../../commonComponents/icons/admin/content/backIcon.png";
+import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { updateSubmoduleContent, getSubmoduleContentById, CodingProblemContentUpdateData, TestCase } from "../../../../services/admin/courseApis";
-import { useToast } from "../../../../contexts/ToastContext";
+import {
+  updateSubmoduleContent,
+  getSubmoduleContentById,
+  CodingProblemContentUpdateData,
+  TestCase,
+} from "../../../../../services/admin/courseApis";
+import { useToast } from "../../../../../contexts/ToastContext";
 
 interface EditCodingProblemContentProps {
   onBack: () => void;
@@ -34,43 +39,71 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
   ]);
 
   // Fetch existing coding problem data
-  const { data: codingProblemData, isLoading: isLoadingCodingProblem } = useQuery({
-    queryKey: ['submodule-content-detail', clientId, courseId, submoduleId, contentId],
-    queryFn: () => {
-      console.log("=== FETCHING CODING PROBLEM DATA FOR EDIT ===");
-      console.log("Client ID:", clientId);
-      console.log("Course ID:", courseId);
-      console.log("Submodule ID:", submoduleId);
-      console.log("Content ID:", contentId);
-      
-      return getSubmoduleContentById(clientId, courseId, submoduleId, contentId);
-    },
-    enabled: !!contentId && !!courseId && !!submoduleId,
-  });
+  const { data: codingProblemData, isLoading: isLoadingCodingProblem } =
+    useQuery({
+      queryKey: [
+        "submodule-content-detail",
+        clientId,
+        courseId,
+        submoduleId,
+        contentId,
+      ],
+      queryFn: () => {
+        console.log("=== FETCHING CODING PROBLEM DATA FOR EDIT ===");
+        console.log("Client ID:", clientId);
+        console.log("Course ID:", courseId);
+        console.log("Submodule ID:", submoduleId);
+        console.log("Content ID:", contentId);
+
+        return getSubmoduleContentById(
+          clientId,
+          courseId,
+          submoduleId,
+          contentId
+        );
+      },
+      enabled: !!contentId && !!courseId && !!submoduleId,
+    });
 
   // Populate form with existing data
   useEffect(() => {
     if (codingProblemData) {
       console.log("=== LOADED CODING PROBLEM DATA FOR EDITING ===");
       console.log("Coding problem data:", codingProblemData);
-      
+
       const contentDetails = codingProblemData.details || codingProblemData;
-      
+
       setTitle(contentDetails.title || codingProblemData.title || "");
-      setMarks(contentDetails.marks?.toString() || codingProblemData.marks?.toString() || "");
-      setProblemStatement(contentDetails.problem_statement || codingProblemData.problem_statement || "");
-      
-      if (contentDetails.test_cases && Array.isArray(contentDetails.test_cases)) {
+      setMarks(
+        contentDetails.marks?.toString() ||
+          codingProblemData.marks?.toString() ||
+          ""
+      );
+      setProblemStatement(
+        contentDetails.problem_statement ||
+          codingProblemData.problem_statement ||
+          ""
+      );
+
+      if (
+        contentDetails.test_cases &&
+        Array.isArray(contentDetails.test_cases)
+      ) {
         setTestCases(contentDetails.test_cases);
-      } else if (codingProblemData.test_cases && Array.isArray(codingProblemData.test_cases)) {
+      } else if (
+        codingProblemData.test_cases &&
+        Array.isArray(codingProblemData.test_cases)
+      ) {
         setTestCases(codingProblemData.test_cases);
       }
-      
+
       console.log("Form populated with:", {
         title: contentDetails.title || codingProblemData.title,
         marks: contentDetails.marks || codingProblemData.marks,
-        problem_statement: contentDetails.problem_statement || codingProblemData.problem_statement,
-        test_cases: contentDetails.test_cases || codingProblemData.test_cases
+        problem_statement:
+          contentDetails.problem_statement ||
+          codingProblemData.problem_statement,
+        test_cases: contentDetails.test_cases || codingProblemData.test_cases,
       });
     }
   }, [codingProblemData]);
@@ -83,12 +116,21 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
       console.log("Submodule ID:", submoduleId);
       console.log("Content ID:", contentId);
       console.log("Update data:", data);
-      
-      return updateSubmoduleContent(clientId, courseId, submoduleId, contentId, data);
+
+      return updateSubmoduleContent(
+        clientId,
+        courseId,
+        submoduleId,
+        contentId,
+        data
+      );
     },
     onSuccess: () => {
       console.log("✅ Coding problem updated successfully!");
-      success("Coding Problem Updated", "Coding problem content updated successfully!");
+      success(
+        "Coding Problem Updated",
+        "Coding problem content updated successfully!"
+      );
       if (onSuccess) {
         onSuccess();
       }
@@ -96,7 +138,10 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
     },
     onError: (error: Error) => {
       console.error("❌ Failed to update coding problem:", error);
-      showError("Update Failed", error.message || "Failed to update coding problem content");
+      showError(
+        "Update Failed",
+        error.message || "Failed to update coding problem content"
+      );
     },
   });
 
@@ -126,25 +171,36 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
     for (let i = 0; i < testCases.length; i++) {
       const testCase = testCases[i];
       if (!testCase.input.trim()) {
-        showError("Validation Error", `Please enter input for test case ${i + 1}`);
+        showError(
+          "Validation Error",
+          `Please enter input for test case ${i + 1}`
+        );
         return;
       }
       if (!testCase.expected_output.trim()) {
-        showError("Validation Error", `Please enter expected output for test case ${i + 1}`);
+        showError(
+          "Validation Error",
+          `Please enter expected output for test case ${i + 1}`
+        );
         return;
       }
     }
 
     console.log("=== SAVING CODING PROBLEM UPDATE ===");
-    console.log("Form data:", { title: title.trim(), marks: marksNumber, problem_statement: problemStatement.trim(), test_cases: testCases });
-    
+    console.log("Form data:", {
+      title: title.trim(),
+      marks: marksNumber,
+      problem_statement: problemStatement.trim(),
+      test_cases: testCases,
+    });
+
     const contentData: CodingProblemContentUpdateData = {
       title: title.trim(),
       marks: marksNumber,
       problem_statement: problemStatement.trim(),
       test_cases: testCases,
     };
-    
+
     updateMutation.mutate(contentData);
   };
 
@@ -165,22 +221,26 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
     }
   };
 
-  const updateTestCase = (index: number, field: keyof TestCase, value: string | boolean) => {
+  const updateTestCase = (
+    index: number,
+    field: keyof TestCase,
+    value: string | boolean
+  ) => {
     const updatedTestCases = [...testCases];
     const testCase = updatedTestCases[index];
-    
+
     switch (field) {
-      case 'input':
+      case "input":
         testCase.input = value as string;
         break;
-      case 'expected_output':
+      case "expected_output":
         testCase.expected_output = value as string;
         break;
-      case 'is_hidden':
+      case "is_hidden":
         testCase.is_hidden = value as boolean;
         break;
     }
-    
+
     setTestCases(updatedTestCases);
   };
 
@@ -189,7 +249,9 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
       <div className="w-full space-y-6">
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#255C79]"></div>
-          <span className="ml-2 text-gray-600">Loading coding problem data...</span>
+          <span className="ml-2 text-gray-600">
+            Loading coding problem data...
+          </span>
         </div>
       </div>
     );
@@ -209,15 +271,21 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
 
       {/* Header */}
       <div className="mb-4">
-        <h2 className="text-xl font-semibold text-gray-800">Edit Coding Problem</h2>
-        <p className="text-sm text-gray-600">Update the coding problem information</p>
+        <h2 className="text-xl font-semibold text-gray-800">
+          Edit Coding Problem
+        </h2>
+        <p className="text-sm text-gray-600">
+          Update the coding problem information
+        </p>
       </div>
 
       {/* Coding Problem Details */}
       <div className="border border-gray-300 rounded-lg p-4 space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
-            <label className="text-sm font-medium text-gray-700">Problem Title</label>
+            <label className="text-sm font-medium text-gray-700">
+              Problem Title
+            </label>
             <input
               type="text"
               placeholder="Enter problem title"
@@ -241,7 +309,9 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700">Problem Statement</label>
+          <label className="text-sm font-medium text-gray-700">
+            Problem Statement
+          </label>
           <textarea
             placeholder="Enter the problem statement with detailed description, constraints, and examples"
             value={problemStatement}
@@ -266,15 +336,22 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
           </div>
 
           {testCases.map((testCase, index) => (
-            <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-4">
+            <div
+              key={index}
+              className="border border-gray-200 rounded-lg p-4 space-y-4"
+            >
               <div className="flex justify-between items-start">
-                <h4 className="text-md font-medium text-gray-700">Test Case {index + 1}</h4>
+                <h4 className="text-md font-medium text-gray-700">
+                  Test Case {index + 1}
+                </h4>
                 <div className="flex items-center gap-2">
                   <label className="flex items-center gap-1 text-sm">
                     <input
                       type="checkbox"
                       checked={testCase.is_hidden || false}
-                      onChange={(e) => updateTestCase(index, "is_hidden", e.target.checked)}
+                      onChange={(e) =>
+                        updateTestCase(index, "is_hidden", e.target.checked)
+                      }
                       className="text-[#255C79] focus:ring-[#255C79]"
                       disabled={updateMutation.isPending}
                     />
@@ -294,11 +371,15 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Input</label>
+                  <label className="text-sm font-medium text-gray-700">
+                    Input
+                  </label>
                   <textarea
                     placeholder="Enter test case input"
                     value={testCase.input}
-                    onChange={(e) => updateTestCase(index, "input", e.target.value)}
+                    onChange={(e) =>
+                      updateTestCase(index, "input", e.target.value)
+                    }
                     className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
                     rows={4}
                     disabled={updateMutation.isPending}
@@ -306,11 +387,15 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Expected Output</label>
+                  <label className="text-sm font-medium text-gray-700">
+                    Expected Output
+                  </label>
                   <textarea
                     placeholder="Enter expected output"
                     value={testCase.expected_output}
-                    onChange={(e) => updateTestCase(index, "expected_output", e.target.value)}
+                    onChange={(e) =>
+                      updateTestCase(index, "expected_output", e.target.value)
+                    }
                     className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
                     rows={4}
                     disabled={updateMutation.isPending}
@@ -350,4 +435,4 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
   );
 };
 
-export default EditCodingProblemContent; 
+export default EditCodingProblemContent;

@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from "react";
-import backIcon from "../../../../commonComponents/icons/admin/content/backIcon.png";
+import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { updateSubmoduleContent, getSubmoduleContentById, QuizContentUpdateData, QuizQuestion } from "../../../../services/admin/courseApis";
-import { useToast } from "../../../../contexts/ToastContext";
+import {
+  updateSubmoduleContent,
+  getSubmoduleContentById,
+  QuizContentUpdateData,
+  QuizQuestion,
+} from "../../../../../services/admin/courseApis";
+import { useToast } from "../../../../../contexts/ToastContext";
 
 interface EditQuizContentProps {
   onBack: () => void;
@@ -35,15 +40,26 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
 
   // Fetch existing quiz data
   const { data: quizData, isLoading: isLoadingQuiz } = useQuery({
-    queryKey: ['submodule-content-detail', clientId, courseId, submoduleId, contentId],
+    queryKey: [
+      "submodule-content-detail",
+      clientId,
+      courseId,
+      submoduleId,
+      contentId,
+    ],
     queryFn: () => {
       console.log("=== FETCHING QUIZ DATA FOR EDIT ===");
       console.log("Client ID:", clientId);
       console.log("Course ID:", courseId);
       console.log("Submodule ID:", submoduleId);
       console.log("Content ID:", contentId);
-      
-      return getSubmoduleContentById(clientId, courseId, submoduleId, contentId);
+
+      return getSubmoduleContentById(
+        clientId,
+        courseId,
+        submoduleId,
+        contentId
+      );
     },
     enabled: !!contentId && !!courseId && !!submoduleId,
   });
@@ -53,22 +69,24 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
     if (quizData) {
       console.log("=== LOADED QUIZ DATA FOR EDITING ===");
       console.log("Quiz data:", quizData);
-      
+
       const contentDetails = quizData.details || quizData;
-      
+
       setTitle(contentDetails.title || quizData.title || "");
-      setMarks(contentDetails.marks?.toString() || quizData.marks?.toString() || "");
-      
+      setMarks(
+        contentDetails.marks?.toString() || quizData.marks?.toString() || ""
+      );
+
       if (contentDetails.questions && Array.isArray(contentDetails.questions)) {
         setQuestions(contentDetails.questions);
       } else if (quizData.questions && Array.isArray(quizData.questions)) {
         setQuestions(quizData.questions);
       }
-      
+
       console.log("Form populated with:", {
         title: contentDetails.title || quizData.title,
         marks: contentDetails.marks || quizData.marks,
-        questions: contentDetails.questions || quizData.questions
+        questions: contentDetails.questions || quizData.questions,
       });
     }
   }, [quizData]);
@@ -81,8 +99,14 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
       console.log("Submodule ID:", submoduleId);
       console.log("Content ID:", contentId);
       console.log("Update data:", data);
-      
-      return updateSubmoduleContent(clientId, courseId, submoduleId, contentId, data);
+
+      return updateSubmoduleContent(
+        clientId,
+        courseId,
+        submoduleId,
+        contentId,
+        data
+      );
     },
     onSuccess: () => {
       console.log("✅ Quiz updated successfully!");
@@ -94,7 +118,10 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
     },
     onError: (error: Error) => {
       console.error("❌ Failed to update quiz:", error);
-      showError("Update Failed", error.message || "Failed to update quiz content");
+      showError(
+        "Update Failed",
+        error.message || "Failed to update quiz content"
+      );
     },
   });
 
@@ -122,28 +149,38 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
         showError("Validation Error", `Please enter question ${i + 1}`);
         return;
       }
-      
-      const filledOptions = question.options.filter(opt => opt.trim() !== "");
+
+      const filledOptions = question.options.filter((opt) => opt.trim() !== "");
       if (filledOptions.length < 2) {
-        showError("Validation Error", `Question ${i + 1} must have at least 2 options`);
+        showError(
+          "Validation Error",
+          `Question ${i + 1} must have at least 2 options`
+        );
         return;
       }
-      
+
       if (!question.correct_answer.trim()) {
-        showError("Validation Error", `Please select correct answer for question ${i + 1}`);
+        showError(
+          "Validation Error",
+          `Please select correct answer for question ${i + 1}`
+        );
         return;
       }
     }
 
     console.log("=== SAVING QUIZ UPDATE ===");
-    console.log("Form data:", { title: title.trim(), marks: marksNumber, questions });
-    
+    console.log("Form data:", {
+      title: title.trim(),
+      marks: marksNumber,
+      questions,
+    });
+
     const contentData: QuizContentUpdateData = {
       title: title.trim(),
       marks: marksNumber,
       questions: questions,
     };
-    
+
     updateMutation.mutate(contentData);
   };
 
@@ -165,29 +202,37 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
     }
   };
 
-  const updateQuestion = (index: number, field: keyof QuizQuestion, value: string | string[]) => {
+  const updateQuestion = (
+    index: number,
+    field: keyof QuizQuestion,
+    value: string | string[]
+  ) => {
     const updatedQuestions = [...questions];
     const question = updatedQuestions[index];
-    
+
     switch (field) {
-      case 'question':
+      case "question":
         question.question = value as string;
         break;
-      case 'options':
+      case "options":
         question.options = value as string[];
         break;
-      case 'correct_answer':
+      case "correct_answer":
         question.correct_answer = value as string;
         break;
-      case 'explanation':
+      case "explanation":
         question.explanation = value as string;
         break;
     }
-    
+
     setQuestions(updatedQuestions);
   };
 
-  const updateOption = (questionIndex: number, optionIndex: number, value: string) => {
+  const updateOption = (
+    questionIndex: number,
+    optionIndex: number,
+    value: string
+  ) => {
     const updatedQuestions = [...questions];
     updatedQuestions[questionIndex].options[optionIndex] = value;
     setQuestions(updatedQuestions);
@@ -226,7 +271,9 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
       <div className="border border-gray-300 rounded-lg p-4 space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
-            <label className="text-sm font-medium text-gray-700">Quiz Title</label>
+            <label className="text-sm font-medium text-gray-700">
+              Quiz Title
+            </label>
             <input
               type="text"
               placeholder="Enter quiz title"
@@ -263,9 +310,14 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
           </div>
 
           {questions.map((question, questionIndex) => (
-            <div key={questionIndex} className="border border-gray-200 rounded-lg p-4 space-y-4">
+            <div
+              key={questionIndex}
+              className="border border-gray-200 rounded-lg p-4 space-y-4"
+            >
               <div className="flex justify-between items-start">
-                <h4 className="text-md font-medium text-gray-700">Question {questionIndex + 1}</h4>
+                <h4 className="text-md font-medium text-gray-700">
+                  Question {questionIndex + 1}
+                </h4>
                 {questions.length > 1 && (
                   <button
                     onClick={() => removeQuestion(questionIndex)}
@@ -278,11 +330,15 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Question Text</label>
+                <label className="text-sm font-medium text-gray-700">
+                  Question Text
+                </label>
                 <textarea
                   placeholder="Enter your question"
                   value={question.question}
-                  onChange={(e) => updateQuestion(questionIndex, "question", e.target.value)}
+                  onChange={(e) =>
+                    updateQuestion(questionIndex, "question", e.target.value)
+                  }
                   className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
                   rows={3}
                   disabled={updateMutation.isPending}
@@ -290,23 +346,42 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Options</label>
+                <label className="text-sm font-medium text-gray-700">
+                  Options
+                </label>
                 <div className="space-y-2 mt-1">
                   {question.options.map((option, optionIndex) => (
                     <div key={optionIndex} className="flex items-center gap-2">
                       <input
                         type="radio"
                         name={`correct-${questionIndex}`}
-                        checked={question.correct_answer === option && option.trim() !== ""}
-                        onChange={() => updateQuestion(questionIndex, "correct_answer", option)}
+                        checked={
+                          question.correct_answer === option &&
+                          option.trim() !== ""
+                        }
+                        onChange={() =>
+                          updateQuestion(
+                            questionIndex,
+                            "correct_answer",
+                            option
+                          )
+                        }
                         className="text-[#255C79] focus:ring-[#255C79]"
-                        disabled={updateMutation.isPending || option.trim() === ""}
+                        disabled={
+                          updateMutation.isPending || option.trim() === ""
+                        }
                       />
                       <input
                         type="text"
                         placeholder={`Option ${optionIndex + 1}`}
                         value={option}
-                        onChange={(e) => updateOption(questionIndex, optionIndex, e.target.value)}
+                        onChange={(e) =>
+                          updateOption(
+                            questionIndex,
+                            optionIndex,
+                            e.target.value
+                          )
+                        }
                         className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
                         disabled={updateMutation.isPending}
                       />
@@ -316,11 +391,15 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Explanation (Optional)</label>
+                <label className="text-sm font-medium text-gray-700">
+                  Explanation (Optional)
+                </label>
                 <textarea
                   placeholder="Explain why this is the correct answer"
                   value={question.explanation || ""}
-                  onChange={(e) => updateQuestion(questionIndex, "explanation", e.target.value)}
+                  onChange={(e) =>
+                    updateQuestion(questionIndex, "explanation", e.target.value)
+                  }
                   className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
                   rows={2}
                   disabled={updateMutation.isPending}
@@ -359,4 +438,4 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
   );
 };
 
-export default EditQuizContent; 
+export default EditQuizContent;

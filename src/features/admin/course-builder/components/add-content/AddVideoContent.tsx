@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import backIcon from "../../../../commonComponents/icons/admin/content/backIcon.png";
+import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
 import { useMutation } from "@tanstack/react-query";
-import { uploadContent } from "../../../../services/admin/contentApis";
-import { useToast } from "../../../../contexts/ToastContext";
+import { uploadContent } from "../../../../../services/admin/contentApis";
+import { useToast } from "../../../../../contexts/ToastContext";
 
 interface AddVideoContentProps {
   onBack: () => void;
@@ -32,7 +32,10 @@ const AddVideoContent: React.FC<AddVideoContentProps> = ({
       onBack();
     },
     onError: (error: Error) => {
-      showError("Upload Failed", error.message || "Failed to upload video content");
+      showError(
+        "Upload Failed",
+        error.message || "Failed to upload video content"
+      );
     },
   });
 
