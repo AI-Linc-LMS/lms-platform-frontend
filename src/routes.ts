@@ -7,7 +7,7 @@ import CourseTopicDetailPage from "./features/learn/pages/CourseTopicDetailPage"
 import Login from "./features/auth/pages/Login";
 import ForgotPassword from "./features/auth/pages/ForgotPassword";
 import Signup from "./features/auth/pages/Signup";
-import AdminDashboard from "./features/admin/course-builder/pages/AdminDashboard";
+import CourseBuilder from "./features/admin/course-builder/pages/CourseBuilder";
 import AdminCourseDetailPage from "./features/admin/course-builder/pages/CourseDetailPage";
 import Courses from "./features/learn/pages/Courses";
 import ContinueLearningAll from "./features/learn/pages/ContinueLearningAll";
@@ -79,7 +79,7 @@ const routes: RouteConfig[] = [
   },
   {
     path: "/admin/courses",
-    component: AdminDashboard,
+    component: CourseBuilder,
     isPrivate: true,
   },
   {
