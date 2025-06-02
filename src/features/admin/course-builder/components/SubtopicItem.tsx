@@ -1,10 +1,10 @@
 import React from 'react';
-import ArticleIcon from "../../../commonComponents/icons/admin/content/ArticleIcon.png";
-import VideoIcon from "../../../commonComponents/icons/admin/content/VideosIcon.png";
-import ProblemIcon from "../../../commonComponents/icons/admin/content/ProblemIcon.png";
-import QuizIcon from "../../../commonComponents/icons/admin/content/QuizIcon.png";
-import AssignmentIcon from "../../../commonComponents/icons/admin/content/SubjectiveIcon.png";
-import DevelopmentIcon from "../../../commonComponents/icons/admin/content/DevelopmentIcon.png";
+import ArticleIcon from "../../../../commonComponents/icons/admin/content/ArticleIcon.png";
+import VideoIcon from "../../../../commonComponents/icons/admin/content/VideosIcon.png";
+import ProblemIcon from "../../../../commonComponents/icons/admin/content/ProblemIcon.png";
+import QuizIcon from "../../../../commonComponents/icons/admin/content/QuizIcon.png";
+import AssignmentIcon from "../../../../commonComponents/icons/admin/content/SubjectiveIcon.png";
+import DevelopmentIcon from "../../../../commonComponents/icons/admin/content/DevelopmentIcon.png";
 
 
 interface SubtopicItemProps {

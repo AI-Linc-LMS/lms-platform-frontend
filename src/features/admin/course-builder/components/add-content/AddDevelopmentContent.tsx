@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import backIcon from "../../../../commonComponents/icons/admin/content/backIcon.png";
+import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
 
 interface AddDevelopmentContentProps {
     onBack: () => void;

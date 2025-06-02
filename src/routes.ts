@@ -7,11 +7,12 @@ import CourseTopicDetailPage from "./features/learn/pages/CourseTopicDetailPage"
 import Login from "./features/auth/pages/Login";
 import ForgotPassword from "./features/auth/pages/ForgotPassword";
 import Signup from "./features/auth/pages/Signup";
-import AdminDashboard from "./features/admin/pages/AdminDashboard";
-import AdminCourseDetailPage from "./features/admin/pages/CourseDetailPage";
+import AdminDashboard from "./features/admin/course-builder/pages/AdminDashboard";
+import AdminCourseDetailPage from "./features/admin/course-builder/pages/CourseDetailPage";
 import Courses from "./features/learn/pages/Courses";
 import ContinueLearningAll from "./features/learn/pages/ContinueLearningAll";
 import RecommendedLearningAll from "./features/learn/pages/RecommendedLearningAll";
+import Dashboard from "./features/admin/dashboard/pages/Dashboard";
 
 export interface RouteConfig {
   path: string;
@@ -79,6 +80,11 @@ const routes: RouteConfig[] = [
   {
     path: "/admin/courses",
     component: AdminDashboard,
+    isPrivate: true,
+  },
+  {
+    path: "/admin/dashboard",
+    component: Dashboard,
     isPrivate: true,
   },
   {

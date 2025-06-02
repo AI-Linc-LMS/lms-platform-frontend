@@ -1,25 +1,27 @@
 import React, { useRef, useState } from "react";
-import backIcon from "../../../../commonComponents/icons/admin/content/backIcon.png";
+import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
 import { useMutation } from "@tanstack/react-query";
-import { uploadContent } from "../../../../services/admin/contentApis";
+import { uploadContent } from "../../../../../services/admin/contentApis";
+import { useToast } from "../../../../../contexts/ToastContext";
 
-interface AddSubjectiveContentProps {
+interface AddArticleContentProps {
   onBack: () => void;
   clientId: number;
 }
 
-interface SubjectiveContentData {
+interface ArticleContentData {
   title: string;
+  content: string;
   marks: number;
-  difficulty_level: "Easy" | "Medium" | "Hard";
+  difficultyLevel: "Easy" | "Medium" | "Hard";
   duration: number;
-  question: string;
 }
 
-const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
+const AddArticleContent: React.FC<AddArticleContentProps> = ({
   onBack,
   clientId,
 }) => {
+  const { success, error: showError } = useToast();
   const [title, setTitle] = useState("");
   const [marks, setMarks] = useState("");
   const [difficultyLevel, setDifficultyLevel] = useState<
@@ -31,45 +33,51 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
   const [fontSize, setFontSize] = useState<number>(14);
   const [textColor, setTextColor] = useState("#2D3748");
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
   const [showPlaceholder, setShowPlaceholder] = useState(true);
   const fontSizeDropdownRef = useRef<HTMLDivElement>(null);
   const colorPickerRef = useRef<HTMLDivElement>(null);
 
   const uploadMutation = useMutation({
-    mutationFn: (data: SubjectiveContentData) =>
-      uploadContent(clientId, "assignments", data),
+    mutationFn: (data: ArticleContentData) =>
+      uploadContent(clientId, "articles", data),
+    onSuccess: () => {
+      success("Article Uploaded", "Article content uploaded successfully!");
+      onBack();
+    },
+    onError: (error: Error) => {
+      showError(
+        "Upload Failed",
+        error.message || "Failed to upload article content"
+      );
+    },
   });
 
   const handleSave = () => {
-    // Save logic here: send data to backend or store in state
     if (!title.trim()) {
-      alert("Please enter a title");
+      showError("Validation Error", "Please enter a title");
       return;
     }
 
-    if (!question.trim()) {
-      alert("Please enter question");
+    if (!answer.trim()) {
+      showError("Validation Error", "Please enter content");
       return;
     }
 
     if (!marks.trim()) {
-      alert("Please enter marks");
+      showError("Validation Error", "Please enter marks");
       return;
     }
-    console.log(title, marks, question);
-    const contentData: SubjectiveContentData = {
+
+    const contentData: ArticleContentData = {
       title: title.trim(),
+      content: answer.trim(),
       marks: parseInt(marks, 10),
-      question: question.trim(),
-      difficulty_level: difficultyLevel,
-      duration: duration,
+      difficultyLevel: "Medium",
+      duration: 10,
     };
 
-    console.log({ title, marks, question });
     uploadMutation.mutate(contentData);
-
-    alert("Content saved!");
   };
 
   const colorOptions = [
@@ -107,8 +115,8 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
       // Execute command
       document.execCommand(command, false, value);
 
-      // Update question state with new content
-      setQuestion(editorRef.current.innerHTML);
+      // Update answer state with new content
+      setAnswer(editorRef.current.innerHTML);
       setShowPlaceholder(false);
     }
   };
@@ -128,7 +136,7 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
   // Handle input in the contentEditable div
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
     const content = e.currentTarget.innerHTML;
-    setQuestion(content);
+    setAnswer(content);
     const isEmpty =
       content.trim() === "" ||
       content === "<br>" ||
@@ -169,6 +177,7 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
       <button
         onClick={onBack}
         className="text-sm font-medium mb-4 flex items-center"
+        disabled={uploadMutation.isPending}
       >
         <img src={backIcon} alt="Back" className="w-3 h-2 mr-2" />
         Back to Content Library
@@ -180,7 +189,7 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
           <div className="flex flex-col md:flex-row gap-4 w-full">
             <div className="flex-1">
               <label className="text-sm font-medium text-gray-700">
-                Subjective Title
+                Article Title
               </label>
               <input
                 type="text"
@@ -188,6 +197,7 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
+                disabled={uploadMutation.isPending}
               />
             </div>
             <div className="w-full md:w-1/3">
@@ -198,6 +208,7 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
                 value={marks}
                 onChange={(e) => setMarks(e.target.value)}
                 className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
+                disabled={uploadMutation.isPending}
               />
             </div>
           </div>
@@ -497,13 +508,14 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
               style={{ direction: "ltr" }}
               suppressContentEditableWarning={true}
               onClick={focusEditor}
+              {...(uploadMutation.isPending && { contentEditable: "false" })}
             ></div>
             {showPlaceholder && (
               <div
                 className="absolute top-4 left-4 text-gray-400 cursor-text"
                 onClick={focusEditor}
               >
-                Type your questions here...
+                Type your answers here...
               </div>
             )}
           </div>
@@ -513,9 +525,10 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
         <div style={{ textAlign: "right" }}>
           <button
             onClick={handleSave}
-            className="px-6 py-2 bg-[#255C79] text-white rounded-xl transition"
+            className="px-6 py-2 bg-[#255C79] text-white rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={uploadMutation.isPending}
           >
-            Save Content
+            {uploadMutation.isPending ? "Saving..." : "Save Content"}
           </button>
         </div>
       </div>
@@ -523,4 +536,4 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
   );
 };
 
-export default AddSubjectiveContent;
+export default AddArticleContent;

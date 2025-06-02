@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import backIcon from "../../../../commonComponents/icons/admin/content/backIcon.png";
+import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   uploadContent,
   getContent,
-} from "../../../../services/admin/contentApis";
+} from "../../../../../services/admin/contentApis";
 
 interface AddQuizContentProps {
   onBack: () => void;

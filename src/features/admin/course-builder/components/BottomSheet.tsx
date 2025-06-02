@@ -1,10 +1,10 @@
-import closeIcon from "../../../commonComponents/icons/admin/content/CloseCircleIcon.png";
-import ArticleIcon from "../../../assets/course_sidebar_assets/article/articleIcon.png";
-import VideoIcon from "../../../assets/course_sidebar_assets/video/vidoesIcon.png";
-import ProblemIcon from "../../../assets/course_sidebar_assets/problem/problemIcon.png";
-import QuizIcon from "../../../assets/course_sidebar_assets/quiz/defaultQuizIcon.png";
-import AssignmentIcon from "../../../assets/course_sidebar_assets/subjective/subjectiveicon.png";
-import DevelopmentIcon from "../../../assets/course_sidebar_assets/development/developmenticon.png";
+import closeIcon from "../../../../commonComponents/icons/admin/content/CloseCircleIcon.png";
+import ArticleIcon from "../../../../commonComponents/icons/admin/content/ArticleIcon.png";
+import VideoIcon from "../../../../commonComponents/icons/admin/content/VideosIcon.png";
+import ProblemIcon from "../../../../commonComponents/icons/admin/content/ProblemIcon.png";
+import QuizIcon from "../../../../assets/course_sidebar_assets/quiz/defaultQuizIcon.png";
+import AssignmentIcon from "../../../../assets/course_sidebar_assets/subjective/subjectiveicon.png";
+import DevelopmentIcon from "../../../../assets/course_sidebar_assets/development/developmenticon.png";
 import { TabKey } from "../types/course";
 
 interface BottomSheetProps {
