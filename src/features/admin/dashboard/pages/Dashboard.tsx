@@ -7,6 +7,7 @@ import timeSpent from "../../../../commonComponents/icons/admin/dashboard/ClockC
 import i from "../../../../commonComponents/icons/admin/dashboard/exclamation-circle.png";
 import StudentRanking from "../components/RankingTable";
 import TimeSpentGraph from "../components/TimeSpentGraph";
+import StudentDailyActivityChart from "../components/StudentActivityChart";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -105,6 +106,7 @@ const Dashboard = () => {
       </div>
       <div className="flex gap-4 my-4">
         <TimeSpentGraph/>
+        <StudentDailyActivityChart/>
         <StudentRanking clientId={1} />
       </div>
     </div>
