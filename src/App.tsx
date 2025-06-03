@@ -229,8 +229,8 @@ function AppContent() {
 
   return (
     <>
-    {/* {isAuthenticated && <FloatingActivityTimer />} */}
-      {isAuthenticated }
+      {/* {isAuthenticated && <FloatingActivityTimer />} */}
+      {isAuthenticated}
       <Routes>
         {routes.map((route) => {
           if (route.isPrivate) {
