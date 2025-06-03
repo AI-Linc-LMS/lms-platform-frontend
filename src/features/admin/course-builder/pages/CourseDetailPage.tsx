@@ -266,7 +266,7 @@ const CourseDetailPage: React.FC = () => {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-8">
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col  gap-4">
           <button
             onClick={() => navigate("/admin/courses")}
             className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
