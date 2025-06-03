@@ -58,11 +58,12 @@ const CourseDetailPage: React.FC = () => {
     queryKey: ["courseDetails", courseId],
     queryFn: () => viewCourseDetails(clientId, Number(courseId)),
   });
+
+
   const [isPublished, setIsPublished] = useState<boolean>(
     courseDetails?.published || false
   );
 
-  console.log("courseDetails", courseDetails);
 
   // Delete course mutation
   const deleteCourseMutation = useMutation({
@@ -347,7 +348,7 @@ const CourseDetailPage: React.FC = () => {
                 className="px-4 py-2 bg-[#17627A] hover:bg-[#124F65] text-white rounded-md transition"
                 onClick={handlePublish}
               >
-                {isPublished ? "Published" : "Publish"}
+                {courseDetails?.published ? "Published" : "Publish"}
               </button>
             </div>
           </div>
