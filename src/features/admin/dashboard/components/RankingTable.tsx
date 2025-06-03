@@ -108,7 +108,7 @@ const data = [
   
 
   return (
-    <div className="flex flex-col transition-all duration-300 rounded-3xl">
+    <div className="flex flex-col transition-all duration-300 px-4">
       <h2 className="text-xl font-semibold text-[#255C79] mb-3">
         Student Ranking
       </h2>
