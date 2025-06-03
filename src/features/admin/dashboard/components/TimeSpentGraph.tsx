@@ -58,7 +58,7 @@ const HorizontalLines = ({ xAxisMap, yAxisMap }: any) => {
 const TimeSpentGraph = () => {
   // State to track the start index of visible data window
   const [startIndex, setStartIndex] = useState(0);
-  const windowSize = 10;
+  const windowSize = 8;
 
   // Clamp startIndex so that window stays within data range
   const maxStartIndex = Math.max(0, dummyData.length - windowSize);
@@ -79,9 +79,9 @@ const TimeSpentGraph = () => {
   };
 
   return (
-    <div className="rounded-2xl border border-[#E3ECF5] bg-white p-4 md:p-6 w-full max-w-[700px] max-h-[370px]">
+    <div className="rounded-2xl bg-white p-4 md:p-6 w-full max-w-[600px] max-h-[370px] ring-1 ring-[#B9E4F2] ring-offset-1">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl md:text-2xl font-semibold text-[#1A3C57]">
+        <h2 className="text-xl font-bold mb-4 text-[#255C79]">
           Total Time Spent by Students →
         </h2>
         <div className="flex items-center gap-2">
