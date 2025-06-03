@@ -1,6 +1,6 @@
-import sunIcon from '../commonComponents/icons/nav/sunIcon.png'; 
+import sunIcon from '../commonComponents/icons/nav/sunIcon.png';
 import bellIcon from '../commonComponents/icons/nav/BellIcon.png';
-import userImg from '../commonComponents/icons/nav/User Image.png'; 
+import userImg from '../commonComponents/icons/nav/User Image.png';
 import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../redux/slices/userSlice';
@@ -20,7 +20,7 @@ const TopNav: React.FC = () => {
   const user = useSelector((state: { user: UserState }) => state.user);
   const profilePicture = user.profile_picture;
   const userId = user.id;
-  
+
   const toggleDropdown = () => {
     setShowDropdown((prev) => !prev);
   };
@@ -39,29 +39,29 @@ const TopNav: React.FC = () => {
         iframe.style.display = 'none';
         iframe.src = '/login';
         document.body.appendChild(iframe);
-        
+
         // Clear all localStorage items
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('tokenTimestamp');
-        
+
         // Clear Redux state
         dispatch(logout());
-        
+
         // Give time for the iframe to load and state to clear
         setTimeout(() => {
           document.body.removeChild(iframe);
           resolve();
         }, 200);
       });
-      
+
       // Wait for cleanup to complete
       await cleanupPromise;
-      
+
       // Use history API directly for a cleaner transition
       window.history.replaceState(null, '', '/login');
       window.location.reload();
-      
+
     } catch (error) {
       console.error('Error during logout:', error);
       // Fallback to direct navigation if something goes wrong
@@ -89,11 +89,11 @@ const TopNav: React.FC = () => {
   // Add unique query parameter to profile picture URL to prevent caching
   const getProfilePictureUrl = () => {
     if (!profilePicture) return userImg;
-    
+
     // If the URL already contains a query parameter, append a timestamp
     const hasQueryParams = profilePicture.includes('?');
     const separator = hasQueryParams ? '&' : '?';
-    
+
     // Add userId as part of the cache-busting strategy
     return `${profilePicture}${separator}uid=${userId}&t=${Date.now()}`;
   };
@@ -110,8 +110,8 @@ const TopNav: React.FC = () => {
 
       <div className="flex items-center gap-5">
         {/* Admin Button - Visible to all users */}
-        <Link 
-          to="/admin/courses" 
+        <Link
+          to="/admin/dashboard"
           className="bg-[#17627A] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#124F65] transition-colors"
         >
           Admin
