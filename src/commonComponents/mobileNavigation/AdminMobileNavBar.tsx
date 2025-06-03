@@ -24,6 +24,18 @@ const AdminMobileNavBar = () => {
           isActive={isActive('/admin/dashboard')}
         />
         <NavItem 
+          to="/admin/manage-students" 
+          icon={
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M16 13.5C16 14.8261 16.5268 16.0979 17.4645 17.0355C18.4021 17.9732 19.6739 18.5 21 18.5C22.3261 18.5 23.5979 17.9732 24.5355 17.0355C25.4732 16.0979 26 14.8261 26 13.5C26 12.1739 25.4732 10.9021 24.5355 9.96447C23.5979 9.02678 22.3261 8.5 21 8.5C19.6739 8.5 18.4021 9.02678 17.4645 9.96447C16.5268 10.9021 16 12.1739 16 13.5Z" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M28.5 17.25C30.5711 17.25 32.25 15.8509 32.25 14.125C32.25 12.3991 30.5711 11 28.5 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M13.5 17.25C11.4289 17.25 9.75 15.8509 9.75 14.125C9.75 12.3991 11.4289 11 13.5 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          } 
+          label="Students" 
+          isActive={isActive('/admin/manage-students')}
+        />
+        <NavItem 
           to="/admin/courses" 
           icon={
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
