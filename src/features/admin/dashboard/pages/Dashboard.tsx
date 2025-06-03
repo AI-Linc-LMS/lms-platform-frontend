@@ -104,6 +104,7 @@ const Dashboard = () => {
           </div>
         ))}
       </div>
+      <div className="h-1 border-t border-[#D9E8FF] my-5"></div>
       <div className="flex gap-4 my-4">
         <TimeSpentGraph/>
         <StudentDailyActivityChart/>
