@@ -74,7 +74,7 @@ const AddVideoContent: React.FC<AddVideoContentProps> = ({
         {/* Back Button */}
         <button
           onClick={onBack}
-          className="text-sm font-medium mb-6 flex items-center"
+          className="text-sm font-medium mb-6 flex items-center mt-4"
           disabled={uploadMutation.isPending}
         >
           <img src={backIcon} alt="Back" className="w-3 h-2 mr-2" />
