@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useTopicForm } from '../hooks/useTopicForm';
 import { Topic } from '../types/course';
 
@@ -10,12 +10,46 @@ interface AddTopicModalProps {
 
 export const AddTopicModal: React.FC<AddTopicModalProps> = ({ isOpen, onClose, onSubmit }) => {
   const modalRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const { formData, handleInputChange, handleSubmit } = useTopicForm(onSubmit);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Generate weeks dynamically (1-20)
+  const generateWeekOptions = () => {
+    const weeks = [];
+    for (let i = 1; i <= 20; i++) {
+      weeks.push({
+        value: i.toString(),
+        label: `Week ${i}`
+      });
+    }
+    return weeks;
+  };
+
+  const weekOptions = generateWeekOptions();
+
+  const handleWeekSelect = (weekValue: string) => {
+    handleInputChange({
+      target: {
+        name: 'week',
+        value: weekValue
+      }
+    } as React.ChangeEvent<HTMLInputElement>);
+    setIsDropdownOpen(false);
+  };
+
+  const getSelectedWeekLabel = () => {
+    if (!formData.week) return 'Choose a week';
+    return `Week ${formData.week}`;
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
         onClose();
+      }
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
       }
     };
 
@@ -56,28 +90,52 @@ export const AddTopicModal: React.FC<AddTopicModalProps> = ({ isOpen, onClose, o
               <label className="block text-gray-700 text-lg font-medium mb-2">
                 Choose Week<span className="text-red-500">*</span>
               </label>
-              <div className="relative">
-                <select
-                  name="week"
-                  value={formData.week}
-                  onChange={handleInputChange}
-                  className="w-full p-3 border border-gray-300 rounded-md bg-white appearance-none pr-8"
-                  required
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="w-full p-3 border border-gray-300 rounded-md bg-white text-left flex justify-between items-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#17627A] focus:border-transparent"
                 >
-                  <option value="">Choose a week</option>
-                  <option value="1">Week 1</option>
-                  <option value="2">Week 2</option>
-                  <option value="3">Week 3</option>
-                  <option value="4">Week 4</option>
-                  <option value="5">Week 5</option>
-                  <option value="6">Week 6</option>
-                </select>
-                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <span className={formData.week ? 'text-gray-900' : 'text-gray-500'}>
+                    {getSelectedWeekLabel()}
+                  </span>
+                  <svg 
+                    className={`w-5 h-5 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                   </svg>
-                </div>
+                </button>
+                
+                {isDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+                    {weekOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => handleWeekSelect(option.value)}
+                        className={`w-full text-left px-3 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none ${
+                          formData.week === option.value ? 'bg-[#17627A] text-white hover:bg-[#124F65]' : 'text-gray-900'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
+              <p className="text-sm text-gray-500 mt-1">
+                Select from weeks 1-20. Scroll to see all options.
+              </p>
+              {/* Hidden input for form validation */}
+              <input
+                type="hidden"
+                name="week"
+                value={formData.week}
+                required
+              />
             </div>
 
             <div className="mb-6">
