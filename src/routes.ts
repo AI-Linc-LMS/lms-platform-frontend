@@ -19,7 +19,7 @@ export interface RouteConfig {
   path: string;
   component: React.ComponentType;
   isPrivate: boolean;
-  requiredPermissions?: string[];
+  requiredRole?: string;
 }
 
 const routes: RouteConfig[] = [
@@ -82,21 +82,25 @@ const routes: RouteConfig[] = [
     path: "/admin/courses",
     component: CourseBuilder,
     isPrivate: true,
+    requiredRole: "admin",
   },
   {
     path: "/admin/dashboard",
     component: Dashboard,
     isPrivate: true,
+    requiredRole: "admin",
   },
   {
     path: "/admin/manage-students",
     component: ManageStudents,
     isPrivate: true,
+    requiredRole: "admin",
   },
   {
     path: "/admin/courses/:courseId",
     component: AdminCourseDetailPage,
     isPrivate: true,
+    requiredRole: "admin",
   },
   {
     path: "/continue-learning",

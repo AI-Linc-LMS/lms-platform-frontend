@@ -9,6 +9,7 @@ import useUserActivityTracking from "./hooks/useUserActivityTracking";
 import { setupActivitySyncListeners } from "./utils/userActivitySync";
 import { ToastProvider } from "./contexts/ToastContext";
 import { ToastContainer } from "./components/ToastContainer";
+import AdminRoute from "./commonComponents/private-route/AdminRoute";
 // import FloatingActivityTimer from "./components/FloatingActivityTimer";
 
 function App() {
@@ -244,7 +245,18 @@ function AppContent() {
                   </Container>
                 }
               >
-                <Route index element={<route.component />} />
+                <Route 
+                  index 
+                  element={
+                    route.requiredRole === 'admin' ? (
+                      <AdminRoute>
+                        <route.component />
+                      </AdminRoute>
+                    ) : (
+                      <route.component />
+                    )
+                  } 
+                />
               </Route>
             );
           }
