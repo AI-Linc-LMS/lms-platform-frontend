@@ -3,6 +3,7 @@ import backIcon from "../../../../../commonComponents/icons/admin/content/backIc
 import { useMutation } from "@tanstack/react-query";
 import { uploadContent } from "../../../../../services/admin/contentApis";
 import { useToast } from "../../../../../contexts/ToastContext";
+import RichTextEditor from "../RichTextEditor";
 
 interface AddVideoContentProps {
   onBack: () => void;
@@ -13,6 +14,7 @@ interface VideoContentData {
   title: string;
   marks: number;
   video_url: string;
+  description?: string;
 }
 
 const AddVideoContent: React.FC<AddVideoContentProps> = ({
@@ -23,6 +25,7 @@ const AddVideoContent: React.FC<AddVideoContentProps> = ({
   const [title, setTitle] = useState("");
   const [marks, setMarks] = useState("");
   const [video_url, setVideo_url] = useState("");
+  const [description, setDescription] = useState("");
 
   const uploadMutation = useMutation({
     mutationFn: (data: VideoContentData) =>
@@ -54,11 +57,13 @@ const AddVideoContent: React.FC<AddVideoContentProps> = ({
       showError("Validation Error", "Please enter marks");
       return;
     }
-    console.log(title, marks, video_url);
+    
+    console.log(title, marks, video_url, description);
     const contentData: VideoContentData = {
       title: title.trim(),
       marks: parseInt(marks, 10),
       video_url: video_url.trim(),
+      description: description.trim() || undefined,
     };
     uploadMutation.mutate(contentData);
   };
@@ -69,51 +74,80 @@ const AddVideoContent: React.FC<AddVideoContentProps> = ({
       <button
         onClick={onBack}
         className="text-sm font-medium mb-4 flex items-center"
+        disabled={uploadMutation.isPending}
       >
         <img src={backIcon} alt="Back" className="w-3 h-2 mr-2" />
         Back to Content Library
       </button>
 
-      {/* Title & Marks */}
-      <div className="border border-gray-300 rounded-lg p-2 px-4 space-y-4">
+      {/* Header */}
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold text-gray-800">
+          Add Video Tutorial
+        </h2>
+        <p className="text-sm text-gray-600">
+          Create a new video tutorial with rich description
+        </p>
+      </div>
+
+      {/* Form Content */}
+      <div className="border border-gray-300 rounded-lg p-4 space-y-6">
+        {/* Title & Marks */}
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <label className="text-sm font-medium text-gray-700">
-              Video Title
+              Video Title<span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              placeholder="Enter title here"
+              placeholder="Enter video title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
+              disabled={uploadMutation.isPending}
             />
           </div>
           <div className="w-full md:w-1/3">
-            <label className="text-sm font-medium text-gray-700">Marks</label>
+            <label className="text-sm font-medium text-gray-700">
+              Marks<span className="text-red-500">*</span>
+            </label>
             <input
               type="number"
-              placeholder="Enter Marks"
+              placeholder="Enter marks"
               value={marks}
               onChange={(e) => setMarks(e.target.value)}
               className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
+              disabled={uploadMutation.isPending}
             />
           </div>
         </div>
 
-        {/* Video video_url */}
+        {/* Video URL */}
         <div>
           <label className="text-sm font-medium text-gray-700">
-            Paste the video_url to the Video
+            Video URL<span className="text-red-500">*</span>
           </label>
           <input
-            type="text"
-            placeholder="Enter video_url here"
+            type="url"
+            placeholder="Enter video URL (YouTube, Vimeo, etc.)"
             value={video_url}
             onChange={(e) => setVideo_url(e.target.value)}
             className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
+            disabled={uploadMutation.isPending}
           />
+          <p className="text-xs text-gray-500 mt-1">
+            Supported formats: YouTube, Vimeo, or direct video file URLs
+          </p>
         </div>
+
+        {/* Description with Rich Text Editor */}
+        <RichTextEditor
+          value={description}
+          onChange={setDescription}
+          placeholder="Enter a detailed description of the video content..."
+          label="Video Description"
+          disabled={uploadMutation.isPending}
+        />
 
         {/* OR Divider */}
         <div className="flex items-center justify-center gap-2">
@@ -124,20 +158,35 @@ const AddVideoContent: React.FC<AddVideoContentProps> = ({
 
         {/* Upload Box */}
         <div className="border border-gray-300 rounded-lg flex flex-col items-center justify-center py-10 text-center">
-          <div className="bg-blue-100 w-12 h-12 rounded-full mb-2">
-            <span className="text-4xl font-bold text-[#255C79]">+</span>
+          <div className="bg-blue-100 w-12 h-12 rounded-full mb-2 flex items-center justify-center">
+            <span className="text-2xl font-bold text-[#255C79]">+</span>
           </div>
           <p className="text-sm font-medium">Drag or Upload the file</p>
           <p className="text-xs text-gray-400">File Size Limit: 1GB</p>
         </div>
 
-        {/* Save Button */}
-        <div className="flex justify-end">
+        {/* Action Buttons */}
+        <div className="flex justify-end gap-3">
           <button
-            className="px-6 py-2 bg-[#255C79] text-white rounded-xl transition"
-            onClick={handleSave}
+            onClick={onBack}
+            className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+            disabled={uploadMutation.isPending}
           >
-            Save Content
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={uploadMutation.isPending}
+            className="px-6 py-2 text-sm font-medium text-white bg-[#255C79] border border-transparent rounded-lg hover:bg-[#1e4a61] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#255C79] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {uploadMutation.isPending ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Saving...
+              </div>
+            ) : (
+              "Save Video"
+            )}
           </button>
         </div>
       </div>
