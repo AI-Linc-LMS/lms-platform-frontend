@@ -21,7 +21,7 @@ const TopNav: React.FC = () => {
   const user = useSelector((state: { user: UserState }) => state.user);
   const profilePicture = user.profile_picture;
   const userId = user.id;
-  const { isAdmin } = useRole();
+  const { isAdminOrInstructor } = useRole();
 
   const toggleDropdown = () => {
     setShowDropdown((prev) => !prev);
@@ -111,8 +111,8 @@ const TopNav: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-5">
-        {/* Admin Button - Only visible to admin users */}
-        {isAdmin && (
+        {/* Admin Button - Only visible to admin and instructor users */}
+        {isAdminOrInstructor && (
           <Link
             to="/admin/dashboard"
             className="bg-[#17627A] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#124F65] transition-colors"

@@ -25,14 +25,14 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
   
-  // If user is authenticated but not admin, show access denied
-  if (user.role !== 'admin') {
-    console.log('AdminRoute - User is not admin, showing access denied');
+  // If user is authenticated but not admin or instructor, show access denied
+  if (user.role !== 'admin' && user.role !== 'instructor') {
+    console.log('AdminRoute - User is not admin or instructor, showing access denied');
     return <AccessDenied />;
   }
   
-  console.log('AdminRoute - User is admin, allowing access');
-  // If user is admin, render the protected component
+  console.log('AdminRoute - User is admin or instructor, allowing access');
+  // If user is admin or instructor, render the protected component
   return <>{children}</>;
 };
 

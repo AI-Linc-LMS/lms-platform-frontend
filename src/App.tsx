@@ -248,7 +248,7 @@ function AppContent() {
                 <Route 
                   index 
                   element={
-                    route.requiredRole === 'admin' ? (
+                    route.requiredRole === 'admin_or_instructor' ? (
                       <AdminRoute>
                         <route.component />
                       </AdminRoute>

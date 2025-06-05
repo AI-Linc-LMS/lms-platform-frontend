@@ -14,7 +14,7 @@ const AccessDenied: React.FC = () => {
         <div className="text-6xl mb-4">🚫</div>
         <h1 className="text-3xl font-bold text-[#1A5A7A] mb-4">Access Denied</h1>
         <p className="text-gray-600 mb-6">
-          You don't have permission to access this page. This area is restricted to administrators only.
+          You don't have permission to access this page. This area is restricted to administrators and instructors only.
         </p>
         <button
           onClick={handleGoHome}
