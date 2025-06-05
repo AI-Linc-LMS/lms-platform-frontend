@@ -481,6 +481,7 @@ export interface VideoContentUpdateData {
   title: string;
   marks: number;
   video_url: string;
+  description?: string;
 }
 
 export interface ArticleContentUpdateData {
