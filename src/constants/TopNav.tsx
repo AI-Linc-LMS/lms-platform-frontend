@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../redux/slices/userSlice';
 import { useNavigate, Link } from 'react-router-dom';
+import { useRole } from '../hooks/useRole';
 
 interface UserState {
   profile_picture?: string;
@@ -20,6 +21,7 @@ const TopNav: React.FC = () => {
   const user = useSelector((state: { user: UserState }) => state.user);
   const profilePicture = user.profile_picture;
   const userId = user.id;
+  const { isAdminOrInstructor } = useRole();
 
   const toggleDropdown = () => {
     setShowDropdown((prev) => !prev);
@@ -109,13 +111,15 @@ const TopNav: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-5">
-        {/* Admin Button - Visible to all users */}
-        <Link
-          to="/admin/dashboard"
-          className="bg-[#17627A] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#124F65] transition-colors"
-        >
-          Admin
-        </Link>
+        {/* Admin Button - Only visible to admin and instructor users */}
+        {isAdminOrInstructor && (
+          <Link
+            to="/admin/dashboard"
+            className="bg-[#17627A] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#124F65] transition-colors"
+          >
+            Admin
+          </Link>
+        )}
         <div className="bg-gray-100 p-2 rounded-md">
           <img src={sunIcon} alt="Loading" className="w-7 h-7" />
         </div>
