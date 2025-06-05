@@ -291,7 +291,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           onInput={handleInput}
           onFocus={focusEditor}
           onBlur={handleBlur}
-          className={`w-full min-h-[120px] p-3 border border-gray-300 rounded-b focus:outline-none focus:ring-1 focus:ring-gray-500 ${
+          className={`w-full min-h-[120px] max-h-[300px] overflow-y-auto p-3 border border-gray-300 rounded-b focus:outline-none focus:ring-1 focus:ring-gray-500 ${
             disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
           }`}
           style={{ fontSize: `${fontSize}px`, color: textColor }}
