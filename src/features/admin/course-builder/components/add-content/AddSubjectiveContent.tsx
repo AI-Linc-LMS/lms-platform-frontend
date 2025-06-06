@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { uploadContent } from "../../../../../services/admin/contentApis";
+import { useToast } from "../../../../../contexts/ToastContext";
 
 interface AddSubjectiveContentProps {
   onBack: () => void;
@@ -21,6 +22,7 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
   clientId,
 }) => {
   const queryClient = useQueryClient();
+  const { success, error: showError } = useToast();
   const [title, setTitle] = useState("");
   const [marks, setMarks] = useState("");
   const [difficultyLevel, setDifficultyLevel] = useState<
@@ -41,7 +43,7 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
     mutationFn: (data: SubjectiveContentData) =>
       uploadContent(clientId, "assignments", data),
     onSuccess: () => {
-      alert("Assignment content saved!");
+      success("Assignment Saved", "Assignment content has been successfully uploaded!");
       
       // Invalidate all content-related queries to refresh the UI
       queryClient.invalidateQueries({
@@ -59,24 +61,24 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
       onBack();
     },
     onError: (error: Error) => {
-      alert(error.message || "Failed to save assignment content");
+      showError("Upload Failed", error.message || "Failed to save assignment content");
     },
   });
 
   const handleSave = () => {
     // Save logic here: send data to backend or store in state
     if (!title.trim()) {
-      alert("Please enter a title");
+      showError("Validation Error", "Please enter a title");
       return;
     }
 
     if (!question.trim()) {
-      alert("Please enter question");
+      showError("Validation Error", "Please enter question");
       return;
     }
 
     if (!marks.trim()) {
-      alert("Please enter marks");
+      showError("Validation Error", "Please enter marks");
       return;
     }
     console.log(title, marks, question);

@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { uploadContent } from "../../../../../services/admin/contentApis";
+import { useToast } from "../../../../../contexts/ToastContext";
 
 interface AddProblemContentProps {
   onBack: () => void;
@@ -27,6 +28,7 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
   clientId,
 }) => {
   const queryClient = useQueryClient();
+  const { success, error: showError } = useToast();
   const [title, setTitle] = useState("");
   const [level, setLevel] = useState("");
   const [topic, setTopic] = useState("");
@@ -117,7 +119,7 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
       uploadContent(clientId, "coding-problems", data),
 
     onSuccess: () => {
-      alert("Problem content saved!");
+      success("Problem Saved", "Coding problem content has been successfully uploaded!");
       
       // Invalidate all content-related queries to refresh the UI
       queryClient.invalidateQueries({
@@ -135,13 +137,13 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
       onBack();
     },
     onError: (error: Error) => {
-      alert(error.message || "Failed to save problem content");
+      showError("Upload Failed", error.message || "Failed to save problem content");
     },
   });
 
   const handleSave = () => {
     if (testCaseError) {
-      alert("Please fix the test cases format before saving");
+      showError("Validation Error", "Please fix the test cases format before saving");
       return;
     }
 
@@ -154,7 +156,7 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
       marks === "" ||
       !statement.trim()
     ) {
-      alert("Please fill all the fields before saving");
+      showError("Validation Error", "Please fill all the fields before saving");
       return;
     }
 

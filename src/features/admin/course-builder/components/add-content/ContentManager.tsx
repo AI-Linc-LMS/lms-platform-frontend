@@ -11,6 +11,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ContentData } from "../../../../../services/admin/courseApis";
 import { addSubmoduleContent, getSubmoduleContent } from "../../../../../services/admin/courseApis";
 import { ContentIdType } from "../../../../../services/admin/contentApis";
+import { useToast } from "../../../../../contexts/ToastContext";
 
 const contentIdFieldMap: Record<TabKey, ContentIdType | undefined> = {
   videos: "video_content",
@@ -37,6 +38,7 @@ const ContentManager: React.FC<{
 }> = ({ tabKey, courseId, submoduleId }) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const queryClient = useQueryClient();
+  const { success, error: showError } = useToast();
   const [showAddNew, setShowAddNew] = useState(false);
   const [autoTriggerSave, setAutoTriggerSave] = useState(false);
   const [selectedContentId, setSelectedContentId] = useState<number | null>(
@@ -58,7 +60,7 @@ const ContentManager: React.FC<{
     mutationFn: (data: ContentData) =>
       addSubmoduleContent(clientId, courseId, submoduleId, data),
     onSuccess: () => {
-      alert("Content saved!");
+      success("Content Saved", "Content has been successfully added to the submodule!");
       setShowAddNew(false);
       
       // Invalidate and refetch relevant queries to update the UI immediately
@@ -77,7 +79,7 @@ const ContentManager: React.FC<{
       });
     },
     onError: (error: Error) => {
-      alert(error.message || "Failed to save content");
+      showError("Save Failed", error.message || "Failed to save content");
     },
   });
 
