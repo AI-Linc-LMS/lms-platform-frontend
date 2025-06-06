@@ -1,7 +1,8 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { uploadContent } from "../../../../../services/admin/contentApis";
+import { useToast } from "../../../../../contexts/ToastContext";
 
 interface AddProblemContentProps {
   onBack: () => void;
@@ -26,33 +27,46 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
   onBack,
   clientId,
 }) => {
+  const queryClient = useQueryClient();
+  const { success, error: showError } = useToast();
   const [title, setTitle] = useState("");
   const [level, setLevel] = useState("");
   const [topic, setTopic] = useState("");
   const [languages, setLanguages] = useState<string[]>([]);
   const [testCases, setTestCases] = useState<TestCase[]>([]);
-  const [testCaseError, setTestCaseError] = useState<string>("");
+  const [testCaseError, setTestCaseError] = useState("");
   const [marks, setMarks] = useState("");
-  const editorRef = useRef<HTMLDivElement>(null);
+  const [statement, setStatement] = useState("");
+  const [showPlaceholder, setShowPlaceholder] = useState(true);
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [fontSizeDropdownOpen, setFontSizeDropdownOpen] = useState(false);
   const [fontSize, setFontSize] = useState<number>(14);
   const [textColor, setTextColor] = useState("#2D3748");
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const [statement, setStatement] = useState("");
-  const [showPlaceholder, setShowPlaceholder] = useState(true);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const languageDropdownRef = useRef<HTMLDivElement>(null);
   const fontSizeDropdownRef = useRef<HTMLDivElement>(null);
   const colorPickerRef = useRef<HTMLDivElement>(null);
-  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
-  const languageDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Add click outside handler
-  React.useEffect(() => {
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         languageDropdownRef.current &&
         !languageDropdownRef.current.contains(event.target as Node)
       ) {
         setShowLanguageDropdown(false);
+      }
+      if (
+        fontSizeDropdownRef.current &&
+        !fontSizeDropdownRef.current.contains(event.target as Node)
+      ) {
+        setFontSizeDropdownOpen(false);
+      }
+      if (
+        colorPickerRef.current &&
+        !colorPickerRef.current.contains(event.target as Node)
+      ) {
+        setShowColorPicker(false);
       }
     };
 
@@ -69,16 +83,18 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
         setTestCaseError("Test cases must be an array");
         return false;
       }
-
       for (const testCase of parsed) {
-        if (!testCase.input || !testCase.expected_output) {
+        if (
+          typeof testCase !== "object" ||
+          !Object.prototype.hasOwnProperty.call(testCase, "input") ||
+          !Object.prototype.hasOwnProperty.call(testCase, "expected_output")
+        ) {
           setTestCaseError(
             "Each test case must have 'input' and 'expected_output' fields"
           );
           return false;
         }
       }
-
       setTestCases(parsed);
       setTestCaseError("");
       return true;
@@ -90,12 +106,12 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
 
   const handleTestCasesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
-    if (!value.trim()) {
+    if (value.trim()) {
+      validateTestCases(value);
+    } else {
       setTestCases([]);
       setTestCaseError("");
-      return;
     }
-    validateTestCases(value);
   };
 
   const uploadMutation = useMutation({
@@ -103,17 +119,31 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
       uploadContent(clientId, "coding-problems", data),
 
     onSuccess: () => {
-      alert("Problem content saved!");
+      success("Problem Saved", "Coding problem content has been successfully uploaded!");
+      
+      // Invalidate all content-related queries to refresh the UI
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey;
+          return (
+            queryKey.includes("submodule-content") ||
+            queryKey.includes("submodule") ||
+            queryKey.includes("course-modules") ||
+            queryKey.includes("coding-problems")
+          );
+        },
+      });
+      
       onBack();
     },
     onError: (error: Error) => {
-      alert(error.message || "Failed to save problem content");
+      showError("Upload Failed", error.message || "Failed to save problem content");
     },
   });
 
   const handleSave = () => {
     if (testCaseError) {
-      alert("Please fix the test cases format before saving");
+      showError("Validation Error", "Please fix the test cases format before saving");
       return;
     }
 
@@ -126,7 +156,7 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
       marks === "" ||
       !statement.trim()
     ) {
-      alert("Please fill all the fields before saving");
+      showError("Validation Error", "Please fill all the fields before saving");
       return;
     }
 

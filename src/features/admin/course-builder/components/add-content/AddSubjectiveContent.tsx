@@ -1,7 +1,8 @@
 import React, { useRef, useState } from "react";
 import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { uploadContent } from "../../../../../services/admin/contentApis";
+import { useToast } from "../../../../../contexts/ToastContext";
 
 interface AddSubjectiveContentProps {
   onBack: () => void;
@@ -20,6 +21,8 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
   onBack,
   clientId,
 }) => {
+  const queryClient = useQueryClient();
+  const { success, error: showError } = useToast();
   const [title, setTitle] = useState("");
   const [marks, setMarks] = useState("");
   const [difficultyLevel, setDifficultyLevel] = useState<
@@ -39,22 +42,43 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
   const uploadMutation = useMutation({
     mutationFn: (data: SubjectiveContentData) =>
       uploadContent(clientId, "assignments", data),
+    onSuccess: () => {
+      success("Assignment Saved", "Assignment content has been successfully uploaded!");
+      
+      // Invalidate all content-related queries to refresh the UI
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey;
+          return (
+            queryKey.includes("submodule-content") ||
+            queryKey.includes("submodule") ||
+            queryKey.includes("course-modules") ||
+            queryKey.includes("assignments")
+          );
+        },
+      });
+      
+      onBack();
+    },
+    onError: (error: Error) => {
+      showError("Upload Failed", error.message || "Failed to save assignment content");
+    },
   });
 
   const handleSave = () => {
     // Save logic here: send data to backend or store in state
     if (!title.trim()) {
-      alert("Please enter a title");
+      showError("Validation Error", "Please enter a title");
       return;
     }
 
     if (!question.trim()) {
-      alert("Please enter question");
+      showError("Validation Error", "Please enter question");
       return;
     }
 
     if (!marks.trim()) {
-      alert("Please enter marks");
+      showError("Validation Error", "Please enter marks");
       return;
     }
     console.log(title, marks, question);
@@ -68,8 +92,6 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
 
     console.log({ title, marks, question });
     uploadMutation.mutate(contentData);
-
-    alert("Content saved!");
   };
 
   const colorOptions = [
