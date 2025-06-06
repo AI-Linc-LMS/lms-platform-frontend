@@ -5,6 +5,7 @@ import {
   uploadContent,
   getContent,
 } from "../../../../../services/admin/contentApis";
+import { useToast } from "../../../../../contexts/ToastContext";
 
 interface AddQuizContentProps {
   onBack: () => void;
@@ -47,6 +48,7 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
   clientId,
 }) => {
   const queryClient = useQueryClient();
+  const { success, error: showError } = useToast();
   const [mode, setMode] = useState<"create" | "select">("select");
   const [title, setTitle] = useState("");
   const [instructions, setInstructions] = useState("");
@@ -86,7 +88,7 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
     const currentQuestion = questions[activeIndex];
 
     if (!isQuestionValid(currentQuestion)) {
-      alert("Please complete the current question before adding a new one.");
+      showError("Validation Error", "Please complete the current question before adding a new one.");
       return;
     }
 
@@ -120,7 +122,7 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
     mutationFn: (data: Omit<QuizQuestion, "id">) =>
       uploadContent(clientId, "mcqs", data),
     onSuccess: () => {
-      alert("Question saved successfully!");
+      success("Question Saved", "Question has been successfully saved!");
       
       // Invalidate MCQ queries to refresh the question list
       queryClient.invalidateQueries({
@@ -131,14 +133,14 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
       setActiveIndex(0);
     },
     onError: (error: Error) => {
-      alert(error.message || "Failed to save question");
+      showError("Save Failed", error.message || "Failed to save question");
     },
   });
 
   const uploadQuizMutation = useMutation({
     mutationFn: (data: QuizData) => uploadContent(clientId, "quizzes", data),
     onSuccess: () => {
-      alert("Quiz content saved!");
+      success("Quiz Saved", "Quiz content has been successfully uploaded!");
       
       // Invalidate all content-related queries to refresh the UI
       queryClient.invalidateQueries({
@@ -156,13 +158,13 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
       onBack();
     },
     onError: (error: Error) => {
-      alert(error.message || "Failed to save quiz content");
+      showError("Upload Failed", error.message || "Failed to save quiz content");
     },
   });
 
   const handleSaveQuestion = () => {
     if (!isQuestionValid(questions[activeIndex])) {
-      alert("Please fill in all fields for the question.");
+      showError("Validation Error", "Please fill in all fields for the question.");
       return;
     }
 
@@ -171,12 +173,12 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
 
   const handleSaveQuiz = () => {
     if (!title.trim()) {
-      alert("Please enter a title");
+      showError("Validation Error", "Please enter a title");
       return;
     }
 
     if (selectedQuestions.length === 0) {
-      alert("Please select at least one question for the quiz");
+      showError("Validation Error", "Please select at least one question for the quiz");
       return;
     }
 
