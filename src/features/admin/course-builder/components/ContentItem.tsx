@@ -18,7 +18,7 @@ interface ContentItemProps {
 
 const iconMap: Record<string, string> = {
   article: ArticleIcon,
-  video: VideosIcon,
+  videotutorial: VideosIcon,
   codingproblem: ProblemIcon,
   quiz: QuizIcon,
   subjective: SubjectiveIcon,
