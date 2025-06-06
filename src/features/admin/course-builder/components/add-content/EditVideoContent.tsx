@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
-  updateSubmoduleContent,
   getSubmoduleContentById,
   VideoContentUpdateData,
 } from "../../../../../services/admin/courseApis";
