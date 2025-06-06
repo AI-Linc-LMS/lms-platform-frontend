@@ -7,9 +7,9 @@ import AddProblemContent from "./AddProblemContent";
 import AddDevelopmentContent from "./AddDevelopmentContent";
 import AddSubjectiveContent from "./AddSubjectiveContent";
 import AddQuizContent from "./AddQuizContent";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { ContentData } from "../../../../../services/admin/courseApis";
-import { addSubmoduleContent } from "../../../../../services/admin/courseApis";
+import { addSubmoduleContent, getSubmoduleContent } from "../../../../../services/admin/courseApis";
 import { ContentIdType } from "../../../../../services/admin/contentApis";
 
 const contentIdFieldMap: Record<TabKey, ContentIdType | undefined> = {
@@ -46,6 +46,13 @@ const ContentManager: React.FC<{
     title: string;
   } | null>(null);
 
+  // Fetch existing content to determine the next order value
+  const { data: existingContent } = useQuery({
+    queryKey: ["submodule-content", clientId, courseId, submoduleId],
+    queryFn: () => getSubmoduleContent(clientId, courseId, submoduleId),
+    enabled: !!clientId && !!courseId && !!submoduleId,
+  });
+
   const uploadMutation = useMutation({
     mutationFn: (data: ContentData) =>
       addSubmoduleContent(clientId, courseId, submoduleId, data),
@@ -65,11 +72,27 @@ const ContentManager: React.FC<{
   // Helper to get the correct contentId field name
   const getContentIdField = (tabKey: TabKey) => contentIdFieldMap[tabKey];
 
+  // Helper to get the next order value
+  const getNextOrderValue = () => {
+    if (!existingContent || !Array.isArray(existingContent)) {
+      return 1; // Start with 1 if no existing content
+    }
+    
+    // Find the maximum order value and add 1
+    const maxOrder = existingContent.reduce((max, content) => {
+      return Math.max(max, content.order || 0);
+    }, 0);
+    
+    return maxOrder + 1;
+  };
+
   const handleSave = () => {
     const contentIdField = getContentIdField(tabKey);
     const body: Record<string, unknown> = {
       title: selectedContent?.title,
       content_type: contentTypeMap[tabKey],
+      order: getNextOrderValue(),
+      duration_in_minutes: 10, // Default duration, can be updated later
     };
     if (contentIdField) {
       body[contentIdField] = selectedContentId;
