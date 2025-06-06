@@ -1,6 +1,8 @@
 import Sidebar from "../commonComponents/sidebar/Sidebar";
+import AdminSidebar from "../commonComponents/sidebar/AdminSidebar";
 import TopNav from "../constants/TopNav"; 
 import MobileNavBar from "../commonComponents/mobileNavigation/MobileNavBar";
+import AdminMobileNavBar from "../commonComponents/mobileNavigation/AdminMobileNavBar";
 import { useState, useEffect } from "react";
 import { useLocation } from 'react-router-dom';
 
@@ -9,12 +11,17 @@ function Container({ children }: { children: React.ReactNode }) {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false); // Default expanded
   const [showSidebar, setShowSidebar] = useState(true); // Control sidebar visibility
   const [showMobileNav, setShowMobileNav] = useState(true);
+  const [isAdminRoute, setIsAdminRoute] = useState(false);
 
   useEffect(() => {
     // Hide sidebar and mobile nav on CourseTopicDetailPage
     const isCourseTopicPage = location.pathname.includes('/learn/course/');
+    // Check if current route is an admin route
+    const isAdmin = location.pathname.startsWith('/admin');
+    
     setShowSidebar(!isCourseTopicPage);
     setShowMobileNav(!isCourseTopicPage);
+    setIsAdminRoute(isAdmin);
   }, [location.pathname]);
 
   const toggleSidebar = () => {
@@ -29,7 +36,11 @@ function Container({ children }: { children: React.ReactNode }) {
       {/* Sidebar and Navbar */}
       {showSidebar && (
         <nav className="fixed z-[1111] top-0 w-full hidden md:block">
-          <Sidebar isExpanded={isSidebarExpanded} toggleSidebar={toggleSidebar} />
+          {isAdminRoute ? (
+            <AdminSidebar isExpanded={isSidebarExpanded} toggleSidebar={toggleSidebar} />
+          ) : (
+            <Sidebar isExpanded={isSidebarExpanded} toggleSidebar={toggleSidebar} />
+          )}
           {/* <div className="flex flex-col">
             <Navbar isSidebarExpanded={isSidebarExpanded} />
           </div> */}
@@ -46,7 +57,9 @@ function Container({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* Mobile Navigation Bar */}
-      {showMobileNav && <MobileNavBar />}
+      {showMobileNav && (
+        isAdminRoute ? <AdminMobileNavBar /> : <MobileNavBar />
+      )}
     </div>
   );
 }

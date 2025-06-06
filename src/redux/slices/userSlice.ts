@@ -10,6 +10,7 @@ interface UserState {
   full_name: string | null;
   username: string | null;
   profile_picture: string | null;
+  role: string | null;
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
@@ -26,6 +27,7 @@ const initialState: UserState = persistedUser
       username: null,
       isAuthenticated: false,
       profile_picture: null,
+      role: null,
       loading: false,
       error: null,
     };

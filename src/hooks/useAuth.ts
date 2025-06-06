@@ -17,6 +17,9 @@ export const useAuth = () => {
       dispatch(loginStart());
     },
     onSuccess: (data) => {
+      console.log('Login successful, user data:', data.user);
+      console.log('User role:', data.user.role);
+      
       dispatch(loginSuccess({
         user: data.user,
         token: data.access_token
@@ -32,8 +35,11 @@ export const useAuth = () => {
         email: data.user.email,
         full_name: data.user.full_name,
         username: data.user.username,
+        role: data.user.role,
         isAuthenticated: true,
       };
+      
+      console.log('Setting user payload:', userPayload);
       dispatch(setUser(userPayload));
       // Redirect to dashboard or home page
       navigate('/');

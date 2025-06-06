@@ -77,13 +77,19 @@ export const CourseCard = ({
         return count >= 1000 ? (count / 1000).toFixed(1) + 'k' : count;
     };
 
+    // Truncate description if it's too long
+    const truncateDescription = (text: string, maxLength: number = 120) => {
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength).trim() + '...';
+    };
+
     return (
         <div className="flex flex-col">
 
             <div className="rounded-3xl border border-[#80C9E0] p-6 flex flex-col w-full bg-white min-h-[350px]">
 
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">{title}</h2>
-                <p className="text-gray-600 mb-6">{description}</p>
+                <p className="text-gray-600 mb-6">{truncateDescription(description)}</p>
 
                 <div className="flex flex-wrap gap-4 mb-8">
                     <div className="flex items-center gap-2 border border-[#DEE2E6] rounded-xl px-4 py-2">
