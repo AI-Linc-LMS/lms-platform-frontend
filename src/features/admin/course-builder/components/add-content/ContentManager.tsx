@@ -7,10 +7,11 @@ import AddProblemContent from "./AddProblemContent";
 import AddDevelopmentContent from "./AddDevelopmentContent";
 import AddSubjectiveContent from "./AddSubjectiveContent";
 import AddQuizContent from "./AddQuizContent";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ContentData } from "../../../../../services/admin/courseApis";
-import { addSubmoduleContent } from "../../../../../services/admin/courseApis";
+import { addSubmoduleContent, getSubmoduleContent } from "../../../../../services/admin/courseApis";
 import { ContentIdType } from "../../../../../services/admin/contentApis";
+import { useToast } from "../../../../../contexts/ToastContext";
 
 const contentIdFieldMap: Record<TabKey, ContentIdType | undefined> = {
   videos: "video_content",
@@ -36,6 +37,8 @@ const ContentManager: React.FC<{
   submoduleId: number;
 }> = ({ tabKey, courseId, submoduleId }) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const queryClient = useQueryClient();
+  const { success, error: showError } = useToast();
   const [showAddNew, setShowAddNew] = useState(false);
   const [autoTriggerSave, setAutoTriggerSave] = useState(false);
   const [selectedContentId, setSelectedContentId] = useState<number | null>(
@@ -46,15 +49,37 @@ const ContentManager: React.FC<{
     title: string;
   } | null>(null);
 
+  // Fetch existing content to determine the next order value
+  const { data: existingContent } = useQuery({
+    queryKey: ["submodule-content", clientId, courseId, submoduleId],
+    queryFn: () => getSubmoduleContent(clientId, courseId, submoduleId),
+    enabled: !!clientId && !!courseId && !!submoduleId,
+  });
+
   const uploadMutation = useMutation({
     mutationFn: (data: ContentData) =>
       addSubmoduleContent(clientId, courseId, submoduleId, data),
     onSuccess: () => {
-      alert("Content saved!");
+      success("Content Saved", "Content has been successfully added to the submodule!");
       setShowAddNew(false);
+      
+      // Invalidate and refetch relevant queries to update the UI immediately
+      queryClient.invalidateQueries({
+        queryKey: ["submodule-content", clientId, courseId, submoduleId],
+      });
+      
+      // Also invalidate the submodule data query used by the learning interface
+      queryClient.invalidateQueries({
+        queryKey: ["submodule", clientId, courseId, submoduleId],
+      });
+      
+      // Invalidate course modules query to update counts
+      queryClient.invalidateQueries({
+        queryKey: ["course-modules", clientId, courseId],
+      });
     },
     onError: (error: Error) => {
-      alert(error.message || "Failed to save content");
+      showError("Save Failed", error.message || "Failed to save content");
     },
   });
 
@@ -65,11 +90,27 @@ const ContentManager: React.FC<{
   // Helper to get the correct contentId field name
   const getContentIdField = (tabKey: TabKey) => contentIdFieldMap[tabKey];
 
+  // Helper to get the next order value
+  const getNextOrderValue = () => {
+    if (!existingContent || !Array.isArray(existingContent)) {
+      return 1; // Start with 1 if no existing content
+    }
+    
+    // Find the maximum order value and add 1
+    const maxOrder = existingContent.reduce((max, content) => {
+      return Math.max(max, content.order || 0);
+    }, 0);
+    
+    return maxOrder + 1;
+  };
+
   const handleSave = () => {
     const contentIdField = getContentIdField(tabKey);
     const body: Record<string, unknown> = {
       title: selectedContent?.title,
       content_type: contentTypeMap[tabKey],
+      order: getNextOrderValue(),
+      duration_in_minutes: 10, // Default duration, can be updated later
     };
     if (contentIdField) {
       body[contentIdField] = selectedContentId;
