@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { uploadContent } from "../../../../../services/admin/contentApis";
 
 interface AddSubjectiveContentProps {
@@ -20,6 +20,7 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
   onBack,
   clientId,
 }) => {
+  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [marks, setMarks] = useState("");
   const [difficultyLevel, setDifficultyLevel] = useState<
@@ -39,6 +40,27 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
   const uploadMutation = useMutation({
     mutationFn: (data: SubjectiveContentData) =>
       uploadContent(clientId, "assignments", data),
+    onSuccess: () => {
+      alert("Assignment content saved!");
+      
+      // Invalidate all content-related queries to refresh the UI
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey;
+          return (
+            queryKey.includes("submodule-content") ||
+            queryKey.includes("submodule") ||
+            queryKey.includes("course-modules") ||
+            queryKey.includes("assignments")
+          );
+        },
+      });
+      
+      onBack();
+    },
+    onError: (error: Error) => {
+      alert(error.message || "Failed to save assignment content");
+    },
   });
 
   const handleSave = () => {
@@ -68,8 +90,6 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
 
     console.log({ title, marks, question });
     uploadMutation.mutate(contentData);
-
-    alert("Content saved!");
   };
 
   const colorOptions = [

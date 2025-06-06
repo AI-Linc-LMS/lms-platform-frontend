@@ -7,7 +7,7 @@ import AddProblemContent from "./AddProblemContent";
 import AddDevelopmentContent from "./AddDevelopmentContent";
 import AddSubjectiveContent from "./AddSubjectiveContent";
 import AddQuizContent from "./AddQuizContent";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ContentData } from "../../../../../services/admin/courseApis";
 import { addSubmoduleContent, getSubmoduleContent } from "../../../../../services/admin/courseApis";
 import { ContentIdType } from "../../../../../services/admin/contentApis";
@@ -36,6 +36,7 @@ const ContentManager: React.FC<{
   submoduleId: number;
 }> = ({ tabKey, courseId, submoduleId }) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const queryClient = useQueryClient();
   const [showAddNew, setShowAddNew] = useState(false);
   const [autoTriggerSave, setAutoTriggerSave] = useState(false);
   const [selectedContentId, setSelectedContentId] = useState<number | null>(
@@ -59,6 +60,21 @@ const ContentManager: React.FC<{
     onSuccess: () => {
       alert("Content saved!");
       setShowAddNew(false);
+      
+      // Invalidate and refetch relevant queries to update the UI immediately
+      queryClient.invalidateQueries({
+        queryKey: ["submodule-content", clientId, courseId, submoduleId],
+      });
+      
+      // Also invalidate the submodule data query used by the learning interface
+      queryClient.invalidateQueries({
+        queryKey: ["submodule", clientId, courseId, submoduleId],
+      });
+      
+      // Invalidate course modules query to update counts
+      queryClient.invalidateQueries({
+        queryKey: ["course-modules", clientId, courseId],
+      });
     },
     onError: (error: Error) => {
       alert(error.message || "Failed to save content");

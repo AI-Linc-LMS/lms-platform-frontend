@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   uploadContent,
   getContent,
@@ -46,6 +46,7 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
   onBack,
   clientId,
 }) => {
+  const queryClient = useQueryClient();
   const [mode, setMode] = useState<"create" | "select">("select");
   const [title, setTitle] = useState("");
   const [instructions, setInstructions] = useState("");
@@ -120,6 +121,12 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
       uploadContent(clientId, "mcqs", data),
     onSuccess: () => {
       alert("Question saved successfully!");
+      
+      // Invalidate MCQ queries to refresh the question list
+      queryClient.invalidateQueries({
+        queryKey: ["content", clientId, "mcqs"],
+      });
+      
       setQuestions([defaultQuestion()]);
       setActiveIndex(0);
     },
@@ -132,6 +139,20 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
     mutationFn: (data: QuizData) => uploadContent(clientId, "quizzes", data),
     onSuccess: () => {
       alert("Quiz content saved!");
+      
+      // Invalidate all content-related queries to refresh the UI
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey;
+          return (
+            queryKey.includes("submodule-content") ||
+            queryKey.includes("submodule") ||
+            queryKey.includes("course-modules") ||
+            queryKey.includes("quizzes")
+          );
+        },
+      });
+      
       onBack();
     },
     onError: (error: Error) => {

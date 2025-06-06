@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { uploadContent } from "../../../../../services/admin/contentApis";
 import { useToast } from "../../../../../contexts/ToastContext";
 
@@ -22,6 +22,7 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
   clientId,
 }) => {
   const { success, error: showError } = useToast();
+  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [marks, setMarks] = useState("");
   const [difficultyLevel, setDifficultyLevel] = useState<
@@ -43,6 +44,20 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
       uploadContent(clientId, "articles", data),
     onSuccess: () => {
       success("Article Uploaded", "Article content uploaded successfully!");
+      
+      // Invalidate all content-related queries to refresh the UI
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey;
+          return (
+            queryKey.includes("submodule-content") ||
+            queryKey.includes("submodule") ||
+            queryKey.includes("course-modules") ||
+            queryKey.includes("articles")
+          );
+        },
+      });
+      
       onBack();
     },
     onError: (error: Error) => {
