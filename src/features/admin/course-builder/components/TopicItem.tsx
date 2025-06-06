@@ -36,9 +36,13 @@ export const TopicItem: React.FC<TopicItemProps> = ({
   isLoading = false,
   error = null,
 }) => {
-  const clientId = import.meta.env.VITE_CLIENT_ID;
+  const clientId = Number(import.meta.env.VITE_CLIENT_ID);
   const queryClient = useQueryClient();
   const { success, error: showError } = useToast();
+  
+  // Add state for collapsible functionality
+  const [isExpanded, setIsExpanded] = useState(false); // Default to collapsed for cleaner view
+  
   const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("videos");
   const [selectedSubtopicId, setSelectedSubtopicId] = useState<number | null>(
@@ -234,9 +238,34 @@ export const TopicItem: React.FC<TopicItemProps> = ({
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
       <div className="p-4">
+        {/* Collapsible Header */}
         <div className="flex justify-between items-start mb-4">
-          <div className="flex flex-col">
+          <div className="flex flex-col flex-1">
             <div className="flex items-center gap-3">
+              {/* Collapse/Expand Button */}
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="text-gray-500 hover:text-gray-700 transition-colors p-1 rounded-md hover:bg-gray-100"
+                aria-label={isExpanded ? "Collapse topic" : "Expand topic"}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className={`h-5 w-5 transition-transform duration-200 ${
+                    isExpanded ? "rotate-90" : "rotate-0"
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+              
               <h3 className="text-lg font-semibold">{topic.title}</h3>
               <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-md">
                 Week {topic.week}
@@ -258,7 +287,9 @@ export const TopicItem: React.FC<TopicItemProps> = ({
                 </svg>
               </button>
             </div>
-            <p className="text-sm text-gray-500 mt-1">Marks: -</p>
+            <p className="text-sm text-gray-500 mt-1 ml-9">
+              Marks: - | {topic.subtopics.length} subtopic{topic.subtopics.length !== 1 ? 's' : ''}
+            </p>
           </div>
           <div className="flex gap-2">
             <button
@@ -303,7 +334,16 @@ export const TopicItem: React.FC<TopicItemProps> = ({
           </div>
         </div>
 
-        {renderSubtopics()}
+        {/* Collapsible Content */}
+        <div
+          className={`transition-all duration-300 ease-in-out overflow-hidden ${
+            isExpanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
+          }`}
+        >
+          <div className="ml-9">
+            {renderSubtopics()}
+          </div>
+        </div>
       </div>
       {/* Bottom Sheet for Add Content */}
       <BottomSheet
