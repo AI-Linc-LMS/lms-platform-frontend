@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   updateSubmoduleContent,
   getSubmoduleContentById,
@@ -26,6 +26,7 @@ const EditAssignmentContent: React.FC<EditAssignmentContentProps> = ({
   onSuccess,
 }) => {
   const { success, error: showError } = useToast();
+  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [marks, setMarks] = useState("");
   const [description, setDescription] = useState("");
@@ -105,6 +106,24 @@ const EditAssignmentContent: React.FC<EditAssignmentContentProps> = ({
     onSuccess: () => {
       console.log("✅ Assignment updated successfully!");
       success("Assignment Updated", "Assignment content updated successfully!");
+      
+      // Invalidate all relevant queries to refresh the UI
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey;
+          return (
+            queryKey.includes("submodule-content") ||
+            queryKey.includes("submodule") ||
+            queryKey.includes("course-modules") ||
+            queryKey.includes("assignments") ||
+            (queryKey.includes("submodule-content-detail") && 
+             queryKey.includes(clientId) && 
+             queryKey.includes(courseId) && 
+             queryKey.includes(submoduleId))
+          );
+        },
+      });
+      
       if (onSuccess) {
         onSuccess();
       }
