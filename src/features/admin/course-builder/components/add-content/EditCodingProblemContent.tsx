@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   updateSubmoduleContent,
   getSubmoduleContentById,
@@ -27,6 +27,7 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
   onSuccess,
 }) => {
   const { success, error: showError } = useToast();
+  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [marks, setMarks] = useState("");
   const [problemStatement, setProblemStatement] = useState("");
@@ -131,6 +132,24 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
         "Coding Problem Updated",
         "Coding problem content updated successfully!"
       );
+      
+      // Invalidate relevant queries to refresh the UI
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey;
+          return (
+            queryKey.includes("submodule-content") ||
+            queryKey.includes("submodules") ||
+            queryKey.includes("course-modules") ||
+            queryKey.includes("coding-problems") ||
+            (queryKey.includes("submodule-content-detail") &&
+              queryKey.includes(clientId) &&
+              queryKey.includes(courseId) &&
+              queryKey.includes(submoduleId))
+          );
+        },
+      });
+      
       if (onSuccess) {
         onSuccess();
       }
