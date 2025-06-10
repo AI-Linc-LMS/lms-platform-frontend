@@ -2,11 +2,10 @@ import React, { useState, useEffect } from "react";
 import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  updateSubmoduleContent,
   getSubmoduleContentById,
   VideoContentUpdateData,
 } from "../../../../../services/admin/courseApis";
-import { getContentById } from "../../../../../services/admin/contentApis";
+import { getContentById, updateContentById } from "../../../../../services/admin/contentApis";
 import { useToast } from "../../../../../contexts/ToastContext";
 import RichTextEditor from "../RichTextEditor";
 
@@ -65,11 +64,14 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
     queryKey: ["video-content-direct", clientId, contentId],
     queryFn: () => {
       console.log("=== FETCHING DIRECT VIDEO DATA ===");
-      return getContentById(clientId, "video-tutorials", contentId);
+      console.log("Video ID:", videoData.video_content);
+      return getContentById(clientId, "video-tutorials", videoData.video_content);
     },
     enabled: !!videoData && !videoData.description && !videoData.details?.description,
   });
-
+  console.log("=== VIDEO DATA FETCHED ===");  
+  console.log("Video Data:", videoData);
+  console.log("Direct Video Data:", directVideoData);
   // Populate form with existing data
   useEffect(() => {
     // Use direct video data if available and has description, otherwise use submodule data
@@ -152,11 +154,10 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
       console.log("Content ID:", contentId);
       console.log("Update data:", data);
 
-      return updateSubmoduleContent(
+      return updateContentById(
         clientId,
-        courseId,
-        submoduleId,
-        contentId,
+        "video-tutorials",
+        videoData.video_content,
         data
       );
     },
