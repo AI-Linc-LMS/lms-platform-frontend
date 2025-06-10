@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import backIcon from "../../../../../commonComponents/icons/admin/content/backIcon.png";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getSubmoduleContentById,
   VideoContentUpdateData,
@@ -27,6 +27,7 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
   onSuccess,
 }) => {
   const { success, error: showError } = useToast();
+  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [marks, setMarks] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
@@ -163,6 +164,25 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
     onSuccess: () => {
       console.log("✅ Video updated successfully!");
       success("Video Updated", "Video content updated successfully!");
+      
+      // Invalidate all relevant queries to refresh the UI
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey;
+          return (
+            queryKey.includes("submodule-content") ||
+            queryKey.includes("submodule") ||
+            queryKey.includes("course-modules") ||
+            queryKey.includes("video-tutorials") ||
+            queryKey.includes("video-content-direct") ||
+            (queryKey.includes("submodule-content-detail") && 
+             queryKey.includes(clientId) && 
+             queryKey.includes(courseId) && 
+             queryKey.includes(submoduleId))
+          );
+        },
+      });
+      
       if (onSuccess) {
         onSuccess();
       }
