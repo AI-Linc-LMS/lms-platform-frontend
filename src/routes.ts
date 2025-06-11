@@ -14,6 +14,8 @@ import ContinueLearningAll from "./features/learn/pages/ContinueLearningAll";
 import RecommendedLearningAll from "./features/learn/pages/RecommendedLearningAll";
 import Dashboard from "./features/admin/dashboard/pages/Dashboard";
 import ManageStudents from "./features/admin/manage-students/pages/ManageStudents";
+import Assessment from "./features/learn/pages/Assessment";
+import ShortAssessment from "./features/learn/pages/ShortAssessment";
 
 export interface RouteConfig {
   path: string;
@@ -51,6 +53,16 @@ const routes: RouteConfig[] = [
   {
     path: "/courses",
     component: Courses,
+    isPrivate: true,
+  },
+  {
+    path: "/assessment",
+    component: Assessment,
+    isPrivate: true,
+  },
+  {
+    path: "/assessment/quiz",
+    component: ShortAssessment,
     isPrivate: true,
   },
   {
