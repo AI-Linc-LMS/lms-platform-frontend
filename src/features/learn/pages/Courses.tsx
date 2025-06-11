@@ -1,11 +1,14 @@
-
+import  { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import { getAllCourse } from '../../../services/enrolled-courses-content/courseContentApis';
 import CourseCard from '../components/courses/CourseCard';
 import EmptyCoursesState from '../components/courses/EmptyCoursesState';
 import MobileFilters from '../components/courses/MobileFilters';
 import DesktopFilters from '../components/courses/DesktopFilters';
 import DesktopSearch from '../components/courses/DesktopSearch';
+import AssessmentBanner from '../components/assessment/AssessmentBanner';
+import AssessmentSuccessNotification from '../components/assessment/AssessmentSuccessNotification';
 import { useCourseFilters } from '../hooks/useCourseFilters';
 import { categoryOptions, levelOptions, priceOptions, ratingOptions } from '../components/courses/FilterOptions';
 import { adaptCourses } from '../utils/courseAdapter';
@@ -13,11 +16,33 @@ import { adaptCourses } from '../utils/courseAdapter';
 // Main component
 const Courses = () => {
   const clientId = Number(import.meta.env.VITE_CLIENT_ID) || 1;
+  const location = useLocation();
+  const [showAssessmentNotification, setShowAssessmentNotification] = useState(false);
+  const [assessmentResults, setAssessmentResults] = useState<{
+    score: number;
+    correctAnswers: number;
+    totalQuestions: number;
+  } | null>(null);
 
   const { data: apiCourses, isLoading, error } = useQuery({
     queryKey: ['all-courses'],
     queryFn: () => getAllCourse(clientId),
   });
+
+  // Check for assessment completion results
+  useEffect(() => {
+    if (location.state?.assessmentCompleted) {
+      setAssessmentResults({
+        score: location.state.score,
+        correctAnswers: location.state.correctAnswers,
+        totalQuestions: location.state.totalQuestions,
+      });
+      setShowAssessmentNotification(true);
+      
+      // Clear the state to prevent showing notification on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Adapt API data to include fields needed for filtering
   const courses = adaptCourses(apiCourses || []);
@@ -64,6 +89,16 @@ const Courses = () => {
 
   return (
     <div className="px-4 md:px-6 py-6">
+      {/* Assessment Success Notification */}
+      {showAssessmentNotification && assessmentResults && (
+        <AssessmentSuccessNotification
+          score={assessmentResults.score}
+          correctAnswers={assessmentResults.correctAnswers}
+          totalQuestions={assessmentResults.totalQuestions}
+          onClose={() => setShowAssessmentNotification(false)}
+        />
+      )}
+
       <div className="mb-6">
         <h1 className="text-[#343A40] font-bold text-[18px] md:text-[22px] font-sans">
           Our Courses
@@ -72,6 +107,9 @@ const Courses = () => {
           {hasNoCourses ? "No courses available at the moment" : "Here's the List of all our Courses"}
         </p>
       </div>
+
+      {/* Assessment Banner */}
+      <AssessmentBanner />
 
       {/* Mobile Filters */}
       <MobileFilters

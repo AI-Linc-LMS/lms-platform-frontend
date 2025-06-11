@@ -7,13 +7,19 @@ import { useEffect, useState } from "react";
 import { useTokenExpirationHandler } from "./hooks/useTokenExpirationHandler";
 import useUserActivityTracking from "./hooks/useUserActivityTracking";
 import { setupActivitySyncListeners } from "./utils/userActivitySync";
+import { ToastProvider } from "./contexts/ToastContext";
+import { ToastContainer } from "./components/ToastContainer";
+import AdminRoute from "./commonComponents/private-route/AdminRoute";
 // import FloatingActivityTimer from "./components/FloatingActivityTimer";
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <ToastProvider>
+      <Router>
+        <AppContent />
+        <ToastContainer />
+      </Router>
+    </ToastProvider>
   );
 }
 
@@ -224,8 +230,8 @@ function AppContent() {
 
   return (
     <>
-    {/* {isAuthenticated && <FloatingActivityTimer />} */}
-      {isAuthenticated }
+      {/* {isAuthenticated && <FloatingActivityTimer />} */}
+      {isAuthenticated}
       <Routes>
         {routes.map((route) => {
           if (route.isPrivate) {
@@ -239,7 +245,18 @@ function AppContent() {
                   </Container>
                 }
               >
-                <Route index element={<route.component />} />
+                <Route 
+                  index 
+                  element={
+                    route.requiredRole === 'admin_or_instructor' ? (
+                      <AdminRoute>
+                        <route.component />
+                      </AdminRoute>
+                    ) : (
+                      <route.component />
+                    )
+                  } 
+                />
               </Route>
             );
           }

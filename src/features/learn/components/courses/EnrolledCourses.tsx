@@ -26,6 +26,13 @@ interface EnrolledCourse extends ReduxCourse {
   };
 }
 
+// Helper function to trim description text
+const trimDescription = (description: string, maxLength: number = 100): string => {
+  if (!description) return "";
+  if (description.length <= maxLength) return description;
+  return description.substring(0, maxLength).trim() + "...";
+};
+
 // Helper function to transform the Redux course type to the CourseCard expected type
 const transformCourseData = (reduxCourse: EnrolledCourse): CardCourse => {
   // Create a module with submodule that contains the stats from the API
@@ -55,10 +62,10 @@ const transformCourseData = (reduxCourse: EnrolledCourse): CardCourse => {
   return {
     id: reduxCourse.id,
     title: reduxCourse.title,
-    description: reduxCourse.description,
+    description: trimDescription(reduxCourse.description),
     course_id: reduxCourse.id,
     course_title: reduxCourse.title,
-    course_description: reduxCourse.description,
+    course_description: trimDescription(reduxCourse.description),
     enrolled_students: reduxCourse.enrolled_students?.length || 0,
     is_certified: reduxCourse.certificate_available || false,
     updated_at: reduxCourse.updated_at,
