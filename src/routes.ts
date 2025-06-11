@@ -7,17 +7,21 @@ import CourseTopicDetailPage from "./features/learn/pages/CourseTopicDetailPage"
 import Login from "./features/auth/pages/Login";
 import ForgotPassword from "./features/auth/pages/ForgotPassword";
 import Signup from "./features/auth/pages/Signup";
-import AdminDashboard from "./features/admin/pages/AdminDashboard";
-import AdminCourseDetailPage from "./features/admin/pages/CourseDetailPage";
+import CourseBuilder from "./features/admin/course-builder/pages/CourseBuilder";
+import AdminCourseDetailPage from "./features/admin/course-builder/pages/CourseDetailPage";
 import Courses from "./features/learn/pages/Courses";
 import ContinueLearningAll from "./features/learn/pages/ContinueLearningAll";
 import RecommendedLearningAll from "./features/learn/pages/RecommendedLearningAll";
+import Dashboard from "./features/admin/dashboard/pages/Dashboard";
+import ManageStudents from "./features/admin/manage-students/pages/ManageStudents";
+import Assessment from "./features/learn/pages/Assessment";
+import ShortAssessment from "./features/learn/pages/ShortAssessment";
 
 export interface RouteConfig {
   path: string;
   component: React.ComponentType;
   isPrivate: boolean;
-  requiredPermissions?: string[];
+  requiredRole?: string;
 }
 
 const routes: RouteConfig[] = [
@@ -52,6 +56,16 @@ const routes: RouteConfig[] = [
     isPrivate: true,
   },
   {
+    path: "/assessment",
+    component: Assessment,
+    isPrivate: true,
+  },
+  {
+    path: "/assessment/quiz",
+    component: ShortAssessment,
+    isPrivate: true,
+  },
+  {
     path: "/live",
     component: Live,
     isPrivate: true,
@@ -78,13 +92,27 @@ const routes: RouteConfig[] = [
   },
   {
     path: "/admin/courses",
-    component: AdminDashboard,
+    component: CourseBuilder,
     isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/dashboard",
+    component: Dashboard,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/manage-students",
+    component: ManageStudents,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
   },
   {
     path: "/admin/courses/:courseId",
     component: AdminCourseDetailPage,
     isPrivate: true,
+    requiredRole: "admin_or_instructor",
   },
   {
     path: "/continue-learning",
