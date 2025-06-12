@@ -15,7 +15,7 @@ const TopNav: React.FC = () => {;
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const user = useSelector((state: { user: UserState }) => state.user);
-  const profilePicture = user.profile_picture;
+  
   const userId = user.id;
   const { isAdminOrInstructor } = useRole();
 
@@ -41,17 +41,7 @@ const TopNav: React.FC = () => {;
   //   };
   // }, []);
 
-  // Add unique query parameter to profile picture URL to prevent caching
-  const getProfilePictureUrl = () => {
-    if (!profilePicture) return userImg;
-
-    // If the URL already contains a query parameter, append a timestamp
-    const hasQueryParams = profilePicture.includes('?');
-    const separator = hasQueryParams ? '&' : '?';
-
-    // Add userId as part of the cache-busting strategy
-    return `${profilePicture}${separator}uid=${userId}&t=${Date.now()}`;
-  };
+  
 
   return (
     <div className="w-full flex justify-between md:justify-end items-center px-4 pt-4">
@@ -81,7 +71,7 @@ const TopNav: React.FC = () => {;
         </div>
         <div className="relative" ref={dropdownRef}>
           <img
-            src={getProfilePictureUrl()}
+            src={user.profile_picture ?? userImg}
             alt="User Avatar"
             className="w-8 h-8 rounded-full object-cover cursor-pointer"
             onClick={toggleDropdown}
