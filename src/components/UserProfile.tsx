@@ -1,36 +1,30 @@
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import userImage from "../commonComponents/icons/nav/User Image.png";
-import { logout } from '../redux/slices/userSlice';
+import { logout } from "../redux/slices/userSlice";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface UserData {
-  name: string;
+  id: string;
+  full_name: string;
   email: string;
   phone: string;
   dob: string;
   gender: string;
-  profileUrl: string;
+  profile_picture: string;
   emailNotification: boolean;
   inAppNotification: boolean;
 }
 
 const ProfileSettings = () => {
-  const userData = {
-    name: "Balbir Yadav",
-    email: "balbir@gmail.com",
-    phone: "9876543210",
-    dob: "1990-01-01",
-    gender: "Male",
-    profileUrl: userImage,
-    emailNotification: true,
-    inAppNotification: true,
-  };
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const userData = useSelector((state: { user: UserData }) => state.user);
   const [editable, setEditable] = useState(false);
   const [formData, setFormData] = useState<UserData>(userData);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -45,53 +39,42 @@ const ProfileSettings = () => {
   };
 
   const handleSave = async () => {
-    console.log("save");
+    setIsSaving(true); // Show loader
+    setEditable(false);
+    await new Promise((resolve) => setTimeout(resolve, 1500)); 
+    console.log("Saved Form Data:", formData);
+    setIsSaving(false); // Hide loader
+    setEditable(false); // Exit edit mode
   };
 
-  const handleLogout = async() => {
-    await Logout();
-  }
   const Logout = async () => {
-    console.log('clicked');
-    // Prevent multiple clicks
     if (isLoggingOut) return;
     setIsLoggingOut(true);
 
     try {
-      // Create a promise that resolves after clearing everything
       const cleanupPromise = new Promise<void>((resolve) => {
-        // Create a hidden iframe for loading the login page in the background
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = '/login';
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = "/login";
         document.body.appendChild(iframe);
 
-        // Clear all localStorage items
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('tokenTimestamp');
-
-        // Clear Redux state
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("tokenTimestamp");
         dispatch(logout());
 
-        // Give time for the iframe to load and state to clear
         setTimeout(() => {
           document.body.removeChild(iframe);
           resolve();
         }, 200);
       });
 
-      // Wait for cleanup to complete
       await cleanupPromise;
-
-      // Use history API directly for a cleaner transition
-      window.history.replaceState(null, '', '/login');
+      window.history.replaceState(null, "", "/login");
       window.location.reload();
-
     } catch (error) {
-      console.error('Error during logout:', error);
-      // Fallback to direct navigation if something goes wrong
-      navigate('/login', { replace: true });
+      console.error("Error during logout:", error);
+      navigate("/login", { replace: true });
     }
   };
 
@@ -106,21 +89,47 @@ const ProfileSettings = () => {
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
             <img
-              src={formData.profileUrl}
+              src={formData.profile_picture ?? userImage}
               alt="Profile"
               className="w-20 h-20 rounded-full object-cover"
             />
             <div>
-              <div className="text-lg font-semibold">{formData.name}</div>
+              <div className="text-lg font-semibold">{formData.full_name}</div>
               <div className="text-sm text-gray-500">{formData.email}</div>
             </div>
           </div>
           <div className="flex justify-end">
             <button
               onClick={() => (editable ? handleSave() : setEditable(true))}
-              className="bg-[#255C79] text-white px-5 py-2 rounded-lg"
+              className="bg-[#255C79] text-white px-5 py-2 rounded-lg flex items-center gap-2"
+              disabled={isSaving}
             >
-              {editable ? "Save" : "Edit"}
+              {isSaving ? (
+                <svg
+                  className="animate-spin h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  ></path>
+                </svg>
+              ) : editable ? (
+                "Save"
+              ) : (
+                "Edit"
+              )}
             </button>
           </div>
         </div>
@@ -131,9 +140,9 @@ const ProfileSettings = () => {
               Name
             </label>
             <input
-              name="name"
+              name="full_name"
               type="text"
-              value={formData.name}
+              value={formData.full_name}
               onChange={handleChange}
               readOnly={!editable}
               className={`mt-1 w-full border rounded px-3 py-2 ${
@@ -165,7 +174,7 @@ const ProfileSettings = () => {
             <input
               name="phone"
               type="text"
-              value={formData.phone}
+              value={formData.phone ?? "9999XXXXXX"}
               onChange={handleChange}
               readOnly={!editable}
               className={`mt-1 w-full border rounded px-3 py-2 ${
@@ -181,7 +190,7 @@ const ProfileSettings = () => {
             <input
               name="dob"
               type="text"
-              value={formData.dob}
+              value={formData.dob ?? "25/05/20XX"}
               onChange={handleChange}
               readOnly={!editable}
               className={`mt-1 w-full border rounded px-3 py-2 ${
@@ -252,14 +261,15 @@ const ProfileSettings = () => {
             </div>
           </div>
         </div>
+
         <div className="flex">
-            <button
-              onClick={() => handleLogout() }
-              className="bg-[#255C79] text-white px-5 py-2 rounded-lg"
-            >
-              Logout
-            </button>
-          </div>
+          <button
+            onClick={() => Logout()}
+            className="bg-[#255C79] text-white px-5 py-2 rounded-lg"
+          >
+            Logout
+          </button>
+        </div>
       </div>
     </div>
   );
