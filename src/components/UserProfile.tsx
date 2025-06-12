@@ -1,5 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
 import userImage from "../commonComponents/icons/nav/User Image.png";
+import editIcon from "../commonComponents/icons/nav/editIcon.png";
 import { logout } from "../redux/slices/userSlice";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -128,7 +129,10 @@ const ProfileSettings = () => {
               ) : editable ? (
                 "Save"
               ) : (
-                "Edit"
+                <>
+                  <img src={editIcon} alt="Edit" className="w-4 h-4"/>
+                  <span>Edit</span>
+                </>
               )}
             </button>
           </div>
