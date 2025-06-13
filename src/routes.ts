@@ -16,6 +16,7 @@ import Dashboard from "./features/admin/dashboard/pages/Dashboard";
 import ManageStudents from "./features/admin/manage-students/pages/ManageStudents";
 import Assessment from "./features/learn/pages/Assessment";
 import ShortAssessment from "./features/learn/pages/ShortAssessment";
+import ProfileSettings from "./components/UserProfile";
 
 export interface RouteConfig {
   path: string;
@@ -124,6 +125,11 @@ const routes: RouteConfig[] = [
     component: RecommendedLearningAll,
     isPrivate: true,
   },
+  {
+    path: "/user-profile",
+    component: ProfileSettings,
+    isPrivate: true,
+  }
 ];
 
 export default routes;
