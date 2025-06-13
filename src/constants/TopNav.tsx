@@ -1,7 +1,7 @@
 import sunIcon from '../commonComponents/icons/nav/sunIcon.png';
 import bellIcon from '../commonComponents/icons/nav/BellIcon.png';
 import userImg from '../commonComponents/icons/nav/User Image.png';
-import { useRef} from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { useRole } from '../hooks/useRole';
@@ -11,37 +11,41 @@ interface UserState {
   id?: string | null;
 }
 
-const TopNav: React.FC = () => {;
+const TopNav: React.FC = () => {
+  const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const user = useSelector((state: { user: UserState }) => state.user);
-  
+
   const userId = user.id;
   const { isAdminOrInstructor } = useRole();
 
   const toggleDropdown = () => {
-    navigate('/user-profile');
+    setShowDropdown(!showDropdown);
   };
 
-  
+  const handleLogout = () => {
+    // Add your logout logic here
+    // For example: dispatch(logoutAction());
+    navigate('/login');
+  };
+
   // Close dropdown on outside click
-  // useEffect(() => {
-  //   const handleClickOutside = (event: MouseEvent) => {
-  //     if (
-  //       dropdownRef.current &&
-  //       !dropdownRef.current.contains(event.target as Node)
-  //     ) {
-  //       setShowDropdown(false);
-  //     }
-  //   };
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    };
 
-  //   document.addEventListener('mousedown', handleClickOutside);
-  //   return () => {
-  //     document.removeEventListener('mousedown', handleClickOutside);
-  //   };
-  // }, []);
-
-  
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="w-full flex justify-between md:justify-end items-center px-4 pt-4">
@@ -77,6 +81,32 @@ const TopNav: React.FC = () => {;
             onClick={toggleDropdown}
             key={`profile-${userId}`}
           />
+
+          {/* Dropdown Menu */}
+          {showDropdown && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+              <Link
+                to="/user-profile"
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                onClick={() => setShowDropdown(false)}
+              >
+                Profile
+              </Link>
+              {/* <Link
+                to="/settings"
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                onClick={() => setShowDropdown(false)}
+              >
+                Settings
+              </Link> */}
+              <button
+                onClick={handleLogout}
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              >
+                Logout
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
