@@ -1,9 +1,8 @@
 import sunIcon from '../commonComponents/icons/nav/sunIcon.png';
 import bellIcon from '../commonComponents/icons/nav/BellIcon.png';
 import userImg from '../commonComponents/icons/nav/User Image.png';
-import { useState, useRef, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../redux/slices/userSlice';
+import { useRef, useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { useRole } from '../hooks/useRole';
 
@@ -14,61 +13,21 @@ interface UserState {
 
 const TopNav: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector((state: { user: UserState }) => state.user);
-  const profilePicture = user.profile_picture;
+
   const userId = user.id;
   const { isAdminOrInstructor } = useRole();
 
   const toggleDropdown = () => {
-    setShowDropdown((prev) => !prev);
+    setShowDropdown(!showDropdown);
   };
 
-  const handleLogout = async () => {
-    // Prevent multiple clicks
-    if (isLoggingOut) return;
-    setIsLoggingOut(true);
-    setShowDropdown(false);
-
-    try {
-      // Create a promise that resolves after clearing everything
-      const cleanupPromise = new Promise<void>((resolve) => {
-        // Create a hidden iframe for loading the login page in the background
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = '/login';
-        document.body.appendChild(iframe);
-
-        // Clear all localStorage items
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('tokenTimestamp');
-
-        // Clear Redux state
-        dispatch(logout());
-
-        // Give time for the iframe to load and state to clear
-        setTimeout(() => {
-          document.body.removeChild(iframe);
-          resolve();
-        }, 200);
-      });
-
-      // Wait for cleanup to complete
-      await cleanupPromise;
-
-      // Use history API directly for a cleaner transition
-      window.history.replaceState(null, '', '/login');
-      window.location.reload();
-
-    } catch (error) {
-      console.error('Error during logout:', error);
-      // Fallback to direct navigation if something goes wrong
-      navigate('/login', { replace: true });
-    }
+  const handleLogout = () => {
+    // Add your logout logic here
+    // For example: dispatch(logoutAction());
+    navigate('/login');
   };
 
   // Close dropdown on outside click
@@ -87,18 +46,6 @@ const TopNav: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
-  // Add unique query parameter to profile picture URL to prevent caching
-  const getProfilePictureUrl = () => {
-    if (!profilePicture) return userImg;
-
-    // If the URL already contains a query parameter, append a timestamp
-    const hasQueryParams = profilePicture.includes('?');
-    const separator = hasQueryParams ? '&' : '?';
-
-    // Add userId as part of the cache-busting strategy
-    return `${profilePicture}${separator}uid=${userId}&t=${Date.now()}`;
-  };
 
   return (
     <div className="w-full flex justify-between md:justify-end items-center px-4 pt-4">
@@ -128,20 +75,35 @@ const TopNav: React.FC = () => {
         </div>
         <div className="relative" ref={dropdownRef}>
           <img
-            src={getProfilePictureUrl()}
+            src={user.profile_picture ?? userImg}
             alt="User Avatar"
             className="w-8 h-8 rounded-full object-cover cursor-pointer"
             onClick={toggleDropdown}
             key={`profile-${userId}`}
           />
+
+          {/* Dropdown Menu */}
           {showDropdown && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200">
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+              <Link
+                to="/user-profile"
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                onClick={() => setShowDropdown(false)}
+              >
+                Profile
+              </Link>
+              {/* <Link
+                to="/settings"
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                onClick={() => setShowDropdown(false)}
+              >
+                Settings
+              </Link> */}
               <button
                 onClick={handleLogout}
-                disabled={isLoggingOut}
-                className={`block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
               >
-                {isLoggingOut ? 'Logging out...' : 'Logout'}
+                Logout
               </button>
             </div>
           )}
