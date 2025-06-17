@@ -2,7 +2,7 @@ import { SidebarLinkInfo } from "./typings";
 import AdminDashboardController from "../commonComponents/icons/sidebarIcons/AdminDashboardController";
 import CourseBuilderController from "../commonComponents/icons/sidebarIcons/CourseBuilderController";
 import ManageStudentsController from "../commonComponents/icons/sidebarIcons/ManagestudentsController";
-import WorkshopRegistrationController from "../commonComponents/icons/sidebarIcons/workshopRegistrationController";
+import WorkshopRegistrationController from "../commonComponents/icons/sidebarIcons/WorkshopRegistrationController";
 export const AdminNavigationLinks: SidebarLinkInfo[] = [
   {
     id: 1,
