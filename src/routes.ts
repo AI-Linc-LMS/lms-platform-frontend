@@ -17,6 +17,7 @@ import ManageStudents from "./features/admin/manage-students/pages/ManageStudent
 import Assessment from "./features/learn/pages/Assessment";
 import ShortAssessment from "./features/learn/pages/ShortAssessment";
 import ProfileSettings from "./components/UserProfile";
+import WorkshopRegistration from "./features/admin/workshop-registrations/workshopRegistration";
 
 export interface RouteConfig {
   path: string;
@@ -100,6 +101,12 @@ const routes: RouteConfig[] = [
   {
     path: "/admin/dashboard",
     component: Dashboard,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/workshop-registrations",
+    component: WorkshopRegistration,
     isPrivate: true,
     requiredRole: "admin_or_instructor",
   },
