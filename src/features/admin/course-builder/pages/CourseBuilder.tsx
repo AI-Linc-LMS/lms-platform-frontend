@@ -624,12 +624,12 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEditClick }) => {
           <h3 className="text-xl font-semibold">{course.title}</h3>
           <span
             className={`${
-              course.is_free
+              course.published
                 ? "bg-green-50 text-green-800"
                 : "bg-blue-50 text-blue-800"
             } text-sm px-3 py-1 rounded-full`}
           >
-            {course.is_free ? "Free" : "Pro"}
+            {course.published ? "Published" : "Draft"}
           </span>
         </div>
         <p className="text-gray-600 mb-8">
