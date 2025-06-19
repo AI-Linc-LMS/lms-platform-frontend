@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { setUser } from '../redux/slices/userSlice';
 import { googleLogin } from '../services/authApis';
+import { clearAnonymousUserId } from '../utils/userIdHelper';
 import axios from 'axios';
 
 export const useGoogleAuth = () => {
@@ -24,9 +25,13 @@ export const useGoogleAuth = () => {
       // Store token in localStorage
       localStorage.setItem('token', access_token);
       
+      // Clear anonymous user ID since user is now authenticated
+      clearAnonymousUserId();
+      
       // Update Redux store with user data
       dispatch(
         setUser({
+          id: user.id,
           access_token,
           refresh_token,
           email: user.email,

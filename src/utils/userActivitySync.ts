@@ -2,6 +2,7 @@ import { ActivitySession } from '../contexts/UserActivityContext';
 import { sendActivityData, storeActivityDataLocally, syncOfflineActivityData, ActivityData } from '../services/activityTrackingApi';
 import { getDeviceFingerprint } from './deviceIdentifier';
 import { logActivityEvent } from './activityDebugger';
+import { getCurrentUserId } from './userIdHelper';
 
 // Storage keys for deduplication (must match UserActivityContext)
 const STORAGE_KEYS = {
@@ -201,8 +202,8 @@ export const createActivityPayload = (
   const validatedTotalTime = validateTimeValue(totalTimeSpent);
   const validatedSessionDuration = validateTimeValue(currentSessionDuration);
   
-  // Get user ID (anonymous if not logged in)
-  const userId = localStorage.getItem('userId') || 'anonymous';
+  // Get user ID (authenticated user ID or unique anonymous ID)
+  const userId = getCurrentUserId();
   
   return {
     date: formatDateForApi(),
@@ -239,8 +240,8 @@ export const createPreciseActivityPayload = (
   const validatedTotalTime = validateTimeValue(totalTimeSpent);
   const validatedSessionDuration = validateTimeValue(currentSessionDuration);
   
-  // Get user ID (anonymous if not logged in)
-  const finalUserId = userId || localStorage.getItem('userId') || 'anonymous';
+  // Get user ID (use provided userId or get current user ID)
+  const finalUserId = userId || getCurrentUserId();
   
   // Use provided timestamp or current time
   const timestamp = customTimestamp || Date.now();
@@ -291,8 +292,8 @@ export const sendSessionEndData = async (
     const validatedSessionDuration = validateTimeValue(sessionDuration);
     const validatedTotalTime = validateTimeValue(totalTimeSpent);
     
-    // Get user ID (anonymous if not logged in)
-    const finalUserId = userId || localStorage.getItem('userId') || 'anonymous';
+    // Get user ID (use provided userId or get current user ID)
+    const finalUserId = userId || getCurrentUserId();
     
     // Create session-end payload with exact timing
     const sessionEndPayload = {
@@ -354,7 +355,7 @@ export const sendSessionEndData = async (
     logActivityEvent('Failed to send session-end data', { 
       error: (error as Error).message,
       sessionDuration,
-      totalTimeSpent
+      totalTime: totalTimeSpent
     });
     
     // Store as pending data if immediate send fails
@@ -414,8 +415,8 @@ export const sendSessionEndDataViaBeacon = (
     const validatedSessionDuration = validateTimeValue(sessionDuration);
     const validatedTotalTime = validateTimeValue(totalTimeSpent);
     
-    // Get user ID (anonymous if not logged in)
-    const finalUserId = userId || localStorage.getItem('userId') || 'anonymous';
+    // Get user ID (use provided userId or get current user ID)
+    const finalUserId = userId || getCurrentUserId();
     
     // Create session-end payload with exact timing
     const sessionEndPayload = {
