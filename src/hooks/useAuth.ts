@@ -4,6 +4,7 @@ import { useAppDispatch } from '../redux/store';
 import { loginStart, loginSuccess, loginFailure } from '../redux/slices/authSlice';
 import { setUser } from '../redux/slices/userSlice';
 import { login, LoginCredentials } from '../services/authApis';
+import { clearAnonymousUserId } from '../utils/userIdHelper';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
@@ -28,8 +29,12 @@ export const useAuth = () => {
       // Store the token in localStorage
       localStorage.setItem('token', data.access_token);
       
+      // Clear anonymous user ID since user is now authenticated
+      clearAnonymousUserId();
+      
       // Save user data in user slice and localStorage
       const userPayload = {
+        id: data.user.id, // Make sure to include the user ID
         access_token: data.access_token,
         refresh_token: data.refresh_token,
         email: data.user.email,
