@@ -3,6 +3,7 @@ import { logActivityEvent } from '../utils/activityDebugger';
 import { getDeviceFingerprint } from '../utils/deviceIdentifier';
 import { shouldResetDailyActivity, performDailyReset, markDailyReset } from '../utils/dailyReset';
 import { sendSessionEndData, sendSessionEndDataViaBeacon } from '../utils/userActivitySync';
+import { getCurrentUserId } from '../utils/userIdHelper';
 
 interface UserActivityContextType {
   isActive: boolean;
@@ -382,7 +383,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       // Immediately send session-end data to backend with exact timing
       if (sessionDuration > 0) { // Only send if there was actual activity
         const { session_id, device_info } = getDeviceFingerprint();
-        const userId = localStorage.getItem('userId') || 'anonymous';
+        const userId = getCurrentUserId();
         
         // Send session-end data immediately (async, don't block state update)
         sendSessionEndData(
@@ -454,7 +455,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       
       if (sessionDuration > 0) {
         const { session_id, device_info } = getDeviceFingerprint();
-        const userId = localStorage.getItem('userId') || 'anonymous';
+        const userId = getCurrentUserId();
         
         // Use beacon for guaranteed delivery during page hide
         sendSessionEndDataViaBeacon(
@@ -485,7 +486,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       
       if (sessionDuration > 0) {
         const { session_id, device_info } = getDeviceFingerprint();
-        const userId = localStorage.getItem('userId') || 'anonymous';
+        const userId = getCurrentUserId();
         
         // Use beacon for guaranteed delivery during page freeze
         sendSessionEndDataViaBeacon(
@@ -564,9 +565,8 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         return;
       }
 
-      // Get a user identifier - using a placeholder here
-      // In a real app, this would get the actual user ID
-      const userId = localStorage.getItem('userId') || 'anonymous';
+      // Get a user identifier - using the new helper function
+      const userId = getCurrentUserId();
       
       // Get device fingerprint for multi-device tracking
       const { session_id, device_info } = getDeviceFingerprint();
@@ -719,7 +719,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         session_id: session_id,
         device_info: device_info,
         current_session_duration: currentSessionDuration, // Send current session separately for diagnostics
-        user_id: localStorage.getItem('userId') || 'anonymous',
+        user_id: getCurrentUserId(),
         timestamp: Date.now()
       };
       
@@ -754,7 +754,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       
       if (sessionDuration > 0) {
         const { session_id, device_info } = getDeviceFingerprint();
-        const userId = localStorage.getItem('userId') || 'anonymous';
+        const userId = getCurrentUserId();
         
         // Use beacon for guaranteed delivery during unload
         sendSessionEndDataViaBeacon(
@@ -845,7 +845,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
           current_session_duration: currentSessionDuration, // Include current session data for diagnostics
           session_id: getDeviceFingerprint().session_id,
           device_info: getDeviceFingerprint().device_info,
-          user_id: localStorage.getItem('userId') || 'anonymous',
+          user_id: getCurrentUserId(),
           timestamp: Date.now() // Include client timestamp for verification
         };
         

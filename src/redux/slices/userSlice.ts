@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { getAnonymousUserId } from '../../utils/userIdHelper';
 
 const persistedUser = localStorage.getItem('user');
 
@@ -50,6 +51,7 @@ const userSlice = createSlice({
     },
     logout: () => {
       localStorage.removeItem('user');
+      getAnonymousUserId();
       return {
         ...initialState,
         loading: false,
