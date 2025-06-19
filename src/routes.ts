@@ -13,9 +13,10 @@ import Courses from "./features/learn/pages/Courses";
 import ContinueLearningAll from "./features/learn/pages/ContinueLearningAll";
 import RecommendedLearningAll from "./features/learn/pages/RecommendedLearningAll";
 import Dashboard from "./features/admin/dashboard/pages/Dashboard";
-import ManageStudents from "./features/admin/manage-students/pages/ManageStudents";
-import Assessment from "./features/learn/pages/Assessment";
+  import ManageStudents from "./features/admin/manage-students/pages/ManageStudents";
+  import Assessment from "./features/learn/pages/Assessment";
 import ShortAssessment from "./features/learn/pages/ShortAssessment";
+import InstructionPage from "./features/learn/pages/InstructionPage";
 import ProfileSettings from "./components/UserProfile";
 import WorkshopRegistration from "./features/admin/workshop-registrations/workshopRegistration";
 
@@ -135,6 +136,11 @@ const routes: RouteConfig[] = [
   {
     path: "/user-profile",
     component: ProfileSettings,
+    isPrivate: true,
+  },
+  {
+    path: "/instruction-page",
+    component: InstructionPage,
     isPrivate: true,
   }
 ];
