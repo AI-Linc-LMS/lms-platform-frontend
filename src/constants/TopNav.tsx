@@ -50,11 +50,11 @@ const TopNav: React.FC = () => {
   return (
     <div className="w-full flex justify-between md:justify-end items-center px-4 pt-4">
       <div className="md:hidden">
-        <div className="w-12 h-12 bg-[#1A5A7A] text-white rounded-full flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        {/* <div className="w-12 h-12 bg-[#1A5A7A] text-white rounded-full flex items-center justify-center"> */}
+          {/* <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-        </div>
+          </svg> */}
+        {/* </div> */}
       </div>
 
       <div className="flex items-center gap-5">
