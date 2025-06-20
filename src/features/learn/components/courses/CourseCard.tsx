@@ -100,8 +100,12 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
     >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 items-center overflow-visible">
         <div>
-          <h1 className="font-bold font-sans text-lg text-[#343A40]">{course.title}</h1>
-          <p className="text-[#6C757D] font-normal text-sm md:text-md mt-1">{course.description}</p>
+            <h1 className="font-bold font-sans text-lg text-[#343A40]">{course.title}</h1>
+            <p className="text-[#6C757D] font-normal text-sm md:text-md mt-1">
+            {course.description && course.description.length > 70
+              ? course.description.slice(0, 70) + "..."
+              : course.description}
+            </p>
         </div>
         <div className="grid grid-cols-5 gap-2 mt-3 lg:mt-0 overflow-visible">
           <StatBlock
@@ -132,7 +136,10 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
         </div>
       </div>
       <div className="w-full my-4 md:my-6">
-        <p className="text-[#495057] text-sm md:text-base">{course.description}</p>
+        <p className="text-[#495057] text-sm md:text-base">
+          {course.description && course.description.length > 130
+              ? course.description.slice(0, 130) + "..."
+              : course.description}</p>
       </div>
       <div className="flex flex-row gap-2 mb-4 items-center text-sm md:text-base">
         <h1 className="text-[#343A40] font-medium">Instructors:</h1>

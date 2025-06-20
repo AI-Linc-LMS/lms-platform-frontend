@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Topic, Subtopic } from "../types/course";
 import { AddTopicModal } from "../components/AddTopicModal";
@@ -64,6 +64,12 @@ const CourseDetailPage: React.FC = () => {
     courseDetails?.published || false
   );
 
+  useEffect(() => { 
+    if (courseDetails) {
+      setIsPublished(courseDetails.published);
+    }
+  }, [courseDetails]);
+
 
   // Delete course mutation
   const deleteCourseMutation = useMutation({
@@ -77,7 +83,7 @@ const CourseDetailPage: React.FC = () => {
       // You might want to show an error toast here
     },
   });
-
+  console.log("isPublished:", isPublished);
   // Update course mutation (for publishing)
   const updateCourseMutation = useMutation({
     mutationFn: (data: { published: boolean }) => {
@@ -103,6 +109,7 @@ const CourseDetailPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["courseDetails", courseId] });
+      console.log("Course updated successfully", isPublished);
       if (isPublished) {
         success(
           "Course Unpublished",
