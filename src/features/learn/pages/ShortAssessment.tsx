@@ -39,6 +39,7 @@ interface SectionResponse {
 }
 
 const ShortAssessment: React.FC = () => {
+
   const navigate = useNavigate();
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -61,17 +62,14 @@ const ShortAssessment: React.FC = () => {
     error: questionsError,
   } = useQuery({
     queryKey: ["questionsData"],
-    queryFn: () => startAssessment(1, "ai-linc-scholarship-test", "1234567890"),
+    queryFn: () => startAssessment(1, "ai-linc-scholarship-test"),
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 0, // Data is always considered stale, so it will refetch
+    gcTime: 0,
   });
+  
   const assessmentId = questions?.slug ?? "ai-linc-scholarship-test";
-  //console.log("Questions:", questions);
-  //console.log("Response Sheet:", questions?.responseSheet);
-  //console.log("Assessment Status:", questions?.status);
-  //console.log("Remaining Time:", questions?.remaining_time);
-  //console.log("Current Question Index:", currentQuestionIndex);
-  //console.log("Current Question:", questionsData[currentQuestionIndex]);
-  //console.log("Questions Data:", questionsData);
-  //console.log("User Answers:", userAnswers);
 
   // Check if assessment is already submitted
   useEffect(() => {
@@ -517,10 +515,11 @@ const ShortAssessment: React.FC = () => {
                     <div
                       key={idx}
                       onClick={() => handleOptionSelect(optionLetter)}
-                      className={`cursor-pointer border rounded-lg p-3 sm:p-4 transition ${isSelected
+                      className={`cursor-pointer border rounded-lg p-3 sm:p-4 transition ${
+                        isSelected
                           ? "border-[#255C79] bg-blue-50"
                           : "bg-white border-gray-200 hover:border-gray-300"
-                        }`}
+                      }`}
                     >
                       <div className="flex items-center">
                         <span className="font-medium mr-2 sm:mr-3 text-[#255C79]">
@@ -540,10 +539,11 @@ const ShortAssessment: React.FC = () => {
               <button
                 onClick={handleBack}
                 disabled={currentQuestionIndex === 0}
-                className={`w-full sm:w-auto px-4 py-2 rounded-md font-medium transition ${currentQuestionIndex === 0
+                className={`w-full sm:w-auto px-4 py-2 rounded-md font-medium transition ${
+                  currentQuestionIndex === 0
                     ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                     : "border border-[#255C79] text-[#255C79] hover:bg-blue-50"
-                  }`}
+                }`}
               >
                 Previous
               </button>
