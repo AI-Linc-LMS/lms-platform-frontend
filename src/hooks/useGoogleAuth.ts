@@ -33,6 +33,7 @@ export const useGoogleAuth = () => {
           full_name: user.full_name,
           username: user.username,
           profile_picture: user.profile_picture,
+          phone_number: user.phone_number,
           role: user.role,
           isAuthenticated: true,
         })

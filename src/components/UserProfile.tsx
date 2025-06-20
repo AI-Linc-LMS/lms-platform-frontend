@@ -9,7 +9,7 @@ interface UserData {
   id: string;
   full_name: string;
   email: string;
-  phone: string;
+  phone_number: string;
   dob: string;
   gender: string;
   profile_picture: string;
@@ -25,6 +25,8 @@ const ProfileSettings = () => {
   const userData = useSelector((state: { user: UserData }) => state.user);
   const [editable, setEditable] = useState(false);
   const [formData, setFormData] = useState<UserData>(userData);
+  console.log("userData", userData);
+  console.log(formData);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -42,7 +44,7 @@ const ProfileSettings = () => {
   const handleSave = async () => {
     setIsSaving(true); // Show loader
     setEditable(false);
-    await new Promise((resolve) => setTimeout(resolve, 1500)); 
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     console.log("Saved Form Data:", formData);
     setIsSaving(false); // Hide loader
     setEditable(false); // Exit edit mode
@@ -78,7 +80,6 @@ const ProfileSettings = () => {
       navigate("/login", { replace: true });
     }
   };
-
 
   return (
     <div className="p-6 rounded-lg w-full max-w-7xl mx-auto">
@@ -130,7 +131,7 @@ const ProfileSettings = () => {
                 "Save"
               ) : (
                 <>
-                  <img src={editIcon} alt="Edit" className="w-4 h-4"/>
+                  <img src={editIcon} alt="Edit" className="w-4 h-4" />
                   <span>Edit</span>
                 </>
               )}
@@ -178,7 +179,7 @@ const ProfileSettings = () => {
             <input
               name="phone"
               type="text"
-              value={formData.phone ?? "9999XXXXXX"}
+              value={formData.phone_number ?? "9999XXXXXX"}
               onChange={handleChange}
               readOnly={!editable}
               className={`mt-1 w-full border rounded px-3 py-2 ${
