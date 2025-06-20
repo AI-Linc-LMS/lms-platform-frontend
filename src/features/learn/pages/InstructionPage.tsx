@@ -31,10 +31,34 @@ const InstructionPage: React.FC = () => {
   console.log("Instructions:", data);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#255C79]"></div>
+      </div>
+    );
   }
   if (error) {
-    return <div>Error: {error.message}</div>;
+    return (
+      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
+        <div className="bg-white rounded-3xl p-6 shadow-sm max-w-md mx-auto">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-[#343A40] mb-2">Error Loading Instructions</h2>
+            <p className="text-[#6C757D] mb-4">{error.message}</p>
+            <button
+              onClick={() => navigate("/assessment")}
+              className="bg-[#255C79] text-white px-6 py-2 rounded-xl font-medium hover:bg-[#1a4a5f] transition-colors"
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,93 +75,163 @@ const InstructionPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-2 sm:p-4">
+    <div className="min-h-screen bg-[#F8F9FA] p-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
-            <button
-              onClick={() => navigate("/assessment")}
-              className="flex items-center text-[#255C79] hover:text-[#1a4a5f] mb-2 sm:mb-0"
-            >
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15 19l-7-7 7-7"
-                ></path>
-              </svg>
-              Back
-            </button>
-            <div className="text-left sm:text-center w-full sm:w-auto">
-              <h1 className="text-base sm:text-lg font-semibold text-gray-800">
-                Assessment Instructions
-              </h1>
-              <p className="text-xs sm:text-sm text-gray-500">
-                Read the instructions carefully before starting the assessment.
-              </p>
-            </div>
-            <div className="w-full sm:w-auto"></div>
+        {/* Header Section - Matching the image */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            {/* <div className="w-10 h-10 bg-gradient-to-br from-[#255C79] to-[#1a4a5f] rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-lg">G</span>
+            </div> */}
+            <h1 className="text-2xl md:text-3xl font-bold text-[#264D64]">
+            🎯 Post-Bootcamp Assessment: Your Path Forward Starts Here
+            </h1>
           </div>
+          <p className="text-[#000000] font-inter font-semibold text-22px md:text-lg max-w-4xl mx-auto leading-[140%] tracking-[-3%] text-center">
+            You've completed the AI Linc No-Code Development Bootcamp <span className="font-inter font-normal"> — now take the next step. This assessment is your
+            chance to showcase your learning, strengths, and readiness for real-world projects.</span>
+          </p>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left Section - Phone Number Input */}
-          <div className="w-full lg:w-1/2">
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <div className="text-center mb-8">
-                <div className="w-20 h-20 bg-gradient-to-br from-[#255C79] to-[#1a4a5f] rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg
-                    className="w-10 h-10 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    ></path>
-                  </svg>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Section - Why this matters */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-sm border border-[#80C9E0]">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-[#EFF9FC] rounded-full flex items-center justify-center">
+                  <span className="text-lg">🔍</span>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                  Ready to Start?
+                <h2 className="text-xl font-bold text-[#255C79]">
+                  Why this matters:
                 </h2>
-                <p className="text-gray-600">
-                  Enter your phone number to begin the assessment
-                </p>
+              </div>
+              <p className="text-[#000000] leading-relaxed mb-6">
+                We're already in touch with companies actively hiring for AI-powered and no-code
+                roles. If you ace this assessment, you may qualify directly for placement interviews
+                with our partner companies.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-sm border border-[#80C9E0]">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-[#FFF8E1] rounded-full flex items-center justify-center">
+                  <span className="text-lg">🛠️</span>
+                </div>
+                <h2 className="text-xl font-bold text-[#255C79]">
+                  What if you don't score high?
+                </h2>
+              </div>
+              <p className="text-[#343A40] leading-relaxed mb-3">
+                <strong>No worries. That's exactly why we're here.</strong>
+              </p>
+              <p className="text-[#343A40] leading-relaxed">
+                If your results show there's room to grow, we'll offer you personalized upskilling
+                pathways — through our industry-grade programs — designed to help you become a{" "}
+                <strong>high-impact individual in AI and full-stack development.</strong>
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-sm border border-[#80C9E0]">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-[#E8F5E8] rounded-full flex items-center justify-center">
+                  <span className="text-lg">🚀</span>
+                </div>
+                <h2 className="text-xl font-bold text-[#255C79]">
+                  Your performance here can unlock
+                </h2>
+              </div>
+              <ul className="space-y-3 text-[#000000]">
+                <li className="flex items-start gap-3">
+                  <span className="text-[#4A90A4] font-bold">🏢</span>
+                  <span>Direct access to interviews with hiring partners</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[#4A90A4] font-bold">💡</span>
+                  <span>Personalized feedback on your current strengths and areas to grow</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[#4A90A4] font-bold">🎯</span>
+                  <span>A chance to join our flagship career-launching program and move closer to your dream job</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Right Section - Assessment Overview and Start */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-sm border border-[#80C9E0]">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 bg-[#EFF9FC] rounded-full flex items-center justify-center">
+                  <span className="text-lg">✅</span>
+                </div>
+                <h2 className="text-xl font-bold text-[#255C79]">
+                  Assessment Overview:
+                </h2>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <span className="text-[#8B4513] text-lg">📊</span>
+                  <div>
+                    <span className="text-[#6C757D] text-sm">Total Questions:</span>
+                    <p className="font-bold text-[#343A40]">30 Multiple Choice Questions</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[#8B4513] text-lg">⏱️</span>
+                  <div>
+                    <span className="text-[#6C757D] text-sm">Duration:</span>
+                    <p className="font-bold text-[#343A40]">30 minutes</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-green-600 text-lg">●</span>
+                  <h3 className="font-bold text-[#343A40]">Topics:</h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {['AI Fundamentals', 'JavaScript', 'React', 'Node.JS', 'HTML/CSS', 'Cloud Database', 'Logic & Aptitude'].map((topic) => (
+                    <span
+                      key={topic}
+                      className="px-3 py-2 bg-[#EFF9FC] text-[#255C79] rounded-xl text-sm font-medium border border-[#80C9E0]"
+                    >
+                      {topic}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Start Assessment Section */}
+            <div className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-sm border border-[#80C9E0]">
+              <h2 className="text-2xl font-bold text-[#255C79] mb-2">
+                Let's begin. Your future self is waiting.
+              </h2>
+
+              <div className="space-y-4">
                 <div>
                   <label
                     htmlFor="phone"
-                    className="block text-sm font-medium text-gray-700 mb-2"
+                    className="block text-sm font-semibold text-[#343A40] mb-2"
                   >
-                    Phone Number
+                    Phone Number*
                   </label>
                   <input
                     type="tel"
                     id="phone"
                     value={phoneNumber}
                     onChange={handlePhoneChange}
-                    placeholder="Enter your 10-digit phone number"
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79] transition-colors ${
-                      phoneNumber && !isPhoneValid
+                    placeholder="Enter phone number"
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79] transition-colors font-medium ${phoneNumber && !isPhoneValid
                         ? "border-red-300 focus:ring-red-200"
                         : "border-gray-300"
-                    }`}
+                      }`}
                     maxLength={10}
                   />
                   {phoneNumber && !isPhoneValid && (
-                    <p className="text-red-500 text-sm mt-1">
+                    <p className="text-red-500 text-sm mt-2 font-medium">
                       Please enter a valid 10-digit phone number
                     </p>
                   )}
@@ -146,11 +240,10 @@ const InstructionPage: React.FC = () => {
                 <button
                   onClick={handleStartAssessment}
                   disabled={!isPhoneValid || startAssessmentMutation.isPending}
-                  className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors duration-200 ${
-                    isPhoneValid && !startAssessmentMutation.isPending
-                      ? "bg-[#255C79] text-white hover:bg-[#1a4a5f]"
+                  className={`w-full py-4 px-6 rounded-xl font-semibold text-base transition-colors duration-200 ${isPhoneValid && !startAssessmentMutation.isPending
+                      ? "bg-[#4A90A4] text-white hover:bg-[#3A7A8A]"
                       : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                  }`}
+                    }`}
                 >
                   {startAssessmentMutation.isPending ? (
                     <div className="flex items-center justify-center">
@@ -158,122 +251,17 @@ const InstructionPage: React.FC = () => {
                       Starting Assessment...
                     </div>
                   ) : (
-                    "Start Assessment"
+                    "Start Quiz"
                   )}
                 </button>
 
                 {startAssessmentMutation.isError && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                    <p className="text-red-600 text-sm">
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                    <p className="text-red-600 text-sm font-medium">
                       Failed to start assessment. Please try again.
                     </p>
                   </div>
                 )}
-              </div>
-            </div>
-          </div>
-
-          {/* Right Section - Instructions */}
-          <div className="w-full lg:w-1/2">
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h2 className="text-xl font-bold text-gray-800 mb-6">
-                Assessment Instructions
-              </h2>
-
-              <div className="space-y-6">
-                {/* General Instructions */}
-                <div>
-                  <h3 className="text-lg font-semibold text-[#255C79] mb-3">
-                    📋 General Instructions
-                  </h3>
-                  <ul className="space-y-2 text-gray-700">
-                    <li className="flex items-start">
-                      <span className="text-[#255C79] mr-2">•</span>
-                      This assessment contains multiple-choice questions
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-[#255C79] mr-2">•</span>
-                      You have 30 minutes to complete the assessment
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-[#255C79] mr-2">•</span>
-                      Each question has only one correct answer
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-[#255C79] mr-2">•</span>
-                      You can navigate between questions using the question grid
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Navigation Instructions */}
-                <div>
-                  <h3 className="text-lg font-semibold text-[#255C79] mb-3">
-                    🧭 Navigation
-                  </h3>
-                  <ul className="space-y-2 text-gray-700">
-                    <li className="flex items-start">
-                      <span className="text-[#255C79] mr-2">•</span>
-                      Use "Previous" and "Next" buttons to navigate
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-[#255C79] mr-2">•</span>
-                      Click on question numbers in the grid to jump to specific
-                      questions
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-[#255C79] mr-2">•</span>
-                      Answered questions will be highlighted in the grid
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Submission Instructions */}
-                <div>
-                  <h3 className="text-lg font-semibold text-[#255C79] mb-3">
-                    ✅ Submission
-                  </h3>
-                  <ul className="space-y-2 text-gray-700">
-                    <li className="flex items-start">
-                      <span className="text-[#255C79] mr-2">•</span>
-                      Review all your answers before final submission
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-[#255C79] mr-2">•</span>
-                      Click "Finish Assessment" when you're ready to submit
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-[#255C79] mr-2">•</span>
-                      You cannot change answers after submission
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Scholarship Information */}
-                <div className="bg-gradient-to-r from-[#B8E6F0] to-[#E0F4F8] rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-[#255C79] mb-2">
-                    🎓 Scholarship Eligibility
-                  </h3>
-                  <ul className="space-y-1 text-[#255C79] text-sm">
-                    <li>• Score 80% or above: 70% scholarship</li>
-                    <li>• Score 60% or above: 50% scholarship</li>
-                    <li>• Score 40% or above: 30% scholarship</li>
-                    <li>• Score below 40%: No scholarship</li>
-                  </ul>
-                </div>
-
-                {/* Important Notes */}
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-yellow-800 mb-2">
-                    ⚠️ Important Notes
-                  </h3>
-                  <ul className="space-y-1 text-yellow-700 text-sm">
-                    <li>• Do not refresh the page during the assessment</li>
-                    <li>• Ensure stable internet connection</li>
-                    <li>• Complete the assessment in one sitting</li>
-                    <li>• Timer will auto-submit when time expires</li>
-                  </ul>
-                </div>
               </div>
             </div>
           </div>
