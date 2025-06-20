@@ -2,6 +2,7 @@ import { SidebarLinkInfo } from "./typings";
 import AdminDashboardController from "../commonComponents/icons/sidebarIcons/AdminDashboardController";
 import CourseBuilderController from "../commonComponents/icons/sidebarIcons/CourseBuilderController";
 import ManageStudentsController from "../commonComponents/icons/sidebarIcons/ManagestudentsController";
+import WorkshopRegistrationController from "../commonComponents/icons/sidebarIcons/WorkshopRegistrationController";
 export const AdminNavigationLinks: SidebarLinkInfo[] = [
   {
     id: 1,
@@ -36,6 +37,18 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
         title: "Course Builder",
         href: "/admin/courses",
         icon: <CourseBuilderController />,
+      },
+    ],
+  },
+  {
+    id: 3,
+    title: "Workshop Registrations",
+    links: [
+      {
+        id: 1,
+        title: "Workshop Registrations",
+        href: "/admin/workshop-registrations",
+        icon: <WorkshopRegistrationController />,
       },
     ],
   },
