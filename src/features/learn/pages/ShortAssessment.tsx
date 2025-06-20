@@ -517,11 +517,10 @@ const ShortAssessment: React.FC = () => {
                     <div
                       key={idx}
                       onClick={() => handleOptionSelect(optionLetter)}
-                      className={`cursor-pointer border rounded-lg p-3 sm:p-4 transition ${
-                        isSelected
+                      className={`cursor-pointer border rounded-lg p-3 sm:p-4 transition ${isSelected
                           ? "border-[#255C79] bg-blue-50"
                           : "bg-white border-gray-200 hover:border-gray-300"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center">
                         <span className="font-medium mr-2 sm:mr-3 text-[#255C79]">
@@ -541,11 +540,10 @@ const ShortAssessment: React.FC = () => {
               <button
                 onClick={handleBack}
                 disabled={currentQuestionIndex === 0}
-                className={`w-full sm:w-auto px-4 py-2 rounded-md font-medium transition ${
-                  currentQuestionIndex === 0
+                className={`w-full sm:w-auto px-4 py-2 rounded-md font-medium transition ${currentQuestionIndex === 0
                     ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                     : "border border-[#255C79] text-[#255C79] hover:bg-blue-50"
-                }`}
+                  }`}
               >
                 Previous
               </button>
