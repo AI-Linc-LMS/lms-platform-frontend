@@ -10,9 +10,8 @@ import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
 import EnrolledCourses from "../components/courses/EnrolledCourses";
 import { RootState } from "../../../redux/store";
-import React, { ReactNode, useEffect } from "react";
+import React, { ReactNode } from "react";
 import LockSvg from "../../../commonComponents/icons/empty-state-handel/LockSvg";
-import { getContent } from "../../../services/admin/contentApis";
 // Props type for the overlay card component
 interface EnrollToCourseOverlayProps {
   title: string;
@@ -21,16 +20,11 @@ interface EnrollToCourseOverlayProps {
 }
 
 // Overlay card component to show over sections when no courses enrolled
-const EnrollToCourseOverlay: React.FC<EnrollToCourseOverlayProps> = ({ title, children, className = "" }) => {
-  useEffect(() => {
-    const fetchCourses = async () => {
-      const content = await getContent(1, "articles");
-      console.log("--------------------------------");
-      console.log("content", content);
-      console.log("--------------------------------");
-    };
-    fetchCourses();
-  }, []);
+const EnrollToCourseOverlay: React.FC<EnrollToCourseOverlayProps> = ({
+  title,
+  children,
+  className = "",
+}) => {
   return (
     <div className={`relative ${className}`}>
       {/* Blurred original content */}
@@ -43,11 +37,12 @@ const EnrollToCourseOverlay: React.FC<EnrollToCourseOverlayProps> = ({ title, ch
         <div className=" p-6 rounded-xl  max-w-[90%] flex flex-col items-center">
           <div className="w-[60px] h-[60px] rounded-full bg-[#EFF9FC] flex items-center justify-center mb-4">
             <LockSvg />
-
           </div>
-          <h3 className="text-lg font-bold text-gray-800 mb-2 text-center">{title}</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-2 text-center">
+            {title}
+          </h3>
           <button
-            onClick={() => window.location.href = '/courses'}
+            onClick={() => (window.location.href = "/courses")}
             className="bg-[#17627A] text-white py-2 px-6 rounded-lg transition-all duration-200 hover:bg-[#12536A] text-center mt-4 font-medium text-sm"
           >
             View all Courses
@@ -90,7 +85,10 @@ const Learn = () => {
       {/* Right Column */}
       <div className="w-full md:w-1/4 space-y-4 gap-4">
         {hasNoCourses ? (
-          <EnrollToCourseOverlay title="Enroll to a Course to Unlock Weekly & Daily Progress" className="min-h-[600px]">
+          <EnrollToCourseOverlay
+            title="Enroll to a Course to Unlock Weekly & Daily Progress"
+            className="min-h-[600px]"
+          >
             <div className="flex flex-col gap-6 w-full">
               <Leaderboard clientId={clientId} />
               <DailyProgress clientId={clientId} />

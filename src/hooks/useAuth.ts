@@ -40,6 +40,7 @@ export const useAuth = () => {
         email: data.user.email,
         full_name: data.user.full_name,
         username: data.user.username,
+        phone_number: data.user.phone_number,
         role: data.user.role,
         isAuthenticated: true,
       };
