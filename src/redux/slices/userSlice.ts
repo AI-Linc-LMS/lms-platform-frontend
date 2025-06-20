@@ -11,6 +11,7 @@ interface UserState {
   username: string | null;
   profile_picture: string | null;
   role: string | null;
+  phone_number: string | null;
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
@@ -25,6 +26,7 @@ const initialState: UserState = persistedUser
       email: null,
       full_name: null,
       username: null,
+      phone_number: null,
       isAuthenticated: false,
       profile_picture: null,
       role: null,

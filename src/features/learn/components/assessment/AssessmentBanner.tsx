@@ -17,7 +17,11 @@ const AssessmentBanner: React.FC = () => {
   });
 
   const handleTakeAssessment = () => {
-    navigate("/instruction-page");
+    if (data?.status === "submitted") {
+      navigate("/assessment/quiz");
+    } else {
+      navigate("/instruction-page");
+    }
   };
 
   if (isLoading) {

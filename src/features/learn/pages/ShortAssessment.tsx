@@ -39,7 +39,6 @@ interface SectionResponse {
 }
 
 const ShortAssessment: React.FC = () => {
-
   const navigate = useNavigate();
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -68,7 +67,7 @@ const ShortAssessment: React.FC = () => {
     staleTime: 0, // Data is always considered stale, so it will refetch
     gcTime: 0,
   });
-  
+
   const assessmentId = questions?.slug ?? "ai-linc-scholarship-test";
 
   // Check if assessment is already submitted
@@ -108,6 +107,30 @@ const ShortAssessment: React.FC = () => {
       ) {
         // Use existing response sheet from API
         setUserAnswers(questions.responseSheet);
+
+        // Find the last attempted question
+        const sectionResponse = questions.responseSheet.quizSectionId[0];
+        if (sectionResponse && sectionResponse[sectionId]) {
+          const answersObj = sectionResponse[sectionId];
+          const answeredQuestions = Object.entries(answersObj)
+            .filter(([, answer]) => answer && answer !== "")
+            .map(([questionId]) => parseInt(questionId));
+
+          if (answeredQuestions.length > 0) {
+            // Find the index of the last answered question
+            const lastAnsweredQuestionId = Math.max(...answeredQuestions);
+            const lastAnsweredIndex = mcqs.findIndex(
+              (q: Question) => q.id === lastAnsweredQuestionId
+            );
+
+            // Set current question to the next unanswered question, or the last answered if all are answered
+            if (lastAnsweredIndex < mcqs.length - 1) {
+              setCurrentQuestionIndex(lastAnsweredIndex + 1);
+            } else {
+              setCurrentQuestionIndex(lastAnsweredIndex);
+            }
+          }
+        }
       } else {
         // Initialize empty response sheet
         const sectionResponse: SectionResponse = {
@@ -117,6 +140,7 @@ const ShortAssessment: React.FC = () => {
           sectionResponse[sectionId][q.id] = ""; // No answer selected initially
         });
         setUserAnswers({ quizSectionId: [sectionResponse] });
+        setCurrentQuestionIndex(0); // Start from first question if no previous answers
         //console.log("Initialized empty response sheet");
       }
     }
