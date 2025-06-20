@@ -41,11 +41,11 @@ export const getInstructions = async (clientId: number, assessmentId: string) =>
 export const startAssessment = async (
   clientId: number,
   assessmentId: string,
-  phoneNumber: string
+  phoneNumber?: string
 ) => {
   try {
     const res = await axiosInstance.get(
-      `assessment/api/client/${clientId}/start-assessment/${assessmentId}/?phone_number=${phoneNumber}`
+      `assessment/api/client/${clientId}/start-assessment/${assessmentId}/?phone_number=${phoneNumber ?? ""}`
     );
     return res.data;
   } catch (error) {

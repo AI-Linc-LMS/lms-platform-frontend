@@ -10,16 +10,14 @@ const AssessmentBanner: React.FC = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ["assessment-banner"],
     queryFn: () => getAssessmentStatus(clientId, "ai-linc-scholarship-test"),
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 0, // Data is always considered stale, so it will refetch
+    gcTime: 0, // Don't cache the data
   });
 
-  console.log(data);
-
   const handleTakeAssessment = () => {
-    if (data?.status === "not_started") {
-      navigate("/instruction-page");
-    } else {
-      navigate("/assessment/quiz");
-    }
+    navigate("/instruction-page");
   };
 
   if (isLoading) {
