@@ -2,7 +2,6 @@ import React from "react";
 
 interface NavigationButtonsProps {
   currentQuestionIndex: number;
-  totalQuestions: number;
   selectedOption: string | null;
   handleBack: () => void;
   handleNext: () => void;
@@ -11,14 +10,11 @@ interface NavigationButtonsProps {
 
 const NavigationButtons: React.FC<NavigationButtonsProps> = ({
   currentQuestionIndex,
-  totalQuestions,
   selectedOption,
   handleBack,
   handleNext,
   handleFinishAssessment,
 }) => {
-  const isLastQuestion = currentQuestionIndex >= totalQuestions - 1;
-
   return (
     <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center pt-4 sm:pt-6 border-t border-gray-200 gap-2 sm:gap-0">
       <button
@@ -33,25 +29,26 @@ const NavigationButtons: React.FC<NavigationButtonsProps> = ({
         Previous
       </button>
       <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
-        {!isLastQuestion ? (
-          <button
-            onClick={handleNext}
-            disabled={!selectedOption}
-            className={`w-full sm:w-auto px-6 py-2 rounded-md font-medium transition ${"bg-[#255C79] text-white hover:bg-[#1a4a5f]"}`}
-          >
-            Next
-          </button>
-        ) : (
-          <button
-            onClick={handleFinishAssessment}
-            className={`w-full sm:w-auto px-6 py-2 rounded-md font-medium transition ${"bg-green-600 text-white hover:bg-green-700"}`}
-          >
-            Finish Assessment
-          </button>
-        )}
+        <button
+          onClick={handleNext}
+          disabled={!selectedOption}
+          className={`w-full sm:w-auto px-6 py-2 rounded-md font-medium transition ${
+            !selectedOption
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-[#255C79] text-white hover:bg-[#1a4a5f]"
+          }`}
+        >
+          Next
+        </button>
+        <button
+          onClick={handleFinishAssessment}
+          className={`w-full sm:w-auto px-6 py-2 rounded-md font-medium transition ${"bg-green-600 text-white hover:bg-green-700"}`}
+        >
+          Finish Assessment
+        </button>
       </div>
     </div>
   );
 };
 
-export default NavigationButtons; 
+export default NavigationButtons;

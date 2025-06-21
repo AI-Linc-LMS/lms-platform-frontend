@@ -73,23 +73,13 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                     /30
                   </span>
                 </div>
-                {score < 50 && (
-                  <div className="flex items-center gap-2 text-[#255C79]">
-                    <span className="text-xl sm:text-2xl">🎉</span>
+                  <div className="flex flex-col gap-2 text-[#255C79]">
+                    <span className="text-xl sm:text-2xl font-bold">"Great effort!” 🎉</span>
                     <p className="text-base sm:text-lg font-medium">
-                      Excellent your assessment is completed!{" "}
-                      <span className="font-bold">Congratulations!</span>
+                    As per to your score, our hiring or counseling team would get in touch with you
                     </p>
                   </div>
-                )}
-                {score >= 50 && (
-                  <div className="flex items-center gap-2 text-[#255C79]">
-                    <span className="text-xl sm:text-2xl">⭐</span>
-                    <p className="text-base sm:text-lg font-medium">
-                      Outstanding! You aced it with top marks! 💯🎉
-                    </p>
-                  </div>
-                )}
+                
               </div>
               {/* Decorative elements */}
               <div className="absolute top-0 right-0 w-20 sm:w-32 h-20 sm:h-32 bg-white/10 rounded-full -translate-y-8 sm:-translate-y-16 translate-x-8 sm:translate-x-16"></div>
