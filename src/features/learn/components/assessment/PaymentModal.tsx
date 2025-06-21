@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   FiX,
   FiCheck,
@@ -47,7 +47,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer " + localStorage.getItem("token"), 
+          "Authorization": "Bearer " + localStorage.getItem("token"),
         },
         body: JSON.stringify({
           amount: coursePrice,
@@ -73,7 +73,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       order_id: orderData.order_id,
       handler: async function (response: any) {
         // 3. Verify signature
-        const verifyRes = await fetch("https://be-app.ailinc.com/payment-gateway/api/clients/1/verify-payment/",{
+        const verifyRes = await fetch("https://be-app.ailinc.com/payment-gateway/api/clients/1/verify-payment/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -128,7 +128,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   // Fetch actual scholarship redemption data from API
   const {
     data: scholarshipData,
-    isLoading: isLoadingScholarship,
+
     error: scholarshipError,
   } = useScholarshipRedemption(clientIdString, assessmentIdString, isOpen);
 
@@ -234,7 +234,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               <button
                 onClick={onClose}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
-                
+
               >
                 <FiX className="h-6 w-6" />
               </button>
@@ -332,15 +332,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                   onClick={handlePayment}
                   className="flex-1 px-6 py-3 bg-[#255C79] text-white rounded-lg hover:bg-[#1e4a61] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      <span>
-                        "Preparing..."
-                      </span>
-                    </div>
-                
-                    `Pay ${currency}${coursePrice.toLocaleString()} Now`
-                
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>
+                      "Preparing..."
+                    </span>
+                  </div>
+
+                  `Pay ${currency}${coursePrice.toLocaleString()} Now`
+
                 </button>
               </div>
 
