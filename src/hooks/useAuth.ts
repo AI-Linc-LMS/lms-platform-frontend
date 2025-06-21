@@ -5,12 +5,14 @@ import { loginStart, loginSuccess, loginFailure } from '../redux/slices/authSlic
 import { setUser } from '../redux/slices/userSlice';
 import { login, LoginCredentials } from '../services/authApis';
 import { clearAnonymousUserId } from '../utils/userIdHelper';
+import { useAuthRedirect } from '../contexts/AuthRedirectContext';
+import { logRedirectInfo } from '../utils/authRedirectUtils';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const clientId = import.meta.env.VITE_CLIENT_ID;
-
+  const { intendedPath, clearIntendedPath } = useAuthRedirect();
 
   const loginMutation = useMutation({
     mutationFn: (credentials: LoginCredentials) => login(credentials, clientId),
@@ -47,8 +49,16 @@ export const useAuth = () => {
       
       console.log('Setting user payload:', userPayload);
       dispatch(setUser(userPayload));
-      // Redirect to dashboard or home page
-      navigate('/');
+      
+      // Redirect to intended path if available, otherwise go to home
+      if (intendedPath) {
+        logRedirectInfo(intendedPath, '/', 'Redirecting after login');
+        navigate(intendedPath);
+        clearIntendedPath(); // Clear the intended path after redirecting
+      } else {
+        logRedirectInfo(null, '/', 'No intended path, going to home');
+        navigate('/');
+      }
     },
     onError: (error: Error) => {
       dispatch(loginFailure(error.message));

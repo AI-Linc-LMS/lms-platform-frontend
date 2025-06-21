@@ -174,7 +174,7 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
           <div className="mt-6 sm:mt-8 text-center">
             {isPurchased ? (
               <p className="text-green-600 text-xs sm:text-sm font-medium">
-                🎉 Your course access is now active! Start learning anytime.
+                🎉 Congratulations! Your course access will be activated within 7 days.
               </p>
             ) : (
               <p className="text-gray-600 text-xs sm:text-sm">

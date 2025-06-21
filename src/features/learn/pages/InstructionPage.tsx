@@ -97,9 +97,6 @@ const InstructionPage: React.FC = () => {
     navigate("/assessment/quiz");
   };
 
-  const handleViewResults = () => {
-    navigate("/assessment/results");
-  };
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] p-4">
@@ -278,7 +275,7 @@ const InstructionPage: React.FC = () => {
                     to view your detailed results and next steps.
                   </p>
                   <button
-                    onClick={handleViewResults}
+                    onClick={handleResumeAssessment}
                     className="w-full py-4 px-6 bg-green-600 text-white rounded-xl font-semibold text-base transition-colors duration-200 hover:bg-green-700"
                   >
                     View Results

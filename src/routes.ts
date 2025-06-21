@@ -13,8 +13,7 @@ import Courses from "./features/learn/pages/Courses";
 import ContinueLearningAll from "./features/learn/pages/ContinueLearningAll";
 import RecommendedLearningAll from "./features/learn/pages/RecommendedLearningAll";
 import Dashboard from "./features/admin/dashboard/pages/Dashboard";
-  import ManageStudents from "./features/admin/manage-students/pages/ManageStudents";
-  import Assessment from "./features/learn/pages/Assessment";
+import ManageStudents from "./features/admin/manage-students/pages/ManageStudents";
 import ShortAssessment from "./features/learn/pages/ShortAssessment";
 import InstructionPage from "./features/learn/pages/InstructionPage";
 import ProfileSettings from "./components/UserProfile";
@@ -56,11 +55,6 @@ const routes: RouteConfig[] = [
   {
     path: "/courses",
     component: Courses,
-    isPrivate: true,
-  },
-  {
-    path: "/assessment",
-    component: Assessment,
     isPrivate: true,
   },
   {
@@ -142,7 +136,7 @@ const routes: RouteConfig[] = [
     path: "/ai-linc-scholarship-test",
     component: InstructionPage,
     isPrivate: true,
-  }
+  },
 ];
 
 export default routes;
