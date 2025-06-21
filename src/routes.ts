@@ -79,8 +79,8 @@ const routes: RouteConfig[] = [
     isPrivate: true,
   },
   {
-    path: "/community",
-    component: Learn, // Using Learn as placeholder for Community page
+    path: "/courses",
+    component: Courses, // Using Learn as placeholder for Community page
     isPrivate: true,
   },
   {
