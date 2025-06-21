@@ -1,5 +1,5 @@
 import React from "react";
-import { Question } from "../hooks/useAssessment";
+import { Question } from "../../hooks/useAssessment";
 
 interface QuestionDisplayProps {
   currentQuestion: Question;
@@ -18,6 +18,10 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   selectedOption,
   handleOptionSelect,
 }) => {
+  if (!currentQuestion) {
+    return <div>Loading question...</div>;
+  }
+
   return (
     <div className="mb-4 sm:mb-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 sm:mb-4 gap-2 sm:gap-0">
@@ -32,7 +36,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
         {currentQuestion?.question_text}
       </h2>
       <div className="space-y-2 sm:space-y-3">
-        {currentQuestion?.options?.map((option, idx) => {
+        {currentQuestion?.options?.map((option: string, idx: number) => {
           const optionLetter = optionLetters[idx];
           const isSelected = selectedOption === optionLetter;
           return (
