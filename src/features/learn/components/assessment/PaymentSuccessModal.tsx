@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { FiCheck, FiX, FiAward, FiBook, FiUsers, FiClock, FiStar } from "react-icons/fi";
+import {
+  FiCheck,
+  FiX,
+  FiAward,
+  FiBook,
+  FiUsers,
+  FiClock,
+  FiStar,
+} from "react-icons/fi";
 
 interface PaymentSuccessModalProps {
   isOpen: boolean;
@@ -26,10 +34,10 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
       const timer1 = setTimeout(() => setAnimationStep(1), 300);
       const timer2 = setTimeout(() => setAnimationStep(2), 600);
       const timer3 = setTimeout(() => setAnimationStep(3), 900);
-      
+
       // Hide confetti after 3 seconds
       const confettiTimer = setTimeout(() => setShowConfetti(false), 3000);
-      
+
       return () => {
         clearTimeout(timer1);
         clearTimeout(timer2);
@@ -51,23 +59,23 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
     {
       icon: FiBook,
       title: "Lifetime Course Access",
-      description: "Access all course materials forever"
+      description: "Access all course materials forever",
     },
     {
       icon: FiUsers,
       title: "Community Support",
-      description: "Join our exclusive learning community"
+      description: "Join our exclusive learning community",
     },
     {
       icon: FiAward,
       title: "Certificate of Completion",
-      description: "Earn your professional certificate"
+      description: "Earn your professional certificate",
     },
     {
       icon: FiClock,
       title: "Learn at Your Pace",
-      description: "No time limits or restrictions"
-    }
+      description: "No time limits or restrictions",
+    },
   ];
 
   return (
@@ -83,20 +91,30 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
                 animationDelay: `${Math.random() * 3}s`,
-                animationDuration: `${2 + Math.random() * 2}s`
+                animationDuration: `${2 + Math.random() * 2}s`,
               }}
             >
-              <div className={`w-2 h-2 rounded-full ${
-                ['bg-yellow-400', 'bg-green-400', 'bg-blue-400', 'bg-red-400', 'bg-purple-400'][Math.floor(Math.random() * 5)]
-              }`} />
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  [
+                    "bg-yellow-400",
+                    "bg-green-400",
+                    "bg-blue-400",
+                    "bg-red-400",
+                    "bg-purple-400",
+                  ][Math.floor(Math.random() * 5)]
+                }`}
+              />
             </div>
           ))}
         </div>
       )}
 
-      <div className={`bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-500 ${
-        animationStep >= 1 ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-      }`}>
+      <div
+        className={`bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-500 ${
+          animationStep >= 1 ? "scale-100 opacity-100" : "scale-95 opacity-0"
+        }`}
+      >
         {/* Header */}
         <div className="relative p-8 text-center bg-gradient-to-br from-green-50 to-blue-50 rounded-t-2xl">
           <button
@@ -107,9 +125,11 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
           </button>
 
           {/* Success Animation */}
-          <div className={`relative mb-6 transform transition-all duration-700 ${
-            animationStep >= 1 ? 'scale-100 rotate-0' : 'scale-0 rotate-180'
-          }`}>
+          <div
+            className={`relative mb-6 transform transition-all duration-700 ${
+              animationStep >= 1 ? "scale-100 rotate-0" : "scale-0 rotate-180"
+            }`}
+          >
             <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto relative">
               <FiCheck className="h-12 w-12 text-white" />
               {/* Pulse rings */}
@@ -118,20 +138,32 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
             </div>
           </div>
 
-          <div className={`transform transition-all duration-500 delay-300 ${
-            animationStep >= 2 ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-          }`}>
+          <div
+            className={`transform transition-all duration-500 delay-300 ${
+              animationStep >= 2
+                ? "translate-y-0 opacity-100"
+                : "translate-y-4 opacity-0"
+            }`}
+          >
             <h2 className="text-3xl font-bold text-gray-900 mb-2">
               🎉 Payment Successful!
             </h2>
-            <p className="text-lg text-gray-600 mb-4">
-              Welcome to AI-LINC Course! Your journey begins now.
+            <p className="text-lg text-gray-600 mb-2">
+              Welcome to AI-LINC Course! Your journey begin with us.
             </p>
-            
+
+            {/* Important Timeline Notice */}
+            <p className="text-orange-600 font-semibold text-base mb-4">
+              ⏰ Access your course dashboard within 7 days
+            </p>
+
             {/* Achievement Badge */}
-            <div className="inline-flex items-center bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-6 py-2 rounded-full font-semibold">
-              <FiStar className="h-5 w-5 mr-2" />
-              Course Access Unlocked
+            <div className="inline-flex items-center bg-emerald-50 text-emerald-800 px-6 py-3 rounded-lg font-medium shadow-md border-l-4 border-emerald-500">
+              <FiStar className="h-5 w-5 mr-3 text-emerald-600" />
+              <span className="text-sm leading-relaxed">
+                Our team will reach out to you on your registered email and
+                phone number.
+              </span>
             </div>
           </div>
         </div>
@@ -139,9 +171,13 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
         {/* Content */}
         <div className="p-8">
           {/* Payment Details */}
-          <div className={`bg-gray-50 rounded-xl p-6 mb-8 transform transition-all duration-500 delay-500 ${
-            animationStep >= 3 ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-          }`}>
+          <div
+            className={`bg-gray-50 rounded-xl p-6 mb-8 transform transition-all duration-500 delay-500 ${
+              animationStep >= 3
+                ? "translate-y-0 opacity-100"
+                : "translate-y-4 opacity-0"
+            }`}
+          >
             <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
               <FiCheck className="h-5 w-5 text-green-600 mr-2" />
               Transaction Details
@@ -149,7 +185,9 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
             <div className="grid md:grid-cols-2 gap-4 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Amount Paid:</span>
-                <span className="font-semibold text-green-600">₹{amount.toLocaleString()}</span>
+                <span className="font-semibold text-green-600">
+                  ₹{amount.toLocaleString()}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Status:</span>
@@ -158,32 +196,49 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
               {paymentId && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Payment ID:</span>
-                  <span className="font-mono text-xs bg-gray-200 px-2 py-1 rounded">{paymentId}</span>
+                  <span className="font-mono text-xs bg-gray-200 px-2 py-1 rounded">
+                    {paymentId}
+                  </span>
                 </div>
               )}
               {orderId && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Order ID:</span>
-                  <span className="font-mono text-xs bg-gray-200 px-2 py-1 rounded">{orderId}</span>
+                  <span className="font-mono text-xs bg-gray-200 px-2 py-1 rounded">
+                    {orderId}
+                  </span>
                 </div>
               )}
             </div>
           </div>
 
           {/* Benefits Grid */}
-          <div className={`mb-8 transform transition-all duration-500 delay-700 ${
-            animationStep >= 3 ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-          }`}>
-            <h4 className="font-semibold text-gray-900 mb-6 text-center">What You Get Access To:</h4>
+          <div
+            className={`mb-8 transform transition-all duration-500 delay-700 ${
+              animationStep >= 3
+                ? "translate-y-0 opacity-100"
+                : "translate-y-4 opacity-0"
+            }`}
+          >
+            <h4 className="font-semibold text-gray-900 mb-6 text-center">
+              What You Get Access To:
+            </h4>
             <div className="grid md:grid-cols-2 gap-4">
               {benefits.map((benefit, index) => (
-                <div key={index} className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                <div
+                  key={index}
+                  className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                >
                   <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                     <benefit.icon className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <h5 className="font-semibold text-gray-900 mb-1">{benefit.title}</h5>
-                    <p className="text-sm text-gray-600">{benefit.description}</p>
+                    <h5 className="font-semibold text-gray-900 mb-1">
+                      {benefit.title}
+                    </h5>
+                    <p className="text-sm text-gray-600">
+                      {benefit.description}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -191,9 +246,13 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
           </div>
 
           {/* Next Steps */}
-          <div className={`bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 mb-8 transform transition-all duration-500 delay-900 ${
-            animationStep >= 3 ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-          }`}>
+          <div
+            className={`bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 mb-8 transform transition-all duration-500 delay-900 ${
+              animationStep >= 3
+                ? "translate-y-0 opacity-100"
+                : "translate-y-4 opacity-0"
+            }`}
+          >
             <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
               <FiAward className="h-5 w-5 text-blue-600 mr-2" />
               What's Next?
@@ -203,45 +262,42 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
                 <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
                   <span className="text-xs font-bold text-green-600">1</span>
                 </div>
-                <span className="text-sm text-gray-700">Access your course dashboard immediately</span>
+                <span className="text-sm text-gray-700">
+                  Access your course dashboard within 7 days
+                </span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
                   <span className="text-xs font-bold text-green-600">2</span>
                 </div>
-                <span className="text-sm text-gray-700">Join our community and introduce yourself</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                  <span className="text-xs font-bold text-green-600">3</span>
-                </div>
-                <span className="text-sm text-gray-700">Start with the welcome module</span>
+                <span className="text-sm text-gray-700">
+                  Join our community and introduce yourself
+                </span>
               </div>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className={`flex flex-col sm:flex-row gap-4 transform transition-all duration-500 delay-1000 ${
-            animationStep >= 3 ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-          }`}>
+          <div
+            className={`flex flex-col sm:flex-row gap-4 transform transition-all duration-500 delay-1000 ${
+              animationStep >= 3
+                ? "translate-y-0 opacity-100"
+                : "translate-y-4 opacity-0"
+            }`}
+          >
             <button
               onClick={handleContinue}
               className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
             >
-              Start Learning Now 🚀
-            </button>
-            <button
-              onClick={onClose}
-              className="sm:w-auto px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-            >
-              I'll Start Later
+              Congratulations, Go Back 🚀
             </button>
           </div>
 
           {/* Support Info */}
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-500">
-              Need help getting started? Contact our support team 24/7 at support@ailinc.com
+              Need help getting started? Contact our support team 24/7 at
+              support@ailinc.com
             </p>
           </div>
         </div>
@@ -250,4 +306,4 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
   );
 };
 
-export default PaymentSuccessModal; 
+export default PaymentSuccessModal;

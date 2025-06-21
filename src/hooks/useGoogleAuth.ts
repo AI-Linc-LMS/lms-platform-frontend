@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { setUser } from '../redux/slices/userSlice';
 import { googleLogin } from '../services/authApis';
 import { clearAnonymousUserId } from '../utils/userIdHelper';
+import { useAuthRedirect } from '../contexts/AuthRedirectContext';
+import { logRedirectInfo } from '../utils/authRedirectUtils';
 import axios from 'axios';
 
 export const useGoogleAuth = () => {
@@ -12,6 +14,7 @@ export const useGoogleAuth = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const { intendedPath, clearIntendedPath } = useAuthRedirect();
 
   const handleGoogleLogin = async (googleToken: string) => {
     try {
@@ -44,8 +47,15 @@ export const useGoogleAuth = () => {
         })
       );
 
-      // Redirect to home page
-      navigate('/');
+      // Redirect to intended path if available, otherwise go to home
+      if (intendedPath) {
+        logRedirectInfo(intendedPath, '/', 'Redirecting after Google login');
+        navigate(intendedPath);
+        clearIntendedPath(); // Clear the intended path after redirecting
+      } else {
+        logRedirectInfo(null, '/', 'No intended path, going to home after Google login');
+        navigate('/');
+      }
     } catch (error) {
       console.error('Google login error:', error);
       

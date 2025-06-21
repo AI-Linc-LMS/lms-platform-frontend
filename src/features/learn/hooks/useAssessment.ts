@@ -251,7 +251,16 @@ export const useAssessment = () => {
 
   const handleBack = () => {
     if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
+      updateAnswerMutation.mutate(userAnswers, {
+        onSuccess: () => {
+          console.log("Answer updated successfully after question change");
+          setCurrentQuestionIndex(currentQuestionIndex - 1);
+        },
+        onError: (error) => {
+          console.error("Error updating answer:", error);
+          setCurrentQuestionIndex(currentQuestionIndex - 1);
+        },
+      });
     }
   };
 
