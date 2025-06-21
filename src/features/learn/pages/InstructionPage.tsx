@@ -114,16 +114,16 @@ const InstructionPage: React.FC = () => {
               {data?.status === "submitted"
                 ? "🎯 Assessment Completed: View Your Results"
                 : data?.status === "in_progress"
-                ? "🎯 Continue Your Assessment"
-                : "🎯 Post-Bootcamp Assessment: Your Path Forward Starts Here"}
+                  ? "🎯 Continue Your Assessment"
+                  : "🎯 Post-Bootcamp Assessment: Your Path Forward Starts Here"}
             </h1>
           </div>
           <p className="text-[#000000] font-inter font-semibold text-22px md:text-lg max-w-4xl mx-auto leading-[140%] tracking-[-3%] text-center">
             {data?.status === "submitted"
               ? "Congratulations! You've completed the assessment. View your results and see what's next for your career journey."
               : data?.status === "in_progress"
-              ? "You have an assessment in progress. Continue where you left off to complete your evaluation."
-              : "You've completed the AI Linc No-Code Development Bootcamp — now take the next step. This assessment is your chance to showcase your learning, strengths, and readiness for real-world projects."}
+                ? "You have an assessment in progress. Continue where you left off to complete your evaluation."
+                : "You've completed the AI Linc No-Code Development Bootcamp — now take the next step. This assessment is your chance to showcase your learning, strengths, and readiness for real-world projects."}
           </p>
         </div>
 
@@ -266,8 +266,8 @@ const InstructionPage: React.FC = () => {
                 {data?.status === "submitted"
                   ? "Your Results Are Ready!"
                   : data?.status === "in_progress"
-                  ? "Continue Your Assessment"
-                  : "Let's begin. Your future self is waiting."}
+                    ? "Continue Your Assessment"
+                    : "Let's begin. Your future self is waiting."}
               </h2>
 
               {data?.status === "submitted" ? (
@@ -294,11 +294,10 @@ const InstructionPage: React.FC = () => {
                   <button
                     onClick={handleResumeAssessment}
                     disabled={startAssessmentMutation.isPending}
-                    className={`w-full py-4 px-6 rounded-xl font-semibold text-base transition-colors duration-200 ${
-                      !startAssessmentMutation.isPending
+                    className={`w-full py-4 px-6 rounded-xl font-semibold text-base transition-colors duration-200 ${!startAssessmentMutation.isPending
                         ? "bg-[#4A90A4] text-white hover:bg-[#3A7A8A]"
                         : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                    }`}
+                      }`}
                   >
                     {startAssessmentMutation.isPending ? (
                       <div className="flex items-center justify-center">
@@ -326,11 +325,10 @@ const InstructionPage: React.FC = () => {
                       value={phoneNumber}
                       onChange={handlePhoneChange}
                       placeholder="Enter phone number"
-                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79] transition-colors font-medium ${
-                        phoneNumber && !isPhoneValid
+                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79] transition-colors font-medium ${phoneNumber && !isPhoneValid
                           ? "border-red-300 focus:ring-red-200"
                           : "border-gray-300"
-                      }`}
+                        }`}
                       maxLength={10}
                     />
                     {phoneNumber && !isPhoneValid && (
@@ -345,11 +343,10 @@ const InstructionPage: React.FC = () => {
                     disabled={
                       !isPhoneValid || startAssessmentMutation.isPending
                     }
-                    className={`w-full py-4 px-6 rounded-xl font-semibold text-base transition-colors duration-200 ${
-                      isPhoneValid && !startAssessmentMutation.isPending
+                    className={`w-full py-4 px-6 rounded-xl font-semibold text-base transition-colors duration-200 ${isPhoneValid && !startAssessmentMutation.isPending
                         ? "bg-[#4A90A4] text-white hover:bg-[#3A7A8A]"
                         : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                    }`}
+                      }`}
                   >
                     {startAssessmentMutation.isPending ? (
                       <div className="flex items-center justify-center">
