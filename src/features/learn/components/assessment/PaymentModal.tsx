@@ -75,10 +75,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   // Use API data if available, otherwise fallback to default values
   const coursePrice = scholarshipData?.payable_amount || 6000;
   const scholarshipPercentage = scholarshipData?.percentage_scholarship || 15;
+  const originalPrice = scholarshipData?.total_amount || 100000;
   const currency = "₹";
-
-  // Calculate original price based on scholarship percentage
-  const originalPrice = Math.round(coursePrice / (1 - scholarshipPercentage / 100));
 
   const handlePayment = async () => {
     const paymentData = {
