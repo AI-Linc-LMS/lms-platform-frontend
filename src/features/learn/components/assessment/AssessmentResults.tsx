@@ -40,7 +40,7 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                     {score}
                   </span>
                   <span className="text-2xl sm:text-3xl md:text-4xl text-[#255C79] ml-2">
-                    /100
+                    /30
                   </span>
                 </div>
                 {score < 50 && (

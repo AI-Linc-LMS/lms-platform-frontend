@@ -1,4 +1,3 @@
-import { QuizSectionResponse } from "../../features/learn/pages/ShortAssessment";
 import axiosInstance from "../axiosInstance";
 
 interface ApiError {
