@@ -26,9 +26,9 @@ export interface CreateOrderResponse {
 }
 
 export interface VerifyPaymentRequest {
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
-  razorpay_signature: string;
+  order_id: string;
+  payment_id: string;
+  signature: string;
 }
 
 export interface VerifyPaymentResponse {
@@ -83,19 +83,59 @@ export const verifyPayment = async (
   try {
     // Get clientId from environment or use default
     const clientId = import.meta.env.VITE_CLIENT_ID || '1';
+    
+    // Ensure all required fields are present
+    const requestPayload = {
+      order_id: paymentData.order_id,
+      payment_id: paymentData.payment_id,
+      signature: paymentData.signature
+    };
+    
+    // Alternative: Try with explicit JSON stringification
+    const requestBody = JSON.stringify(requestPayload);
+    
+    console.log('=== PAYMENT VERIFICATION DEBUG ===');
+    console.log('Original paymentData:', paymentData);
+    console.log('Cleaned requestPayload:', requestPayload);
+    console.log('Stringified requestBody:', requestBody);
+    console.log('Field validation:', {
+      'order_id exists': !!requestPayload.order_id,
+      'payment_id exists': !!requestPayload.payment_id,
+      'signature exists': !!requestPayload.signature,
+      'order_id value': requestPayload.order_id,
+      'payment_id value': requestPayload.payment_id,
+      'signature value': requestPayload.signature ? `${requestPayload.signature.substring(0, 20)}...` : 'MISSING'
+    });
+    
+    console.log('Verify Payment API Call:', {
+      url: `/payment-gateway/api/clients/${clientId}/verify-payment/`,
+      payload: requestPayload,
+      clientId: clientId
+    });
+    
     const response = await axiosInstance.post(
       `/payment-gateway/api/clients/${clientId}/verify-payment/`,
-      paymentData
+      requestPayload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      }
     );
+    
+    console.log('Verify Payment API Response:', response.data);
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
       const axiosError = error as ApiError;
+      console.error("=== PAYMENT VERIFICATION ERROR ===");
       console.error("Failed to verify payment:", error);
       console.error("Error details:", {
         message: axiosError.message,
         response: axiosError.response?.data,
         status: axiosError.response?.status,
+        requestData: paymentData
       });
 
       throw new Error(
