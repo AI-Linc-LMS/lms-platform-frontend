@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link} from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import { useAppSelector } from "../../../redux/store";
 import GoogleLoginButton from "../../../commonComponents/common-buttons/google-login-button/GoogleLoginButton";
