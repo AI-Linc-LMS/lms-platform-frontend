@@ -37,7 +37,7 @@ const AssessmentBanner: React.FC = () => {
       <div className="flex flex-col md:flex-row items-center justify-between relative z-10">
         <div className="flex-1 mb-6 md:mb-0 md:pr-8">
           <h2 className="text-2xl md:text-3xl font-bold text-[#255C79] mb-3">
-            Take the FREE Placement Assessment
+            Take the Free Placement Assessment
           </h2>
           <p className="text-[#255C79] text-base md:text-lg font-medium">
             Get added to the placement pool or get a scholarship to become eligible

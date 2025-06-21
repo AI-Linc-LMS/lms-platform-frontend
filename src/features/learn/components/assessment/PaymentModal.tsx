@@ -7,17 +7,23 @@ import {
   FiUsers,
   FiAward,
 } from "react-icons/fi";
-import { useScholarshipRedemption } from "../../hooks/useScholarshipRedemption";
 import PaymentSuccessModal from "./PaymentSuccessModal";
 import PaymentProcessingModal from "./PaymentProcessingModal";
 import PaymentToast from "./PaymentToast";
+
+export interface CreateOrderResponse {
+  order_id: string;
+  amount: number;
+  currency: string;
+  key: string;
+}
 
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   clientId: number;
-  assessmentId: string | number;
   onPaymentSuccess?: () => void;
+  purchasedData: PurchasedData;
 }
 
 interface RazorpayResponse {
@@ -54,12 +60,18 @@ declare global {
   }
 }
 
+interface PurchasedData {
+  percentage_scholarship: number;
+  total_amount: number;
+  payable_amount: number;
+}
+
 const PaymentModal: React.FC<PaymentModalProps> = ({
   isOpen,
   onClose,
   clientId,
-  assessmentId,
   onPaymentSuccess,
+  purchasedData,
 }) => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showProcessingModal, setShowProcessingModal] = useState(false);
@@ -257,52 +269,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     }
   };
 
-  // Convert values to strings for API call
-  const clientIdString = clientId.toString();
-  const assessmentIdString =
-    typeof assessmentId === "number" ? assessmentId.toString() : assessmentId;
-
-  // Fetch actual scholarship redemption data from API
-  const {
-    data: scholarshipData,
-
-    error: scholarshipError,
-  } = useScholarshipRedemption(clientIdString, assessmentIdString, isOpen);
-
-  // Show error state if API call fails
-  if (scholarshipError && !showSuccessModal) {
-    return (
-      <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg p-8 max-w-md w-full shadow-xl">
-          <div className="text-center">
-            <div className="text-red-500 mb-4">
-              <FiX className="h-12 w-12 mx-auto" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Error Loading Course Details
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Unable to load course information. Please try again.
-            </p>
-            <button
-              onClick={onClose}
-              className="bg-[#255C79] text-white px-4 py-2 rounded-lg hover:bg-[#1e4a61] transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Use API data if available, otherwise fallback to default values
-  const coursePrice = scholarshipData?.payable_amount || 6000;
-  const scholarshipPercentage = scholarshipData?.percentage_scholarship || 15;
+  const coursePrice = purchasedData?.payable_amount || 6000;
+  const scholarshipPercentage = purchasedData?.percentage_scholarship || 15;
   const currency = "₹";
 
   // Use total_amount from API as the original price
-  const originalPrice = scholarshipData?.total_amount || 100000;
+  const originalPrice = purchasedData?.total_amount || 100000;
 
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);

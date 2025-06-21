@@ -1,29 +1,44 @@
 import React, { useState, useEffect } from "react";
-import { FiCheck, FiShoppingCart } from "react-icons/fi";
+import { FiCheck, FiShoppingCart, FiX } from "react-icons/fi";
 import PaymentModal from "./PaymentModal";
+import { redeemScholarship } from "../../../../services/assesment/assesmentApis";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 
 interface AssessmentResultsProps {
-  score: number;
-  scholarshipPercentage: number;
   clientId?: number;
-  assessmentId?: string | number;
+  assessmentId?: string;
 }
 
 const AssessmentResults: React.FC<AssessmentResultsProps> = ({
-  score,
-  scholarshipPercentage,
   clientId = 1, // Default fallback
   assessmentId = "ai-linc-scholarship-test", // Default fallback - string slug for API
 }) => {
+  const navigate = useNavigate();
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isPurchased, setIsPurchased] = useState(false);
+  
+  const {data:redeemData,isLoading,error} = useQuery({ 
+    queryKey: ["assessment-results", clientId, assessmentId],
+    queryFn: () => redeemScholarship(clientId, assessmentId),
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 0, 
+    gcTime: 0, 
+    enabled: !!clientId && !!assessmentId,
+  });
 
+  const onCloseErrorModal = () => {
+    navigate("/courses");
+  }
   // Check if already purchased on component mount
   useEffect(() => {
-    const purchaseKey = `course_purchased_${clientId}_${assessmentId}`;
-    const purchased = localStorage.getItem(purchaseKey) === 'true';
-    setIsPurchased(purchased);
-  }, [clientId, assessmentId]);
+    if(redeemData?.txn_status === "VERIFIED"){
+      setIsPurchased(true);
+    }else{
+      setIsPurchased(false);
+    }
+  }, [redeemData]);
 
   const handleRedeemNow = () => {
     if (!isPurchased) {
@@ -46,13 +61,45 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
       purchasedAt: new Date().toISOString(),
       clientId,
       assessmentId,
-      scholarshipPercentage,
-      score
+      percentage_scholarship : redeemData?.percentage_scholarship,
+      total_amount : redeemData?.total_amount,
+      payable_amount : redeemData?.payable_amount,
     };
     localStorage.setItem(`${purchaseKey}_metadata`, JSON.stringify(purchaseData));
     
     setIsPaymentModalOpen(false);
   };
+
+  if(isLoading){
+    return <div className="flex justify-center items-center h-screen">
+      <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
+    </div>
+  }
+  if (error && !isPaymentModalOpen) {
+    return (
+      <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg p-8 max-w-md w-full shadow-xl">
+          <div className="text-center">
+            <div className="text-red-500 mb-4">
+              <FiX className="h-12 w-12 mx-auto" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Error Loading submission
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Unable to load submission information. Please try again.
+            </p>
+            <button
+              onClick={onCloseErrorModal}
+              className="bg-[#255C79] text-white px-4 py-2 rounded-lg hover:bg-[#1e4a61] transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -67,7 +114,7 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                 </p>
                 <div className="flex items-baseline mb-4">
                   <span className="text-5xl sm:text-6xl md:text-7xl font-bold text-[#255C79]">
-                    {score}
+                    {redeemData?.score}
                   </span>
                   <span className="text-2xl sm:text-3xl md:text-4xl text-[#255C79] ml-2">
                     /30
@@ -96,10 +143,10 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                 </div>
                 <div className="text-center mb-6">
                   <div className="text-5xl sm:text-6xl md:text-7xl font-bold mb-2">
-                    {scholarshipPercentage}%
+                    {redeemData?.percentage_scholarship ?? 15}%
                   </div>
                   <div className="text-lg sm:text-xl font-semibold">
-                    {isPurchased ? "Course Access" : "Scholarship"}
+                    {"Scholarship"}
                   </div>
                 </div>
                 
@@ -143,8 +190,8 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
         isOpen={isPaymentModalOpen}
         onClose={handleClosePaymentModal}
         clientId={clientId}
-        assessmentId={assessmentId}
         onPaymentSuccess={handlePaymentSuccess}
+        purchasedData={redeemData}
       />
     </>
   );
