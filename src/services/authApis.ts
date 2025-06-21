@@ -8,6 +8,8 @@ export interface LoginCredentials {
 }
 
 export interface UserData {
+  phone_number: string;
+  user: UserData;
   name: string;
   role: string;
   id: string;
