@@ -17,6 +17,7 @@ interface PaymentModalProps {
   onClose: () => void;
   clientId: number;
   assessmentId: string | number;
+  onPaymentSuccess?: () => void;
 }
 
 interface RazorpayResponse {
@@ -58,6 +59,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   onClose,
   clientId,
   assessmentId,
+  onPaymentSuccess,
 }) => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showProcessingModal, setShowProcessingModal] = useState(false);
@@ -181,6 +183,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 setShowSuccessModal(true);
                 hideToast();
               }, 2000);
+
+              if (onPaymentSuccess) {
+                onPaymentSuccess();
+              }
             } else {
               throw new Error(verifyData.error || "Payment verification failed");
             }
