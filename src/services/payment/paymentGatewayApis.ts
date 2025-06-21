@@ -1,28 +1,11 @@
 import axiosInstance from "../axiosInstance";
 
-export interface CreateOrderRequest {
-  amount: number;
-  currency?: string;
-  receipt?: string;
-  notes?: Record<string, string>;
-  assessment_id?: string;
-  user_email?: string;
-  scholarship_percentage?: number;
-}
 
 export interface CreateOrderResponse {
-  id: string;
-  entity: string;
+  order_id: string;
   amount: number;
-  amount_paid: number;
-  amount_due: number;
   currency: string;
-  receipt: string;
-  offer_id?: string;
-  status: string;
-  attempts: number;
-  notes: Record<string, string>;
-  created_at: number;
+  key: string;
 }
 
 export interface VerifyPaymentRequest {
@@ -38,22 +21,22 @@ export interface VerifyPaymentResponse {
 }
 
 interface ApiError {
-  response?: { 
-    data?: { detail?: string }; 
-    status?: number 
+  response?: {
+    data?: { detail?: string };
+    status?: number;
   };
   message: string;
 }
 
 export const createOrder = async (
-  orderData: CreateOrderRequest
+  clientId: number,
+  amount: number
 ): Promise<CreateOrderResponse> => {
   try {
-    // Get clientId from environment or use default
-    const clientId = import.meta.env.VITE_CLIENT_ID || '1';
     const response = await axiosInstance.post(
-      `/payment-gateway/api/clients/${clientId}/create-order/`,
-      orderData
+      `/payment-gateway/api/clients/${clientId}/create-order/`,{
+        amount: amount,
+      }
     );
     return response.data;
   } catch (error) {
@@ -78,53 +61,54 @@ export const createOrder = async (
 };
 
 export const verifyPayment = async (
+  clientId: number,
   paymentData: VerifyPaymentRequest
 ): Promise<VerifyPaymentResponse> => {
   try {
-    // Get clientId from environment or use default
-    const clientId = import.meta.env.VITE_CLIENT_ID || '1';
-    
+
     // Ensure all required fields are present
     const requestPayload = {
       order_id: paymentData.order_id,
       payment_id: paymentData.payment_id,
-      signature: paymentData.signature
+      signature: paymentData.signature,
     };
-    
+
     // Alternative: Try with explicit JSON stringification
     const requestBody = JSON.stringify(requestPayload);
-    
-    console.log('=== PAYMENT VERIFICATION DEBUG ===');
-    console.log('Original paymentData:', paymentData);
-    console.log('Cleaned requestPayload:', requestPayload);
-    console.log('Stringified requestBody:', requestBody);
-    console.log('Field validation:', {
-      'order_id exists': !!requestPayload.order_id,
-      'payment_id exists': !!requestPayload.payment_id,
-      'signature exists': !!requestPayload.signature,
-      'order_id value': requestPayload.order_id,
-      'payment_id value': requestPayload.payment_id,
-      'signature value': requestPayload.signature ? `${requestPayload.signature.substring(0, 20)}...` : 'MISSING'
+
+    console.log("=== PAYMENT VERIFICATION DEBUG ===");
+    console.log("Original paymentData:", paymentData);
+    console.log("Cleaned requestPayload:", requestPayload);
+    console.log("Stringified requestBody:", requestBody);
+    console.log("Field validation:", {
+      "order_id exists": !!requestPayload.order_id,
+      "payment_id exists": !!requestPayload.payment_id,
+      "signature exists": !!requestPayload.signature,
+      "order_id value": requestPayload.order_id,
+      "payment_id value": requestPayload.payment_id,
+      "signature value": requestPayload.signature
+        ? `${requestPayload.signature.substring(0, 20)}...`
+        : "MISSING",
     });
-    
-    console.log('Verify Payment API Call:', {
+
+    console.log("Verify Payment API Call:", {
       url: `/payment-gateway/api/clients/${clientId}/verify-payment/`,
       payload: requestPayload,
-      clientId: clientId
+      clientId: clientId,
     });
-    
+
     const response = await axiosInstance.post(
       `/payment-gateway/api/clients/${clientId}/verify-payment/`,
       requestPayload,
       {
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
       }
     );
-    
-    console.log('Verify Payment API Response:', response.data);
+
+    console.log("Verify Payment API Response:", response.data);
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
@@ -135,7 +119,7 @@ export const verifyPayment = async (
         message: axiosError.message,
         response: axiosError.response?.data,
         status: axiosError.response?.status,
-        requestData: paymentData
+        requestData: paymentData,
       });
 
       throw new Error(
@@ -147,4 +131,4 @@ export const verifyPayment = async (
       throw new Error("An unknown error occurred");
     }
   }
-}; 
+};
