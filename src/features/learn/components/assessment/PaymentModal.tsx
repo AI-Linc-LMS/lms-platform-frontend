@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { FiX, FiCheck, FiShield, FiClock, FiUsers, FiAward } from "react-icons/fi";
-import { usePayment } from "../../hooks/usePayment";
+import { useRazorpayPayment } from "../../hooks/useRazorpayPayment";
 import { useScholarshipRedemption } from "../../hooks/useScholarshipRedemption";
+import PaymentSuccessModal from "./PaymentSuccessModal";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -16,7 +17,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   clientId,
   assessmentId,
 }) => {
-  const { isProcessing, processPayment } = usePayment();
+  const { isProcessing, isLoading, processRazorpayPayment } = useRazorpayPayment();
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [paymentResult, setPaymentResult] = useState<{
+    paymentId?: string;
+    orderId?: string;
+    amount: number;
+  } | null>(null);
   
   // Convert values to strings for API call
   const clientIdString = clientId.toString();
@@ -29,10 +36,27 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     error: scholarshipError 
   } = useScholarshipRedemption(clientIdString, assessmentIdString, isOpen);
 
-  if (!isOpen) return null;
+  // Load Razorpay script
+  useEffect(() => {
+    const loadRazorpayScript = () => {
+      return new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.body.appendChild(script);
+      });
+    };
+
+    if (isOpen && !window.Razorpay) {
+      loadRazorpayScript();
+    }
+  }, [isOpen]);
+
+  if (!isOpen && !showSuccessModal) return null;
 
   // Show loading state while fetching data
-  if (isLoadingScholarship) {
+  if (isLoadingScholarship && !showSuccessModal) {
     return (
       <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg p-8 max-w-md w-full shadow-xl">
@@ -46,7 +70,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   }
 
   // Show error state if API call fails
-  if (scholarshipError) {
+  if (scholarshipError && !showSuccessModal) {
     return (
       <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg p-8 max-w-md w-full shadow-xl">
@@ -75,31 +99,49 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   // Use API data if available, otherwise fallback to default values
   const coursePrice = scholarshipData?.payable_amount || 6000;
   const scholarshipPercentage = scholarshipData?.percentage_scholarship || 15;
-  const originalPrice = scholarshipData?.total_amount || 100000;
   const currency = "₹";
 
+  // Use total_amount from API as the original price
+  const originalPrice = scholarshipData?.total_amount || 100000;
+
   const handlePayment = async () => {
+    if (!window.Razorpay) {
+      alert('Razorpay SDK not loaded. Please refresh and try again.');
+      return;
+    }
+
     const paymentData = {
-      plan: 'monthly' as const, // Keep for compatibility, but it's actually a one-time purchase
       amount: coursePrice,
-      scholarshipPercentage,
-      originalPrice: originalPrice,
       clientId,
       assessmentId: assessmentIdString,
+      scholarshipPercentage,
+      originalPrice: originalPrice,
     };
 
     try {
-      const result = await processPayment(paymentData);
+      const result = await processRazorpayPayment(paymentData);
       if (result.success) {
-        alert("Payment successful! You now have lifetime access to the course.");
-        onClose();
+        // Store payment result and show success modal
+        setPaymentResult({
+          paymentId: result.paymentId,
+          orderId: result.orderId,
+          amount: coursePrice,
+        });
+        setShowSuccessModal(true);
+        // Don't close the payment modal immediately, let success modal handle it
       } else {
-        alert("Payment failed. Please try again.");
+        alert(result.message || "Payment failed. Please try again.");
       }
     } catch (error) {
       console.error("Payment error:", error);
       alert("Payment failed. Please try again.");
     }
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    setPaymentResult(null);
+    onClose();
   };
 
   const features = [
@@ -112,130 +154,150 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Get Lifetime Course Access
-            </h2>
-            <p className="text-gray-600 mt-1">
-              One-time payment for complete course access
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <FiX className="h-6 w-6" />
-          </button>
-        </div>
-
-        {/* Scholarship Badge */}
-        <div className="px-6 pt-4">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center space-x-3">
-            <FiAward className="h-8 w-8 text-green-600" />
-            <div>
-              <h3 className="font-semibold text-green-800">
-                🎉 Scholarship Applied!
-              </h3>
-              <p className="text-green-700 text-sm">
-                You've earned a {scholarshipPercentage}% discount based on your assessment performance
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Course Purchase Card */}
-        <div className="p-6">
-          <div className="border-2 border-[#255C79] bg-blue-50 rounded-lg p-6 mb-6">
-            <div className="text-center mb-4">
-              <h3 className="font-semibold text-xl text-gray-900 mb-2">Complete Course Access</h3>
-              <p className="text-gray-600 text-sm">One-time purchase • Lifetime access</p>
-            </div>
-            
-            <div className="text-center mb-4">
-              <div className="text-4xl font-bold text-gray-900 mb-2">
-                {currency}{coursePrice.toLocaleString()}
-                <span className="text-lg font-normal text-gray-500 ml-2">
-                  one-time
-                </span>
+    <>
+      {/* Payment Modal */}
+      {isOpen && !showSuccessModal && (
+        <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex justify-between items-center p-6 border-b">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Get Lifetime Course Access
+                </h2>
+                <p className="text-gray-600 mt-1">
+                  One-time payment for complete course access
+                </p>
               </div>
-              <div className="text-sm text-gray-500 line-through mb-2">
-                Original Price: {currency}{originalPrice.toLocaleString()}
-              </div>
-              <div className="text-lg text-green-600 font-semibold">
-                You Save {currency}{(originalPrice - coursePrice).toLocaleString()} with scholarship!
-              </div>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                disabled={isProcessing || isLoading}
+              >
+                <FiX className="h-6 w-6" />
+              </button>
             </div>
 
-            <div className="bg-white rounded-lg p-4 mb-4">
-              <h4 className="font-semibold text-gray-900 mb-3 text-center">
-                What you'll get:
-              </h4>
-              <div className="grid md:grid-cols-2 gap-2">
-                {features.map((feature, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <FiCheck className="h-4 w-4 text-green-500 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">{feature}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Security & Support Info */}
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <div className="flex items-center justify-center space-x-6 text-sm text-gray-600">
-              <div className="flex items-center space-x-1">
-                <FiShield className="h-4 w-4" />
-                <span>Secure Payment</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <FiClock className="h-4 w-4" />
-                <span>Instant Access</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <FiUsers className="h-4 w-4" />
-                <span>24/7 Support</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex space-x-3">
-            <button
-              onClick={onClose}
-              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-            >
-              Maybe Later
-            </button>
-            <button
-              onClick={handlePayment}
-              disabled={isProcessing}
-              className="flex-1 px-6 py-3 bg-[#255C79] text-white rounded-lg hover:bg-[#1e4a61] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isProcessing ? (
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Processing...</span>
+            {/* Scholarship Badge */}
+            <div className="px-6 pt-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center space-x-3">
+                <FiAward className="h-8 w-8 text-green-600" />
+                <div>
+                  <h3 className="font-semibold text-green-800">
+                    🎉 Scholarship Applied!
+                  </h3>
+                  <p className="text-green-700 text-sm">
+                    You've earned a {scholarshipPercentage}% discount based on your assessment performance
+                  </p>
                 </div>
-              ) : (
-                `Pay ${currency}${coursePrice.toLocaleString()} Now`
-              )}
-            </button>
-          </div>
+              </div>
+            </div>
 
-          {/* Additional Info */}
-          <div className="mt-4 text-center">
-            <p className="text-xs text-gray-500">
-              Secure payment • 30-day money-back guarantee • No hidden fees
-            </p>
+            {/* Course Purchase Card */}
+            <div className="p-6">
+              <div className="border-2 border-[#255C79] bg-blue-50 rounded-lg p-6 mb-6">
+                <div className="text-center mb-4">
+                  <h3 className="font-semibold text-xl text-gray-900 mb-2">Complete Course Access</h3>
+                  <p className="text-gray-600 text-sm">One-time purchase • Lifetime access</p>
+                </div>
+                
+                <div className="text-center mb-4">
+                  <div className="text-4xl font-bold text-gray-900 mb-2">
+                    {currency}{coursePrice.toLocaleString()}
+                    <span className="text-lg font-normal text-gray-500 ml-2">
+                      one-time
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-500 line-through mb-2">
+                    Original Price: {currency}{originalPrice.toLocaleString()}
+                  </div>
+                  <div className="text-lg text-green-600 font-semibold">
+                    You Save {currency}{(originalPrice - coursePrice).toLocaleString()} with scholarship!
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 mb-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 text-center">
+                    What you'll get:
+                  </h4>
+                  <div className="grid md:grid-cols-2 gap-2">
+                    {features.map((feature, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <FiCheck className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span className="text-sm text-gray-700">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Security & Support Info */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <div className="flex items-center justify-center space-x-6 text-sm text-gray-600">
+                  <div className="flex items-center space-x-1">
+                    <FiShield className="h-4 w-4" />
+                    <span>Secure Payment</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <FiClock className="h-4 w-4" />
+                    <span>Instant Access</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <FiUsers className="h-4 w-4" />
+                    <span>24/7 Support</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex space-x-3">
+                <button
+                  onClick={onClose}
+                  disabled={isProcessing || isLoading}
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Maybe Later
+                </button>
+                <button
+                  onClick={handlePayment}
+                  disabled={isProcessing || isLoading}
+                  className="flex-1 px-6 py-3 bg-[#255C79] text-white rounded-lg hover:bg-[#1e4a61] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isProcessing || isLoading ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>
+                        {isLoading ? 'Preparing...' : 'Processing...'}
+                      </span>
+                    </div>
+                  ) : (
+                    `Pay ${currency}${coursePrice.toLocaleString()} Now`
+                  )}
+                </button>
+              </div>
+
+              {/* Additional Info */}
+              <div className="mt-4 text-center">
+                <p className="text-xs text-gray-500">
+                  Secure payment via Razorpay • 30-day money-back guarantee • No hidden fees
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      )}
+
+      {/* Success Modal */}
+      {paymentResult && (
+        <PaymentSuccessModal
+          isOpen={showSuccessModal}
+          onClose={handleSuccessModalClose}
+          paymentId={paymentResult.paymentId}
+          orderId={paymentResult.orderId}
+          amount={paymentResult.amount}
+        />
+      )}
+    </>
   );
 };
 
