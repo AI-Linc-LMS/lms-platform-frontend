@@ -121,7 +121,7 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                   </span>
                 </div>
                   <div className="flex flex-col gap-2 text-[#255C79]">
-                    <span className="text-xl sm:text-2xl font-bold">"Great effort!” 🎉</span>
+                    <span className="text-xl sm:text-2xl font-bold">Great effort! 🎉</span>
                     <p className="text-base sm:text-lg font-medium">
                     As per to your score, our hiring or counseling team would get in touch with you
                     </p>

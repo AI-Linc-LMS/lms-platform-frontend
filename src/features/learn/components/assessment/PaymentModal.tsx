@@ -10,6 +10,11 @@ import {
 import PaymentSuccessModal from "./PaymentSuccessModal";
 import PaymentProcessingModal from "./PaymentProcessingModal";
 import PaymentToast from "./PaymentToast";
+import {
+  createOrder,
+  verifyPayment,
+  VerifyPaymentRequest,
+} from "../../../../services/payment/paymentGatewayApis";
 
 export interface CreateOrderResponse {
   order_id: string;
@@ -110,16 +115,36 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   };
 
   const loadRazorpayScript = () =>
-    new Promise((resolve) => {
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
+    new Promise<boolean>((resolve, reject) => {
+      try {
+        // Check if Razorpay is already loaded
+        if (window.Razorpay) {
+          resolve(true);
+          return;
+        }
+
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.onload = () => resolve(true);
+        script.onerror = () =>
+          reject(new Error("Failed to load Razorpay script"));
+        document.body.appendChild(script);
+      } catch {
+        reject(new Error("Failed to initialize Razorpay script"));
+      }
     });
 
   const handlePayment = async () => {
     try {
+      // Validate input parameters
+      if (!clientId || clientId <= 0) {
+        throw new Error("Invalid client ID provided");
+      }
+
+      if (!coursePrice || coursePrice <= 0) {
+        throw new Error("Invalid course price provided");
+      }
+
       setShowProcessingModal(true);
       setProcessingStep("creating");
       showToast(
@@ -136,25 +161,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       }
 
       // 1. Create order from backend
-      const createOrderResponse = await fetch(
-        "https://be-app.ailinc.com/payment-gateway/api/clients/1/create-order/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: "Bearer " + localStorage.getItem("token"),
-          },
-          body: JSON.stringify({
-            amount: coursePrice,
-            client_id: clientId,
-          }),
-        }
-      );
+      const orderData = await createOrder(clientId, coursePrice);
 
-      const orderData = await createOrderResponse.json();
-
-      if (!orderData.order_id) {
-        throw new Error("Failed to create payment order. Please try again.");
+      if (!orderData || !orderData.order_id || !orderData.key) {
+        throw new Error(
+          "Failed to create payment order. Invalid response from server."
+        );
       }
 
       setProcessingStep("processing");
@@ -164,12 +176,23 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       const options: RazorpayOptions = {
         key: orderData.key,
         amount: coursePrice,
-        currency: orderData.currency,
+        currency: orderData.currency || "INR",
         name: "AI-LINC Platform",
         description: "Course Access Payment",
         order_id: orderData.order_id,
         handler: async function (response: RazorpayResponse) {
           try {
+            // Validate Razorpay response
+            if (
+              !response.razorpay_order_id ||
+              !response.razorpay_payment_id ||
+              !response.razorpay_signature
+            ) {
+              throw new Error(
+                "Invalid payment response received from Razorpay"
+              );
+            }
+
             setProcessingStep("verifying");
             showToast(
               "loading",
@@ -177,26 +200,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               "Confirming transaction security..."
             );
 
+            const paymentResult: VerifyPaymentRequest = {
+              order_id: response.razorpay_order_id,
+              payment_id: response.razorpay_payment_id,
+              signature: response.razorpay_signature,
+            };
+
             // 3. Verify signature
-            const verifyRes = await fetch(
-              "https://be-app.ailinc.com/payment-gateway/api/clients/1/verify-payment/",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: "Bearer " + localStorage.getItem("token"),
-                },
-                body: JSON.stringify({
-                  order_id: response.razorpay_order_id,
-                  payment_id: response.razorpay_payment_id,
-                  signature: response.razorpay_signature,
-                }),
-              }
-            );
+            const verifyRes = await verifyPayment(clientId, paymentResult);
 
-            const verifyData = await verifyRes.json();
-
-            if (verifyRes.ok) {
+            // Check if verification was successful based on the response message
+            if (verifyRes.status === 200) {
               setProcessingStep("complete");
               hideToast();
               showToast(
@@ -214,39 +228,51 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
               // Wait a moment to show completion, then show success modal
               setTimeout(() => {
-                setShowProcessingModal(false);
-                setShowSuccessModal(true);
-                hideToast();
+                try {
+                  setShowProcessingModal(false);
+                  setShowSuccessModal(true);
+                  hideToast();
+                } catch (error) {
+                  console.error("Error showing success modal:", error);
+                  setShowProcessingModal(false);
+                  hideToast();
+                }
               }, 2000);
 
               if (onPaymentSuccess) {
                 onPaymentSuccess();
               }
-            } else {
-              throw new Error(
-                verifyData.error || "Payment verification failed"
-              );
             }
           } catch (error) {
             setShowProcessingModal(false);
             hideToast();
             console.error("Payment verification error:", error);
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : "Payment verification failed";
             showToast(
               "error",
               "Verification Failed",
-              "Payment verification failed. Please contact support if amount was debited."
+              `Payment verification failed: ${errorMessage}. Please contact support if amount was debited.`
             );
           }
         },
         modal: {
           ondismiss: function () {
-            setShowProcessingModal(false);
-            hideToast();
-            showToast(
-              "warning",
-              "Payment Cancelled",
-              "Payment process was cancelled by user."
-            );
+            try {
+              setShowProcessingModal(false);
+              hideToast();
+              showToast(
+                "warning",
+                "Payment Cancelled",
+                "Payment process was cancelled by user."
+              );
+            } catch (error) {
+              console.error("Error handling modal dismiss:", error);
+              setShowProcessingModal(false);
+              hideToast();
+            }
           },
         },
         prefill: {
@@ -265,7 +291,25 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       setShowProcessingModal(false);
       hideToast();
       console.error("Payment error:", error);
-      showToast("error", "Payment Failed", (error as Error).message);
+
+      let errorMessage =
+        "An unexpected error occurred during payment processing.";
+
+      if (error instanceof Error) {
+        if (error.message.includes("Failed to load Razorpay script")) {
+          errorMessage =
+            "Payment gateway failed to load. Please check your internet connection and try again.";
+        } else if (error.message.includes("Failed to create payment order")) {
+          errorMessage =
+            "Unable to initialize payment. Please try again or contact support.";
+        } else if (error.message.includes("Invalid payment response")) {
+          errorMessage = "Payment response was invalid. Please try again.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      showToast("error", "Payment Failed", errorMessage);
     }
   };
 

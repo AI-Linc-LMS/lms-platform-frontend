@@ -8,11 +8,6 @@ export interface VerifyPaymentRequest {
   signature: string;
 }
 
-export interface VerifyPaymentResponse {
-  success: boolean;
-  message: string;
-  payment_details?: Record<string, unknown>;
-}
 
 interface ApiError {
   response?: {
@@ -57,7 +52,7 @@ export const createOrder = async (
 export const verifyPayment = async (
   clientId: number,
   paymentData: VerifyPaymentRequest
-): Promise<VerifyPaymentResponse> => {
+) => {
   try {
 
     // Ensure all required fields are present
@@ -102,8 +97,8 @@ export const verifyPayment = async (
       }
     );
 
-    console.log("Verify Payment API Response:", response.data);
-    return response.data;
+    console.log("Verify Payment API Response:", response);
+    return response;
   } catch (error) {
     if (error instanceof Error) {
       const axiosError = error as ApiError;
