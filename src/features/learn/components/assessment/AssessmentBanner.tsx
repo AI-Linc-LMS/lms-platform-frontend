@@ -20,7 +20,7 @@ const AssessmentBanner: React.FC = () => {
     if (data?.status === "submitted") {
       navigate("/assessment/quiz");
     } else {
-      navigate("/instruction-page");
+      navigate("/ai-linc-scholarship-test");
     }
   };
 

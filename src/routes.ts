@@ -139,7 +139,7 @@ const routes: RouteConfig[] = [
     isPrivate: true,
   },
   {
-    path: "/instruction-page",
+    path: "/ai-linc-scholarship-test",
     component: InstructionPage,
     isPrivate: true,
   }
