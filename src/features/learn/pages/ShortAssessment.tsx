@@ -46,21 +46,11 @@ const ShortAssessment: React.FC = () => {
 
   // Assessment completed section
   if (isCompleted) {
-    const score = questions?.score || assessmentResult.score;
-    const scholarshipPercentage =
-      questions?.offered_scholarship_percentage ||
-      assessmentResult.offered_scholarship_percentage;
-
     const clientId = parseInt(import.meta.env.VITE_CLIENT_ID) || 1;
     const assessmentSlug = questions?.slug || "ai-linc-scholarship-test"; // Use slug from questions
 
     return (
-      <AssessmentResults
-        score={score}
-        scholarshipPercentage={scholarshipPercentage}
-        clientId={clientId}
-        assessmentId={assessmentSlug}
-      />
+      <AssessmentResults clientId={clientId} assessmentId={assessmentSlug} />
     );
   }
 
