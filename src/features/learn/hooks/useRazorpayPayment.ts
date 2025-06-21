@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { createOrder, verifyPayment, CreateOrderRequest, VerifyPaymentRequest } from '../../../services/payment/paymentGatewayApis';
+import { verifyPayment, VerifyPaymentRequest } from '../../../services/payment/paymentGatewayApis';
 
 // Function to load Razorpay script dynamically
 const loadRazorpayScript = (): Promise<boolean> => {
@@ -41,7 +41,7 @@ interface RazorpayOptions {
   currency: string;
   name: string;
   description: string;
-  order_id: string;
+  order_id?: string;
   handler: (response: RazorpayResponse) => void;
   prefill: {
     name: string;
@@ -54,6 +54,7 @@ interface RazorpayOptions {
   modal: {
     ondismiss: () => void;
   };
+  onError?: (error: { description?: string; reason?: string; code?: string }) => void;
 }
 
 interface RazorpayInstance {
@@ -112,61 +113,69 @@ export const useRazorpayPayment = () => {
         throw new Error('Failed to load Razorpay script. Please check your internet connection.');
       }
 
-      // Step 2: Create order on backend
-      const orderRequest: CreateOrderRequest = {
-        amount: paymentData.amount, // Send amount in rupees as backend expects
-        currency: 'INR',
-        receipt: `receipt_${Date.now()}`,
-        assessment_id: paymentData.assessmentId.toString(),
-        scholarship_percentage: paymentData.scholarshipPercentage,
-        user_email: userEmail,
-        notes: {
-          assessmentId: paymentData.assessmentId.toString(),
-          scholarshipPercentage: paymentData.scholarshipPercentage.toString(),
-          originalPrice: paymentData.originalPrice.toString(),
-        }
-      };
+      // Step 2: Create Razorpay order directly (bypass backend for now)
+      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+      
+      if (!razorpayKey) {
+        throw new Error('Razorpay key is not configured. Please check your environment variables.');
+      }
 
-      const order = await createOrder(orderRequest);
-      console.log('Order created:', order);
-
-      // Step 3: Initialize Razorpay checkout
+      console.log('=== DIRECT RAZORPAY ORDER CREATION ===');
+      console.log('Creating order with amount:', paymentData.amount);
+      
+      // Step 3: Initialize Razorpay checkout without pre-created order
       return new Promise((resolve) => {
-        const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
-        console.log('Razorpay Key:', razorpayKey ? 'Present' : 'Missing');
-        console.log('Order details:', order);
-        console.log('Amount conversion:', {
-          'Backend amount (rupees)': order.amount,
-          'Razorpay amount (paise)': order.amount * 100,
-          'Display amount': `₹${order.amount.toLocaleString()}`
-        });
-
-        if (!razorpayKey) {
-          resolve({
-            success: false,
-            message: 'Razorpay key is not configured. Please check your environment variables.',
-            email: userEmail,
-          });
-          return;
-        }
-
         const options: RazorpayOptions = {
           key: razorpayKey,
-          amount: order.amount * 100, // Convert rupees to paise for Razorpay
-          currency: order.currency,
+          amount: paymentData.amount * 100, // Convert rupees to paise for Razorpay
+          currency: 'INR',
           name: 'AI-LINC Course',
           description: 'Course Purchase with Scholarship Applied',
-          order_id: order.id,
+          // Remove order_id - let Razorpay create it automatically
           handler: async (response: RazorpayResponse) => {
+            console.log('=== RAZORPAY RESPONSE DEBUG ===');
             console.log('Payment response received:', response);
+            console.log('Raw Razorpay response structure:', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            });
+            
+            // Validate all required fields are present
+            if (!response.razorpay_order_id || !response.razorpay_payment_id || !response.razorpay_signature) {
+              console.error('=== INCOMPLETE RAZORPAY RESPONSE ===');
+              console.error('Missing required fields in Razorpay response:', {
+                'Missing order_id': !response.razorpay_order_id,
+                'Missing payment_id': !response.razorpay_payment_id,
+                'Missing signature': !response.razorpay_signature,
+                'Actual values': {
+                  'razorpay_order_id': response.razorpay_order_id || 'UNDEFINED',
+                  'razorpay_payment_id': response.razorpay_payment_id || 'UNDEFINED',
+                  'razorpay_signature': response.razorpay_signature || 'UNDEFINED'
+                }
+              });
+              
+              setIsProcessing(false);
+              setIsLoading(false);
+              resolve({
+                success: false,
+                message: 'Incomplete payment data received from Razorpay. Please try again.',
+                email: userEmail,
+              });
+              return;
+            }
+            
             try {
               // Step 4: Verify payment on backend
               const verifyRequest: VerifyPaymentRequest = {
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
+                order_id: response.razorpay_order_id,
+                payment_id: response.razorpay_payment_id,
+                signature: response.razorpay_signature,
               };
 
+              console.log('=== VERIFICATION REQUEST DEBUG ===');
+              console.log('Sending verification request:', verifyRequest);
+              
               const verificationResult = await verifyPayment(verifyRequest);
               console.log('Verification result:', verificationResult);
               
@@ -223,9 +232,32 @@ export const useRazorpayPayment = () => {
               });
             },
           },
+          onError: (error: { description?: string; reason?: string; code?: string }) => {
+            console.error('=== RAZORPAY PAYMENT ERROR ===');
+            console.error('Razorpay payment error:', error);
+            
+            setIsProcessing(false);
+            setIsLoading(false);
+            resolve({
+              success: false,
+              message: `Payment failed: ${error.description || error.reason || 'Please try again or contact support.'}`,
+              email: userEmail,
+            });
+          },
         };
 
-        console.log('Razorpay options:', options);
+        console.log('=== RAZORPAY CONFIGURATION DEBUG ===');
+        console.log('Razorpay configuration details:', {
+          key: razorpayKey,
+          amount: paymentData.amount * 100,
+          currency: 'INR',
+          'Amount validation': {
+            'Original amount': paymentData.amount,
+            'Converted amount (paise)': paymentData.amount * 100,
+            'Is valid number': !isNaN(paymentData.amount * 100),
+            'Is positive': (paymentData.amount * 100) > 0
+          }
+        });
         console.log('Creating Razorpay instance...');
         
         try {
