@@ -1,5 +1,5 @@
 import React from "react";
-import { Question } from "../hooks/useAssessment";
+import { Question } from "../../hooks/useAssessment";
 
 interface QuestionNavigationProps {
   questionsData: Question[];

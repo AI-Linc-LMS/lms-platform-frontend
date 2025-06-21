@@ -1,3 +1,4 @@
+import { QuizSectionResponse } from "../../features/learn/hooks/useAssessment";
 import axiosInstance from "../axiosInstance";
 
 interface ApiError {
