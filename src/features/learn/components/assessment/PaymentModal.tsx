@@ -9,12 +9,49 @@ import {
 } from "react-icons/fi";
 import { useScholarshipRedemption } from "../../hooks/useScholarshipRedemption";
 import PaymentSuccessModal from "./PaymentSuccessModal";
+import PaymentProcessingModal from "./PaymentProcessingModal";
+import PaymentToast from "./PaymentToast";
 
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   clientId: number;
   assessmentId: string | number;
+  onPaymentSuccess?: () => void;
+}
+
+interface RazorpayResponse {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
+interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  handler: (response: RazorpayResponse) => Promise<void>;
+  modal: {
+    ondismiss: () => void;
+  };
+  prefill: {
+    name: string;
+    email: string;
+  };
+  theme: {
+    color: string;
+  };
+}
+
+declare global {
+  interface Window {
+    Razorpay: new (options: RazorpayOptions) => {
+      open: () => void;
+    };
+  }
 }
 
 const PaymentModal: React.FC<PaymentModalProps> = ({
@@ -22,8 +59,38 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   onClose,
   clientId,
   assessmentId,
+  onPaymentSuccess,
 }) => {
-  //balbir
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showProcessingModal, setShowProcessingModal] = useState(false);
+  const [processingStep, setProcessingStep] = useState<'creating' | 'processing' | 'verifying' | 'complete'>('creating');
+  const [paymentResult, setPaymentResult] = useState<{
+    paymentId?: string;
+    orderId?: string;
+    amount: number;
+  } | null>(null);
+
+  // Toast state
+  const [toast, setToast] = useState<{
+    show: boolean;
+    type: 'success' | 'error' | 'warning' | 'loading';
+    title: string;
+    message: string;
+  }>({
+    show: false,
+    type: 'success',
+    title: '',
+    message: '',
+  });
+
+  const showToast = (type: 'success' | 'error' | 'warning' | 'loading', title: string, message: string) => {
+    setToast({ show: true, type, title, message });
+  };
+
+  const hideToast = () => {
+    setToast(prev => ({ ...prev, show: false }));
+  };
+
   const loadRazorpayScript = () =>
     new Promise((resolve) => {
       const script = document.createElement("script");
@@ -34,91 +101,128 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     });
 
   const handlePayment = async () => {
-    const res = await loadRazorpayScript();
-    if (!res) {
-      alert("Razorpay SDK failed to load.");
-      return;
-    }
+    try {
+      setShowProcessingModal(true);
+      setProcessingStep('creating');
+      showToast('loading', 'Initializing Payment', 'Setting up secure payment gateway...');
 
-    // 1. Create order from backend
-    const createOrderResponse = await fetch(
-      "https://be-app.ailinc.com/payment-gateway/api/clients/1/create-order/",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + localStorage.getItem("token"),
-        },
-        body: JSON.stringify({
-          amount: coursePrice,
-          client_id: clientId,
-        }),
+      const res = await loadRazorpayScript();
+      if (!res) {
+        throw new Error("Razorpay SDK failed to load. Please check your internet connection.");
       }
-    );
 
-    const orderData = await createOrderResponse.json();
-
-    if (!orderData.order_id) {
-      alert("Error creating order");
-      return;
-    }
-
-    // 2. Launch Razorpay
-    const options = {
-      key: orderData.key,
-      amount: coursePrice,
-      currency: orderData.currency,
-      name: "My Platform",
-      description: "Custom Payment",
-      order_id: orderData.order_id,
-      handler: async function (response: any) {
-        // 3. Verify signature
-        const verifyRes = await fetch("https://be-app.ailinc.com/payment-gateway/api/clients/1/verify-payment/", {
+      // 1. Create order from backend
+      const createOrderResponse = await fetch(
+        "https://be-app.ailinc.com/payment-gateway/api/clients/1/create-order/",
+        {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": "Bearer " + localStorage.getItem("token"),
           },
           body: JSON.stringify({
-            order_id: response.razorpay_order_id,
-            payment_id: response.razorpay_payment_id,
-            signature: response.razorpay_signature,
+            amount: coursePrice,
+            client_id: clientId,
           }),
-        });
-
-        const verifyData = await verifyRes.json();
-
-        if (verifyRes.ok) {
-          alert("✅ Payment verified successfully!");
-        } else {
-          alert(
-            "❌ Verification failed: " + (verifyData.error || "Unknown error")
-          );
         }
-      },
-      prefill: {
-        name: "Test User",
-        email: "test@example.com",
-      },
-      theme: {
-        color: "#0a8fdd",
-      },
-    };
+      );
 
-    // Type assertion to handle Razorpay on window object
-    const rzp = new (window as any).Razorpay(options);
-    rzp.open();
+      const orderData = await createOrderResponse.json();
+
+      if (!orderData.order_id) {
+        throw new Error("Failed to create payment order. Please try again.");
+      }
+
+      setProcessingStep('processing');
+      hideToast();
+
+      // 2. Launch Razorpay
+      const options: RazorpayOptions = {
+        key: orderData.key,
+        amount: coursePrice,
+        currency: orderData.currency,
+        name: "AI-LINC Platform",
+        description: "Course Access Payment",
+        order_id: orderData.order_id,
+        handler: async function (response: RazorpayResponse) {
+          try {
+            setProcessingStep('verifying');
+            showToast('loading', 'Verifying Payment', 'Confirming transaction security...');
+            
+            // 3. Verify signature
+            const verifyRes = await fetch("https://be-app.ailinc.com/payment-gateway/api/clients/1/verify-payment/", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + localStorage.getItem("token"),
+              },
+              body: JSON.stringify({
+                order_id: response.razorpay_order_id,
+                payment_id: response.razorpay_payment_id,
+                signature: response.razorpay_signature,
+              }),
+            });
+
+            const verifyData = await verifyRes.json();
+
+            if (verifyRes.ok) {
+              setProcessingStep('complete');
+              hideToast();
+              showToast('success', 'Payment Successful!', 'Your payment has been verified and processed.');
+              
+              // Set payment result for success modal
+              setPaymentResult({
+                paymentId: response.razorpay_payment_id,
+                orderId: response.razorpay_order_id,
+                amount: coursePrice,
+              });
+
+              // Wait a moment to show completion, then show success modal
+              setTimeout(() => {
+                setShowProcessingModal(false);
+                setShowSuccessModal(true);
+                hideToast();
+              }, 2000);
+
+              if (onPaymentSuccess) {
+                onPaymentSuccess();
+              }
+            } else {
+              throw new Error(verifyData.error || "Payment verification failed");
+            }
+          } catch (error) {
+            setShowProcessingModal(false);
+            hideToast();
+            console.error("Payment verification error:", error);
+            showToast('error', 'Verification Failed', 'Payment verification failed. Please contact support if amount was debited.');
+          }
+        },
+        modal: {
+          ondismiss: function() {
+            setShowProcessingModal(false);
+            hideToast();
+            showToast('warning', 'Payment Cancelled', 'Payment process was cancelled by user.');
+          }
+        },
+        prefill: {
+          name: "Test User",
+          email: "test@example.com",
+        },
+        theme: {
+          color: "#255C79",
+        },
+      };
+
+      // Type assertion to handle Razorpay on window object
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      setShowProcessingModal(false);
+      hideToast();
+      console.error("Payment error:", error);
+      showToast('error', 'Payment Failed', (error as Error).message);
+    }
   };
-  //balbir
-
-  // const { isProcessing, isLoading, processRazorpayPayment } =
-  //   useRazorpayPayment();
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [paymentResult, setPaymentResult] = useState<{
-    paymentId?: string;
-    orderId?: string;
-    amount: number;
-  } | null>(null);
 
   // Convert values to strings for API call
   const clientIdString = clientId.toString();
@@ -131,39 +235,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
     error: scholarshipError,
   } = useScholarshipRedemption(clientIdString, assessmentIdString, isOpen);
-
-  // Load Razorpay script
-  // useEffect(() => {
-  //   const loadRazorpayScript = () => {
-  //     return new Promise((resolve) => {
-  //       const script = document.createElement("script");
-  //       script.src = "https://checkout.razorpay.com/v1/checkout.js";
-  //       script.onload = () => resolve(true);
-  //       script.onerror = () => resolve(false);
-  //       document.body.appendChild(script);
-  //     });
-  //   };
-
-  //   if (isOpen && !window.Razorpay) {
-  //     loadRazorpayScript();
-  //   }
-  // }, [isOpen]);
-
-  // if (!isOpen && !showSuccessModal) return null;
-
-  // // Show loading state while fetching data
-  // if (isLoadingScholarship && !showSuccessModal) {
-  //   return (
-  //     <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-  //       <div className="bg-white rounded-lg p-8 max-w-md w-full shadow-xl">
-  //         <div className="text-center">
-  //           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#255C79] mx-auto mb-4"></div>
-  //           <p className="text-gray-600">Loading course details...</p>
-  //         </div>
-  //       </div>
-  //     </div>
-  //   );
-  // }
 
   // Show error state if API call fails
   if (scholarshipError && !showSuccessModal) {
@@ -218,7 +289,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   return (
     <>
       {/* Payment Modal */}
-      {isOpen && !showSuccessModal && (
+      {isOpen && !showSuccessModal && !showProcessingModal && (
         <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             {/* Header */}
@@ -356,6 +427,16 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         </div>
       )}
 
+      {/* Processing Modal */}
+      <PaymentProcessingModal
+        isOpen={showProcessingModal}
+        step={processingStep}
+        onClose={() => {
+          setShowProcessingModal(false);
+          hideToast();
+        }}
+      />
+
       {/* Success Modal */}
       {paymentResult && (
         <PaymentSuccessModal
@@ -366,6 +447,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           amount={paymentResult.amount}
         />
       )}
+
+      {/* Toast Notification */}
+      <PaymentToast
+        show={toast.show}
+        type={toast.type}
+        title={toast.title}
+        message={toast.message}
+        onClose={hideToast}
+      />
     </>
   );
 };

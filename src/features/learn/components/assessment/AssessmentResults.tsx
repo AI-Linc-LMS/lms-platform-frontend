@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { FiCheck, FiShoppingCart } from "react-icons/fi";
 import PaymentModal from "./PaymentModal";
 
 interface AssessmentResultsProps {
@@ -15,12 +16,41 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
   assessmentId = "ai-linc-scholarship-test", // Default fallback - string slug for API
 }) => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isPurchased, setIsPurchased] = useState(false);
+
+  // Check if already purchased on component mount
+  useEffect(() => {
+    const purchaseKey = `course_purchased_${clientId}_${assessmentId}`;
+    const purchased = localStorage.getItem(purchaseKey) === 'true';
+    setIsPurchased(purchased);
+  }, [clientId, assessmentId]);
 
   const handleRedeemNow = () => {
-    setIsPaymentModalOpen(true);
+    if (!isPurchased) {
+      setIsPaymentModalOpen(true);
+    }
   };
 
   const handleClosePaymentModal = () => {
+    setIsPaymentModalOpen(false);
+  };
+
+  const handlePaymentSuccess = () => {
+    // Mark as purchased and persist in localStorage
+    setIsPurchased(true);
+    const purchaseKey = `course_purchased_${clientId}_${assessmentId}`;
+    localStorage.setItem(purchaseKey, 'true');
+    
+    // Also store purchase metadata
+    const purchaseData = {
+      purchasedAt: new Date().toISOString(),
+      clientId,
+      assessmentId,
+      scholarshipPercentage,
+      score
+    };
+    localStorage.setItem(`${purchaseKey}_metadata`, JSON.stringify(purchaseData));
+    
     setIsPaymentModalOpen(false);
   };
 
@@ -71,7 +101,7 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-xl sm:text-2xl">👋</span>
                   <p className="text-base sm:text-lg">
-                    Hey, You are eligible for a
+                    {isPurchased ? "Congratulations! You have" : "Hey, You are eligible for a"}
                   </p>
                 </div>
                 <div className="text-center mb-6">
@@ -79,15 +109,24 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                     {scholarshipPercentage}%
                   </div>
                   <div className="text-lg sm:text-xl font-semibold">
-                    Scholarship
+                    {isPurchased ? "Course Access" : "Scholarship"}
                   </div>
                 </div>
-                <button
-                  onClick={handleRedeemNow}
-                  className="w-full bg-white text-[#255C79] py-3 px-6 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-200"
-                >
-                  Redeem Now
-                </button>
+                
+                {isPurchased ? (
+                  <div className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-lg font-semibold flex items-center justify-center gap-2 cursor-default shadow-lg">
+                    <FiCheck className="h-5 w-5" />
+                    <span>Purchased</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleRedeemNow}
+                    className="w-full bg-white text-[#255C79] py-3 px-6 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-200 flex items-center justify-center gap-2"
+                  >
+                    <FiShoppingCart className="h-5 w-5" />
+                    <span>Redeem Now</span>
+                  </button>
+                )}
               </div>
               {/* Decorative elements */}
               <div className="absolute top-0 right-0 w-16 sm:w-24 h-16 sm:h-24 bg-white/10 rounded-full -translate-y-6 sm:-translate-y-12 translate-x-6 sm:translate-x-12"></div>
@@ -96,9 +135,15 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
           </div>
           {/* Bottom notification */}
           <div className="mt-6 sm:mt-8 text-center">
-            <p className="text-gray-600 text-xs sm:text-sm">
-              Need time to decide ? Don't worry, you can redeem later as well
-            </p>
+            {isPurchased ? (
+              <p className="text-green-600 text-xs sm:text-sm font-medium">
+                🎉 Your course access is now active! Start learning anytime.
+              </p>
+            ) : (
+              <p className="text-gray-600 text-xs sm:text-sm">
+                Need time to decide ? Don't worry, you can redeem later as well
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -109,6 +154,7 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
         onClose={handleClosePaymentModal}
         clientId={clientId}
         assessmentId={assessmentId}
+        onPaymentSuccess={handlePaymentSuccess}
       />
     </>
   );
