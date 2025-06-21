@@ -16,7 +16,6 @@ const ShortAssessment: React.FC = () => {
     timeRemaining,
     isCompleted,
     questionsData,
-    assessmentResult,
     questions,
     questionsLoading,
     questionsError,
