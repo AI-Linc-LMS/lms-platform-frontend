@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { FiX, FiCheck, FiShield, FiClock, FiUsers, FiAward } from "react-icons/fi";
-import { useRazorpayPayment } from "../../hooks/useRazorpayPayment";
+import {
+  FiX,
+  FiCheck,
+  FiShield,
+  FiClock,
+  FiUsers,
+  FiAward,
+} from "react-icons/fi";
 import { useScholarshipRedemption } from "../../hooks/useScholarshipRedemption";
 import PaymentSuccessModal from "./PaymentSuccessModal";
 
@@ -17,57 +23,147 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   clientId,
   assessmentId,
 }) => {
-  const { isProcessing, isLoading, processRazorpayPayment } = useRazorpayPayment();
+  //balbir
+  const loadRazorpayScript = () =>
+    new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+
+  const handlePayment = async () => {
+    const res = await loadRazorpayScript();
+    if (!res) {
+      alert("Razorpay SDK failed to load.");
+      return;
+    }
+
+    // 1. Create order from backend
+    const createOrderResponse = await fetch(
+      "https://be-app.ailinc.com/payment-gateway/api/clients/1/create-order/",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + localStorage.getItem("token"), 
+        },
+        body: JSON.stringify({
+          amount: coursePrice,
+          client_id: clientId,
+        }),
+      }
+    );
+
+    const orderData = await createOrderResponse.json();
+
+    if (!orderData.order_id) {
+      alert("Error creating order");
+      return;
+    }
+
+    // 2. Launch Razorpay
+    const options = {
+      key: orderData.key,
+      amount: coursePrice,
+      currency: orderData.currency,
+      name: "My Platform",
+      description: "Custom Payment",
+      order_id: orderData.order_id,
+      handler: async function (response: any) {
+        // 3. Verify signature
+        const verifyRes = await fetch("https://be-app.ailinc.com/payment-gateway/api/clients/1/verify-payment/",{
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + localStorage.getItem("token"),
+          },
+          body: JSON.stringify({
+            order_id: response.razorpay_order_id,
+            payment_id: response.razorpay_payment_id,
+            signature: response.razorpay_signature,
+          }),
+        });
+
+        const verifyData = await verifyRes.json();
+
+        if (verifyRes.ok) {
+          alert("✅ Payment verified successfully!");
+        } else {
+          alert(
+            "❌ Verification failed: " + (verifyData.error || "Unknown error")
+          );
+        }
+      },
+      prefill: {
+        name: "Test User",
+        email: "test@example.com",
+      },
+      theme: {
+        color: "#0a8fdd",
+      },
+    };
+
+    // Type assertion to handle Razorpay on window object
+    const rzp = new (window as any).Razorpay(options);
+    rzp.open();
+  };
+  //balbir
+
+  // const { isProcessing, isLoading, processRazorpayPayment } =
+  //   useRazorpayPayment();
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [paymentResult, setPaymentResult] = useState<{
     paymentId?: string;
     orderId?: string;
     amount: number;
   } | null>(null);
-  
+
   // Convert values to strings for API call
   const clientIdString = clientId.toString();
-  const assessmentIdString = typeof assessmentId === 'number' ? assessmentId.toString() : assessmentId;
-  
+  const assessmentIdString =
+    typeof assessmentId === "number" ? assessmentId.toString() : assessmentId;
+
   // Fetch actual scholarship redemption data from API
-  const { 
-    data: scholarshipData, 
-    isLoading: isLoadingScholarship, 
-    error: scholarshipError 
+  const {
+    data: scholarshipData,
+    isLoading: isLoadingScholarship,
+    error: scholarshipError,
   } = useScholarshipRedemption(clientIdString, assessmentIdString, isOpen);
 
   // Load Razorpay script
-  useEffect(() => {
-    const loadRazorpayScript = () => {
-      return new Promise((resolve) => {
-        const script = document.createElement('script');
-        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-        script.onload = () => resolve(true);
-        script.onerror = () => resolve(false);
-        document.body.appendChild(script);
-      });
-    };
+  // useEffect(() => {
+  //   const loadRazorpayScript = () => {
+  //     return new Promise((resolve) => {
+  //       const script = document.createElement("script");
+  //       script.src = "https://checkout.razorpay.com/v1/checkout.js";
+  //       script.onload = () => resolve(true);
+  //       script.onerror = () => resolve(false);
+  //       document.body.appendChild(script);
+  //     });
+  //   };
 
-    if (isOpen && !window.Razorpay) {
-      loadRazorpayScript();
-    }
-  }, [isOpen]);
+  //   if (isOpen && !window.Razorpay) {
+  //     loadRazorpayScript();
+  //   }
+  // }, [isOpen]);
 
-  if (!isOpen && !showSuccessModal) return null;
+  // if (!isOpen && !showSuccessModal) return null;
 
-  // Show loading state while fetching data
-  if (isLoadingScholarship && !showSuccessModal) {
-    return (
-      <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg p-8 max-w-md w-full shadow-xl">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#255C79] mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading course details...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // // Show loading state while fetching data
+  // if (isLoadingScholarship && !showSuccessModal) {
+  //   return (
+  //     <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  //       <div className="bg-white rounded-lg p-8 max-w-md w-full shadow-xl">
+  //         <div className="text-center">
+  //           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#255C79] mx-auto mb-4"></div>
+  //           <p className="text-gray-600">Loading course details...</p>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   // Show error state if API call fails
   if (scholarshipError && !showSuccessModal) {
@@ -104,40 +200,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   // Use total_amount from API as the original price
   const originalPrice = scholarshipData?.total_amount || 100000;
 
-  const handlePayment = async () => {
-    if (!window.Razorpay) {
-      alert('Razorpay SDK not loaded. Please refresh and try again.');
-      return;
-    }
-
-    const paymentData = {
-      amount: coursePrice,
-      clientId,
-      assessmentId: assessmentIdString,
-      scholarshipPercentage,
-      originalPrice: originalPrice,
-    };
-
-    try {
-      const result = await processRazorpayPayment(paymentData);
-      if (result.success) {
-        // Store payment result and show success modal
-        setPaymentResult({
-          paymentId: result.paymentId,
-          orderId: result.orderId,
-          amount: coursePrice,
-        });
-        setShowSuccessModal(true);
-        // Don't close the payment modal immediately, let success modal handle it
-      } else {
-        alert(result.message || "Payment failed. Please try again.");
-      }
-    } catch (error) {
-      console.error("Payment error:", error);
-      alert("Payment failed. Please try again.");
-    }
-  };
-
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
     setPaymentResult(null);
@@ -172,7 +234,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               <button
                 onClick={onClose}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
-                disabled={isProcessing || isLoading}
+                
               >
                 <FiX className="h-6 w-6" />
               </button>
@@ -187,7 +249,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                     🎉 Scholarship Applied!
                   </h3>
                   <p className="text-green-700 text-sm">
-                    You've earned a {scholarshipPercentage}% discount based on your assessment performance
+                    You've earned a {scholarshipPercentage}% discount based on
+                    your assessment performance
                   </p>
                 </div>
               </div>
@@ -197,22 +260,30 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             <div className="p-6">
               <div className="border-2 border-[#255C79] bg-blue-50 rounded-lg p-6 mb-6">
                 <div className="text-center mb-4">
-                  <h3 className="font-semibold text-xl text-gray-900 mb-2">Complete Course Access</h3>
-                  <p className="text-gray-600 text-sm">One-time purchase • Lifetime access</p>
+                  <h3 className="font-semibold text-xl text-gray-900 mb-2">
+                    Complete Course Access
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    One-time purchase • Lifetime access
+                  </p>
                 </div>
-                
+
                 <div className="text-center mb-4">
                   <div className="text-4xl font-bold text-gray-900 mb-2">
-                    {currency}{coursePrice.toLocaleString()}
+                    {currency}
+                    {coursePrice.toLocaleString()}
                     <span className="text-lg font-normal text-gray-500 ml-2">
                       one-time
                     </span>
                   </div>
                   <div className="text-sm text-gray-500 line-through mb-2">
-                    Original Price: {currency}{originalPrice.toLocaleString()}
+                    Original Price: {currency}
+                    {originalPrice.toLocaleString()}
                   </div>
                   <div className="text-lg text-green-600 font-semibold">
-                    You Save {currency}{(originalPrice - coursePrice).toLocaleString()} with scholarship!
+                    You Save {currency}
+                    {(originalPrice - coursePrice).toLocaleString()} with
+                    scholarship!
                   </div>
                 </div>
 
@@ -253,33 +324,31 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               <div className="flex space-x-3">
                 <button
                   onClick={onClose}
-                  disabled={isProcessing || isLoading}
                   className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Maybe Later
                 </button>
                 <button
                   onClick={handlePayment}
-                  disabled={isProcessing || isLoading}
                   className="flex-1 px-6 py-3 bg-[#255C79] text-white rounded-lg hover:bg-[#1e4a61] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isProcessing || isLoading ? (
                     <div className="flex items-center justify-center space-x-2">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                       <span>
-                        {isLoading ? 'Preparing...' : 'Processing...'}
+                        "Preparing..."
                       </span>
                     </div>
-                  ) : (
+                
                     `Pay ${currency}${coursePrice.toLocaleString()} Now`
-                  )}
+                
                 </button>
               </div>
 
               {/* Additional Info */}
               <div className="mt-4 text-center">
                 <p className="text-xs text-gray-500">
-                  Secure payment via Razorpay • 30-day money-back guarantee • No hidden fees
+                  Secure payment via Razorpay • 30-day money-back guarantee • No
+                  hidden fees
                 </p>
               </div>
             </div>
@@ -301,4 +370,4 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   );
 };
 
-export default PaymentModal; 
+export default PaymentModal;
