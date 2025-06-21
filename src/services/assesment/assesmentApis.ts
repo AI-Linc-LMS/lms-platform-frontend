@@ -181,7 +181,7 @@ export const redeemScholarship = async (
   assessmentId: string
 ) => {
   try {
-    const res = await axiosInstance.post(
+    const res = await axiosInstance.get(
       `/assessment/api/client/${clientId}/redeem-scholarship/${assessmentId}/`
     );
     return res.data;

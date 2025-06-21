@@ -1,12 +1,6 @@
+import { CreateOrderResponse } from "../../features/learn/components/assessment/PaymentModal";
 import axiosInstance from "../axiosInstance";
 
-
-export interface CreateOrderResponse {
-  order_id: string;
-  amount: number;
-  currency: string;
-  key: string;
-}
 
 export interface VerifyPaymentRequest {
   order_id: string;
