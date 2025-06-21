@@ -363,23 +363,16 @@ const ShortAssessment: React.FC = () => {
                     /100
                   </span>
                 </div>
-                {score < 50 && (
-                  <div className="flex items-center gap-2 text-[#255C79]">
-                    <span className="text-xl sm:text-2xl">🎉</span>
-                    <p className="text-base sm:text-lg font-medium">
-                      Excellent your assessment is completed!{" "}
-                      <span className="font-bold">Congratulations!</span>
-                    </p>
-                  </div>
-                )}
-                {score >= 50 && (
-                  <div className="flex items-center gap-2 text-[#255C79]">
-                    <span className="text-xl sm:text-2xl">⭐</span>
-                    <p className="text-base sm:text-lg font-medium">
-                      Outstanding! You aced it with top marks! 💯🎉
-                    </p>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 text-[#255C79]">
+                  <p className="text-base sm:text-lg font-medium">
+                    <span className="font-bold text-2xl">Great effort! 🎉</span>
+                    <br />
+                    <span className="font-medium">
+                      As per to your score, our hiring or counseling team would
+                      get in touch with you
+                    </span>
+                  </p>
+                </div>
               </div>
               {/* Decorative elements */}
               <div className="absolute top-0 right-0 w-20 sm:w-32 h-20 sm:h-32 bg-white/10 rounded-full -translate-y-8 sm:-translate-y-16 translate-x-8 sm:translate-x-16"></div>
@@ -572,22 +565,20 @@ const ShortAssessment: React.FC = () => {
                 Previous
               </button>
               <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
-                {currentQuestionIndex < questionsData.length - 1 ? (
+                {currentQuestionIndex < questionsData.length - 1 && (
                   <button
                     onClick={handleNext}
-                    disabled={!selectedOption}
-                    className={`w-full sm:w-auto px-6 py-2 rounded-md font-medium transition ${"bg-[#255C79] text-white hover:bg-[#1a4a5f]"}`}
+                    className="w-full sm:w-auto px-6 py-2 rounded-md font-medium transition bg-[#255C79] text-white hover:bg-[#1a4a5f]"
                   >
                     Next
                   </button>
-                ) : (
-                  <button
-                    onClick={handleFinishAssessment}
-                    className={`w-full sm:w-auto px-6 py-2 rounded-md font-medium transition ${"bg-green-600 text-white hover:bg-green-700"}`}
-                  >
-                    Finish Assessment
-                  </button>
                 )}
+                <button
+                  onClick={handleFinishAssessment}
+                  className={`w-full sm:w-auto px-6 py-2 rounded-md font-medium transition ${"bg-green-600 text-white hover:bg-green-700"}`}
+                >
+                  Finish Assessment
+                </button>
               </div>
             </div>
           </div>
