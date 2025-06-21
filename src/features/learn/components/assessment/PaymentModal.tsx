@@ -63,7 +63,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 }) => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showProcessingModal, setShowProcessingModal] = useState(false);
-  const [processingStep, setProcessingStep] = useState<'creating' | 'processing' | 'verifying' | 'complete'>('creating');
+  const [processingStep, setProcessingStep] = useState<
+    "creating" | "processing" | "verifying" | "complete"
+  >("creating");
   const [paymentResult, setPaymentResult] = useState<{
     paymentId?: string;
     orderId?: string;
@@ -73,22 +75,26 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   // Toast state
   const [toast, setToast] = useState<{
     show: boolean;
-    type: 'success' | 'error' | 'warning' | 'loading';
+    type: "success" | "error" | "warning" | "loading";
     title: string;
     message: string;
   }>({
     show: false,
-    type: 'success',
-    title: '',
-    message: '',
+    type: "success",
+    title: "",
+    message: "",
   });
 
-  const showToast = (type: 'success' | 'error' | 'warning' | 'loading', title: string, message: string) => {
+  const showToast = (
+    type: "success" | "error" | "warning" | "loading",
+    title: string,
+    message: string
+  ) => {
     setToast({ show: true, type, title, message });
   };
 
   const hideToast = () => {
-    setToast(prev => ({ ...prev, show: false }));
+    setToast((prev) => ({ ...prev, show: false }));
   };
 
   const loadRazorpayScript = () =>
@@ -103,12 +109,18 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const handlePayment = async () => {
     try {
       setShowProcessingModal(true);
-      setProcessingStep('creating');
-      showToast('loading', 'Initializing Payment', 'Setting up secure payment gateway...');
+      setProcessingStep("creating");
+      showToast(
+        "loading",
+        "Initializing Payment",
+        "Setting up secure payment gateway..."
+      );
 
       const res = await loadRazorpayScript();
       if (!res) {
-        throw new Error("Razorpay SDK failed to load. Please check your internet connection.");
+        throw new Error(
+          "Razorpay SDK failed to load. Please check your internet connection."
+        );
       }
 
       // 1. Create order from backend
@@ -118,7 +130,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": "Bearer " + localStorage.getItem("token"),
+            Authorization: "Bearer " + localStorage.getItem("token"),
           },
           body: JSON.stringify({
             amount: coursePrice,
@@ -133,7 +145,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         throw new Error("Failed to create payment order. Please try again.");
       }
 
-      setProcessingStep('processing');
+      setProcessingStep("processing");
       hideToast();
 
       // 2. Launch Razorpay
@@ -146,30 +158,41 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         order_id: orderData.order_id,
         handler: async function (response: RazorpayResponse) {
           try {
-            setProcessingStep('verifying');
-            showToast('loading', 'Verifying Payment', 'Confirming transaction security...');
-            
+            setProcessingStep("verifying");
+            showToast(
+              "loading",
+              "Verifying Payment",
+              "Confirming transaction security..."
+            );
+
             // 3. Verify signature
-            const verifyRes = await fetch("https://be-app.ailinc.com/payment-gateway/api/clients/1/verify-payment/", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + localStorage.getItem("token"),
-              },
-              body: JSON.stringify({
-                order_id: response.razorpay_order_id,
-                payment_id: response.razorpay_payment_id,
-                signature: response.razorpay_signature,
-              }),
-            });
+            const verifyRes = await fetch(
+              "https://be-app.ailinc.com/payment-gateway/api/clients/1/verify-payment/",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: "Bearer " + localStorage.getItem("token"),
+                },
+                body: JSON.stringify({
+                  order_id: response.razorpay_order_id,
+                  payment_id: response.razorpay_payment_id,
+                  signature: response.razorpay_signature,
+                }),
+              }
+            );
 
             const verifyData = await verifyRes.json();
 
             if (verifyRes.ok) {
-              setProcessingStep('complete');
+              setProcessingStep("complete");
               hideToast();
-              showToast('success', 'Payment Successful!', 'Your payment has been verified and processed.');
-              
+              showToast(
+                "success",
+                "Payment Successful!",
+                "Your payment has been verified and processed."
+              );
+
               // Set payment result for success modal
               setPaymentResult({
                 paymentId: response.razorpay_payment_id,
@@ -188,21 +211,31 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 onPaymentSuccess();
               }
             } else {
-              throw new Error(verifyData.error || "Payment verification failed");
+              throw new Error(
+                verifyData.error || "Payment verification failed"
+              );
             }
           } catch (error) {
             setShowProcessingModal(false);
             hideToast();
             console.error("Payment verification error:", error);
-            showToast('error', 'Verification Failed', 'Payment verification failed. Please contact support if amount was debited.');
+            showToast(
+              "error",
+              "Verification Failed",
+              "Payment verification failed. Please contact support if amount was debited."
+            );
           }
         },
         modal: {
-          ondismiss: function() {
+          ondismiss: function () {
             setShowProcessingModal(false);
             hideToast();
-            showToast('warning', 'Payment Cancelled', 'Payment process was cancelled by user.');
-          }
+            showToast(
+              "warning",
+              "Payment Cancelled",
+              "Payment process was cancelled by user."
+            );
+          },
         },
         prefill: {
           name: "Test User",
@@ -220,7 +253,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       setShowProcessingModal(false);
       hideToast();
       console.error("Payment error:", error);
-      showToast('error', 'Payment Failed', (error as Error).message);
+      showToast("error", "Payment Failed", (error as Error).message);
     }
   };
 
@@ -305,7 +338,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               <button
                 onClick={onClose}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
-
               >
                 <FiX className="h-6 w-6" />
               </button>
@@ -403,15 +435,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                   onClick={handlePayment}
                   className="flex-1 px-6 py-3 bg-[#255C79] text-white rounded-lg hover:bg-[#1e4a61] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>
-                      Payment Processing...
-                    </span>
-                  </div>
-
-                   {currency}{coursePrice.toLocaleString()} 
-
+                  {currency}
+                  {coursePrice.toLocaleString()}
                 </button>
               </div>
 
