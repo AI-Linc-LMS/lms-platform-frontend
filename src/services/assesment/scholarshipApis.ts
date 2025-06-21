@@ -6,6 +6,7 @@ export interface ScholarshipRedemptionData {
   score: number;
   maximum_marks: number;
   payable_amount: number;
+  total_amount: number;
 }
 
 interface ApiError {
