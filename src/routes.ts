@@ -20,7 +20,7 @@ import ProfileSettings from "./components/UserProfile";
 import AssesmentStudentsResults from "./features/admin/assesment-results/AssesmentStudentsResults";
 import Otp from "./features/auth/pages/Otp";
 import WorkshopResistrations from "./features/admin/workshop-registrations/WorkshopResistrations";
-import CertificatePortal from "./components/CertificatePortal";
+import CertificatePortal from "./components/certificate/CertificatePortal";
 
 export interface RouteConfig {
   path: string;
