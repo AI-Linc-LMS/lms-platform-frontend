@@ -3,6 +3,7 @@ import AdminDashboardController from "../commonComponents/icons/sidebarIcons/Adm
 import CourseBuilderController from "../commonComponents/icons/sidebarIcons/CourseBuilderController";
 import ManageStudentsController from "../commonComponents/icons/sidebarIcons/ManagestudentsController";
 import WorkshopRegistrationController from "../commonComponents/icons/sidebarIcons/WorkshopRegistrationController";
+import AssesmentStudentResultsController from "../commonComponents/icons/sidebarIcons/AssesmentStudentsResultsController";
 export const AdminNavigationLinks: SidebarLinkInfo[] = [
   {
     id: 1,
@@ -49,6 +50,18 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
         title: "Workshop Registrations",
         href: "/admin/workshop-registrations",
         icon: <WorkshopRegistrationController />,
+      },
+    ],
+  },
+  {
+    id: 4,
+    title: "Assesment Results",
+    links: [
+      {
+        id: 1,
+        title: "Assesment Results",
+        href: "/admin/assesment-results",
+        icon: <AssesmentStudentResultsController />,
       },
     ],
   },
