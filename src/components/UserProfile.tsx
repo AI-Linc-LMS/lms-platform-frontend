@@ -78,7 +78,7 @@ const ProfileSettings = () => {
       window.location.reload();
     } catch (error) {
       console.error("Error during logout:", error);
-      handleMobileNavigation("/login", navigate, true);
+      handleMobileNavigation("/login", navigate, true, false); // Don't force reload for logout
     }
   };
 

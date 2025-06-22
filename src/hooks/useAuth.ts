@@ -56,11 +56,11 @@ export const useAuth = () => {
       // Redirect to intended path if available, otherwise go to home
       if (intendedPath) {
         logRedirectInfo(intendedPath, '/', 'Redirecting after login');
-        handleMobileNavigation(intendedPath, navigate);
+        handleMobileNavigation(intendedPath, navigate, true, true); // Force reload after successful login
         clearIntendedPath(); // Clear the intended path after redirecting
       } else {
         logRedirectInfo(null, '/', 'No intended path, going to home');
-        handleMobileNavigation('/', navigate);
+        handleMobileNavigation('/', navigate, true, true); // Force reload after successful login
       }
     },
     onError: (error: Error) => {
