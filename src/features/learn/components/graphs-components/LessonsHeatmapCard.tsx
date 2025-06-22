@@ -3,7 +3,7 @@ import leftArrow from "../../../../assets/dashboard_assets/leftArrow.png";
 import rightArrow from "../../../../assets/dashboard_assets/rightArrow.png";
 import MonthHeatmap from "./MonthHeatmap";
 import {
-  endOfToday,
+  endOfDay,
   subMonths,
   getYear,
   format,
@@ -18,7 +18,6 @@ interface LessonsHeatmapCardProps {
   hoveredCell: string | null;
   setHoveredCell: (cell: string | null) => void;
 }
-
 
 type ApiDataType = Record<
   string,
@@ -36,7 +35,11 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
   hoveredCell,
   setHoveredCell,
 }) => {
-  const { data: apiData, isLoading, error } = useQuery<ApiDataType>({
+  const {
+    data: apiData,
+    isLoading,
+    error,
+  } = useQuery<ApiDataType>({
     queryKey: ["activityData"],
     queryFn: () => getUserActivityHeatmapData(1),
   });
@@ -56,7 +59,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
   }, []);
 
   const monthsToShow = isMobile ? 5 : 4;
-  const daysLimitDate = subDays(endOfToday(), 300);
+  const daysLimitDate = subDays(endOfDay(new Date()), 300);
 
   const ACTIVITY_WEIGHTS = {
     Article: 1,
@@ -100,7 +103,6 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
     return 5;
   };
 
-
   const activityData = useMemo(() => {
     const dataSource = apiData || {};
     return Object.entries(dataSource)
@@ -137,7 +139,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
     year: number;
     daysCount: number;
   }[] => {
-    const today = endOfToday();
+    const today = endOfDay(new Date());
     const startDate = subDays(today, 364);
 
     const months: {
@@ -149,7 +151,10 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
 
     let pointer = new Date(today.getFullYear(), today.getMonth(), 1); // Start of current month
 
-    while (isBefore(startDate, pointer) || format(startDate, "yyyy-MM") === format(pointer, "yyyy-MM")) {
+    while (
+      isBefore(startDate, pointer) ||
+      format(startDate, "yyyy-MM") === format(pointer, "yyyy-MM")
+    ) {
       const year = pointer.getFullYear();
       const month = pointer.getMonth();
       const monthStart = new Date(year, month, 1);
@@ -159,9 +164,14 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
       if (monthEnd < startDate) break;
 
       // Determine valid day count
-      const effectiveStart = isBefore(monthStart, startDate) ? startDate : monthStart;
+      const effectiveStart = isBefore(monthStart, startDate)
+        ? startDate
+        : monthStart;
       const effectiveEnd = monthEnd > today ? today : monthEnd;
-      const daysCount = eachDayOfInterval({ start: effectiveStart, end: effectiveEnd }).length;
+      const daysCount = eachDayOfInterval({
+        start: effectiveStart,
+        end: effectiveEnd,
+      }).length;
 
       months.unshift({
         monthName: format(pointer, "MMM"),
@@ -175,7 +185,6 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
 
     return months;
   };
-
 
   const validMonths = useMemo(getValidMonthsInPastYear, []);
   const visibleMonths = validMonths.slice(
@@ -206,7 +215,10 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
           {Array(monthsToShow)
             .fill(0)
             .map((_, index) => (
-              <div key={index} className="w-full h-40 bg-gray-200 rounded animate-pulse"></div>
+              <div
+                key={index}
+                className="w-full h-40 bg-gray-200 rounded animate-pulse"
+              ></div>
             ))}
         </div>
       </div>
@@ -217,7 +229,9 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
     <div className="flex flex-col w-full">
       <div className="flex justify-between items-center mb-4 md:mb-6">
         <div className="flex flex-row items-center justify-between w-full">
-          <h2 className="text-[20px] font-medium text-gray-700">Activity Map</h2>
+          <h2 className="text-[20px] font-medium text-gray-700">
+            Activity Map
+          </h2>
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
@@ -232,14 +246,20 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
 
         {isMobile && (
           <div className="flex items-center ml-2">
-            <button onClick={handlePrev} className="w-8 h-8 flex items-center justify-center rounded-full bg-[#12293A] shadow cursor-pointer">
+            <button
+              onClick={handlePrev}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-[#12293A] shadow cursor-pointer"
+            >
               <img src={leftArrow} alt="Previous" className="w-3 h-3" />
             </button>
             <button
               onClick={handleNext}
               disabled={monthOffset === 0}
-              className={`w-8 h-8 flex items-center justify-center rounded-full ml-2 ${monthOffset === 0 ? "bg-gray-200 cursor-not-allowed" : "bg-[#12293A]"
-                } shadow`}
+              className={`w-8 h-8 flex items-center justify-center rounded-full ml-2 ${
+                monthOffset === 0
+                  ? "bg-gray-200 cursor-not-allowed"
+                  : "bg-[#12293A]"
+              } shadow`}
             >
               <img src={rightArrow} alt="Next" className="w-3 h-3" />
             </button>
@@ -277,16 +297,30 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
 
       {!isMobile && (
         <div className="bottom-3 right-4 flex justify-end space-x-3">
-          <button onClick={handlePrev} className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-[#12293A] shadow cursor-pointer">
-            <img src={leftArrow} alt="Previous" className="w-3 h-3 md:w-4 md:h-4" />
+          <button
+            onClick={handlePrev}
+            className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-[#12293A] shadow cursor-pointer"
+          >
+            <img
+              src={leftArrow}
+              alt="Previous"
+              className="w-3 h-3 md:w-4 md:h-4"
+            />
           </button>
           <button
             onClick={handleNext}
             disabled={monthOffset === 0}
-            className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full ${monthOffset === 0 ? "bg-gray-200 cursor-not-allowed" : "bg-[#12293A]"
-              } shadow`}
+            className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full ${
+              monthOffset === 0
+                ? "bg-gray-200 cursor-not-allowed"
+                : "bg-[#12293A]"
+            } shadow`}
           >
-            <img src={rightArrow} alt="Next" className="w-3 h-3 md:w-4 md:h-4" />
+            <img
+              src={rightArrow}
+              alt="Next"
+              className="w-3 h-3 md:w-4 md:h-4"
+            />
           </button>
         </div>
       )}
