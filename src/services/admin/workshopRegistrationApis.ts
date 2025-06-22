@@ -9,3 +9,13 @@ export const getWorkshopRegistrations = async (clientId: string) => {
     throw error;
   }
 }
+
+export const getAssesmentStudentResults = async (clientId: string) => {
+  try {
+    const response = await axiosInstance.get(`/admin-dashboard/api/clients/${clientId}/assessment-submissions/`);
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch assessment student results:', error);
+    throw error;
+  }
+}

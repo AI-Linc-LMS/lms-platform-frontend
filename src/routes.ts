@@ -17,8 +17,10 @@ import ManageStudents from "./features/admin/manage-students/pages/ManageStudent
 import ShortAssessment from "./features/learn/pages/ShortAssessment";
 import InstructionPage from "./features/learn/pages/InstructionPage";
 import ProfileSettings from "./components/UserProfile";
-import WorkshopRegistration from "./features/admin/workshop-registrations/workshopRegistration";
+import AssesmentStudentsResults from "./features/admin/assesment-results/AssesmentStudentsResults";
 import Otp from "./features/auth/pages/Otp";
+import WorkshopResistrations from "./features/admin/workshop-registrations/WorkshopResistrations";
+import CertificatePortal from "./components/certificate/CertificatePortal";
 
 export interface RouteConfig {
   path: string;
@@ -107,7 +109,13 @@ const routes: RouteConfig[] = [
   },
   {
     path: "/admin/workshop-registrations",
-    component: WorkshopRegistration,
+    component: WorkshopResistrations,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/assesment-results",
+    component: AssesmentStudentsResults,
     isPrivate: true,
     requiredRole: "admin_or_instructor",
   },
@@ -136,6 +144,11 @@ const routes: RouteConfig[] = [
   {
     path: "/user-profile",
     component: ProfileSettings,
+    isPrivate: true,
+  },
+  {
+    path: "/certificates",
+    component: CertificatePortal,
     isPrivate: true,
   },
   {
