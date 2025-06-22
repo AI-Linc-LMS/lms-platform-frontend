@@ -222,7 +222,7 @@ const AssesmentStudentResults = () => {
                       entry?.score
                     )}`}
                   >
-                    {entry?.score ? `${entry.score}%` : "N/A"}
+                    {entry?.score ? `${entry.score}` : "N/A"}
                   </span>
                 </td>
                 <td className="p-3">

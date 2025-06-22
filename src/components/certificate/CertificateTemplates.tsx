@@ -1,8 +1,9 @@
 import { useRef, useImperativeHandle, forwardRef, useState } from "react";
 import html2pdf from "html2pdf.js";
 import { useSelector } from "react-redux";
-import { RootState } from "../redux/store";
-import { Certificate } from "../services/certificateApis";
+import { RootState } from "../../redux/store";
+import { Certificate } from "../../services/certificateApis";
+import certificateBg from "./certificate-bg/certifiacte bg.png";
 
 export interface CertificateTemplatesRef {
   downloadPDF: () => Promise<void>;
@@ -30,6 +31,12 @@ const CertificateTemplates = forwardRef<
     setIsDownloading(true);
 
     try {
+      // Store original border radius
+      const originalBorderRadius = element.style.borderRadius;
+
+      // Temporarily remove border radius for PDF generation
+      element.style.borderRadius = "0px";
+
       // Local type for jsPDF options
       const jsPDFOptions: {
         unit: string;
@@ -37,25 +44,30 @@ const CertificateTemplates = forwardRef<
         orientation: "landscape" | "portrait";
       } = {
         unit: "px",
-        format: [800, 550],
+        format: [800, 500],
         orientation: "landscape",
       };
 
       const opt = {
         margin: [0, 0, 0, 0] as [number, number, number, number],
         filename: `${certificateName.replace(/\s+/g, "_")}_certificate.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
+        image: { type: "jpeg", quality: 1 },
         html2canvas: {
           scale: 2,
           useCORS: true,
           width: 800,
-          height: 550,
+          height: 500,
           backgroundColor: "#071c30",
+          allowTaint: false,
+          foreignObjectRendering: false,
         },
         jsPDF: jsPDFOptions,
       };
 
       await html2pdf().set(opt).from(element).save();
+
+      // Restore original border radius
+      element.style.borderRadius = originalBorderRadius;
     } catch (error) {
       console.error("Error generating PDF:", error);
     } finally {
@@ -93,59 +105,52 @@ const CertificateTemplates = forwardRef<
       <div
         ref={certificateRef}
         data-certificate-ref="true"
-        className="w-full max-w-[800px] h-[500] sm:h-[540px] bg-gradient-to-b from-[#050f1d] to-[#071c30] text-white p-4 sm:p-6 md:p-8 lg:p-12 box-border relative rounded-lg shadow-lg"
+        className="w-full max-w-[800px] h-[500px] text-white p-4 sm:p-6 md:p-8 lg:p-12 box-border relative rounded-lg shadow-lg bg-cover bg-center"
         style={{
+          backgroundImage: `url(${certificateBg})`,
           aspectRatio: "8/5",
           minHeight: "400px",
-          maxHeight: "550px",
+          maxHeight: "500px",
           width: "100%",
           maxWidth: "800px",
           margin: "0",
-          backgroundColor: "#071c30",
-          background: "linear-gradient(to bottom, #050f1d, #071c30)",
+          borderRadius: "12px",
         }}
       >
-        <div className="absolute top-2 sm:top-4 md:top-6 left-2 sm:left-4 md:left-8 text-sm sm:text-lg md:text-xl lg:text-2xl font-bold text-[#42c6ff]">
+        <div className="absolute top-4 md:top-6 left-4 md:left-8 text-3xl font-bold text-[#42c6ff] z-10">
           AI LINC
         </div>
 
-        <div className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold tracking-wider text-[#1ce4dd] text-center mt-6 sm:mt-8 md:mt-12">
-          CERTIFICATE
-        </div>
-        <div className="text-xs sm:text-sm md:text-base lg:text-lg tracking-wide text-[#d3d3d3] text-center mb-3 sm:mb-4 md:mb-6">
-          OF COMPLETION
+        <div className="flex flex-col justify-center items-center h-full text-center -mt-8">
+          <div className="font-oswald text-5xl font-semibold tracking-[0.68rem] text-[#1ce4dd] mb-2">
+            CERTIFICATE
+          </div>
+          <div className="font-oswald text-2xl tracking-wider text-[#d3d3d3] text-center mb-3">
+            OF COMPLETION
+          </div>
+
+          <div className="font-oswald text-xl tracking-wider text-center">
+            Presented to
+          </div>
+          <div className="font-playfair-display text-[2.7rem] text-[#3ae6e6] italic tracking-wider text-center mb-4 mt-2">
+            {userName}
+          </div>
+
+          <div className="font-oswald text-base text-center tracking-wide mb-4 px-4">
+            has successfully completed the AI Assessment conducted by Ai-Linc
+          </div>
+
+          <div className="font-oswald text-lg text-[#1ce4dd] font-medium tracking-wider text-center px-4 mt-2">
+            NO CODE DEVELOPMENT BOOTCAMP USING AGENTIC/GENERATIVE AI
+          </div>
+
+          <div className="font-lato text-lg text-center">
+            Issued on {issuedDate}
+          </div>
         </div>
 
-        <div className="text-xs sm:text-sm md:text-base lg:text-lg text-center">
-          Presented to
-        </div>
-        <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-[#3ae6e6] italic text-center my-2 sm:my-3">
-          {userName}
-        </div>
-
-        <div className="text-xs sm:text-sm md:text-base text-center mb-3 sm:mb-4 px-2 sm:px-4">
-          has successfully completed the {certificateName} conducted by Ai-Linc
-        </div>
-
-        <div className="text-xs sm:text-sm md:text-base lg:text-lg text-[#1ce4dd] font-bold text-center px-2 sm:px-4">
-          NO CODE DEVELOPMENT BOOTCAMP USING AGENTIC/GENERATIVE AI
-        </div>
-
-        <div className="text-xs sm:text-sm md:text-base lg:text-lg text-center mt-3 sm:mt-4 md:mt-6">
-          Issued on {issuedDate}
-        </div>
-
-        <div className="text-xs sm:text-sm md:text-base lg:text-lg text-center mt-2 sm:mt-3 md:mt-4 px-2 sm:px-4">
-          We appreciate your efforts and dedication in learning and growing with
-          us.
-        </div>
-
-        <div className="flex flex-col text-xs sm:text-sm md:text-base lg:text-lg items-end 
-        mt-4">
-          <p className="text-[#3ae6e6] font-medium">Best Regards</p>
-          <p className="text-[#42c6ff] font-bold text-sm sm:text-base md:text-lg">
-            Team AI LINC
-          </p>
+        <div className="font-oswald text-lg text-center tracking-wider absolute bottom-14 left-0 right-0">
+          Session taken by the experts from
         </div>
       </div>
     </div>

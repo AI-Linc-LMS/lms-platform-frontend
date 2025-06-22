@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getAvailableCertificates,
   Certificate,
-} from "../services/certificateApis";
+} from "../../services/certificateApis";
 
 const CertificatePortal: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -22,7 +22,14 @@ const CertificatePortal: React.FC = () => {
   // Check if mobile on mount and resize
   useEffect(() => {
     const checkIfMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      console.log(
+        "Mobile detection:",
+        mobile,
+        "Screen width:",
+        window.innerWidth
+      );
     };
 
     checkIfMobile();
@@ -48,9 +55,35 @@ const CertificatePortal: React.FC = () => {
     );
   }, [certificates, searchTerm]);
 
-  const handleViewCertificate = (certificate: Certificate) => {
-    setSelectedCertificate(certificate);
-    setShowPreview(true);
+  const handleViewCertificate = async (certificate: Certificate) => {
+    // If on mobile, directly download the certificate
+    if (isMobile) {
+      console.log("Mobile download triggered for:", certificate.name);
+      setIsDownloading(true);
+
+      try {
+        // Set the certificate first
+        setSelectedCertificate(certificate);
+
+        // Wait for the component to update with the new certificate
+        await new Promise((resolve) => setTimeout(resolve, 300));
+
+        if (certificateRef.current) {
+          console.log("Certificate ref found, downloading...");
+          await certificateRef.current.downloadPDF();
+        } else {
+          console.error("Certificate ref not found after waiting");
+        }
+      } catch (error) {
+        console.error("Download failed:", error);
+      } finally {
+        setIsDownloading(false);
+      }
+    } else {
+      // On desktop, show preview modal
+      setSelectedCertificate(certificate);
+      setShowPreview(true);
+    }
   };
 
   const getCertificateIcon = (type: string) => {
@@ -298,31 +331,59 @@ const CertificatePortal: React.FC = () => {
                 <div className="space-y-2">
                   <button
                     onClick={() => handleViewCertificate(certificate)}
-                    className="w-full bg-[#255C79] text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-[#1E4A63] hover:scale-105 hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2 transform active:scale-95 text-xs sm:text-sm"
+                    disabled={isDownloading}
+                    className="w-full bg-[#255C79] text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-[#1E4A63] hover:scale-105 hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2 transform active:scale-95 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <svg
-                      className="w-3 h-3 sm:w-4 sm:h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                      />
-                    </svg>
+                    {isDownloading && isMobile ? (
+                      <svg
+                        className="animate-spin w-3 h-3 sm:w-4 sm:h-4"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-3 h-3 sm:w-4 sm:h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
+                      </svg>
+                    )}
                     <span className="hidden sm:inline">
                       View & Download Certificate
                     </span>
-                    <span className="sm:hidden">View Certificate</span>
+                    <span className="sm:hidden">
+                      {isDownloading
+                        ? "Downloading..."
+                        : "Download Certificate"}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -330,8 +391,8 @@ const CertificatePortal: React.FC = () => {
           </div>
         )}
 
-        {/* Certificate Preview Modal */}
-        {showPreview && (
+        {/* Certificate Preview Modal - Hidden on Mobile */}
+        {showPreview && !isMobile && (
           <div className="fixed inset-0 bg-opacity-50 backdrop-blur-[1px] flex items-center justify-center p-2 sm:p-4 z-50">
             <div className="bg-white rounded-lg w-full max-w-4xl sm:max-w-5xl lg:max-w-6xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-lg border border-gray-300">
               <div className="p-3 sm:p-4 md:p-6">
@@ -431,6 +492,16 @@ const CertificatePortal: React.FC = () => {
                 />
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Hidden CertificateTemplates for Mobile Downloads */}
+        {isMobile && (
+          <div className="hidden">
+            <CertificateTemplates
+              ref={certificateRef}
+              certificate={selectedCertificate}
+            />
           </div>
         )}
       </div>
