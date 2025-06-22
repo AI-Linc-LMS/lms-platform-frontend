@@ -3,8 +3,11 @@ import bellIcon from '../commonComponents/icons/nav/BellIcon.png';
 import userImg from '../commonComponents/icons/nav/User Image.png';
 import { useRef, useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { useRole } from '../hooks/useRole';
+import { logout } from '../redux/slices/userSlice';
+import { handleMobileNavigation } from '../utils/authRedirectUtils';
 
 interface UserState {
   profile_picture?: string;
@@ -16,6 +19,7 @@ const TopNav: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const user = useSelector((state: { user: UserState }) => state.user);
+  const dispatch = useDispatch();
 
   const userId = user.id;
   const { isAdminOrInstructor } = useRole();
@@ -25,9 +29,20 @@ const TopNav: React.FC = () => {
   };
 
   const handleLogout = () => {
-    // Add your logout logic here
-    // For example: dispatch(logoutAction());
-    navigate('/login');
+    try {
+      // Clear user data from localStorage
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      // Dispatch logout action
+      dispatch(logout());
+
+      // Navigate to login using mobile navigation
+      handleMobileNavigation('/login', navigate, true, false);
+    } catch (error) {
+      console.error("Error during logout:", error);
+      handleMobileNavigation('/login', navigate, true, false);
+    }
   };
 
   // Close dropdown on outside click

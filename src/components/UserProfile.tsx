@@ -4,6 +4,7 @@ import editIcon from "../commonComponents/icons/nav/editIcon.png";
 import { logout } from "../redux/slices/userSlice";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { handleMobileNavigation } from "../utils/authRedirectUtils";
 
 interface UserData {
   id: string;
@@ -20,7 +21,6 @@ interface UserData {
 const ProfileSettings = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const userData = useSelector((state: { user: UserData }) => state.user);
   const [editable, setEditable] = useState(false);
@@ -51,21 +51,22 @@ const ProfileSettings = () => {
   };
 
   const Logout = async () => {
-    if (isLoggingOut) return;
-    setIsLoggingOut(true);
-
     try {
+      // Clear user data from localStorage
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      // Dispatch logout action
+      dispatch(logout());
+
+      // Create a hidden iframe to clear Google session
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = "https://accounts.google.com/logout";
+      document.body.appendChild(iframe);
+
+      // Wait for iframe to load and then clean up
       const cleanupPromise = new Promise<void>((resolve) => {
-        const iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        iframe.src = "/login";
-        document.body.appendChild(iframe);
-
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        localStorage.removeItem("tokenTimestamp");
-        dispatch(logout());
-
         setTimeout(() => {
           document.body.removeChild(iframe);
           resolve();
@@ -77,7 +78,7 @@ const ProfileSettings = () => {
       window.location.reload();
     } catch (error) {
       console.error("Error during logout:", error);
-      navigate("/login", { replace: true });
+      handleMobileNavigation("/login", navigate, true, false); // Don't force reload for logout
     }
   };
 
