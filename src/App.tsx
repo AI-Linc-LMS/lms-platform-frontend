@@ -24,6 +24,7 @@ import {
   shouldStoreIntendedPath,
   getFullPath,
   logRedirectInfo,
+  handleMobileNavigation,
 } from "./utils/authRedirectUtils";
 // import FloatingActivityTimer from "./components/FloatingActivityTimer";
 
@@ -51,7 +52,7 @@ const NotFound = () => {
   }, []);
 
   const handleGoHome = () => {
-    navigate("/", { replace: true });
+    handleMobileNavigation("/", navigate, true);
   };
 
   const handleGoBack = () => {
@@ -143,7 +144,7 @@ const InvalidRoute = () => {
         );
         setIntendedPath(currentPath);
       }
-      navigate("/login", { replace: true });
+      handleMobileNavigation("/login", navigate, true);
       return;
     }
 
@@ -198,7 +199,7 @@ const InvalidRoute = () => {
 
         if (isValidParentRoute) {
           // If we found a valid parent path, navigate to it
-          navigate(possibleValidPath, { replace: true });
+          handleMobileNavigation(possibleValidPath, navigate, true);
           return;
         }
       }
@@ -225,7 +226,7 @@ const InvalidRoute = () => {
 
         if (isValidParentRoute) {
           // If we found a valid parent path, navigate to it
-          navigate(possibleValidPath, { replace: true });
+          handleMobileNavigation(possibleValidPath, navigate, true);
           return;
         }
       }
@@ -282,7 +283,7 @@ function AppContent() {
         logRedirectInfo(null, currentPath, "Storing intended path");
         setIntendedPath(currentPath);
       }
-      navigate("/login");
+      handleMobileNavigation("/login", navigate, true);
     }
   }, [isAuthenticated, navigate, location, setIntendedPath]);
 

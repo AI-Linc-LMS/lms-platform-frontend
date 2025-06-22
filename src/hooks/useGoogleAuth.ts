@@ -5,7 +5,7 @@ import { setUser } from '../redux/slices/userSlice';
 import { googleLogin } from '../services/authApis';
 import { clearAnonymousUserId } from '../utils/userIdHelper';
 import { useAuthRedirect } from '../contexts/AuthRedirectContext';
-import { logRedirectInfo } from '../utils/authRedirectUtils';
+import { logRedirectInfo, handleMobileNavigation, waitForAuthState } from '../utils/authRedirectUtils';
 import axios from 'axios';
 
 export const useGoogleAuth = () => {
@@ -47,14 +47,17 @@ export const useGoogleAuth = () => {
         })
       );
 
+      // Wait for authentication state to be properly set
+      await waitForAuthState();
+
       // Redirect to intended path if available, otherwise go to home
       if (intendedPath) {
         logRedirectInfo(intendedPath, '/', 'Redirecting after Google login');
-        navigate(intendedPath);
+        handleMobileNavigation(intendedPath, navigate);
         clearIntendedPath(); // Clear the intended path after redirecting
       } else {
         logRedirectInfo(null, '/', 'No intended path, going to home after Google login');
-        navigate('/');
+        handleMobileNavigation('/', navigate);
       }
     } catch (error) {
       console.error('Google login error:', error);
