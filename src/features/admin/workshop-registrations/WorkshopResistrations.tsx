@@ -10,6 +10,7 @@ interface WorkshopRegistrationData {
   phone_number: string;
   registered_at: string;
   workshop_name: string;
+  session_number: number | null;
 }
 
 const WorkshopRegistration = () => {
@@ -46,6 +47,7 @@ const WorkshopRegistration = () => {
       Email: entry.email,
       "Mobile Number": entry.phone_number,
       "Workshop Name": entry.workshop_name,
+      "Session Number": entry.session_number || 1,
       "Registered At": entry.registered_at,
     }));
 
@@ -101,7 +103,7 @@ const WorkshopRegistration = () => {
               d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
             />
           </svg>
-        <span className="inline text-white">Export</span>
+          <span className="inline text-white">Export</span>
         </button>
       </div>
 
@@ -110,13 +112,14 @@ const WorkshopRegistration = () => {
       </div>
 
       <div className="overflow-x-auto bg-white shadow rounded">
-        <table className="w-full text-sm text-left min-w-[600px]">
+        <table className="w-full text-sm text-left min-w-[700px]">
           <thead className="bg-gray-100">
             <tr>
               <th className="p-3">Name</th>
               <th className="p-3">Email</th>
               <th className="p-3">Mobile Number</th>
               <th className="p-3">Workshop Name</th>
+              <th className="p-3">Session</th>
               <th className="p-3">Registered At</th>
             </tr>
           </thead>
@@ -129,6 +132,11 @@ const WorkshopRegistration = () => {
                 <td className="p-3">
                   <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full md:text-xs text-[10px]">
                     {entry.workshop_name}
+                  </span>
+                </td>
+                <td className="p-3">
+                  <span className="bg-green-100 items-center justify-center text-center text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                    {entry.session_number || 1}
                   </span>
                 </td>
                 <td className="p-3">
