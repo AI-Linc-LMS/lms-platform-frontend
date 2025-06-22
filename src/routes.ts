@@ -18,6 +18,7 @@ import ShortAssessment from "./features/learn/pages/ShortAssessment";
 import InstructionPage from "./features/learn/pages/InstructionPage";
 import ProfileSettings from "./components/UserProfile";
 import WorkshopRegistration from "./features/admin/workshop-registrations/workshopRegistration";
+import Otp from "./features/auth/pages/Otp";
 
 export interface RouteConfig {
   path: string;
@@ -40,6 +41,11 @@ const routes: RouteConfig[] = [
   {
     path: "/signup",
     component: Signup,
+    isPrivate: false,
+  },
+  {
+    path: "/otp",
+    component: Otp,
     isPrivate: false,
   },
   {
