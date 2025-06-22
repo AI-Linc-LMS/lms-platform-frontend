@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { logout } from '../redux/slices/authSlice';
 import { setUser } from '../redux/slices/userSlice';
 import { refreshToken } from '../services/authApis';
+import { handleMobileNavigation } from '../utils/authRedirectUtils';
 
 // Calculate refresh threshold as a percentage of token lifetime (refresh at 90% of token lifetime)
 // This is a relative value, not hardcoded
@@ -172,8 +173,8 @@ export const useTokenExpirationHandler = () => {
     // Dispatch logout action
     dispatch(logout());
     
-    // Redirect to login page
-    navigate('/login');
+    // Redirect to login page using mobile navigation
+    handleMobileNavigation('/login', navigate);
   }, [dispatch, navigate]);
 
   useEffect(() => {
