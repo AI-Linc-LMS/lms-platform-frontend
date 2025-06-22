@@ -14,8 +14,8 @@ import ContinueLearningAll from "./features/learn/pages/ContinueLearningAll";
 import RecommendedLearningAll from "./features/learn/pages/RecommendedLearningAll";
 import Dashboard from "./features/admin/dashboard/pages/Dashboard";
 import ManageStudents from "./features/admin/manage-students/pages/ManageStudents";
-import Assessment from "./features/learn/pages/Assessment";
 import ShortAssessment from "./features/learn/pages/ShortAssessment";
+import InstructionPage from "./features/learn/pages/InstructionPage";
 import ProfileSettings from "./components/UserProfile";
 import WorkshopRegistration from "./features/admin/workshop-registrations/workshopRegistration";
 
@@ -58,11 +58,6 @@ const routes: RouteConfig[] = [
     isPrivate: true,
   },
   {
-    path: "/assessment",
-    component: Assessment,
-    isPrivate: true,
-  },
-  {
     path: "/assessment/quiz",
     component: ShortAssessment,
     isPrivate: true,
@@ -78,8 +73,8 @@ const routes: RouteConfig[] = [
     isPrivate: true,
   },
   {
-    path: "/community",
-    component: Learn, // Using Learn as placeholder for Community page
+    path: "/courses",
+    component: Courses, // Using Learn as placeholder for Community page
     isPrivate: true,
   },
   {
@@ -136,7 +131,12 @@ const routes: RouteConfig[] = [
     path: "/user-profile",
     component: ProfileSettings,
     isPrivate: true,
-  }
+  },
+  {
+    path: "/ai-linc-scholarship-test",
+    component: InstructionPage,
+    isPrivate: true,
+  },
 ];
 
 export default routes;
