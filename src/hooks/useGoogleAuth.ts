@@ -5,7 +5,7 @@ import { setUser } from '../redux/slices/userSlice';
 import { googleLogin } from '../services/authApis';
 import { clearAnonymousUserId } from '../utils/userIdHelper';
 import { useAuthRedirect } from '../contexts/AuthRedirectContext';
-import { logRedirectInfo, handleMobileNavigation, waitForAuthState } from '../utils/authRedirectUtils';
+import { logRedirectInfo, handlePostLoginNavigation, waitForAuthState } from '../utils/authRedirectUtils';
 import axios from 'axios';
 
 export const useGoogleAuth = () => {
@@ -53,35 +53,38 @@ export const useGoogleAuth = () => {
       // Redirect to intended path if available, otherwise go to home
       if (intendedPath) {
         logRedirectInfo(intendedPath, '/', 'Redirecting after Google login');
-        handleMobileNavigation(intendedPath, navigate, true, true); // Force reload after successful login
+        await handlePostLoginNavigation(intendedPath, navigate, true);
         clearIntendedPath(); // Clear the intended path after redirecting
       } else {
         logRedirectInfo(null, '/', 'No intended path, going to home after Google login');
-        handleMobileNavigation('/', navigate, true, true); // Force reload after successful login
+        await handlePostLoginNavigation('/', navigate, true);
       }
-    } catch (error) {
-      console.error('Google login error:', error);
+    } catch (err) {
+      console.error('Google login error:', err);
+      setIsLoading(false);
       
-      // Set a more user-friendly error message
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 400) {
-          setError('Invalid Google account or authorization. Please try again.');
-        } else if (error.response?.status === 500) {
-          setError('Server error. Please try again later or use a different account.');
-        } else if (error.message.includes('Network Error')) {
-          setError('Network error. Please check your internet connection and try again.');
+      // Enhanced error handling
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401) {
+          setError('Invalid Google credentials. Please try again.');
+        } else if (err.response && err.response.status >= 500) {
+          setError('Server error. Please try again later.');
+        } else if (err.code === 'NETWORK_ERROR' || !err.response) {
+          setError('Network error. Please check your connection and try again.');
         } else {
-          setError(error.response?.data?.message || error.response?.data?.detail || 'Failed to log in with Google. Please try again.');
+          setError(err.response?.data?.message || 'Login failed. Please try again.');
         }
-      } else if (error instanceof Error) {
-        setError(error.message);
+      } else if (err instanceof Error) {
+        setError(err.message);
       } else {
         setError('An unexpected error occurred. Please try again.');
       }
-      
-      setIsLoading(false);
     }
   };
 
-  return { handleGoogleLogin, isLoading, error };
+  return {
+    handleGoogleLogin,
+    isLoading,
+    error,
+  };
 }; 

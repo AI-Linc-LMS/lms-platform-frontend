@@ -6,7 +6,7 @@ import { setUser } from '../redux/slices/userSlice';
 import { login, LoginCredentials } from '../services/authApis';
 import { clearAnonymousUserId } from '../utils/userIdHelper';
 import { useAuthRedirect } from '../contexts/AuthRedirectContext';
-import { logRedirectInfo, handleMobileNavigation, waitForAuthState } from '../utils/authRedirectUtils';
+import { logRedirectInfo, handlePostLoginNavigation, waitForAuthState } from '../utils/authRedirectUtils';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
@@ -56,11 +56,11 @@ export const useAuth = () => {
       // Redirect to intended path if available, otherwise go to home
       if (intendedPath) {
         logRedirectInfo(intendedPath, '/', 'Redirecting after login');
-        handleMobileNavigation(intendedPath, navigate, true, true); // Force reload after successful login
+        await handlePostLoginNavigation(intendedPath, navigate, true);
         clearIntendedPath(); // Clear the intended path after redirecting
       } else {
         logRedirectInfo(null, '/', 'No intended path, going to home');
-        handleMobileNavigation('/', navigate, true, true); // Force reload after successful login
+        await handlePostLoginNavigation('/', navigate, true);
       }
     },
     onError: (error: Error) => {
@@ -68,13 +68,10 @@ export const useAuth = () => {
     },
   });
 
-  const handleLogin = (credentials: LoginCredentials) => {
-    loginMutation.mutate(credentials);
-  };
-
   return {
-    handleLogin,
+    login: loginMutation.mutate,
     isLoading: loginMutation.isPending,
     error: loginMutation.error,
+    isSuccess: loginMutation.isSuccess,
   };
 }; 
