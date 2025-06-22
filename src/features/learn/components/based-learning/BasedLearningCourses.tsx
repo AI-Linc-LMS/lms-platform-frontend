@@ -69,13 +69,13 @@ export const CourseCard = ({
     level = "Beginner",
     duration = "3 hr 28 mins",
     certification = true,
-    enrolledStudents = 3200,
+    // enrolledStudents = 3200,
     studentAvatars = []
 }: CourseCardProps) => {
     // Format number with k for thousands
-    const formatStudentCount = (count: number) => {
-        return count >= 1000 ? (count / 1000).toFixed(1) + 'k' : count;
-    };
+    // const formatStudentCount = (count: number) => {
+    //     return count >= 1000 ? (count / 1000).toFixed(1) + 'k' : count;
+    // };
 
     // Truncate description if it's too long
     const truncateDescription = (text: string, maxLength: number = 120) => {
@@ -123,12 +123,14 @@ export const CourseCard = ({
                         ))}
                     </div>
                     <span className="text-gray-700">
-                        {formatStudentCount(enrolledStudents)} students already enrolled
+                        {/* {formatStudentCount(enrolledStudents)}  */}
+                        500+
+                        students already enrolled
                     </span>
                 </div>
 
                 <div className="flex gap-4 mt-auto">
-                    <PrimaryButton className="whitespace-nowrap text-sm" onClick={() => alert('Enrolled!')}>Enroll Now</PrimaryButton>
+                    <PrimaryButton className="whitespace-nowrap text-sm" onClick={() => alert('Enrollment will start soon...')}>Enroll Now</PrimaryButton>
 
 
                     <SecondaryButton className="whitespace-nowrap text-sm" onClick={() => alert('Not Interested')} >Not Interested</SecondaryButton>

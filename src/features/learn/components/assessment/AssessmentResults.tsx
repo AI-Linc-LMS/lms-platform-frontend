@@ -181,6 +181,9 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                 Need time to decide ? Don't worry, you can redeem later as well
               </p>
             )}
+            <p className="text-gray-600 text-xs sm:text-sm mt-2">
+              To know about the placement program vist: <a href="https://ailinc.com/" className="underline">www.ailinc.com</a> 
+            </p>
           </div>
         </div>
       </div>
