@@ -6,7 +6,7 @@ import { setUser } from '../redux/slices/userSlice';
 import { login, LoginCredentials } from '../services/authApis';
 import { clearAnonymousUserId } from '../utils/userIdHelper';
 import { useAuthRedirect } from '../contexts/AuthRedirectContext';
-import { logRedirectInfo } from '../utils/authRedirectUtils';
+import { logRedirectInfo, handleMobileNavigation, waitForAuthState } from '../utils/authRedirectUtils';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
@@ -19,7 +19,7 @@ export const useAuth = () => {
     onMutate: () => {
       dispatch(loginStart());
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       console.log('Login successful, user data:', data.user);
       console.log('User role:', data.user.role);
       
@@ -50,14 +50,17 @@ export const useAuth = () => {
       console.log('Setting user payload:', userPayload);
       dispatch(setUser(userPayload));
       
+      // Wait for authentication state to be properly set
+      await waitForAuthState();
+      
       // Redirect to intended path if available, otherwise go to home
       if (intendedPath) {
         logRedirectInfo(intendedPath, '/', 'Redirecting after login');
-        navigate(intendedPath);
+        handleMobileNavigation(intendedPath, navigate);
         clearIntendedPath(); // Clear the intended path after redirecting
       } else {
         logRedirectInfo(null, '/', 'No intended path, going to home');
-        navigate('/');
+        handleMobileNavigation('/', navigate);
       }
     },
     onError: (error: Error) => {
