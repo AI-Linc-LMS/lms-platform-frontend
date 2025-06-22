@@ -37,15 +37,21 @@ const CertificateTemplates = forwardRef<
         orientation: "landscape" | "portrait";
       } = {
         unit: "px",
-        format: [1123, 794],
+        format: [800, 550],
         orientation: "landscape",
       };
 
       const opt = {
-        margin: 0,
+        margin: [0, 0, 0, 0] as [number, number, number, number],
         filename: `${certificateName.replace(/\s+/g, "_")}_certificate.pdf`,
         image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          width: 800,
+          height: 550,
+          backgroundColor: "#071c30",
+        },
         jsPDF: jsPDFOptions,
       };
 
@@ -82,153 +88,64 @@ const CertificateTemplates = forwardRef<
         day: "2-digit",
       });
 
-  // Get score if available
-  const score = certificate?.score;
-
-  // Get session number if available
-  const sessionNumber = certificate?.sessionNumber;
-
   return (
-    <div
-      style={{
-        margin: 0,
-        padding: 0,
-        background: "#071c30",
-        fontFamily: "Arial, sans-serif",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        minHeight: "100vh",
-      }}
-    >
+    <div className="flex justify-center items-center w-full h-full min-h-[400px] p-2">
       <div
         ref={certificateRef}
         data-certificate-ref="true"
+        className="w-full max-w-[800px] h-[500] sm:h-[540px] bg-gradient-to-b from-[#050f1d] to-[#071c30] text-white p-4 sm:p-6 md:p-8 lg:p-12 box-border relative rounded-lg shadow-lg"
         style={{
+          aspectRatio: "8/5",
+          minHeight: "400px",
+          maxHeight: "550px",
           width: "100%",
-          maxWidth: "1123px",
-          height: "auto",
-          aspectRatio: "1123/794",
+          maxWidth: "800px",
+          margin: "0",
+          backgroundColor: "#071c30",
           background: "linear-gradient(to bottom, #050f1d, #071c30)",
-          color: "white",
-          padding: "60px 40px",
-          boxSizing: "border-box",
-          position: "relative",
-          borderRadius: "8px",
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            top: 30,
-            left: 40,
-            fontSize: 28,
-            fontWeight: "bold",
-            color: "#42c6ff",
-          }}
-        >
+        <div className="absolute top-2 sm:top-4 md:top-6 left-2 sm:left-4 md:left-8 text-sm sm:text-lg md:text-xl lg:text-2xl font-bold text-[#42c6ff]">
           AI LINC
         </div>
 
-        <div
-          style={{
-            fontSize: 48,
-            fontWeight: "bold",
-            letterSpacing: 8,
-            color: "#1ce4dd",
-            textAlign: "center",
-            marginTop: 60,
-          }}
-        >
+        <div className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold tracking-wider text-[#1ce4dd] text-center mt-6 sm:mt-8 md:mt-12">
           CERTIFICATE
         </div>
-        <div
-          style={{
-            fontSize: 24,
-            letterSpacing: 3,
-            color: "#d3d3d3",
-            textAlign: "center",
-            marginBottom: 40,
-          }}
-        >
+        <div className="text-xs sm:text-sm md:text-base lg:text-lg tracking-wide text-[#d3d3d3] text-center mb-3 sm:mb-4 md:mb-6">
           OF COMPLETION
         </div>
 
-        <div style={{ textAlign: "center", fontSize: 20 }}>Presented to</div>
-        <div
-          style={{
-            textAlign: "center",
-            fontSize: 40,
-            color: "#3ae6e6",
-            fontStyle: "italic",
-            margin: "10px 0",
-          }}
-        >
+        <div className="text-xs sm:text-sm md:text-base lg:text-lg text-center">
+          Presented to
+        </div>
+        <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-[#3ae6e6] italic text-center my-2 sm:my-3">
           {userName}
         </div>
 
-        <div style={{ textAlign: "center", fontSize: 18, marginBottom: 20 }}>
+        <div className="text-xs sm:text-sm md:text-base text-center mb-3 sm:mb-4 px-2 sm:px-4">
           has successfully completed the {certificateName} conducted by Ai-Linc
         </div>
 
-        <div
-          style={{
-            textAlign: "center",
-            fontSize: 20,
-            color: "#1ce4dd",
-            fontWeight: "bold",
-          }}
-        >
+        <div className="text-xs sm:text-sm md:text-base lg:text-lg text-[#1ce4dd] font-bold text-center px-2 sm:px-4">
           NO CODE DEVELOPMENT BOOTCAMP USING AGENTIC/GENERATIVE AI
         </div>
 
-        {score && (
-          <div style={{ textAlign: "center", fontSize: 18, marginTop: 20 }}>
-            Score: {score}%
-          </div>
-        )}
-
-        {sessionNumber && (
-          <div style={{ textAlign: "center", fontSize: 18, marginTop: 10 }}>
-            Session: {sessionNumber}
-          </div>
-        )}
-
-        <div style={{ textAlign: "center", fontSize: 18, marginTop: 30 }}>
-          {issuedDate}
+        <div className="text-xs sm:text-sm md:text-base lg:text-lg text-center mt-3 sm:mt-4 md:mt-6">
+          Issued on {issuedDate}
         </div>
 
-        <div style={{ textAlign: "center", fontSize: 18, marginTop: 40 }}>
-          Session taken by the experts from
-          <div style={{ marginTop: 10 }}>
-            <img
-              src="https://cdn.worldvectorlogo.com/logos/microsoft-1.svg"
-              alt="Microsoft"
-              style={{
-                height: 30,
-                margin: "0 10px",
-                verticalAlign: "middle",
-              }}
-            />
-            <img
-              src="https://cdn.worldvectorlogo.com/logos/google-icon.svg"
-              alt="Google"
-              style={{
-                height: 30,
-                margin: "0 10px",
-                verticalAlign: "middle",
-              }}
-            />
-            <img
-              src="https://cdn.worldvectorlogo.com/logos/amazon-icon-1.svg"
-              alt="Amazon"
-              style={{
-                height: 30,
-                margin: "0 10px",
-                verticalAlign: "middle",
-              }}
-            />
-          </div>
+        <div className="text-xs sm:text-sm md:text-base lg:text-lg text-center mt-2 sm:mt-3 md:mt-4 px-2 sm:px-4">
+          We appreciate your efforts and dedication in learning and growing with
+          us.
+        </div>
+
+        <div className="flex flex-col text-xs sm:text-sm md:text-base lg:text-lg items-end 
+        mt-4">
+          <p className="text-[#3ae6e6] font-medium">Best Regards</p>
+          <p className="text-[#42c6ff] font-bold text-sm sm:text-base md:text-lg">
+            Team AI LINC
+          </p>
         </div>
       </div>
     </div>

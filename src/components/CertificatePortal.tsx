@@ -14,9 +14,21 @@ const CertificatePortal: React.FC = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [selectedCertificate, setSelectedCertificate] =
     useState<Certificate | null>(null);
-
+  const [isMobile, setIsMobile] = useState(false);
+  console.log(isMobile);
   // Ref to access CertificateTemplates methods
   const certificateRef = useRef<CertificateTemplatesRef>(null);
+
+  // Check if mobile on mount and resize
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkIfMobile();
+    window.addEventListener("resize", checkIfMobile);
+    return () => window.removeEventListener("resize", checkIfMobile);
+  }, []);
 
   // Fetch certificates from API
   const {
@@ -132,49 +144,57 @@ const CertificatePortal: React.FC = () => {
   }, [showPreview]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <div className="mb-4 sm:mb-6 md:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
             My Certificates
           </h1>
-          <p className="text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             View and download your certificates from assessments and workshops
           </p>
         </div>
 
         {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <input
-              type="text"
-              placeholder="Search certificates by name or type..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79]"
-            />
-            <svg
-              className="absolute left-3 top-3.5 h-5 w-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+            <div className="relative max-w-md">
+              <input
+                type="text"
+                placeholder="Search certificates by name or type..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79] text-sm sm:text-base"
               />
-            </svg>
+              <svg
+                className="absolute left-3 top-2.5 sm:top-3.5 h-4 w-4 sm:h-5 sm:w-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+            {!isLoading && !error && (
+              <div className="text-sm text-gray-500">
+                {filteredCertificates.length} certificate
+                {filteredCertificates.length !== 1 ? "s" : ""} found
+              </div>
+            )}
           </div>
         </div>
 
         {/* Certificates Grid */}
         {isLoading ? (
-          <div className="text-center py-12">
+          <div className="text-center py-8 sm:py-12">
             <svg
-              className="mx-auto h-12 w-12 text-gray-400 animate-spin"
+              className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-gray-400 animate-spin"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -191,9 +211,9 @@ const CertificatePortal: React.FC = () => {
             </h3>
           </div>
         ) : error ? (
-          <div className="text-center py-12">
+          <div className="text-center py-8 sm:py-12">
             <svg
-              className="mx-auto h-12 w-12 text-red-400"
+              className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-red-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -213,9 +233,9 @@ const CertificatePortal: React.FC = () => {
             </p>
           </div>
         ) : filteredCertificates.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-8 sm:py-12">
             <svg
-              className="mx-auto h-12 w-12 text-gray-400"
+              className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-gray-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -237,34 +257,38 @@ const CertificatePortal: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
             {filteredCertificates.map((certificate) => (
               <div
                 key={certificate.id}
-                className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 p-6"
+                className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 p-3 sm:p-4 md:p-6"
               >
-                <div className="flex items-start justify-between mb-4">
-                  {getCertificateIcon(certificate.type)}
-                  {getCertificateBadge(certificate.type)}
+                <div className="flex items-start justify-between mb-3 sm:mb-4">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6">
+                    {getCertificateIcon(certificate.type)}
+                  </div>
+                  <div className="text-xs sm:text-sm">
+                    {getCertificateBadge(certificate.type)}
+                  </div>
                 </div>
 
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3 line-clamp-2">
                   {certificate.name}
                 </h3>
 
-                <div className="space-y-2 mb-4">
-                  <p className="text-sm text-gray-600">
+                <div className="space-y-1 sm:space-y-2 mb-3 sm:mb-4">
+                  <p className="text-xs sm:text-sm text-gray-600">
                     <span className="font-medium">Issued:</span>{" "}
                     {new Date(certificate.issuedDate).toLocaleDateString()}
                   </p>
                   {certificate.score && (
-                    <p className="text-sm text-gray-600">
+                    <p className="text-xs sm:text-sm text-gray-600">
                       <span className="font-medium">Score:</span>{" "}
                       {certificate.score}%
                     </p>
                   )}
                   {certificate.sessionNumber && (
-                    <p className="text-sm text-gray-600">
+                    <p className="text-xs sm:text-sm text-gray-600">
                       <span className="font-medium">Session:</span>{" "}
                       {certificate.sessionNumber}
                     </p>
@@ -274,10 +298,10 @@ const CertificatePortal: React.FC = () => {
                 <div className="space-y-2">
                   <button
                     onClick={() => handleViewCertificate(certificate)}
-                    className="w-full bg-[#255C79] text-white py-2 px-4 rounded-lg hover:bg-[#1E4A63] hover:scale-105 hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 transform active:scale-95"
+                    className="w-full bg-[#255C79] text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-[#1E4A63] hover:scale-105 hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2 transform active:scale-95 text-xs sm:text-sm"
                   >
                     <svg
-                      className="w-4 h-4"
+                      className="w-3 h-3 sm:w-4 sm:h-4"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -295,7 +319,10 @@ const CertificatePortal: React.FC = () => {
                         d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
                       />
                     </svg>
-                    View & Download Certificate
+                    <span className="hidden sm:inline">
+                      View & Download Certificate
+                    </span>
+                    <span className="sm:hidden">View Certificate</span>
                   </button>
                 </div>
               </div>
@@ -305,16 +332,29 @@ const CertificatePortal: React.FC = () => {
 
         {/* Certificate Preview Modal */}
         {showPreview && (
-          <div className="fixed inset-0 bg-opacity-50 backdrop-blur-[1px] flex items-center justify-center p-4 z-50 ">
-            <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto shadow-lg border-1 border-gray-300 p-4">
-              <div className="px-6 py-4">
-                <div className="flex items-center justify-between">
+          <div className="fixed inset-0 bg-opacity-50 backdrop-blur-[1px] flex items-center justify-center p-2 sm:p-4 z-50">
+            <div className="bg-white rounded-lg w-full max-w-4xl sm:max-w-5xl lg:max-w-6xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-lg border border-gray-300">
+              <div className="p-3 sm:p-4 md:p-6">
+                <div className="flex flex-row items-center justify-between gap-3">
                   <div>
                     <button
                       onClick={() => setShowPreview(false)}
-                      className="w-auto h-10 px-6 text-sm rounded-xl text-white bg-[#255C79] font-medium transition-all duration-200 hover:bg-[#1E4A63] hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
+                      className="flex items-center justify-center w-10 h-10 sm:w-auto sm:h-10 sm:px-4 text-sm rounded-xl text-white bg-[#255C79] font-medium transition-all duration-200 hover:bg-[#1E4A63] hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
                     >
-                      Close
+                      <svg
+                        className="w-5 h-5 sm:w-4 sm:h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                      <span className="hidden sm:inline ml-2">Close</span>
                     </button>
                   </div>
                   <div>
@@ -332,12 +372,12 @@ const CertificatePortal: React.FC = () => {
                         }
                       }}
                       disabled={isDownloading}
-                      className="w-auto h-10 px-6 text-sm rounded-xl text-white bg-[#255C79] font-medium transition-all duration-200 hover:bg-[#1E4A63] hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transform active:scale-95"
+                      className="flex items-center justify-center w-10 h-10 sm:w-auto sm:h-10 sm:px-4 sm:px-6 text-sm rounded-xl text-white bg-[#255C79] font-medium transition-all duration-200 hover:bg-[#1E4A63] hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
                     >
                       {isDownloading ? (
                         <>
                           <svg
-                            className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                            className="animate-spin w-5 h-5 sm:w-4 sm:h-4 text-white"
                             xmlns="http://www.w3.org/2000/svg"
                             fill="none"
                             viewBox="0 0 24 24"
@@ -356,12 +396,14 @@ const CertificatePortal: React.FC = () => {
                               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                             ></path>
                           </svg>
-                          Generating PDF...
+                          <span className="hidden sm:inline ml-2">
+                            Generating PDF...
+                          </span>
                         </>
                       ) : (
                         <>
                           <svg
-                            className="w-4 h-4"
+                            className="w-5 h-5 sm:w-4 sm:h-4"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -373,14 +415,16 @@ const CertificatePortal: React.FC = () => {
                               d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                             />
                           </svg>
-                          Download
+                          <span className="hidden sm:inline ml-2">
+                            Download
+                          </span>
                         </>
                       )}
                     </button>
                   </div>
                 </div>
               </div>
-              <div className="py-2 px-6">
+              <div className="py-2 px-3 sm:px-6">
                 <CertificateTemplates
                   ref={certificateRef}
                   certificate={selectedCertificate}
