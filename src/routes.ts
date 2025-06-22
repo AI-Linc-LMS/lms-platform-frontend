@@ -20,6 +20,7 @@ import ProfileSettings from "./components/UserProfile";
 import AssesmentStudentsResults from "./features/admin/assesment-results/AssesmentStudentsResults";
 import Otp from "./features/auth/pages/Otp";
 import WorkshopResistrations from "./features/admin/workshop-registrations/WorkshopResistrations";
+import CertificatePortal from "./components/CertificatePortal";
 
 export interface RouteConfig {
   path: string;
@@ -143,6 +144,11 @@ const routes: RouteConfig[] = [
   {
     path: "/user-profile",
     component: ProfileSettings,
+    isPrivate: true,
+  },
+  {
+    path: "/certificates",
+    component: CertificatePortal,
     isPrivate: true,
   },
   {
