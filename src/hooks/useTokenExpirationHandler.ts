@@ -174,7 +174,7 @@ export const useTokenExpirationHandler = () => {
     dispatch(logout());
     
     // Redirect to login page using mobile navigation
-    handleMobileNavigation('/login', navigate);
+    handleMobileNavigation('/login', navigate, true, false); // Don't force reload for logout
   }, [dispatch, navigate]);
 
   useEffect(() => {
