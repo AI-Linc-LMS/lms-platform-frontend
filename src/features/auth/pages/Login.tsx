@@ -10,12 +10,12 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const { handleLogin, isLoading } = useAuth();
+  const { login, isLoading } = useAuth();
   const { error } = useAppSelector((state) => state.auth);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    handleLogin({ email, password });
+    login({ email, password });
   };
 
   return (
