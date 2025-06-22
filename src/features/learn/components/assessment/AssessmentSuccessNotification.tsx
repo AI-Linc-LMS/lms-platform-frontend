@@ -18,7 +18,7 @@ const AssessmentSuccessNotification: React.FC<AssessmentSuccessNotificationProps
   useEffect(() => {
     // Animate in
     setIsVisible(true);
-    
+
     // Auto close after 5 seconds
     const timer = setTimeout(() => {
       handleClose();
@@ -33,9 +33,8 @@ const AssessmentSuccessNotification: React.FC<AssessmentSuccessNotificationProps
   };
 
   return (
-    <div className={`fixed top-4 right-4 z-50 transition-all duration-300 ${
-      isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
-    }`}>
+    <div className={`fixed top-4 right-4 z-50 transition-all duration-300 ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+      }`}>
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 min-w-[280px] max-w-sm">
         <div className="flex items-start gap-3">
           {/* Green checkmark icon */}
@@ -46,7 +45,7 @@ const AssessmentSuccessNotification: React.FC<AssessmentSuccessNotificationProps
               </svg>
             </div>
           </div>
-          
+
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1">
@@ -60,11 +59,11 @@ const AssessmentSuccessNotification: React.FC<AssessmentSuccessNotificationProps
                 </svg>
               </button>
             </div>
-            
+
             <p className="text-sm text-gray-600 leading-relaxed">
               You scored <span className="font-medium text-gray-900">{correctAnswers}</span> out of <span className="font-medium text-gray-900">{totalQuestions}</span> questions correctly
             </p>
-            
+
             <div className="mt-2">
               <span className="text-2xl font-bold text-red-500">{score}%</span>
             </div>
