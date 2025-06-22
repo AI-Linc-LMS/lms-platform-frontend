@@ -2,13 +2,21 @@ import { useRef, useImperativeHandle, forwardRef, useState } from "react";
 import html2pdf from "html2pdf.js";
 import { useSelector } from "react-redux";
 import { RootState } from "../redux/store";
+import { Certificate } from "../services/certificateApis";
 
 export interface CertificateTemplatesRef {
   downloadPDF: () => Promise<void>;
   isDownloading: boolean;
 }
 
-const CertificateTemplates = forwardRef<CertificateTemplatesRef>((_, ref) => {
+interface CertificateTemplatesProps {
+  certificate?: Certificate | null;
+}
+
+const CertificateTemplates = forwardRef<
+  CertificateTemplatesRef,
+  CertificateTemplatesProps
+>(({ certificate }, ref) => {
   const certificateRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -35,7 +43,7 @@ const CertificateTemplates = forwardRef<CertificateTemplatesRef>((_, ref) => {
 
       const opt = {
         margin: 0,
-        filename: "certificate.pdf",
+        filename: `${certificateName.replace(/\s+/g, "_")}_certificate.pdf`,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true },
         jsPDF: jsPDFOptions,
@@ -56,14 +64,29 @@ const CertificateTemplates = forwardRef<CertificateTemplatesRef>((_, ref) => {
   }));
 
   // Get user's full name or fallback to "User"
-  const userName = userData?.full_name || "User";
+  const userName = certificate?.studentName || userData?.full_name || "User";
 
-  // Get today's date
-  const today = new Date().toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
+  // Get certificate name or fallback
+  const certificateName = certificate?.name || "AI Assessment";
+
+  // Get issued date or today's date
+  const issuedDate = certificate?.issuedDate
+    ? new Date(certificate.issuedDate).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      })
+    : new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      });
+
+  // Get score if available
+  const score = certificate?.score;
+
+  // Get session number if available
+  const sessionNumber = certificate?.sessionNumber;
 
   return (
     <div
@@ -145,7 +168,7 @@ const CertificateTemplates = forwardRef<CertificateTemplatesRef>((_, ref) => {
         </div>
 
         <div style={{ textAlign: "center", fontSize: 18, marginBottom: 20 }}>
-          has successfully completed the AI Assessment conducted by Ai-Linc
+          has successfully completed the {certificateName} conducted by Ai-Linc
         </div>
 
         <div
@@ -159,8 +182,20 @@ const CertificateTemplates = forwardRef<CertificateTemplatesRef>((_, ref) => {
           NO CODE DEVELOPMENT BOOTCAMP USING AGENTIC/GENERATIVE AI
         </div>
 
+        {score && (
+          <div style={{ textAlign: "center", fontSize: 18, marginTop: 20 }}>
+            Score: {score}%
+          </div>
+        )}
+
+        {sessionNumber && (
+          <div style={{ textAlign: "center", fontSize: 18, marginTop: 10 }}>
+            Session: {sessionNumber}
+          </div>
+        )}
+
         <div style={{ textAlign: "center", fontSize: 18, marginTop: 30 }}>
-          {today}
+          {issuedDate}
         </div>
 
         <div style={{ textAlign: "center", fontSize: 18, marginTop: 40 }}>

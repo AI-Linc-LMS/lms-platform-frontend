@@ -2,40 +2,31 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import CertificateTemplates, {
   CertificateTemplatesRef,
 } from "./CertificateTemplates";
-
-// Dummy data interface
-interface Certificate {
-  id: string;
-  type: "assessment" | "workshop" | "assessment-workshop";
-  name: string;
-  issuedDate: string;
-  studentName: string;
-  studentEmail: string;
-  score?: number;
-  sessionNumber?: number;
-}
+import { useQuery } from "@tanstack/react-query";
+import {
+  getAvailableCertificates,
+  Certificate,
+} from "../services/certificateApis";
 
 const CertificatePortal: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [selectedCertificate, setSelectedCertificate] =
+    useState<Certificate | null>(null);
 
   // Ref to access CertificateTemplates methods
   const certificateRef = useRef<CertificateTemplatesRef>(null);
 
-  // Single certificate data - every student will have this
-  const certificates: Certificate[] = [
-    {
-      id: "1",
-      type: "assessment-workshop",
-      name: "No code Development",
-      issuedDate: "2024-01-15",
-      studentName: "John Doe",
-      studentEmail: "john.doe@example.com",
-      score: 85,
-      sessionNumber: 1,
-    },
-  ];
+  // Fetch certificates from API
+  const {
+    data: certificates = [],
+    isLoading,
+    error,
+  } = useQuery<Certificate[]>({
+    queryKey: ["availableCertificates"],
+    queryFn: () => getAvailableCertificates(1),
+  });
 
   const filteredCertificates = useMemo(() => {
     return certificates.filter(
@@ -43,9 +34,10 @@ const CertificatePortal: React.FC = () => {
         cert.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         cert.type.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm]);
+  }, [certificates, searchTerm]);
 
-  const handleViewCertificate = () => {
+  const handleViewCertificate = (certificate: Certificate) => {
+    setSelectedCertificate(certificate);
     setShowPreview(true);
   };
 
@@ -179,7 +171,48 @@ const CertificatePortal: React.FC = () => {
         </div>
 
         {/* Certificates Grid */}
-        {filteredCertificates.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-12">
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400 animate-spin"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">
+              Loading certificates...
+            </h3>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <svg
+              className="mx-auto h-12 w-12 text-red-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">
+              Error loading certificates
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Please try again later.
+            </p>
+          </div>
+        ) : filteredCertificates.length === 0 ? (
           <div className="text-center py-12">
             <svg
               className="mx-auto h-12 w-12 text-gray-400"
@@ -240,7 +273,7 @@ const CertificatePortal: React.FC = () => {
 
                 <div className="space-y-2">
                   <button
-                    onClick={() => handleViewCertificate()}
+                    onClick={() => handleViewCertificate(certificate)}
                     className="w-full bg-[#255C79] text-white py-2 px-4 rounded-lg hover:bg-[#1E4A63] hover:scale-105 hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 transform active:scale-95"
                   >
                     <svg
@@ -348,7 +381,10 @@ const CertificatePortal: React.FC = () => {
                 </div>
               </div>
               <div className="py-2 px-6">
-                <CertificateTemplates ref={certificateRef} />
+                <CertificateTemplates
+                  ref={certificateRef}
+                  certificate={selectedCertificate}
+                />
               </div>
             </div>
           </div>
