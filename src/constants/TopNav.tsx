@@ -38,10 +38,10 @@ const TopNav: React.FC = () => {
       dispatch(logout());
 
       // Navigate to login using mobile navigation
-      handleMobileNavigation('/login', navigate, true);
+      handleMobileNavigation('/login', navigate, true, false);
     } catch (error) {
       console.error("Error during logout:", error);
-      handleMobileNavigation('/login', navigate, true);
+      handleMobileNavigation('/login', navigate, true, false);
     }
   };
 
