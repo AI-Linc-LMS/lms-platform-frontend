@@ -17,14 +17,14 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
   const navigate = useNavigate();
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isPurchased, setIsPurchased] = useState(false);
-  
-  const {data:redeemData,isLoading,error} = useQuery({ 
+
+  const { data: redeemData, isLoading, error } = useQuery({
     queryKey: ["assessment-results", clientId, assessmentId],
     queryFn: () => redeemScholarship(clientId, assessmentId),
     refetchOnWindowFocus: true,
     refetchOnMount: true,
-    staleTime: 0, 
-    gcTime: 0, 
+    staleTime: 0,
+    gcTime: 0,
     enabled: !!clientId && !!assessmentId,
   });
 
@@ -33,9 +33,9 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
   }
   // Check if already purchased on component mount
   useEffect(() => {
-    if(redeemData?.txn_status === "VERIFIED"){
+    if (redeemData?.txn_status === "VERIFIED") {
       setIsPurchased(true);
-    }else{
+    } else {
       setIsPurchased(false);
     }
   }, [redeemData]);
@@ -55,22 +55,22 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
     setIsPurchased(true);
     const purchaseKey = `course_purchased_${clientId}_${assessmentId}`;
     localStorage.setItem(purchaseKey, 'true');
-    
+
     // Also store purchase metadata
     const purchaseData = {
       purchasedAt: new Date().toISOString(),
       clientId,
       assessmentId,
-      percentage_scholarship : redeemData?.percentage_scholarship,
-      total_amount : redeemData?.total_amount,
-      payable_amount : redeemData?.payable_amount,
+      percentage_scholarship: redeemData?.percentage_scholarship,
+      total_amount: redeemData?.total_amount,
+      payable_amount: redeemData?.payable_amount,
     };
     localStorage.setItem(`${purchaseKey}_metadata`, JSON.stringify(purchaseData));
-    
+
     setIsPaymentModalOpen(false);
   };
 
-  if(isLoading){
+  if (isLoading) {
     return <div className="flex justify-center items-center h-screen">
       <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
     </div>
@@ -120,13 +120,13 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                     /30
                   </span>
                 </div>
-                  <div className="flex flex-col gap-2 text-[#255C79]">
-                    <span className="text-xl sm:text-2xl font-bold">Great effort! 🎉</span>
-                    <p className="text-base sm:text-lg font-medium">
+                <div className="flex flex-col gap-2 text-[#255C79]">
+                  <span className="text-xl sm:text-2xl font-bold">Great effort! 🎉</span>
+                  <p className="text-base sm:text-lg font-medium">
                     As per to your score, our hiring or counseling team would get in touch with you
-                    </p>
-                  </div>
-                
+                  </p>
+                </div>
+
               </div>
               {/* Decorative elements */}
               <div className="absolute top-0 right-0 w-20 sm:w-32 h-20 sm:h-32 bg-white/10 rounded-full -translate-y-8 sm:-translate-y-16 translate-x-8 sm:translate-x-16"></div>
@@ -149,7 +149,7 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                     {"Scholarship"}
                   </div>
                 </div>
-                
+
                 {isPurchased ? (
                   <div className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-lg font-semibold flex items-center justify-center gap-2 cursor-default shadow-lg">
                     <FiCheck className="h-5 w-5" />
@@ -182,7 +182,7 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
               </p>
             )}
             <p className="text-gray-600 text-xs sm:text-sm mt-2">
-              To know about the placement program vist: <a href="https://ailinc.com/" className="underline">www.ailinc.com</a> 
+              To know about the placement program vist: <a href="https://ailinc.com/" className="underline">www.ailinc.com</a>
             </p>
           </div>
         </div>
