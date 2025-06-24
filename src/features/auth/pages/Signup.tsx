@@ -2,19 +2,37 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PrimaryButton from "../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import GoogleSignupButton from "../../../commonComponents/common-buttons/google-login-button/GoogleSignupButton";
+import { signup } from "../../../services/authApis";
+import { useToast } from "../../../contexts/ToastContext";
+
+export interface SignupFormData {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  password: string;
+  confirm_password: string;
+}
+
+interface FieldErrors {
+  [key: string]: string;
+}
 
 const Signup: React.FC = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    full_name: "",
+  const { success: showSuccessToast, error: showErrorToast } = useToast();
+  const [formData, setFormData] = useState<SignupFormData>({
+    first_name: "",
+    last_name: "",
     email: "",
-    phone_number: "",
+    phone: "",
     password: "",
-    confirmPassword: "",
+    confirm_password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
-  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [isLoading, setIsLoading] = useState(false);
 
   const validatePassword = (password: string) => {
     const errors: string[] = [];
@@ -42,17 +60,30 @@ const Signup: React.FC = () => {
     return errors;
   };
 
-  const validateField = (name: string, value: string) => {
+  const validateField = (name: keyof SignupFormData, value: string) => {
     switch (name) {
-      case "full_name": {
+      case "first_name": {
         if (!value.trim()) {
-          return "Full name is required";
+          return "First name is required";
         }
         if (value.trim().length < 2) {
-          return "Full name must be at least 2 characters";
+          return "First name must be at least 2 characters";
         }
         if (!/^[a-zA-Z\s]+$/.test(value.trim())) {
-          return "Full name can only contain letters and spaces";
+          return "First name can only contain letters and spaces";
+        }
+        break;
+      }
+
+      case "last_name": {
+        if (!value.trim()) {
+          return "Last name is required";
+        }
+        if (value.trim().length < 2) {
+          return "Last name must be at least 2 characters";
+        }
+        if (!/^[a-zA-Z\s]+$/.test(value.trim())) {
+          return "Last name can only contain letters and spaces";
         }
         break;
       }
@@ -67,7 +98,7 @@ const Signup: React.FC = () => {
         break;
       }
 
-      case "phone_number": {
+      case "phone": {
         if (!value.trim()) {
           return "Phone number is required";
         }
@@ -93,7 +124,7 @@ const Signup: React.FC = () => {
         break;
       }
 
-      case "confirmPassword": {
+      case "confirm_password": {
         if (!value) {
           return "Please confirm your password";
         }
@@ -108,9 +139,10 @@ const Signup: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    const fieldName = name as keyof SignupFormData;
 
     // Limit phone number to 15 digits
-    if (name === "phone_number") {
+    if (fieldName === "phone") {
       const digitsOnly = value.replace(/\D/g, "");
       if (digitsOnly.length > 15) {
         return; // Don't update if exceeding 15 digits
@@ -119,45 +151,45 @@ const Signup: React.FC = () => {
 
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [fieldName]: value,
     }));
 
     // Clear field error when user starts typing
-    if (fieldErrors[name]) {
+    if (fieldErrors[fieldName]) {
       setFieldErrors((prev) => ({
         ...prev,
-        [name]: "",
+        [fieldName]: "",
       }));
     }
 
     // Validate password when password field changes
-    if (name === "password") {
+    if (fieldName === "password") {
       const errors = validatePassword(value);
       setPasswordErrors(errors);
     }
 
     // Validate confirm password when it changes
-    if (name === "confirmPassword") {
+    if (fieldName === "confirm_password") {
       if (value && value !== formData.password) {
         setFieldErrors((prev) => ({
           ...prev,
-          [name]: "Passwords do not match",
+          [fieldName]: "Passwords do not match",
         }));
       } else if (value && value === formData.password) {
         setFieldErrors((prev) => ({
           ...prev,
-          [name]: "",
+          [fieldName]: "",
         }));
       }
     }
   };
 
   const validateForm = () => {
-    const errors: { [key: string]: string } = {};
+    const errors: FieldErrors = {};
 
     Object.keys(formData).forEach((key) => {
       const fieldError = validateField(
-        key,
+        key as keyof SignupFormData,
         formData[key as keyof typeof formData]
       );
       if (fieldError) {
@@ -169,16 +201,16 @@ const Signup: React.FC = () => {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     if (!validateForm()) {
       return; // Don't proceed if validation fails
     }
 
     // Check if passwords match
-    if (formData.password !== formData.confirmPassword) {
+    if (formData.password !== formData.confirm_password) {
       setFieldErrors((prev) => ({
         ...prev,
-        confirmPassword: "Passwords do not match",
+        confirm_password: "Passwords do not match",
       }));
       return;
     }
@@ -188,12 +220,46 @@ const Signup: React.FC = () => {
       return; // Don't proceed if password requirements not met
     }
 
-    // All validations passed
-    console.log("Signup with:", formData);
-    navigate("/otp");
+    setIsLoading(true);
+
+    try {
+      const clientId = import.meta.env.VITE_CLIENT_ID;
+
+      // Create API data without confirm_password
+      const signupData: SignupFormData = {
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+        confirm_password: formData.confirm_password,
+      };
+
+      await signup(signupData, clientId);
+
+      showSuccessToast(
+        "Account Created",
+        "Your account has been created successfully!"
+      );
+
+      // Store email in localStorage for OTP page
+      localStorage.setItem("signupEmail", formData.email);
+
+      navigate(`/otp?email=${encodeURIComponent(formData.email)}`);
+    } catch (error) {
+      console.error("Signup error:", error);
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to create account. Please try again.";
+      showErrorToast("Signup Failed", errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const getFieldError = (fieldName: string) => {
+  const getFieldError = (fieldName: keyof SignupFormData) => {
     return fieldErrors[fieldName] || "";
   };
 
@@ -229,33 +295,64 @@ const Signup: React.FC = () => {
 
           <div className="space-y-3">
             <div className="space-y-4">
-              <div>
-                <label
-                  htmlFor="full_name"
-                  className="block text-xs font-medium text-gray-700"
-                >
-                  Full Name
-                </label>
-                <div className="mt-1">
-                  <input
-                    id="full_name"
-                    name="full_name"
-                    type="text"
-                    autoComplete="name"
-                    required
-                    value={formData.full_name}
-                    onChange={handleChange}
-                    className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${
-                      getFieldError("full_name") ? "border-red-500" : ""
-                    }`}
-                    placeholder="John Doe"
-                  />
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label
+                    htmlFor="first_name"
+                    className="block text-xs font-medium text-gray-700"
+                  >
+                    First Name
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      id="first_name"
+                      name="first_name"
+                      type="text"
+                      autoComplete="given-name"
+                      required
+                      value={formData.first_name}
+                      onChange={handleChange}
+                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${
+                        getFieldError("first_name") ? "border-red-500" : ""
+                      }`}
+                      placeholder="John"
+                    />
+                  </div>
+                  {getFieldError("first_name") && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {getFieldError("first_name")}
+                    </p>
+                  )}
                 </div>
-                {getFieldError("full_name") && (
-                  <p className="mt-1 text-xs text-red-600">
-                    {getFieldError("full_name")}
-                  </p>
-                )}
+
+                <div className="flex-1">
+                  <label
+                    htmlFor="last_name"
+                    className="block text-xs font-medium text-gray-700"
+                  >
+                    Last Name
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      id="last_name"
+                      name="last_name"
+                      type="text"
+                      autoComplete="family-name"
+                      required
+                      value={formData.last_name}
+                      onChange={handleChange}
+                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${
+                        getFieldError("last_name") ? "border-red-500" : ""
+                      }`}
+                      placeholder="Doe"
+                    />
+                  </div>
+                  {getFieldError("last_name") && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {getFieldError("last_name")}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -289,30 +386,30 @@ const Signup: React.FC = () => {
 
               <div>
                 <label
-                  htmlFor="phone_number"
+                  htmlFor="phone"
                   className="block text-xs font-medium text-gray-700"
                 >
                   Phone Number
                 </label>
                 <div className="mt-1">
                   <input
-                    id="phone_number"
-                    name="phone_number"
+                    id="phone"
+                    name="phone"
                     type="tel"
                     autoComplete="tel"
                     required
-                    value={formData.phone_number}
+                    value={formData.phone}
                     onChange={handleChange}
                     className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${
-                      getFieldError("phone_number") ? "border-red-500" : ""
+                      getFieldError("phone") ? "border-red-500" : ""
                     }`}
                     placeholder="+91 945323XXXX"
                     maxLength={20}
                   />
                 </div>
-                {getFieldError("phone_number") && (
+                {getFieldError("phone") && (
                   <p className="mt-1 text-xs text-red-600">
-                    {getFieldError("phone_number")}
+                    {getFieldError("phone")}
                   </p>
                 )}
               </div>
@@ -425,29 +522,31 @@ const Signup: React.FC = () => {
 
                 <div className="flex-1">
                   <label
-                    htmlFor="confirmPassword"
+                    htmlFor="confirm_password"
                     className="block text-xs font-medium text-gray-700"
                   >
                     Confirm Password
                   </label>
                   <div className="mt-1">
                     <input
-                      id="confirmPassword"
-                      name="confirmPassword"
+                      id="confirm_password"
+                      name="confirm_password"
                       type={showPassword ? "text" : "password"}
                       autoComplete="new-password"
                       required
-                      value={formData.confirmPassword}
+                      value={formData.confirm_password}
                       onChange={handleChange}
                       className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${
-                        getFieldError("confirmPassword") ? "border-red-500" : ""
+                        getFieldError("confirm_password")
+                          ? "border-red-500"
+                          : ""
                       }`}
                       placeholder="Confirm your password"
                     />
                   </div>
-                  {getFieldError("confirmPassword") && (
+                  {getFieldError("confirm_password") && (
                     <p className="mt-1 text-xs text-red-600">
-                      {getFieldError("confirmPassword")}
+                      {getFieldError("confirm_password")}
                     </p>
                   )}
                 </div>
@@ -455,8 +554,8 @@ const Signup: React.FC = () => {
             </div>
 
             <div>
-              <PrimaryButton onClick={handleSignup}>
-                Create account
+              <PrimaryButton onClick={handleSignup} disabled={isLoading}>
+                {isLoading ? "Creating account..." : "Create account"}
               </PrimaryButton>
             </div>
 
