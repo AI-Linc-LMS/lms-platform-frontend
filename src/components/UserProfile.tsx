@@ -1,40 +1,127 @@
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import userImage from "../commonComponents/icons/nav/User Image.png";
 import editIcon from "../commonComponents/icons/nav/editIcon.png";
 import { logout } from "../redux/slices/userSlice";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { handleMobileNavigation } from "../utils/authRedirectUtils";
+import { getUser, updateUser } from "../services/userApis";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "../contexts/ToastContext";
 
 interface UserData {
-  id: string;
-  full_name: string;
+  first_name: string;
+  last_name: string;
   email: string;
-  phone_number: string;
-  dob: string;
-  gender: string;
+  username: string;
   profile_picture: string;
-  emailNotification: boolean;
-  inAppNotification: boolean;
+  phone_number: string;
+  bio: string | null;
+  social_links: {
+    linkedin?: string;
+    github?: string;
+  };
+  date_of_birth: string | null;
+  emailNotification?: boolean;
+  inAppNotification?: boolean;
 }
 
 const ProfileSettings = () => {
+  const clientId = import.meta.env.VITE_CLIENT_ID;
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { error: showErrorToast, success: showSuccessToast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const userData = useSelector((state: { user: UserData }) => state.user);
   const [editable, setEditable] = useState(false);
-  const [formData, setFormData] = useState<UserData>(userData);
-  console.log("userData", userData);
-  console.log(formData);
+  const [formData, setFormData] = useState<UserData>({
+    first_name: "",
+    last_name: "",
+    email: "",
+    username: "",
+    profile_picture: "",
+    phone_number: "",
+    bio: null,
+    social_links: {},
+    date_of_birth: null,
+    emailNotification: false,
+    inAppNotification: false,
+  });
+
+  const {
+    data: user,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["user"],
+    queryFn: () => getUser(clientId),
+  });
+
+  // Update mutation
+  const updateUserMutation = useMutation({
+    mutationFn: (userData: Partial<UserData>) => updateUser(clientId, userData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+      setIsSaving(false);
+      setEditable(false);
+      showSuccessToast(
+        "Profile Updated",
+        "Your profile has been updated successfully!"
+      );
+    },
+    onError: (error) => {
+      console.error("Failed to update user:", error);
+      setIsSaving(false);
+      showErrorToast(
+        "Update Failed",
+        "Failed to update profile. Please try again."
+      );
+    },
+  });
+
+  // Update formData when user data is loaded
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        email: user.email || "",
+        username: user.username || "",
+        profile_picture: user.profile_picture || "",
+        phone_number: user.phone_number || "",
+        bio: user.bio,
+        social_links: user.social_links || {},
+        date_of_birth: user.date_of_birth,
+        emailNotification: user.emailNotification || false,
+        inAppNotification: user.inAppNotification || false,
+      });
+    }
+  }, [user]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     const { name, value, type } = e.target;
     const val =
       type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
-    setFormData((prev) => ({ ...prev, [name]: val }));
+
+    // Handle nested social_links fields
+    if (name.startsWith("social_links.")) {
+      const socialKey = name.split(
+        "."
+      )[1] as keyof typeof formData.social_links;
+      setFormData((prev) => ({
+        ...prev,
+        social_links: {
+          ...prev.social_links,
+          [socialKey]: val,
+        },
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: val }));
+    }
   };
 
   const handleToggle = (key: keyof UserData) => {
@@ -42,12 +129,25 @@ const ProfileSettings = () => {
   };
 
   const handleSave = async () => {
-    setIsSaving(true); // Show loader
+    setIsSaving(true);
+
+    // Prepare data for update (exclude non-editable fields)
+    const updateData = {
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      phone_number: formData.phone_number,
+      bio: formData.bio,
+      date_of_birth: formData.date_of_birth,
+      emailNotification: formData.emailNotification,
+      inAppNotification: formData.inAppNotification,
+      social_links: {
+        linkedin: formData.social_links.linkedin || "",
+        github: formData.social_links.github || "",
+      },
+    };
+
+    updateUserMutation.mutate(updateData);
     setEditable(false);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    console.log("Saved Form Data:", formData);
-    setIsSaving(false); // Hide loader
-    setEditable(false); // Exit edit mode
   };
 
   const Logout = async () => {
@@ -78,9 +178,37 @@ const ProfileSettings = () => {
       window.location.reload();
     } catch (error) {
       console.error("Error during logout:", error);
+      showErrorToast(
+        "Logout Error",
+        "Failed to logout properly. Please try again."
+      );
       handleMobileNavigation("/login", navigate, true, false); // Don't force reload for logout
     }
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="p-6 rounded-lg w-full max-w-7xl mx-auto">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#255C79]"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="p-6 rounded-lg w-full max-w-7xl mx-auto">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-red-500">
+            Error loading user data. Please try again.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 rounded-lg w-full max-w-7xl mx-auto">
@@ -92,12 +220,14 @@ const ProfileSettings = () => {
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
             <img
-              src={formData.profile_picture ?? userImage}
+              src={formData.profile_picture || userImage}
               alt="Profile"
               className="w-20 h-20 rounded-full object-cover"
             />
             <div>
-              <div className="text-lg font-semibold">{formData.full_name}</div>
+              <div className="text-lg font-semibold">
+                {formData.first_name} {formData.last_name}
+              </div>
               <div className="text-sm text-gray-500">{formData.email}</div>
             </div>
           </div>
@@ -143,12 +273,28 @@ const ProfileSettings = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Name
+              First Name
             </label>
             <input
-              name="full_name"
+              name="first_name"
               type="text"
-              value={formData.full_name}
+              value={formData.first_name}
+              onChange={handleChange}
+              readOnly={!editable}
+              className={`mt-1 w-full border rounded px-3 py-2 ${
+                editable ? "border-[#255C79]" : "border-gray-300"
+              } focus:outline-none`}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Last Name
+            </label>
+            <input
+              name="last_name"
+              type="text"
+              value={formData.last_name}
               onChange={handleChange}
               readOnly={!editable}
               className={`mt-1 w-full border rounded px-3 py-2 ${
@@ -165,12 +311,28 @@ const ProfileSettings = () => {
               name="email"
               type="email"
               value={formData.email}
-              onChange={handleChange}
-              readOnly={!editable}
-              className={`mt-1 w-full border rounded px-3 py-2 ${
-                editable ? "border-[#255C79]" : "border-gray-300"
-              } focus:outline-none`}
+              readOnly={true}
+              className="mt-1 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none bg-gray-100"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Email cannot be changed
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Username
+            </label>
+            <input
+              name="username"
+              type="text"
+              value={formData.username}
+              readOnly={true}
+              className="mt-1 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none bg-gray-100"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Username cannot be changed
+            </p>
           </div>
 
           <div>
@@ -178,9 +340,9 @@ const ProfileSettings = () => {
               Phone Number
             </label>
             <input
-              name="phone"
+              name="phone_number"
               type="text"
-              value={formData.phone_number ?? "9999XXXXXX"}
+              value={formData.phone_number || ""}
               onChange={handleChange}
               readOnly={!editable}
               className={`mt-1 w-full border rounded px-3 py-2 ${
@@ -194,9 +356,9 @@ const ProfileSettings = () => {
               Date of Birth
             </label>
             <input
-              name="dob"
-              type="text"
-              value={formData.dob ?? "25/05/20XX"}
+              name="date_of_birth"
+              type="date"
+              value={formData.date_of_birth || ""}
               onChange={handleChange}
               readOnly={!editable}
               className={`mt-1 w-full border rounded px-3 py-2 ${
@@ -207,21 +369,52 @@ const ProfileSettings = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Gender
+              Bio
             </label>
-            <select
-              name="gender"
-              value={formData.gender}
+            <textarea
+              name="bio"
+              value={formData.bio || ""}
               onChange={handleChange}
-              disabled={!editable}
+              readOnly={!editable}
+              rows={3}
               className={`mt-1 w-full border rounded px-3 py-2 ${
                 editable ? "border-[#255C79]" : "border-gray-300"
               } focus:outline-none`}
-            >
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </select>
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              LinkedIn Profile
+            </label>
+            <input
+              name="social_links.linkedin"
+              type="url"
+              value={formData.social_links.linkedin || ""}
+              onChange={handleChange}
+              readOnly={!editable}
+              placeholder="https://linkedin.com/in/yourprofile"
+              className={`mt-1 w-full border rounded px-3 py-2 ${
+                editable ? "border-[#255C79]" : "border-gray-300"
+              } focus:outline-none`}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              GitHub Profile
+            </label>
+            <input
+              name="social_links.github"
+              type="url"
+              value={formData.social_links.github || ""}
+              onChange={handleChange}
+              readOnly={!editable}
+              placeholder="https://github.com/yourusername"
+              className={`mt-1 w-full border rounded px-3 py-2 ${
+                editable ? "border-[#255C79]" : "border-gray-300"
+              } focus:outline-none`}
+            />
           </div>
         </div>
 
