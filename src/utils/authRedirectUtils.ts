@@ -3,7 +3,7 @@
  */
 
 export const shouldStoreIntendedPath = (path: string): boolean => {
-  const excludedPaths = ['/login', '/signup', '/forgot-password'];
+  const excludedPaths = ['/login', '/signup', '/forgot-password', '/otp'];
   return !excludedPaths.includes(path);
 };
 
