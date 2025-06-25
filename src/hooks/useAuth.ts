@@ -43,6 +43,7 @@ export const useAuth = () => {
         full_name: data.user.full_name,
         username: data.user.username,
         phone_number: data.user.phone_number,
+        profile_picture: data.user.profile_picture,
         role: data.user.role,
         isAuthenticated: true,
       };
