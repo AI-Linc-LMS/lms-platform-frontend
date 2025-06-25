@@ -189,9 +189,9 @@ const ProfileSettings = () => {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="p-6 rounded-lg w-full max-w-7xl mx-auto">
+      <div className="p-4 sm:p-6 rounded-lg w-full max-w-7xl mx-auto">
         <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#255C79]"></div>
+          <div className="animate-spin rounded-full h-16 w-16 sm:h-32 sm:w-32 border-b-2 border-[#255C79]"></div>
         </div>
       </div>
     );
@@ -200,9 +200,9 @@ const ProfileSettings = () => {
   // Show error state
   if (error) {
     return (
-      <div className="p-6 rounded-lg w-full max-w-7xl mx-auto">
+      <div className="p-4 sm:p-6 rounded-lg w-full max-w-7xl mx-auto">
         <div className="flex items-center justify-center min-h-screen">
-          <div className="text-red-500">
+          <div className="text-red-500 text-center px-4">
             Error loading user data. Please try again.
           </div>
         </div>
@@ -211,35 +211,35 @@ const ProfileSettings = () => {
   }
 
   return (
-    <div className="p-6 rounded-lg w-full max-w-7xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4 px-2">Profile Settings</h2>
+    <div className="p-4 sm:p-6 rounded-lg w-full max-w-7xl mx-auto">
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 px-2">Profile Settings</h2>
 
-      <div className="border-1 border-gray-300 shadow-sm rounded-lg p-6 space-y-6 min-h-screen">
-        <div className="text-xl font-bold text-[#257195]">My Profile</div>
+      <div className="border-1 border-gray-300 shadow-sm rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6 min-h-screen">
+        <div className="text-lg sm:text-xl font-bold text-[#257195]">My Profile</div>
 
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
             <img
               src={formData.profile_picture || userImage}
               alt="Profile"
-              className="w-20 h-20 rounded-full object-cover"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover"
             />
-            <div>
-              <div className="text-lg font-semibold">
+            <div className="text-center sm:text-left">
+              <div className="text-base sm:text-lg font-semibold">
                 {formData.first_name} {formData.last_name}
               </div>
-              <div className="text-sm text-gray-500">{formData.email}</div>
+              <div className="text-sm text-gray-500 break-all">{formData.email}</div>
             </div>
           </div>
-          <div className="flex justify-end">
+          <div className="flex justify-center sm:justify-end">
             <button
               onClick={() => (editable ? handleSave() : setEditable(true))}
-              className="bg-[#255C79] text-white px-5 py-2 rounded-lg flex items-center gap-2"
+              className="bg-[#255C79] text-white px-4 sm:px-5 py-2 rounded-lg flex items-center gap-2 text-sm sm:text-base"
               disabled={isSaving}
             >
               {isSaving ? (
                 <svg
-                  className="animate-spin h-5 w-5 text-white"
+                  className="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-white"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -262,7 +262,7 @@ const ProfileSettings = () => {
                 "Save"
               ) : (
                 <>
-                  <img src={editIcon} alt="Edit" className="w-4 h-4" />
+                  <img src={editIcon} alt="Edit" className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span>Edit</span>
                 </>
               )}
@@ -270,9 +270,9 @@ const ProfileSettings = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               First Name
             </label>
             <input
@@ -281,14 +281,13 @@ const ProfileSettings = () => {
               value={formData.first_name}
               onChange={handleChange}
               readOnly={!editable}
-              className={`mt-1 w-full border rounded px-3 py-2 ${
-                editable ? "border-[#255C79]" : "border-gray-300"
-              } focus:outline-none`}
+              className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${editable ? "border-[#255C79]" : "border-gray-300"
+                } focus:outline-none`}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Last Name
             </label>
             <input
@@ -297,14 +296,13 @@ const ProfileSettings = () => {
               value={formData.last_name}
               onChange={handleChange}
               readOnly={!editable}
-              className={`mt-1 w-full border rounded px-3 py-2 ${
-                editable ? "border-[#255C79]" : "border-gray-300"
-              } focus:outline-none`}
+              className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${editable ? "border-[#255C79]" : "border-gray-300"
+                } focus:outline-none`}
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
+          <div className="sm:col-span-2 lg:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Email
             </label>
             <input
@@ -312,7 +310,7 @@ const ProfileSettings = () => {
               type="email"
               value={formData.email}
               readOnly={true}
-              className="mt-1 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none bg-gray-100"
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm sm:text-base focus:outline-none bg-gray-100"
             />
             <p className="text-xs text-gray-500 mt-1">
               Email cannot be changed
@@ -320,7 +318,7 @@ const ProfileSettings = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Username
             </label>
             <input
@@ -328,7 +326,7 @@ const ProfileSettings = () => {
               type="text"
               value={formData.username}
               readOnly={true}
-              className="mt-1 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none bg-gray-100"
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm sm:text-base focus:outline-none bg-gray-100"
             />
             <p className="text-xs text-gray-500 mt-1">
               Username cannot be changed
@@ -336,7 +334,7 @@ const ProfileSettings = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Phone Number
             </label>
             <input
@@ -345,14 +343,13 @@ const ProfileSettings = () => {
               value={formData.phone_number || ""}
               onChange={handleChange}
               readOnly={!editable}
-              className={`mt-1 w-full border rounded px-3 py-2 ${
-                editable ? "border-[#255C79]" : "border-gray-300"
-              } focus:outline-none`}
+              className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${editable ? "border-[#255C79]" : "border-gray-300"
+                } focus:outline-none`}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Date of Birth
             </label>
             <input
@@ -361,14 +358,13 @@ const ProfileSettings = () => {
               value={formData.date_of_birth || ""}
               onChange={handleChange}
               readOnly={!editable}
-              className={`mt-1 w-full border rounded px-3 py-2 ${
-                editable ? "border-[#255C79]" : "border-gray-300"
-              } focus:outline-none`}
+              className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${editable ? "border-[#255C79]" : "border-gray-300"
+                } focus:outline-none`}
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
+          <div className="sm:col-span-2 lg:col-span-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Bio
             </label>
             <textarea
@@ -377,14 +373,13 @@ const ProfileSettings = () => {
               onChange={handleChange}
               readOnly={!editable}
               rows={3}
-              className={`mt-1 w-full border rounded px-3 py-2 ${
-                editable ? "border-[#255C79]" : "border-gray-300"
-              } focus:outline-none`}
+              className={`w-full border rounded px-3 py-2 text-sm sm:text-base resize-none ${editable ? "border-[#255C79]" : "border-gray-300"
+                } focus:outline-none`}
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
+          <div className="sm:col-span-2 lg:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               LinkedIn Profile
             </label>
             <input
@@ -394,14 +389,13 @@ const ProfileSettings = () => {
               onChange={handleChange}
               readOnly={!editable}
               placeholder="https://linkedin.com/in/yourprofile"
-              className={`mt-1 w-full border rounded px-3 py-2 ${
-                editable ? "border-[#255C79]" : "border-gray-300"
-              } focus:outline-none`}
+              className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${editable ? "border-[#255C79]" : "border-gray-300"
+                } focus:outline-none`}
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
+          <div className="sm:col-span-2 lg:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               GitHub Profile
             </label>
             <input
@@ -411,9 +405,8 @@ const ProfileSettings = () => {
               onChange={handleChange}
               readOnly={!editable}
               placeholder="https://github.com/yourusername"
-              className={`mt-1 w-full border rounded px-3 py-2 ${
-                editable ? "border-[#255C79]" : "border-gray-300"
-              } focus:outline-none`}
+              className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${editable ? "border-[#255C79]" : "border-gray-300"
+                } focus:outline-none`}
             />
           </div>
         </div>
@@ -421,50 +414,46 @@ const ProfileSettings = () => {
         <hr className="my-4" />
 
         <div>
-          <h3 className="text-lg font-bold text-[#257195] mb-4">
-            Notification Setting
+          <h3 className="text-base sm:text-lg font-bold text-[#257195] mb-4">
+            Notification Settings
           </h3>
-          <div className="flex gap-6">
-            <div className="flex items-center gap-2">
-              <span>Email Notifications</span>
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+            <div className="flex items-center justify-between sm:justify-start gap-2">
+              <span className="text-sm sm:text-base">Email Notifications</span>
               <button
                 type="button"
                 onClick={() => handleToggle("emailNotification")}
-                className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors duration-300 ${
-                  formData.emailNotification ? "bg-green-500" : "bg-gray-300"
-                }`}
+                className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors duration-300 ${formData.emailNotification ? "bg-green-500" : "bg-gray-300"
+                  }`}
               >
                 <div
-                  className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
-                    formData.emailNotification ? "translate-x-5" : ""
-                  }`}
+                  className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${formData.emailNotification ? "translate-x-5" : ""
+                    }`}
                 />
               </button>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span>In-App Notification</span>
+            <div className="flex items-center justify-between sm:justify-start gap-2">
+              <span className="text-sm sm:text-base">In-App Notifications</span>
               <button
                 type="button"
                 onClick={() => handleToggle("inAppNotification")}
-                className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors duration-300 ${
-                  formData.inAppNotification ? "bg-green-500" : "bg-gray-300"
-                }`}
+                className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors duration-300 ${formData.inAppNotification ? "bg-green-500" : "bg-gray-300"
+                  }`}
               >
                 <div
-                  className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
-                    formData.inAppNotification ? "translate-x-5" : ""
-                  }`}
+                  className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${formData.inAppNotification ? "translate-x-5" : ""
+                    }`}
                 />
               </button>
             </div>
           </div>
         </div>
 
-        <div className="flex">
+        <div className="flex justify-center sm:justify-start">
           <button
             onClick={() => Logout()}
-            className="bg-[#255C79] text-white px-5 py-2 rounded-lg"
+            className="bg-[#255C79] text-white px-6 py-2 rounded-lg text-sm sm:text-base w-full sm:w-auto"
           >
             Logout
           </button>
