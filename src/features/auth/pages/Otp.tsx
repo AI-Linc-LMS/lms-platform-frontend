@@ -245,11 +245,10 @@ function Otp() {
               <button
                 onClick={handleResendOtp}
                 disabled={isResendDisabled || resendLoading}
-                className={`font-medium ${
-                  isResendDisabled || resendLoading
+                className={`font-medium ${isResendDisabled || resendLoading
                     ? "text-gray-400 cursor-not-allowed"
                     : "text-black hover:underline"
-                }`}
+                  }`}
               >
                 {resendLoading ? "Sending..." : "Resend OTP"}
               </button>
