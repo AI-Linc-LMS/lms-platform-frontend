@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getInstructions,
@@ -14,8 +14,8 @@ import score from "../../../../public/score-card.png";
 const InstructionPage: React.FC = () => {
   const navigate = useNavigate();
   const clientId = import.meta.env.VITE_CLIENT_ID;
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [isPhoneValid, setIsPhoneValid] = useState(false);
+  // const [phoneNumber, setPhoneNumber] = useState("");
+  // const [isPhoneValid, setIsPhoneValid] = useState(false);
 
   const startAssessmentMutation = useMutation({
     mutationFn: (phone: string) =>
@@ -71,16 +71,16 @@ const InstructionPage: React.FC = () => {
     );
   }
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setPhoneNumber(value);
-    setIsPhoneValid(/^\d{10}$/.test(value));
-  };
+  // const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const value = e.target.value;
+  //   setPhoneNumber(value);
+  //   setIsPhoneValid(/^\d{10}$/.test(value));
+  // };
 
   const handleStartAssessment = () => {
-    if (isPhoneValid) {
-      startAssessmentMutation.mutate(phoneNumber);
-    }
+    // if (isPhoneValid) {
+      startAssessmentMutation.mutate(""); // Empty phone number for now
+    // }
   };
 
   const handleResumeAssessment = () => {
@@ -160,9 +160,9 @@ const InstructionPage: React.FC = () => {
                   </div>
 
                   <div className="flex flex-col lg:flex-row gap-3">
-                    {/* <button className="w-full py-3 px-6 border-2 border-[#2C5F7F] text-[#2C5F7F] rounded-xl font-medium hover:bg-[#2C5F7F] hover:text-white transition-colors">
+                    <button className="w-full py-3 px-6 border-2 border-[#2C5F7F] text-[#2C5F7F] rounded-xl font-medium hover:bg-[#2C5F7F] hover:text-white transition-colors">
                       Why Take This Test?
-                    </button> */}
+                    </button>
 
                     {data?.status === "submitted" ? (
                       <button
@@ -180,23 +180,23 @@ const InstructionPage: React.FC = () => {
                       </button>
                     ) : (
                       <div className="flex flex-col lg:flex-row gap-3 w-full">
-                        <input
+                        {/* <input
                           type="tel"
                           value={phoneNumber}
                           onChange={handlePhoneChange}
                           placeholder="Enter phone number"
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2C5F7F] focus:border-[#2C5F7F]"
                           maxLength={10}
-                        />
+                        /> */}
                         <button
                           onClick={handleStartAssessment}
-                          disabled={!isPhoneValid || startAssessmentMutation.isPending}
-                          className={`w-full py-3 px-6 rounded-xl font-medium transition-colors ${isPhoneValid && !startAssessmentMutation.isPending
+                          disabled={startAssessmentMutation.isPending}
+                          className={`w-full py-3 px-6 rounded-xl font-medium transition-colors ${!startAssessmentMutation.isPending
                             ? "bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]"
                             : "bg-gray-300 text-gray-500 cursor-not-allowed"
                             }`}
                         >
-                          {startAssessmentMutation.isPending ? "Starting..." : "Enter your phone number"}
+                          {startAssessmentMutation.isPending ? "Starting..." : "Start Your Test"}
                         </button>
                       </div>
                     )}
@@ -344,8 +344,8 @@ const InstructionPage: React.FC = () => {
               ) : (
                 <button
                   onClick={handleStartAssessment}
-                  disabled={!isPhoneValid || startAssessmentMutation.isPending}
-                  className={`px-8 py-4 rounded-xl font-semibold text-lg transition-colors ${isPhoneValid && !startAssessmentMutation.isPending
+                  disabled={startAssessmentMutation.isPending}
+                  className={`px-8 py-4 rounded-xl font-semibold text-lg transition-colors ${!startAssessmentMutation.isPending
                     ? "bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]"
                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}
