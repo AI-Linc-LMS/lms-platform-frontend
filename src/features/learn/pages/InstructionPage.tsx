@@ -206,7 +206,7 @@ const InstructionPage: React.FC = () => {
             </div>
           </div>
         </div>
-        
+
 
 
         {/* Unlock These Perks Section */}
