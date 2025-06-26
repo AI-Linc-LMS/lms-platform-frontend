@@ -61,7 +61,7 @@ const TopNav: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
+  console.log("user", user);
   return (
     <div className="w-full flex justify-between md:justify-end items-center px-4 pt-4">
       <div className="md:hidden">
