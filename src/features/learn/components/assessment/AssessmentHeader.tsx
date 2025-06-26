@@ -19,6 +19,7 @@ const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({ timeRemaining }) =>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
         <button
           onClick={() => navigate("/ai-linc-scholarship-test")}
+          // onClick={() => navigate(-1)}
           className="flex items-center text-[#255C79] hover:text-[#1a4a5f] mb-2 sm:mb-0"
         >
           <svg
