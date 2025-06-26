@@ -1,9 +1,8 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getInstructions,
-  startAssessment,
 } from "../../../services/assesment/assesmentApis";
 
 import InstructionVector from "../../../../public/instruction-vector.png";
@@ -16,19 +15,6 @@ const InstructionPage: React.FC = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
   // const [phoneNumber, setPhoneNumber] = useState("");
   // const [isPhoneValid, setIsPhoneValid] = useState(false);
-
-  const startAssessmentMutation = useMutation({
-    mutationFn: (phone: string) =>
-      startAssessment(clientId, "ai-linc-scholarship-test", phone),
-    onSuccess: (data) => {
-      console.log("Assessment started successfully:", data);
-      navigate("/assessment/quiz");
-    },
-    onError: (error) => {
-      console.error("Error starting assessment:", error);
-      alert("Failed to start assessment. Please try again.");
-    },
-  });
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["assessment-instructions"],
@@ -78,9 +64,8 @@ const InstructionPage: React.FC = () => {
   // };
 
   const handleStartAssessment = () => {
-    // if (isPhoneValid) {
-      startAssessmentMutation.mutate(""); // Empty phone number for now
-    // }
+    // Navigate to phone verification page first
+    navigate("/assessment/phone-verification");
   };
 
   const handleResumeAssessment = () => {
@@ -190,13 +175,9 @@ const InstructionPage: React.FC = () => {
                         /> */}
                         <button
                           onClick={handleStartAssessment}
-                          disabled={startAssessmentMutation.isPending}
-                          className={`w-full py-3 px-6 rounded-xl font-medium transition-colors ${!startAssessmentMutation.isPending
-                            ? "bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]"
-                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            }`}
+                          className="w-full py-3 px-6 rounded-xl font-medium transition-colors bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]"
                         >
-                          {startAssessmentMutation.isPending ? "Starting..." : "Start Your Test"}
+                          Start Your Test
                         </button>
                       </div>
                     )}
@@ -344,13 +325,9 @@ const InstructionPage: React.FC = () => {
               ) : (
                 <button
                   onClick={handleStartAssessment}
-                  disabled={startAssessmentMutation.isPending}
-                  className={`px-8 py-4 rounded-xl font-semibold text-lg transition-colors ${!startAssessmentMutation.isPending
-                    ? "bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    }`}
+                  className="px-8 py-4 rounded-xl font-semibold text-lg transition-colors bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]"
                 >
-                  {startAssessmentMutation.isPending ? "Starting..." : "Start Your Test"}
+                  Start Your Test
                 </button>
               )}
             </div>
