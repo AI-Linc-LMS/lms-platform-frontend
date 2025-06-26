@@ -1,11 +1,13 @@
 import { CreateOrderResponse } from "../../features/learn/components/assessment/PaymentModal";
 import axiosInstance from "../axiosInstance";
+import { PaymentType } from "./razorpayService";
 
 
 export interface VerifyPaymentRequest {
   order_id: string;
   payment_id: string;
   signature: string;
+  payment_type?: PaymentType;
 }
 
 
@@ -19,13 +21,18 @@ interface ApiError {
 
 export const createOrder = async (
   clientId: number,
-  amount: number
+  amount: number,
+  paymentType?: PaymentType
 ): Promise<CreateOrderResponse> => {
   try {
+    const requestPayload = {
+      amount: amount,
+      payment_type: paymentType || PaymentType.COURSE,
+    };
+
     const response = await axiosInstance.post(
-      `/payment-gateway/api/clients/${clientId}/create-order/`,{
-        amount: amount,
-      }
+      `/payment-gateway/api/clients/${clientId}/create-order/`,
+      requestPayload
     );
     return response.data;
   } catch (error) {
@@ -60,6 +67,7 @@ export const verifyPayment = async (
       order_id: paymentData.order_id,
       payment_id: paymentData.payment_id,
       signature: paymentData.signature,
+      payment_type: paymentData.payment_type || PaymentType.COURSE,
     };
 
     // Alternative: Try with explicit JSON stringification
@@ -73,6 +81,7 @@ export const verifyPayment = async (
       "order_id exists": !!requestPayload.order_id,
       "payment_id exists": !!requestPayload.payment_id,
       "signature exists": !!requestPayload.signature,
+      "payment_type": requestPayload.payment_type,
       "order_id value": requestPayload.order_id,
       "payment_id value": requestPayload.payment_id,
       "signature value": requestPayload.signature
