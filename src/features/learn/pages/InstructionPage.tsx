@@ -88,65 +88,67 @@ const InstructionPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="">
       <div className="">
         {/* Hero Section */}
         <div className="bg-white rounded-3xl w-full border border-gray-200 shadow-lg">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 m-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-4 ">
             {/* Left - Image Section */}
-            <div className="flex items-center justify-center p-8">
+            <div className=" ">
               <img
                 src={InstructionVector}
                 alt="Instruction Vector"
-                className="w-full h-auto max-w-full object-cover"
+                className="w-full  object-contain"
               />
             </div>
 
             {/* Right - Info Section */}
-            <div className="p-8 space-y-6">
+            <div className=" flex flex-col justify-center ">
               <div>
-                <h2 className="text-3xl md:text-4xl font-bold text-[#2C5F7F] mb-4">
+                <h2 className="text-3xl md:text-4xl font-bold text-[#2C5F7F] ">
                   Placement Assessment: Your Path Forward Starts Here
                 </h2>
-                <p className="text-gray-700 mb-6 leading-relaxed">
+                <p className="text-gray-700  leading-relaxed">
                   <span className="font-semibold">Completed the AI Linc No-Code Bootcamp?</span> Now prove your skills. Take this assessment to showcase your strengths and project readiness.
                 </p>
               </div>
 
-              <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-amber-600">📊</span>
-                    <span className="font-medium">Total Questions: <span className="font-bold">30 MCQ</span></span>
+              <div className=" rounded-2xl  flex-1 flex flex-col justify-between">
+                <div className="">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-amber-600">📊</span>
+                      <span className="font-medium">Total Questions: <span className="font-bold">30 MCQ</span></span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-amber-600">⏱️</span>
-                    <span className="font-medium">Duration: <span className="font-bold">30 minutes</span></span>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-amber-600">⏱️</span>
+                      <span className="font-medium">Duration: <span className="font-bold">30 minutes</span></span>
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                    <span className="font-medium">Topics:</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      "AI Fundamentals",
-                      "JavaScript",
-                      "React",
-                      "Node.JS",
-                      "HTML/CSS",
-                      "Cloud Database",
-                      "Logic & Aptitude"
-                    ].map((topic) => (
-                      <span key={topic} className="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm">
-                        {topic}
-                      </span>
-                    ))}
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                      <span className="font-medium">Topics:</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        "AI Fundamentals",
+                        "JavaScript",
+                        "React",
+                        "Node.JS",
+                        "HTML/CSS",
+                        "Cloud Database",
+                        "Logic & Aptitude"
+                      ].map((topic) => (
+                        <span key={topic} className="px-3 py-1 bg-[#EFF9FC] text-gray-700 rounded-full text-sm border border-[#80C9E0]">
+                          {topic}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -157,10 +159,10 @@ const InstructionPage: React.FC = () => {
                     <span className="text-gray-500 line-through">₹699</span>
                   </div>
 
-                  <div className="space-y-3">
-                    <button className="w-full py-3 px-6 border-2 border-[#2C5F7F] text-[#2C5F7F] rounded-xl font-medium hover:bg-[#2C5F7F] hover:text-white transition-colors">
+                  <div className="flex flex-col lg:flex-row gap-3">
+                    {/* <button className="w-full py-3 px-6 border-2 border-[#2C5F7F] text-[#2C5F7F] rounded-xl font-medium hover:bg-[#2C5F7F] hover:text-white transition-colors">
                       Why Take This Test?
-                    </button>
+                    </button> */}
 
                     {data?.status === "submitted" ? (
                       <button
@@ -177,7 +179,7 @@ const InstructionPage: React.FC = () => {
                         Resume Quiz
                       </button>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="flex flex-col lg:flex-row gap-3 w-full">
                         <input
                           type="tel"
                           value={phoneNumber}
@@ -194,7 +196,7 @@ const InstructionPage: React.FC = () => {
                             : "bg-gray-300 text-gray-500 cursor-not-allowed"
                             }`}
                         >
-                          {startAssessmentMutation.isPending ? "Starting..." : "Start Your Test"}
+                          {startAssessmentMutation.isPending ? "Starting..." : "Enter your phone number"}
                         </button>
                       </div>
                     )}
@@ -204,6 +206,7 @@ const InstructionPage: React.FC = () => {
             </div>
           </div>
         </div>
+        
 
 
         {/* Unlock These Perks Section */}
