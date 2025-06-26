@@ -1,41 +1,29 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getInstructions,
-  startAssessment,
 } from "../../../services/assesment/assesmentApis";
+
+import InstructionVector from "../../../../public/instruction-vector.png";
+import linkdln from "../../../../public/linkdln.png";
+import certificate from "../../../../public/preview-certificate.png";
+import score from "../../../../public/score-card.png";
 
 const InstructionPage: React.FC = () => {
   const navigate = useNavigate();
   const clientId = import.meta.env.VITE_CLIENT_ID;
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [isPhoneValid, setIsPhoneValid] = useState(false);
-
-  const startAssessmentMutation = useMutation({
-    mutationFn: (phone: string) =>
-      startAssessment(clientId, "ai-linc-scholarship-test", phone),
-    onSuccess: (data) => {
-      console.log("Assessment started successfully:", data);
-      // Navigate to the assessment page
-      navigate("/assessment/quiz");
-    },
-    onError: (error) => {
-      console.error("Error starting assessment:", error);
-      alert("Failed to start assessment. Please try again.");
-    },
-  });
+  // const [phoneNumber, setPhoneNumber] = useState("");
+  // const [isPhoneValid, setIsPhoneValid] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["assessment-instructions"],
     queryFn: () => getInstructions(clientId, "ai-linc-scholarship-test"),
     refetchOnWindowFocus: true,
     refetchOnMount: true,
-    staleTime: 0, // Data is always considered stale, so it will refetch
-    gcTime: 0, // Don't cache the data
+    staleTime: 0,
+    gcTime: 0,
   });
-
-  console.log("Instructions:", data);
 
   if (isLoading) {
     return (
@@ -44,29 +32,18 @@ const InstructionPage: React.FC = () => {
       </div>
     );
   }
+
   if (error) {
     return (
       <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
         <div className="bg-white rounded-3xl p-6 shadow-sm max-w-md mx-auto">
           <div className="text-center">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg
-                className="w-8 h-8 text-red-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M6 18L18 6M6 6l12 12"
-                ></path>
+              <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-[#343A40] mb-2">
-              Error Loading Instructions
-            </h2>
+            <h2 className="text-xl font-bold text-[#343A40] mb-2">Error Loading Instructions</h2>
             <p className="text-[#6C757D] mb-4">{error.message}</p>
             <button
               onClick={() => navigate("/assessment")}
@@ -80,289 +57,278 @@ const InstructionPage: React.FC = () => {
     );
   }
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setPhoneNumber(value);
-    // Basic phone number validation (10 digits)
-    setIsPhoneValid(/^\d{10}$/.test(value));
-  };
+  // const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const value = e.target.value;
+  //   setPhoneNumber(value);
+  //   setIsPhoneValid(/^\d{10}$/.test(value));
+  // };
 
   const handleStartAssessment = () => {
-    if (isPhoneValid) {
-      startAssessmentMutation.mutate(phoneNumber);
-    }
+    // Navigate to phone verification page first
+    navigate("/assessment/phone-verification");
   };
 
   const handleResumeAssessment = () => {
     navigate("/assessment/quiz");
   };
 
-
   return (
-    <div className="min-h-screen bg-[#F8F9FA] p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header Section - Matching the image */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            {/* <div className="w-10 h-10 bg-gradient-to-br from-[#255C79] to-[#1a4a5f] rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-lg">G</span>
-            </div> */}
-            <h1 className="text-2xl md:text-3xl font-bold text-[#264D64]">
-              {data?.status === "submitted"
-                ? "🎯 Assessment Completed: View Your Results"
-                : data?.status === "in_progress"
-                  ? "🎯 Continue Your Assessment"
-                  : "🎯 Post-Bootcamp Assessment: Your Path Forward Starts Here"}
-            </h1>
+    <div className="">
+      <div className="">
+        {/* Hero Section */}
+        <div className="bg-white rounded-3xl w-full border border-gray-200 shadow-lg">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-4 ">
+            {/* Left - Image Section */}
+            <div className=" ">
+              <img
+                src={InstructionVector}
+                alt="Instruction Vector"
+                className="w-full  object-contain"
+              />
+            </div>
+
+            {/* Right - Info Section */}
+            <div className=" flex flex-col justify-center ">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-bold text-[#2C5F7F] ">
+                  Placement Assessment: Your Path Forward Starts Here
+                </h2>
+                <p className="text-gray-700  leading-relaxed">
+                  <span className="font-semibold">Completed the AI Linc No-Code Bootcamp?</span> Now prove your skills. Take this assessment to showcase your strengths and project readiness.
+                </p>
+              </div>
+
+              <div className=" rounded-2xl  flex-1 flex flex-col justify-between">
+                <div className="">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-amber-600">📊</span>
+                      <span className="font-medium">Total Questions: <span className="font-bold">30 MCQ</span></span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-amber-600">⏱️</span>
+                      <span className="font-medium">Duration: <span className="font-bold">30 minutes</span></span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                      <span className="font-medium">Topics:</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        "AI Fundamentals",
+                        "JavaScript",
+                        "React",
+                        "Node.JS",
+                        "HTML/CSS",
+                        "Cloud Database",
+                        "Logic & Aptitude"
+                      ].map((topic) => (
+                        <span key={topic} className="px-3 py-1 bg-[#EFF9FC] text-gray-700 rounded-full text-sm border border-[#80C9E0]">
+                          {topic}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <p className="text-lg mb-4">Take this test for only</p>
+                  <div className="flex items-baseline gap-2 mb-6">
+                    <span className="text-4xl font-bold text-[#2C5F7F]">₹49</span>
+                    <span className="text-gray-500 line-through">₹699</span>
+                  </div>
+
+                  <div className="flex flex-col lg:flex-row gap-3">
+                    <button className="w-full py-3 px-6 border-2 border-[#2C5F7F] text-[#2C5F7F] rounded-xl font-medium hover:bg-[#2C5F7F] hover:text-white transition-colors">
+                      Why Take This Test?
+                    </button>
+
+                    {data?.status === "submitted" ? (
+                      <button
+                        onClick={handleResumeAssessment}
+                        className="w-full py-3 px-6 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors"
+                      >
+                        View Results
+                      </button>
+                    ) : data?.status === "in_progress" ? (
+                      <button
+                        onClick={handleResumeAssessment}
+                        className="w-full py-3 px-6 bg-[#2C5F7F] text-white rounded-xl font-medium hover:bg-[#1a4a5f] transition-colors"
+                      >
+                        Resume Quiz
+                      </button>
+                    ) : (
+                      <div className="flex flex-col lg:flex-row gap-3 w-full">
+                        {/* <input
+                          type="tel"
+                          value={phoneNumber}
+                          onChange={handlePhoneChange}
+                          placeholder="Enter phone number"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2C5F7F] focus:border-[#2C5F7F]"
+                          maxLength={10}
+                        /> */}
+                        <button
+                          onClick={handleStartAssessment}
+                          className="w-full py-3 px-6 rounded-xl font-medium transition-colors bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]"
+                        >
+                          Start Your Test
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <p className="text-[#000000] font-inter font-semibold text-22px md:text-lg max-w-4xl mx-auto leading-[140%] tracking-[-3%] text-center">
-            {data?.status === "submitted"
-              ? "Congratulations! You've completed the assessment. View your results and see what's next for your career journey."
-              : data?.status === "in_progress"
-                ? "You have an assessment in progress. Continue where you left off to complete your evaluation."
-                : "You've completed the AI Linc No-Code Development Bootcamp — now take the next step. This assessment is your chance to showcase your learning, strengths, and readiness for real-world projects."}
-          </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Section - Why this matters */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-sm border border-[#80C9E0]">
+
+
+        {/* Unlock These Perks Section */}
+        <div className="my-16">
+          <h2 className="text-3xl font-normal text-center text-[#2C5F7F] mb-12">
+            UNLOCK THESE PERKS WITH THE TEST
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Certificate Card */}
+
+            <div className="">
+              <img
+                src={linkdln}
+                alt="LinkedIn"
+                className="  object-contain"
+              />
+            </div>
+
+            {/* </div> */}
+
+            {/* LinkedIn Card */}
+            <div className="">
+              <img
+                src={certificate}
+                alt="LinkedIn"
+                className="  object-contain"
+              />
+            </div>
+
+            {/* Score Card */}
+            <div className="">
+              <img
+                src={score}
+                alt="LinkedIn"
+                className="  object-contain"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* What's With This Test Section */}
+        <div className="mb-16">
+          <h2 className="text-3xl font-normal text-center text-[#2C5F7F] mb-12">
+            WHAT'S WITH THIS TEST
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Why this matters */}
+            <div className="bg-white rounded-3xl p-8 shadow-lg border border-[#DADADA]">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-[#EFF9FC] rounded-full flex items-center justify-center">
-                  <span className="text-lg">🔍</span>
-                </div>
-                <h2 className="text-xl font-bold text-[#255C79]">
-                  Why this matters:
-                </h2>
+                <span className="text-2xl">🔍</span>
+                <h3 className="text-xl font-bold text-[#2C5F7F]">Why this matters:</h3>
               </div>
-              <p className="text-[#000000] leading-relaxed mb-6">
-                We're already in touch with companies actively hiring for
-                AI-powered and no-code roles. If you ace this assessment, you
-                may qualify directly for placement interviews with our partner
-                companies.
+              <p className="text-gray-700 leading-relaxed">
+                We're already in touch with companies actively hiring for AI-powered and no-code roles. If you ace this assessment, you may qualify directly for placement interviews with our partner companies.
               </p>
             </div>
 
-            <div className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-sm border border-[#80C9E0]">
+            {/* What if you don't score high */}
+            <div className="bg-white rounded-3xl p-8 shadow-lg border border-[#DADADA]">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-[#FFF8E1] rounded-full flex items-center justify-center">
-                  <span className="text-lg">🛠️</span>
-                </div>
-                <h2 className="text-xl font-bold text-[#255C79]">
-                  What if you don't score high?
-                </h2>
+                <span className="text-2xl">❌</span>
+                <h3 className="text-xl font-bold text-[#2C5F7F]">What if you don't score high?</h3>
               </div>
-              <p className="text-[#343A40] leading-relaxed mb-3">
+              <p className="text-gray-700 leading-relaxed mb-3">
                 <strong>No worries. That's exactly why we're here.</strong>
               </p>
-              <p className="text-[#343A40] leading-relaxed">
-                If your results show there's room to grow, we'll offer you
-                personalized upskilling pathways — through our industry-grade
-                programs — designed to help you become a{" "}
-                <strong>
-                  high-impact individual in AI and full-stack development.
-                </strong>
+              <p className="text-gray-700 leading-relaxed">
+                If your results show there's room to grow, we'll offer you personalized upskilling pathways — through our industry-grade programs — designed to help you become a{" "}
+                <strong>high-impact individual in AI and full-stack development.</strong>
               </p>
             </div>
 
-            <div className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-sm border border-[#80C9E0]">
+            {/* Your performance can unlock */}
+            <div className="bg-white rounded-3xl p-8 shadow-lg border border-[#DADADA]">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-[#E8F5E8] rounded-full flex items-center justify-center">
-                  <span className="text-lg">🚀</span>
-                </div>
-                <h2 className="text-xl font-bold text-[#255C79]">
-                  Your performance here can unlock
-                </h2>
+                <span className="text-2xl">🚀</span>
+                <h3 className="text-xl font-bold text-[#2C5F7F]">Your performance here can unlock</h3>
               </div>
-              <ul className="space-y-3 text-[#000000]">
+              <ul className="space-y-3 text-gray-700">
                 <li className="flex items-start gap-3">
                   <span className="text-[#4A90A4] font-bold">🏢</span>
                   <span>Direct access to interviews with hiring partners</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-[#4A90A4] font-bold">💡</span>
-                  <span>
-                    Personalized feedback on your current strengths and areas to
-                    grow
-                  </span>
+                  <span>Personalized feedback on your current strengths and areas to grow</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-[#4A90A4] font-bold">🎯</span>
-                  <span>
-                    A chance to join our flagship career-launching program and
-                    move closer to your dream job
-                  </span>
+                  <span>A chance to join our flagship career-launching program and move closer to your dream job</span>
                 </li>
               </ul>
             </div>
           </div>
+        </div>
 
-          {/* Right Section - Assessment Overview and Start */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-sm border border-[#80C9E0]">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 bg-[#EFF9FC] rounded-full flex items-center justify-center">
-                  <span className="text-lg">✅</span>
-                </div>
-                <h2 className="text-xl font-bold text-[#255C79]">
-                  Assessment Overview:
-                </h2>
-              </div>
-
-              <div className="space-y-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <span className="text-[#8B4513] text-lg">📊</span>
-                  <div>
-                    <span className="text-[#6C757D] text-sm">
-                      Total Questions:
-                    </span>
-                    <p className="font-bold text-[#343A40]">
-                      30 Multiple Choice Questions
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-[#8B4513] text-lg">⏱️</span>
-                  <div>
-                    <span className="text-[#6C757D] text-sm">Duration:</span>
-                    <p className="font-bold text-[#343A40]">30 minutes</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-green-600 text-lg">●</span>
-                  <h3 className="font-bold text-[#343A40]">Topics:</h3>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    "AI Fundamentals",
-                    "JavaScript",
-                    "React",
-                    "Node.JS",
-                    "HTML/CSS",
-                    "Cloud Database",
-                    "Logic & Aptitude",
-                  ].map((topic) => (
-                    <span
-                      key={topic}
-                      className="px-3 py-2 bg-[#EFF9FC] text-[#255C79] rounded-xl text-sm font-medium border border-[#80C9E0]"
-                    >
-                      {topic}
-                    </span>
-                  ))}
-                </div>
-              </div>
+        {/* Final Section - Test Details and Pricing */}
+        <div className="bg-gray-50 rounded-3xl p-4 my-8 border border-gray-200 shadow-lg ">
+          <div className="flex flex-col lg:flex-row justify-between items-center gap-8">
+            <div>
+              <h2 className="text-3xl font-bold text-[#2C5F7F] mb-4">
+                Post-Bootcamp Assessment:<br />
+                Your Path Forward Starts Here
+              </h2>
+              {/* <p className="text-gray-600 max-w-md">
+                Take this test to showcase your learning and get personalized career guidance.
+              </p> */}
             </div>
 
-            {/* Action Section */}
-            <div className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-sm border border-[#80C9E0]">
-              <h2 className="text-2xl font-bold text-[#255C79] mb-2">
-                {data?.status === "submitted"
-                  ? "Your Results Are Ready!"
-                  : data?.status === "in_progress"
-                    ? "Continue Your Assessment"
-                    : "Let's begin. Your future self is waiting."}
-              </h2>
+            <div className="flex items-center gap-8">
+              <div className="text-center">
+                <p className="text-gray-600 mb-2">Take this test for only</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-[48px] font-bold text-[#2C5F7F]">₹49</span>
+                  <span className="text-gray-500 line-through">₹699</span>
+                </div>
+              </div>
 
               {data?.status === "submitted" ? (
-                // View Results Section
-                <div className="space-y-4">
-                  <p className="text-[#6C757D] mb-4">
-                    Your assessment has been completed successfully. Click below
-                    to view your detailed results and next steps.
-                  </p>
-                  <button
-                    onClick={handleResumeAssessment}
-                    className="w-full py-4 px-6 bg-green-600 text-white rounded-xl font-semibold text-base transition-colors duration-200 hover:bg-green-700"
-                  >
-                    View Results
-                  </button>
-                </div>
+                <button
+                  onClick={handleResumeAssessment}
+                  className="px-8 py-4 bg-green-600 text-white rounded-xl font-semibold text-lg hover:bg-green-700 transition-colors"
+                >
+                  View Results
+                </button>
               ) : data?.status === "in_progress" ? (
-                // Resume Quiz Section
-                <div className="space-y-4">
-                  <p className="text-[#6C757D] mb-4">
-                    You have an assessment in progress. Click below to continue
-                    where you left off.
-                  </p>
-                  <button
-                    onClick={handleResumeAssessment}
-                    disabled={startAssessmentMutation.isPending}
-                    className={`w-full py-4 px-6 rounded-xl font-semibold text-base transition-colors duration-200 ${!startAssessmentMutation.isPending
-                        ? "bg-[#4A90A4] text-white hover:bg-[#3A7A8A]"
-                        : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                      }`}
-                  >
-                    {startAssessmentMutation.isPending ? (
-                      <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                        Resuming Assessment...
-                      </div>
-                    ) : (
-                      "Resume Quiz"
-                    )}
-                  </button>
-                </div>
+                <button
+                  onClick={handleResumeAssessment}
+                  className="px-8 py-4 bg-[#2C5F7F] text-white rounded-xl font-semibold text-lg hover:bg-[#1a4a5f] transition-colors"
+                >
+                  Resume Test
+                </button>
               ) : (
-                // Start New Assessment Section
-                <div className="space-y-4">
-                  <div>
-                    <label
-                      htmlFor="phone"
-                      className="block text-sm font-semibold text-[#343A40] mb-2"
-                    >
-                      Phone Number*
-                    </label>
-                    <input
-                      type="tel"
-                      id="phone"
-                      value={phoneNumber}
-                      onChange={handlePhoneChange}
-                      placeholder="Enter phone number"
-                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79] transition-colors font-medium ${phoneNumber && !isPhoneValid
-                          ? "border-red-300 focus:ring-red-200"
-                          : "border-gray-300"
-                        }`}
-                      maxLength={10}
-                    />
-                    {phoneNumber && !isPhoneValid && (
-                      <p className="text-red-500 text-sm mt-2 font-medium">
-                        Please enter a valid 10-digit phone number
-                      </p>
-                    )}
-                  </div>
-
-                  <button
-                    onClick={handleStartAssessment}
-                    disabled={
-                      !isPhoneValid || startAssessmentMutation.isPending
-                    }
-                    className={`w-full py-4 px-6 rounded-xl font-semibold text-base transition-colors duration-200 ${isPhoneValid && !startAssessmentMutation.isPending
-                        ? "bg-[#4A90A4] text-white hover:bg-[#3A7A8A]"
-                        : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                      }`}
-                  >
-                    {startAssessmentMutation.isPending ? (
-                      <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                        Starting Assessment...
-                      </div>
-                    ) : (
-                      "Start Quiz"
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {startAssessmentMutation.isError && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4 mt-4">
-                  <p className="text-red-600 text-sm font-medium">
-                    Failed to start assessment. Please try again.
-                  </p>
-                </div>
+                <button
+                  onClick={handleStartAssessment}
+                  className="px-8 py-4 rounded-xl font-semibold text-lg transition-colors bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]"
+                >
+                  Start Your Test
+                </button>
               )}
             </div>
           </div>
