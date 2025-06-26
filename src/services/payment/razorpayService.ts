@@ -21,7 +21,8 @@ export enum PaymentType {
   SUBSCRIPTION = 'subscription',
   CERTIFICATION = 'certification',
   PREMIUM_FEATURE = 'premium_feature',
-  CONSULTATION = 'consultation'
+  CONSULTATION = 'consultation',
+  ASSESSMENT = 'assessment'
 }
 
 export interface CreateOrderResponse {
@@ -336,6 +337,12 @@ export class RazorpayService {
       [PaymentType.CONSULTATION]: {
         name: "AI-LINC Platform",
         description: "Consultation Fee",
+        currency: "INR",
+        theme: { color: "#255C79" },
+      },
+      [PaymentType.ASSESSMENT]: {
+        name: "AI-LINC Platform",
+        description: "Assessment Fee",
         currency: "INR",
         theme: { color: "#255C79" },
       },

@@ -1,9 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getInstructions,
 } from "../../../services/assesment/assesmentApis";
+import { useAssessmentPayment } from "../../../hooks/useRazorpayPayment";
+import { 
+  PaymentProcessingModal, 
+  PaymentSuccessModal, 
+  PaymentToast 
+} from "../components/assessment";
 
 import InstructionVector from "../../../../public/instruction-vector.png";
 import linkdln from "../../../../public/linkdln.png";
@@ -16,6 +22,30 @@ const InstructionPage: React.FC = () => {
   // const [phoneNumber, setPhoneNumber] = useState("");
   // const [isPhoneValid, setIsPhoneValid] = useState(false);
 
+  // Toast state for error messages
+  const [toast, setToast] = useState<{
+    show: boolean;
+    type: 'success' | 'error' | 'warning' | 'loading';
+    title: string;
+    message: string;
+  }>({ show: false, type: 'success', title: '', message: '' });
+
+  // Payment success modal state
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [paymentResult, setPaymentResult] = useState<{
+    paymentId?: string;
+    orderId?: string;
+    amount: number;
+  } | null>(null);
+
+  // Check payment status from localStorage
+  const getPaymentStatus = () => {
+    const paymentKey = `assessment_payment_${clientId}_ai-linc-scholarship-test`;
+    return localStorage.getItem(paymentKey) === 'paid';
+  };
+
+  const [isPaymentCompleted, setIsPaymentCompleted] = useState(getPaymentStatus());
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["assessment-instructions"],
     queryFn: () => getInstructions(clientId, "ai-linc-scholarship-test"),
@@ -24,6 +54,59 @@ const InstructionPage: React.FC = () => {
     staleTime: 0,
     gcTime: 0,
   });
+
+  // Payment hook
+  const { paymentState, initiateAssessmentPayment } = useAssessmentPayment({
+    onSuccess: (result) => {
+      console.log('Payment successful:', result);
+      
+      // Store payment status in localStorage
+      const paymentKey = `assessment_payment_${clientId}_ai-linc-scholarship-test`;
+      localStorage.setItem(paymentKey, 'paid');
+      localStorage.setItem(`${paymentKey}_details`, JSON.stringify({
+        paymentId: result.paymentId,
+        orderId: result.orderId,
+        amount: result.amount,
+        timestamp: new Date().toISOString()
+      }));
+      
+      setIsPaymentCompleted(true);
+      setPaymentResult({
+        paymentId: result.paymentId,
+        orderId: result.orderId,
+        amount: result.amount
+      });
+      setShowSuccessModal(true);
+    },
+    onError: (error) => {
+      console.error('Payment failed:', error);
+      setToast({
+        show: true,
+        type: 'error',
+        title: 'Payment Failed',
+        message: error || 'Payment failed. Please try again.'
+      });
+    },
+    onDismiss: () => {
+      console.log('Payment dismissed by user');
+      setToast({
+        show: true,
+        type: 'warning',
+        title: 'Payment Cancelled',
+        message: 'Payment was cancelled. You can try again anytime.'
+      });
+    }
+  });
+
+  // Auto-hide notification after 5 seconds
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(() => {
+        setToast(prev => ({ ...prev, show: false }));
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
 
   if (isLoading) {
     return (
@@ -64,8 +147,32 @@ const InstructionPage: React.FC = () => {
   // };
 
   const handleStartAssessment = () => {
-    // Navigate to phone verification page first
-    navigate("/assessment/phone-verification");
+    // Check if payment is already in progress
+    if (paymentState.isProcessing) {
+      return;
+    }
+
+    // If payment is already completed, proceed to phone verification
+    if (isPaymentCompleted) {
+      navigate("/assessment/phone-verification");
+      return;
+    }
+
+    // Otherwise, initiate payment for ₹49 (fixed amount, not in paise)
+    initiateAssessmentPayment(
+      parseInt(clientId),
+      49, // ₹49 (not in paise - the backend should handle currency conversion)
+      {
+        prefill: {
+          name: "Test User", // You can get this from user context if available
+          email: "test@example.com", // You can get this from user context if available
+        },
+        metadata: {
+          assessmentId: "ai-linc-scholarship-test",
+          testType: "placement-assessment"
+        }
+      }
+    );
   };
 
   const handleResumeAssessment = () => {
@@ -74,6 +181,41 @@ const InstructionPage: React.FC = () => {
 
   return (
     <div className="">
+      {/* Payment Processing Modal */}
+      <PaymentProcessingModal
+        isOpen={paymentState.isProcessing}
+        step={paymentState.step === 'error' ? 'creating' : paymentState.step as 'creating' | 'processing' | 'verifying' | 'complete'}
+        onClose={() => {
+          // Can't close during processing, but we can handle dismiss
+          if (paymentState.step === 'creating') {
+            setToast({
+              show: true,
+              type: 'warning',
+              title: 'Payment Cancelled',
+              message: 'Payment initialization was cancelled.'
+            });
+          }
+        }}
+      />
+
+      {/* Payment Success Modal */}
+      <PaymentSuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        paymentId={paymentResult?.paymentId}
+        orderId={paymentResult?.orderId}
+        amount={paymentResult?.amount || 49}
+      />
+
+      {/* Payment Toast for errors/warnings */}
+      <PaymentToast
+        show={toast.show}
+        type={toast.type}
+        title={toast.title}
+        message={toast.message}
+        onClose={() => setToast(prev => ({ ...prev, show: false }))}
+      />
+      
       <div className="">
         {/* Hero Section */}
         <div className="bg-white rounded-3xl w-full border border-gray-200 shadow-lg">
@@ -142,6 +284,11 @@ const InstructionPage: React.FC = () => {
                   <div className="flex items-baseline gap-2 mb-6">
                     <span className="text-4xl font-bold text-[#2C5F7F]">₹49</span>
                     <span className="text-gray-500 line-through">₹699</span>
+                    {isPaymentCompleted && (
+                      <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
+                        ✓ Paid
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex flex-col lg:flex-row gap-3">
@@ -175,9 +322,20 @@ const InstructionPage: React.FC = () => {
                         /> */}
                         <button
                           onClick={handleStartAssessment}
-                          className="w-full py-3 px-6 rounded-xl font-medium transition-colors bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]"
+                          disabled={paymentState.isProcessing}
+                          className={`w-full py-3 px-6 rounded-xl font-medium transition-colors ${
+                            paymentState.isProcessing 
+                              ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                              : isPaymentCompleted
+                              ? 'bg-green-600 text-white hover:bg-green-700'
+                              : 'bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]'
+                          }`}
                         >
-                          Start Your Test
+                          {paymentState.isProcessing 
+                            ? 'Processing Payment...' 
+                            : isPaymentCompleted 
+                            ? 'Start Assessment Now' 
+                            : 'Pay ₹49 & Start Test'}
                         </button>
                       </div>
                     )}
@@ -305,6 +463,11 @@ const InstructionPage: React.FC = () => {
                 <div className="flex items-baseline gap-2">
                   <span className="text-[48px] font-bold text-[#2C5F7F]">₹49</span>
                   <span className="text-gray-500 line-through">₹699</span>
+                  {isPaymentCompleted && (
+                    <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-sm rounded-full font-medium">
+                      ✓ Paid
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -325,9 +488,20 @@ const InstructionPage: React.FC = () => {
               ) : (
                 <button
                   onClick={handleStartAssessment}
-                  className="px-8 py-4 rounded-xl font-semibold text-lg transition-colors bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]"
+                  disabled={paymentState.isProcessing}
+                  className={`px-8 py-4 rounded-xl font-semibold text-lg transition-colors ${
+                    paymentState.isProcessing 
+                      ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                      : isPaymentCompleted
+                      ? 'bg-green-600 text-white hover:bg-green-700'
+                      : 'bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]'
+                  }`}
                 >
-                  Start Your Test
+                  {paymentState.isProcessing 
+                    ? 'Processing Payment...' 
+                    : isPaymentCompleted 
+                    ? 'Start Assessment Now' 
+                    : 'Pay ₹49 & Start Test'}
                 </button>
               )}
             </div>
