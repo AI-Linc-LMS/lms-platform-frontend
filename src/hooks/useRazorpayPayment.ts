@@ -281,4 +281,27 @@ export const usePremiumFeaturePayment = (options: UseRazorpayPaymentOptions = {}
   };
 };
 
+export const useAssessmentPayment = (options: UseRazorpayPaymentOptions = {}) => {
+  const paymentHook = useRazorpayPayment(options);
+
+  const initiateAssessmentPayment = useCallback((
+    clientId: number,
+    amount: number,
+    overrides?: Partial<PaymentConfig>
+  ) => {
+    const config = paymentHook.createPaymentConfig(
+      PaymentType.ASSESSMENT,
+      clientId,
+      amount,
+      overrides
+    );
+    return paymentHook.initiatePayment(config);
+  }, [paymentHook]);
+
+  return {
+    ...paymentHook,
+    initiateAssessmentPayment,
+  };
+};
+
 export default useRazorpayPayment; 
