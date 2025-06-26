@@ -21,6 +21,7 @@ import AssesmentStudentsResults from "./features/admin/assesment-results/Assesme
 import Otp from "./features/auth/pages/Otp";
 import WorkshopResistrations from "./features/admin/workshop-registrations/WorkshopResistrations";
 import CertificatePortal from "./components/certificate/CertificatePortal";
+import PhoneVerificationPage from "./features/learn/pages/PhoneVerificationPage";
 
 export interface RouteConfig {
   path: string;
@@ -63,6 +64,11 @@ const routes: RouteConfig[] = [
   {
     path: "/courses",
     component: Courses,
+    isPrivate: true,
+  },
+  {
+    path: "/assessment/phone-verification",
+    component: PhoneVerificationPage,
     isPrivate: true,
   },
   {
