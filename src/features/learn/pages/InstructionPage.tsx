@@ -292,7 +292,19 @@ const InstructionPage: React.FC = () => {
                   </div>
 
                   <div className="flex flex-col lg:flex-row gap-3">
-                    <button className="w-full py-3 px-6 border-2 border-[#2C5F7F] text-[#2C5F7F] rounded-xl font-medium hover:bg-[#2C5F7F] hover:text-white transition-colors">
+                    <button 
+                      onClick={() => {
+                        const section = document.getElementById('whats-with-this-test');
+                        if (section) {
+                          section.scrollIntoView({ 
+                            behavior: 'smooth',
+                            block: 'start',
+                            inline: 'nearest'
+                          });
+                        }
+                      }}
+                      className="w-full py-3 px-6 border-2 border-[#2C5F7F] text-[#2C5F7F] rounded-xl font-medium hover:bg-[#2C5F7F] hover:text-white transition-all duration-700 ease-in-out transform hover:scale-[1.02] active:scale-[0.98]"
+                    >
                       Why Take This Test?
                     </button>
 
@@ -387,7 +399,7 @@ const InstructionPage: React.FC = () => {
         </div>
 
         {/* What's With This Test Section */}
-        <div className="mb-16">
+        <div id="whats-with-this-test" className="mb-16">
           <h2 className="text-3xl font-normal text-center text-[#2C5F7F] mb-12">
             WHAT'S WITH THIS TEST
           </h2>
