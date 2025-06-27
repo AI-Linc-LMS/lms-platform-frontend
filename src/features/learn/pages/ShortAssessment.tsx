@@ -5,18 +5,17 @@ import {
   AssessmentHeader,
   QuestionNavigation,
   QuestionDisplay,
-  NavigationButtons,
-  AssessmentResults,
+  NavigationButtons
 } from "../components/assessment";
 
 const ShortAssessment: React.FC = () => {
   const { assessmentId } = useParams<{ assessmentId?: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   // Get assessment ID from URL params or location state
   const currentAssessmentId = assessmentId || location.state?.assessmentId;
-  
+
   // Redirect to assessments list if no assessment ID is provided
   useEffect(() => {
     if (!currentAssessmentId) {
@@ -32,7 +31,6 @@ const ShortAssessment: React.FC = () => {
     timeRemaining,
     isCompleted,
     questionsData,
-    questions,
     questionsLoading,
     questionsError,
 
@@ -61,12 +59,7 @@ const ShortAssessment: React.FC = () => {
 
   // Assessment completed section
   if (isCompleted) {
-    const clientId = parseInt(import.meta.env.VITE_CLIENT_ID) || 1;
-    const assessmentSlug = questions?.slug || currentAssessmentId; // Use slug from questions or current assessment ID
-
-    return (
-      <AssessmentResults clientId={clientId} assessmentId={assessmentSlug} />
-    );
+    navigate("/roadmap/ai-linc-scholarship-test-2");
   }
 
   // Early return if no assessment ID - component will redirect
@@ -81,8 +74,8 @@ const ShortAssessment: React.FC = () => {
   return (
     <div className="bg-[#F8F9FA] min-h-screen">
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <AssessmentHeader 
-          timeRemaining={timeRemaining} 
+        <AssessmentHeader
+          timeRemaining={timeRemaining}
           assessmentId={currentAssessmentId}
         />
 
