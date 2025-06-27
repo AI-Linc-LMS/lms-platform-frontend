@@ -265,3 +265,26 @@ export const redeemScholarship = async (
     }
   }
 };
+
+export const getRoadmapPaymentStatus = async (
+  clientId: number,
+  programId: string
+) => {
+  try {
+    const res = await axiosInstance.get(
+      `/assessment/api/client/${clientId}/payment-status/${programId}/`
+    );
+    return res.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      // AxiosError type guard
+      const axiosError = error as ApiError;
+      console.error("Failed to get roadmap payment status:", error);
+      console.error("Error details:", {
+        message: axiosError.message,
+        response: axiosError.response?.data,
+        status: axiosError.response?.status,
+      });
+    }
+  }
+};
