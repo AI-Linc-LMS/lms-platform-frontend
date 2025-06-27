@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { FiX, FiCheck, FiX as FiClose } from "react-icons/fi";
 
 interface ScholarshipBreakupModalProps {
@@ -28,6 +28,13 @@ const ScholarshipBreakupModal: React.FC<ScholarshipBreakupModalProps> = ({
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
 
+  const handleClose = useCallback(() => {
+    setIsAnimating(false);
+    setTimeout(() => {
+      onClose();
+    }, 300);
+  }, [onClose]);
+
   useEffect(() => {
     if (isOpen) {
       setIsAnimating(true);
@@ -53,7 +60,7 @@ const ScholarshipBreakupModal: React.FC<ScholarshipBreakupModalProps> = ({
       document.body.style.overflow = 'unset';
       document.removeEventListener('keydown', handleEscapeKey);
     };
-  }, [isOpen]);
+  }, [isOpen, handleClose]);
 
   if (!isOpen) return null;
 
@@ -89,13 +96,6 @@ const ScholarshipBreakupModal: React.FC<ScholarshipBreakupModalProps> = ({
       scholarshipApplied: false,
     },
   ];
-
-  const handleClose = () => {
-    setIsAnimating(false);
-    setTimeout(() => {
-      onClose();
-    }, 300);
-  };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
