@@ -32,10 +32,12 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
   }
 
   // Check if already purchased based on backend data
-  // Note: txn_status "VERIFIED" means scholarship calculation is verified, NOT that payment is completed
-  // We need to check for actual payment completion status
-  // For now, we'll be conservative and assume not purchased unless explicitly confirmed
-  const isPurchased = redeemData?.txn_status === "PAID" || redeemData?.txn_status === "COMPLETED";
+  // txn_status "VERIFIED" means the transaction is verified and payment is completed
+  // Also check for "PAID" and "COMPLETED" for backward compatibility
+  const isPurchased = 
+    redeemData?.txn_status === "VERIFIED" || 
+    redeemData?.txn_status === "PAID" || 
+    redeemData?.txn_status === "COMPLETED";
   
   // TODO: Backend should provide a clear field like 'is_course_purchased' or 'payment_completed'
   // Currently txn_status "VERIFIED" only means scholarship eligibility is verified

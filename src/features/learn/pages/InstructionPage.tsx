@@ -224,6 +224,7 @@ const InstructionPage: React.FC = () => {
         paymentId={paymentResult?.paymentId}
         orderId={paymentResult?.orderId}
         amount={paymentResult?.amount || assessmentPrice}
+        paymentType="assessment"
       />
 
       {/* Payment Toast for errors/warnings */}
