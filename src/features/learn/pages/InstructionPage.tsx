@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   getInstructions,
   AssessmentDetails,
@@ -17,10 +18,19 @@ import linkdln from "../../../../public/linkdln.png";
 import certificate from "../../../../public/preview-certificate.png";
 import score from "../../../../public/score-card.png";
 
+interface UserState {
+  email: string | null;
+  full_name: string | null;
+  isAuthenticated: boolean;
+}
+
 const InstructionPage: React.FC = () => {
   const navigate = useNavigate();
   const { assessmentId } = useParams<{ assessmentId: string }>();
   const clientId = import.meta.env.VITE_CLIENT_ID;
+
+  // Get user data from Redux store
+  const user = useSelector((state: { user: UserState }) => state.user);
 
   // Use assessment ID from URL params or redirect to assessments list
   const currentAssessmentId = assessmentId;
@@ -182,8 +192,8 @@ const InstructionPage: React.FC = () => {
 
       {
         prefill: {
-          name: "Test User", // You can get this from user context if available
-          email: "test@example.com", // You can get this from user context if available
+          name: user.full_name || "User",
+          email: user.email || "",
         },
         metadata: {
           assessmentId: currentAssessmentId,
