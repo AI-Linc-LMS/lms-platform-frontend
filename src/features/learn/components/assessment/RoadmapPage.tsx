@@ -1,4 +1,4 @@
-import React, { JSX } from "react";
+import React, { JSX, useRef, useState } from "react";
 import ailincimg from "../../../../assets/dashboard_assets/toplogoimg.png";
 import popper from "../../../../assets/dashboard_assets/poppers.png";
 import roadmap from "../../../../assets/roadmap/roadmap.png";
@@ -13,6 +13,12 @@ import {
 import { useSelector } from "react-redux";
 import { PaymentResult } from "../../../../services/payment/razorpayService";
 import { useParams } from "react-router-dom";
+import CertificateTemplates from "../../../../components/certificate/CertificateTemplates";
+
+export interface CertificateTemplatesRef {
+  downloadPDF: () => Promise<void>;
+  isDownloading: boolean;
+}
 
 type Metric = {
   label: string;
@@ -1053,12 +1059,15 @@ const RoadmapPage = () => {
   const { assessmentId } = useParams<{ assessmentId: string }>();
   console.log("assessmentId", assessmentId);
   const clientId = parseInt(import.meta.env.VITE_CLIENT_ID) || 1;
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const certificateRef = useRef<CertificateTemplatesRef>(null);
 
   const { data: redeemData } = useQuery({
     queryKey: ["assessment-results", clientId, assessmentId],
     queryFn: () =>
       assessmentId
-        ? redeemScholarship(clientId,"ai-linc-scholarship-test-2")
+        ? redeemScholarship(clientId, "ai-linc-scholarship-test-2")
         : Promise.reject(new Error("No assessment ID")),
     refetchOnWindowFocus: true,
     refetchOnMount: true,
@@ -1067,11 +1076,41 @@ const RoadmapPage = () => {
     enabled: !!clientId && !!assessmentId,
   });
 
-  console.log("redeemData", redeemData);
-  // Map backend data to UI props
+  const handleDownloadCertificate = async () => {
+    setIsDownloading(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      if (certificateRef.current) {
+        console.log("Certificate ref found, downloading...");
+        await certificateRef.current.downloadPDF();
+      } else {
+        console.error("Certificate ref not found after waiting");
+      }
+    } catch (error) {
+      console.error("Download failed:", error);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // Certificate data for the assessment
+  const user = useSelector((state: { user: UserState }) => state.user);
   const stats = redeemData?.stats;
 
-  // Performance Report
+  const certificateData = {
+    id: "1",
+    name: "AI Linc Scholarship Assessment",
+    type: "assessment" as const,
+    issuedDate: "2025-06-28", // Set to 28th
+    studentName: user?.full_name || "User",
+    studentEmail: user?.email || "user@example.com",
+    score: stats?.accuracy_percent || 0,
+    sessionNumber: 1,
+  };
+
+  console.log("redeemData", redeemData);
+  // Map backend data to UI props
   const perfReportData = stats
     ? [
         {
@@ -1236,8 +1275,11 @@ const RoadmapPage = () => {
               Your performance in the assessment has qualified you for an
               exclusive opportunity.
             </p>
-            <button className="flex items-center gap-2 bg-[#14212B] text-white font-semibold px-8 py-3 rounded-lg shadow hover:bg-[#223344] transition-colors duration-200 focus:outline-none">
-              Download Certificate
+            <button
+              onClick={handleDownloadCertificate}
+              className="flex items-center gap-2 bg-[#14212B] text-white font-semibold px-8 py-3 rounded-lg shadow hover:bg-[#223344] transition-colors duration-200 focus:outline-none"
+            >
+              {isDownloading ? "Downloading..." : "Download Certificate"}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="w-5 h-5 ml-1"
@@ -1306,6 +1348,13 @@ const RoadmapPage = () => {
           redeemData={redeemData as ScholarshipRedemptionData}
           clientId={clientId}
           assessmentId={assessmentId ?? "ai-linc-scholarship-test-2"}
+        />
+      </div>
+      {/* Hidden Certificate Component */}
+      <div className="hidden">
+        <CertificateTemplates
+          ref={certificateRef}
+          certificate={certificateData}
         />
       </div>
     </div>
