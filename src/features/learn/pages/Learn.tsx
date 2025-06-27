@@ -1,5 +1,5 @@
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import Leaderboard from "../components/LeaderboardTable";
 import TimeTrackingDashboard from "../components/graphs-components/TimeTrackingDashboard";
 import BasedLearningCourses from "../components/based-learning/BasedLearningCourses";
@@ -13,7 +13,7 @@ import EnrolledCourses from "../components/courses/EnrolledCourses";
 import { RootState } from "../../../redux/store";
 import React, { ReactNode } from "react";
 import LockSvg from "../../../commonComponents/icons/empty-state-handel/LockSvg";
-import { FiPlayCircle, FiArrowRight, FiClock, FiCheckCircle, FiTrendingUp } from "react-icons/fi";
+// import { FiPlayCircle, FiArrowRight, FiClock, FiCheckCircle, FiTrendingUp } from "react-icons/fi";
 // Props type for the overlay card component
 interface EnrollToCourseOverlayProps {
   title: string;
@@ -57,7 +57,7 @@ const EnrollToCourseOverlay: React.FC<EnrollToCourseOverlayProps> = ({
 
 const Learn = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   // Get enrolled courses from Redux store
   const courses = useSelector((state: RootState) => state.courses.courses);
   // Check if user has no enrolled courses
@@ -70,7 +70,7 @@ const Learn = () => {
         <WelcomeSection />
         
         {/* Assessments Section */}
-        <div className="bg-gradient-to-r from-[#EFF9FC] to-[#E0F4F8] rounded-2xl p-6 border border-[#80C9E0]">
+        {/* <div className="bg-gradient-to-r from-[#EFF9FC] to-[#E0F4F8] rounded-2xl p-6 border border-[#80C9E0]">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-3">
@@ -81,10 +81,10 @@ const Learn = () => {
               </div>
               <p className="text-[#2C5F7F] mb-4">
                 Take our comprehensive assessments to evaluate your knowledge and get personalized feedback. Choose from free and paid options.
-              </p>
+              </p> */}
               
               {/* Quick Assessment Info */}
-              <div className="flex flex-wrap gap-4 text-sm">
+              {/* <div className="flex flex-wrap gap-4 text-sm">
                 <div className="flex items-center gap-1">
                   <FiCheckCircle className="h-4 w-4 text-green-600" />
                   <span className="text-gray-700">Free Options Available</span>
@@ -111,7 +111,7 @@ const Learn = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {hasNoCourses ? (
           <EnrollToCourseOverlay title="Enroll to a Course to Unlock Stats">
