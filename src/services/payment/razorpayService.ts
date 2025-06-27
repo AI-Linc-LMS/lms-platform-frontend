@@ -22,7 +22,8 @@ export enum PaymentType {
   CERTIFICATION = 'certification',
   PREMIUM_FEATURE = 'premium_feature',
   CONSULTATION = 'consultation',
-  ASSESSMENT = 'assessment'
+  ASSESSMENT = 'assessment',
+  WORKSHOP = 'workshop'
 }
 
 export interface CreateOrderResponse {
@@ -126,8 +127,8 @@ export class RazorpayService {
     const { createOrder } = await import('./paymentGatewayApis');
     
     try {
-      // Pass payment type to createOrder API
-      const orderData = await createOrder(config.clientId, config.amount, config.type);
+      // Pass payment type and metadata to createOrder API
+      const orderData = await createOrder(config.clientId, config.amount, config.type, config.metadata);
       
       if (!orderData || !orderData.order_id || !orderData.key) {
         throw new Error("Failed to create payment order. Invalid response from server.");
@@ -350,6 +351,12 @@ export class RazorpayService {
       [PaymentType.ASSESSMENT]: {
         name: "AI-LINC Platform",
         description: "Assessment Fee",
+        currency: "INR",
+        theme: { color: "#255C79" },
+      },
+      [PaymentType.WORKSHOP]: {
+        name: "AI-LINC Platform",
+        description: "Workshop Registration Fee",
         currency: "INR",
         theme: { color: "#255C79" },
       },
