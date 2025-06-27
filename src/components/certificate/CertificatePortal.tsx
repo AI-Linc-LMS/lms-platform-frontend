@@ -433,7 +433,7 @@ const CertificatePortal: React.FC = () => {
                         }
                       }}
                       disabled={isDownloading}
-                      className="flex items-center justify-center w-10 h-10 sm:w-auto sm:h-10 sm:px-4 sm:px-6 text-sm rounded-xl text-white bg-[#255C79] font-medium transition-all duration-200 hover:bg-[#1E4A63] hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
+                      className="flex items-center justify-center w-10 h-10 sm:w-auto sm:h-10 text-sm rounded-xl text-white bg-[#255C79] font-medium transition-all duration-200 hover:bg-[#1E4A63] hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
                     >
                       {isDownloading ? (
                         <>
