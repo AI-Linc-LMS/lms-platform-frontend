@@ -7,6 +7,9 @@ import {
   FiUsers,
   FiClock,
   FiStar,
+  FiFileText,
+  FiTarget,
+  FiTrendingUp,
 } from "react-icons/fi";
 
 interface PaymentSuccessModalProps {
@@ -15,6 +18,7 @@ interface PaymentSuccessModalProps {
   paymentId?: string;
   orderId?: string;
   amount: number;
+  paymentType?: 'assessment' | 'course'; // New prop to determine content type
 }
 
 const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
@@ -23,6 +27,7 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
   paymentId,
   orderId,
   amount,
+  paymentType = 'course', // Default to course for backward compatibility
 }) => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [animationStep, setAnimationStep] = useState(0);
@@ -55,7 +60,8 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
     // window.location.href = '/courses';
   };
 
-  const benefits = [
+  // Different benefits based on payment type
+  const courseBenefits = [
     {
       icon: FiBook,
       title: "Lifetime Course Access",
@@ -77,6 +83,68 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
       description: "No time limits or restrictions",
     },
   ];
+
+  const assessmentBenefits = [
+    {
+      icon: FiFileText,
+      title: "Assessment Access",
+      description: "Complete your placement assessment",
+    },
+    {
+      icon: FiTarget,
+      title: "Performance Analysis",
+      description: "Get detailed results and feedback",
+    },
+    {
+      icon: FiTrendingUp,
+      title: "Career Opportunities",
+      description: "Unlock placement and scholarship chances",
+    },
+    {
+      icon: FiAward,
+      title: "Certificate & Recognition",
+      description: "Earn your assessment completion certificate",
+    },
+  ];
+
+  const benefits = paymentType === 'assessment' ? assessmentBenefits : courseBenefits;
+
+  // Different content based on payment type
+  const getContentByType = () => {
+    if (paymentType === 'assessment') {
+      return {
+        title: "Assessment Payment Successful!",
+        subtitle: "You can now take your placement assessment",
+        timelineNotice: "⏰ Start your assessment immediately",
+        achievementText: "You're all set to showcase your skills and unlock opportunities!",
+        nextStepsTitle: "Ready to Begin?",
+        nextSteps: [
+          "Start your assessment immediately",
+          "Complete all questions within the time limit",
+          "Get detailed results and feedback",
+          "Unlock placement opportunities based on your score"
+        ],
+        buttonText: "Start Assessment Now 🚀",
+        supportText: "Need help with the assessment? Contact our support team at support@ailinc.com"
+      };
+    } else {
+      return {
+        title: "Payment Successful!",
+        subtitle: "Welcome to AI-LINC Course! Your journey begins with us.",
+        timelineNotice: "⏰ Access your course dashboard within 7 days",
+        achievementText: "Our team will reach out to you on your registered email and phone number.",
+        nextStepsTitle: "What's Next?",
+        nextSteps: [
+          "Access your course dashboard within 7 days",
+          "Join our community and introduce yourself"
+        ],
+        buttonText: "Congratulations, Go Back 🚀",
+        supportText: "Need help getting started? Contact our support team 24/7 at support@ailinc.com"
+      };
+    }
+  };
+
+  const content = getContentByType();
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -146,23 +214,22 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
             }`}
           >
             <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              🎉 Payment Successful!
+              {content.title}
             </h2>
             <p className="text-lg text-gray-600 mb-2">
-              Welcome to AI-LINC Course! Your journey begin with us.
+              {content.subtitle}
             </p>
 
             {/* Important Timeline Notice */}
             <p className="text-orange-600 font-semibold text-base mb-4">
-              ⏰ Access your course dashboard within 7 days
+              {content.timelineNotice}
             </p>
 
             {/* Achievement Badge */}
             <div className="inline-flex items-center bg-emerald-50 text-emerald-800 px-6 py-3 rounded-lg font-medium shadow-md border-l-4 border-emerald-500">
               <FiStar className="h-5 w-5 mr-3 text-emerald-600" />
               <span className="text-sm leading-relaxed">
-                Our team will reach out to you on your registered email and
-                phone number.
+                {content.achievementText}
               </span>
             </div>
           </div>
@@ -255,25 +322,19 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
           >
             <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
               <FiAward className="h-5 w-5 text-blue-600 mr-2" />
-              What's Next?
+              {content.nextStepsTitle}
             </h4>
             <div className="space-y-3">
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                  <span className="text-xs font-bold text-green-600">1</span>
+              {content.nextSteps.map((step, index) => (
+                <div key={index} className="flex items-center space-x-3">
+                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                    <span className="text-xs font-bold text-green-600">{index + 1}</span>
+                  </div>
+                  <span className="text-sm text-gray-700">
+                    {step}
+                  </span>
                 </div>
-                <span className="text-sm text-gray-700">
-                  Access your course dashboard within 7 days
-                </span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                  <span className="text-xs font-bold text-green-600">2</span>
-                </div>
-                <span className="text-sm text-gray-700">
-                  Join our community and introduce yourself
-                </span>
-              </div>
+              ))}
             </div>
           </div>
 
@@ -289,15 +350,14 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
               onClick={handleContinue}
               className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
             >
-              Congratulations, Go Back 🚀
+              {content.buttonText}
             </button>
           </div>
 
           {/* Support Info */}
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-500">
-              Need help getting started? Contact our support team 24/7 at
-              support@ailinc.com
+              {content.supportText}
             </p>
           </div>
         </div>
