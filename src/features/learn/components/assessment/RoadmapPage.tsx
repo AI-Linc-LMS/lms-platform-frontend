@@ -12,11 +12,6 @@ import {
 } from "../../../../hooks/useRazorpayPayment";
 import { useSelector } from "react-redux";
 import { PaymentResult } from "../../../../services/payment/razorpayService";
-const clientId = import.meta.env.VITE_CLIENT_ID;
-const assessmentId = "ai-linc-scholarship-test-2";
-
-// Dummy data simulating backend response
-// const reportData = [...];
 
 type Metric = {
   label: string;
@@ -442,7 +437,9 @@ interface UserState {
 // PaymentCardSection component for pricing cards
 const PaymentCardSection: React.FC<{
   redeemData: ScholarshipRedemptionData;
-}> = ({ redeemData }) => {
+  clientId: number;
+  assessmentId: string;
+}> = ({ redeemData, clientId, assessmentId }) => {
   // Get assessment price in rupees (convert from string)
   const user = useSelector((state: { user: UserState }) => state.user);
 
@@ -459,7 +456,7 @@ const PaymentCardSection: React.FC<{
   });
 
   const handleNanodegreePayment = () => {
-    initiateNanodegreePayment(parseInt(clientId), 1, "nanodegree", {
+    initiateNanodegreePayment(clientId, 1, "nanodegree", {
       prefill: {
         name: user.full_name || "User",
         email: user.email || "",
@@ -474,7 +471,7 @@ const PaymentCardSection: React.FC<{
   };
 
   const handleFlagshipPayment = () => {
-    initiateFlagshipPayment(parseInt(clientId), 1, "flagship", {
+    initiateFlagshipPayment(clientId, 1, "flagship", {
       prefill: {
         name: user.full_name || "User",
         email: user.email || "",
@@ -639,7 +636,11 @@ const PaymentCardSection: React.FC<{
 };
 
 // ProgramCard
-const ProgramCard: React.FC<{ redeemData: unknown }> = ({ redeemData }) => (
+const ProgramCard: React.FC<{
+  redeemData: ScholarshipRedemptionData;
+  clientId: number;
+  assessmentId: string;
+}> = ({ redeemData, clientId, assessmentId }) => (
   <div className="w-full flex flex-col gap-8 my-10">
     {/* Nanodegree Card */}
     <div className="flex flex-col md:flex-row items-center bg-gradient-to-br from-[#f8fcfc] to-[#eafff6] rounded-3xl px-8 shadow-sm border border-gray-200">
@@ -954,7 +955,11 @@ const ProgramCard: React.FC<{ redeemData: unknown }> = ({ redeemData }) => (
         </span>
       </div>
     </div>
-    <PaymentCardSection redeemData={redeemData as ScholarshipRedemptionData} />
+    <PaymentCardSection
+      redeemData={redeemData as ScholarshipRedemptionData}
+      clientId={clientId}
+      assessmentId={assessmentId}
+    />
   </div>
 );
 
@@ -1043,20 +1048,24 @@ export interface ScholarshipRedemptionData {
   stats?: AssessmentStats;
 }
 
-const RoadmapPage = () => {
-  const assesmentId = "ai-linc-scholarship-test-2";
-  const clientId = import.meta.env.VITE_CLIENT_ID;
+const RoadmapPage = ({
+  clientId,
+  assessmentId,
+}: {
+  clientId: number;
+  assessmentId: string;
+}) => {
   const { data: redeemData } = useQuery({
-    queryKey: ["assessment-results", clientId, assesmentId],
+    queryKey: ["assessment-results", clientId, assessmentId],
     queryFn: () =>
-      assesmentId
-        ? redeemScholarship(clientId, assesmentId)
+      assessmentId
+        ? redeemScholarship(clientId, assessmentId)
         : Promise.reject(new Error("No assessment ID")),
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     staleTime: 0,
     gcTime: 0,
-    enabled: !!clientId && !!assesmentId,
+    enabled: !!clientId && !!assessmentId,
   });
 
   // Map backend data to UI props
@@ -1293,7 +1302,11 @@ const RoadmapPage = () => {
         {/* Upskilling Roadmap Section */}
         <UpskillingRoadmapSection />
         {/* Nanodegree Program Card */}
-        <ProgramCard redeemData={redeemData} />
+        <ProgramCard
+          redeemData={redeemData as ScholarshipRedemptionData}
+          clientId={clientId}
+          assessmentId={assessmentId}
+        />
       </div>
     </div>
   );
