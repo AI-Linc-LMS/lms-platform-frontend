@@ -318,7 +318,7 @@ const PhoneVerificationPage: React.FC = () => {
           </div>
           
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 px-2">
-            Before we Begin, Verify your Phone Number!
+            Before we Begin, Enter your Phone Number!
           </h1>
         </div>
 

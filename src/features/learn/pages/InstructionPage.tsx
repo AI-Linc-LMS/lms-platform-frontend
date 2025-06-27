@@ -5,13 +5,13 @@ import {
   getInstructions,
 } from "../../../services/assesment/assesmentApis";
 import { useAssessmentPayment } from "../../../hooks/useRazorpayPayment";
-import { 
-  PaymentProcessingModal, 
-  PaymentSuccessModal, 
-  PaymentToast 
+import {
+  PaymentProcessingModal,
+  PaymentSuccessModal,
+  PaymentToast
 } from "../components/assessment";
 
-import InstructionVector from "../../../../public/instruction-vector.png";
+import InstructionVector from "../../../../public/updated_illustrations.png";
 import linkdln from "../../../../public/linkdln.png";
 import certificate from "../../../../public/preview-certificate.png";
 import score from "../../../../public/score-card.png";
@@ -59,7 +59,7 @@ const InstructionPage: React.FC = () => {
   const { paymentState, initiateAssessmentPayment } = useAssessmentPayment({
     onSuccess: (result) => {
       console.log('Payment successful:', result);
-      
+
       // Store payment status in localStorage
       const paymentKey = `assessment_payment_${clientId}_ai-linc-scholarship-test`;
       localStorage.setItem(paymentKey, 'paid');
@@ -69,7 +69,7 @@ const InstructionPage: React.FC = () => {
         amount: result.amount,
         timestamp: new Date().toISOString()
       }));
-      
+
       setIsPaymentCompleted(true);
       setPaymentResult({
         paymentId: result.paymentId,
@@ -215,7 +215,7 @@ const InstructionPage: React.FC = () => {
         message={toast.message}
         onClose={() => setToast(prev => ({ ...prev, show: false }))}
       />
-      
+
       <div className="">
         {/* Hero Section */}
         <div className="bg-white rounded-3xl w-full border border-gray-200 shadow-lg">
@@ -323,19 +323,18 @@ const InstructionPage: React.FC = () => {
                         <button
                           onClick={handleStartAssessment}
                           disabled={paymentState.isProcessing}
-                          className={`w-full py-3 px-6 rounded-xl font-medium transition-colors ${
-                            paymentState.isProcessing 
-                              ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                          className={`w-full py-3 px-6 rounded-xl font-medium transition-colors ${paymentState.isProcessing
+                              ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
                               : isPaymentCompleted
-                              ? 'bg-green-600 text-white hover:bg-green-700'
-                              : 'bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]'
-                          }`}
+                                ? 'bg-green-600 text-white hover:bg-green-700'
+                                : 'bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]'
+                            }`}
                         >
-                          {paymentState.isProcessing 
-                            ? 'Processing Payment...' 
-                            : isPaymentCompleted 
-                            ? 'Start Assessment Now' 
-                            : 'Pay ₹49 & Start Test'}
+                          {paymentState.isProcessing
+                            ? 'Processing Payment...'
+                            : isPaymentCompleted
+                              ? 'Start Assessment Now'
+                              : 'Pay ₹49 & Start Test'}
                         </button>
                       </div>
                     )}
@@ -489,19 +488,18 @@ const InstructionPage: React.FC = () => {
                 <button
                   onClick={handleStartAssessment}
                   disabled={paymentState.isProcessing}
-                  className={`px-8 py-4 rounded-xl font-semibold text-lg transition-colors ${
-                    paymentState.isProcessing 
-                      ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                  className={`px-8 py-4 rounded-xl font-semibold text-lg transition-colors ${paymentState.isProcessing
+                      ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
                       : isPaymentCompleted
-                      ? 'bg-green-600 text-white hover:bg-green-700'
-                      : 'bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]'
-                  }`}
+                        ? 'bg-green-600 text-white hover:bg-green-700'
+                        : 'bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]'
+                    }`}
                 >
-                  {paymentState.isProcessing 
-                    ? 'Processing Payment...' 
-                    : isPaymentCompleted 
-                    ? 'Start Assessment Now' 
-                    : 'Pay ₹49 & Start Test'}
+                  {paymentState.isProcessing
+                    ? 'Processing Payment...'
+                    : isPaymentCompleted
+                      ? 'Start Assessment Now'
+                      : 'Pay ₹49 & Start Test'}
                 </button>
               )}
             </div>
