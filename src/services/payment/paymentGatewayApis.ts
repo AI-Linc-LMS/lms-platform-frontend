@@ -8,6 +8,7 @@ export interface VerifyPaymentRequest {
   payment_id: string;
   signature: string;
   payment_type?: PaymentType;
+  type_id?: string;
 }
 
 
@@ -37,7 +38,20 @@ export const createOrder = async (
       payment_type: paymentType || PaymentType.COURSE,
     };
 
-    // For assessment payments, include type_id as required by backend
+    // Include type_id for all payment types if available in metadata
+    const typeId = metadata?.type_id as string || 
+                  metadata?.assessmentId as string || 
+                  metadata?.workshopId as string ||
+                  metadata?.courseId as string ||
+                  metadata?.subscriptionId as string ||
+                  metadata?.certificationId as string ||
+                  metadata?.consultationId as string;
+
+    if (typeId) {
+      requestPayload.type_id = typeId;
+    }
+
+    // Legacy specific handling for backward compatibility
     if (paymentType === PaymentType.ASSESSMENT && metadata?.assessmentId) {
       requestPayload = {
         amount: amount.toString(),
@@ -46,7 +60,6 @@ export const createOrder = async (
       };
     }
 
-    // For workshop payments, include type_id as required by backend
     if (paymentType === PaymentType.WORKSHOP && metadata?.workshopId) {
       requestPayload = {
         amount: amount.toString(),
@@ -95,6 +108,7 @@ export const verifyPayment = async (
       payment_id: paymentData.payment_id,
       signature: paymentData.signature,
       payment_type: paymentData.payment_type || PaymentType.COURSE,
+      ...(paymentData.type_id && { type_id: paymentData.type_id }), // Include type_id if provided
     };
 
     // Alternative: Try with explicit JSON stringification

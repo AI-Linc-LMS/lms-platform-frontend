@@ -70,12 +70,12 @@ const InstructionPage: React.FC = () => {
   });
 
   // Check if payment is completed based on backend data
-  // If the assessment has started (status is "in_progress" or "submitted"), it means payment was completed
-  // OR if txn_status is "paid", it means payment was completed
-  const isPaymentCompleted = 
-    assessmentData?.status === "in_progress" || 
-    assessmentData?.status === "submitted" ||
-    assessmentData?.txn_status === "paid";
+  // txn_status is the authoritative source for payment completion
+  // Only consider payment completed if txn_status is "paid"
+  const isPaymentCompleted = assessmentData?.txn_status === "paid";
+  
+  // Note: We don't rely on assessment status ("in_progress" or "submitted") 
+  // because a user might have started the assessment but payment could have failed
 
   // Get assessment price in rupees (convert from string)
   const assessmentPrice = assessmentData?.price ? parseFloat(assessmentData.price) : 25;

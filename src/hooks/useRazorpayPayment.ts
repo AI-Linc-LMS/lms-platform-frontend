@@ -148,13 +148,27 @@ export const useRazorpayPayment = (
   ): PaymentConfig => {
     const template = RazorpayService.getPaymentTemplate(type);
     
-    return {
+    // Extract type_id from overrides or metadata - this is the key fix
+    const type_id = overrides.type_id || 
+                   overrides.metadata?.type_id as string || 
+                   overrides.metadata?.assessmentId as string ||
+                   overrides.metadata?.workshopId as string ||
+                   overrides.metadata?.courseId as string ||
+                   overrides.metadata?.subscriptionId as string ||
+                   overrides.metadata?.certificationId as string ||
+                   overrides.metadata?.consultationId as string ||
+                   `${type.toLowerCase()}-default-id`;
+    
+    const finalConfig = {
       type,
       clientId,
       amount,
       ...template,
       ...overrides,
+      type_id,
     } as PaymentConfig;
+    
+    return finalConfig;
   }, []);
 
   return {
