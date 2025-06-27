@@ -13,6 +13,7 @@ import PaymentConfirmationModal from "./PaymentConfirmationModal";
 import PaymentProcessingModal from "../PaymentProcessingModal";
 import PaymentSuccessModal from "../PaymentSuccessModal";
 import PaymentToast from "../PaymentToast";
+import ScholarshipBreakupModal from "./ScholarshipBreakupModal";
 
 const PaymentCardSection: React.FC<{
   redeemData: ScholarshipRedemptionData;
@@ -23,6 +24,7 @@ const PaymentCardSection: React.FC<{
   const [showNanodegreeModal, setShowNanodegreeModal] = useState(false);
   const [showFlagshipModal, setShowFlagshipModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showScholarshipBreakupModal, setShowScholarshipBreakupModal] = useState(false);
   const [paymentResult, setPaymentResult] = useState<{
     paymentId?: string;
     orderId?: string;
@@ -306,9 +308,12 @@ const PaymentCardSection: React.FC<{
             </div>
             <span className="text-xs text-gray-500 mb-1">
               This price is only valid for next 7 days!{" "}
-              <a href="#" className="underline text-[#0ea5e9]">
+              <button 
+                onClick={() => setShowScholarshipBreakupModal(true)}
+                className="underline text-[#0ea5e9] hover:text-[#0284c7] transition-colors"
+              >
                 View Cost Breakup →
-              </a>
+              </button>
             </span>
             <div className="w-full border-t border-gray-200 my-3 sm:my-4"></div>
             <span className="text-xs font-bold text-gray-500 mb-2 tracking-wide">
@@ -402,6 +407,17 @@ const PaymentCardSection: React.FC<{
         orderId={paymentResult?.orderId}
         amount={paymentResult?.amount || 0}
         paymentType="course"
+      />
+
+      {/* Scholarship Breakup Modal */}
+      <ScholarshipBreakupModal
+        isOpen={showScholarshipBreakupModal}
+        onClose={() => setShowScholarshipBreakupModal(false)}
+        scholarshipData={{
+          percentage_scholarship: redeemData?.percentage_scholarship || 90,
+          total_amount: redeemData?.total_amount || 120000,
+          payable_amount: redeemData?.payable_amount || 10000,
+        }}
       />
 
       {/* Payment Toast */}
