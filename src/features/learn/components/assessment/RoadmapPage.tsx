@@ -12,6 +12,7 @@ import {
 } from "../../../../hooks/useRazorpayPayment";
 import { useSelector } from "react-redux";
 import { PaymentResult } from "../../../../services/payment/razorpayService";
+import { useParams } from "react-router-dom";
 
 type Metric = {
   label: string;
@@ -456,7 +457,7 @@ const PaymentCardSection: React.FC<{
   });
 
   const handleNanodegreePayment = () => {
-    initiateNanodegreePayment(clientId, 1, "nanodegree", {
+    initiateNanodegreePayment(clientId, 499, "nanodegree", {
       prefill: {
         name: user.full_name || "User",
         email: user.email || "",
@@ -471,7 +472,7 @@ const PaymentCardSection: React.FC<{
   };
 
   const handleFlagshipPayment = () => {
-    initiateFlagshipPayment(clientId, 1, "flagship", {
+    initiateFlagshipPayment(clientId, 999, "flagship", {
       prefill: {
         name: user.full_name || "User",
         email: user.email || "",
@@ -1048,18 +1049,16 @@ export interface ScholarshipRedemptionData {
   stats?: AssessmentStats;
 }
 
-const RoadmapPage = ({
-  clientId,
-  assessmentId,
-}: {
-  clientId: number;
-  assessmentId: string;
-}) => {
+const RoadmapPage = () => {
+  const { assessmentId } = useParams<{ assessmentId: string }>();
+  console.log("assessmentId", assessmentId);
+  const clientId = parseInt(import.meta.env.VITE_CLIENT_ID) || 1;
+
   const { data: redeemData } = useQuery({
     queryKey: ["assessment-results", clientId, assessmentId],
     queryFn: () =>
       assessmentId
-        ? redeemScholarship(clientId, assessmentId)
+        ? redeemScholarship(clientId,"ai-linc-scholarship-test-2")
         : Promise.reject(new Error("No assessment ID")),
     refetchOnWindowFocus: true,
     refetchOnMount: true,
@@ -1068,6 +1067,7 @@ const RoadmapPage = ({
     enabled: !!clientId && !!assessmentId,
   });
 
+  console.log("redeemData", redeemData);
   // Map backend data to UI props
   const stats = redeemData?.stats;
 
@@ -1305,7 +1305,7 @@ const RoadmapPage = ({
         <ProgramCard
           redeemData={redeemData as ScholarshipRedemptionData}
           clientId={clientId}
-          assessmentId={assessmentId}
+          assessmentId={assessmentId ?? "ai-linc-scholarship-test-2"}
         />
       </div>
     </div>

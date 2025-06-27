@@ -10,7 +10,7 @@ import { useAssessmentPayment } from "../../../hooks/useRazorpayPayment";
 import {
   PaymentProcessingModal,
   PaymentSuccessModal,
-  PaymentToast
+  PaymentToast,
 } from "../components/assessment";
 
 import InstructionVector from "../../../../public/updated_illustrations.png";
@@ -46,10 +46,10 @@ const InstructionPage: React.FC = () => {
   // Toast state for error messages
   const [toast, setToast] = useState<{
     show: boolean;
-    type: 'success' | 'error' | 'warning' | 'loading';
+    type: "success" | "error" | "warning" | "loading";
     title: string;
     message: string;
-  }>({ show: false, type: 'success', title: '', message: '' });
+  }>({ show: false, type: "success", title: "", message: "" });
 
   // Payment success modal state
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -59,9 +59,16 @@ const InstructionPage: React.FC = () => {
     amount: number;
   } | null>(null);
 
-  const { data: assessmentData, isLoading, error } = useQuery<AssessmentDetails>({
+  const {
+    data: assessmentData,
+    isLoading,
+    error,
+  } = useQuery<AssessmentDetails>({
     queryKey: ["assessment-instructions", currentAssessmentId],
-    queryFn: () => currentAssessmentId ? getInstructions(clientId, currentAssessmentId) : Promise.reject(new Error("No assessment ID")),
+    queryFn: () =>
+      currentAssessmentId
+        ? getInstructions(clientId, currentAssessmentId)
+        : Promise.reject(new Error("No assessment ID")),
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     staleTime: 0,
@@ -73,13 +80,15 @@ const InstructionPage: React.FC = () => {
   // txn_status is the authoritative source for payment completion
   // Only consider payment completed if txn_status is "paid"
   const isPaymentCompleted = assessmentData?.txn_status === "paid";
-  
-  // Note: We don't rely on assessment status ("in_progress" or "submitted") 
+
+  // Note: We don't rely on assessment status ("in_progress" or "submitted")
   // because a user might have started the assessment but payment could have failed
 
   // Get assessment price in rupees (convert from string)
-  const assessmentPrice = assessmentData?.price ? parseFloat(assessmentData.price) : 25;
-  
+  const assessmentPrice = assessmentData?.price
+    ? parseFloat(assessmentData.price)
+    : 25;
+
   // Convert to paise for Razorpay (multiply by 100)
   const assessmentPriceInPaise = Math.round(assessmentPrice);
   // const assessmentPriceInPaise = Math.round(1);
@@ -87,40 +96,40 @@ const InstructionPage: React.FC = () => {
   // Payment hook
   const { paymentState, initiateAssessmentPayment } = useAssessmentPayment({
     onSuccess: (result) => {
-      console.log('Payment successful:', result);
+      console.log("Payment successful:", result);
 
       setPaymentResult({
         paymentId: result.paymentId,
         orderId: result.orderId,
-        amount: result.amount
+        amount: result.amount,
       });
       setShowSuccessModal(true);
     },
     onError: (error) => {
-      console.error('Payment failed:', error);
+      console.error("Payment failed:", error);
       setToast({
         show: true,
-        type: 'error',
-        title: 'Payment Failed',
-        message: error || 'Payment failed. Please try again.'
+        type: "error",
+        title: "Payment Failed",
+        message: error || "Payment failed. Please try again.",
       });
     },
     onDismiss: () => {
-      console.log('Payment dismissed by user');
+      console.log("Payment dismissed by user");
       setToast({
         show: true,
-        type: 'warning',
-        title: 'Payment Cancelled',
-        message: 'Payment was cancelled. You can try again anytime.'
+        type: "warning",
+        title: "Payment Cancelled",
+        message: "Payment was cancelled. You can try again anytime.",
       });
-    }
+    },
   });
 
   // Auto-hide notification after 5 seconds
   useEffect(() => {
     if (toast.show) {
       const timer = setTimeout(() => {
-        setToast(prev => ({ ...prev, show: false }));
+        setToast((prev) => ({ ...prev, show: false }));
       }, 5000);
       return () => clearTimeout(timer);
     }
@@ -149,11 +158,23 @@ const InstructionPage: React.FC = () => {
         <div className="bg-white rounded-3xl p-6 shadow-sm max-w-md mx-auto">
           <div className="text-center">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+              <svg
+                className="w-8 h-8 text-red-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M6 18L18 6M6 6l12 12"
+                ></path>
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-[#343A40] mb-2">Error Loading Assessment</h2>
+            <h2 className="text-xl font-bold text-[#343A40] mb-2">
+              Error Loading Assessment
+            </h2>
             <p className="text-[#6C757D] mb-4">{error.message}</p>
             <button
               onClick={() => navigate("/assessments")}
@@ -175,13 +196,17 @@ const InstructionPage: React.FC = () => {
 
     // If payment is already completed, proceed to phone verification
     if (isPaymentCompleted) {
-      navigate("/assessment/phone-verification", { state: { assessmentId: currentAssessmentId } });
+      navigate("/assessment/phone-verification", {
+        state: { assessmentId: currentAssessmentId },
+      });
       return;
     }
 
     // If assessment is free, proceed directly
     if (!assessmentData?.is_paid) {
-      navigate("/assessment/phone-verification", { state: { assessmentId: currentAssessmentId } });
+      navigate("/assessment/phone-verification", {
+        state: { assessmentId: currentAssessmentId },
+      });
       return;
     }
 
@@ -198,14 +223,16 @@ const InstructionPage: React.FC = () => {
         metadata: {
           assessmentId: currentAssessmentId,
           testType: "placement-assessment",
-          type_id: currentAssessmentId // Add type_id as required by backend
-        }
+          type_id: currentAssessmentId, // Add type_id as required by backend
+        },
       }
     );
   };
 
   const handleResumeAssessment = () => {
-    navigate("/assessment/quiz", { state: { assessmentId: currentAssessmentId } });
+    navigate("/assessment/quiz", {
+      state: { assessmentId: currentAssessmentId },
+    });
   };
 
   return (
@@ -213,15 +240,23 @@ const InstructionPage: React.FC = () => {
       {/* Payment Processing Modal */}
       <PaymentProcessingModal
         isOpen={paymentState.isProcessing}
-        step={paymentState.step === 'error' ? 'creating' : paymentState.step as 'creating' | 'processing' | 'verifying' | 'complete'}
+        step={
+          paymentState.step === "error"
+            ? "creating"
+            : (paymentState.step as
+                | "creating"
+                | "processing"
+                | "verifying"
+                | "complete")
+        }
         onClose={() => {
           // Can't close during processing, but we can handle dismiss
-          if (paymentState.step === 'creating') {
+          if (paymentState.step === "creating") {
             setToast({
               show: true,
-              type: 'warning',
-              title: 'Payment Cancelled',
-              message: 'Payment initialization was cancelled.'
+              type: "warning",
+              title: "Payment Cancelled",
+              message: "Payment initialization was cancelled.",
             });
           }
         }}
@@ -243,7 +278,7 @@ const InstructionPage: React.FC = () => {
         type={toast.type}
         title={toast.title}
         message={toast.message}
-        onClose={() => setToast(prev => ({ ...prev, show: false }))}
+        onClose={() => setToast((prev) => ({ ...prev, show: false }))}
       />
 
       <div className="">
@@ -266,7 +301,9 @@ const InstructionPage: React.FC = () => {
                   {assessmentData?.title || "Assessment"}
                 </h2>
                 <p className="text-gray-700  leading-relaxed">
-                  {assessmentData?.instructions || assessmentData?.description || "Complete this assessment to showcase your skills and knowledge."}
+                  {assessmentData?.instructions ||
+                    assessmentData?.description ||
+                    "Complete this assessment to showcase your skills and knowledge."}
                 </p>
               </div>
 
@@ -275,14 +312,22 @@ const InstructionPage: React.FC = () => {
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                       <span className="text-amber-600">📊</span>
-                      <span className="font-medium">Total Questions: <span className="font-bold">30 MCQ</span></span>
+                      <span className="font-medium">
+                        Total Questions:{" "}
+                        <span className="font-bold">30 MCQ</span>
+                      </span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                       <span className="text-amber-600">⏱️</span>
-                      <span className="font-medium">Duration: <span className="font-bold">{assessmentData?.duration_minutes || 30} minutes</span></span>
+                      <span className="font-medium">
+                        Duration:{" "}
+                        <span className="font-bold">
+                          {assessmentData?.duration_minutes || 30} minutes
+                        </span>
+                      </span>
                     </div>
                   </div>
 
@@ -299,9 +344,12 @@ const InstructionPage: React.FC = () => {
                         "Node.JS",
                         "HTML/CSS",
                         "Cloud Database",
-                        "Logic & Aptitude"
+                        "Logic & Aptitude",
                       ].map((topic) => (
-                        <span key={topic} className="px-3 py-1 bg-[#EFF9FC] text-gray-700 rounded-full text-sm border border-[#80C9E0]">
+                        <span
+                          key={topic}
+                          className="px-3 py-1 bg-[#EFF9FC] text-gray-700 rounded-full text-sm border border-[#80C9E0]"
+                        >
                           {topic}
                         </span>
                       ))}
@@ -315,8 +363,12 @@ const InstructionPage: React.FC = () => {
                       <p className="text-lg mb-4">Take this test for only</p>
                       <div className="flex items-baseline gap-2 mb-6">
                         <div className="flex items-baseline gap-2">
-                          <span className="text-lg text-gray-500 line-through">₹699</span>
-                          <span className="text-4xl font-bold text-[#2C5F7F]">₹{assessmentPrice}</span>
+                          <span className="text-lg text-gray-500 line-through">
+                            ₹699
+                          </span>
+                          <span className="text-4xl font-bold text-[#2C5F7F]">
+                            ₹{assessmentPrice}
+                          </span>
                         </div>
                         {isPaymentCompleted && (
                           <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
@@ -327,20 +379,26 @@ const InstructionPage: React.FC = () => {
                     </>
                   ) : (
                     <div className="mb-6">
-                      <p className="text-lg font-bold text-green-600">Free Assessment</p>
-                      <p className="text-sm text-gray-600">No payment required</p>
+                      <p className="text-lg font-bold text-green-600">
+                        Free Assessment
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        No payment required
+                      </p>
                     </div>
                   )}
 
                   <div className="flex flex-col lg:flex-row gap-3">
-                    <button 
+                    <button
                       onClick={() => {
-                        const section = document.getElementById('whats-with-this-test');
+                        const section = document.getElementById(
+                          "whats-with-this-test"
+                        );
                         if (section) {
-                          section.scrollIntoView({ 
-                            behavior: 'smooth',
-                            block: 'start',
-                            inline: 'nearest'
+                          section.scrollIntoView({
+                            behavior: "smooth",
+                            block: "start",
+                            inline: "nearest",
                           });
                         }
                       }}
@@ -368,22 +426,23 @@ const InstructionPage: React.FC = () => {
                         <button
                           onClick={handleStartAssessment}
                           disabled={paymentState.isProcessing}
-                          className={`w-full py-3 px-6 rounded-xl font-medium transition-colors ${paymentState.isProcessing
-                              ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                          className={`w-full py-3 px-6 rounded-xl font-medium transition-colors ${
+                            paymentState.isProcessing
+                              ? "bg-gray-400 text-gray-600 cursor-not-allowed"
                               : isPaymentCompleted
-                                ? 'bg-green-600 text-white hover:bg-green-700'
-                                : assessmentData?.is_paid
-                                  ? 'bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]'
-                                  : 'bg-green-600 text-white hover:bg-green-700'
-                            }`}
+                              ? "bg-green-600 text-white hover:bg-green-700"
+                              : assessmentData?.is_paid
+                              ? "bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]"
+                              : "bg-green-600 text-white hover:bg-green-700"
+                          }`}
                         >
                           {paymentState.isProcessing
-                            ? 'Processing Payment...'
+                            ? "Processing Payment..."
                             : isPaymentCompleted
-                              ? 'Start Assessment Now'
-                              : assessmentData?.is_paid
-                                ? `Pay ₹${assessmentPrice} & Start Test`
-                                : 'Start Free Assessment'}
+                            ? "Start Assessment Now"
+                            : assessmentData?.is_paid
+                            ? `Pay ₹${assessmentPrice} & Start Test`
+                            : "Start Free Assessment"}
                         </button>
                       </div>
                     )}
@@ -404,11 +463,7 @@ const InstructionPage: React.FC = () => {
             {/* Certificate Card */}
 
             <div className="">
-              <img
-                src={linkdln}
-                alt="LinkedIn"
-                className="  object-contain"
-              />
+              <img src={linkdln} alt="LinkedIn" className="  object-contain" />
             </div>
 
             {/* </div> */}
@@ -424,11 +479,7 @@ const InstructionPage: React.FC = () => {
 
             {/* Score Card */}
             <div className="">
-              <img
-                src={score}
-                alt="LinkedIn"
-                className="  object-contain"
-              />
+              <img src={score} alt="LinkedIn" className="  object-contain" />
             </div>
           </div>
         </div>
@@ -444,10 +495,15 @@ const InstructionPage: React.FC = () => {
             <div className="bg-white rounded-3xl p-8 shadow-lg border border-[#DADADA]">
               <div className="flex items-center gap-3 mb-4">
                 <span className="text-2xl">🔍</span>
-                <h3 className="text-xl font-bold text-[#2C5F7F]">Why this matters:</h3>
+                <h3 className="text-xl font-bold text-[#2C5F7F]">
+                  Why this matters:
+                </h3>
               </div>
               <p className="text-gray-700 leading-relaxed">
-                We're already in touch with companies actively hiring for AI-powered and no-code roles. If you ace this assessment, you may qualify directly for placement interviews with our partner companies.
+                We're already in touch with companies actively hiring for
+                AI-powered and no-code roles. If you ace this assessment, you
+                may qualify directly for placement interviews with our partner
+                companies.
               </p>
             </div>
 
@@ -455,14 +511,20 @@ const InstructionPage: React.FC = () => {
             <div className="bg-white rounded-3xl p-8 shadow-lg border border-[#DADADA]">
               <div className="flex items-center gap-3 mb-4">
                 <span className="text-2xl">❌</span>
-                <h3 className="text-xl font-bold text-[#2C5F7F]">What if you don't score high?</h3>
+                <h3 className="text-xl font-bold text-[#2C5F7F]">
+                  What if you don't score high?
+                </h3>
               </div>
               <p className="text-gray-700 leading-relaxed mb-3">
                 <strong>No worries. That's exactly why we're here.</strong>
               </p>
               <p className="text-gray-700 leading-relaxed">
-                If your results show there's room to grow, we'll offer you personalized upskilling pathways — through our industry-grade programs — designed to help you become a{" "}
-                <strong>high-impact individual in AI and full-stack development.</strong>
+                If your results show there's room to grow, we'll offer you
+                personalized upskilling pathways — through our industry-grade
+                programs — designed to help you become a{" "}
+                <strong>
+                  high-impact individual in AI and full-stack development.
+                </strong>
               </p>
             </div>
 
@@ -470,7 +532,9 @@ const InstructionPage: React.FC = () => {
             <div className="bg-white rounded-3xl p-8 shadow-lg border border-[#DADADA]">
               <div className="flex items-center gap-3 mb-4">
                 <span className="text-2xl">🚀</span>
-                <h3 className="text-xl font-bold text-[#2C5F7F]">Your performance here can unlock</h3>
+                <h3 className="text-xl font-bold text-[#2C5F7F]">
+                  Your performance here can unlock
+                </h3>
               </div>
               <ul className="space-y-3 text-gray-700">
                 <li className="flex items-start gap-3">
@@ -479,11 +543,17 @@ const InstructionPage: React.FC = () => {
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-[#4A90A4] font-bold">💡</span>
-                  <span>Personalized feedback on your current strengths and areas to grow</span>
+                  <span>
+                    Personalized feedback on your current strengths and areas to
+                    grow
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-[#4A90A4] font-bold">🎯</span>
-                  <span>A chance to join our flagship career-launching program and move closer to your dream job</span>
+                  <span>
+                    A chance to join our flagship career-launching program and
+                    move closer to your dream job
+                  </span>
                 </li>
               </ul>
             </div>
@@ -495,7 +565,8 @@ const InstructionPage: React.FC = () => {
           <div className="flex flex-col lg:flex-row justify-between items-center gap-8">
             <div>
               <h2 className="text-3xl font-bold text-[#2C5F7F] mb-4">
-                Post-Bootcamp Assessment:<br />
+                Post-Bootcamp Assessment:
+                <br />
                 Your Path Forward Starts Here
               </h2>
               {/* <p className="text-gray-600 max-w-md">
@@ -507,7 +578,9 @@ const InstructionPage: React.FC = () => {
               <div className="text-center">
                 <p className="text-gray-600 mb-2">Take this test for only</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-[48px] font-bold text-[#2C5F7F]">₹{assessmentPrice}</span>
+                  <span className="text-[48px] font-bold text-[#2C5F7F]">
+                    ₹{assessmentPrice}
+                  </span>
                   <span className="text-gray-500 line-through">₹699</span>
                   {isPaymentCompleted && (
                     <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-sm rounded-full font-medium">
@@ -535,22 +608,23 @@ const InstructionPage: React.FC = () => {
                 <button
                   onClick={handleStartAssessment}
                   disabled={paymentState.isProcessing}
-                  className={`px-8 py-4 rounded-xl font-semibold text-lg transition-colors ${paymentState.isProcessing
-                      ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                  className={`px-8 py-4 rounded-xl font-semibold text-lg transition-colors ${
+                    paymentState.isProcessing
+                      ? "bg-gray-400 text-gray-600 cursor-not-allowed"
                       : isPaymentCompleted
-                        ? 'bg-green-600 text-white hover:bg-green-700'
-                        : assessmentData?.is_paid
-                          ? 'bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]'
-                          : 'bg-green-600 text-white hover:bg-green-700'
-                    }`}
+                      ? "bg-green-600 text-white hover:bg-green-700"
+                      : assessmentData?.is_paid
+                      ? "bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]"
+                      : "bg-green-600 text-white hover:bg-green-700"
+                  }`}
                 >
                   {paymentState.isProcessing
-                    ? 'Processing Payment...'
+                    ? "Processing Payment..."
                     : isPaymentCompleted
-                      ? 'Start Assessment Now'
-                      : assessmentData?.is_paid
-                        ? `Pay ₹${assessmentPrice} & Start Test`
-                        : 'Start Free Assessment'}
+                    ? "Start Assessment Now"
+                    : assessmentData?.is_paid
+                    ? `Pay ₹${assessmentPrice} & Start Test`
+                    : "Start Free Assessment"}
                 </button>
               )}
             </div>
