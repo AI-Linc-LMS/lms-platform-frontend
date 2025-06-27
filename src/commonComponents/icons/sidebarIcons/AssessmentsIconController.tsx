@@ -13,16 +13,78 @@ const AssessmentsIconController: React.FC = () => {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <path
-        d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+      {/* Document background */}
+      <rect
+        x="4"
+        y="3"
+        width="16"
+        height="18"
+        rx="2"
+        ry="2"
         stroke={isActive ? "#255C79" : "#6C757D"}
-        strokeWidth="2"
+        strokeWidth="1.5"
+        fill={isActive ? "#EFF9FC" : "none"}
+      />
+      
+      {/* Header section */}
+      <rect
+        x="4"
+        y="3"
+        width="16"
+        height="5"
+        rx="2"
+        ry="2"
+        fill={isActive ? "#255C79" : "#E9ECEF"}
+        opacity="0.3"
+      />
+      
+      {/* Quiz/Assessment lines */}
+      <line
+        x1="7"
+        y1="11"
+        x2="17"
+        y2="11"
+        stroke={isActive ? "#255C79" : "#6C757D"}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="7"
+        y1="14"
+        x2="14"
+        y2="14"
+        stroke={isActive ? "#255C79" : "#6C757D"}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="7"
+        y1="17"
+        x2="16"
+        y2="17"
+        stroke={isActive ? "#255C79" : "#6C757D"}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      
+      {/* Checkmark or assessment indicator */}
+      <circle
+        cx="16.5"
+        cy="6"
+        r="2.5"
+        fill={isActive ? "#255C79" : "#6C757D"}
+        opacity="0.8"
+      />
+      <path
+        d="M15.2 6l0.8 0.8 1.5-1.5"
+        stroke="white"
+        strokeWidth="1.2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        fill={isActive ? "#EFF9FC" : "none"}
+        fill="none"
       />
     </svg>
   );
 };
 
-export default AssessmentsIconController; 
+export default AssessmentsIconController;

@@ -303,7 +303,10 @@ const InstructionPage: React.FC = () => {
                     <>
                       <p className="text-lg mb-4">Take this test for only</p>
                       <div className="flex items-baseline gap-2 mb-6">
-                        <span className="text-4xl font-bold text-[#2C5F7F]">₹{assessmentPrice}</span>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-lg text-gray-500 line-through">₹699</span>
+                          <span className="text-4xl font-bold text-[#2C5F7F]">₹{assessmentPrice}</span>
+                        </div>
                         {isPaymentCompleted && (
                           <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
                             ✓ Paid

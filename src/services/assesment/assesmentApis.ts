@@ -86,7 +86,7 @@ export const getAllAssessments = async (clientId: number): Promise<AssessmentLis
         description: "Complete this assessment to showcase your AI and full-stack development skills and qualify for our scholarship program.",
         duration_minutes: 30,
         is_paid: true,
-        price: "25.00",
+        price: "00.00",
         is_active: true,
       },
       {
