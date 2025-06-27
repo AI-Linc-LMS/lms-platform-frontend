@@ -3,23 +3,37 @@ import { useNavigate } from "react-router-dom";
 
 interface AssessmentHeaderProps {
   timeRemaining: number;
+  assessmentId?: string;
 }
 
-const formatTime = (seconds: number) => {
+const formatTime = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  return `${minutes.toString().padStart(2, "0")}:${remainingSeconds
+    .toString()
+    .padStart(2, "0")}`;
 };
 
-const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({ timeRemaining }) => {
+const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({ 
+  timeRemaining, 
+  assessmentId = "ai-linc-scholarship-test" 
+}) => {
   const navigate = useNavigate();
+
+  const handleBackClick = () => {
+    // Navigate to the specific assessment instruction page or fallback to the default
+    if (assessmentId === "ai-linc-scholarship-test") {
+      navigate("/ai-linc-scholarship-test");
+    } else {
+      navigate(`/assessment/${assessmentId}`);
+    }
+  };
 
   return (
     <div className="bg-white rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 shadow-sm">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
         <button
-          onClick={() => navigate("/ai-linc-scholarship-test")}
-          // onClick={() => navigate(-1)}
+          onClick={handleBackClick}
           className="flex items-center text-[#255C79] hover:text-[#1a4a5f] mb-2 sm:mb-0"
         >
           <svg

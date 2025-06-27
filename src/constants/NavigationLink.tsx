@@ -3,6 +3,7 @@ import LiveIconController from "../commonComponents/icons/sidebarIcons/LiveIconC
 import JobsIconController from "../commonComponents/icons/sidebarIcons/JobsIconController";
 import DashboardController from "../commonComponents/icons/sidebarIcons/DashboardController";
 import CoursesIconController from "../commonComponents/icons/sidebarIcons/CoursesIconController";
+import AssessmentsIconController from "../commonComponents/icons/sidebarIcons/AssessmentsIconController";
 
 export const NavigationLinks: SidebarLinkInfo[] = [
   {
@@ -26,6 +27,18 @@ export const NavigationLinks: SidebarLinkInfo[] = [
         title: "Courses",
         href: "/courses",
         icon: <CoursesIconController />,
+      },
+    ],
+  },
+  {
+    id: 5,
+    title: "Assessments",
+    links: [
+      {
+        id: 1,
+        title: "Assessments",
+        href: "/assessments",
+        icon: <AssessmentsIconController />,
       },
     ],
   },

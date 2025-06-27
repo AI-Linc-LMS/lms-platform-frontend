@@ -19,16 +19,43 @@ interface ApiError {
   message: string;
 }
 
+interface CreateOrderRequest {
+  amount: string;
+  payment_type: string;
+  type_id?: string;
+}
+
 export const createOrder = async (
   clientId: number,
   amount: number,
-  paymentType?: PaymentType
+  paymentType?: PaymentType,
+  metadata?: Record<string, string | number | boolean>
 ): Promise<CreateOrderResponse> => {
   try {
-    const requestPayload = {
-      amount: amount,
+    let requestPayload: CreateOrderRequest = {
+      amount: amount.toString(),
       payment_type: paymentType || PaymentType.COURSE,
     };
+
+    // For assessment payments, include type_id as required by backend
+    if (paymentType === PaymentType.ASSESSMENT && metadata?.assessmentId) {
+      requestPayload = {
+        amount: amount.toString(),
+        payment_type: "ASSESSMENT",
+        type_id: metadata.assessmentId as string
+      };
+    }
+
+    // For workshop payments, include type_id as required by backend
+    if (paymentType === PaymentType.WORKSHOP && metadata?.workshopId) {
+      requestPayload = {
+        amount: amount.toString(),
+        payment_type: "WORKSHOP",
+        type_id: metadata.workshopId as string
+      };
+    }
+
+    console.log('Creating order with payload:', requestPayload);
 
     const response = await axiosInstance.post(
       `/payment-gateway/api/clients/${clientId}/create-order/`,

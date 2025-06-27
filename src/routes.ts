@@ -16,6 +16,7 @@ import Dashboard from "./features/admin/dashboard/pages/Dashboard";
 import ManageStudents from "./features/admin/manage-students/pages/ManageStudents";
 import ShortAssessment from "./features/learn/pages/ShortAssessment";
 import InstructionPage from "./features/learn/pages/InstructionPage";
+import AssessmentsList from "./features/learn/pages/AssessmentsList";
 import ProfileSettings from "./components/UserProfile";
 import AssesmentStudentsResults from "./features/admin/assesment-results/AssesmentStudentsResults";
 import Otp from "./features/auth/pages/Otp";
@@ -64,6 +65,11 @@ const routes: RouteConfig[] = [
   {
     path: "/courses",
     component: Courses,
+    isPrivate: true,
+  },
+  {
+    path: "/assessments",
+    component: AssessmentsList,
     isPrivate: true,
   },
   {
@@ -155,6 +161,11 @@ const routes: RouteConfig[] = [
   {
     path: "/certificates",
     component: CertificatePortal,
+    isPrivate: true,
+  },
+  {
+    path: "/assessment/:assessmentId",
+    component: InstructionPage,
     isPrivate: true,
   },
   {

@@ -37,8 +37,10 @@ interface SectionResponse {
   };
 }
 
-export const useAssessment = () => {
+export const useAssessment = (assessmentId?: string) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const currentAssessmentId = assessmentId || "ai-linc-scholarship-test";
+  
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [userAnswers, setUserAnswers] = useState<QuizSectionResponse>({
@@ -57,19 +59,19 @@ export const useAssessment = () => {
     isLoading: questionsLoading,
     error: questionsError,
   } = useQuery({
-    queryKey: ["questionsData"],
-    queryFn: () => startAssessment(1, "ai-linc-scholarship-test"),
+    queryKey: ["questionsData", currentAssessmentId],
+    queryFn: () => startAssessment(1, currentAssessmentId),
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     staleTime: 0,
     gcTime: 0,
   });
 
-  const assessmentId = questions?.slug ?? "ai-linc-scholarship-test";
+  const finalAssessmentId = questions?.slug ?? currentAssessmentId;
 
   const finalSubmitMutation = useMutation({
     mutationFn: (answers: QuizSectionResponse) =>
-      submitFinalAssessment(clientId, assessmentId, answers),
+      submitFinalAssessment(clientId, finalAssessmentId, answers),
     onSuccess: (data) => {
       console.log("Final assessment submitted successfully:", data);
       if (data) {
@@ -89,7 +91,7 @@ export const useAssessment = () => {
 
   const updateAnswerMutation = useMutation({
     mutationFn: (answers: QuizSectionResponse) =>
-      updateAfterEachQuestion(clientId, assessmentId, answers),
+      updateAfterEachQuestion(clientId, finalAssessmentId, answers),
     onSuccess: (data) => {
       console.log("Answer updated successfully:", data);
     },

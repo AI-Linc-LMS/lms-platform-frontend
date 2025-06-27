@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   getInstructions,
+  AssessmentDetails,
 } from "../../../services/assesment/assesmentApis";
 import { useAssessmentPayment } from "../../../hooks/useRazorpayPayment";
 import {
@@ -18,9 +19,11 @@ import score from "../../../../public/score-card.png";
 
 const InstructionPage: React.FC = () => {
   const navigate = useNavigate();
+  const { assessmentId } = useParams<{ assessmentId: string }>();
   const clientId = import.meta.env.VITE_CLIENT_ID;
-  // const [phoneNumber, setPhoneNumber] = useState("");
-  // const [isPhoneValid, setIsPhoneValid] = useState(false);
+
+  // Use assessment ID from URL params or fallback to default
+  const currentAssessmentId = assessmentId || "ai-linc-scholarship-test-2";
 
   // Toast state for error messages
   const [toast, setToast] = useState<{
@@ -38,39 +41,34 @@ const InstructionPage: React.FC = () => {
     amount: number;
   } | null>(null);
 
-  // Check payment status from localStorage
-  const getPaymentStatus = () => {
-    const paymentKey = `assessment_payment_${clientId}_ai-linc-scholarship-test`;
-    return localStorage.getItem(paymentKey) === 'paid';
-  };
-
-  const [isPaymentCompleted, setIsPaymentCompleted] = useState(getPaymentStatus());
-
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["assessment-instructions"],
-    queryFn: () => getInstructions(clientId, "ai-linc-scholarship-test"),
+  const { data: assessmentData, isLoading, error } = useQuery<AssessmentDetails>({
+    queryKey: ["assessment-instructions", currentAssessmentId],
+    queryFn: () => getInstructions(clientId, currentAssessmentId),
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     staleTime: 0,
     gcTime: 0,
   });
 
+  // Check if payment is completed based on backend data
+  // If the assessment has started (status is "in_progress" or "submitted"), it means payment was completed
+  // OR if txn_status is "paid", it means payment was completed
+  const isPaymentCompleted = 
+    assessmentData?.status === "in_progress" || 
+    assessmentData?.status === "submitted" ||
+    assessmentData?.txn_status === "paid";
+
+  // Get assessment price in rupees (convert from string)
+  const assessmentPrice = assessmentData?.price ? parseFloat(assessmentData.price) : 25;
+  
+  // Convert to paise for Razorpay (multiply by 100)
+  const assessmentPriceInPaise = Math.round(assessmentPrice);
+
   // Payment hook
   const { paymentState, initiateAssessmentPayment } = useAssessmentPayment({
     onSuccess: (result) => {
       console.log('Payment successful:', result);
 
-      // Store payment status in localStorage
-      const paymentKey = `assessment_payment_${clientId}_ai-linc-scholarship-test`;
-      localStorage.setItem(paymentKey, 'paid');
-      localStorage.setItem(`${paymentKey}_details`, JSON.stringify({
-        paymentId: result.paymentId,
-        orderId: result.orderId,
-        amount: result.amount,
-        timestamp: new Date().toISOString()
-      }));
-
-      setIsPaymentCompleted(true);
       setPaymentResult({
         paymentId: result.paymentId,
         orderId: result.orderId,
@@ -126,25 +124,19 @@ const InstructionPage: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-[#343A40] mb-2">Error Loading Instructions</h2>
+            <h2 className="text-xl font-bold text-[#343A40] mb-2">Error Loading Assessment</h2>
             <p className="text-[#6C757D] mb-4">{error.message}</p>
             <button
-              onClick={() => navigate("/assessment")}
+              onClick={() => navigate("/assessments")}
               className="bg-[#255C79] text-white px-6 py-2 rounded-xl font-medium hover:bg-[#1a4a5f] transition-colors"
             >
-              Go Back
+              View All Assessments
             </button>
           </div>
         </div>
       </div>
     );
   }
-
-  // const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const value = e.target.value;
-  //   setPhoneNumber(value);
-  //   setIsPhoneValid(/^\d{10}$/.test(value));
-  // };
 
   const handleStartAssessment = () => {
     // Check if payment is already in progress
@@ -154,22 +146,30 @@ const InstructionPage: React.FC = () => {
 
     // If payment is already completed, proceed to phone verification
     if (isPaymentCompleted) {
-      navigate("/assessment/phone-verification");
+      navigate("/assessment/phone-verification", { state: { assessmentId: currentAssessmentId } });
       return;
     }
 
-    // Otherwise, initiate payment for ₹49 (fixed amount, not in paise)
+    // If assessment is free, proceed directly
+    if (!assessmentData?.is_paid) {
+      navigate("/assessment/phone-verification", { state: { assessmentId: currentAssessmentId } });
+      return;
+    }
+
+    // Otherwise, initiate payment
     initiateAssessmentPayment(
       parseInt(clientId),
-      49, // ₹49 (not in paise - the backend should handle currency conversion)
+      assessmentPriceInPaise,
+
       {
         prefill: {
           name: "Test User", // You can get this from user context if available
           email: "test@example.com", // You can get this from user context if available
         },
         metadata: {
-          assessmentId: "ai-linc-scholarship-test",
-          testType: "placement-assessment"
+          assessmentId: currentAssessmentId,
+          testType: "placement-assessment",
+          type_id: currentAssessmentId // Add type_id as required by backend
         }
       }
     );
@@ -204,7 +204,7 @@ const InstructionPage: React.FC = () => {
         onClose={() => setShowSuccessModal(false)}
         paymentId={paymentResult?.paymentId}
         orderId={paymentResult?.orderId}
-        amount={paymentResult?.amount || 49}
+        amount={paymentResult?.amount || assessmentPrice}
       />
 
       {/* Payment Toast for errors/warnings */}
@@ -233,10 +233,10 @@ const InstructionPage: React.FC = () => {
             <div className=" flex flex-col justify-center ">
               <div>
                 <h2 className="text-3xl md:text-4xl font-bold text-[#2C5F7F] ">
-                  Placement Assessment: Your Path Forward Starts Here
+                  {assessmentData?.title || "Assessment"}
                 </h2>
                 <p className="text-gray-700  leading-relaxed">
-                  <span className="font-semibold">Completed the AI Linc No-Code Bootcamp?</span> Now prove your skills. Take this assessment to showcase your strengths and project readiness.
+                  {assessmentData?.instructions || assessmentData?.description || "Complete this assessment to showcase your skills and knowledge."}
                 </p>
               </div>
 
@@ -252,7 +252,7 @@ const InstructionPage: React.FC = () => {
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                       <span className="text-amber-600">⏱️</span>
-                      <span className="font-medium">Duration: <span className="font-bold">30 minutes</span></span>
+                      <span className="font-medium">Duration: <span className="font-bold">{assessmentData?.duration_minutes || 30} minutes</span></span>
                     </div>
                   </div>
 
@@ -280,16 +280,24 @@ const InstructionPage: React.FC = () => {
                 </div>
 
                 <div className="pt-4">
-                  <p className="text-lg mb-4">Take this test for only</p>
-                  <div className="flex items-baseline gap-2 mb-6">
-                    <span className="text-4xl font-bold text-[#2C5F7F]">₹49</span>
-                    <span className="text-gray-500 line-through">₹699</span>
-                    {isPaymentCompleted && (
-                      <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
-                        ✓ Paid
-                      </span>
-                    )}
-                  </div>
+                  {assessmentData?.is_paid ? (
+                    <>
+                      <p className="text-lg mb-4">Take this test for only</p>
+                      <div className="flex items-baseline gap-2 mb-6">
+                        <span className="text-4xl font-bold text-[#2C5F7F]">₹{assessmentPrice}</span>
+                        {isPaymentCompleted && (
+                          <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
+                            ✓ Paid
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="mb-6">
+                      <p className="text-lg font-bold text-green-600">Free Assessment</p>
+                      <p className="text-sm text-gray-600">No payment required</p>
+                    </div>
+                  )}
 
                   <div className="flex flex-col lg:flex-row gap-3">
                     <button 
@@ -308,14 +316,14 @@ const InstructionPage: React.FC = () => {
                       Why Take This Test?
                     </button>
 
-                    {data?.status === "submitted" ? (
+                    {assessmentData?.status === "submitted" ? (
                       <button
                         onClick={handleResumeAssessment}
                         className="w-full py-3 px-6 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors"
                       >
                         View Results
                       </button>
-                    ) : data?.status === "in_progress" ? (
+                    ) : assessmentData?.status === "in_progress" ? (
                       <button
                         onClick={handleResumeAssessment}
                         className="w-full py-3 px-6 bg-[#2C5F7F] text-white rounded-xl font-medium hover:bg-[#1a4a5f] transition-colors"
@@ -324,14 +332,6 @@ const InstructionPage: React.FC = () => {
                       </button>
                     ) : (
                       <div className="flex flex-col lg:flex-row gap-3 w-full">
-                        {/* <input
-                          type="tel"
-                          value={phoneNumber}
-                          onChange={handlePhoneChange}
-                          placeholder="Enter phone number"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2C5F7F] focus:border-[#2C5F7F]"
-                          maxLength={10}
-                        /> */}
                         <button
                           onClick={handleStartAssessment}
                           disabled={paymentState.isProcessing}
@@ -339,14 +339,18 @@ const InstructionPage: React.FC = () => {
                               ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
                               : isPaymentCompleted
                                 ? 'bg-green-600 text-white hover:bg-green-700'
-                                : 'bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]'
+                                : assessmentData?.is_paid
+                                  ? 'bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]'
+                                  : 'bg-green-600 text-white hover:bg-green-700'
                             }`}
                         >
                           {paymentState.isProcessing
                             ? 'Processing Payment...'
                             : isPaymentCompleted
                               ? 'Start Assessment Now'
-                              : 'Pay ₹49 & Start Test'}
+                              : assessmentData?.is_paid
+                                ? `Pay ₹${assessmentPrice} & Start Test`
+                                : 'Start Free Assessment'}
                         </button>
                       </div>
                     )}
@@ -356,8 +360,6 @@ const InstructionPage: React.FC = () => {
             </div>
           </div>
         </div>
-
-
 
         {/* Unlock These Perks Section */}
         <div className="my-16">
@@ -472,7 +474,7 @@ const InstructionPage: React.FC = () => {
               <div className="text-center">
                 <p className="text-gray-600 mb-2">Take this test for only</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-[48px] font-bold text-[#2C5F7F]">₹49</span>
+                  <span className="text-[48px] font-bold text-[#2C5F7F]">₹{assessmentPrice}</span>
                   <span className="text-gray-500 line-through">₹699</span>
                   {isPaymentCompleted && (
                     <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-sm rounded-full font-medium">
@@ -482,14 +484,14 @@ const InstructionPage: React.FC = () => {
                 </div>
               </div>
 
-              {data?.status === "submitted" ? (
+              {assessmentData?.status === "submitted" ? (
                 <button
                   onClick={handleResumeAssessment}
                   className="px-8 py-4 bg-green-600 text-white rounded-xl font-semibold text-lg hover:bg-green-700 transition-colors"
                 >
                   View Results
                 </button>
-              ) : data?.status === "in_progress" ? (
+              ) : assessmentData?.status === "in_progress" ? (
                 <button
                   onClick={handleResumeAssessment}
                   className="px-8 py-4 bg-[#2C5F7F] text-white rounded-xl font-semibold text-lg hover:bg-[#1a4a5f] transition-colors"
@@ -504,14 +506,18 @@ const InstructionPage: React.FC = () => {
                       ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
                       : isPaymentCompleted
                         ? 'bg-green-600 text-white hover:bg-green-700'
-                        : 'bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]'
+                        : assessmentData?.is_paid
+                          ? 'bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]'
+                          : 'bg-green-600 text-white hover:bg-green-700'
                     }`}
                 >
                   {paymentState.isProcessing
                     ? 'Processing Payment...'
                     : isPaymentCompleted
                       ? 'Start Assessment Now'
-                      : 'Pay ₹49 & Start Test'}
+                      : assessmentData?.is_paid
+                        ? `Pay ₹${assessmentPrice} & Start Test`
+                        : 'Start Free Assessment'}
                 </button>
               )}
             </div>

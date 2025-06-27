@@ -304,4 +304,27 @@ export const useAssessmentPayment = (options: UseRazorpayPaymentOptions = {}) =>
   };
 };
 
+export const useWorkshopPayment = (options: UseRazorpayPaymentOptions = {}) => {
+  const paymentHook = useRazorpayPayment(options);
+
+  const initiateWorkshopPayment = useCallback((
+    clientId: number,
+    amount: number,
+    overrides?: Partial<PaymentConfig>
+  ) => {
+    const config = paymentHook.createPaymentConfig(
+      PaymentType.WORKSHOP,
+      clientId,
+      amount,
+      overrides
+    );
+    return paymentHook.initiatePayment(config);
+  }, [paymentHook]);
+
+  return {
+    ...paymentHook,
+    initiateWorkshopPayment,
+  };
+};
+
 export default useRazorpayPayment; 

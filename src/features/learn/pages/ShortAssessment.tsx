@@ -1,4 +1,5 @@
 import React from "react";
+import { useParams, useLocation } from "react-router-dom";
 import { useAssessment } from "../hooks/useAssessment";
 import {
   AssessmentHeader,
@@ -9,6 +10,12 @@ import {
 } from "../components/assessment";
 
 const ShortAssessment: React.FC = () => {
+  const { assessmentId } = useParams<{ assessmentId?: string }>();
+  const location = useLocation();
+  
+  // Get assessment ID from URL params, location state, or fallback to default
+  const currentAssessmentId = assessmentId || location.state?.assessmentId || "ai-linc-scholarship-test";
+  
   const {
     // State
     currentQuestionIndex,
@@ -31,7 +38,7 @@ const ShortAssessment: React.FC = () => {
     getQuestionButtonStyle,
     getAnsweredCount,
     getRemainingCount,
-  } = useAssessment();
+  } = useAssessment(currentAssessmentId);
 
   const currentQuestion = questionsData[currentQuestionIndex];
 
@@ -46,7 +53,7 @@ const ShortAssessment: React.FC = () => {
   // Assessment completed section
   if (isCompleted) {
     const clientId = parseInt(import.meta.env.VITE_CLIENT_ID) || 1;
-    const assessmentSlug = questions?.slug || "ai-linc-scholarship-test"; // Use slug from questions
+    const assessmentSlug = questions?.slug || currentAssessmentId; // Use slug from questions or current assessment ID
 
     return (
       <AssessmentResults clientId={clientId} assessmentId={assessmentSlug} />
@@ -54,10 +61,12 @@ const ShortAssessment: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-2 sm:p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <AssessmentHeader timeRemaining={timeRemaining} />
+    <div className="bg-[#F8F9FA] min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <AssessmentHeader 
+          timeRemaining={timeRemaining} 
+          assessmentId={currentAssessmentId}
+        />
 
         <div className="flex flex-col md:flex-row gap-4 md:gap-6">
           {/* Left Sidebar - Question Navigation */}

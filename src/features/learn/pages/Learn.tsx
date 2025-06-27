@@ -1,4 +1,5 @@
 import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import Leaderboard from "../components/LeaderboardTable";
 import TimeTrackingDashboard from "../components/graphs-components/TimeTrackingDashboard";
 import BasedLearningCourses from "../components/based-learning/BasedLearningCourses";
@@ -12,6 +13,7 @@ import EnrolledCourses from "../components/courses/EnrolledCourses";
 import { RootState } from "../../../redux/store";
 import React, { ReactNode } from "react";
 import LockSvg from "../../../commonComponents/icons/empty-state-handel/LockSvg";
+import { FiPlayCircle, FiArrowRight, FiClock, FiCheckCircle, FiTrendingUp } from "react-icons/fi";
 // Props type for the overlay card component
 interface EnrollToCourseOverlayProps {
   title: string;
@@ -55,6 +57,7 @@ const EnrollToCourseOverlay: React.FC<EnrollToCourseOverlayProps> = ({
 
 const Learn = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const navigate = useNavigate();
   // Get enrolled courses from Redux store
   const courses = useSelector((state: RootState) => state.courses.courses);
   // Check if user has no enrolled courses
@@ -65,6 +68,51 @@ const Learn = () => {
       {/* Left Column */}
       <div className="w-full md:w-3/4 space-y-4 gap-4">
         <WelcomeSection />
+        
+        {/* Assessments Section */}
+        <div className="bg-gradient-to-r from-[#EFF9FC] to-[#E0F4F8] rounded-2xl p-6 border border-[#80C9E0]">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-3">
+                <FiTrendingUp className="h-6 w-6 text-[#2C5F7F]" />
+                <h2 className="text-xl font-bold text-[#2C5F7F]">
+                  Test Your Skills
+                </h2>
+              </div>
+              <p className="text-[#2C5F7F] mb-4">
+                Take our comprehensive assessments to evaluate your knowledge and get personalized feedback. Choose from free and paid options.
+              </p>
+              
+              {/* Quick Assessment Info */}
+              <div className="flex flex-wrap gap-4 text-sm">
+                <div className="flex items-center gap-1">
+                  <FiCheckCircle className="h-4 w-4 text-green-600" />
+                  <span className="text-gray-700">Free Options Available</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <FiClock className="h-4 w-4 text-[#2C5F7F]" />
+                  <span className="text-gray-700">30-60 minutes</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[#2C5F7F]">🏆</span>
+                  <span className="text-gray-700">Earn Certificates</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => navigate('/assessments')}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#2C5F7F] text-white rounded-xl font-medium hover:bg-[#1a4a5f] transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                <FiPlayCircle className="h-4 w-4" />
+                View All Assessments
+                <FiArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
         {hasNoCourses ? (
           <EnrollToCourseOverlay title="Enroll to a Course to Unlock Stats">
             <TimeTrackingDashboard />

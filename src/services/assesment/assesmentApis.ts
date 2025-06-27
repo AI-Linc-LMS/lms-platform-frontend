@@ -9,7 +9,35 @@ interface ApiError {
   message: string;
 }
 
-export const getInstructions = async (clientId: number, assessmentId: string) => {
+// Interface for assessment details from backend
+export interface AssessmentDetails {
+  id: number;
+  title: string;
+  slug: string;
+  instructions: string;
+  description: string;
+  duration_minutes: number;
+  is_paid: boolean;
+  price: string;
+  is_active: boolean;
+  created_at: string;
+  status: "not_started" | "in_progress" | "submitted";
+  txn_status?: "paid" | "pending" | "failed" | null;
+}
+
+// Interface for assessment list item
+export interface AssessmentListItem {
+  id: number;
+  title: string;
+  slug: string;
+  description: string;
+  duration_minutes: number;
+  is_paid: boolean;
+  price: string;
+  is_active: boolean;
+}
+
+export const getInstructions = async (clientId: number, assessmentId: string): Promise<AssessmentDetails> => {
   try {
     const res = await axiosInstance.get(
       `/assessment/api/client/${clientId}/assessment-details/${assessmentId}/`
@@ -19,7 +47,7 @@ export const getInstructions = async (clientId: number, assessmentId: string) =>
     if (error instanceof Error) {
       // AxiosError type guard
       const axiosError = error as ApiError;
-      console.error("Failed to fetch all courses:", error);
+      console.error("Failed to fetch assessment details:", error);
       console.error("Error details:", {
         message: axiosError.message,
         response: axiosError.response?.data,
@@ -30,7 +58,35 @@ export const getInstructions = async (clientId: number, assessmentId: string) =>
       throw new Error(
         (axiosError.response?.data?.detail as string) ||
           axiosError.message ||
-          "Failed to fetch all courses"
+          "Failed to fetch assessment details"
+      );
+    } else {
+      throw new Error("An unknown error occurred");
+    }
+  }
+};
+
+// New API to get all available assessments
+export const getAllAssessments = async (clientId: number): Promise<AssessmentListItem[]> => {
+  try {
+    const res = await axiosInstance.get(
+      `/assessment/api/client/${clientId}/assessments/`
+    );
+    return res.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      const axiosError = error as ApiError;
+      console.error("Failed to fetch assessments list:", error);
+      console.error("Error details:", {
+        message: axiosError.message,
+        response: axiosError.response?.data,
+        status: axiosError.response?.status,
+      });
+
+      throw new Error(
+        (axiosError.response?.data?.detail as string) ||
+          axiosError.message ||
+          "Failed to fetch assessments list"
       );
     } else {
       throw new Error("An unknown error occurred");
