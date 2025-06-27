@@ -5,12 +5,35 @@ import {
 } from "../../../../../hooks/useRazorpayPayment";
 import { PaymentResult } from "../../../../../services/payment/razorpayService";
 import { ScholarshipRedemptionData, UserState } from "../types/assessmentTypes";
+import { useQuery } from "@tanstack/react-query";
+import { getRoadmapPaymentStatus } from "../../../../../services/assesment/assesmentApis";
 
 const PaymentCardSection: React.FC<{
   redeemData: ScholarshipRedemptionData;
   clientId: number;
   assessmentId: string;
 }> = ({ redeemData, clientId, assessmentId }) => {
+  const { data: roadmapPaymentStatus } = useQuery({
+    queryKey: ["roadmap-payment-status", clientId, assessmentId],
+    queryFn: () => getRoadmapPaymentStatus(clientId, "nanodegree"),
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 0,
+    enabled: !!clientId,
+  });
+
+  const { data: roadmapPaymentStatusFlagship } = useQuery({
+    queryKey: ["roadmap-payment-status-flagship", clientId, assessmentId],
+    queryFn: () => getRoadmapPaymentStatus(clientId, "flagship"),
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 0,
+    enabled: !!clientId,
+  });
+
+  const isNanodegreePayment = roadmapPaymentStatus?.status === "paid";
+  const isFlagshipPayment = roadmapPaymentStatusFlagship?.status === "paid";
+
   // Get assessment price in rupees (convert from string)
   const user = useSelector((state: { user: UserState }) => state.user);
 
@@ -122,7 +145,7 @@ const PaymentCardSection: React.FC<{
             onClick={handleNanodegreePayment}
             className="w-full bg-[#14212B] text-white font-semibold py-2 sm:py-3 rounded-lg shadow hover:bg-[#223344] transition-colors duration-200 mb-2 text-sm sm:text-base"
           >
-            Book Your Seat for ₹499
+            {isNanodegreePayment ? "Already Booked" : "Book Your Seat for ₹499"}
           </button>
           <span className="text-xs text-gray-400">
             Fully refundable within 7 days
@@ -138,7 +161,7 @@ const PaymentCardSection: React.FC<{
           <span className="absolute top-3 sm:top-4 left-3 sm:left-4 bg-yellow-200 text-yellow-800 text-xs font-bold px-2 sm:px-3 py-1 rounded-full">
             ⚡ Eligible for Scholarship ⚡
           </span>
-          <h3 className="text-lg sm:text-xl font-bold text-[#2563eb] mb-1 mt-4 sm:mt-4">
+          <h3 className="text-lg sm:text-xl font-bold text-[#2563eb] mb-1 my-14 sm:my-4">
             Flagship Career Launchpad
           </h3>
           <span className="text-xs text-gray-500 mb-2">
@@ -197,7 +220,7 @@ const PaymentCardSection: React.FC<{
             onClick={handleFlagshipPayment}
             className="w-full bg-[#14212B] text-white font-semibold py-2 sm:py-3 rounded-lg shadow hover:bg-[#223344] transition-colors duration-200 mb-2 text-sm sm:text-base"
           >
-            Book Your Seat for ₹999
+            {isFlagshipPayment ? "Already Booked" : "Book Your Seat for ₹999"}
           </button>
           <span className="text-xs text-gray-400">
             Fully refundable within 7 days

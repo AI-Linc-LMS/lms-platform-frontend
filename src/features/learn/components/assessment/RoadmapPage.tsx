@@ -2,7 +2,6 @@ import React, { useRef, useState } from "react";
 import ailincimg from "../../../../assets/dashboard_assets/toplogoimg.png";
 import popper from "../../../../assets/dashboard_assets/poppers.png";
 import roadmap from "../../../../assets/roadmap/roadmap.png";
-import { redeemScholarship } from "../../../../services/assesment/assesmentApis";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import CertificateTemplates from "../../../../components/certificate/CertificateTemplates";
@@ -38,6 +37,7 @@ import {
 
 // Import fallback data
 import { certificateFallbackData } from "./data/assessmentData";
+import { redeemScholarship } from "../../../../services/assesment/assesmentApis";
 
 const RoadmapPage = () => {
   const { assessmentId } = useParams<{ assessmentId: string }>();

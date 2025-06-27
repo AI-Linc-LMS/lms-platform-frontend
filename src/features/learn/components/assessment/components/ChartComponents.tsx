@@ -83,15 +83,11 @@ export function RatingBars({ data }: { data: RatingData[] }) {
 
 // --- ScoreArc ---
 export const ScoreArc: React.FC<ScoreArcProps> = ({ score, max }) => {
-  // Arc settings - responsive sizing
-  const radius = 60; // Smaller for mobile
-  const stroke = 12; // Smaller stroke for mobile
-  const center = 80; // Adjusted center
+  // Arc settings - larger arc for more card fill
+  const radius = 85; // Increased arc radius
+  const stroke = 14; // Thicker arc
   const arcLength = Math.PI; // 180deg
   const percent = Math.max(0, Math.min(1, score / max));
-  const arcAngle = arcLength * percent;
-  const startAngle = Math.PI;
-  const endAngle = startAngle + arcAngle;
 
   // Helper to describe arc
   function describeArc(
@@ -107,7 +103,7 @@ export const ScoreArc: React.FC<ScoreArcProps> = ({ score, max }) => {
     };
     const endPt = {
       x: cx + r * Math.cos(end),
-      y: cy + r * Math.cos(end),
+      y: cy + r * Math.sin(end),
     };
     const largeArcFlag = end - start <= Math.PI ? 0 : 1;
     return [
@@ -126,54 +122,68 @@ export const ScoreArc: React.FC<ScoreArcProps> = ({ score, max }) => {
   }
 
   return (
-    <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 flex-1 min-w-[240px] sm:min-w-[260px] max-w-[350px] min-h-[200px] sm:min-h-[240px] flex flex-col items-center justify-center relative w-full">
+    <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 flex-1 min-w-[240px] sm:min-w-[260px] max-w-[350px] min-h-[200px] sm:min-h-[240px] flex flex-col relative w-full">
       <span className="text-base sm:text-lg font-bold text-black mb-2 w-full text-left">
         Score
       </span>
-      <svg
-        width={160}
-        height={100}
-        viewBox={`0 0 160 100`}
-        className="sm:w-[180px] sm:h-[120px]"
-      >
-        {/* Background arc */}
-        <path
-          d={describeArc(center, center, radius, Math.PI, 2 * Math.PI)}
-          stroke="#e5e7eb"
-          strokeWidth={stroke}
-          fill="none"
-          strokeLinecap="round"
-        />
-        {/* Foreground arc */}
-        <path
-          d={describeArc(center, center, radius, Math.PI, endAngle)}
-          stroke="url(#scoreGradient)"
-          strokeWidth={stroke}
-          fill="none"
-          strokeLinecap="round"
-        />
-        <defs>
-          <linearGradient id="scoreGradient" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#2563eb" />
-            <stop offset="100%" stopColor="#a5b4fc" />
-          </linearGradient>
-        </defs>
-        {/* Dotted inner arc */}
-        <path
-          d={describeArc(center, center, radius - 15, Math.PI, 2 * Math.PI)}
-          stroke="#d1d5db"
-          strokeWidth={2}
-          fill="none"
-          strokeDasharray="2 6"
-        />
-      </svg>
-      <div className="absolute flex flex-col items-center justify-center mx-auto">
-        <span className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-black">
-          {score}
-        </span>
-        <span className="text-sm sm:text-md text-gray-500 font-semibold">
-          of {max}
-        </span>
+      <div className="flex flex-col items-center justify-center w-full h-full">
+        <div
+          className="relative flex items-center justify-center w-full"
+          style={{ minHeight: "140px" }}
+        >
+          <svg
+            width={260}
+            height={140}
+            viewBox="0 0 260 140"
+            className="w-[260px] h-[140px]"
+          >
+            {/* Background arc */}
+            <path
+              d={describeArc(130, 130, radius, Math.PI, 2 * Math.PI)}
+              stroke="#e5e7eb"
+              strokeWidth={stroke}
+              fill="none"
+              strokeLinecap="round"
+            />
+            {/* Foreground arc */}
+            <path
+              d={describeArc(
+                130,
+                130,
+                radius,
+                Math.PI,
+                Math.PI + arcLength * percent
+              )}
+              stroke="url(#scoreGradient)"
+              strokeWidth={stroke}
+              fill="none"
+              strokeLinecap="round"
+            />
+            <defs>
+              <linearGradient id="scoreGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#2563eb" />
+                <stop offset="100%" stopColor="#a5b4fc" />
+              </linearGradient>
+            </defs>
+            {/* Dotted inner arc */}
+            <path
+              d={describeArc(130, 130, radius - 18, Math.PI, 2 * Math.PI)}
+              stroke="#d1d5db"
+              strokeWidth={2}
+              fill="none"
+              strokeDasharray="2 6"
+            />
+          </svg>
+          {/* Centered score value, smaller */}
+          <div className="absolute left-1/2 top-[72%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center">
+            <span className="text-2xl lg:text-3xl font-extrabold text-black leading-none">
+              {score}
+            </span>
+            <span className="text-xs sm:text-sm text-gray-500 font-semibold leading-none">
+              of {max}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );
