@@ -5,8 +5,7 @@ import {
   AssessmentHeader,
   QuestionNavigation,
   QuestionDisplay,
-  NavigationButtons,
-  RoadmapPage,
+  NavigationButtons
 } from "../components/assessment";
 
 const ShortAssessment: React.FC = () => {
@@ -32,7 +31,6 @@ const ShortAssessment: React.FC = () => {
     timeRemaining,
     isCompleted,
     questionsData,
-    questions,
     questionsLoading,
     questionsError,
 
@@ -61,10 +59,7 @@ const ShortAssessment: React.FC = () => {
 
   // Assessment completed section
   if (isCompleted) {
-    const clientId = parseInt(import.meta.env.VITE_CLIENT_ID) || 1;
-    const assessmentSlug = questions?.slug || currentAssessmentId; // Use slug from questions or current assessment ID
-
-    return <RoadmapPage clientId={clientId} assessmentId={assessmentSlug} />;
+    navigate("/roadmap/ai-linc-scholarship-test-2");
   }
 
   // Early return if no assessment ID - component will redirect

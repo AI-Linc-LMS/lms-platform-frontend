@@ -6,3 +6,4 @@ export { default as RoadmapPage } from './RoadmapPage';
 export { default as PaymentModal } from './PaymentModal';
 export { default as PaymentProcessingModal } from './PaymentProcessingModal';
 export { default as PaymentSuccessModal } from './PaymentSuccessModal';
+export { default as PaymentToast } from './PaymentToast';
