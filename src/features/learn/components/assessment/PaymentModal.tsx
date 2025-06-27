@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useSelector } from "react-redux";
 import {
   FiX,
   FiCheck,
@@ -72,6 +73,12 @@ interface PurchasedData {
   payable_amount: number;
 }
 
+interface UserState {
+  email: string | null;
+  full_name: string | null;
+  isAuthenticated: boolean;
+}
+
 const PaymentModal: React.FC<PaymentModalProps> = ({
   isOpen,
   onClose,
@@ -102,6 +109,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     title: "",
     message: "",
   });
+
+  // Get user data from Redux store
+  const user = useSelector((state: { user: UserState }) => state.user);
 
   const showToast = (
     type: "success" | "error" | "warning" | "loading",
@@ -285,8 +295,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           },
         },
         prefill: {
-          name: "Test User",
-          email: "test@example.com",
+          name: user.full_name || "User",
+          email: user.email || "",
         },
         theme: {
           color: "#255C79",
