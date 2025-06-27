@@ -22,6 +22,25 @@ const GreenTick: React.FC = () => (
   </svg>
 );
 
+const RedCross: React.FC = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 20 20"
+    fill="none"
+    className="inline-block align-middle"
+  >
+    <circle cx="10" cy="10" r="10" fill="#ef4444" />
+    <path
+      d="M7 7l6 6M7 13l6-6"
+      stroke="#fff"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 const ProgramCard: React.FC<{
   redeemData: ScholarshipRedemptionData;
   clientId: number;
@@ -73,7 +92,7 @@ const ProgramCard: React.FC<{
         </ul>
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-3 sm:mt-4 text-xs sm:text-sm">
           <button className="bg-[#255C79] text-white px-3 sm:px-4 py-2 rounded-full font-semibold flex items-center gap-2 shadow hover:bg-[#1a4a5f] transition-colors">
-            🚀 21-Day No-Code AI Sprint
+            🚀 21-Day No-Code Product Builder
           </button>
           <button className="bg-[#0e7490] text-white px-3 sm:px-4 py-2 rounded-full font-semibold flex items-center gap-2 shadow hover:bg-[#155e75] transition-colors">
             🟢 90-Day Work Experience
@@ -135,7 +154,7 @@ const ProgramCard: React.FC<{
         </ul>
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-3 sm:mt-4 text-xs sm:text-sm">
           <button className="bg-yellow-700 text-white px-3 sm:px-4 py-2 rounded-full font-semibold flex items-center gap-2 shadow hover:bg-yellow-600 transition-colors">
-            🧑‍💻 21-Day Guided No-Code Build
+            🧑‍💻 21-Day No-Code Product Builder
           </button>
           <button className="bg-yellow-700 text-white px-3 sm:px-4 py-2 rounded-full font-semibold flex items-center gap-2 shadow hover:bg-yellow-800 transition-colors">
             ✅ 90-Day MAANG PM Work Experience
@@ -197,7 +216,7 @@ const ProgramCard: React.FC<{
           </tr>
           <tr className="border-b border-gray-200">
             <td className="px-3 sm:px-6 py-2 border-r border-gray-200 text-xs sm:text-sm">
-              21-Day No-Code Build
+              21-Day No-Code Product Builder
             </td>
             <td className="px-3 sm:px-6 py-2 border-r border-gray-200">
               <GreenTick />
@@ -265,7 +284,7 @@ const ProgramCard: React.FC<{
               AI Resume Review
             </td>
             <td className="px-3 sm:px-6 py-2 border-r border-gray-200">
-              <GreenTick />
+              <RedCross />
             </td>
             <td className="px-3 sm:px-6 py-2 border-gray-200">
               <GreenTick />
@@ -276,7 +295,7 @@ const ProgramCard: React.FC<{
               Portfolio Support
             </td>
             <td className="px-3 sm:px-6 py-2 border-r border-gray-200">
-              <GreenTick />
+              <RedCross />
             </td>
             <td className="px-3 sm:px-6 py-2 border-gray-200">
               <GreenTick />
@@ -287,7 +306,7 @@ const ProgramCard: React.FC<{
               Direct Hiring Partner Referrals
             </td>
             <td className="px-3 sm:px-6 py-2 border-r border-gray-200">
-              <GreenTick />
+              <RedCross />
             </td>
             <td className="px-3 sm:px-6 py-2 border-gray-200">
               <GreenTick />
@@ -298,7 +317,7 @@ const ProgramCard: React.FC<{
               Live Sessions by MAANG Professionals
             </td>
             <td className="px-3 sm:px-6 py-2 border-r border-gray-200">
-              <GreenTick />
+              <RedCross />
             </td>
             <td className="px-3 sm:px-6 py-2 border-gray-200">
               <GreenTick />
@@ -309,7 +328,7 @@ const ProgramCard: React.FC<{
               Mock Interview Prep
             </td>
             <td className="px-3 sm:px-6 py-2 border-r border-gray-200">
-              <GreenTick />
+              <RedCross />
             </td>
             <td className="px-3 sm:px-6 py-2 border-gray-200">
               <GreenTick />
