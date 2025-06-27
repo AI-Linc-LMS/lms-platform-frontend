@@ -14,34 +14,46 @@ type PerformanceReportProps = {
 
 const PerformanceReport = ({ data }: PerformanceReportProps) => {
   return (
-    <div>
-      <div className="flex flex-col items-center mb-4">
-        <span className="text-black text-lg font-semibold mb-1">
+    <div className="px-2 sm:px-4">
+      <div className="flex flex-col items-center mb-3 sm:mb-4">
+        <span className="text-black text-sm sm:text-lg font-semibold mb-1">
           ✨ AI Generated ✨
         </span>
-        <h2 className="text-3xl md:text-4xl font-semibold text-[#264D64] text-center mb-8">
+        <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-[#264D64] text-center mb-4 sm:mb-6 lg:mb-8 px-2">
           AILINC Student Performance Report
         </h2>
       </div>
-      <div className="flex flex-col md:flex-row justify-between items-center gap-8 md:gap-0">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8 justify-between items-center">
         {data.map((metric: Metric, idx: number) => {
           const isPlacementReadiness = metric.label === "Placement Readiness";
           return (
             <div
               key={metric.label}
-              className={`flex flex-col items-center flex-1 min-w-[200px] ${
-                idx === 1 ? "border-l border-gray-200 border-r px-4" : ""
-              } ${idx === 2 || idx === 3 ? "border-r px-4" : ""} ${
-                idx === 4 ? "px-4" : ""
-              }`}
+              className={`flex flex-col items-center flex-1 min-w-[120px] sm:min-w-[150px] lg:min-w-[200px] ${
+                idx === 1 || idx === 3
+                  ? "lg:border-l lg:border-gray-200 lg:border-r lg:px-4"
+                  : ""
+              } ${idx === 2 ? " lg:px-4" : ""} ${idx === 4 ? "lg:px-4" : ""}`}
             >
-              <span className="text-gray-500 text-md mb-2">{metric.label}</span>
-              <div className="flex flex-row items-center justify-center gap-4 mb-1 w-full">
+              <span className="text-gray-500 text-xs sm:text-sm lg:text-md mb-2 text-center">
+                {metric.label}
+              </span>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-1 w-full">
                 <div
                   className="relative flex items-center justify-center"
-                  style={{ minHeight: "70px", minWidth: "70px" }}
+                  style={{
+                    minHeight: "50px",
+                    minWidth: "50px",
+                    maxHeight: "70px",
+                    maxWidth: "70px",
+                  }}
                 >
-                  <svg width="70" height="70" viewBox="0 0 70 70">
+                  <svg
+                    width="50"
+                    height="50"
+                    viewBox="0 0 70 70"
+                    className="sm:w-[60px] sm:h-[60px] lg:w-[70px] lg:h-[70px]"
+                  >
                     <circle
                       cx="35"
                       cy="35"
@@ -105,13 +117,17 @@ const PerformanceReport = ({ data }: PerformanceReportProps) => {
                       )}
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    {metric.icon}
+                    <span className="w-full h-full flex items-center justify-center">
+                      <span className="max-w-[24px] max-h-[24px] w-full h-full flex items-center justify-center">
+                        {metric.icon}
+                      </span>
+                    </span>
                   </div>
                 </div>
-                <span className="text-3xl font-bold text-[#14212B] flex items-end">
+                <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#14212B] flex items-end text-center">
                   {metric.value}
                   {metric.unit && (
-                    <span className="text-lg font-semibold ml-1">
+                    <span className="text-sm sm:text-base lg:text-lg font-semibold ml-1">
                       {metric.unit}
                     </span>
                   )}
@@ -124,6 +140,5 @@ const PerformanceReport = ({ data }: PerformanceReportProps) => {
     </div>
   );
 };
-
 
 export default PerformanceReport;

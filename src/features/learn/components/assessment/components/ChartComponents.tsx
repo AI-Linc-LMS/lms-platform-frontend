@@ -9,9 +9,11 @@ import {
 export function AccuracyBarChart({ data }: { data: AccuracyData[] }) {
   const yTicks = [100, 75, 50, 25, 0];
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-4 flex-1 min-w-[260px] max-w-[350px] min-h-[240px] flex flex-col">
+    <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 flex-1 min-w-[240px] sm:min-w-[260px] max-w-[350px] min-h-[200px] sm:min-h-[240px] flex flex-col w-full">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xl font-bold text-gray-800">Accuracy</span>
+        <span className="text-lg sm:text-xl font-bold text-gray-800">
+          Accuracy
+        </span>
       </div>
       <div className="flex-1 flex flex-row items-end w-full overflow-x-auto">
         {/* Y-axis */}
@@ -24,14 +26,14 @@ export function AccuracyBarChart({ data }: { data: AccuracyData[] }) {
         </div>
         {/* Bars */}
         <div className="flex-1 flex flex-col justify-end">
-          <div className="flex items-end gap-4 min-w-0 overflow-x-auto">
+          <div className="flex items-end gap-2 sm:gap-4 min-w-0 overflow-x-auto">
             {data.map((d) => (
               <div
                 key={d.label}
-                className="flex flex-col items-center flex-1 min-w-[40px]"
+                className="flex flex-col items-center flex-1 min-w-[30px] sm:min-w-[40px]"
               >
                 <div
-                  className={`w-10 bg-gradient-to-t from-purple-400 to-purple-600 rounded-t-lg`}
+                  className={`w-6 sm:w-10 bg-gradient-to-t from-purple-400 to-purple-600 rounded-t-lg`}
                   style={{ height: d.value > 10 ? `${d.value}%` : "10px" }}
                 ></div>
               </div>
@@ -39,7 +41,10 @@ export function AccuracyBarChart({ data }: { data: AccuracyData[] }) {
           </div>
           <div className="flex justify-between mt-2 text-xs text-gray-700 font-medium min-w-0 overflow-x-auto">
             {data.map((d) => (
-              <span key={d.label} className="w-12 text-center truncate">
+              <span
+                key={d.label}
+                className="w-8 sm:w-12 text-center truncate text-xs"
+              >
                 {d.label}
               </span>
             ))}
@@ -53,15 +58,17 @@ export function AccuracyBarChart({ data }: { data: AccuracyData[] }) {
 // --- RatingBars ---
 export function RatingBars({ data }: { data: RatingData[] }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-4 flex-1 min-w-[260px] max-w-[350px] min-h-[240px] flex flex-col overflow-x-auto">
-      <span className="text-xl font-bold text-gray-800 mb-2">Rating</span>
-      <div className="flex flex-col gap-4 mt-2 min-w-0">
+    <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 flex-1 min-w-[240px] sm:min-w-[260px] max-w-[350px] min-h-[200px] sm:min-h-[240px] flex flex-col overflow-x-auto w-full">
+      <span className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
+        Rating
+      </span>
+      <div className="flex flex-col gap-3 sm:gap-4 mt-2 min-w-0">
         {data.slice(0, 5).map((d) => (
           <div key={d.label} className="flex items-center gap-2 min-w-0">
-            <span className="w-28 text-sm text-gray-700 truncate">
+            <span className="w-20 sm:w-28 text-xs sm:text-sm text-gray-700 truncate">
               {d.label}
             </span>
-            <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden min-w-[40px]">
+            <div className="flex-1 h-2 sm:h-3 bg-gray-200 rounded-full overflow-hidden min-w-[30px] sm:min-w-[40px]">
               <div
                 className="h-full rounded-full"
                 style={{ width: `${d.value}%`, background: d.color }}
@@ -76,10 +83,10 @@ export function RatingBars({ data }: { data: RatingData[] }) {
 
 // --- ScoreArc ---
 export const ScoreArc: React.FC<ScoreArcProps> = ({ score, max }) => {
-  // Arc settings
-  const radius = 70;
-  const stroke = 14;
-  const center = 90;
+  // Arc settings - responsive sizing
+  const radius = 60; // Smaller for mobile
+  const stroke = 12; // Smaller stroke for mobile
+  const center = 80; // Adjusted center
   const arcLength = Math.PI; // 180deg
   const percent = Math.max(0, Math.min(1, score / max));
   const arcAngle = arcLength * percent;
@@ -100,7 +107,7 @@ export const ScoreArc: React.FC<ScoreArcProps> = ({ score, max }) => {
     };
     const endPt = {
       x: cx + r * Math.cos(end),
-      y: cy + r * Math.sin(end),
+      y: cy + r * Math.cos(end),
     };
     const largeArcFlag = end - start <= Math.PI ? 0 : 1;
     return [
@@ -119,11 +126,16 @@ export const ScoreArc: React.FC<ScoreArcProps> = ({ score, max }) => {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-4 flex-1 min-w-[260px] max-w-[350px] min-h-[240px] flex flex-col items-center justify-center relative">
-      <span className="text-lg font-bold text-black mb-2 w-full text-left">
+    <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 flex-1 min-w-[240px] sm:min-w-[260px] max-w-[350px] min-h-[200px] sm:min-h-[240px] flex flex-col items-center justify-center relative w-full">
+      <span className="text-base sm:text-lg font-bold text-black mb-2 w-full text-left">
         Score
       </span>
-      <svg width={180} height={120} viewBox={`0 0 180 120`}>
+      <svg
+        width={160}
+        height={100}
+        viewBox={`0 0 160 100`}
+        className="sm:w-[180px] sm:h-[120px]"
+      >
         {/* Background arc */}
         <path
           d={describeArc(center, center, radius, Math.PI, 2 * Math.PI)}
@@ -148,7 +160,7 @@ export const ScoreArc: React.FC<ScoreArcProps> = ({ score, max }) => {
         </defs>
         {/* Dotted inner arc */}
         <path
-          d={describeArc(center, center, radius - 18, Math.PI, 2 * Math.PI)}
+          d={describeArc(center, center, radius - 15, Math.PI, 2 * Math.PI)}
           stroke="#d1d5db"
           strokeWidth={2}
           fill="none"
@@ -156,8 +168,12 @@ export const ScoreArc: React.FC<ScoreArcProps> = ({ score, max }) => {
         />
       </svg>
       <div className="absolute flex flex-col items-center justify-center mx-auto">
-        <span className="text-4xl font-extrabold text-black">{score}</span>
-        <span className="text-md text-gray-500 font-semibold">of {max}</span>
+        <span className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-black">
+          {score}
+        </span>
+        <span className="text-sm sm:text-md text-gray-500 font-semibold">
+          of {max}
+        </span>
       </div>
     </div>
   );
@@ -168,10 +184,10 @@ export const SkillsSection: React.FC<{
   shineSkills: string[];
   attentionSkills: string[];
 }> = ({ shineSkills, attentionSkills }) => (
-  <div className="flex flex-col md:flex-row justify-between gap-8 mt-10 w-full px-10">
+  <div className="flex flex-col lg:flex-row justify-between gap-6 sm:gap-8 mt-6 sm:mt-8 lg:mt-10 w-full px-4 sm:px-6 lg:px-10">
     {/* Skills you Shine in */}
     <div className="flex-1">
-      <h3 className="text-lg font-semibold text-[#222] mb-3 flex items-center gap-2">
+      <h3 className="text-base sm:text-lg font-semibold text-[#222] mb-3 flex items-center gap-2">
         <span role="img" aria-label="shine">
           ✨
         </span>{" "}
@@ -181,7 +197,7 @@ export const SkillsSection: React.FC<{
         {shineSkills.map((skill) => (
           <span
             key={skill}
-            className="px-4 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium border border-green-200"
+            className="px-3 sm:px-4 py-1 bg-green-100 text-green-800 rounded-full text-xs sm:text-sm font-medium border border-green-200"
           >
             {skill}
           </span>
@@ -190,7 +206,7 @@ export const SkillsSection: React.FC<{
     </div>
     {/* Skills you Need Attention */}
     <div className="flex-1">
-      <h3 className="text-lg font-semibold text-[#222] mb-3 flex items-center gap-2">
+      <h3 className="text-base sm:text-lg font-semibold text-[#222] mb-3 flex items-center gap-2">
         <span role="img" aria-label="attention">
           👀
         </span>{" "}
@@ -200,7 +216,7 @@ export const SkillsSection: React.FC<{
         {attentionSkills.map((skill) => (
           <span
             key={skill}
-            className="px-4 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium border border-yellow-200"
+            className="px-3 sm:px-4 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs sm:text-sm font-medium border border-yellow-200"
           >
             {skill}
           </span>
