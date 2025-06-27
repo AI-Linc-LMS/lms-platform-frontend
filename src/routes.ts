@@ -23,6 +23,7 @@ import Otp from "./features/auth/pages/Otp";
 import WorkshopResistrations from "./features/admin/workshop-registrations/WorkshopResistrations";
 import CertificatePortal from "./components/certificate/CertificatePortal";
 import PhoneVerificationPage from "./features/learn/pages/PhoneVerificationPage";
+import RoadmapPage from "./features/learn/components/assessment/RoadmapPage";
 
 export interface RouteConfig {
   path: string;
@@ -171,6 +172,11 @@ const routes: RouteConfig[] = [
   {
     path: "/ai-linc-scholarship-test",
     component: InstructionPage,
+    isPrivate: true,
+  },
+  {
+    path: "/roadmap/:assessmentId",
+    component: RoadmapPage,
     isPrivate: true,
   },
 ];
