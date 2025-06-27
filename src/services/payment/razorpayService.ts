@@ -1,5 +1,6 @@
 export interface PaymentConfig {
   type: PaymentType;
+  type_id: string;
   clientId: number;
   amount: number;
   currency?: string;
@@ -43,6 +44,7 @@ export interface VerifyPaymentRequest {
   order_id: string;
   payment_id: string;
   signature: string;
+  type_id?: string;
 }
 
 export interface RazorpayOptions {
@@ -74,6 +76,7 @@ export interface PaymentResult {
   amount: number;
   error?: string;
   paymentType: PaymentType;
+  typeId?: string;
 }
 
 export interface PaymentVerificationResponse {
@@ -127,8 +130,22 @@ export class RazorpayService {
     const { createOrder } = await import('./paymentGatewayApis');
     
     try {
-      // Pass payment type and metadata to createOrder API
-      const orderData = await createOrder(config.clientId, config.amount, config.type, config.metadata);
+      // Include type_id in metadata for the API call
+      const enhancedMetadata = {
+        ...config.metadata,
+        type_id: config.type_id,
+        // Add specific metadata keys based on payment type
+        ...(config.type === PaymentType.ASSESSMENT && { assessmentId: config.type_id }),
+        ...(config.type === PaymentType.WORKSHOP && { workshopId: config.type_id }),
+      };
+
+      // Pass payment type and enhanced metadata to createOrder API
+      const orderData = await createOrder(
+        config.clientId, 
+        config.amount, 
+        config.type, 
+        enhancedMetadata
+      );
       
       if (!orderData || !orderData.order_id || !orderData.key) {
         throw new Error("Failed to create payment order. Invalid response from server.");
@@ -150,15 +167,17 @@ export class RazorpayService {
   public async verifyPayment(
     clientId: number,
     paymentData: VerifyPaymentRequest,
-    paymentType: PaymentType // Add payment type parameter
+    paymentType: PaymentType,
+    typeId?: string
   ): Promise<PaymentVerificationResponse> {
     const { verifyPayment } = await import('./paymentGatewayApis');
     
     try {
-      // Include payment type in verification request
+      // Include payment type and type_id in verification request
       const verificationData = {
         ...paymentData,
-        payment_type: paymentType
+        payment_type: paymentType,
+        type_id: typeId
       };
       
       const verifyRes = await verifyPayment(clientId, verificationData);
@@ -214,7 +233,7 @@ export class RazorpayService {
             };
 
             // Verify payment
-            const verifyRes = await this.verifyPayment(config.clientId, paymentVerifyData, config.type);
+            const verifyRes = await this.verifyPayment(config.clientId, paymentVerifyData, config.type, config.type_id);
 
             if (verifyRes.status === 200) {
               const result: PaymentResult = {
@@ -223,6 +242,7 @@ export class RazorpayService {
                 orderId: response.razorpay_order_id,
                 amount: config.amount,
                 paymentType: config.type,
+                typeId: config.type_id,
               };
               onSuccess(result);
             } else {
@@ -302,6 +322,10 @@ export class RazorpayService {
 
     if (!config.type || !Object.values(PaymentType).includes(config.type)) {
       throw new Error("Invalid payment type provided");
+    }
+
+    if (!config.type_id || config.type_id.trim() === "") {
+      throw new Error("Payment type ID is required");
     }
 
     if (!config.name || config.name.trim() === "") {
