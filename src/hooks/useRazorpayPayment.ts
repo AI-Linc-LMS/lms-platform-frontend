@@ -281,4 +281,50 @@ export const usePremiumFeaturePayment = (options: UseRazorpayPaymentOptions = {}
   };
 };
 
+export const useAssessmentPayment = (options: UseRazorpayPaymentOptions = {}) => {
+  const paymentHook = useRazorpayPayment(options);
+
+  const initiateAssessmentPayment = useCallback((
+    clientId: number,
+    amount: number,
+    overrides?: Partial<PaymentConfig>
+  ) => {
+    const config = paymentHook.createPaymentConfig(
+      PaymentType.ASSESSMENT,
+      clientId,
+      amount,
+      overrides
+    );
+    return paymentHook.initiatePayment(config);
+  }, [paymentHook]);
+
+  return {
+    ...paymentHook,
+    initiateAssessmentPayment,
+  };
+};
+
+export const useWorkshopPayment = (options: UseRazorpayPaymentOptions = {}) => {
+  const paymentHook = useRazorpayPayment(options);
+
+  const initiateWorkshopPayment = useCallback((
+    clientId: number,
+    amount: number,
+    overrides?: Partial<PaymentConfig>
+  ) => {
+    const config = paymentHook.createPaymentConfig(
+      PaymentType.WORKSHOP,
+      clientId,
+      amount,
+      overrides
+    );
+    return paymentHook.initiatePayment(config);
+  }, [paymentHook]);
+
+  return {
+    ...paymentHook,
+    initiateWorkshopPayment,
+  };
+};
+
 export default useRazorpayPayment; 

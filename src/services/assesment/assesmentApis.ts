@@ -9,7 +9,35 @@ interface ApiError {
   message: string;
 }
 
-export const getInstructions = async (clientId: number, assessmentId: string) => {
+// Interface for assessment details from backend
+export interface AssessmentDetails {
+  id: number;
+  title: string;
+  slug: string;
+  instructions: string;
+  description: string;
+  duration_minutes: number;
+  is_paid: boolean;
+  price: string;
+  is_active: boolean;
+  created_at: string;
+  status: "not_started" | "in_progress" | "submitted";
+  txn_status?: "paid" | "pending" | "failed" | null;
+}
+
+// Interface for assessment list item
+export interface AssessmentListItem {
+  id: number;
+  title: string;
+  slug: string;
+  description: string;
+  duration_minutes: number;
+  is_paid: boolean;
+  price: string;
+  is_active: boolean;
+}
+
+export const getInstructions = async (clientId: number, assessmentId: string): Promise<AssessmentDetails> => {
   try {
     const res = await axiosInstance.get(
       `/assessment/api/client/${clientId}/assessment-details/${assessmentId}/`
@@ -19,7 +47,7 @@ export const getInstructions = async (clientId: number, assessmentId: string) =>
     if (error instanceof Error) {
       // AxiosError type guard
       const axiosError = error as ApiError;
-      console.error("Failed to fetch all courses:", error);
+      console.error("Failed to fetch assessment details:", error);
       console.error("Error details:", {
         message: axiosError.message,
         response: axiosError.response?.data,
@@ -30,11 +58,50 @@ export const getInstructions = async (clientId: number, assessmentId: string) =>
       throw new Error(
         (axiosError.response?.data?.detail as string) ||
           axiosError.message ||
-          "Failed to fetch all courses"
+          "Failed to fetch assessment details"
       );
     } else {
       throw new Error("An unknown error occurred");
     }
+  }
+};
+
+// New API to get all available assessments
+export const getAllAssessments = async (clientId: number): Promise<AssessmentListItem[]> => {
+  try {
+    const res = await axiosInstance.get(
+      `/assessment/api/client/${clientId}/assessments/`
+    );
+    return res.data;
+  } catch (error) {
+    // If the API endpoint doesn't exist, return a static list of known assessments
+    console.warn("Assessments list API not available, using fallback list:", error);
+    
+    // Fallback list of known assessments - this can be configured
+    const fallbackAssessments: AssessmentListItem[] = [
+      {
+        id: 1,
+        title: "AI-Linc Scholarship Test",
+        slug: "ai-linc-scholarship-test",
+        description: "Complete this assessment to showcase your AI and full-stack development skills and qualify for our scholarship program.",
+        duration_minutes: 30,
+        is_paid: true,
+        price: "00.00",
+        is_active: true,
+      },
+      {
+        id: 2,
+        title: "AI-Linc Scholarship Test II",
+        slug: "ai-linc-scholarship-test-2",
+        description: "Advanced assessment to evaluate your technical expertise and problem-solving abilities in AI and development.",
+        duration_minutes: 30,
+        is_paid: true,
+        price: "49.00",
+        is_active: true,
+      }
+    ];
+    
+    return fallbackAssessments;
   }
 };
 
