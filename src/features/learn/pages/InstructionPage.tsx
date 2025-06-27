@@ -195,7 +195,7 @@ const InstructionPage: React.FC = () => {
   };
 
   const handleResumeAssessment = () => {
-    navigate("/assessment/quiz");
+    navigate("/assessment/quiz", { state: { assessmentId: currentAssessmentId } });
   };
 
   return (
