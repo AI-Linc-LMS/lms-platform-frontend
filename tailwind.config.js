@@ -6,6 +6,7 @@ module.exports = {
         oswald: ["Oswald", "sans-serif"],
         "playfair-display": ["Playfair Display", "serif"],
         lato: ["Lato", "sans-serif"],
+        "awesome-serif": ["Awesome Serif", "serif"],
       },
       keyframes: {
         slideUp: {
