@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { FiCheck, FiShoppingCart, FiX } from "react-icons/fi";
 import PaymentModal from "./PaymentModal";
 import { redeemScholarship } from "../../../../services/assesment/assesmentApis";
@@ -12,15 +12,14 @@ interface AssessmentResultsProps {
 
 const AssessmentResults: React.FC<AssessmentResultsProps> = ({
   clientId = 1, // Default fallback
-  assessmentId = "ai-linc-scholarship-test", // Default fallback - string slug for API
+  assessmentId, // Remove hardcoded fallback
 }) => {
   const navigate = useNavigate();
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [isPurchased, setIsPurchased] = useState(false);
 
   const { data: redeemData, isLoading, error } = useQuery({
     queryKey: ["assessment-results", clientId, assessmentId],
-    queryFn: () => redeemScholarship(clientId, assessmentId),
+    queryFn: () => assessmentId ? redeemScholarship(clientId, assessmentId) : Promise.reject(new Error("No assessment ID")),
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     staleTime: 0,
@@ -31,14 +30,15 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
   const onCloseErrorModal = () => {
     navigate("/courses");
   }
-  // Check if already purchased on component mount
-  useEffect(() => {
-    if (redeemData?.txn_status === "VERIFIED") {
-      setIsPurchased(true);
-    } else {
-      setIsPurchased(false);
-    }
-  }, [redeemData]);
+
+  // Check if already purchased based on backend data
+  // Note: txn_status "VERIFIED" means scholarship calculation is verified, NOT that payment is completed
+  // We need to check for actual payment completion status
+  // For now, we'll be conservative and assume not purchased unless explicitly confirmed
+  const isPurchased = redeemData?.txn_status === "PAID" || redeemData?.txn_status === "COMPLETED";
+  
+  // TODO: Backend should provide a clear field like 'is_course_purchased' or 'payment_completed'
+  // Currently txn_status "VERIFIED" only means scholarship eligibility is verified
 
   const handleRedeemNow = () => {
     if (!isPurchased) {
@@ -51,24 +51,16 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
   };
 
   const handlePaymentSuccess = () => {
-    // Mark as purchased and persist in localStorage
-    setIsPurchased(true);
-    const purchaseKey = `course_purchased_${clientId}_${assessmentId}`;
-    localStorage.setItem(purchaseKey, 'true');
-
-    // Also store purchase metadata
-    const purchaseData = {
-      purchasedAt: new Date().toISOString(),
-      clientId,
-      assessmentId,
-      percentage_scholarship: redeemData?.percentage_scholarship,
-      total_amount: redeemData?.total_amount,
-      payable_amount: redeemData?.payable_amount,
-    };
-    localStorage.setItem(`${purchaseKey}_metadata`, JSON.stringify(purchaseData));
-
+    // Close modal and refetch data to get updated status from backend
     setIsPaymentModalOpen(false);
+    // The useQuery will automatically refetch and update the purchase status
   };
+
+  // Redirect to assessments if no assessment ID is provided
+  if (!assessmentId) {
+    navigate("/assessments");
+    return null;
+  }
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen">

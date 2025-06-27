@@ -15,6 +15,7 @@ import {
   verifyPayment,
   VerifyPaymentRequest,
 } from "../../../../services/payment/paymentGatewayApis";
+import { PaymentType } from "../../../../services/payment/razorpayService";
 
 export interface CreateOrderResponse {
   order_id: string;
@@ -160,8 +161,16 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         );
       }
 
-      // 1. Create order from backend
-      const orderData = await createOrder(clientId, coursePrice);
+      // 1. Create order from backend - IMPORTANT: Specify COURSE payment type
+      const orderData = await createOrder(
+        clientId, 
+        coursePrice, 
+        PaymentType.COURSE, // Explicitly specify this is a COURSE payment
+        {
+          courseAccess: true,
+          scholarshipPercentage: scholarshipPercentage
+        }
+      );
 
       if (!orderData || !orderData.order_id || !orderData.key) {
         throw new Error(

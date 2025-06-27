@@ -37,6 +37,17 @@ const MobileNavBar = () => {
           isActive={isActive('/courses')}
         />
         <NavItem 
+          to="/assessments" 
+          icon={
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2Z" fill="currentColor"/>
+              <path d="M16 18V16H8V18H16ZM16 14V12H8V14H16ZM10 10V8H8V10H10Z" fill="currentColor"/>
+            </svg>
+          } 
+          label="Tests" 
+          isActive={isActive('/assessments')}
+        />
+        <NavItem 
           to="/jobs" 
           icon={
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

@@ -21,7 +21,9 @@ export enum PaymentType {
   SUBSCRIPTION = 'subscription',
   CERTIFICATION = 'certification',
   PREMIUM_FEATURE = 'premium_feature',
-  CONSULTATION = 'consultation'
+  CONSULTATION = 'consultation',
+  ASSESSMENT = 'assessment',
+  WORKSHOP = 'workshop'
 }
 
 export interface CreateOrderResponse {
@@ -125,8 +127,8 @@ export class RazorpayService {
     const { createOrder } = await import('./paymentGatewayApis');
     
     try {
-      // You can customize the order creation based on payment type
-      const orderData = await createOrder(config.clientId, config.amount);
+      // Pass payment type and metadata to createOrder API
+      const orderData = await createOrder(config.clientId, config.amount, config.type, config.metadata);
       
       if (!orderData || !orderData.order_id || !orderData.key) {
         throw new Error("Failed to create payment order. Invalid response from server.");
@@ -147,12 +149,19 @@ export class RazorpayService {
    */
   public async verifyPayment(
     clientId: number,
-    paymentData: VerifyPaymentRequest
+    paymentData: VerifyPaymentRequest,
+    paymentType: PaymentType // Add payment type parameter
   ): Promise<PaymentVerificationResponse> {
     const { verifyPayment } = await import('./paymentGatewayApis');
     
     try {
-      const verifyRes = await verifyPayment(clientId, paymentData);
+      // Include payment type in verification request
+      const verificationData = {
+        ...paymentData,
+        payment_type: paymentType
+      };
+      
+      const verifyRes = await verifyPayment(clientId, verificationData);
       return verifyRes;
     } catch (error) {
       throw new Error(
@@ -205,7 +214,7 @@ export class RazorpayService {
             };
 
             // Verify payment
-            const verifyRes = await this.verifyPayment(config.clientId, paymentVerifyData);
+            const verifyRes = await this.verifyPayment(config.clientId, paymentVerifyData, config.type);
 
             if (verifyRes.status === 200) {
               const result: PaymentResult = {
@@ -336,6 +345,18 @@ export class RazorpayService {
       [PaymentType.CONSULTATION]: {
         name: "AI-LINC Platform",
         description: "Consultation Fee",
+        currency: "INR",
+        theme: { color: "#255C79" },
+      },
+      [PaymentType.ASSESSMENT]: {
+        name: "AI-LINC Platform",
+        description: "Assessment Fee",
+        currency: "INR",
+        theme: { color: "#255C79" },
+      },
+      [PaymentType.WORKSHOP]: {
+        name: "AI-LINC Platform",
+        description: "Workshop Registration Fee",
         currency: "INR",
         theme: { color: "#255C79" },
       },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { startAssessment } from "../../../services/assesment/assesmentApis";
 
@@ -233,9 +233,13 @@ const countryCodes = [
 
 const PhoneVerificationPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const dropdownRef = useRef<HTMLDivElement>(null);
   
+  // Get assessment ID from location state or fallback to default
+  const assessmentId = location.state?.assessmentId || "ai-linc-scholarship-test";
+
   const [selectedCountryCode, setSelectedCountryCode] = useState("+91");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -265,10 +269,10 @@ const PhoneVerificationPage: React.FC = () => {
 
   const startAssessmentMutation = useMutation({
     mutationFn: (phone: string) =>
-      startAssessment(clientId, "ai-linc-scholarship-test", phone),
+      startAssessment(clientId, assessmentId, phone),
     onSuccess: (data) => {
       console.log("Assessment started successfully:", data);
-      navigate("/assessment/quiz");
+      navigate("/assessment/quiz", { state: { assessmentId } });
     },
     onError: (error) => {
       console.error("Error starting assessment:", error);
@@ -318,7 +322,7 @@ const PhoneVerificationPage: React.FC = () => {
           </div>
           
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 px-2">
-            Before we Begin, Verify your Phone Number!
+            Before we Begin, Enter your Phone Number!
           </h1>
         </div>
 
