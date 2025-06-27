@@ -1,5 +1,5 @@
-import React from "react";
-import { useParams, useLocation } from "react-router-dom";
+import React, { useEffect } from "react";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { useAssessment } from "../hooks/useAssessment";
 import {
   AssessmentHeader,
@@ -12,10 +12,19 @@ import {
 const ShortAssessment: React.FC = () => {
   const { assessmentId } = useParams<{ assessmentId?: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   
-  // Get assessment ID from URL params, location state, or fallback to default
-  const currentAssessmentId = assessmentId || location.state?.assessmentId || "ai-linc-scholarship-test";
+  // Get assessment ID from URL params or location state
+  const currentAssessmentId = assessmentId || location.state?.assessmentId;
   
+  // Redirect to assessments list if no assessment ID is provided
+  useEffect(() => {
+    if (!currentAssessmentId) {
+      navigate("/assessments");
+      return;
+    }
+  }, [currentAssessmentId, navigate]);
+
   const {
     // State
     currentQuestionIndex,
@@ -57,6 +66,15 @@ const ShortAssessment: React.FC = () => {
 
     return (
       <AssessmentResults clientId={clientId} assessmentId={assessmentSlug} />
+    );
+  }
+
+  // Early return if no assessment ID - component will redirect
+  if (!currentAssessmentId) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#255C79]"></div>
+      </div>
     );
   }
 

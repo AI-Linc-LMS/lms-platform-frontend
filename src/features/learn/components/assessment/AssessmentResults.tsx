@@ -12,14 +12,14 @@ interface AssessmentResultsProps {
 
 const AssessmentResults: React.FC<AssessmentResultsProps> = ({
   clientId = 1, // Default fallback
-  assessmentId = "ai-linc-scholarship-test", // Default fallback - string slug for API
+  assessmentId, // Remove hardcoded fallback
 }) => {
   const navigate = useNavigate();
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   const { data: redeemData, isLoading, error } = useQuery({
     queryKey: ["assessment-results", clientId, assessmentId],
-    queryFn: () => redeemScholarship(clientId, assessmentId),
+    queryFn: () => assessmentId ? redeemScholarship(clientId, assessmentId) : Promise.reject(new Error("No assessment ID")),
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     staleTime: 0,
@@ -55,6 +55,12 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
     setIsPaymentModalOpen(false);
     // The useQuery will automatically refetch and update the purchase status
   };
+
+  // Redirect to assessments if no assessment ID is provided
+  if (!assessmentId) {
+    navigate("/assessments");
+    return null;
+  }
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen">

@@ -22,8 +22,16 @@ const InstructionPage: React.FC = () => {
   const { assessmentId } = useParams<{ assessmentId: string }>();
   const clientId = import.meta.env.VITE_CLIENT_ID;
 
-  // Use assessment ID from URL params or fallback to default
-  const currentAssessmentId = assessmentId || "ai-linc-scholarship-test-2";
+  // Use assessment ID from URL params or redirect to assessments list
+  const currentAssessmentId = assessmentId;
+
+  // If no assessment ID is provided, redirect to assessments list
+  useEffect(() => {
+    if (!currentAssessmentId) {
+      navigate("/assessments");
+      return;
+    }
+  }, [currentAssessmentId, navigate]);
 
   // Toast state for error messages
   const [toast, setToast] = useState<{
@@ -43,11 +51,12 @@ const InstructionPage: React.FC = () => {
 
   const { data: assessmentData, isLoading, error } = useQuery<AssessmentDetails>({
     queryKey: ["assessment-instructions", currentAssessmentId],
-    queryFn: () => getInstructions(clientId, currentAssessmentId),
+    queryFn: () => currentAssessmentId ? getInstructions(clientId, currentAssessmentId) : Promise.reject(new Error("No assessment ID")),
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     staleTime: 0,
     gcTime: 0,
+    enabled: !!currentAssessmentId, // Only run query if we have an assessment ID
   });
 
   // Check if payment is completed based on backend data
@@ -63,6 +72,7 @@ const InstructionPage: React.FC = () => {
   
   // Convert to paise for Razorpay (multiply by 100)
   const assessmentPriceInPaise = Math.round(assessmentPrice);
+  // const assessmentPriceInPaise = Math.round(1);
 
   // Payment hook
   const { paymentState, initiateAssessmentPayment } = useAssessmentPayment({
@@ -105,6 +115,15 @@ const InstructionPage: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [toast.show]);
+
+  // Early return if no assessment ID - component will redirect
+  if (!currentAssessmentId) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#255C79]"></div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
