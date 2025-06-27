@@ -2,7 +2,7 @@ import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { getAllAssessments, AssessmentListItem } from "../../../services/assesment/assesmentApis";
-import { FiClock, FiDollarSign, FiCheckCircle, FiPlayCircle } from "react-icons/fi";
+import { FiClock,  FiCheckCircle, FiPlayCircle, FiAward, FiUsers, FiTrendingUp, FiArrowLeft } from "react-icons/fi";
 
 const AssessmentsList: React.FC = () => {
   const navigate = useNavigate();
@@ -23,27 +23,33 @@ const AssessmentsList: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#255C79]"></div>
+      <div className="min-h-screen bg-gradient-to-br from-[#F8FAFC] via-[#EFF9FC] to-[#E0F4F8] flex items-center justify-center">
+        <div className="text-center">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#80C9E0] border-t-[#255C79] mx-auto"></div>
+            <div className="absolute inset-0 rounded-full h-16 w-16 border-4 border-transparent border-t-[#255C79] animate-pulse mx-auto"></div>
+          </div>
+          <p className="mt-4 text-[#255C79] font-medium">Loading assessments...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
-        <div className="bg-white rounded-3xl p-6 shadow-sm max-w-md mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-[#F8FAFC] via-[#EFF9FC] to-[#E0F4F8] flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-8 shadow-2xl max-w-md mx-auto border border-red-100">
           <div className="text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+            <div className="w-20 h-20 bg-gradient-to-br from-red-50 to-red-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+              <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-[#343A40] mb-2">Error Loading Assessments</h2>
-            <p className="text-[#6C757D] mb-4">{error.message}</p>
+            <h2 className="text-2xl font-bold text-gray-800 mb-3">Oops! Something went wrong</h2>
+            <p className="text-gray-600 mb-6 leading-relaxed">{error.message}</p>
             <button
               onClick={() => window.location.reload()}
-              className="bg-[#255C79] text-white px-6 py-2 rounded-xl font-medium hover:bg-[#1a4a5f] transition-colors"
+              className="bg-gradient-to-r from-[#255C79] to-[#2C5F7F] text-white px-8 py-3 rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-200"
             >
               Try Again
             </button>
@@ -54,78 +60,140 @@ const AssessmentsList: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-[#2C5F7F] mb-4">
-            Available Assessments
-          </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Choose from our range of assessments to test your skills and knowledge. 
-            Each assessment is designed to evaluate different aspects of your expertise.
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-[#F8FAFC] via-[#EFF9FC] to-[#E0F4F8]">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#255C79]/5 to-[#2C5F7F]/5"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12">
+          {/* Back Button */}
+          <button
+            onClick={() => navigate("/courses")}
+            className="inline-flex items-center gap-2 mb-8 px-4 py-2 text-[#255C79] hover:text-[#2C5F7F] transition-colors group"
+          >
+            <FiArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span className="font-medium">Back to Courses</span>
+          </button>
 
-        {/* Assessments Grid */}
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-[#80C9E0]/30 mb-6">
+              <FiAward className="w-4 h-4 text-[#255C79]" />
+              <span className="text-sm font-medium text-[#255C79]">Skill Assessment Center</span>
+            </div>
+            
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-[#255C79] to-[#2C5F7F] bg-clip-text text-transparent mb-6">
+              Test Your Expertise
+            </h1>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+              Discover your strengths and areas for improvement with our comprehensive assessments. 
+              Choose from free evaluations or premium detailed analyses.
+            </p>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-4xl mx-auto">
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-lg">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <FiUsers className="w-6 h-6 text-blue-600" />
+                </div>
+                <h3 className="font-bold text-gray-800 mb-1">10,000+</h3>
+                <p className="text-sm text-gray-600">Assessments Taken</p>
+              </div>
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-lg">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-50 to-green-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <FiTrendingUp className="w-6 h-6 text-green-600" />
+                </div>
+                <h3 className="font-bold text-gray-800 mb-1">95%</h3>
+                <p className="text-sm text-gray-600">Success Rate</p>
+              </div>
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-lg">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <FiAward className="w-6 h-6 text-purple-600" />
+                </div>
+                <h3 className="font-bold text-gray-800 mb-1">500+</h3>
+                <p className="text-sm text-gray-600">Certificates Issued</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Assessments Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {assessments && assessments.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {assessments.map((assessment) => (
+            {assessments.map((assessment, index) => (
               <div
                 key={assessment.id}
-                className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300"
+                className="group relative bg-white rounded-3xl shadow-lg border border-gray-100 p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden"
+                style={{
+                  animationDelay: `${index * 100}ms`,
+                  animation: 'fadeInUp 0.6s ease-out forwards'
+                }}
               >
+                {/* Gradient Overlay */}
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#255C79] to-[#2C5F7F]"></div>
+                
+                {/* Status Badge - Repositioned to avoid overlap */}
+                <div className="flex justify-end mb-4">
+                  <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
+                    assessment.is_active 
+                      ? 'bg-green-50 text-green-700 border border-green-200' 
+                      : 'bg-red-50 text-red-700 border border-red-200'
+                  }`}>
+                    <div className={`w-1.5 h-1.5 rounded-full ${assessment.is_active ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    {assessment.is_active ? 'Active' : 'Inactive'}
+                  </div>
+                </div>
+
                 {/* Assessment Header */}
-                <div className="mb-4">
-                  <h3 className="text-xl font-bold text-[#2C5F7F] mb-2">
+                <div className="mb-6">
+                  <h3 className="text-2xl font-bold text-gray-800 mb-3 group-hover:text-[#255C79] transition-colors">
                     {assessment.title}
                   </h3>
                   {assessment.description && (
-                    <p className="text-gray-600 text-sm line-clamp-3">
+                    <p className="text-gray-600 leading-relaxed line-clamp-3">
                       {assessment.description}
                     </p>
                   )}
                 </div>
 
                 {/* Assessment Details */}
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <FiClock className="h-4 w-4 text-[#2C5F7F]" />
-                    <span className="text-sm">
-                      Duration: {assessment.duration_minutes} minutes
-                    </span>
+                <div className="space-y-4 mb-8">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                      <FiClock className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Duration</p>
+                      <p className="font-semibold text-gray-800">{assessment.duration_minutes} minutes</p>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2 text-gray-700">
-                    {assessment.is_paid ? (
-                      <>
-                        <FiDollarSign className="h-4 w-4 text-[#2C5F7F]" />
-                        <span className="text-sm">
-                          Price: ₹{parseFloat(assessment.price).toFixed(0)}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <FiCheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="text-sm text-green-600 font-medium">
-                          Free Assessment
-                        </span>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${assessment.is_active ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className={`text-xs font-medium ${assessment.is_active ? 'text-green-600' : 'text-red-600'}`}>
-                      {assessment.is_active ? 'Active' : 'Inactive'}
-                    </span>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      assessment.is_paid ? 'bg-orange-50' : 'bg-green-50'
+                    }`}>
+                      {assessment.is_paid ? (
+                        <FiAward className="h-5 w-5 text-orange-600" />
+                      ) : (
+                        <FiCheckCircle className="h-5 w-5 text-green-600" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Price</p>
+                      {assessment.is_paid ? (
+                        <p className="font-semibold text-gray-800">₹{parseFloat(assessment.price).toFixed(0)}</p>
+                      ) : (
+                        <p className="font-semibold text-green-600">Free</p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Price Badge */}
+                {/* Price Badge for Paid Assessments */}
                 {assessment.is_paid && (
-                  <div className="mb-4">
-                    <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-[#EFF9FC] text-[#2C5F7F] border border-[#80C9E0]">
+                  <div className="mb-6">
+                    <div className="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 border border-orange-200">
+                      {/* <FiDollarSign className="w-4 h-4 mr-1" /> */}
                       ₹{parseFloat(assessment.price).toFixed(0)}
                     </div>
                   </div>
@@ -135,56 +203,67 @@ const AssessmentsList: React.FC = () => {
                 <button
                   onClick={() => handleStartAssessment(assessment.slug)}
                   disabled={!assessment.is_active}
-                  className={`w-full py-3 px-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
+                  className={`w-full py-4 px-6 rounded-2xl font-semibold transition-all duration-300 flex items-center justify-center gap-3 text-lg ${
                     assessment.is_active
                       ? assessment.is_paid
-                        ? 'bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]'
-                        : 'bg-green-600 text-white hover:bg-green-700'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        ? 'bg-gradient-to-r from-[#255C79] to-[#2C5F7F] text-white hover:shadow-xl hover:shadow-[#255C79]/25 transform hover:scale-105'
+                        : 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:shadow-xl hover:shadow-green-500/25 transform hover:scale-105'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  <FiPlayCircle className="h-4 w-4" />
+                  <FiPlayCircle className="h-5 w-5" />
                   {assessment.is_active
                     ? assessment.is_paid
-                      ? 'Start Paid Assessment'
+                      ? 'Start Premium Assessment'
                       : 'Start Free Assessment'
                     : 'Currently Unavailable'
                   }
                 </button>
+
+                {/* Decorative Elements */}
+                <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-gradient-to-br from-[#255C79]/5 to-[#2C5F7F]/5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-              </svg>
+          <div className="text-center py-20">
+            <div className="max-w-md mx-auto">
+              <div className="w-32 h-32 bg-gradient-to-br from-gray-50 to-gray-100 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
+                <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                </svg>
+              </div>
+              <h3 className="text-3xl font-bold text-gray-800 mb-4">
+                No Assessments Available
+              </h3>
+              <p className="text-gray-600 text-lg leading-relaxed mb-8">
+                We're working on bringing you amazing assessments. Check back soon for new opportunities to test your skills!
+              </p>
+              <button
+                onClick={() => navigate("/courses")}
+                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#255C79] to-[#2C5F7F] text-white rounded-2xl font-semibold hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+              >
+                Explore Courses Instead
+              </button>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              No Assessments Available
-            </h3>
-            <p className="text-gray-600">
-              There are currently no assessments available. Please check back later.
-            </p>
           </div>
         )}
-
-        {/* Back to Courses Button */}
-        <div className="text-center mt-12">
-          <button
-            onClick={() => navigate("/courses")}
-            className="inline-flex items-center gap-2 px-6 py-3 border-2 border-[#2C5F7F] text-[#2C5F7F] rounded-xl font-medium hover:bg-[#2C5F7F] hover:text-white transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-            </svg>
-            Back to Courses
-          </button>
-        </div>
       </div>
+      {/* Add custom CSS for animations */}
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 };
 
-export default AssessmentsList; 
+export default AssessmentsList;
