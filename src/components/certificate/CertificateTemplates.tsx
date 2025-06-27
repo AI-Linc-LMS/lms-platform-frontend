@@ -88,17 +88,7 @@ const CertificateTemplates = forwardRef<
   const certificateName = certificate?.name || "AI Assessment";
 
   // Get issued date or today's date
-  const issuedDate = certificate?.issuedDate
-    ? new Date(certificate.issuedDate).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      })
-    : new Date().toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      });
+  const issuedDate = certificate?.issuedDate ?? "06/22/2025";
 
   return (
     <div className="flex justify-center items-center w-full h-full min-h-[400px] p-2">
