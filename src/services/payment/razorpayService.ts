@@ -24,7 +24,8 @@ export enum PaymentType {
   PREMIUM_FEATURE = 'premium_feature',
   CONSULTATION = 'consultation',
   ASSESSMENT = 'assessment',
-  WORKSHOP = 'workshop'
+  WORKSHOP = 'workshop',
+  PREBOOKING = 'PREBOOKING'
 }
 
 export interface CreateOrderResponse {
@@ -381,6 +382,12 @@ export class RazorpayService {
       [PaymentType.WORKSHOP]: {
         name: "AI-LINC Platform",
         description: "Workshop Registration Fee",
+        currency: "INR",
+        theme: { color: "#255C79" },
+      },
+      [PaymentType.PREBOOKING]: {
+        name: "AI-LINC Platform",
+        description: "Prebooking Fee",
         currency: "INR",
         theme: { color: "#255C79" },
       },
