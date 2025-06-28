@@ -3,7 +3,7 @@ import React, { useRef, useState } from "react";
 import popper from "../../../../assets/dashboard_assets/poppers.png";
 import roadmap from "../../../../assets/roadmap/roadmap.png";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import CertificateTemplates from "../../../../components/certificate/CertificateTemplates";
 import ProgramCard from "./roadmap/ProgramCard";
 import MentorFeedbackSection from "./roadmap/MentorFeedback";
@@ -42,7 +42,9 @@ import { redeemScholarship } from "../../../../services/assesment/assesmentApis"
 const RoadmapPage = () => {
   const navigate = useNavigate();
   const { assessmentId } = useParams<{ assessmentId: string }>();
-  console.log("assessmentId", assessmentId);
+  const location = useLocation();
+
+  const currentAssessmentId = assessmentId || location.state?.assessmentId;
   const clientId = parseInt(import.meta.env.VITE_CLIENT_ID) || 1;
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -56,14 +58,16 @@ const RoadmapPage = () => {
     queryKey: ["assessment-results", clientId, assessmentId],
     queryFn: () =>
       assessmentId
-        ? redeemScholarship(clientId, "ai-linc-scholarship-test-2")
+        ? redeemScholarship(clientId, currentAssessmentId)
         : Promise.reject(new Error("No assessment ID")),
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     staleTime: 0,
     gcTime: 0,
-    enabled: !!clientId && !!assessmentId,
+    enabled: !!clientId && !!currentAssessmentId,
   });
+
+
 
   const handleDownloadCertificate = async () => {
     setIsDownloading(true);

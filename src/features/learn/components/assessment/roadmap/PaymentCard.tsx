@@ -260,7 +260,7 @@ const PaymentCardSection: React.FC<{
             <span className="text-xs font-bold text-gray-500 mb-2 tracking-wide">
               WHAT YOU GET
             </span>
-            <ul className="text-xs sm:text-sm text-gray-700 mb-4 sm:mb-6 space-y-1 sm:space-y-2 w-full">
+            <ul className="text-xs sm:text-sm text-gray-700 mb-4 sm:mb-6 space-y-1 sm:space-y-2 w-full flex-1">
               <li className="flex items-center gap-2">
                 <span className="text-[#2563eb]">★</span>100+ hours of expert
                 video content
@@ -290,22 +290,24 @@ const PaymentCardSection: React.FC<{
                 readiness report
               </li>
             </ul>
-            <button
-              onClick={handleNanodegreePayment}
-              disabled={isNanodegreePayment}
-              className={`w-full font-semibold py-2 sm:py-3 rounded-lg shadow transition-colors duration-200 mb-2 text-sm sm:text-base ${
-                isNanodegreePayment
-                  ? "bg-green-600 text-white cursor-not-allowed"
-                  : "bg-[#14212B] text-white hover:bg-[#223344]"
-              }`}
-            >
-              {isNanodegreePayment
-                ? "Payment Completed"
-                : "Book Your Seat for ₹499"}
-            </button>
-            <span className="text-xs text-gray-400">
-              Fully refundable within 7 days
-            </span>
+            <div className="mt-auto">
+              <button
+                onClick={handleNanodegreePayment}
+                disabled={isNanodegreePayment}
+                className={`w-full font-semibold py-2 sm:py-3 rounded-lg shadow transition-colors duration-200 mb-2 text-sm sm:text-base ${
+                  isNanodegreePayment
+                    ? "bg-green-600 text-white cursor-not-allowed"
+                    : "bg-[#14212B] text-white hover:bg-[#223344]"
+                }`}
+              >
+                {isNanodegreePayment
+                  ? "Payment Completed"
+                  : "Book Your Seat for ₹499"}
+              </button>
+              <span className="text-xs text-gray-400">
+                Fully refundable within 7 days
+              </span>
+            </div>
           </div>
 
           {/* Flagship Card */}
@@ -351,7 +353,7 @@ const PaymentCardSection: React.FC<{
             <span className="text-xs font-bold text-gray-500 mb-2 tracking-wide">
               WHAT YOU GET
             </span>
-            <ul className="text-xs sm:text-sm text-gray-700 mb-4 sm:mb-6 space-y-1 sm:space-y-2 w-full">
+            <ul className="text-xs sm:text-sm text-gray-700 mb-4 sm:mb-6 space-y-1 sm:space-y-2 w-full flex-1">
               <li className="flex items-center gap-2">
                 <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">
                   Everything in Nanodegree
@@ -378,22 +380,24 @@ const PaymentCardSection: React.FC<{
                 mock interviews
               </li>
             </ul>
-            <button
-              onClick={handleFlagshipPayment}
-              disabled={isFlagshipPayment}
-              className={`w-full font-semibold py-2 sm:py-3 rounded-lg shadow transition-colors duration-200 mb-2 text-sm sm:text-base ${
-                isFlagshipPayment
-                  ? "bg-green-600 text-white cursor-not-allowed"
-                  : "bg-[#14212B] text-white hover:bg-[#223344]"
-              }`}
-            >
-              {isFlagshipPayment
-                ? "Payment Completed"
-                : "Book Your Seat for ₹999"}
-            </button>
-            <span className="text-xs text-gray-400">
-              Fully refundable within 7 days
-            </span>
+            <div className="mt-auto">
+              <button
+                onClick={handleFlagshipPayment}
+                disabled={isFlagshipPayment}
+                className={`w-full font-semibold py-2 sm:py-3 rounded-lg shadow transition-colors duration-200 mb-2 text-sm sm:text-base ${
+                  isFlagshipPayment
+                    ? "bg-green-600 text-white cursor-not-allowed"
+                    : "bg-[#14212B] text-white hover:bg-[#223344]"
+                }`}
+              >
+                {isFlagshipPayment
+                  ? "Payment Completed"
+                  : "Book Your Seat for ₹999"}
+              </button>
+              <span className="text-xs text-gray-400">
+                Fully refundable within 7 days
+              </span>
+            </div>
           </div>
         </div>
       </div>
