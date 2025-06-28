@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import ailincimg from "../../../../assets/dashboard_assets/toplogoimg.png";
+// import ailincimg from "../../../../assets/dashboard_assets/toplogoimg.png";
 import popper from "../../../../assets/dashboard_assets/poppers.png";
 import roadmap from "../../../../assets/roadmap/roadmap.png";
 import { useQuery } from "@tanstack/react-query";
@@ -143,14 +143,14 @@ const RoadmapPage = () => {
     <div className="mb-8 sm:mb-12 lg:mb-30">
       {/* Header */}
       <div className="flex flex-row items-center justify-center relative z-10 mb-6 sm:mb-8 lg:mb-10">
-        <img
+        {/* <img
           src={ailincimg}
           alt="Ai Linc"
           className="w-6 h-6 sm:w-8 sm:h-8 mr-2"
-        />
-        <p className="font-bold text-center text-[#264D64] text-lg sm:text-xl lg:text-2xl">
+        /> */}
+        {/* <p className="font-bold text-center text-[#264D64] text-lg sm:text-xl lg:text-2xl">
           Ai Linc
-        </p>
+        </p> */}
       </div>
 
       {/* Main Container */}
