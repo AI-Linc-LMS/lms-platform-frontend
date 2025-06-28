@@ -222,7 +222,7 @@ const RoadmapPage = () => {
           {/* Performance Report Section */}
           <PerformanceReport data={perfReportData} />
 
-          <div className="flex flex-col lg:flex-row mt-6 sm:mt-8 lg:mt-10 w-full min-h-[200px] sm:min-h-[222px] justify-evenly items-center gap-4 sm:gap-6 lg:gap-0 px-3 sm:px-0">
+          <div className="flex flex-col lg:flex-row mt-6 sm:mt-8 lg:mt-10 w-full min-h-[200px] sm:min-h-[222px] justify-evenly items-center gap-4 sm:gap-6 lg:gap-2 px-3">
             <AccuracyBarChart data={accuracyBarData} />
             <ScoreArc score={score} max={max} />
             <RatingBars data={ratingBarData} />
