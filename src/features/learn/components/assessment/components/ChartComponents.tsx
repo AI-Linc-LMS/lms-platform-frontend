@@ -11,8 +11,11 @@ export function AccuracyBarChart({ data }: { data: AccuracyData[] }) {
   // Sort by value descending and take top 4
   const displayData = [...data].sort((a, b) => b.value - a.value).slice(0, 4);
   const chartHeight = 135; // px
+  // Helper to truncate label
+  const getDisplayLabel = (label: string) =>
+    label.length > 10 ? label.slice(0, 10) + "..." : label;
   return (
-    <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 flex-1 min-w-[240px] sm:min-w-[260px] max-w-[350px] min-h-[220px] sm:min-h-[240px] flex flex-col w-full">
+    <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 flex-1 min-w-[240px] sm:min-w-[260px] max-w-[400px] min-h-[220px] sm:min-h-[240px] flex flex-col w-full">
       <div className="flex items-center justify-between mb-2">
         <span className="text-lg sm:text-xl font-bold text-gray-800">
           Accuracy
@@ -29,15 +32,15 @@ export function AccuracyBarChart({ data }: { data: AccuracyData[] }) {
         </div>
         {/* Bars */}
         <div className="flex-1 flex flex-col justify-end h-[180px]">
-          <div className="flex items-end gap-2 sm:gap-4 min-w-0 overflow-x-auto h-full">
+          <div className="flex items-end gap-2 sm:gap-3 min-w-0 overflow-x-auto h-full">
             {displayData.length > 0 ? (
               displayData.map((d) => (
                 <div
                   key={d.label}
-                  className="flex flex-col items-center flex-1 min-w-[30px] sm:min-w-[40px] h-full justify-end"
+                  className="flex flex-col items-center flex-1 min-w-[50px] sm:min-w-[60px] h-full justify-end"
                 >
                   <div
-                    className={`w-6 sm:w-10 bg-gradient-to-t from-purple-400 to-purple-600 rounded-t-lg transition-all duration-300 mt-auto`}
+                    className={`w-8 sm:w-10 bg-gradient-to-t from-purple-400 to-purple-600 rounded-t-lg transition-all duration-300 mt-auto`}
                     style={{
                       height: `${Math.max(4, (d.value / 100) * chartHeight)}px`,
                       minHeight: "4px",
@@ -53,9 +56,10 @@ export function AccuracyBarChart({ data }: { data: AccuracyData[] }) {
             {displayData.map((d) => (
               <span
                 key={d.label}
-                className="w-8 sm:w-12 text-center truncate text-xs"
+                className="w-12 sm:w-16 text-center whitespace-nowrap overflow-hidden text-ellipsis"
+                title={d.label}
               >
-                {d.label}
+                {getDisplayLabel(d.label)}
               </span>
             ))}
           </div>
@@ -134,7 +138,7 @@ export const ScoreArc: React.FC<ScoreArcProps> = ({ score, max }) => {
   }
 
   return (
-    <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 flex-1 min-w-[240px] sm:min-w-[260px] max-w-[350px] min-h-[200px] sm:min-h-[240px] flex flex-col relative w-full">
+    <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 flex-1 min-w-[200px] sm:min-w-[220px] max-w-[270px] min-h-[200px] sm:min-h-[240px] flex flex-col relative w-full">
       <span className="text-base sm:text-lg font-bold text-black mb-2 w-full text-left">
         Score
       </span>

@@ -300,7 +300,7 @@ const PaymentCardSection: React.FC<{
               }`}
             >
               {isNanodegreePayment
-                ? "Already Booked"
+                ? "Payment Completed"
                 : "Book Your Seat for ₹499"}
             </button>
             <span className="text-xs text-gray-400">
@@ -324,7 +324,10 @@ const PaymentCardSection: React.FC<{
               Mentorship · Referrals · Job-Ready
             </span>
             <div className="text-sm sm:text-lg text-[#0ea5e9] font-bold mb-1">
-              Claim your <span className="text-xl sm:text-2xl">90%</span>{" "}
+              Claim your{" "}
+              <span className="text-xl sm:text-2xl">
+                {redeemData?.percentage_scholarship ?? 90}%
+              </span>{" "}
               scholarship.
             </div>
             <div className="flex items-end gap-2 mb-1">
@@ -384,7 +387,9 @@ const PaymentCardSection: React.FC<{
                   : "bg-[#14212B] text-white hover:bg-[#223344]"
               }`}
             >
-              {isFlagshipPayment ? "Already Booked" : "Book Your Seat for ₹999"}
+              {isFlagshipPayment
+                ? "Payment Completed"
+                : "Book Your Seat for ₹999"}
             </button>
             <span className="text-xs text-gray-400">
               Fully refundable within 7 days
@@ -392,6 +397,16 @@ const PaymentCardSection: React.FC<{
           </div>
         </div>
       </div>
+
+      {/* Show message if payment is done */}
+      {(isNanodegreePayment || isFlagshipPayment) && (
+        <div className="w-full flex justify-center mt-6">
+          <span className="text-gray-500 text-base text-center w-full max-w-2xl border-t border-gray-200 pt-4 block font-medium">
+            Thank you for your payment. Our team will reach out to you soon with
+            next steps and further information.
+          </span>
+        </div>
+      )}
 
       {/* Nanodegree Payment Confirmation Modal */}
       <PaymentConfirmationModal
