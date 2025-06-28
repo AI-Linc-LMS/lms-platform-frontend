@@ -310,7 +310,7 @@ const ScholarshipBreakupModal: React.FC<ScholarshipBreakupModalProps> = ({
               onClick={handleClose}
               className={`w-full font-semibold py-2 sm:py-3 rounded-lg shadow transition-colors duration-200 mb-2 text-sm sm:text-base ${
                 isFlagshipPayment || isNanodegreePayment
-                  ? "bg-green-600 text-white cursor-not-allowed"
+                  ? "bg-green-600 text-white"
                   : "bg-[#14212B] text-white hover:bg-[#223344]"
               }`}
             >
