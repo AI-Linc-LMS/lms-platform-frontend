@@ -59,7 +59,7 @@ const ShortAssessment: React.FC = () => {
 
   // Assessment completed section
   if (isCompleted) {
-    navigate("/roadmap/ai-linc-scholarship-test-2");
+    navigate(`/roadmap/${currentAssessmentId}`);
   }
 
   // Early return if no assessment ID - component will redirect
