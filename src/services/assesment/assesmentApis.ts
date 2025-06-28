@@ -70,7 +70,7 @@ export const getInstructions = async (clientId: number, assessmentId: string): P
 export const getAllAssessments = async (clientId: number): Promise<AssessmentListItem[]> => {
   try {
     const res = await axiosInstance.get(
-      `/assessment/api/client/${clientId}/assessments/`
+      `/assessment/api/client/${clientId}/active-assessments/`
     );
     return res.data;
   } catch (error) {
