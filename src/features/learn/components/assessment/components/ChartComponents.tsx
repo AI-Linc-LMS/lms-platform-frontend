@@ -10,16 +10,17 @@ export function AccuracyBarChart({ data }: { data: AccuracyData[] }) {
   const yTicks = [100, 75, 50, 25, 0];
   // Sort by value descending and take top 4
   const displayData = [...data].sort((a, b) => b.value - a.value).slice(0, 4);
+  const chartHeight = 135; // px
   return (
-    <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 flex-1 min-w-[240px] sm:min-w-[260px] max-w-[350px] min-h-[200px] sm:min-h-[240px] flex flex-col w-full">
+    <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 flex-1 min-w-[240px] sm:min-w-[260px] max-w-[350px] min-h-[220px] sm:min-h-[240px] flex flex-col w-full">
       <div className="flex items-center justify-between mb-2">
         <span className="text-lg sm:text-xl font-bold text-gray-800">
           Accuracy
         </span>
       </div>
-      <div className="flex-1 flex flex-row items-end w-full overflow-x-auto min-h-[140px]">
+      <div className="flex-1 flex flex-row items-end w-full overflow-x-auto">
         {/* Y-axis - fill height */}
-        <div className="flex flex-col justify-between h-full mr-2 py-2 min-h-full">
+        <div className="flex flex-col justify-between h-[180px] mr-2 py-2 min-h-full">
           {yTicks.map((tick) => (
             <span key={tick} className="text-xs text-gray-400 h-full my-2">
               {tick}%
@@ -27,18 +28,18 @@ export function AccuracyBarChart({ data }: { data: AccuracyData[] }) {
           ))}
         </div>
         {/* Bars */}
-        <div className="flex-1 flex flex-col justify-end h-full">
+        <div className="flex-1 flex flex-col justify-end h-[180px]">
           <div className="flex items-end gap-2 sm:gap-4 min-w-0 overflow-x-auto h-full">
             {displayData.length > 0 ? (
               displayData.map((d) => (
                 <div
                   key={d.label}
-                  className="flex flex-col items-center flex-1 min-w-[30px] sm:min-w-[40px] h-full"
+                  className="flex flex-col items-center flex-1 min-w-[30px] sm:min-w-[40px] h-full justify-end"
                 >
                   <div
-                    className={`w-6 sm:w-10 bg-gradient-to-t from-purple-400 to-purple-600 rounded-t-lg`}
+                    className={`w-6 sm:w-10 bg-gradient-to-t from-purple-400 to-purple-600 rounded-t-lg transition-all duration-300 mt-auto`}
                     style={{
-                      height: d.value > 0 ? d.value : "4px",
+                      height: `${Math.max(4, (d.value / 100) * chartHeight)}px`,
                       minHeight: "4px",
                     }}
                   ></div>
