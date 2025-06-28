@@ -51,7 +51,7 @@ const ProgramCard: React.FC<{
     <div className="flex flex-col lg:flex-row items-center bg-gradient-to-br from-[#f8fcfc] to-[#eafff6] rounded-2xl sm:rounded-3xl px-4 sm:px-6 lg:px-8 shadow-sm border border-gray-200">
       <div className="flex-1 min-w-[280px] sm:min-w-[300px]">
         <div className="">
-          <span className="inline-block px-2 sm:px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs sm:text-sm font-semibold mb-2">
+          <span className="inline-block px-2 sm:px-3 py-1 mt-2 bg-green-100 text-green-700 rounded-lg text-xs sm:text-sm font-semibold mb-2">
             Your Learning Hub
           </span>
         </div>
@@ -100,7 +100,7 @@ const ProgramCard: React.FC<{
         </div>
       </div>
       <div className="flex-1 flex items-center justify-center mt-6 sm:mt-8 lg:mt-0">
-        <div className="relative lg:left-20 lg:top-4">
+        <div className="relative lg:left-20 lg:top-4 hidden sm:block">
           <img
             src={cube}
             alt="Cube"
@@ -114,7 +114,7 @@ const ProgramCard: React.FC<{
     <div className="flex flex-col lg:flex-row items-center bg-gradient-to-br from-[#fffbe6] to-[#fffde6] rounded-2xl sm:rounded-3xl px-4 sm:px-6 lg:px-8 shadow-sm border border-gray-200">
       <div className="flex-1 min-w-[280px] sm:min-w-[300px]">
         <div className="flex items-center gap-2 mb-2">
-          <span className="inline-block px-2 sm:px-3 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-xs sm:text-sm font-semibold">
+          <span className="inline-block px-2 sm:px-3 py-1 mt-2 bg-yellow-100 text-yellow-700 rounded-lg text-xs sm:text-sm font-semibold">
             Mentorship · Referrals · Career-Ready
           </span>
         </div>
@@ -122,7 +122,7 @@ const ProgramCard: React.FC<{
           AI Linc Flagship Career Launchpad
         </h2>
         <div className="mb-2">
-          <span className="inline-block px-2 sm:px-3 py-1 bg-green-600 text-white rounded-full text-xs font-semibold mb-2">
+          <span className="inline-block px-2 sm:px-3 py-1 mt-1 bg-green-600 text-white rounded-full text-xs font-semibold mb-2">
             Everything in Nanodegree
           </span>
         </div>
@@ -162,7 +162,7 @@ const ProgramCard: React.FC<{
         </div>
       </div>
       <div className="flex-1 flex items-center justify-center mt-6 sm:mt-8 lg:mt-0">
-        <div className="relative lg:left-10 lg:top-5">
+        <div className="relative lg:left-10 lg:top-5 hidden sm:block">
           <img
             src={triangle}
             alt="Yellow Shape"

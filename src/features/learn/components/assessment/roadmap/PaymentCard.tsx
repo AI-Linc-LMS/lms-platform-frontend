@@ -24,12 +24,13 @@ const PaymentCardSection: React.FC<{
   const [showNanodegreeModal, setShowNanodegreeModal] = useState(false);
   const [showFlagshipModal, setShowFlagshipModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showScholarshipBreakupModal, setShowScholarshipBreakupModal] = useState(false);
+  const [showScholarshipBreakupModal, setShowScholarshipBreakupModal] =
+    useState(false);
   const [paymentResult, setPaymentResult] = useState<{
     paymentId?: string;
     orderId?: string;
     amount: number;
-    type: 'nanodegree' | 'flagship';
+    type: "nanodegree" | "flagship";
   } | null>(null);
 
   // Toast state
@@ -59,7 +60,7 @@ const PaymentCardSection: React.FC<{
 
   // Auto-hide toast after 5 seconds
   useEffect(() => {
-    if (toast.show && toast.type !== 'loading') {
+    if (toast.show && toast.type !== "loading") {
       const timer = setTimeout(() => {
         hideToast();
       }, 5000);
@@ -91,53 +92,75 @@ const PaymentCardSection: React.FC<{
   // Get user data
   const user = useSelector((state: { user: UserState }) => state.user);
 
-  const { paymentState: nanodegreePaymentState, initiateNanodegreePayment } = useNanodegreePayment({
-    onSuccess: (result: PaymentResult) => {
-      console.log("Nanodegree payment successful:", result);
-      setPaymentResult({
-        paymentId: result.paymentId,
-        orderId: result.orderId,
-        amount: result.amount,
-        type: 'nanodegree'
-      });
-      setShowSuccessModal(true);
-      showToast("success", "Payment Successful!", "Your Nanodegree program access has been confirmed.");
-    },
-    onError: (error: string) => {
-      console.error("Nanodegree payment failed:", error);
-      showToast("error", "Payment Failed", error);
-    },
-    onDismiss: () => {
-      console.log("Nanodegree payment dismissed");
-      showToast("warning", "Payment Cancelled", "Payment was cancelled. You can try again anytime.");
-    },
-  });
+  const { paymentState: nanodegreePaymentState, initiateNanodegreePayment } =
+    useNanodegreePayment({
+      onSuccess: (result: PaymentResult) => {
+        console.log("Nanodegree payment successful:", result);
+        setPaymentResult({
+          paymentId: result.paymentId,
+          orderId: result.orderId,
+          amount: result.amount,
+          type: "nanodegree",
+        });
+        setShowSuccessModal(true);
+        showToast(
+          "success",
+          "Payment Successful!",
+          "Your Nanodegree program access has been confirmed."
+        );
+      },
+      onError: (error: string) => {
+        console.error("Nanodegree payment failed:", error);
+        showToast("error", "Payment Failed", error);
+      },
+      onDismiss: () => {
+        console.log("Nanodegree payment dismissed");
+        showToast(
+          "warning",
+          "Payment Cancelled",
+          "Payment was cancelled. You can try again anytime."
+        );
+      },
+    });
 
-  const { paymentState: flagshipPaymentState, initiateFlagshipPayment } = useFlagshipPayment({
-    onSuccess: (result: PaymentResult) => {
-      console.log("Flagship payment successful:", result);
-      setPaymentResult({
-        paymentId: result.paymentId,
-        orderId: result.orderId,
-        amount: result.amount,
-        type: 'flagship'
-      });
-      setShowSuccessModal(true);
-      showToast("success", "Payment Successful!", "Your Flagship Career Launchpad access has been confirmed.");
-    },
-    onError: (error: string) => {
-      console.error("Flagship payment failed:", error);
-      showToast("error", "Payment Failed", error);
-    },
-    onDismiss: () => {
-      console.log("Flagship payment dismissed");
-      showToast("warning", "Payment Cancelled", "Payment was cancelled. You can try again anytime.");
-    },
-  });
+  const { paymentState: flagshipPaymentState, initiateFlagshipPayment } =
+    useFlagshipPayment({
+      onSuccess: (result: PaymentResult) => {
+        console.log("Flagship payment successful:", result);
+        setPaymentResult({
+          paymentId: result.paymentId,
+          orderId: result.orderId,
+          amount: result.amount,
+          type: "flagship",
+        });
+        setShowSuccessModal(true);
+        showToast(
+          "success",
+          "Payment Successful!",
+          "Your Flagship Career Launchpad access has been confirmed."
+        );
+      },
+      onError: (error: string) => {
+        console.error("Flagship payment failed:", error);
+        showToast("error", "Payment Failed", error);
+      },
+      onDismiss: () => {
+        console.log("Flagship payment dismissed");
+        showToast(
+          "warning",
+          "Payment Cancelled",
+          "Payment was cancelled. You can try again anytime."
+        );
+      },
+    });
 
   const handleNanodegreePayment = () => {
     if (isNanodegreePayment) {
-      showToast("warning", "Already Enrolled", "You have already booked the Nanodegree program.");
+      showToast(
+        "warning",
+        "Already Enrolled",
+        "You have already booked the Nanodegree program."
+      );
       return;
     }
     setShowNanodegreeModal(true);
@@ -145,7 +168,11 @@ const PaymentCardSection: React.FC<{
 
   const handleFlagshipPayment = () => {
     if (isFlagshipPayment) {
-      showToast("warning", "Already Enrolled", "You have already booked the Flagship Career Launchpad program.");
+      showToast(
+        "warning",
+        "Already Enrolled",
+        "You have already booked the Flagship Career Launchpad program."
+      );
       return;
     }
     setShowFlagshipModal(true);
@@ -243,8 +270,8 @@ const PaymentCardSection: React.FC<{
                 quizzes
               </li>
               <li className="flex items-center gap-2">
-                <span className="text-[#2563eb]">★</span>21-day No-Code AI Product
-                Builder
+                <span className="text-[#2563eb]">★</span>21-day No-Code AI
+                Product Builder
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-[#2563eb]">★</span>90-Day Mentored Work
@@ -268,11 +295,13 @@ const PaymentCardSection: React.FC<{
               disabled={isNanodegreePayment}
               className={`w-full font-semibold py-2 sm:py-3 rounded-lg shadow transition-colors duration-200 mb-2 text-sm sm:text-base ${
                 isNanodegreePayment
-                  ? 'bg-gray-400 text-white cursor-not-allowed'
-                  : 'bg-[#14212B] text-white hover:bg-[#223344]'
+                  ? "bg-green-600 text-white cursor-not-allowed"
+                  : "bg-[#14212B] text-white hover:bg-[#223344]"
               }`}
             >
-              {isNanodegreePayment ? "Already Booked" : "Book Your Seat for ₹499"}
+              {isNanodegreePayment
+                ? "Already Booked"
+                : "Book Your Seat for ₹499"}
             </button>
             <span className="text-xs text-gray-400">
               Fully refundable within 7 days
@@ -308,7 +337,7 @@ const PaymentCardSection: React.FC<{
             </div>
             <span className="text-xs text-gray-500 mb-1">
               This price is only valid for next 7 days!{" "}
-              <button 
+              <button
                 onClick={() => setShowScholarshipBreakupModal(true)}
                 className="underline text-[#0ea5e9] hover:text-[#0284c7] transition-colors"
               >
@@ -326,12 +355,12 @@ const PaymentCardSection: React.FC<{
                 </span>
               </li>
               <li className="flex items-center gap-2">
-                <span className="text-[#2563eb]">★</span>Live sessions with MAANG
-                experts
+                <span className="text-[#2563eb]">★</span>Live sessions with
+                MAANG experts
               </li>
               <li className="flex items-center gap-2">
-                <span className="text-[#2563eb]">★</span>Direct referral to hiring
-                partners
+                <span className="text-[#2563eb]">★</span>Direct referral to
+                hiring partners
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-[#2563eb]">★</span>90-Day guided work with
@@ -342,8 +371,8 @@ const PaymentCardSection: React.FC<{
                 branding help
               </li>
               <li className="flex items-center gap-2">
-                <span className="text-[#2563eb]">★</span>Portfolio building & mock
-                interviews
+                <span className="text-[#2563eb]">★</span>Portfolio building &
+                mock interviews
               </li>
             </ul>
             <button
@@ -351,8 +380,8 @@ const PaymentCardSection: React.FC<{
               disabled={isFlagshipPayment}
               className={`w-full font-semibold py-2 sm:py-3 rounded-lg shadow transition-colors duration-200 mb-2 text-sm sm:text-base ${
                 isFlagshipPayment
-                  ? 'bg-gray-400 text-white cursor-not-allowed'
-                  : 'bg-[#14212B] text-white hover:bg-[#223344]'
+                  ? "bg-green-600 text-white cursor-not-allowed"
+                  : "bg-[#14212B] text-white hover:bg-[#223344]"
               }`}
             >
               {isFlagshipPayment ? "Already Booked" : "Book Your Seat for ₹999"}
@@ -384,9 +413,13 @@ const PaymentCardSection: React.FC<{
 
       {/* Payment Processing Modal */}
       <PaymentProcessingModal
-        isOpen={nanodegreePaymentState.isProcessing || flagshipPaymentState.isProcessing}
+        isOpen={
+          nanodegreePaymentState.isProcessing ||
+          flagshipPaymentState.isProcessing
+        }
         step={
-          (nanodegreePaymentState.step === "error" || flagshipPaymentState.step === "error")
+          nanodegreePaymentState.step === "error" ||
+          flagshipPaymentState.step === "error"
             ? "creating"
             : ((nanodegreePaymentState.step || flagshipPaymentState.step) as
                 | "creating"
