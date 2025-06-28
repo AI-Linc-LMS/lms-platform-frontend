@@ -16,12 +16,14 @@ import Dashboard from "./features/admin/dashboard/pages/Dashboard";
 import ManageStudents from "./features/admin/manage-students/pages/ManageStudents";
 import ShortAssessment from "./features/learn/pages/ShortAssessment";
 import InstructionPage from "./features/learn/pages/InstructionPage";
+import AssessmentsList from "./features/learn/pages/AssessmentsList";
 import ProfileSettings from "./components/UserProfile";
 import AssesmentStudentsResults from "./features/admin/assesment-results/AssesmentStudentsResults";
 import Otp from "./features/auth/pages/Otp";
 import WorkshopResistrations from "./features/admin/workshop-registrations/WorkshopResistrations";
 import CertificatePortal from "./components/certificate/CertificatePortal";
 import PhoneVerificationPage from "./features/learn/pages/PhoneVerificationPage";
+import RoadmapPage from "./features/learn/components/assessment/RoadmapPage";
 
 export interface RouteConfig {
   path: string;
@@ -64,6 +66,11 @@ const routes: RouteConfig[] = [
   {
     path: "/courses",
     component: Courses,
+    isPrivate: true,
+  },
+  {
+    path: "/assessments",
+    component: AssessmentsList,
     isPrivate: true,
   },
   {
@@ -158,8 +165,18 @@ const routes: RouteConfig[] = [
     isPrivate: true,
   },
   {
+    path: "/assessment/:assessmentId",
+    component: InstructionPage,
+    isPrivate: true,
+  },
+  {
     path: "/ai-linc-scholarship-test",
     component: InstructionPage,
+    isPrivate: true,
+  },
+  {
+    path: "/roadmap/:assessmentId",
+    component: RoadmapPage,
     isPrivate: true,
   },
 ];

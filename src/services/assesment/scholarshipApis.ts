@@ -7,6 +7,14 @@ export interface ScholarshipRedemptionData {
   maximum_marks: number;
   payable_amount: number;
   total_amount: number;
+  txn_status?: string; // "VERIFIED" = scholarship calculated, "PAID" = course purchased
+  stats?: {
+    total_questions: number;
+    attempted_questions: number;
+    correct_answers: number;
+    score: number;
+    incorrect_answers: number;
+  };
 }
 
 interface ApiError {

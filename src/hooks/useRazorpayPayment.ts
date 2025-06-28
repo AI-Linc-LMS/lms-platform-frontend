@@ -30,7 +30,8 @@ export interface UseRazorpayPaymentReturn {
     type: PaymentType,
     clientId: number,
     amount: number,
-    overrides?: Partial<PaymentConfig>
+    overrides?: Partial<PaymentConfig>,
+    type_id?: string
   ) => PaymentConfig;
 }
 
@@ -144,17 +145,33 @@ export const useRazorpayPayment = (
     type: PaymentType,
     clientId: number,
     amount: number,
-    overrides: Partial<PaymentConfig> = {}
+    overrides: Partial<PaymentConfig> = {},
+    type_id?: string
   ): PaymentConfig => {
     const template = RazorpayService.getPaymentTemplate(type);
     
-    return {
+    // Extract type_id from overrides or metadata - this is the key fix
+    const finalTypeId = type_id || 
+                       overrides.type_id || 
+                       overrides.metadata?.type_id as string || 
+                       overrides.metadata?.assessmentId as string ||
+                       overrides.metadata?.workshopId as string ||
+                       overrides.metadata?.courseId as string ||
+                       overrides.metadata?.subscriptionId as string ||
+                       overrides.metadata?.certificationId as string ||
+                       overrides.metadata?.consultationId as string ||
+                       `${type.toLowerCase()}-default-id`;
+    
+    const finalConfig = {
       type,
       clientId,
       amount,
       ...template,
       ...overrides,
+      type_id: finalTypeId,
     } as PaymentConfig;
+    
+    return finalConfig;
   }, []);
 
   return {
@@ -278,6 +295,102 @@ export const usePremiumFeaturePayment = (options: UseRazorpayPaymentOptions = {}
   return {
     ...paymentHook,
     initiatePremiumFeaturePayment,
+  };
+};
+
+export const useAssessmentPayment = (options: UseRazorpayPaymentOptions = {}) => {
+  const paymentHook = useRazorpayPayment(options);
+
+  const initiateAssessmentPayment = useCallback((
+    clientId: number,
+    amount: number,
+    overrides?: Partial<PaymentConfig>
+  ) => {
+    const config = paymentHook.createPaymentConfig(
+      PaymentType.ASSESSMENT,
+      clientId,
+      amount,
+      overrides
+    );
+    return paymentHook.initiatePayment(config);
+  }, [paymentHook]);
+
+  return {
+    ...paymentHook,
+    initiateAssessmentPayment,
+  };
+};
+
+export const useWorkshopPayment = (options: UseRazorpayPaymentOptions = {}) => {
+  const paymentHook = useRazorpayPayment(options);
+
+  const initiateWorkshopPayment = useCallback((
+    clientId: number,
+    amount: number,
+    overrides?: Partial<PaymentConfig>
+  ) => {
+    const config = paymentHook.createPaymentConfig(
+      PaymentType.WORKSHOP,
+      clientId,
+      amount,
+      overrides
+    );
+    return paymentHook.initiatePayment(config);
+  }, [paymentHook]);
+
+  return {
+    ...paymentHook,
+    initiateWorkshopPayment,
+  };
+};
+
+export const useNanodegreePayment = (options: UseRazorpayPaymentOptions = {}) => {
+  const paymentHook = useRazorpayPayment(options);
+
+  const initiateNanodegreePayment = useCallback((
+    clientId: number,
+    amount: number,
+    type_id?: string,
+    overrides?: Partial<PaymentConfig>
+  ) => {
+    const config = paymentHook.createPaymentConfig(
+      PaymentType.PREBOOKING,
+      clientId,
+      amount,
+      overrides,
+      type_id || "nanodegree"
+    );
+    return paymentHook.initiatePayment(config);
+  }, [paymentHook]);
+
+  return {
+    ...paymentHook,
+    initiateNanodegreePayment,
+  };
+};
+
+export const useFlagshipPayment = (options: UseRazorpayPaymentOptions = {}) => {
+  const paymentHook = useRazorpayPayment(options);
+
+  const initiateFlagshipPayment = useCallback((
+    clientId: number,
+    amount: number,
+    type_id?: string,
+    overrides?: Partial<PaymentConfig>
+  ) => {
+    const config = paymentHook.createPaymentConfig(
+      PaymentType.PREBOOKING,
+      clientId,
+      amount,
+      overrides,
+      type_id || "flagship"
+    );
+    return paymentHook.initiatePayment(config);
+  }, [paymentHook]);
+
+  return {
+    ...paymentHook,
+    initiateFlagshipPayment,
   };
 };
 
