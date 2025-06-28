@@ -3,7 +3,7 @@ import ailincimg from "../../../../assets/dashboard_assets/toplogoimg.png";
 import popper from "../../../../assets/dashboard_assets/poppers.png";
 import roadmap from "../../../../assets/roadmap/roadmap.png";
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import CertificateTemplates from "../../../../components/certificate/CertificateTemplates";
 import ProgramCard from "./roadmap/ProgramCard";
 import MentorFeedbackSection from "./roadmap/MentorFeedback";
@@ -40,6 +40,7 @@ import { certificateFallbackData } from "./data/assessmentData";
 import { redeemScholarship } from "../../../../services/assesment/assesmentApis";
 
 const RoadmapPage = () => {
+  const navigate = useNavigate();
   const { assessmentId } = useParams<{ assessmentId: string }>();
   console.log("assessmentId", assessmentId);
   const clientId = parseInt(import.meta.env.VITE_CLIENT_ID) || 1;
@@ -47,7 +48,11 @@ const RoadmapPage = () => {
 
   const certificateRef = useRef<CertificateTemplatesRef>(null);
 
-  const { data: redeemData } = useQuery({
+  const {
+    data: redeemData,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["assessment-results", clientId, assessmentId],
     queryFn: () =>
       assessmentId
@@ -90,8 +95,6 @@ const RoadmapPage = () => {
     score: stats?.accuracy_percent || certificateFallbackData.score,
   };
 
-  console.log("redeemData", redeemData);
-
   // Transform data using utilities
   const perfReportData = transformToPerformanceReportData(stats);
   const accuracyBarData = transformToAccuracyBarData(stats);
@@ -99,6 +102,42 @@ const RoadmapPage = () => {
   const { shineSkills, attentionSkills } = transformToSkillsData(stats);
   const mentorFeedback = getMentorFeedback(stats);
   const { score, max } = getScoreArcData(stats);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] w-full">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="relative">
+            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-t-blue-400 rounded-full animate-ping"></div>
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-semibold text-gray-700 mb-2">
+              Loading your assessment results...
+            </p>
+            <p className="text-sm text-gray-500">
+              Please wait while we prepare your personalized roadmap
+            </p>
+          </div>
+          <div className="flex space-x-1">
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+            <div
+              className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
+              style={{ animationDelay: "0.1s" }}
+            ></div>
+            <div
+              className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
+              style={{ animationDelay: "0.2s" }}
+            ></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    navigate("/assessments");
+  }
 
   return (
     <div className="mb-8 sm:mb-12 lg:mb-30">
@@ -183,7 +222,7 @@ const RoadmapPage = () => {
           {/* Performance Report Section */}
           <PerformanceReport data={perfReportData} />
 
-          <div className="flex flex-col lg:flex-row mt-6 sm:mt-8 lg:mt-10 w-full min-h-[200px] sm:min-h-[222px] justify-evenly items-center gap-4 sm:gap-6 lg:gap-0">
+          <div className="flex flex-col lg:flex-row mt-6 sm:mt-8 lg:mt-10 w-full min-h-[200px] sm:min-h-[222px] justify-evenly items-center gap-4 sm:gap-6 lg:gap-0 px-3 sm:px-0">
             <AccuracyBarChart data={accuracyBarData} />
             <ScoreArc score={score} max={max} />
             <RatingBars data={ratingBarData} />
