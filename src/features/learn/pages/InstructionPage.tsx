@@ -63,6 +63,7 @@ const InstructionPage: React.FC = () => {
     data: assessmentData,
     isLoading,
     error,
+    refetch: refetchAssessmentData,
   } = useQuery<AssessmentDetails>({
     queryKey: ["assessment-instructions", currentAssessmentId],
     queryFn: () =>
@@ -95,9 +96,10 @@ const InstructionPage: React.FC = () => {
 
   // Payment hook
   const { paymentState, initiateAssessmentPayment } = useAssessmentPayment({
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       console.log("Payment successful:", result);
-
+      // Refetch assessment data after payment
+      await refetchAssessmentData();
       setPaymentResult({
         paymentId: result.paymentId,
         orderId: result.orderId,

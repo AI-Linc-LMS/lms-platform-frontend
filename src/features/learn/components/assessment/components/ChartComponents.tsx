@@ -8,39 +8,49 @@ import {
 // --- AccuracyBarChart ---
 export function AccuracyBarChart({ data }: { data: AccuracyData[] }) {
   const yTicks = [100, 75, 50, 25, 0];
+  // Sort by value descending and take top 4
+  const displayData = [...data].sort((a, b) => b.value - a.value).slice(0, 4);
+  const chartHeight = 135; // px
   return (
-    <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 flex-1 min-w-[240px] sm:min-w-[260px] max-w-[350px] min-h-[200px] sm:min-h-[240px] flex flex-col w-full">
+    <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 flex-1 min-w-[240px] sm:min-w-[260px] max-w-[350px] min-h-[220px] sm:min-h-[240px] flex flex-col w-full">
       <div className="flex items-center justify-between mb-2">
         <span className="text-lg sm:text-xl font-bold text-gray-800">
           Accuracy
         </span>
       </div>
       <div className="flex-1 flex flex-row items-end w-full overflow-x-auto">
-        {/* Y-axis */}
-        <div className="flex flex-col justify-between h-full mr-2 py-2">
+        {/* Y-axis - fill height */}
+        <div className="flex flex-col justify-between h-[180px] mr-2 py-2 min-h-full">
           {yTicks.map((tick) => (
-            <span key={tick} className="text-xs text-gray-400 h-full">
+            <span key={tick} className="text-xs text-gray-400 h-full my-2">
               {tick}%
             </span>
           ))}
         </div>
         {/* Bars */}
-        <div className="flex-1 flex flex-col justify-end">
-          <div className="flex items-end gap-2 sm:gap-4 min-w-0 overflow-x-auto">
-            {data.map((d) => (
-              <div
-                key={d.label}
-                className="flex flex-col items-center flex-1 min-w-[30px] sm:min-w-[40px]"
-              >
+        <div className="flex-1 flex flex-col justify-end h-[180px]">
+          <div className="flex items-end gap-2 sm:gap-4 min-w-0 overflow-x-auto h-full">
+            {displayData.length > 0 ? (
+              displayData.map((d) => (
                 <div
-                  className={`w-6 sm:w-10 bg-gradient-to-t from-purple-400 to-purple-600 rounded-t-lg`}
-                  style={{ height: d.value > 10 ? `${d.value}%` : "10px" }}
-                ></div>
-              </div>
-            ))}
+                  key={d.label}
+                  className="flex flex-col items-center flex-1 min-w-[30px] sm:min-w-[40px] h-full justify-end"
+                >
+                  <div
+                    className={`w-6 sm:w-10 bg-gradient-to-t from-purple-400 to-purple-600 rounded-t-lg transition-all duration-300 mt-auto`}
+                    style={{
+                      height: `${Math.max(4, (d.value / 100) * chartHeight)}px`,
+                      minHeight: "4px",
+                    }}
+                  ></div>
+                </div>
+              ))
+            ) : (
+              <div className="text-xs text-gray-400">No data</div>
+            )}
           </div>
           <div className="flex justify-between mt-2 text-xs text-gray-700 font-medium min-w-0 overflow-x-auto">
-            {data.map((d) => (
+            {displayData.map((d) => (
               <span
                 key={d.label}
                 className="w-8 sm:w-12 text-center truncate text-xs"
@@ -57,13 +67,15 @@ export function AccuracyBarChart({ data }: { data: AccuracyData[] }) {
 
 // --- RatingBars ---
 export function RatingBars({ data }: { data: RatingData[] }) {
+  // Sort by value descending and take top 5
+  const sortedData = [...data].sort((a, b) => b.value - a.value).slice(0, 5);
   return (
     <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 flex-1 min-w-[240px] sm:min-w-[260px] max-w-[350px] min-h-[200px] sm:min-h-[240px] flex flex-col overflow-x-auto w-full">
       <span className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
         Rating
       </span>
       <div className="flex flex-col gap-3 sm:gap-4 mt-2 min-w-0">
-        {data.slice(0, 5).map((d) => (
+        {sortedData.map((d) => (
           <div key={d.label} className="flex items-center gap-2 min-w-0">
             <span className="w-20 sm:w-28 text-xs sm:text-sm text-gray-700 truncate">
               {d.label}
