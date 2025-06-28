@@ -9,6 +9,8 @@ interface ScholarshipBreakupModalProps {
     total_amount: number;
     payable_amount: number;
   };
+  isFlagshipPayment: boolean;
+  isNanodegreePayment: boolean;
 }
 
 interface CostComponent {
@@ -25,6 +27,8 @@ const ScholarshipBreakupModal: React.FC<ScholarshipBreakupModalProps> = ({
     total_amount: 120000,
     payable_amount: 10000,
   },
+  isFlagshipPayment,
+  isNanodegreePayment,
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -292,17 +296,27 @@ const ScholarshipBreakupModal: React.FC<ScholarshipBreakupModalProps> = ({
 
           {/* Action Button */}
           <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-gray-50 rounded-xl text-center">
-            <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
-              Ready to claim your scholarship?
-            </h4>
-            <p className="text-gray-600 mb-4 text-sm sm:text-base">
-              Book your seat now and start your journey with AI-LINC Flagship Career Launchpad
-            </p>
+            {!isFlagshipPayment || !isNanodegreePayment ? (
+              <>
+                <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
+                  Ready to claim your scholarship?
+                </h4>
+                <p className="text-gray-600 mb-4 text-sm sm:text-base">
+                  Book your seat now and start your journey with AI-LINC Flagship Career Launchpad
+                </p>
+              </>
+            ) : null}
             <button
               onClick={handleClose}
-              className="bg-blue-600 text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg text-sm sm:text-base"
+              className={`w-full font-semibold py-2 sm:py-3 rounded-lg shadow transition-colors duration-200 mb-2 text-sm sm:text-base ${
+                isFlagshipPayment || isNanodegreePayment
+                  ? "bg-green-600 text-white cursor-not-allowed"
+                  : "bg-[#14212B] text-white hover:bg-[#223344]"
+              }`}
             >
-              Book Your Seat for ₹{scholarshipData.payable_amount.toLocaleString()}
+              {isFlagshipPayment || isNanodegreePayment
+                ? "Payment Completed"
+                : "Book Your Seat for ₹999"}
             </button>
           </div>
         </div>

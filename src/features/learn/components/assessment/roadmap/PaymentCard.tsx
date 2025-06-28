@@ -466,6 +466,8 @@ const PaymentCardSection: React.FC<{
           total_amount: redeemData?.total_amount || 120000,
           payable_amount: redeemData?.payable_amount || 10000,
         }}
+        isFlagshipPayment={isFlagshipPayment}
+        isNanodegreePayment={isNanodegreePayment}
       />
 
       {/* Payment Toast */}
