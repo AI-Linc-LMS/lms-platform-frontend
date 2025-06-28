@@ -1,5 +1,6 @@
 export interface PaymentConfig {
   type: PaymentType;
+  type_id: string;
   clientId: number;
   amount: number;
   currency?: string;
@@ -21,7 +22,10 @@ export enum PaymentType {
   SUBSCRIPTION = 'subscription',
   CERTIFICATION = 'certification',
   PREMIUM_FEATURE = 'premium_feature',
-  CONSULTATION = 'consultation'
+  CONSULTATION = 'consultation',
+  ASSESSMENT = 'assessment',
+  WORKSHOP = 'workshop',
+  PREBOOKING = 'PREBOOKING'
 }
 
 export interface CreateOrderResponse {
@@ -41,6 +45,7 @@ export interface VerifyPaymentRequest {
   order_id: string;
   payment_id: string;
   signature: string;
+  type_id?: string;
 }
 
 export interface RazorpayOptions {
@@ -72,6 +77,7 @@ export interface PaymentResult {
   amount: number;
   error?: string;
   paymentType: PaymentType;
+  typeId?: string;
 }
 
 export interface PaymentVerificationResponse {
@@ -125,8 +131,22 @@ export class RazorpayService {
     const { createOrder } = await import('./paymentGatewayApis');
     
     try {
-      // You can customize the order creation based on payment type
-      const orderData = await createOrder(config.clientId, config.amount);
+      // Include type_id in metadata for the API call
+      const enhancedMetadata = {
+        ...config.metadata,
+        type_id: config.type_id,
+        // Add specific metadata keys based on payment type
+        ...(config.type === PaymentType.ASSESSMENT && { assessmentId: config.type_id }),
+        ...(config.type === PaymentType.WORKSHOP && { workshopId: config.type_id }),
+      };
+
+      // Pass payment type and enhanced metadata to createOrder API
+      const orderData = await createOrder(
+        config.clientId, 
+        config.amount, 
+        config.type, 
+        enhancedMetadata
+      );
       
       if (!orderData || !orderData.order_id || !orderData.key) {
         throw new Error("Failed to create payment order. Invalid response from server.");
@@ -147,12 +167,21 @@ export class RazorpayService {
    */
   public async verifyPayment(
     clientId: number,
-    paymentData: VerifyPaymentRequest
+    paymentData: VerifyPaymentRequest,
+    paymentType: PaymentType,
+    typeId?: string
   ): Promise<PaymentVerificationResponse> {
     const { verifyPayment } = await import('./paymentGatewayApis');
     
     try {
-      const verifyRes = await verifyPayment(clientId, paymentData);
+      // Include payment type and type_id in verification request
+      const verificationData = {
+        ...paymentData,
+        payment_type: paymentType,
+        type_id: typeId
+      };
+      
+      const verifyRes = await verifyPayment(clientId, verificationData);
       return verifyRes;
     } catch (error) {
       throw new Error(
@@ -205,7 +234,7 @@ export class RazorpayService {
             };
 
             // Verify payment
-            const verifyRes = await this.verifyPayment(config.clientId, paymentVerifyData);
+            const verifyRes = await this.verifyPayment(config.clientId, paymentVerifyData, config.type, config.type_id);
 
             if (verifyRes.status === 200) {
               const result: PaymentResult = {
@@ -214,6 +243,7 @@ export class RazorpayService {
                 orderId: response.razorpay_order_id,
                 amount: config.amount,
                 paymentType: config.type,
+                typeId: config.type_id,
               };
               onSuccess(result);
             } else {
@@ -295,6 +325,10 @@ export class RazorpayService {
       throw new Error("Invalid payment type provided");
     }
 
+    if (!config.type_id || config.type_id.trim() === "") {
+      throw new Error("Payment type ID is required");
+    }
+
     if (!config.name || config.name.trim() === "") {
       throw new Error("Payment name is required");
     }
@@ -336,6 +370,24 @@ export class RazorpayService {
       [PaymentType.CONSULTATION]: {
         name: "AI-LINC Platform",
         description: "Consultation Fee",
+        currency: "INR",
+        theme: { color: "#255C79" },
+      },
+      [PaymentType.ASSESSMENT]: {
+        name: "AI-LINC Platform",
+        description: "Assessment Fee",
+        currency: "INR",
+        theme: { color: "#255C79" },
+      },
+      [PaymentType.WORKSHOP]: {
+        name: "AI-LINC Platform",
+        description: "Workshop Registration Fee",
+        currency: "INR",
+        theme: { color: "#255C79" },
+      },
+      [PaymentType.PREBOOKING]: {
+        name: "AI-LINC Platform",
+        description: "Prebooking Fee",
         currency: "INR",
         theme: { color: "#255C79" },
       },

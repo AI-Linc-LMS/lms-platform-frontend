@@ -1,11 +1,14 @@
 import { CreateOrderResponse } from "../../features/learn/components/assessment/PaymentModal";
 import axiosInstance from "../axiosInstance";
+import { PaymentType } from "./razorpayService";
 
 
 export interface VerifyPaymentRequest {
   order_id: string;
   payment_id: string;
   signature: string;
+  payment_type?: PaymentType;
+  type_id?: string;
 }
 
 
@@ -17,15 +20,59 @@ interface ApiError {
   message: string;
 }
 
+interface CreateOrderRequest {
+  amount: string;
+  payment_type: string;
+  type_id?: string;
+}
+
 export const createOrder = async (
   clientId: number,
-  amount: number
+  amount: number,
+  paymentType?: PaymentType,
+  metadata?: Record<string, string | number | boolean>
 ): Promise<CreateOrderResponse> => {
   try {
+    let requestPayload: CreateOrderRequest = {
+      amount: amount.toString(),
+      payment_type: paymentType || PaymentType.COURSE,
+    };
+
+    // Include type_id for all payment types if available in metadata
+    const typeId = metadata?.type_id as string || 
+                  metadata?.assessmentId as string || 
+                  metadata?.workshopId as string ||
+                  metadata?.courseId as string ||
+                  metadata?.subscriptionId as string ||
+                  metadata?.certificationId as string ||
+                  metadata?.consultationId as string;
+
+    if (typeId) {
+      requestPayload.type_id = typeId;
+    }
+
+    // Legacy specific handling for backward compatibility
+    if (paymentType === PaymentType.ASSESSMENT && metadata?.assessmentId) {
+      requestPayload = {
+        amount: amount.toString(),
+        payment_type: "ASSESSMENT",
+        type_id: metadata.assessmentId as string
+      };
+    }
+
+    if (paymentType === PaymentType.WORKSHOP && metadata?.workshopId) {
+      requestPayload = {
+        amount: amount.toString(),
+        payment_type: "WORKSHOP",
+        type_id: metadata.workshopId as string
+      };
+    }
+
+    console.log('Creating order with payload:', requestPayload);
+
     const response = await axiosInstance.post(
-      `/payment-gateway/api/clients/${clientId}/create-order/`,{
-        amount: amount,
-      }
+      `/payment-gateway/api/clients/${clientId}/create-order/`,
+      requestPayload
     );
     return response.data;
   } catch (error) {
@@ -60,6 +107,8 @@ export const verifyPayment = async (
       order_id: paymentData.order_id,
       payment_id: paymentData.payment_id,
       signature: paymentData.signature,
+      payment_type: paymentData.payment_type || PaymentType.COURSE,
+      ...(paymentData.type_id && { type_id: paymentData.type_id }), // Include type_id if provided
     };
 
     // Alternative: Try with explicit JSON stringification
@@ -73,6 +122,7 @@ export const verifyPayment = async (
       "order_id exists": !!requestPayload.order_id,
       "payment_id exists": !!requestPayload.payment_id,
       "signature exists": !!requestPayload.signature,
+      "payment_type": requestPayload.payment_type,
       "order_id value": requestPayload.order_id,
       "payment_id value": requestPayload.payment_id,
       "signature value": requestPayload.signature

@@ -1,14 +1,29 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { useAssessment } from "../hooks/useAssessment";
 import {
   AssessmentHeader,
   QuestionNavigation,
   QuestionDisplay,
-  NavigationButtons,
-  AssessmentResults,
+  NavigationButtons
 } from "../components/assessment";
 
 const ShortAssessment: React.FC = () => {
+  const { assessmentId } = useParams<{ assessmentId?: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Get assessment ID from URL params or location state
+  const currentAssessmentId = assessmentId || location.state?.assessmentId;
+
+  // Redirect to assessments list if no assessment ID is provided
+  useEffect(() => {
+    if (!currentAssessmentId) {
+      navigate("/assessments");
+      return;
+    }
+  }, [currentAssessmentId, navigate]);
+
   const {
     // State
     currentQuestionIndex,
@@ -16,7 +31,6 @@ const ShortAssessment: React.FC = () => {
     timeRemaining,
     isCompleted,
     questionsData,
-    questions,
     questionsLoading,
     questionsError,
 
@@ -31,7 +45,7 @@ const ShortAssessment: React.FC = () => {
     getQuestionButtonStyle,
     getAnsweredCount,
     getRemainingCount,
-  } = useAssessment();
+  } = useAssessment(currentAssessmentId);
 
   const currentQuestion = questionsData[currentQuestionIndex];
 
@@ -45,19 +59,25 @@ const ShortAssessment: React.FC = () => {
 
   // Assessment completed section
   if (isCompleted) {
-    const clientId = parseInt(import.meta.env.VITE_CLIENT_ID) || 1;
-    const assessmentSlug = questions?.slug || "ai-linc-scholarship-test"; // Use slug from questions
+    navigate("/roadmap/ai-linc-scholarship-test-2");
+  }
 
+  // Early return if no assessment ID - component will redirect
+  if (!currentAssessmentId) {
     return (
-      <AssessmentResults clientId={clientId} assessmentId={assessmentSlug} />
+      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#255C79]"></div>
+      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-2 sm:p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <AssessmentHeader timeRemaining={timeRemaining} />
+    <div className="bg-[#F8F9FA] min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <AssessmentHeader
+          timeRemaining={timeRemaining}
+          assessmentId={currentAssessmentId}
+        />
 
         <div className="flex flex-col md:flex-row gap-4 md:gap-6">
           {/* Left Sidebar - Question Navigation */}
