@@ -229,32 +229,40 @@ const ProgramCard: React.FC<{
             <td className="px-3 sm:px-6 py-2 border-r border-gray-200 text-xs sm:text-sm">
               90-Day Guided Work Experience
             </td>
-            <td className="px-3 sm:px-6 py-2 border-r border-gray-200 flex items-center gap-1">
-              <GreenTick />
-              <span className="font-semibold text-xs ml-1">
-                (Led by tech pro)
-              </span>
+            <td className="px-3 sm:px-6 py-2 border-r border-gray-200">
+              <div className="flex items-center gap-1">
+                <GreenTick />
+                <span className="font-semibold text-xs ml-1">
+                  (Led by tech pro)
+                </span>
+              </div>
             </td>
-            <td className="px-3 sm:px-6 py-2 border-gray-200 flex items-center gap-1">
-              <GreenTick />
-              <span className="font-semibold text-xs ml-1">
-                (Led by MAANG PM)
-              </span>
+            <td className="px-3 sm:px-6 py-2 border-gray-200">
+              <div className="flex items-center gap-1">
+                <GreenTick />
+                <span className="font-semibold text-xs ml-1">
+                  (Led by MAANG PM)
+                </span>
+              </div>
             </td>
           </tr>
           <tr className="border-b border-gray-200">
             <td className="px-3 sm:px-6 py-2 border-r border-gray-200 text-xs sm:text-sm">
               Weekly Mentor Session
             </td>
-            <td className="px-3 sm:px-6 py-2 border-r border-gray-200 flex items-center gap-1">
-              <GreenTick />
-              <span className="font-semibold text-xs ml-1">(1 per week)</span>
+            <td className="px-3 sm:px-6 py-2 border-r border-gray-200">
+              <div className="flex items-center gap-1">
+                <GreenTick />
+                <span className="font-semibold text-xs ml-1">(1 per week)</span>
+              </div>
             </td>
-            <td className="px-3 sm:px-6 py-2 border-gray-200 flex items-center gap-1">
-              <GreenTick />
-              <span className="font-semibold text-xs ml-1">
-                (Multiple per week with Experts)
-              </span>
+            <td className="px-3 sm:px-6 py-2 border-gray-200">
+              <div className="flex items-center gap-1">
+                <GreenTick />
+                <span className="font-semibold text-xs ml-1">
+                  (Multiple per week with Experts)
+                </span>
+              </div>
             </td>
           </tr>
           <tr className="border-b border-gray-200">
