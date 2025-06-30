@@ -4,6 +4,7 @@ import CourseBuilderController from "../commonComponents/icons/sidebarIcons/Cour
 import ManageStudentsController from "../commonComponents/icons/sidebarIcons/ManagestudentsController";
 import WorkshopRegistrationController from "../commonComponents/icons/sidebarIcons/WorkshopRegistrationController";
 import AssesmentStudentResultsController from "../commonComponents/icons/sidebarIcons/AssesmentStudentsResultsController";
+import ReferalsController from "../commonComponents/icons/sidebarIcons/ReferalsController";
 export const AdminNavigationLinks: SidebarLinkInfo[] = [
   {
     id: 1,
@@ -65,4 +66,16 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
       },
     ],
   },
-]; 
+  {
+    id: 5,
+    title: "Referals",
+    links: [
+      {
+        id: 1,
+        title: "Referals",
+        href: "/admin/referals",
+        icon: <ReferalsController />,
+      },
+    ],
+  },
+];
