@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX } from "react-icons/fi";
+import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiCopy, FiExternalLink, FiCheck } from "react-icons/fi";
 import {
   getRefferalDetails,
   createReferral,
@@ -25,6 +25,23 @@ const Referals = () => {
   const [referralToDelete, setReferralToDelete] = useState<Referral | null>(
     null
   );
+  const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
+
+  // Function to generate referral link
+  const generateReferralLink = (referralCode: string) => {
+    return `https://ailinc.com/workshop-registration?ref=${referralCode}`;
+  };
+
+  // Function to copy link to clipboard
+  const copyToClipboard = async (link: string, referralId: string) => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiedLinkId(referralId);
+      setTimeout(() => setCopiedLinkId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
+  };
 
   // Fetch referrals data
   const {
@@ -145,6 +162,9 @@ const Referals = () => {
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
                     Referral Code
                   </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                    Referral Link
+                  </th>
                   <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">
                     Actions
                   </th>
@@ -154,7 +174,7 @@ const Referals = () => {
                 {filteredReferrals.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="px-6 py-8 text-center text-gray-500"
                     >
                       {searchTerm
@@ -163,45 +183,85 @@ const Referals = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredReferrals.map((referral: Referral) => (
-                    <tr key={referral.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-gray-900 font-medium">
-                        {referral.name}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {referral.email}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {referral.phone_number}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md font-mono text-xs">
-                          {referral.referral_code}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => setEditingReferral(referral)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                            title="Edit"
-                          >
-                            <FiEdit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setReferralToDelete(referral);
-                              setIsDeleteModalOpen(true);
-                            }}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                            title="Delete"
-                          >
-                            <FiTrash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                  filteredReferrals.map((referral: Referral) => {
+                    const referralLink = generateReferralLink(referral.referral_code);
+                    const isCopied = copiedLinkId === referral.id.toString();
+                    
+                    return (
+                      <tr key={referral.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 text-sm text-gray-900 font-medium">
+                          {referral.name}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {referral.email}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {referral.phone_number}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md font-mono text-xs">
+                            {referral.referral_code}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          <div className="flex items-center gap-2 max-w-xs">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-gray-500 truncate" title={referralLink}>
+                                {referralLink}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => copyToClipboard(referralLink, referral.id.toString())}
+                                className={`p-1.5 rounded-md transition-colors ${
+                                  isCopied 
+                                    ? 'text-green-600 bg-green-50' 
+                                    : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'
+                                }`}
+                                title={isCopied ? "Copied!" : "Copy link"}
+                              >
+                                {isCopied ? (
+                                  <FiCheck className="w-3 h-3" />
+                                ) : (
+                                  <FiCopy className="w-3 h-3" />
+                                )}
+                              </button>
+                              <a
+                                href={referralLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                                title="Open link"
+                              >
+                                <FiExternalLink className="w-3 h-3" />
+                              </a>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => setEditingReferral(referral)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                              title="Edit"
+                            >
+                              <FiEdit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setReferralToDelete(referral);
+                                setIsDeleteModalOpen(true);
+                              }}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                              title="Delete"
+                            >
+                              <FiTrash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
