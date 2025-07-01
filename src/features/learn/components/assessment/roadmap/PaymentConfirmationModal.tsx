@@ -12,7 +12,7 @@ interface PaymentConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  programType: 'nanodegree' | 'flagship';
+  programType: 'nanodegree' | 'nanodegree-course' | 'flagship' | 'flagship-course';
   purchasedData: {
     percentage_scholarship: number;
     total_amount: number;
@@ -31,12 +31,24 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
 
   const programDetails = {
     nanodegree: {
-      title: "AI Linc Nanodegree Program",
-      subtitle: "Career-Ready Training at Best Price",
-      description: "Complete career-ready training with lifetime access",
+      title: "AI Linc Nanodegree Program - Seat Booking",
+      subtitle: "Reserve Your Seat",
+      description: "Book your seat for the Nanodegree program",
+      features: [
+        "Seat reservation for Nanodegree Program",
+        "7-day refund guarantee",
+        "Priority access to course materials",
+        "Early enrollment benefits",
+      ],
+      color: "blue",
+    },
+    "nanodegree-course": {
+      title: "AI Linc Nanodegree Program - Full Course",
+      subtitle: "Complete Course Access",
+      description: "Get full access to the Nanodegree program",
       features: [
         "100+ hours of expert video content",
-        "AI-graded assignments & quizzes", 
+        "AI-graded assignments & quizzes",
         "21-day No-Code AI Product Builder",
         "90-Day Mentored Work Experience",
         "Weekly performance tracking",
@@ -46,7 +58,19 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
       color: "blue",
     },
     flagship: {
-      title: "AI Linc Flagship Career Launchpad",
+      title: "AI Linc Flagship Career Launchpad - Seat Booking",
+      subtitle: "Reserve Your Seat",
+      description: "Book your seat for the Flagship Career Launchpad program",
+      features: [
+        "Seat reservation for Flagship Program",
+        "7-day refund guarantee",
+        "Priority access to course materials",
+        "Early enrollment benefits",
+      ],
+      color: "yellow",
+    },
+    "flagship-course": {
+      title: "AI Linc Flagship Career Launchpad - Full Course",
       subtitle: "Mentorship · Referrals · Job-Ready",
       description: "Premium program with MAANG mentorship and direct referrals",
       features: [
