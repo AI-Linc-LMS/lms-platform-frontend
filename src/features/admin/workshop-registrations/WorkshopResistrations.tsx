@@ -11,6 +11,7 @@ interface WorkshopRegistrationData {
   registered_at: string;
   workshop_name: string;
   session_number: number | null;
+  referal_code: string | null;
 }
 
 const WorkshopRegistration = () => {
@@ -48,6 +49,7 @@ const WorkshopRegistration = () => {
       "Mobile Number": entry.phone_number,
       "Workshop Name": entry.workshop_name,
       "Session Number": entry.session_number || 1,
+      "Referral Code": entry.referal_code || "N/A",
       "Registered At": entry.registered_at,
     }));
 
@@ -120,6 +122,7 @@ const WorkshopRegistration = () => {
               <th className="p-3">Mobile Number</th>
               <th className="p-3">Workshop Name</th>
               <th className="p-3">Session</th>
+              <th className="p-3">Referral Code</th>
               <th className="p-3">Registered At</th>
             </tr>
           </thead>
@@ -138,6 +141,15 @@ const WorkshopRegistration = () => {
                   <span className="bg-green-100 items-center justify-center text-center text-green-800 px-2 py-1 rounded-full text-xs font-medium">
                     {entry.session_number || 1}
                   </span>
+                </td>
+                <td className="p-3">
+                  {entry.referal_code ? (
+                    <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
+                      {entry.referal_code}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400 text-xs">N/A</span>
+                  )}
                 </td>
                 <td className="p-3">
                   {new Date(entry.registered_at).toLocaleString(undefined, {
