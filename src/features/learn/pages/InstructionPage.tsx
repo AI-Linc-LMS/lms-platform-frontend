@@ -1,36 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useSelector } from "react-redux";
 import {
   getInstructions,
   AssessmentDetails,
 } from "../../../services/assesment/assesmentApis";
-import { useAssessmentPayment } from "../../../hooks/useRazorpayPayment";
-import {
-  PaymentProcessingModal,
-  PaymentSuccessModal,
-  PaymentToast,
-} from "../components/assessment";
 
 import InstructionVector from "../../../../public/updated_illustrations.png";
 import linkdln from "../../../../public/linkdln.png";
 import certificate from "../../../../public/preview-certificate.png";
 import score from "../../../../public/score-card.png";
 
-interface UserState {
-  email: string | null;
-  full_name: string | null;
-  isAuthenticated: boolean;
-}
-
 const InstructionPage: React.FC = () => {
   const navigate = useNavigate();
   const { assessmentId } = useParams<{ assessmentId: string }>();
   const clientId = import.meta.env.VITE_CLIENT_ID;
-
-  // Get user data from Redux store
-  const user = useSelector((state: { user: UserState }) => state.user);
 
   // Use assessment ID from URL params or redirect to assessments list
   const currentAssessmentId = assessmentId;
@@ -43,27 +27,10 @@ const InstructionPage: React.FC = () => {
     }
   }, [currentAssessmentId, navigate]);
 
-  // Toast state for error messages
-  const [toast, setToast] = useState<{
-    show: boolean;
-    type: "success" | "error" | "warning" | "loading";
-    title: string;
-    message: string;
-  }>({ show: false, type: "success", title: "", message: "" });
-
-  // Payment success modal state
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [paymentResult, setPaymentResult] = useState<{
-    paymentId?: string;
-    orderId?: string;
-    amount: number;
-  } | null>(null);
-
   const {
     data: assessmentData,
     isLoading,
     error,
-    refetch: refetchAssessmentData,
   } = useQuery<AssessmentDetails>({
     queryKey: ["assessment-instructions", currentAssessmentId],
     queryFn: () =>
@@ -76,66 +43,6 @@ const InstructionPage: React.FC = () => {
     gcTime: 0,
     enabled: !!currentAssessmentId, // Only run query if we have an assessment ID
   });
-
-  // Check if payment is completed based on backend data
-  // txn_status is the authoritative source for payment completion
-  // Only consider payment completed if txn_status is "paid"
-  const isPaymentCompleted = assessmentData?.txn_status === "paid";
-
-  // Note: We don't rely on assessment status ("in_progress" or "submitted")
-  // because a user might have started the assessment but payment could have failed
-
-  // Get assessment price in rupees (convert from string)
-  const assessmentPrice = assessmentData?.price
-    ? parseFloat(assessmentData.price)
-    : 25;
-
-  // Convert to paise for Razorpay (multiply by 100)
-  const assessmentPriceInPaise = Math.round(assessmentPrice);
-  // const assessmentPriceInPaise = Math.round(1);
-
-  // Payment hook
-  const { paymentState, initiateAssessmentPayment } = useAssessmentPayment({
-    onSuccess: async (result) => {
-      console.log("Payment successful:", result);
-      // Refetch assessment data after payment
-      await refetchAssessmentData();
-      setPaymentResult({
-        paymentId: result.paymentId,
-        orderId: result.orderId,
-        amount: result.amount,
-      });
-      setShowSuccessModal(true);
-    },
-    onError: (error) => {
-      console.error("Payment failed:", error);
-      setToast({
-        show: true,
-        type: "error",
-        title: "Payment Failed",
-        message: error || "Payment failed. Please try again.",
-      });
-    },
-    onDismiss: () => {
-      console.log("Payment dismissed by user");
-      setToast({
-        show: true,
-        type: "warning",
-        title: "Payment Cancelled",
-        message: "Payment was cancelled. You can try again anytime.",
-      });
-    },
-  });
-
-  // Auto-hide notification after 5 seconds
-  useEffect(() => {
-    if (toast.show) {
-      const timer = setTimeout(() => {
-        setToast((prev) => ({ ...prev, show: false }));
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast.show]);
 
   // Early return if no assessment ID - component will redirect
   if (!currentAssessmentId) {
@@ -191,44 +98,9 @@ const InstructionPage: React.FC = () => {
   }
 
   const handleStartAssessment = () => {
-    // Check if payment is already in progress
-    if (paymentState.isProcessing) {
-      return;
-    }
-
-    // If payment is already completed, proceed to phone verification
-    if (isPaymentCompleted) {
-      navigate("/assessment/phone-verification", {
-        state: { assessmentId: currentAssessmentId },
-      });
-      return;
-    }
-
-    // If assessment is free, proceed directly
-    if (!assessmentData?.is_paid) {
-      navigate("/assessment/phone-verification", {
-        state: { assessmentId: currentAssessmentId },
-      });
-      return;
-    }
-
-    // Otherwise, initiate payment
-    initiateAssessmentPayment(
-      parseInt(clientId),
-      assessmentPriceInPaise,
-
-      {
-        prefill: {
-          name: user.full_name || "User",
-          email: user.email || "",
-        },
-        metadata: {
-          assessmentId: currentAssessmentId,
-          testType: "placement-assessment",
-          type_id: currentAssessmentId, // Add type_id as required by backend
-        },
-      }
-    );
+    navigate("/assessment/phone-verification", {
+      state: { assessmentId: currentAssessmentId },
+    });
   };
 
   const handleResumeAssessment = () => {
@@ -239,50 +111,6 @@ const InstructionPage: React.FC = () => {
 
   return (
     <div className="">
-      {/* Payment Processing Modal */}
-      <PaymentProcessingModal
-        isOpen={paymentState.isProcessing}
-        step={
-          paymentState.step === "error"
-            ? "creating"
-            : (paymentState.step as
-                | "creating"
-                | "processing"
-                | "verifying"
-                | "complete")
-        }
-        onClose={() => {
-          // Can't close during processing, but we can handle dismiss
-          if (paymentState.step === "creating") {
-            setToast({
-              show: true,
-              type: "warning",
-              title: "Payment Cancelled",
-              message: "Payment initialization was cancelled.",
-            });
-          }
-        }}
-      />
-
-      {/* Payment Success Modal */}
-      <PaymentSuccessModal
-        isOpen={showSuccessModal}
-        onClose={() => setShowSuccessModal(false)}
-        paymentId={paymentResult?.paymentId}
-        orderId={paymentResult?.orderId}
-        amount={paymentResult?.amount || assessmentPrice}
-        paymentType="assessment"
-      />
-
-      {/* Payment Toast for errors/warnings */}
-      <PaymentToast
-        show={toast.show}
-        type={toast.type}
-        title={toast.title}
-        message={toast.message}
-        onClose={() => setToast((prev) => ({ ...prev, show: false }))}
-      />
-
       <div className="">
         {/* Hero Section */}
         <div className="bg-white rounded-3xl w-full border border-gray-200 shadow-lg">
@@ -360,36 +188,6 @@ const InstructionPage: React.FC = () => {
                 </div>
 
                 <div className="pt-4">
-                  {assessmentData?.is_paid ? (
-                    <>
-                      <p className="text-lg mb-4">Take this test for only</p>
-                      <div className="flex items-baseline gap-2 mb-6">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-lg text-gray-500 line-through">
-                            ₹699
-                          </span>
-                          <span className="text-4xl font-bold text-[#2C5F7F]">
-                            ₹{assessmentPrice}
-                          </span>
-                        </div>
-                        {isPaymentCompleted && (
-                          <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
-                            ✓ Paid
-                          </span>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="mb-6">
-                      <p className="text-lg font-bold text-green-600">
-                        Free Assessment
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        No payment required
-                      </p>
-                    </div>
-                  )}
-
                   <div className="flex flex-col lg:flex-row gap-3">
                     <button
                       onClick={() => {
@@ -424,29 +222,12 @@ const InstructionPage: React.FC = () => {
                         Resume Quiz
                       </button>
                     ) : (
-                      <div className="flex flex-col lg:flex-row gap-3 w-full">
-                        <button
-                          onClick={handleStartAssessment}
-                          disabled={paymentState.isProcessing}
-                          className={`w-full py-3 px-6 rounded-xl font-medium transition-colors ${
-                            paymentState.isProcessing
-                              ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                              : isPaymentCompleted
-                              ? "bg-green-600 text-white hover:bg-green-700"
-                              : assessmentData?.is_paid
-                              ? "bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]"
-                              : "bg-green-600 text-white hover:bg-green-700"
-                          }`}
-                        >
-                          {paymentState.isProcessing
-                            ? "Processing Payment..."
-                            : isPaymentCompleted
-                            ? "Start Assessment Now"
-                            : assessmentData?.is_paid
-                            ? `Pay ₹${assessmentPrice} & Start Test`
-                            : "Start Free Assessment"}
-                        </button>
-                      </div>
+                      <button
+                        onClick={handleStartAssessment}
+                        className="w-full py-3 px-6 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors"
+                      >
+                        Start Assessment
+                      </button>
                     )}
                   </div>
                 </div>
@@ -578,18 +359,7 @@ const InstructionPage: React.FC = () => {
 
             <div className="flex items-center gap-8">
               <div className="text-center">
-                <p className="text-gray-600 mb-2">Take this test for only</p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-[48px] font-bold text-[#2C5F7F]">
-                    ₹{assessmentPrice}
-                  </span>
-                  <span className="text-gray-500 line-through">₹699</span>
-                  {isPaymentCompleted && (
-                    <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-sm rounded-full font-medium">
-                      ✓ Paid
-                    </span>
-                  )}
-                </div>
+                <div className="flex items-baseline gap-2"></div>
               </div>
 
               {assessmentData?.status === "submitted" ? (
@@ -609,24 +379,9 @@ const InstructionPage: React.FC = () => {
               ) : (
                 <button
                   onClick={handleStartAssessment}
-                  disabled={paymentState.isProcessing}
-                  className={`px-8 py-4 rounded-xl font-semibold text-lg transition-colors ${
-                    paymentState.isProcessing
-                      ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                      : isPaymentCompleted
-                      ? "bg-green-600 text-white hover:bg-green-700"
-                      : assessmentData?.is_paid
-                      ? "bg-[#2C5F7F] text-white hover:bg-[#1a4a5f]"
-                      : "bg-green-600 text-white hover:bg-green-700"
-                  }`}
+                  className="px-8 py-4 bg-green-600 text-white rounded-xl font-semibold text-lg hover:bg-green-700 transition-colors"
                 >
-                  {paymentState.isProcessing
-                    ? "Processing Payment..."
-                    : isPaymentCompleted
-                    ? "Start Assessment Now"
-                    : assessmentData?.is_paid
-                    ? `Pay ₹${assessmentPrice} & Start Test`
-                    : "Start Free Assessment"}
+                  Start Assessment
                 </button>
               )}
             </div>
