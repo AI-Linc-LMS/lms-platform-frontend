@@ -24,7 +24,6 @@ import WorkshopResistrations from "./features/admin/workshop-registrations/Works
 import CertificatePortal from "./components/certificate/CertificatePortal";
 import PhoneVerificationPage from "./features/learn/pages/PhoneVerificationPage";
 import RoadmapPage from "./features/learn/components/assessment/RoadmapPage";
-import Referals from "./features/admin/referals/Referals";
 
 export interface RouteConfig {
   path: string;
@@ -124,12 +123,6 @@ const routes: RouteConfig[] = [
   {
     path: "/admin/workshop-registrations",
     component: WorkshopResistrations,
-    isPrivate: true,
-    requiredRole: "admin_or_instructor",
-  },
-  {
-    path: "/admin/referals",
-    component: Referals,
     isPrivate: true,
     requiredRole: "admin_or_instructor",
   },
