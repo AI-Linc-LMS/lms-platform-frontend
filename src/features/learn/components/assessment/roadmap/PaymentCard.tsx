@@ -344,7 +344,7 @@ const PaymentCardSection: React.FC<{
 
   const confirmNanodegreeCoursePayment = () => {
     setShowNanoDegreeCourseModal(false);
-    initiateCoursePayment(clientId, 4999, {
+    initiateCoursePayment(clientId, 4500, {
       prefill: {
         name: user.full_name || "User",
         email: user.email || "",
@@ -374,7 +374,7 @@ const PaymentCardSection: React.FC<{
 
   const confirmFlagshipCoursePayment = () => {
     setShowFlagshipCourseModal(false);
-    initiateFlagshipCoursePayment(clientId, redeemData?.payable_amount || 10000, {
+    initiateFlagshipCoursePayment(clientId, redeemData?.payable_amount-999 || 9001, {
       prefill: {
         name: user.full_name || "User",
         email: user.email || "",
@@ -395,14 +395,14 @@ const PaymentCardSection: React.FC<{
   // Create purchase data for modals
   const nanodegreePurchaseData = {
     percentage_scholarship: 0,
-    total_amount: 4999,
+    total_amount: 499,
     payable_amount: 499,
   };
 
   const nanodegreeCoursePurchaseData = {
     percentage_scholarship: 0,
     total_amount: 4999,
-    payable_amount: 4999,
+    payable_amount: 4500,
   };
 
   const flagshipPurchaseData = {
@@ -414,7 +414,7 @@ const PaymentCardSection: React.FC<{
   const flagshipCoursePurchaseData = {
     percentage_scholarship: redeemData?.percentage_scholarship || 90,
     total_amount: redeemData?.total_amount || 120000,
-    payable_amount: redeemData?.payable_amount || 10000,
+    payable_amount: redeemData?.payable_amount-999 || 9001,
   };
 
   // Helper function to get button text and style for Nanodegree
@@ -427,7 +427,7 @@ const PaymentCardSection: React.FC<{
       };
     } else if (isNanodegreeSeatBooked) {
       return {
-        text: "Seat Booked, Now Pay for Course ₹4999",
+        text: "Seat Booked, Now Pay for Course ₹4500",
         disabled: false,
         className: "bg-[#14212B] text-white hover:bg-[#223344]",
       };
@@ -450,7 +450,7 @@ const PaymentCardSection: React.FC<{
       };
     } else if (isFlagshipSeatBooked) {
       return {
-        text: `Seat Booked, Now Pay for Course ₹${redeemData?.payable_amount || 10000}`,
+        text: `Seat Booked, Now Pay for Course ₹${redeemData?.payable_amount-999 || 9001}`,
         disabled: false,
         className: "bg-[#14212B] text-white hover:bg-[#223344]",
       };
