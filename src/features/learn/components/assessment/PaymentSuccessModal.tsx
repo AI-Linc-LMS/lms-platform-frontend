@@ -18,7 +18,7 @@ interface PaymentSuccessModalProps {
   paymentId?: string;
   orderId?: string;
   amount: number;
-  paymentType?: 'assessment' | 'course'; // New prop to determine content type
+  paymentType?: "assessment" | "course"; // New prop to determine content type
 }
 
 const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
@@ -27,7 +27,7 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
   paymentId,
   orderId,
   amount,
-  paymentType = 'course', // Default to course for backward compatibility
+  paymentType = "course", // Default to course for backward compatibility
 }) => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [animationStep, setAnimationStep] = useState(0);
@@ -107,39 +107,43 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
     },
   ];
 
-  const benefits = paymentType === 'assessment' ? assessmentBenefits : courseBenefits;
+  const benefits =
+    paymentType === "assessment" ? assessmentBenefits : courseBenefits;
 
   // Different content based on payment type
   const getContentByType = () => {
-    if (paymentType === 'assessment') {
+    if (paymentType === "assessment") {
       return {
-        title: "Assessment Payment Successful!",
-        subtitle: "You can now take your placement assessment",
-        timelineNotice: "⏰ Start your assessment immediately",
-        achievementText: "You're all set to showcase your skills and unlock opportunities!",
-        nextStepsTitle: "Ready to Begin?",
+        title: "Certificate Payment Successful!",
+        subtitle: "Your certificate is now ready for download",
+        timelineNotice: "⏰ Download your certificate immediately",
+        achievementText:
+          "Congratulations! Your certificate is ready to showcase your achievement!",
+        nextStepsTitle: "What's Next?",
         nextSteps: [
-          "Start your assessment immediately",
-          "Complete all questions within the time limit",
-          "Get detailed results and feedback",
-          "Unlock placement opportunities based on your score"
+          "Download your certificate immediately",
+          "Share it on LinkedIn and other professional platforms",
+          "Add it to your resume and portfolio",
+          "Use it to enhance your career opportunities",
         ],
-        buttonText: "Start Assessment Now 🚀",
-        supportText: "Need help with the assessment? Contact our support team at support@ailinc.com"
+        supportText:
+          "Contact our support team at support@ailinc.com for any query",
       };
     } else {
       return {
         title: "Payment Successful!",
         subtitle: "Welcome to AI-LINC Course! Your journey begins with us.",
         timelineNotice: "⏰ Access your course dashboard within 7 days",
-        achievementText: "Our team will reach out to you on your registered email and phone number.",
+        achievementText:
+          "Our team will reach out to you on your registered email and phone number.",
         nextStepsTitle: "What's Next?",
         nextSteps: [
           "Access your course dashboard within 7 days",
-          "Join our community and introduce yourself"
+          "Join our community and introduce yourself",
         ],
         buttonText: "Congratulations, Go Back 🚀",
-        supportText: "Need help getting started? Contact our support team 24/7 at support@ailinc.com"
+        supportText:
+          "Need help getting started? Contact our support team 24/7 at support@ailinc.com",
       };
     }
   };
@@ -216,9 +220,7 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
             <h2 className="text-3xl font-bold text-gray-900 mb-2">
               {content.title}
             </h2>
-            <p className="text-lg text-gray-600 mb-2">
-              {content.subtitle}
-            </p>
+            <p className="text-lg text-gray-600 mb-2">{content.subtitle}</p>
 
             {/* Important Timeline Notice */}
             <p className="text-orange-600 font-semibold text-base mb-4">
@@ -328,11 +330,11 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
               {content.nextSteps.map((step, index) => (
                 <div key={index} className="flex items-center space-x-3">
                   <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-bold text-green-600">{index + 1}</span>
+                    <span className="text-xs font-bold text-green-600">
+                      {index + 1}
+                    </span>
                   </div>
-                  <span className="text-sm text-gray-700">
-                    {step}
-                  </span>
+                  <span className="text-sm text-gray-700">{step}</span>
                 </div>
               ))}
             </div>
@@ -346,19 +348,19 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
                 : "translate-y-4 opacity-0"
             }`}
           >
-            <button
-              onClick={handleContinue}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
-            >
-              {content.buttonText}
-            </button>
+            {content.buttonText && (
+              <button
+                onClick={handleContinue}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
+              >
+                {content.buttonText}
+              </button>
+            )}
           </div>
 
           {/* Support Info */}
           <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500">
-              {content.supportText}
-            </p>
+            <p className="text-xs text-gray-500">{content.supportText}</p>
           </div>
         </div>
       </div>

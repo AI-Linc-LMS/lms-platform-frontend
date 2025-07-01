@@ -118,8 +118,7 @@ const AssessmentsList: React.FC = () => {
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
               Discover your strengths and areas for improvement with our
-              comprehensive assessments. Choose from free evaluations or premium
-              detailed analyses.
+              comprehensive assessments designed to help you grow and succeed.
             </p>
 
             {/* Stats Cards */}
@@ -197,7 +196,7 @@ const AssessmentsList: React.FC = () => {
                 </div>
 
                 {/* Assessment Details */}
-                <div className="space-y-4 mb-8 flex-1">
+                <div className="space-y-4 mb-8 flex-1 min-h-[170px]">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
                       <FiClock className="h-5 w-5 text-blue-600" />
@@ -211,39 +210,15 @@ const AssessmentsList: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                        assessment.is_paid ? "bg-orange-50" : "bg-green-50"
-                      }`}
-                    >
-                      {assessment.is_paid ? (
-                        <FiAward className="h-5 w-5 text-orange-600" />
-                      ) : (
-                        <FiCheckCircle className="h-5 w-5 text-green-600" />
-                      )}
+                    <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+                      <FiCheckCircle className="h-5 w-5 text-green-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Price</p>
-                      {assessment.is_paid ? (
-                        <p className="font-semibold text-gray-800">
-                          ₹{parseFloat(assessment.price).toFixed(0)}
-                        </p>
-                      ) : (
-                        <p className="font-semibold text-green-600">Free</p>
-                      )}
+                      <p className="text-sm text-gray-500">Status</p>
+                      <p className="font-semibold text-green-600">Available</p>
                     </div>
                   </div>
                 </div>
-
-                {/* Price Badge for Paid Assessments */}
-                {assessment.is_paid && (
-                  <div className="mb-6">
-                    <div className="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 border border-orange-200">
-                      {/* <FiDollarSign className="w-4 h-4 mr-1" /> */}₹
-                      {parseFloat(assessment.price).toFixed(0)}
-                    </div>
-                  </div>
-                )}
 
                 {/* Action Button at the bottom */}
                 <div className="mt-auto">
@@ -258,9 +233,7 @@ const AssessmentsList: React.FC = () => {
                   >
                     <FiPlayCircle className="h-5 w-5" />
                     {assessment.is_active
-                      ? assessment.is_paid
-                        ? "Start Premium Assessment"
-                        : "Start Free Assessment"
+                      ? "Start Assessment"
                       : "Currently Unavailable"}
                   </button>
                 </div>

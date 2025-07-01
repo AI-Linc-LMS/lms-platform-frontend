@@ -4,6 +4,7 @@ import { getWorkshopRegistrations } from "../../../services/admin/workshopRegist
 import * as XLSX from "xlsx";
 
 interface WorkshopRegistrationData {
+  referal_code: string;
   id: number;
   name: string;
   email: string;
@@ -121,6 +122,7 @@ const WorkshopRegistration = () => {
               <th className="p-3">Email</th>
               <th className="p-3">Mobile Number</th>
               <th className="p-3">Workshop Name</th>
+              <th className="p-3">Referral Code</th>
               <th className="p-3">Session</th>
               <th className="p-3">Referral Code</th>
               <th className="p-3">Registered At</th>
@@ -137,6 +139,7 @@ const WorkshopRegistration = () => {
                     {entry.workshop_name}
                   </span>
                 </td>
+                <td className="p-3">{entry.referal_code}</td>
                 <td className="p-3">
                   <span className="bg-green-100 items-center justify-center text-center text-green-800 px-2 py-1 rounded-full text-xs font-medium">
                     {entry.session_number || 1}

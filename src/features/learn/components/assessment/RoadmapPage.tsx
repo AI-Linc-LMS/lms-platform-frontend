@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 // import ailincimg from "../../../../assets/dashboard_assets/toplogoimg.png";
 import popper from "../../../../assets/dashboard_assets/poppers.png";
 import roadmap from "../../../../assets/roadmap/roadmap.png";
@@ -9,6 +9,11 @@ import ProgramCard from "./roadmap/ProgramCard";
 import MentorFeedbackSection from "./roadmap/MentorFeedback";
 import PerformanceReport from "./roadmap/PerformanceReport";
 import { useSelector } from "react-redux";
+import { useAssessmentPayment } from "../../../../hooks/useRazorpayPayment";
+import { PaymentResult } from "../../../../services/payment/razorpayService";
+import PaymentProcessingModal from "./PaymentProcessingModal";
+import PaymentSuccessModal from "./PaymentSuccessModal";
+import PaymentToast from "./PaymentToast";
 
 // Import types
 import {
@@ -50,6 +55,49 @@ const RoadmapPage = () => {
 
   const certificateRef = useRef<CertificateTemplatesRef>(null);
 
+  // Payment states
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [paymentResult, setPaymentResult] = useState<{
+    paymentId?: string;
+    orderId?: string;
+    amount: number;
+  } | null>(null);
+
+  // Toast state
+  const [toast, setToast] = useState<{
+    show: boolean;
+    type: "success" | "error" | "warning" | "loading";
+    title: string;
+    message: string;
+  }>({
+    show: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
+  const showToast = (
+    type: "success" | "error" | "warning" | "loading",
+    title: string,
+    message: string
+  ) => {
+    setToast({ show: true, type, title, message });
+  };
+
+  const hideToast = () => {
+    setToast((prev) => ({ ...prev, show: false }));
+  };
+
+  // Auto-hide toast after 5 seconds
+  useEffect(() => {
+    if (toast.show && toast.type !== "loading") {
+      const timer = setTimeout(() => {
+        hideToast();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show, toast.type]);
+
   const {
     data: redeemData,
     isLoading,
@@ -66,8 +114,6 @@ const RoadmapPage = () => {
     gcTime: 0,
     enabled: !!clientId && !!currentAssessmentId,
   });
-
-
 
   const handleDownloadCertificate = async () => {
     setIsDownloading(true);
@@ -87,9 +133,66 @@ const RoadmapPage = () => {
     }
   };
 
+  const handleCertificatePayment = () => {
+    if (!currentAssessmentId) {
+      showToast("error", "Error", "Assessment ID not found");
+      return;
+    }
+
+    const certificatePrice = redeemData?.assessment_price ?? 49;
+
+    initiateAssessmentPayment(clientId, certificatePrice, {
+      prefill: {
+        name: user?.full_name || "User",
+        email: user?.email || "",
+      },
+      metadata: {
+        assessmentId: currentAssessmentId,
+        type_id: currentAssessmentId,
+        payment_type: "ASSESSMENT",
+      },
+    });
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    setPaymentResult(null);
+  };
+
   // Get user data and stats
   const user = useSelector((state: { user: UserState }) => state.user);
   const stats = redeemData?.stats;
+
+  // Certificate payment hook
+  const { paymentState: assessmentPaymentState, initiateAssessmentPayment } =
+    useAssessmentPayment({
+      onSuccess: (result: PaymentResult) => {
+        console.log("Certificate payment successful:", result);
+        setPaymentResult({
+          paymentId: result.paymentId,
+          orderId: result.orderId,
+          amount: result.amount,
+        });
+        setShowSuccessModal(true);
+        showToast(
+          "success",
+          "Payment Successful!",
+          "Your certificate is now ready for download."
+        );
+      },
+      onError: (error: string) => {
+        console.error("Certificate payment failed:", error);
+        showToast("error", "Payment Failed", error);
+      },
+      onDismiss: () => {
+        console.log("Certificate payment dismissed");
+        showToast(
+          "warning",
+          "Payment Cancelled",
+          "Payment was cancelled. You can try again anytime."
+        );
+      },
+    });
 
   // Certificate data for the assessment
   const certificateData = {
@@ -198,26 +301,38 @@ const RoadmapPage = () => {
               Your performance in the assessment has qualified you for an
               exclusive opportunity.
             </p>
-            <button
-              onClick={handleDownloadCertificate}
-              className="flex items-center gap-2 bg-[#14212B] text-white font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-lg shadow hover:bg-[#223344] transition-colors duration-200 focus:outline-none text-sm sm:text-base"
-            >
-              {isDownloading ? "Downloading..." : "Download Certificate"}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-4 h-4 sm:w-5 sm:h-5 ml-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="2"
+            {redeemData?.is_paid && redeemData?.txn_status !== "paid" ? (
+              <div className="flex flex-col items-center justify-center">
+                <button
+                  onClick={handleCertificatePayment}
+                  className="flex items-center gap-2 bg-[#14212B] text-white font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-lg shadow hover:bg-[#223344] transition-colors duration-200 focus:outline-none text-sm sm:text-base"
+                >
+                  Download Certificate
+                </button>
+                <span className="text-sm text-gray-500 italic text-center max-w-md font-sans px-2 mt-2">(You'll be required to pay Rs 49/- for the certificate)</span>
+              </div>
+            ) : (
+              <button
+                onClick={handleDownloadCertificate}
+                className="flex items-center gap-2 bg-[#14212B] text-white font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-lg shadow hover:bg-[#223344] transition-colors duration-200 focus:outline-none text-sm sm:text-base"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
-                />
-              </svg>
-            </button>
+                {isDownloading ? "Downloading..." : "Download Certificate"}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-4 h-4 sm:w-5 sm:h-5 ml-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
+                  />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
 
@@ -285,6 +400,42 @@ const RoadmapPage = () => {
           certificate={certificateData}
         />
       </div>
+
+      {/* Payment Processing Modal */}
+      <PaymentProcessingModal
+        isOpen={assessmentPaymentState.isProcessing}
+        step={
+          assessmentPaymentState.step === "error"
+            ? "creating"
+            : (assessmentPaymentState.step as
+                | "creating"
+                | "processing"
+                | "verifying"
+                | "complete")
+        }
+        onClose={() => {
+          // Handle processing modal close if needed
+        }}
+      />
+
+      {/* Payment Success Modal */}
+      <PaymentSuccessModal
+        isOpen={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        paymentId={paymentResult?.paymentId}
+        orderId={paymentResult?.orderId}
+        amount={paymentResult?.amount || 0}
+        paymentType="assessment"
+      />
+
+      {/* Payment Toast */}
+      <PaymentToast
+        show={toast.show}
+        type={toast.type}
+        title={toast.title}
+        message={toast.message}
+        onClose={hideToast}
+      />
     </div>
   );
 };
