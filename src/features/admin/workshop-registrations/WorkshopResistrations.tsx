@@ -4,7 +4,7 @@ import { getWorkshopRegistrations } from "../../../services/admin/workshopRegist
 import * as XLSX from "xlsx";
 
 interface WorkshopRegistrationData {
-  referal_code: string;
+  // referal_code: string;
   id: number;
   name: string;
   email: string;
