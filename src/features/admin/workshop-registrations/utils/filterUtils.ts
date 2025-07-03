@@ -6,6 +6,17 @@ export const filterWorkshopData = (
   search: string,
   filters: FilterState
 ): WorkshopRegistrationData[] => {
+  // Debug logging for active filters
+  const activeFilters = Object.entries(filters).filter(([key, value]) => {
+    if (typeof value === 'string') return value !== '';
+    if (typeof value === 'object') return value.start !== '' || value.end !== '';
+    return false;
+  });
+  
+  if (activeFilters.length > 0) {
+    console.log('Active Filters:', activeFilters);
+  }
+  
   return workshopData.filter((entry) => {
     // Global search
     const globalSearch = `${entry.name} ${entry.email}`
@@ -18,7 +29,19 @@ export const filterWorkshopData = (
     const matchesSelectedOptions = (value: string, filterValue: string) => {
       if (!filterValue) return true;
       const selectedOptions = filterValue.split(',').map(opt => opt.trim().toLowerCase());
-      return selectedOptions.includes(value.toLowerCase());
+      const matches = selectedOptions.includes(value.toLowerCase());
+      
+      // Debug logging for OR query
+      if (selectedOptions.length > 1) {
+        console.log('OR Query Debug:', {
+          fieldValue: value,
+          selectedOptions,
+          matches,
+          filterValue
+        });
+      }
+      
+      return matches;
     };
 
     // Helper function to check if value matches search string (for when user is searching)
@@ -28,17 +51,47 @@ export const filterWorkshopData = (
     };
 
     // Column filters
-    const nameMatch =
-      !filters.name ||
-      entry.name.toLowerCase().includes(filters.name.toLowerCase());
+    const nameMatch = (() => {
+      if (!filters.name) return true;
+      const filterVal = filters.name.trim();
+      if (filterVal.includes(',')) {
+        // Multi-select: match any selected value exactly (OR query)
+        const result = matchesSelectedOptions(entry.name, filterVal);
+        console.log('Name OR Query:', {
+          entryName: entry.name,
+          filterValue: filterVal,
+          result
+        });
+        return result;
+      } else {
+        // Single search string: substring match
+        return matchesSearchString(entry.name, filterVal);
+      }
+    })();
 
-    const emailMatch =
-      !filters.email ||
-      entry.email.toLowerCase().includes(filters.email.toLowerCase());
+    const emailMatch = (() => {
+      if (!filters.email) return true;
+      const filterVal = filters.email.trim();
+      if (filterVal.includes(',')) {
+        // Multi-select: match any selected value exactly (OR query)
+        return matchesSelectedOptions(entry.email, filterVal);
+      } else {
+        // Single search string: substring match
+        return matchesSearchString(entry.email, filterVal);
+      }
+    })();
 
-    const phoneMatch =
-      !filters.phone_number ||
-      entry.phone_number.includes(filters.phone_number);
+    const phoneMatch = (() => {
+      if (!filters.phone_number) return true;
+      const filterVal = filters.phone_number.trim();
+      if (filterVal.includes(',')) {
+        // Multi-select: match any selected value exactly (OR query)
+        return matchesSelectedOptions(entry.phone_number, filterVal);
+      } else {
+        // Single search string: substring match
+        return entry.phone_number.includes(filterVal);
+      }
+    })();
 
     // For multi-select fields, check if the filter value contains commas (selected options)
     // or is a single search string
@@ -46,8 +99,15 @@ export const filterWorkshopData = (
       if (!filters.workshop_name) return true;
       const filterVal = filters.workshop_name.trim();
       if (filterVal.includes(',')) {
-        // Multi-select: match any selected value exactly
-        return matchesSelectedOptions(entry.workshop_name, filterVal);
+        // Multi-select: match any selected value exactly (OR query)
+        const result = matchesSelectedOptions(entry.workshop_name, filterVal);
+        console.log('Workshop OR Query:', {
+          entryName: entry.name,
+          workshopName: entry.workshop_name,
+          filterValue: filterVal,
+          result
+        });
+        return result;
       } else {
         // Single search string: substring match
         return matchesSearchString(entry.workshop_name, filterVal);
@@ -178,7 +238,28 @@ export const filterWorkshopData = (
       (!startDate || registeredDate >= startDate) &&
       (!endDate || registeredDate <= endDate);
 
-    return (
+    // Debug logging for filter results
+    const allMatches = {
+      nameMatch,
+      emailMatch,
+      phoneMatch,
+      workshopMatch,
+      sessionMatch,
+      referralMatch,
+      attendedWebinarsMatch,
+      assessmentAttemptedMatch,
+      certificatePaidMatch,
+      prebookingPaidMatch,
+      coursePaidMatch,
+      firstCallStatusMatch,
+      firstCallCommentMatch,
+      secondCallStatusMatch,
+      secondCallCommentMatch,
+      amountPaidMatch,
+      dateMatch
+    };
+
+    const finalResult = (
       nameMatch &&
       emailMatch &&
       phoneMatch &&
@@ -197,6 +278,18 @@ export const filterWorkshopData = (
       amountPaidMatch &&
       dateMatch
     );
+
+    // Debug logging for failed matches
+    if (!finalResult && (filters.name || filters.email || filters.phone_number || filters.workshop_name)) {
+      console.log('Filter Match Failed:', {
+        entryName: entry.name,
+        entryEmail: entry.email,
+        allMatches,
+        activeFilters: Object.entries(filters).filter(([k, v]) => v && (typeof v === 'string' ? v !== '' : true))
+      });
+    }
+
+    return finalResult;
   });
 };
 

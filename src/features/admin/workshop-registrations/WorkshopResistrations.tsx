@@ -82,6 +82,7 @@ const WorkshopRegistration = () => {
     column: keyof FilterState,
     value: string | { start: string; end: string }
   ) => {
+    console.log("Filter Update:", { column, value, type: typeof value });
     setFilters((prev) => ({ ...prev, [column]: value }));
     setPage(1);
   };
@@ -129,7 +130,7 @@ const WorkshopRegistration = () => {
           </>
         )}
       </div>
-      <div className="overflow-x-auto bg-white shadow rounded min-h-[400px]">
+      <div className="flex flex-col overflow-x-auto bg-white shadow rounded min-h-[400px]">
         <table className="w-full text-sm text-left min-w-[1400px]">
           <WorkshopTableHeader
             filters={filters}
@@ -152,13 +153,15 @@ const WorkshopRegistration = () => {
             )}
           </tbody>
         </table>
-        <Pagination
-          currentPage={page}
-          totalPages={totalPages}
-          totalItems={filteredData.length}
-          pageSize={pageSize}
-          onPageChange={setPage}
-        />
+        <div className="mt-auto">
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            totalItems={filteredData.length}
+            pageSize={pageSize}
+            onPageChange={setPage}
+          />
+        </div>
       </div>
     </div>
   );

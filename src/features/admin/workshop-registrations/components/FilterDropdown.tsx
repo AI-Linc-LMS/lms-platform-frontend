@@ -53,32 +53,18 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
     return Array.from(values).sort();
   }, [data, column, filterType]);
 
-  // Filter unique values based on search term
-  const filteredValues = useMemo(() => {
-    if (filterType === "text") return [];
-
-    let filtered = uniqueValues;
-
-    if (searchTerm) {
-      // When searching, show matching options plus any selected options that don't match
-      const matchingOptions = uniqueValues.filter((value) =>
+  // Calculate selected and non-selected options
+  const selectedOptionsInData = selectedOptions.filter((opt) =>
+    uniqueValues.includes(opt)
+  );
+  const nonSelectedOptions = uniqueValues.filter(
+    (opt) => !selectedOptions.includes(opt)
+  );
+  const filteredNonSelected = searchTerm
+    ? nonSelectedOptions.filter((value) =>
         value.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      const selectedNotMatching = selectedOptions.filter(
-        (option) =>
-          !matchingOptions.includes(option) && uniqueValues.includes(option)
-      );
-      filtered = [...matchingOptions, ...selectedNotMatching];
-    } else {
-      // When not searching, show selected at top, then rest
-      filtered = [
-        ...selectedOptions.filter((opt) => uniqueValues.includes(opt)),
-        ...uniqueValues.filter((opt) => !selectedOptions.includes(opt)),
-      ];
-    }
-
-    return filtered;
-  }, [uniqueValues, searchTerm, filterType, selectedOptions]);
+      )
+    : nonSelectedOptions;
 
   const handleOptionToggle = (option: string) => {
     let newSelected: string[];
@@ -90,7 +76,17 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
     setSelectedOptions(newSelected);
     // Clear search term after selecting an option
     setSearchTerm("");
-    onChange(column, newSelected.join(","));
+
+    const filterValue = newSelected.join(",");
+    console.log("FilterDropdown Toggle:", {
+      column,
+      option,
+      newSelected,
+      filterValue,
+      action: selectedOptions.includes(option) ? "deselected" : "selected",
+    });
+
+    onChange(column, filterValue);
   };
 
   const handleClear = () => {
@@ -134,36 +130,66 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
         />
       </div>
       <div className="max-h-40 overflow-y-auto space-y-1 bg-white border border-gray-200 rounded shadow-sm">
-        {filteredValues.length > 0 ? (
-          filteredValues.map((option) => (
-            <label
-              key={option}
-              className={`flex items-center space-x-2 p-2 hover:bg-gray-50 rounded cursor-pointer ${
-                selectedOptions.includes(option)
-                  ? "bg-blue-50 border-l-2 border-blue-500"
-                  : ""
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={selectedOptions.includes(option)}
-                onChange={() => handleOptionToggle(option)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span
-                className={`text-sm flex-1 truncate ${
-                  selectedOptions.includes(option)
-                    ? "text-blue-700 font-medium"
-                    : "text-gray-700"
-                }`}
+        {selectedOptionsInData.length > 0 || filteredNonSelected.length > 0 ? (
+          <>
+            {/* Selected options section - always show if there are selected options */}
+            {selectedOptionsInData.length > 0 && (
+              <>
+                {selectedOptionsInData.map((option) => (
+                  <label
+                    key={option}
+                    className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded cursor-pointer bg-blue-50 border-l-2 border-blue-500"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedOptions.includes(option)}
+                      onChange={() => handleOptionToggle(option)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-blue-700 font-medium flex-1 truncate">
+                      {option}
+                    </span>
+                    <FiCheck className="w-4 h-4 text-blue-600" />
+                  </label>
+                ))}
+                {/* Show "All Selected" message when all options are selected */}
+                {filteredNonSelected.length === 0 &&
+                  selectedOptionsInData.length > 0 && (
+                    <div className="px-2 py-1 bg-green-50 border-t border-b border-green-200">
+                      <span className="text-xs text-green-600 font-medium">
+                        ✓ All options selected
+                      </span>
+                    </div>
+                  )}
+                {/* Separator between selected and non-selected */}
+                {filteredNonSelected.length > 0 && (
+                  <div className="px-2 py-1 bg-gray-100 border-t border-b border-gray-200">
+                    <span className="text-xs text-gray-500 font-medium">
+                      Other Options
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Non-selected options section */}
+            {filteredNonSelected.map((option) => (
+              <label
+                key={option}
+                className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
               >
-                {option}
-              </span>
-              {selectedOptions.includes(option) && (
-                <FiCheck className="w-4 h-4 text-blue-600" />
-              )}
-            </label>
-          ))
+                <input
+                  type="checkbox"
+                  checked={selectedOptions.includes(option)}
+                  onChange={() => handleOptionToggle(option)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700 flex-1 truncate">
+                  {option}
+                </span>
+              </label>
+            ))}
+          </>
         ) : (
           <div className="text-sm text-gray-500 p-2 text-center">
             {searchTerm ? "No options found" : "No options available"}

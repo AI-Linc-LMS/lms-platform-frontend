@@ -46,25 +46,18 @@ const MultiSelectDropdown: React.FC<{
         .filter(Boolean)
     : [];
 
-  // Filtering logic for dropdown only
-  let optionsToShow: string[] = [];
-  if (searchTerm) {
-    // When searching, show matching options plus any selected options that don't match
-    const matchingOptions = uniqueOptions.filter((opt) =>
-      opt.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    const selectedNotMatching = selectedOptions.filter(
-      (option) =>
-        !matchingOptions.includes(option) && uniqueOptions.includes(option)
-    );
-    optionsToShow = [...matchingOptions, ...selectedNotMatching];
-  } else {
-    // When not searching, show selected at top, then rest
-    optionsToShow = [
-      ...selectedOptions.filter((opt) => uniqueOptions.includes(opt)),
-      ...uniqueOptions.filter((opt) => !selectedOptions.includes(opt)),
-    ];
-  }
+  // Calculate selected and non-selected options
+  const selectedOptionsInData = selectedOptions.filter((opt) =>
+    uniqueOptions.includes(opt)
+  );
+  const nonSelectedOptions = uniqueOptions.filter(
+    (opt) => !selectedOptions.includes(opt)
+  );
+  const filteredNonSelected = searchTerm
+    ? nonSelectedOptions.filter((opt) =>
+        opt.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : nonSelectedOptions;
 
   // On search change, filter dropdown options and table data
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,7 +78,16 @@ const MultiSelectDropdown: React.FC<{
     }
     // Clear search term after selecting an option
     setSearchTerm("");
-    onChange(newSelected.join(","));
+
+    const filterValue = newSelected.join(",");
+    console.log("MultiSelectDropdown Toggle:", {
+      option: opt,
+      newSelected,
+      filterValue,
+      action: selectedOptions.includes(opt) ? "deselected" : "selected",
+    });
+
+    onChange(filterValue);
   };
 
   const handleClear = () => {
@@ -105,41 +107,74 @@ const MultiSelectDropdown: React.FC<{
         />
       </div>
       <div className="max-h-40 overflow-y-auto border border-gray-200 rounded bg-white">
-        {optionsToShow.length > 0 ? (
-          optionsToShow.map((opt) => (
-            <label
-              key={opt}
-              className={`flex items-center space-x-2 p-2 hover:bg-gray-50 cursor-pointer ${
-                selectedOptions.includes(opt)
-                  ? "bg-blue-50 border-l-2 border-blue-500"
-                  : ""
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={selectedOptions.includes(opt)}
-                onChange={() => handleToggle(opt)}
-                className="rounded border-gray-300 text-blue-600"
-              />
-              {colorMap && colorMap[opt] && (
-                <span
-                  className={`inline-block w-3 h-3 rounded-full ${colorMap[opt]}`}
-                ></span>
-              )}
-              <span
-                className={`text-sm flex-1 ${
-                  selectedOptions.includes(opt)
-                    ? "text-blue-700 font-medium"
-                    : "text-gray-700"
-                }`}
+        {selectedOptionsInData.length > 0 || filteredNonSelected.length > 0 ? (
+          <>
+            {/* Selected options section - always show if there are selected options */}
+            {selectedOptionsInData.length > 0 && (
+              <>
+                {selectedOptionsInData.map((opt) => (
+                  <label
+                    key={opt}
+                    className="flex items-center space-x-2 p-2 hover:bg-gray-50 cursor-pointer bg-blue-50 border-l-2 border-blue-500"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedOptions.includes(opt)}
+                      onChange={() => handleToggle(opt)}
+                      className="rounded border-gray-300 text-blue-600"
+                    />
+                    {colorMap && colorMap[opt] && (
+                      <span
+                        className={`inline-block w-3 h-3 rounded-full ${colorMap[opt]}`}
+                      ></span>
+                    )}
+                    <span className="text-sm text-blue-700 font-medium flex-1">
+                      {opt}
+                    </span>
+                    <FiCheck className="w-4 h-4 text-blue-600" />
+                  </label>
+                ))}
+                {/* Show "All Selected" message when all options are selected */}
+                {filteredNonSelected.length === 0 &&
+                  selectedOptionsInData.length > 0 && (
+                    <div className="px-2 py-1 bg-green-50 border-t border-b border-green-200">
+                      <span className="text-xs text-green-600 font-medium">
+                        ✓ All options selected
+                      </span>
+                    </div>
+                  )}
+                {/* Separator between selected and non-selected */}
+                {filteredNonSelected.length > 0 && (
+                  <div className="px-2 py-1 bg-gray-100 border-t border-b border-gray-200">
+                    <span className="text-xs text-gray-500 font-medium">
+                      Other Options
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Non-selected options section */}
+            {filteredNonSelected.map((opt) => (
+              <label
+                key={opt}
+                className="flex items-center space-x-2 p-2 hover:bg-gray-50 cursor-pointer"
               >
-                {opt}
-              </span>
-              {selectedOptions.includes(opt) && (
-                <FiCheck className="w-4 h-4 text-blue-600" />
-              )}
-            </label>
-          ))
+                <input
+                  type="checkbox"
+                  checked={selectedOptions.includes(opt)}
+                  onChange={() => handleToggle(opt)}
+                  className="rounded border-gray-300 text-blue-600"
+                />
+                {colorMap && colorMap[opt] && (
+                  <span
+                    className={`inline-block w-3 h-3 rounded-full ${colorMap[opt]}`}
+                  ></span>
+                )}
+                <span className="text-sm text-gray-700 flex-1">{opt}</span>
+              </label>
+            ))}
+          </>
         ) : (
           <div className="p-3 text-sm text-gray-500 text-center">
             {searchTerm ? "No options found" : "No options available"}
@@ -265,20 +300,6 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
     return Array.from(values);
   };
 
-  // For each column, filter the data based on the text input for that column
-  const getFilteredDataForColumn = (col: keyof WorkshopRegistrationData) => {
-    const inputValue = filters[col as keyof FilterState] as string;
-    if (!inputValue) return data;
-    return data.filter((item) => {
-      const val = item[col];
-      if (val && typeof val === "string")
-        return val.toLowerCase().includes(inputValue.toLowerCase());
-      if (val && typeof val === "number")
-        return val.toString().includes(inputValue);
-      return false;
-    });
-  };
-
   // Click outside handler
   const popoverRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   useEffect(() => {
@@ -371,9 +392,7 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
                       }
                       data={getUniqueFieldValues(
                         config.column as keyof WorkshopRegistrationData,
-                        getFilteredDataForColumn(
-                          config.column as keyof WorkshopRegistrationData
-                        )
+                        data
                       )}
                     />
                   )}
