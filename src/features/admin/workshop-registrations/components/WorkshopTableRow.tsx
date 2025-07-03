@@ -186,37 +186,63 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   // Modal for editing all 4 fields
   const renderEditModal = () => (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50 backdrop-blur-xs">
-      <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md relative border border-blue-100">
+      <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-xl relative border border-blue-100">
         <button
           className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
           onClick={() => setModalOpen(false)}
         >
           <FiX className="w-6 h-6" />
         </button>
-        <h2 className="text-2xl font-bold mb-6">Edit Call Status & Comments</h2>
+        <h2 className="text-2xl font-bold mb-6">Edit</h2>
         <div className="space-y-5">
-          <div>
-            <label className="block text-sm font-semibold mb-1">
-              1st Call Status <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <select
-                className="w-full p-3 border rounded text-base bg-gray-50 border-gray-300 focus:ring-2 focus:ring-blue-200"
-                value={modalFirstCallStatus}
-                onChange={(e) => setModalFirstCallStatus(e.target.value)}
-                required
-              >
-                <option value="">Select status</option>
-                {FIRST_CALL_STATUS_OPTIONS.map((opt) => (
-                  <option
-                    key={opt.value}
-                    value={opt.value}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full"
-                  >
-                    {opt.value}
-                  </option>
-                ))}
-              </select>
+          <div className="flex gap-5 w-full">
+            <div className="w-full">
+              <label className="block text-sm font-semibold mb-1">
+                1st Call Status <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  className="w-full p-3 border rounded text-base bg-gray-50 border-gray-300"
+                  value={modalFirstCallStatus}
+                  onChange={(e) => setModalFirstCallStatus(e.target.value)}
+                  required
+                >
+                  <option value="">Select status</option>
+                  {FIRST_CALL_STATUS_OPTIONS.map((opt) => (
+                    <option
+                      key={opt.value}
+                      value={opt.value}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full"
+                    >
+                      {opt.value}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="w-full">
+              <label className="block text-sm font-semibold mb-1">
+                2nd Call Status <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  className="w-full p-3 border rounded text-base bg-gray-50 border-gray-300"
+                  value={modalSecondCallStatus}
+                  onChange={(e) => setModalSecondCallStatus(e.target.value)}
+                  required
+                >
+                  <option value="">Select status</option>
+                  {SECOND_CALL_STATUS_OPTIONS.map((opt) => (
+                    <option
+                      key={opt.value}
+                      value={opt.value}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full"
+                    >
+                      {opt.value}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
           <div>
@@ -224,47 +250,23 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
               1st Call Comment
             </label>
             <textarea
-              className="w-full p-3 border rounded text-base bg-gray-50 border-gray-300 focus:ring-2 focus:ring-blue-200"
+              className="w-full p-3 h-full border rounded-md text-base bg-gray-50 border-gray-300"
               value={modalFirstCallComment}
               onChange={(e) => setModalFirstCallComment(e.target.value)}
               placeholder="Enter comment"
-              rows={2}
+              rows={3}
             />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-1">
-              2nd Call Status <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <select
-                className="w-full p-3 border rounded text-base bg-gray-50 border-gray-300 focus:ring-2 focus:ring-blue-200"
-                value={modalSecondCallStatus}
-                onChange={(e) => setModalSecondCallStatus(e.target.value)}
-                required
-              >
-                <option value="">Select status</option>
-                {SECOND_CALL_STATUS_OPTIONS.map((opt) => (
-                  <option
-                    key={opt.value}
-                    value={opt.value}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full"
-                  >
-                    {opt.value}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
           <div>
             <label className="block text-sm font-semibold mb-1">
               2nd Call Comment
             </label>
             <textarea
-              className="w-full p-3 border rounded text-base bg-gray-50 border-gray-300 focus:ring-2 focus:ring-blue-200"
+              className="w-full p-3 border rounded-md text-base bg-gray-50 border-gray-300"
               value={modalSecondCallComment}
               onChange={(e) => setModalSecondCallComment(e.target.value)}
               placeholder="Enter comment"
-              rows={2}
+              rows={3}
             />
           </div>
         </div>
