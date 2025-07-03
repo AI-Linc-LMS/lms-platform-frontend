@@ -128,6 +128,7 @@ const WorkshopRegistration = () => {
             Total Students Registered: <strong>{workshopData.length}</strong>
           </>
         )}
+        
       </div>
       <div className="overflow-x-auto bg-white shadow rounded min-h-[400px]">
         <table className="w-full text-sm text-left min-w-[1400px]">
