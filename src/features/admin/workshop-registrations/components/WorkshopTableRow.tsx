@@ -52,6 +52,18 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   const [modalSecondCallComment, setModalSecondCallComment] =
     useState(secondCallComment);
 
+  // Tooltip state
+  const [tooltipData, setTooltipData] = useState<{
+    show: boolean;
+    text: string;
+    x: number;
+    y: number;
+  }>({ show: false, text: "", x: 0, y: 0 });
+
+  // Separate hover states
+  const [isCommentHovered, setIsCommentHovered] = useState(false);
+  const [isTooltipHovered, setIsTooltipHovered] = useState(false);
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString(undefined, {
       year: "numeric",
@@ -69,6 +81,52 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
       ? `${comment.substring(0, maxLength)}...`
       : comment;
   };
+
+  const handleCommentHover = (event: React.MouseEvent, comment: string) => {
+    if (comment && comment.length > 25) {
+      setIsCommentHovered(true);
+      const rect = event.currentTarget.getBoundingClientRect();
+      setTooltipData({
+        show: true,
+        text: comment,
+        x: rect.left,
+        y: rect.top - 10,
+      });
+    }
+  };
+
+  const handleCommentLeave = () => {
+    setIsCommentHovered(false);
+    // Only close tooltip if tooltip is also not hovered
+    if (!isTooltipHovered) {
+      setTooltipData({ show: false, text: "", x: 0, y: 0 });
+    }
+  };
+
+  // Add scroll event listener to close tooltip
+  useEffect(() => {
+    const handleScroll = () => {
+      if (tooltipData.show) {
+        setTooltipData({ show: false, text: "", x: 0, y: 0 });
+      }
+    };
+
+    // Listen for both horizontal and vertical scroll
+    window.addEventListener("scroll", handleScroll, true);
+    const tableContainer =
+      document.querySelector(".table-container") ||
+      document.querySelector("table")?.parentElement;
+    if (tableContainer) {
+      tableContainer.addEventListener("scroll", handleScroll, true);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll, true);
+      if (tableContainer) {
+        tableContainer.removeEventListener("scroll", handleScroll, true);
+      }
+    };
+  }, [tooltipData.show]);
 
   const getStatusBadgeClass = (status: string, type: "yes/no" | "call") => {
     if (type === "yes/no") {
@@ -396,7 +454,11 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
         </td>
         {/* 1st Call Comment */}
         <td className="p-3">
-          <span className="text-sm text-gray-700 cursor-help">
+          <span
+            className="text-sm text-gray-700"
+            onMouseEnter={(e) => handleCommentHover(e, firstCallComment)}
+            onMouseLeave={handleCommentLeave}
+          >
             {truncateComment(firstCallComment)}
           </span>
         </td>
@@ -410,7 +472,11 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
         </td>
         {/* 2nd Call Comment */}
         <td className="p-3">
-          <span className="text-sm text-gray-700 cursor-help">
+          <span
+            className="text-sm text-gray-700"
+            onMouseEnter={(e) => handleCommentHover(e, secondCallComment)}
+            onMouseLeave={handleCommentLeave}
+          >
             {truncateComment(secondCallComment)}
           </span>
         </td>
@@ -437,6 +503,28 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
           </button>
         </td>
       </tr>
+      {/* Global Tooltip */}
+      {tooltipData.show && (
+        <div
+          className="fixed z-[9999] px-3 py-2 bg-white text-black text-sm rounded-lg shadow-lg max-w-sm whitespace-pre-wrap break-words border border-gray-300"
+          style={{
+            left: tooltipData.x,
+            top: tooltipData.y,
+            transform: "translateX(-103%)",
+          }}
+          onMouseEnter={() => setIsTooltipHovered(true)}
+          onMouseLeave={() => {
+            setIsTooltipHovered(false);
+            // Only close tooltip if comment is also not hovered
+            if (!isCommentHovered) {
+              setTooltipData({ show: false, text: "", x: 0, y: 0 });
+            }
+          }}
+        >
+          {tooltipData.text}
+          <div className="absolute top-3 -right-2 w-1 h-1 border-l-6 border-l-gray-300 border-t-6 border-t-transparent border-b-6 border-b-transparent"></div>
+        </div>
+      )}
     </>
   );
 };

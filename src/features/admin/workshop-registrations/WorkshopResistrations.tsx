@@ -107,7 +107,7 @@ const WorkshopRegistration = () => {
     return <div className="p-6">Error loading workshop registrations</div>;
 
   return (
-    <div className="p-4 md:p-6 bg-gray-50 min-h-screen">
+    <div className="p-4 md:p-6 bg-gray-50 min-h-screen flex flex-col">
       <h1 className="text-xl md:text-2xl font-bold mb-6">
         Workshop Registrations
       </h1>
@@ -130,30 +130,35 @@ const WorkshopRegistration = () => {
           </>
         )}
       </div>
-      <div className="flex flex-col overflow-x-auto bg-white shadow rounded min-h-[400px]">
-        <table className="w-full text-sm text-left min-w-[1400px]">
-          <WorkshopTableHeader
-            filters={filters}
-            openFilter={openFilter}
-            filterRefs={filterRefs}
-            onToggleFilter={(col) =>
-              setOpenFilter(openFilter === col ? null : col)
-            }
-            onUpdateFilter={updateFilter}
-            onClearFilter={clearFilter}
-            data={workshopData}
-          />
-          <tbody>
-            {paginatedData.length > 0 ? (
-              paginatedData.map((entry) => (
-                <WorkshopTableRow key={entry.id} entry={entry} />
-              ))
-            ) : (
-              <NoDataState hasActiveFilters={hasActiveFilters(filters)} />
-            )}
-          </tbody>
-        </table>
-        <div className="mt-auto">
+      <div className="flex flex-col bg-white shadow rounded flex-1 min-h-0">
+        {/* Scrollable table container */}
+        <div className="flex-1 overflow-auto min-h-0">
+          <table className="w-full text-sm text-left min-w-[1400px]">
+            <WorkshopTableHeader
+              filters={filters}
+              openFilter={openFilter}
+              filterRefs={filterRefs}
+              onToggleFilter={(col) =>
+                setOpenFilter(openFilter === col ? null : col)
+              }
+              onUpdateFilter={updateFilter}
+              onClearFilter={clearFilter}
+              data={workshopData}
+            />
+            <tbody>
+              {paginatedData.length > 0 ? (
+                paginatedData.map((entry) => (
+                  <WorkshopTableRow key={entry.id} entry={entry} />
+                ))
+              ) : (
+                <NoDataState hasActiveFilters={hasActiveFilters(filters)} />
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Fixed pagination */}
+        <div className="border-t bg-white">
           <Pagination
             currentPage={page}
             totalPages={totalPages}
