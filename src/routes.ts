@@ -1,4 +1,5 @@
 import Jobs from "./features/jobs/pages/Jobs";
+import JobDetail from "./features/jobs/pages/JobDetail";
 import Learn from "./features/learn/pages/Learn";
 import Live from "./features/live/pages/Live";
 // Might have potential bug
@@ -93,6 +94,11 @@ const routes: RouteConfig[] = [
     path: "/jobs",
     component: Jobs,
     isPrivate: true,
+  },
+  {
+    path: "/jobs/:jobId",
+    component: JobDetail,
+    isPrivate: false,
   },
   {
     path: "/courses",
