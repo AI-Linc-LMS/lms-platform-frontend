@@ -97,7 +97,6 @@ const AssesmentStudentResults = () => {
   );
   const totalPages = Math.ceil(filteredData.length / pageSize);
 
-
   // Helper function to safely parse score
   const getScoreColor = (score: string) => {
     try {
@@ -181,7 +180,16 @@ const AssesmentStudentResults = () => {
       </div>
 
       <div className="mb-4 text-sm text-gray-600">
-        Total Students: <strong>{assessmentData.length}</strong>
+        {search ? (
+          <>
+            Filtered count: <strong>{filteredData.length}</strong> of{" "}
+            <strong>{assessmentData.length}</strong> total students
+          </>
+        ) : (
+          <>
+            Total Students: <strong>{assessmentData.length}</strong>
+          </>
+        )}
       </div>
 
       <div className="overflow-x-auto bg-white shadow rounded">
@@ -212,7 +220,7 @@ const AssesmentStudentResults = () => {
                   {entry?.userprofile?.phone_number || "N/A"}
                 </td>
                 <td className="p-3">
-                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full md:text-xs text-[10px]">
+                  <span className="text-[13px]">
                     {entry?.assessment?.title || "N/A"}
                   </span>
                 </td>
