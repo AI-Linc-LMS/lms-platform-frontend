@@ -118,7 +118,16 @@ const WorkshopRegistration = () => {
         onClearAllFilters={clearAllFilters}
       />
       <div className="mb-4 text-sm text-gray-600">
-        Total Students Registered: <strong>{workshopData.length}</strong>
+        {hasActiveFilters(filters) || search ? (
+          <>
+            Filtered count: <strong>{filteredData.length}</strong> of{" "}
+            <strong>{workshopData.length}</strong> total students
+          </>
+        ) : (
+          <>
+            Total Students Registered: <strong>{workshopData.length}</strong>
+          </>
+        )}
       </div>
       <div className="overflow-x-auto bg-white shadow rounded min-h-[400px]">
         <table className="w-full text-sm text-left min-w-[1400px]">

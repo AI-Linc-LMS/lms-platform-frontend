@@ -1,6 +1,15 @@
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiCopy, FiExternalLink, FiCheck } from "react-icons/fi";
+import {
+  FiSearch,
+  FiPlus,
+  FiEdit2,
+  FiTrash2,
+  FiX,
+  FiCopy,
+  FiExternalLink,
+  FiCheck,
+} from "react-icons/fi";
 import {
   getRefferalDetails,
   createReferral,
@@ -39,7 +48,7 @@ const Referals = () => {
       setCopiedLinkId(referralId);
       setTimeout(() => setCopiedLinkId(null), 2000);
     } catch (err) {
-      console.error('Failed to copy link:', err);
+      console.error("Failed to copy link:", err);
     }
   };
 
@@ -144,6 +153,20 @@ const Referals = () => {
           </button>
         </div>
 
+        {/* Count Display */}
+        <div className="mb-4 text-sm text-gray-600">
+          {searchTerm ? (
+            <>
+              Filtered count: <strong>{filteredReferrals.length}</strong> of{" "}
+              <strong>{referrals?.length || 0}</strong> total referrals
+            </>
+          ) : (
+            <>
+              Total Referrals: <strong>{referrals?.length || 0}</strong>
+            </>
+          )}
+        </div>
+
         {/* Referrals Table */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
@@ -184,7 +207,9 @@ const Referals = () => {
                   </tr>
                 ) : (
                   filteredReferrals.map((referral: Referral) => {
-                    const referralLink = generateReferralLink(referral.referral_code);
+                    const referralLink = generateReferralLink(
+                      referral.referral_code
+                    );
                     const isCopied = copiedLinkId === referral.id.toString();
 
                     return (
@@ -206,17 +231,26 @@ const Referals = () => {
                         <td className="px-6 py-4 text-sm text-gray-600">
                           <div className="flex items-center gap-2 max-w-xs">
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs text-gray-500 truncate" title={referralLink}>
+                              <p
+                                className="text-xs text-gray-500 truncate"
+                                title={referralLink}
+                              >
                                 {referralLink}
                               </p>
                             </div>
                             <div className="flex items-center gap-1">
                               <button
-                                onClick={() => copyToClipboard(referralLink, referral.id.toString())}
-                                className={`p-1.5 rounded-md transition-colors ${isCopied
-                                    ? 'text-green-600 bg-green-50'
-                                    : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'
-                                  }`}
+                                onClick={() =>
+                                  copyToClipboard(
+                                    referralLink,
+                                    referral.id.toString()
+                                  )
+                                }
+                                className={`p-1.5 rounded-md transition-colors ${
+                                  isCopied
+                                    ? "text-green-600 bg-green-50"
+                                    : "text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+                                }`}
                                 title={isCopied ? "Copied!" : "Copy link"}
                               >
                                 {isCopied ? (
@@ -428,8 +462,9 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, name: e.target.value }))
               }
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${errors.name ? "border-red-500" : "border-gray-300"
-                }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${
+                errors.name ? "border-red-500" : "border-gray-300"
+              }`}
               placeholder="Enter full name"
               disabled={isLoading}
             />
@@ -452,8 +487,9 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, email: e.target.value }))
               }
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${errors.email ? "border-red-500" : "border-gray-300"
-                }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${
+                errors.email ? "border-red-500" : "border-gray-300"
+              }`}
               placeholder="Enter email address"
               disabled={isLoading}
             />
@@ -479,8 +515,9 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
                   phone_number: e.target.value,
                 }))
               }
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${errors.phone_number ? "border-red-500" : "border-gray-300"
-                }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${
+                errors.phone_number ? "border-red-500" : "border-gray-300"
+              }`}
               placeholder="Enter phone number"
               disabled={isLoading}
             />
@@ -506,8 +543,9 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
                   referral_code: e.target.value,
                 }))
               }
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${errors.referral_code ? "border-red-500" : "border-gray-300"
-                }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${
+                errors.referral_code ? "border-red-500" : "border-gray-300"
+              }`}
               placeholder="Enter referral code"
               disabled={isLoading}
             />
