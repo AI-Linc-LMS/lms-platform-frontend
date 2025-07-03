@@ -7,7 +7,7 @@ export const filterWorkshopData = (
   filters: FilterState
 ): WorkshopRegistrationData[] => {
   // Debug logging for active filters
-  const activeFilters = Object.entries(filters).filter(([key, value]) => {
+  const activeFilters = Object.entries(filters).filter(([, value]) => {
     if (typeof value === 'string') return value !== '';
     if (typeof value === 'object') return value.start !== '' || value.end !== '';
     return false;
@@ -285,7 +285,7 @@ export const filterWorkshopData = (
         entryName: entry.name,
         entryEmail: entry.email,
         allMatches,
-        activeFilters: Object.entries(filters).filter(([k, v]) => v && (typeof v === 'string' ? v !== '' : true))
+        activeFilters: Object.entries(filters).filter(([, v]) => v && (typeof v === 'string' ? v !== '' : true))
       });
     }
 
