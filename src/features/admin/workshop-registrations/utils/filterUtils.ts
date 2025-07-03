@@ -14,6 +14,19 @@ export const filterWorkshopData = (
 
     if (!globalSearch) return false;
 
+    // Helper function to check if value matches any of the selected options
+    const matchesSelectedOptions = (value: string, filterValue: string) => {
+      if (!filterValue) return true;
+      const selectedOptions = filterValue.split(',').map(opt => opt.trim().toLowerCase());
+      return selectedOptions.includes(value.toLowerCase());
+    };
+
+    // Helper function to check if value matches search string (for when user is searching)
+    const matchesSearchString = (value: string, filterValue: string) => {
+      if (!filterValue) return true;
+      return value.toLowerCase().includes(filterValue.toLowerCase());
+    };
+
     // Column filters
     const nameMatch =
       !filters.name ||
@@ -27,84 +40,130 @@ export const filterWorkshopData = (
       !filters.phone_number ||
       entry.phone_number.includes(filters.phone_number);
 
-    const workshopMatch =
-      !filters.workshop_name ||
-      entry.workshop_name
-        .toLowerCase()
-        .includes(filters.workshop_name.toLowerCase());
+    // For multi-select fields, check if the filter value contains commas (selected options)
+    // or is a single search string
+    const workshopMatch = (() => {
+      if (!filters.workshop_name) return true;
+      const filterVal = filters.workshop_name.trim();
+      if (filterVal.includes(',')) {
+        // Multi-select: match any selected value exactly
+        return matchesSelectedOptions(entry.workshop_name, filterVal);
+      } else {
+        // Single search string: substring match
+        return matchesSearchString(entry.workshop_name, filterVal);
+      }
+    })();
 
-    const sessionMatch =
-      !filters.session_number ||
-      (entry.session_number &&
-        entry.session_number.toString().includes(filters.session_number));
+    const sessionMatch = (() => {
+      if (!filters.session_number) return true;
+      const filterVal = filters.session_number.trim();
+      const sessionValue = entry.session_number?.toString() || '';
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions(sessionValue, filterVal);
+      } else {
+        return matchesSearchString(sessionValue, filterVal);
+      }
+    })();
 
-    const referralMatch =
-      !filters.referal_code ||
-      (entry.referal_code &&
-        entry.referal_code
-          .toLowerCase()
-          .includes(filters.referal_code.toLowerCase()));
+    const referralMatch = (() => {
+      if (!filters.referal_code) return true;
+      const filterVal = filters.referal_code.trim();
+      if (!entry.referal_code) return false;
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions(entry.referal_code, filterVal);
+      } else {
+        return matchesSearchString(entry.referal_code, filterVal);
+      }
+    })();
 
-    // New field filters
-    const attendedWebinarsMatch =
-      !filters.attended_webinars ||
-      entry.attended_webinars
-        .toLowerCase()
-        .includes(filters.attended_webinars.toLowerCase());
+    // New field filters with improved logic
+    const attendedWebinarsMatch = (() => {
+      if (!filters.attended_webinars) return true;
+      const filterVal = filters.attended_webinars.trim();
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions(entry.attended_webinars, filterVal);
+      } else {
+        return matchesSearchString(entry.attended_webinars, filterVal);
+      }
+    })();
 
-    const assessmentAttemptedMatch =
-      !filters.is_assessment_attempted ||
-      entry.is_assessment_attempted
-        .toLowerCase()
-        .includes(filters.is_assessment_attempted.toLowerCase());
+    const assessmentAttemptedMatch = (() => {
+      if (!filters.is_assessment_attempted) return true;
+      const filterVal = filters.is_assessment_attempted.trim();
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions(entry.is_assessment_attempted, filterVal);
+      } else {
+        return matchesSearchString(entry.is_assessment_attempted, filterVal);
+      }
+    })();
 
-    const certificatePaidMatch =
-      !filters.is_certificate_amount_paid ||
-      entry.is_certificate_amount_paid
-        .toLowerCase()
-        .includes(filters.is_certificate_amount_paid.toLowerCase());
+    const certificatePaidMatch = (() => {
+      if (!filters.is_certificate_amount_paid) return true;
+      const filterVal = filters.is_certificate_amount_paid.trim();
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions(entry.is_certificate_amount_paid, filterVal);
+      } else {
+        return matchesSearchString(entry.is_certificate_amount_paid, filterVal);
+      }
+    })();
 
-    const prebookingPaidMatch =
-      !filters.is_prebooking_amount_paid ||
-      entry.is_prebooking_amount_paid
-        .toLowerCase()
-        .includes(filters.is_prebooking_amount_paid.toLowerCase());
+    const prebookingPaidMatch = (() => {
+      if (!filters.is_prebooking_amount_paid) return true;
+      const filterVal = filters.is_prebooking_amount_paid.trim();
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions(entry.is_prebooking_amount_paid, filterVal);
+      } else {
+        return matchesSearchString(entry.is_prebooking_amount_paid, filterVal);
+      }
+    })();
 
-    const coursePaidMatch =
-      !filters.is_course_amount_paid ||
-      entry.is_course_amount_paid
-        .toLowerCase()
-        .includes(filters.is_course_amount_paid.toLowerCase());
+    const coursePaidMatch = (() => {
+      if (!filters.is_course_amount_paid) return true;
+      const filterVal = filters.is_course_amount_paid.trim();
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions(entry.is_course_amount_paid, filterVal);
+      } else {
+        return matchesSearchString(entry.is_course_amount_paid, filterVal);
+      }
+    })();
 
-    const firstCallStatusMatch =
-      !filters.first_call_status ||
-      entry.first_call_status
-        .toLowerCase()
-        .includes(filters.first_call_status.toLowerCase());
+    const firstCallStatusMatch = (() => {
+      if (!filters.first_call_status) return true;
+      const filterVal = filters.first_call_status.trim();
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions(entry.first_call_status, filterVal);
+      } else {
+        return matchesSearchString(entry.first_call_status, filterVal);
+      }
+    })();
 
     const firstCallCommentMatch =
       !filters.fist_call_comment ||
-      entry.fist_call_comment
-        .toLowerCase()
-        .includes(filters.fist_call_comment.toLowerCase());
+      entry.fist_call_comment.toLowerCase().includes(filters.fist_call_comment.toLowerCase());
 
-    const secondCallStatusMatch =
-      !filters.second_call_status ||
-      entry.second_call_status
-        .toLowerCase()
-        .includes(filters.second_call_status.toLowerCase());
+    const secondCallStatusMatch = (() => {
+      if (!filters.second_call_status) return true;
+      const filterVal = filters.second_call_status.trim();
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions(entry.second_call_status, filterVal);
+      } else {
+        return matchesSearchString(entry.second_call_status, filterVal);
+      }
+    })();
 
     const secondCallCommentMatch =
       !filters.second_call_comment ||
-      entry.second_call_comment
-        .toLowerCase()
-        .includes(filters.second_call_comment.toLowerCase());
+      entry.second_call_comment.toLowerCase().includes(filters.second_call_comment.toLowerCase());
 
-    const amountPaidMatch =
-      !filters.amount_paid ||
-      entry.amount_paid
-        .toLowerCase()
-        .includes(filters.amount_paid.toLowerCase());
+    const amountPaidMatch = (() => {
+      if (!filters.amount_paid) return true;
+      const filterVal = filters.amount_paid.trim();
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions(entry.amount_paid, filterVal);
+      } else {
+        return matchesSearchString(entry.amount_paid, filterVal);
+      }
+    })();
 
     // Date range filter
     const registeredDate = new Date(entry.registered_at);
