@@ -38,7 +38,7 @@ const WorkshopRegistration = () => {
     is_prebooking_amount_paid: useRef<HTMLDivElement>(null),
     is_course_amount_paid: useRef<HTMLDivElement>(null),
     first_call_status: useRef<HTMLDivElement>(null),
-    fist_call_comment: useRef<HTMLDivElement>(null),
+    first_call_comment: useRef<HTMLDivElement>(null),
     second_call_status: useRef<HTMLDivElement>(null),
     second_call_comment: useRef<HTMLDivElement>(null),
     amount_paid: useRef<HTMLDivElement>(null),
@@ -49,8 +49,10 @@ const WorkshopRegistration = () => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         openFilter &&
-        filterRefs[openFilter]?.current &&
-        !filterRefs[openFilter]?.current?.contains(event.target as Node)
+        filterRefs[openFilter as keyof typeof filterRefs]?.current &&
+        !filterRefs[openFilter as keyof typeof filterRefs]?.current?.contains(
+          event.target as Node
+        )
       ) {
         setOpenFilter(null);
       }

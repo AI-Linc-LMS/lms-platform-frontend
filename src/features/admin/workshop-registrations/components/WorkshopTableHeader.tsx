@@ -39,12 +39,13 @@ const MultiSelectDropdown: React.FC<{
 }> = ({ value, onChange, data, colorMap }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const uniqueOptions = useMemo(() => Array.from(new Set(data)).sort(), [data]);
-  const selectedOptions = value
-    ? value
-        .split(",")
-        .map((v) => v.trim())
-        .filter(Boolean)
-    : [];
+  const selectedOptions =
+    typeof value === "string" && value
+      ? value
+          .split(",")
+          .map((v) => v.trim())
+          .filter(Boolean)
+      : [];
 
   // Calculate selected and non-selected options
   const selectedOptionsInData = selectedOptions.filter((opt) =>
@@ -262,7 +263,7 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
       enum: FIRST_CALL_STATUS_OPTIONS,
     },
     {
-      column: "fist_call_comment",
+      column: "first_call_comment",
       label: "1st Call Comment",
       placeholder: "Filter by first call comment...",
     },
@@ -284,7 +285,7 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
     },
   ];
 
-  const commentFields = ["fist_call_comment", "second_call_comment"];
+  const commentFields = ["first_call_comment", "second_call_comment"];
 
   // Helper to get all unique values for a field from a filtered dataset
   const getUniqueFieldValues = (
@@ -433,6 +434,43 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
                 onChange={(column, value) => onUpdateFilter(column, value)}
                 onClear={onClearFilter}
                 filterRef={filterRefs.registered_at!}
+              />
+            </div>
+          )}
+        </th>
+        <th className="p-3 relative min-w-[160px]">
+          <div className="flex items-center gap-1">
+            <span>Updated At</span>
+            <button
+              type="button"
+              className={`ml-1 p-1 rounded hover:bg-gray-200 ${
+                openFilter === "updated_at" ? "text-blue-600" : "text-gray-400"
+              }`}
+              onClick={() =>
+                onToggleFilter(
+                  openFilter === "updated_at"
+                    ? null
+                    : ("updated_at" as keyof FilterState)
+                )
+              }
+            >
+              <FiFilter className="w-4 h-4" />
+            </button>
+          </div>
+          {openFilter === "updated_at" && (
+            <div
+              ref={(el) => {
+                popoverRefs.current["updated_at"] = el;
+              }}
+              className="absolute right-2 top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
+            >
+              <DateFilterDropdown
+                column={"updated_at" as keyof FilterState}
+                value={filters.updated_at || { start: "", end: "" }}
+                isOpen={true}
+                onChange={(column, value) => onUpdateFilter(column, value)}
+                onClear={onClearFilter}
+                filterRef={filterRefs.updated_at!}
               />
             </div>
           )}
