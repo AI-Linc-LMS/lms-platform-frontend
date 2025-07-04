@@ -144,9 +144,17 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
 
   const getStatusBadgeClass = (status: string, type: "yes/no" | "call") => {
     if (type === "yes/no") {
-      return status === "yes"
-        ? "bg-green-100 text-green-800"
-        : "bg-gray-100 text-gray-600";
+      if (status === "yes" || status === "paid" || status === "attempted") {
+        return "bg-green-500 text-white";
+      }
+      if (
+        status === "no" ||
+        status === "not_paid" ||
+        status === "not_attempted"
+      ) {
+        return "bg-yellow-100 text-yellow-800";
+      }
+      return "bg-gray-100 text-gray-600";
     }
     if (type === "call") {
       if (
