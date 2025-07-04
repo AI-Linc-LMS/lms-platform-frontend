@@ -223,9 +223,9 @@ export const filterWorkshopData = (
       if (!filters.amount_paid) return true;
       const filterVal = filters.amount_paid.trim();
       if (filterVal.includes(',')) {
-        return matchesSelectedOptions(entry.amount_paid, filterVal);
+        return matchesSelectedOptions(String(entry.amount_paid), filterVal);
       } else {
-        return matchesSearchString(entry.amount_paid, filterVal);
+        return matchesSearchString(String(entry.amount_paid), filterVal);
       }
     })();
 
