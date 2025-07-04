@@ -153,7 +153,8 @@ export const filterWorkshopData = (
       if (filterVal.includes(',')) {
         return matchesSelectedOptions(entry.is_assessment_attempted, filterVal);
       } else {
-        return matchesSearchString(entry.is_assessment_attempted, filterVal);
+        // Use exact match for attempted/not_attempted
+        return entry.is_assessment_attempted.toLowerCase() === filterVal.toLowerCase();
       }
     })();
 
@@ -163,7 +164,8 @@ export const filterWorkshopData = (
       if (filterVal.includes(',')) {
         return matchesSelectedOptions(entry.is_certificate_amount_paid, filterVal);
       } else {
-        return matchesSearchString(entry.is_certificate_amount_paid, filterVal);
+        // Use exact match for paid/not_paid
+        return entry.is_certificate_amount_paid.toLowerCase() === filterVal.toLowerCase();
       }
     })();
 
@@ -173,7 +175,8 @@ export const filterWorkshopData = (
       if (filterVal.includes(',')) {
         return matchesSelectedOptions(entry.is_prebooking_amount_paid, filterVal);
       } else {
-        return matchesSearchString(entry.is_prebooking_amount_paid, filterVal);
+        // Use exact match for paid/not_paid
+        return entry.is_prebooking_amount_paid.toLowerCase() === filterVal.toLowerCase();
       }
     })();
 
@@ -183,7 +186,8 @@ export const filterWorkshopData = (
       if (filterVal.includes(',')) {
         return matchesSelectedOptions(entry.is_course_amount_paid, filterVal);
       } else {
-        return matchesSearchString(entry.is_course_amount_paid, filterVal);
+        // Use exact match for paid/not_paid
+        return entry.is_course_amount_paid.toLowerCase() === filterVal.toLowerCase();
       }
     })();
 
