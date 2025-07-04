@@ -19,6 +19,13 @@ export interface WorkshopRegistrationData {
   amount_paid: string;
 }
 
+export interface EditRegistrationData {
+  first_call_status?: string;
+  fist_call_comment?: string;
+  second_call_status?: string;
+  second_call_comment?: string;
+}
+
 export interface FilterState {
   name: string;
   email: string;

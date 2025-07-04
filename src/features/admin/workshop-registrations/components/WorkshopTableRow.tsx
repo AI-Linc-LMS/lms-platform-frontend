@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { WorkshopRegistrationData } from "../types";
+import { EditRegistrationData, WorkshopRegistrationData } from "../types";
 import { FiChevronDown, FiCheck, FiEdit2, FiX } from "react-icons/fi";
+import { editRegistration } from "../../../../services/admin/workshopRegistrationApis";
+import { useMutation } from "@tanstack/react-query";
 
 const FIRST_CALL_STATUS_OPTIONS = [
   { value: "Connected, scheduled interview", color: "bg-green-500" },
@@ -21,6 +23,18 @@ interface WorkshopTableRowProps {
 export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   entry,
 }) => {
+  const clientId = import.meta.env.VITE_CLIENT_ID;
+  const updateMutation = useMutation({
+    mutationFn: (data: EditRegistrationData) =>
+      editRegistration(clientId, entry.id.toString(), data),
+    onSuccess: () => {
+      setModalOpen(false);
+    },
+    onError: () => {
+      setModalOpen(false);
+    },
+  });
+
   // Local state for the 4 editable fields
   const [firstCallStatus, setFirstCallStatus] = useState(
     entry.first_call_status
@@ -222,6 +236,18 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
                   () => setCooldown((prev) => ({ ...prev, [field]: false })),
                   5000
                 );
+
+                // Call API to update the status
+                updateMutation.mutate({
+                  first_call_status:
+                    field === "first_call_status" ? opt.value : firstCallStatus,
+                  fist_call_comment: firstCallComment,
+                  second_call_status:
+                    field === "second_call_status"
+                      ? opt.value
+                      : secondCallStatus,
+                  second_call_comment: secondCallComment,
+                });
               }}
               type="button"
             >
@@ -345,6 +371,13 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
               setModalOpen(false);
               console.log("Modal Save:", {
                 id: entry.id,
+                first_call_status: modalFirstCallStatus,
+                fist_call_comment: modalFirstCallComment,
+                second_call_status: modalSecondCallStatus,
+                second_call_comment: modalSecondCallComment,
+              });
+              // Call API to update the data
+              updateMutation.mutate({
                 first_call_status: modalFirstCallStatus,
                 fist_call_comment: modalFirstCallComment,
                 second_call_status: modalSecondCallStatus,
