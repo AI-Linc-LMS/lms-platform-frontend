@@ -202,8 +202,8 @@ export const filterWorkshopData = (
     })();
 
     const firstCallCommentMatch =
-      !filters.fist_call_comment ||
-      entry.fist_call_comment.toLowerCase().includes(filters.fist_call_comment.toLowerCase());
+      !filters.first_call_comment ||
+      entry.first_call_comment.toLowerCase().includes(filters.first_call_comment.toLowerCase());
 
     const secondCallStatusMatch = (() => {
       if (!filters.second_call_status) return true;
@@ -229,7 +229,7 @@ export const filterWorkshopData = (
       }
     })();
 
-    // Date range filter
+    // Date range filter for registered_at
     const registeredDate = new Date(entry.registered_at);
     const startDate = filters.registered_at.start
       ? new Date(filters.registered_at.start + "T00:00:00")
@@ -241,6 +241,19 @@ export const filterWorkshopData = (
     const dateMatch =
       (!startDate || registeredDate >= startDate) &&
       (!endDate || registeredDate <= endDate);
+
+    // Date range filter for updated_at
+    const updatedDate = entry.updated_at ? new Date(entry.updated_at) : null;
+    const updatedStartDate = filters.updated_at && filters.updated_at.start
+      ? new Date(filters.updated_at.start + "T00:00:00")
+      : null;
+    const updatedEndDate = filters.updated_at && filters.updated_at.end
+      ? new Date(filters.updated_at.end + "T23:59:59")
+      : null;
+
+    const updatedDateMatch =
+      (!updatedStartDate || (updatedDate && updatedDate >= updatedStartDate)) &&
+      (!updatedEndDate || (updatedDate && updatedDate <= updatedEndDate));
 
     // Debug logging for filter results
     const allMatches = {
@@ -260,9 +273,11 @@ export const filterWorkshopData = (
       secondCallStatusMatch,
       secondCallCommentMatch,
       amountPaidMatch,
-      dateMatch
+      dateMatch,
+      updatedDateMatch,
     };
 
+    // Final match
     const finalResult = (
       nameMatch &&
       emailMatch &&
@@ -280,7 +295,8 @@ export const filterWorkshopData = (
       secondCallStatusMatch &&
       secondCallCommentMatch &&
       amountPaidMatch &&
-      dateMatch
+      dateMatch &&
+      updatedDateMatch
     );
 
     // Debug logging for failed matches
@@ -313,7 +329,7 @@ export const exportToExcel = (filteredData: WorkshopRegistrationData[]) => {
     "Prebooking Amount Paid": entry.is_prebooking_amount_paid || "N/A",
     "Course Amount Paid": entry.is_course_amount_paid || "N/A",
     "First Call Status": entry.first_call_status || "N/A",
-    "First Call Comment": entry.fist_call_comment || "N/A",
+    "First Call Comment": entry.first_call_comment || "N/A",
     "Second Call Status": entry.second_call_status || "N/A",
     "Second Call Comment": entry.second_call_comment || "N/A",
     "Amount Paid": entry.amount_paid || "N/A",
@@ -338,11 +354,12 @@ export const getInitialFilterState = (): FilterState => ({
   is_prebooking_amount_paid: "",
   is_course_amount_paid: "",
   first_call_status: "",
-  fist_call_comment: "",
+  first_call_comment: "",
   second_call_status: "",
   second_call_comment: "",
   amount_paid: "",
   registered_at: { start: "", end: "" },
+  updated_at: { start: "", end: "" },
 });
 
 export const hasActiveFilters = (filters: FilterState): boolean => {
