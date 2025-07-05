@@ -1,5 +1,6 @@
 import axiosInstance from "../axiosInstance";
 import { ReferralData } from "../../types/referral";
+import { EditRegistrationData} from "../../features/admin/workshop-registrations/types";
 
 export const getWorkshopRegistrations = async (clientId: string) => {
   try {
@@ -57,6 +58,16 @@ export const deleteReferral = async (clientId: string, referralId: string) => {
     return response.data;
   } catch (error) {
     console.error('Failed to delete referral:', error);
+    throw error;
+  }
+}
+
+export const editRegistration = async (clientId: string, registrationId: string, data: EditRegistrationData) => {
+  try {
+    const response = await axiosInstance.patch(`/api/clients/${clientId}/workshop-registrations/${registrationId}/`, data)
+    return response.data;
+  } catch (error) {
+    console.error('Failed to edit registration:', error);
     throw error;
   }
 }
