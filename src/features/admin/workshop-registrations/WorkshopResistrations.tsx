@@ -14,6 +14,8 @@ import {
   WorkshopTableRow,
   NoDataState,
   Pagination,
+  ReferralCodeAnalytics,
+  ReferralCodeCapture,
 } from "./components";
 
 const WorkshopRegistration = () => {
@@ -107,9 +109,16 @@ const WorkshopRegistration = () => {
 
   return (
     <div className="p-4 md:p-6 bg-gray-50 min-h-screen">
+      {/* Referral Code Capture Notification */}
+      <ReferralCodeCapture />
+      
       <h1 className="text-xl md:text-2xl font-bold mb-6">
         Workshop Registrations
       </h1>
+      
+      {/* Referral Code Analytics */}
+      <ReferralCodeAnalytics workshopData={workshopData} />
+      
       <SearchAndExport
         search={search}
         onSearchChange={setSearch}

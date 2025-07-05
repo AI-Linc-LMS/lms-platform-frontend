@@ -1,5 +1,6 @@
 import React from "react";
 import { WorkshopRegistrationData } from "../types";
+import { FiCopy, FiCheck } from "react-icons/fi";
 
 interface WorkshopTableRowProps {
   entry: WorkshopRegistrationData;
@@ -8,6 +9,8 @@ interface WorkshopTableRowProps {
 export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   entry,
 }) => {
+  const [copiedCode, setCopiedCode] = React.useState<string | null>(null);
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString(undefined, {
       year: "numeric",
@@ -42,6 +45,16 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     return "bg-gray-100 text-gray-600";
   };
 
+  const handleCopyReferralCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(code);
+      setTimeout(() => setCopiedCode(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy referral code:', err);
+    }
+  };
+
   return (
     <tr className="border-t">
       <td className="p-3">{entry.name}</td>
@@ -57,9 +70,22 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
       </td>
       <td className="p-3">
         {entry.referal_code ? (
-          <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
-            {entry.referal_code}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium font-mono">
+              {entry.referal_code}
+            </span>
+            <button
+              onClick={() => handleCopyReferralCode(entry.referal_code!)}
+              className="p-1 hover:bg-gray-100 rounded transition-colors"
+              title="Copy referral code"
+            >
+              {copiedCode === entry.referal_code ? (
+                <FiCheck className="w-3 h-3 text-green-600" />
+              ) : (
+                <FiCopy className="w-3 h-3 text-gray-500" />
+              )}
+            </button>
+          </div>
         ) : (
           <span className="text-gray-400 text-xs">N/A</span>
         )}
