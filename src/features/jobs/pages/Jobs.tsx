@@ -1,9 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import JobCard from '../components/JobCard';
 import JobFilters from '../components/JobFilters';
 import FeaturedCompanies from '../components/FeaturedCompanies';
+import { Job } from '../types/jobs.types';
 import { mockJobs } from '../data/mockJobs';
+import { fetchAIJobs, fetchRemoteJobs, fetchAllJobs, fetchTechJobs, bookmarkJob, getBookmarkedJobs } from '../../../api/jobsApiService';
+import JobApplicationModal from '../components/JobApplicationModal';
 
 const Jobs: React.FC = () => {
   const navigate = useNavigate();
@@ -14,7 +17,67 @@ const Jobs: React.FC = () => {
   const [salaryFilter, setSalaryFilter] = useState({ min: 0, max: 200000 });
   const [remoteFilter, setRemoteFilter] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [bookmarkedJobs, setBookmarkedJobs] = useState<Set<string>>(new Set());
+  const [bookmarkedJobs, setBookmarkedJobs] = useState<string[]>([]);
+  const [jobs, setJobs] = useState<Job[]>(mockJobs);
+  const [loading, setLoading] = useState(false);
+  const [dataSource, setDataSource] = useState<'sample-jobs' | 'ai-jobs' | 'remote-jobs' | 'all-jobs' | 'tech-jobs'>('sample-jobs');
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [showApplicationModal, setShowApplicationModal] = useState(false);
+
+  // Fetch jobs based on selected data source
+  useEffect(() => {
+    const fetchJobs = async () => {
+      setLoading(true);
+      setError(null);
+      setSuccessMessage(null);
+
+      try {
+        let jobs: Job[] = [];
+        
+        switch (dataSource) {
+          case 'sample-jobs':
+            setError(null);
+            jobs = mockJobs;
+            break;
+          case 'ai-jobs':
+            jobs = await fetchAIJobs();
+            setSuccessMessage('✅ AI jobs loaded from enhanced database (External APIs blocked by browser security)');
+            break;
+          case 'remote-jobs':
+            jobs = await fetchRemoteJobs();
+            setSuccessMessage('✅ Remote jobs loaded from enhanced database (External APIs blocked by browser security)');
+            break;
+          case 'all-jobs':
+            jobs = await fetchAllJobs();
+            setSuccessMessage('✅ All jobs loaded from enhanced database (External APIs blocked by browser security)');
+            break;
+          case 'tech-jobs':
+            jobs = await fetchTechJobs();
+            setSuccessMessage('✅ Tech jobs loaded from enhanced database (External APIs blocked by browser security)');
+            break;
+          default:
+            jobs = mockJobs;
+        }
+
+        setJobs(jobs);
+      } catch (error) {
+        console.error('Error fetching jobs:', error);
+        setError('Unable to load jobs. Using sample data instead.');
+        setJobs(mockJobs);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, [dataSource]);
+
+  // Load bookmarked jobs on component mount
+  useEffect(() => {
+    setBookmarkedJobs(getBookmarkedJobs());
+  }, []);
 
   const handleSearch = () => {
     // Search functionality will be implemented
@@ -29,19 +92,30 @@ const Jobs: React.FC = () => {
   };
 
   const handleBookmarkJob = (jobId: string) => {
-    setBookmarkedJobs(prev => {
-      const newBookmarks = new Set(prev);
-      if (newBookmarks.has(jobId)) {
-        newBookmarks.delete(jobId);
-      } else {
-        newBookmarks.add(jobId);
-      }
-      return newBookmarks;
-    });
+    const success = bookmarkJob(jobId);
+    if (success) {
+      setBookmarkedJobs(getBookmarkedJobs());
+      setSuccessMessage('Job bookmark updated successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    }
+  };
+
+  const handleApplyToJob = (job: Job) => {
+    setSelectedJob(job);
+    setShowApplicationModal(true);
+  };
+
+  const handleApplicationSuccess = () => {
+    setSuccessMessage('Application submitted successfully!');
+    setTimeout(() => setSuccessMessage(''), 3000);
+  };
+
+  const isBookmarked = (jobId: string) => {
+    return bookmarkedJobs.includes(jobId);
   };
 
   const filteredJobs = useMemo(() => {
-    return mockJobs.filter((job) => {
+    return jobs.filter((job) => {
       // Search query filter
       if (searchQuery && !job.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
           !job.company.toLowerCase().includes(searchQuery.toLowerCase())) {
@@ -75,7 +149,7 @@ const Jobs: React.FC = () => {
 
       return true;
     });
-  }, [mockJobs, searchQuery, locationFilter, jobTypeFilter, experienceFilter, remoteFilter, salaryFilter]);
+  }, [jobs, searchQuery, locationFilter, jobTypeFilter, experienceFilter, remoteFilter, salaryFilter]);
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
@@ -89,6 +163,63 @@ const Jobs: React.FC = () => {
             <p className="text-lg sm:text-xl lg:text-2xl mb-8 sm:mb-12 opacity-90 max-w-3xl mx-auto">
               Discover thousands of job opportunities from top companies around the world
             </p>
+            
+            {/* Data Source Toggle */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center items-center mb-8">
+              <span className="text-sm font-medium opacity-90">Data Source:</span>
+              <div className="flex flex-wrap gap-2 justify-center">
+                <button
+                  onClick={() => setDataSource('sample-jobs')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    dataSource === 'sample-jobs' 
+                      ? 'bg-white text-[#255C79]' 
+                      : 'bg-white/20 text-white hover:bg-white/30'
+                  }`}
+                >
+                  📋 Sample
+                </button>
+                <button
+                  onClick={() => setDataSource('ai-jobs')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    dataSource === 'ai-jobs' 
+                      ? 'bg-white text-[#255C79]' 
+                      : 'bg-white/20 text-white hover:bg-white/30'
+                  }`}
+                >
+                  🤖 AI Jobs
+                </button>
+                <button
+                  onClick={() => setDataSource('remote-jobs')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    dataSource === 'remote-jobs' 
+                      ? 'bg-white text-[#255C79]' 
+                      : 'bg-white/20 text-white hover:bg-white/30'
+                  }`}
+                >
+                  🌍 Remote
+                </button>
+                <button
+                  onClick={() => setDataSource('tech-jobs')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    dataSource === 'tech-jobs' 
+                      ? 'bg-white text-[#255C79]' 
+                      : 'bg-white/20 text-white hover:bg-white/30'
+                  }`}
+                >
+                  💻 Tech
+                </button>
+                <button
+                  onClick={() => setDataSource('all-jobs')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    dataSource === 'all-jobs' 
+                      ? 'bg-white text-[#255C79]' 
+                      : 'bg-white/20 text-white hover:bg-white/30'
+                  }`}
+                >
+                  🔍 All Jobs
+                </button>
+              </div>
+            </div>
             
             {/* Search Bar */}
             <div className="max-w-4xl mx-auto">
@@ -168,13 +299,6 @@ const Jobs: React.FC = () => {
         </div>
       </div>
 
-      {/* Featured Companies */}
-      {/* <div className="bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-          <FeaturedCompanies />
-        </div>
-      </div> */}
-
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Header with Filters Toggle */}
@@ -182,10 +306,60 @@ const Jobs: React.FC = () => {
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-[#343A40] mb-2">
               Job Opportunities
+              {dataSource === 'ai-jobs' && <span className="text-lg ml-2">🤖 AI Jobs</span>}
+              {dataSource === 'remote-jobs' && <span className="text-lg ml-2">🌍 Remote Jobs</span>}
+              {dataSource === 'tech-jobs' && <span className="text-lg ml-2">💻 Tech Jobs</span>}
+              {dataSource === 'all-jobs' && <span className="text-lg ml-2">🔍 All Jobs</span>}
             </h2>
             <p className="text-[#6C757D] text-sm sm:text-base">
-              {filteredJobs.length} jobs found {searchQuery && `for "${searchQuery}"`}
+              {loading ? 'Loading jobs...' : `${filteredJobs.length} jobs found`} {searchQuery && `for "${searchQuery}"`}
             </p>
+            {/* Loading State */}
+            {loading && (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Jobs...</h3>
+                <p className="text-gray-600 text-center max-w-md">
+                  Fetching the latest opportunities from our enhanced job database...
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Our database includes curated listings from top companies
+                </p>
+              </div>
+            )}
+
+            {/* Success Message */}
+            {successMessage && !loading && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-green-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-green-800 font-medium">{successMessage}</span>
+                </div>
+                {successMessage.includes('External APIs blocked') && (
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 className="font-medium text-blue-900 mb-2">ℹ️ About External API Access</h4>
+                    <div className="text-sm text-blue-800 space-y-1">
+                      <p>• Modern browsers block direct API calls to external services for security (CORS policy)</p>
+                      <p>• In production, this would be solved with a backend proxy or serverless functions</p>
+                      <p>• Our enhanced mock database provides realistic job data for demonstration</p>
+                      <p>• The application and bookmarking features work fully with all data sources</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Error Message */}
+            {error && !loading && (
+              <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-center">
+                <svg className="w-5 h-5 text-amber-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <span className="text-amber-800">{error}</span>
+              </div>
+            )}
           </div>
           
           {/* Mobile Filter Toggle */}
@@ -223,7 +397,20 @@ const Jobs: React.FC = () => {
 
           {/* Job Listings */}
           <div className="lg:col-span-3">
-            {filteredJobs.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-12 sm:py-16">
+                <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6 bg-[#F8F9FA] rounded-full flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-[#255C79]"></div>
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-[#343A40] mb-2">Loading Jobs...</h3>
+                <p className="text-[#6C757D] text-sm sm:text-base mb-2">
+                  Fetching the latest opportunities from multiple job APIs
+                </p>
+                <p className="text-[#6C757D] text-xs">
+                  If this takes too long, we'll show you enhanced sample jobs instead
+                </p>
+              </div>
+            ) : filteredJobs.length === 0 ? (
               <div className="text-center py-12 sm:py-16">
                 <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6 bg-[#F8F9FA] rounded-full flex items-center justify-center">
                   <svg className="w-8 h-8 sm:w-12 sm:h-12 text-[#6C757D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -232,14 +419,24 @@ const Jobs: React.FC = () => {
                 </div>
                 <h3 className="text-lg sm:text-xl font-semibold text-[#343A40] mb-2">No jobs found</h3>
                 <p className="text-[#6C757D] mb-4 text-sm sm:text-base">
-                  Try adjusting your search criteria or filters
+                  {error ? 'There was an error loading jobs. Please try again.' : 'Try adjusting your search criteria or filters'}
                 </p>
-                <button
-                  onClick={handleClearFilters}
-                  className="px-4 sm:px-6 py-2 sm:py-3 bg-[#255C79] text-white rounded-lg hover:bg-[#1E4A63] transition-colors font-medium"
-                >
-                  Clear Filters
-                </button>
+                <div className="flex gap-2 justify-center">
+                  <button
+                    onClick={handleClearFilters}
+                    className="px-4 sm:px-6 py-2 sm:py-3 bg-[#255C79] text-white rounded-lg hover:bg-[#1E4A63] transition-colors font-medium"
+                  >
+                    Clear Filters
+                  </button>
+                  {error && (
+                    <button
+                      onClick={() => setDataSource('sample-jobs')}
+                      className="px-4 sm:px-6 py-2 sm:py-3 border border-[#255C79] text-[#255C79] rounded-lg hover:bg-[#255C79] hover:text-white transition-colors font-medium"
+                    >
+                      View Sample Jobs
+                    </button>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="space-y-4 sm:space-y-6">
@@ -249,14 +446,15 @@ const Jobs: React.FC = () => {
                     job={job}
                     onClick={() => navigate(`/jobs/${job.id}`)}
                     onBookmark={() => handleBookmarkJob(job.id)}
-                    isBookmarked={bookmarkedJobs.has(job.id)}
+                    isBookmarked={isBookmarked(job.id)}
+                    onApply={handleApplyToJob}
                   />
                 ))}
               </div>
             )}
 
             {/* Load More Button */}
-            {filteredJobs.length > 0 && (
+            {filteredJobs.length > 0 && !loading && (
               <div className="text-center mt-8 sm:mt-12">
                 <button className="px-6 sm:px-8 py-3 sm:py-4 border border-[#255C79] text-[#255C79] rounded-lg hover:bg-[#255C79] hover:text-white transition-colors font-medium">
                   Load More Jobs
@@ -274,32 +472,18 @@ const Jobs: React.FC = () => {
         </div>
       </div>
 
-      {/* Newsletter Section */}
-      {/* <div className="bg-[#255C79] text-white mt-12 sm:mt-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-          <div className="text-center">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">
-              Stay Updated with New Opportunities
-            </h2>
-            <p className="text-lg sm:text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-              Get the latest job postings delivered directly to your inbox
-            </p>
-            
-            <div className="max-w-md mx-auto">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  className="flex-1 px-4 py-3 rounded-lg text-[#343A40] placeholder-[#6C757D] focus:ring-2 focus:ring-white focus:ring-opacity-50"
-                />
-                <button className="px-6 py-3 bg-white text-[#255C79] rounded-lg hover:bg-[#F8F9FA] transition-colors font-semibold whitespace-nowrap">
-                  Subscribe
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div> */}
+      {/* Application Modal */}
+      {selectedJob && (
+        <JobApplicationModal
+          job={selectedJob}
+          isOpen={showApplicationModal}
+          onClose={() => {
+            setShowApplicationModal(false);
+            setSelectedJob(null);
+          }}
+          onSuccess={handleApplicationSuccess}
+        />
+      )}
     </div>
   );
 };

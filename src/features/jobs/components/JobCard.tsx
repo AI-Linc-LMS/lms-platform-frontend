@@ -8,6 +8,7 @@ interface JobCardProps {
   onClick?: () => void;
   onBookmark?: () => void;
   isBookmarked?: boolean;
+  onApply?: (job: Job) => void;
 }
 
 const JobCard: React.FC<JobCardProps> = ({ 
@@ -15,7 +16,8 @@ const JobCard: React.FC<JobCardProps> = ({
   featured = false, 
   onClick,
   onBookmark,
-  isBookmarked: externalBookmarked
+  isBookmarked: externalBookmarked,
+  onApply
 }) => {
   const navigate = useNavigate();
   const [internalBookmarked, setInternalBookmarked] = useState(false);
@@ -65,7 +67,9 @@ const JobCard: React.FC<JobCardProps> = ({
   };
 
   const handleApplyNow = () => {
-    if (onClick) {
+    if (onApply) {
+      onApply(job);
+    } else if (onClick) {
       onClick();
     } else {
       navigate(`/jobs/${job.id}`);
