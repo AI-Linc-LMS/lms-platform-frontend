@@ -13,10 +13,23 @@ export interface WorkshopRegistrationData {
   is_prebooking_amount_paid: string;
   is_course_amount_paid: string;
   first_call_status: string;
-  fist_call_comment: string;
+  first_call_comment: string;
   second_call_status: string;
   second_call_comment: string;
-  amount_paid: string;
+  amount_paid: number;
+  updated_at?: string;
+  edithistory?: Record<string, {
+    changes: Record<string, string | null>;
+    edited_by: string;
+    timestamp: string;
+  }>;
+}
+
+export interface EditRegistrationData {
+  first_call_status?: string;
+  first_call_comment?: string;
+  second_call_status?: string;
+  second_call_comment?: string;
 }
 
 export interface FilterState {
@@ -32,11 +45,15 @@ export interface FilterState {
   is_prebooking_amount_paid: string;
   is_course_amount_paid: string;
   first_call_status: string;
-  fist_call_comment: string;
+  first_call_comment: string;
   second_call_status: string;
   second_call_comment: string;
   amount_paid: string;
   registered_at: {
+    start: string;
+    end: string;
+  };
+  updated_at: {
     start: string;
     end: string;
   };
