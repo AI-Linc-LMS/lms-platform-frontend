@@ -109,10 +109,11 @@ const ShortAssessment: React.FC = () => {
 
             <NavigationButtons
               currentQuestionIndex={currentQuestionIndex}
-              selectedOption={selectedOption}
               handleBack={handleBack}
               handleNext={handleNext}
               handleFinishAssessment={handleFinishAssessment}
+              answeredCount={getAnsweredCount()}
+              totalQuestions={questionsData.length}
             />
           </div>
         </div>
