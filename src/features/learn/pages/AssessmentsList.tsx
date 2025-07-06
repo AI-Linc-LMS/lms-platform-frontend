@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   getAllAssessments,
   AssessmentListItem,
@@ -14,10 +14,15 @@ import {
   FiTrendingUp,
   FiArrowLeft,
 } from "react-icons/fi";
+import { addReferralCodeToUrl, getReferralCode } from "../../../utils/referralUtils";
 
 const AssessmentsList: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const clientId = import.meta.env.VITE_CLIENT_ID;
+
+  // Get referral code to preserve it during navigation
+  const referralCode = getReferralCode(searchParams);
 
   const {
     data: assessments,
@@ -33,7 +38,9 @@ const AssessmentsList: React.FC = () => {
   });
 
   const handleStartAssessment = (assessmentSlug: string) => {
-    navigate(`/assessment/${assessmentSlug}`);
+    const baseUrl = `/assessment/${assessmentSlug}`;
+    const urlWithReferral = addReferralCodeToUrl(baseUrl, referralCode);
+    navigate(urlWithReferral);
   };
 
   if (isLoading) {

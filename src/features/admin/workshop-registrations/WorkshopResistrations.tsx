@@ -113,6 +113,7 @@ const WorkshopRegistration = () => {
       <h1 className="text-xl md:text-2xl font-bold mb-6">
         Workshop Registrations
       </h1>
+      
       <SearchAndExport
         search={search}
         onSearchChange={setSearch}
