@@ -35,7 +35,7 @@ export const createOrder = async (
   try {
     let requestPayload: CreateOrderRequest = {
       amount: amount.toString(),
-      payment_type: paymentType || PaymentType.COURSE,
+      payment_type: (paymentType || PaymentType.COURSE).toString().toUpperCase(),
     };
 
     // Include type_id for all payment types if available in metadata
@@ -107,7 +107,7 @@ export const verifyPayment = async (
       order_id: paymentData.order_id,
       payment_id: paymentData.payment_id,
       signature: paymentData.signature,
-      payment_type: paymentData.payment_type || PaymentType.COURSE,
+      payment_type: String(paymentData.payment_type || PaymentType.COURSE).toUpperCase(),
       ...(paymentData.type_id && { type_id: paymentData.type_id }), // Include type_id if provided
     };
 
