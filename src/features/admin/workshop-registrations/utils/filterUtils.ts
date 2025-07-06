@@ -229,6 +229,57 @@ export const filterWorkshopData = (
       }
     })();
 
+    // New assessment-related filters
+    const amountPendingMatch = (() => {
+      if (!filters.amount_pending) return true;
+      const filterVal = filters.amount_pending.trim();
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions(entry.amount_pending, filterVal);
+      } else {
+        return matchesSearchString(entry.amount_pending, filterVal);
+      }
+    })();
+
+    const scoreMatch = (() => {
+      if (!filters.score) return true;
+      const filterVal = filters.score.trim();
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions(entry.score, filterVal);
+      } else {
+        return matchesSearchString(entry.score, filterVal);
+      }
+    })();
+
+    const scholarshipPercentageMatch = (() => {
+      if (!filters.offered_scholarship_percentage) return true;
+      const filterVal = filters.offered_scholarship_percentage.trim();
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions(entry.offered_scholarship_percentage, filterVal);
+      } else {
+        return matchesSearchString(entry.offered_scholarship_percentage, filterVal);
+      }
+    })();
+
+    const offeredAmountMatch = (() => {
+      if (!filters.offered_amount) return true;
+      const filterVal = filters.offered_amount.trim();
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions(entry.offered_amount, filterVal);
+      } else {
+        return matchesSearchString(entry.offered_amount, filterVal);
+      }
+    })();
+
+    const assessmentStatusMatch = (() => {
+      if (!filters.assessment_status) return true;
+      const filterVal = filters.assessment_status.trim();
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions(entry.assessment_status, filterVal);
+      } else {
+        return matchesSearchString(entry.assessment_status, filterVal);
+      }
+    })();
+
     // Date range filter for registered_at
     const registeredDate = new Date(entry.registered_at);
     const startDate = filters.registered_at.start
@@ -255,6 +306,19 @@ export const filterWorkshopData = (
       (!updatedStartDate || (updatedDate && updatedDate >= updatedStartDate)) &&
       (!updatedEndDate || (updatedDate && updatedDate <= updatedEndDate));
 
+    // Date range filter for submitted_at
+    const submittedDate = entry.submitted_at && entry.submitted_at !== "" ? new Date(entry.submitted_at) : null;
+    const submittedStartDate = filters.submitted_at && filters.submitted_at.start
+      ? new Date(filters.submitted_at.start + "T00:00:00")
+      : null;
+    const submittedEndDate = filters.submitted_at && filters.submitted_at.end
+      ? new Date(filters.submitted_at.end + "T23:59:59")
+      : null;
+
+    const submittedDateMatch =
+      (!submittedStartDate || (submittedDate && submittedDate >= submittedStartDate)) &&
+      (!submittedEndDate || (submittedDate && submittedDate <= submittedEndDate));
+
     // Debug logging for filter results
     const allMatches = {
       nameMatch,
@@ -273,8 +337,14 @@ export const filterWorkshopData = (
       secondCallStatusMatch,
       secondCallCommentMatch,
       amountPaidMatch,
+      amountPendingMatch,
+      scoreMatch,
+      scholarshipPercentageMatch,
+      offeredAmountMatch,
+      assessmentStatusMatch,
       dateMatch,
       updatedDateMatch,
+      submittedDateMatch,
     };
 
     // Final match
@@ -295,8 +365,14 @@ export const filterWorkshopData = (
       secondCallStatusMatch &&
       secondCallCommentMatch &&
       amountPaidMatch &&
+      amountPendingMatch &&
+      scoreMatch &&
+      scholarshipPercentageMatch &&
+      offeredAmountMatch &&
+      assessmentStatusMatch &&
       dateMatch &&
-      updatedDateMatch
+      updatedDateMatch &&
+      submittedDateMatch
     );
 
     // Debug logging for failed matches
@@ -320,7 +396,7 @@ export const exportToExcel = (filteredData: WorkshopRegistrationData[]) => {
     Email: entry.email,
     "Mobile Number": entry.phone_number,
     "Workshop Name": entry.workshop_name,
-    "Session Number": entry.session_number || 1,
+    "Session Number": entry.session_number || "N/A",
     "Referral Code": entry.referal_code || "N/A",
     "Registered At": entry.registered_at,
     "Attended Webinars": entry.attended_webinars || "N/A",
@@ -333,6 +409,12 @@ export const exportToExcel = (filteredData: WorkshopRegistrationData[]) => {
     "Second Call Status": entry.second_call_status || "N/A",
     "Second Call Comment": entry.second_call_comment || "N/A",
     "Amount Paid": entry.amount_paid || "N/A",
+    "Amount Pending": entry.amount_pending || "N/A",
+    "Score": entry.score || "N/A",
+    "Offered Scholarship Percentage": entry.offered_scholarship_percentage || "N/A",
+    "Offered Amount": entry.offered_amount || "N/A",
+    "Submitted At": entry.submitted_at && entry.submitted_at !== "" ? entry.submitted_at : "N/A",
+    "Assessment Status": entry.assessment_status || "N/A",
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -358,6 +440,12 @@ export const getInitialFilterState = (): FilterState => ({
   second_call_status: "",
   second_call_comment: "",
   amount_paid: "",
+  amount_pending: "",
+  score: "",
+  offered_scholarship_percentage: "",
+  offered_amount: "",
+  submitted_at: { start: "", end: "" },
+  assessment_status: "",
   registered_at: { start: "", end: "" },
   updated_at: { start: "", end: "" },
 });

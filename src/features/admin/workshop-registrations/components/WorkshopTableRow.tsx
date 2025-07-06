@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { WorkshopRegistrationData } from "../types";
-import { FiCopy, FiCheck, FiChevronDown, FiEdit2, FiX, FiClock } from "react-icons/fi";
+import {
+  FiCopy,
+  FiCheck,
+  FiChevronDown,
+  FiEdit2,
+  FiX,
+  FiClock,
+} from "react-icons/fi";
 import { EditRegistrationData } from "../types";
 import { editRegistration } from "../../../../services/admin/workshopRegistrationApis";
 import { useMutation } from "@tanstack/react-query";
@@ -156,14 +163,14 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   const handleCopyReferralCode = async (code: string) => {
     try {
       if (!isValidReferralCode(code)) {
-        console.warn('Invalid referral code:', code);
+        console.warn("Invalid referral code:", code);
         return;
       }
       await navigator.clipboard.writeText(code);
       setCopiedCode(code);
       setTimeout(() => setCopiedCode(null), 2000);
     } catch (err) {
-      console.error('Failed to copy referral code:', err);
+      console.error("Failed to copy referral code:", err);
     }
   };
 
@@ -412,15 +419,19 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     }
 
     const isValid = isValidReferralCode(entry.referal_code);
-    
+
     return (
       <div className="flex items-center gap-2">
-        <span 
+        <span
           className={`
             px-2 py-1 rounded-full text-xs font-medium font-mono 
-            ${isValid ? 'bg-purple-100 text-purple-800' : 'bg-red-100 text-red-800'}
+            ${
+              isValid
+                ? "bg-purple-100 text-purple-800"
+                : "bg-red-100 text-red-800"
+            }
           `}
-          title={!isValid ? 'Invalid Referral Code' : ''}
+          title={!isValid ? "Invalid Referral Code" : ""}
         >
           {entry.referal_code}
         </span>
@@ -456,9 +467,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
             {entry.session_number || 1}
           </span>
         </td>
-        <td className="p-3">
-          {renderReferralCode()}
-        </td>
+        <td className="p-3">{renderReferralCode()}</td>
         <td className="p-3">
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
@@ -511,15 +520,14 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
         </td>
         <td className="p-3">
           {renderStatusDropdown(
-            firstCallStatus,
+            firstCallStatus || "N/A",
             FIRST_CALL_STATUS_OPTIONS,
             "first_call_status"
           )}
         </td>
         <td className="p-3">
-          <span
-            className="text-sm text-gray-700 cursor-help">
-            {truncateComment(entry.first_call_comment)}
+          <span className="text-sm text-gray-700 cursor-help">
+            {truncateComment(entry.first_call_comment || "")}
           </span>
           {entry.first_call_comment && entry.first_call_comment.length > 25 && (
             <div className="absolute bottom-full left-0 -top-20 mb-2 h-[90px] w-[300px] px-4 py-2 bg-white text-gray-800 text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-normal max-w-md z-50 border border-gray-200 shadow-lg">
@@ -529,29 +537,62 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
         </td>
         <td className="p-3">
           {renderStatusDropdown(
-            secondCallStatus,
+            secondCallStatus || "N/A",
             SECOND_CALL_STATUS_OPTIONS,
             "second_call_status"
           )}
         </td>
         <td className="p-3">
-          <span
-            className="text-sm text-gray-700 cursor-help">
-            {truncateComment(entry.second_call_comment)}
+          <span className="text-sm text-gray-700 cursor-help">
+            {truncateComment(entry.second_call_comment || "")}
           </span>
-          {entry.second_call_comment && entry.second_call_comment.length > 25 && (
-            <div className="absolute bottom-full left-0 mb-2 h-[100px] w-[300px] px-4 py-2 bg-white text-gray-800 text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-normal max-w-md z-50 border border-gray-200 shadow-lg">
-              {entry.second_call_comment}
-            </div>
-          )}
+          {entry.second_call_comment &&
+            entry.second_call_comment.length > 25 && (
+              <div className="absolute bottom-full left-0 mb-2 h-[100px] w-[300px] px-4 py-2 bg-white text-gray-800 text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-normal max-w-md z-50 border border-gray-200 shadow-lg">
+                {entry.second_call_comment}
+              </div>
+            )}
         </td>
         <td className="p-3">
           <span className="text-xs font-medium">
             {entry.amount_paid ?? "N/A"}
           </span>
         </td>
+        <td className="p-3">
+          <span className="text-xs font-medium">
+            {entry.amount_pending || "N/A"}
+          </span>
+        </td>
+        <td className="p-3">
+          <span className="text-xs font-medium">{entry.score || "N/A"}</span>
+        </td>
+        <td className="p-3">
+          <span className="text-xs font-medium">
+            {entry.offered_scholarship_percentage || "N/A"}
+          </span>
+        </td>
+        <td className="p-3">
+          <span className="text-xs font-medium">
+            {entry.offered_amount || "N/A"}
+          </span>
+        </td>
+        <td className="p-3">
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
+              entry.assessment_status || "N/A",
+              "true/false"
+            )}`}
+          >
+            {entry.assessment_status || "N/A"}
+          </span>
+        </td>
         <td className="p-3">{formatDate(entry.registered_at)}</td>
         <td className="p-3">{formatDate(entry.updated_at || "N/A")}</td>
+        <td className="p-3">
+          {entry.submitted_at && entry.submitted_at !== ""
+            ? formatDate(entry.submitted_at)
+            : "N/A"}
+        </td>
         <td className="p-3 text-center w-[120px] min-w-[120px] flex gap-2 items-center justify-center">
           <button
             className="text-gray-400 hover:text-blue-600"
