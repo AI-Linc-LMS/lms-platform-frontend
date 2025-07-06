@@ -4,6 +4,7 @@ import { FiCopy, FiCheck, FiChevronDown, FiEdit2, FiX, FiClock } from "react-ico
 import { EditRegistrationData } from "../types";
 import { editRegistration } from "../../../../services/admin/workshopRegistrationApis";
 import { useMutation } from "@tanstack/react-query";
+import { isValidReferralCode } from "../../../../utils/referralUtils";
 
 const FIRST_CALL_STATUS_OPTIONS = [
   { value: "Connected, scheduled interview", color: "bg-green-500" },
@@ -154,6 +155,10 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
 
   const handleCopyReferralCode = async (code: string) => {
     try {
+      if (!isValidReferralCode(code)) {
+        console.warn('Invalid referral code:', code);
+        return;
+      }
       await navigator.clipboard.writeText(code);
       setCopiedCode(code);
       setTimeout(() => setCopiedCode(null), 2000);
@@ -401,6 +406,41 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     };
   }, [modalOpen]);
 
+  const renderReferralCode = () => {
+    if (!entry.referal_code) {
+      return <span className="text-gray-400 text-xs">N/A</span>;
+    }
+
+    const isValid = isValidReferralCode(entry.referal_code);
+    
+    return (
+      <div className="flex items-center gap-2">
+        <span 
+          className={`
+            px-2 py-1 rounded-full text-xs font-medium font-mono 
+            ${isValid ? 'bg-purple-100 text-purple-800' : 'bg-red-100 text-red-800'}
+          `}
+          title={!isValid ? 'Invalid Referral Code' : ''}
+        >
+          {entry.referal_code}
+        </span>
+        {isValid && (
+          <button
+            onClick={() => handleCopyReferralCode(entry.referal_code!)}
+            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            title="Copy referral code"
+          >
+            {copiedCode === entry.referal_code ? (
+              <FiCheck className="w-3 h-3 text-green-600" />
+            ) : (
+              <FiCopy className="w-3 h-3 text-gray-500" />
+            )}
+          </button>
+        )}
+      </div>
+    );
+  };
+
   return (
     <>
       {modalOpen && renderEditModal()}
@@ -417,26 +457,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
           </span>
         </td>
         <td className="p-3">
-          {entry.referal_code ? (
-            <div className="flex items-center gap-2">
-              <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium font-mono">
-                {entry.referal_code}
-              </span>
-              <button
-                onClick={() => handleCopyReferralCode(entry.referal_code!)}
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
-                title="Copy referral code"
-              >
-                {copiedCode === entry.referal_code ? (
-                  <FiCheck className="w-3 h-3 text-green-600" />
-                ) : (
-                  <FiCopy className="w-3 h-3 text-gray-500" />
-                )}
-              </button>
-            </div>
-          ) : (
-            <span className="text-gray-400 text-xs">N/A</span>
-          )}
+          {renderReferralCode()}
         </td>
         <td className="p-3">
           <span
