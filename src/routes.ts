@@ -76,13 +76,18 @@ const routes: RouteConfig[] = [
     isPrivate: true,
   },
   {
+    path: "/assessment/quiz",
+    component: ShortAssessment,
+    isPrivate: true,
+  },
+  {
     path: "/assessment/phone-verification",
     component: PhoneVerificationPage,
     isPrivate: true,
   },
   {
-    path: "/assessment/quiz",
-    component: ShortAssessment,
+    path: "/assessment/phone-verification/:ref",
+    component: PhoneVerificationPage,
     isPrivate: true,
   },
   {
@@ -183,7 +188,7 @@ const routes: RouteConfig[] = [
     isPrivate: true,
   },
   {
-    path: "/ai-linc-scholarship-test",
+    path: "/assessment/:assessmentId/:ref",
     component: InstructionPage,
     isPrivate: true,
   },

@@ -42,6 +42,12 @@ const WorkshopRegistration = () => {
     second_call_status: useRef<HTMLDivElement>(null),
     second_call_comment: useRef<HTMLDivElement>(null),
     amount_paid: useRef<HTMLDivElement>(null),
+    amount_pending: useRef<HTMLDivElement>(null),
+    score: useRef<HTMLDivElement>(null),
+    offered_scholarship_percentage: useRef<HTMLDivElement>(null),
+    offered_amount: useRef<HTMLDivElement>(null),
+    submitted_at: useRef<HTMLDivElement>(null),
+    assessment_status: useRef<HTMLDivElement>(null),
     registered_at: useRef<HTMLDivElement>(null),
   };
 
@@ -92,7 +98,9 @@ const WorkshopRegistration = () => {
   const clearFilter = (column: keyof FilterState) => {
     setFilters((prev) => ({
       ...prev,
-      [column]: column === "registered_at" ? { start: "", end: "" } : "",
+      [column]: (column === "registered_at" || column === "submitted_at" || column === "updated_at") 
+        ? { start: "", end: "" } 
+        : "",
     }));
   };
 
@@ -113,7 +121,7 @@ const WorkshopRegistration = () => {
       <h1 className="text-xl md:text-2xl font-bold mb-6">
         Workshop Registrations
       </h1>
-      
+
       <SearchAndExport
         search={search}
         onSearchChange={setSearch}
