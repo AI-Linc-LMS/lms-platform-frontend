@@ -283,6 +283,31 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
       label: "Amount Paid",
       placeholder: "Filter by amount paid...",
     },
+    {
+      column: "amount_pending",
+      label: "Amount Pending",
+      placeholder: "Filter by amount pending...",
+    },
+    {
+      column: "score",
+      label: "Score",
+      placeholder: "Filter by score...",
+    },
+    {
+      column: "offered_scholarship_percentage",
+      label: "Scholarship %",
+      placeholder: "Filter by scholarship percentage...",
+    },
+    {
+      column: "offered_amount",
+      label: "Offered Amount",
+      placeholder: "Filter by offered amount...",
+    },
+    {
+      column: "assessment_status",
+      label: "Assessment Status",
+      placeholder: "Filter by assessment status...",
+    },
   ];
 
   const commentFields = ["first_call_comment", "second_call_comment"];
@@ -471,6 +496,43 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
                 onChange={(column, value) => onUpdateFilter(column, value)}
                 onClear={onClearFilter}
                 filterRef={filterRefs.updated_at!}
+              />
+            </div>
+          )}
+        </th>
+        <th className="p-3 relative min-w-[160px]">
+          <div className="flex items-center gap-1">
+            <span>Submitted At</span>
+            <button
+              type="button"
+              className={`ml-1 p-1 rounded hover:bg-gray-200 ${
+                openFilter === "submitted_at" ? "text-blue-600" : "text-gray-400"
+              }`}
+              onClick={() =>
+                onToggleFilter(
+                  openFilter === "submitted_at"
+                    ? null
+                    : ("submitted_at" as keyof FilterState)
+                )
+              }
+            >
+              <FiFilter className="w-4 h-4" />
+            </button>
+          </div>
+          {openFilter === "submitted_at" && (
+            <div
+              ref={(el) => {
+                popoverRefs.current["submitted_at"] = el;
+              }}
+              className="absolute right-2 top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
+            >
+              <DateFilterDropdown
+                column={"submitted_at" as keyof FilterState}
+                value={filters.submitted_at || { start: "", end: "" }}
+                isOpen={true}
+                onChange={(column, value) => onUpdateFilter(column, value)}
+                onClear={onClearFilter}
+                filterRef={filterRefs.submitted_at!}
               />
             </div>
           )}

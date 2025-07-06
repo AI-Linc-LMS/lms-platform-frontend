@@ -114,11 +114,12 @@ export const getAllAssessments = async (clientId: number): Promise<AssessmentLis
 export const startAssessment = async (
   clientId: number,
   assessmentId: string,
-  phoneNumber?: string
+  phoneNumber?: string,
+  referralCode?: string
 ) => {
   try {
     const res = await axiosInstance.get(
-      `assessment/api/client/${clientId}/start-assessment/${assessmentId}/?phone_number=${phoneNumber ?? ""}`
+      `assessment/api/client/${clientId}/start-assessment/${assessmentId}/?phone_number=${phoneNumber ?? ""}/?ref=${referralCode ?? ""}`
     );
     return res.data;
   } catch (error) {
