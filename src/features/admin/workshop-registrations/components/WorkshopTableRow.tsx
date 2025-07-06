@@ -1,9 +1,7 @@
-import React from "react";
-import { WorkshopRegistrationData } from "../types";
-import { FiCopy, FiCheck } from "react-icons/fi";
 import React, { useState, useEffect } from "react";
-import { EditRegistrationData, WorkshopRegistrationData } from "../types";
-import { FiChevronDown, FiCheck, FiEdit2, FiX, FiClock } from "react-icons/fi";
+import { WorkshopRegistrationData } from "../types";
+import { FiCopy, FiCheck, FiChevronDown, FiEdit2, FiX, FiClock } from "react-icons/fi";
+import { EditRegistrationData } from "../types";
 import { editRegistration } from "../../../../services/admin/workshopRegistrationApis";
 import { useMutation } from "@tanstack/react-query";
 
@@ -78,10 +76,6 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     y: number;
   }>({ show: false, text: "", x: 0, y: 0 });
 
-  // Separate hover states
-  const [isCommentHovered, setIsCommentHovered] = useState(false);
-  const [isTooltipHovered, setIsTooltipHovered] = useState(false);
-
   // Add state for edit history modal
   const [editHistoryOpen, setEditHistoryOpen] = useState(false);
 
@@ -101,27 +95,6 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     return comment.length > maxLength
       ? `${comment.substring(0, maxLength)}...`
       : comment;
-  };
-
-  const handleCommentHover = (event: React.MouseEvent, comment: string) => {
-    if (comment && comment.length > 25) {
-      setIsCommentHovered(true);
-      const rect = event.currentTarget.getBoundingClientRect();
-      setTooltipData({
-        show: true,
-        text: comment,
-        x: rect.left,
-        y: rect.top - 10,
-      });
-    }
-  };
-
-  const handleCommentLeave = () => {
-    setIsCommentHovered(false);
-    // Only close tooltip if tooltip is also not hovered
-    if (!isTooltipHovered) {
-      setTooltipData({ show: false, text: "", x: 0, y: 0 });
-    }
   };
 
   // Add scroll event listener to close tooltip
@@ -189,141 +162,6 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     }
   };
 
-  return (
-    <tr className="border-t">
-      <td className="p-3">{entry.name}</td>
-      <td className="p-3">{entry.email}</td>
-      <td className="p-3">{entry.phone_number}</td>
-      <td className="p-3">
-        <span className="text-xs text-[10px]">{entry.workshop_name}</span>
-      </td>
-      <td className="p-3">
-        <span className="bg-green-100 items-center justify-center text-center text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-          {entry.session_number || 1}
-        </span>
-      </td>
-      <td className="p-3">
-        {entry.referal_code ? (
-          <div className="flex items-center gap-2">
-            <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium font-mono">
-              {entry.referal_code}
-            </span>
-            <button
-              onClick={() => handleCopyReferralCode(entry.referal_code!)}
-              className="p-1 hover:bg-gray-100 rounded transition-colors"
-              title="Copy referral code"
-            >
-              {copiedCode === entry.referal_code ? (
-                <FiCheck className="w-3 h-3 text-green-600" />
-              ) : (
-                <FiCopy className="w-3 h-3 text-gray-500" />
-              )}
-            </button>
-          </div>
-        ) : (
-          <span className="text-gray-400 text-xs">N/A</span>
-        )}
-      </td>
-      <td className="p-3">
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
-            entry.attended_webinars,
-            "yes/no"
-          )}`}
-        >
-          {entry.attended_webinars || "N/A"}
-        </span>
-      </td>
-      <td className="p-3">
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
-            entry.is_assessment_attempted,
-            "yes/no"
-          )}`}
-        >
-          {entry.is_assessment_attempted || "N/A"}
-        </span>
-      </td>
-      <td className="p-3">
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
-            entry.is_certificate_amount_paid,
-            "yes/no"
-          )}`}
-        >
-          {entry.is_certificate_amount_paid || "N/A"}
-        </span>
-      </td>
-      <td className="p-3">
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
-            entry.is_prebooking_amount_paid,
-            "yes/no"
-          )}`}
-        >
-          {entry.is_prebooking_amount_paid || "N/A"}
-        </span>
-      </td>
-      <td className="p-3">
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
-            entry.is_course_amount_paid,
-            "yes/no"
-          )}`}
-        >
-          {entry.is_course_amount_paid || "N/A"}
-        </span>
-      </td>
-      <td className="p-3">
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
-            entry.first_call_status,
-            "call"
-          )}`}
-        >
-          {entry.first_call_status || "N/A"}
-        </span>
-      </td>
-      <td className="p-3">
-        <div className="relative group">
-          <span className="text-sm text-gray-700 cursor-help">
-            {truncateComment(entry.fist_call_comment)}
-          </span>
-          {entry.fist_call_comment && entry.fist_call_comment.length > 25 && (
-            <div className="absolute bottom-full left-0 -top-20 mb-2 h-[90px] w-[300px] px-4 py-2 bg-white text-gray-800 text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-normal max-w-md z-50 border border-gray-200 shadow-lg">
-              {entry.fist_call_comment}
-            </div>
-          )}
-        </div>
-      </td>
-      <td className="p-3">
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
-            entry.second_call_status,
-            "call"
-          )}`}
-        >
-          {entry.second_call_status || "N/A"}
-        </span>
-      </td>
-      <td className="p-3">
-        <div className="relative group">
-          <span className="text-sm text-gray-700 cursor-help">
-            {truncateComment(entry.second_call_comment)}
-          </span>
-          {entry.second_call_comment &&
-            entry.second_call_comment.length > 25 && (
-              <div className="absolute bottom-full left-0 mb-2 h-[100px] w-[300px] px-4 py-2 bg-white text-gray-800 text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-normal max-w-md z-50 border border-gray-200 shadow-lg">
-                {entry.second_call_comment}
-              </div>
-            )}
-        </div>
-      </td>
-      <td className="p-3">
-        <span className="text-xs font-medium">
-          {entry.amount_paid || "N/A"}
-        </span>
-      </td>
   // Helper to get color for a status value
   const getStatusColor = (value: string, type: "first" | "second") => {
     const options =
@@ -580,14 +418,36 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
         </td>
         <td className="p-3">
           {entry.referal_code ? (
-            <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
-              {entry.referal_code}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium font-mono">
+                {entry.referal_code}
+              </span>
+              <button
+                onClick={() => handleCopyReferralCode(entry.referal_code!)}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                title="Copy referral code"
+              >
+                {copiedCode === entry.referal_code ? (
+                  <FiCheck className="w-3 h-3 text-green-600" />
+                ) : (
+                  <FiCopy className="w-3 h-3 text-gray-500" />
+                )}
+              </button>
+            </div>
           ) : (
             <span className="text-gray-400 text-xs">N/A</span>
           )}
         </td>
-        <td className="p-3">{String(entry.attended_webinars) || "N/A"}</td>
+        <td className="p-3">
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
+              entry.attended_webinars,
+              "true/false"
+            )}`}
+          >
+            {entry.attended_webinars || "N/A"}
+          </span>
+        </td>
         <td className="p-3">
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
@@ -628,7 +488,6 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
             {entry.is_course_amount_paid || "N/A"}
           </span>
         </td>
-        {/* 1st Call Status */}
         <td className="p-3">
           {renderStatusDropdown(
             firstCallStatus,
@@ -636,17 +495,17 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
             "first_call_status"
           )}
         </td>
-        {/* 1st Call Comment */}
         <td className="p-3">
           <span
-            className="text-sm text-gray-700"
-            onMouseEnter={(e) => handleCommentHover(e, firstCallComment)}
-            onMouseLeave={handleCommentLeave}
-          >
-            {truncateComment(firstCallComment)}
+            className="text-sm text-gray-700 cursor-help">
+            {truncateComment(entry.first_call_comment)}
           </span>
+          {entry.first_call_comment && entry.first_call_comment.length > 25 && (
+            <div className="absolute bottom-full left-0 -top-20 mb-2 h-[90px] w-[300px] px-4 py-2 bg-white text-gray-800 text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-normal max-w-md z-50 border border-gray-200 shadow-lg">
+              {entry.first_call_comment}
+            </div>
+          )}
         </td>
-        {/* 2nd Call Status */}
         <td className="p-3">
           {renderStatusDropdown(
             secondCallStatus,
@@ -654,15 +513,16 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
             "second_call_status"
           )}
         </td>
-        {/* 2nd Call Comment */}
         <td className="p-3">
           <span
-            className="text-sm text-gray-700"
-            onMouseEnter={(e) => handleCommentHover(e, secondCallComment)}
-            onMouseLeave={handleCommentLeave}
-          >
-            {truncateComment(secondCallComment)}
+            className="text-sm text-gray-700 cursor-help">
+            {truncateComment(entry.second_call_comment)}
           </span>
+          {entry.second_call_comment && entry.second_call_comment.length > 25 && (
+            <div className="absolute bottom-full left-0 mb-2 h-[100px] w-[300px] px-4 py-2 bg-white text-gray-800 text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-normal max-w-md z-50 border border-gray-200 shadow-lg">
+              {entry.second_call_comment}
+            </div>
+          )}
         </td>
         <td className="p-3">
           <span className="text-xs font-medium">
@@ -707,14 +567,6 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
             left: tooltipData.x,
             top: tooltipData.y,
             transform: "translateX(-103%)",
-          }}
-          onMouseEnter={() => setIsTooltipHovered(true)}
-          onMouseLeave={() => {
-            setIsTooltipHovered(false);
-            // Only close tooltip if comment is also not hovered
-            if (!isCommentHovered) {
-              setTooltipData({ show: false, text: "", x: 0, y: 0 });
-            }
           }}
         >
           {tooltipData.text}
