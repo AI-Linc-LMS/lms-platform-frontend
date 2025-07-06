@@ -218,6 +218,15 @@ export const useAssessment = (assessmentId?: string) => {
 
   const handleOptionSelect = (option: string) => {
     setSelectedOption(option);
+    updateAnswerMutation.mutate(userAnswers, {
+      onSuccess: () => {
+        console.log("Answer updated successfully after question change");
+      },
+      onError: (error) => {
+        console.error("Error updating answer:", error);
+      },
+    });
+    
     setUserAnswers((prev) => {
       if (!questions || !questionsData[currentQuestionIndex]) return prev;
       try {
@@ -238,32 +247,12 @@ export const useAssessment = (assessmentId?: string) => {
 
   const handleNext = () => {
     if (currentQuestionIndex < questionsData.length - 1) {
-      updateAnswerMutation.mutate(userAnswers, {
-        onSuccess: () => {
-          console.log("Answer updated successfully after question change");
-          setCurrentQuestionIndex(currentQuestionIndex + 1);
-        },
-        onError: (error) => {
-          console.error("Error updating answer:", error);
-          setCurrentQuestionIndex(currentQuestionIndex + 1);
-        },
-      });
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
   };
 
   const handleBack = () => {
-    if (currentQuestionIndex > 0) {
-      updateAnswerMutation.mutate(userAnswers, {
-        onSuccess: () => {
-          console.log("Answer updated successfully after question change");
-          setCurrentQuestionIndex(currentQuestionIndex - 1);
-        },
-        onError: (error) => {
-          console.error("Error updating answer:", error);
-          setCurrentQuestionIndex(currentQuestionIndex - 1);
-        },
-      });
-    }
+    setCurrentQuestionIndex(currentQuestionIndex - 1);
   };
 
   const navigateToQuestion = (index: number) => {
