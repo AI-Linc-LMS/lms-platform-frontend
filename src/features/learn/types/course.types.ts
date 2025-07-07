@@ -59,6 +59,8 @@ export interface Course {
   rating?: number;
   level?: string;
   categories?: string[];
+  liked_count?: number;
+  is_liked_by_current_user?: boolean;
   stats?: {
     video: { total: number };
     article: { total: number };
