@@ -6,6 +6,10 @@ import { getCourseContent } from "../../../../../services/enrolled-courses-conte
 import { submitContent } from "../../../../../services/enrolled-courses-content/submitApis";
 import Comments from "../../../../../commonComponents/components/Comments";
 import parse from "html-react-parser";
+import { TranscriptViewer } from '../../../../../components/TranscriptViewer';
+// import { useVimeoTranscript } from '../../../../../hooks/useVimeoTranscript';
+// import { CommentList } from '../../comments/CommentList';
+// import { CommentInput } from '../../comments/CommentInput';
 
 interface VideoCardProps {
   currentWeek: { title: string };
@@ -65,7 +69,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
   onProgressUpdate,
 }) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
-  const [activeTab, setActiveTab] = useState<"description" | "comments">("description");
+  const [activeTab, setActiveTab] = useState<"description" | "comments" | "transcript">("description");
   const [processedVideoUrl, setProcessedVideoUrl] = useState<string>("");
   const [useDirectHtml, setUseDirectHtml] = useState(true);
   const [useDebugMode, setUseDebugMode] = useState(false);
@@ -89,7 +93,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['video', contentId],
-    queryFn: () => getCourseContent(1, courseId, contentId),
+    queryFn: () => getCourseContent(Number(clientId), courseId, contentId),
     enabled: !!contentId && !!courseId,
     retry: 3,
     retryDelay: 1000,
@@ -183,11 +187,11 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
     // Continue with existing completion logic
     if (clientId && courseId && contentId) {
-      await submitContent(clientId, courseId, contentId, 'VideoTutorial', {})
-        .then(status => {
+      await submitContent(Number(clientId), courseId, contentId, 'VideoTutorial', {})
+        .then((status: number) => {
           console.log('Video completion submitted successfully:', status);
         })
-        .catch(error => {
+        .catch((error: Error) => {
           console.error('Failed to submit video completion:', error);
         });
     }
@@ -414,6 +418,15 @@ const VideoCard: React.FC<VideoCardProps> = ({
           >
             Comments
           </button>
+          <button
+            onClick={() => setActiveTab("transcript")}
+            className={`whitespace-nowrap py-3 md:py-4 px-1 border-b-2 font-medium text-xs md:text-sm ${activeTab === "transcript"
+              ? "border-[#255C79] text-[#255C79]"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+          >
+            Transcript
+          </button>
         </nav>
       </div>
 
@@ -514,6 +527,12 @@ const VideoCard: React.FC<VideoCardProps> = ({
             courseId={courseId}
             isDarkTheme={false}
             clientId={Number(clientId)}
+          />
+        )}
+        {activeTab === "transcript" && (
+          <TranscriptViewer
+            videoUrl={useDebugMode ? SAMPLE_VIMEO_URL : processedVideoUrl}
+            className="mt-4"
           />
         )}
       </div>
