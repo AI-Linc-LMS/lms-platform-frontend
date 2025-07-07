@@ -7,7 +7,11 @@ const BackToPreviousPage: React.FC = () => {
   return (
     <div className="flex items-center mb-6">
       <button
-        onClick={() => navigate(-1)}
+        onClick={() => {
+          const pathSegments = window.location.pathname.split('/');
+          const courseId = pathSegments[3]; // Extract courseId from /learn/course/:courseId/:submoduleId
+          navigate(`/courses/${courseId}`);
+        }}
         className="h-[38px] w-[38px] bg-[#12293A] rounded-full text-[#255C79] flex items-center justify-center mr-4 cursor-pointer"
       >
         <svg width="22" height="18" viewBox="0 0 22 18" fill="none" xmlns="http://www.w3.org/2000/svg">
