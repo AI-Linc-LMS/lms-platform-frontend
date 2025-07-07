@@ -5,7 +5,10 @@ import {
   getSubmoduleContentById,
   VideoContentUpdateData,
 } from "../../../../../services/admin/courseApis";
-import { getContentById, updateContentById } from "../../../../../services/admin/contentApis";
+import {
+  getContentById,
+  updateContentById,
+} from "../../../../../services/admin/contentApis";
 import { useToast } from "../../../../../contexts/ToastContext";
 import RichTextEditor from "../RichTextEditor";
 
@@ -42,11 +45,11 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
       contentId,
     ],
     queryFn: () => {
-      console.log("=== FETCHING VIDEO DATA FOR EDIT ===");
-      console.log("Client ID:", clientId);
-      console.log("Course ID:", courseId);
-      console.log("Submodule ID:", submoduleId);
-      console.log("Content ID:", contentId);
+      //console.log("=== FETCHING VIDEO DATA FOR EDIT ===");
+      //console.log("Client ID:", clientId);
+      //console.log("Course ID:", courseId);
+      //console.log("Submodule ID:", submoduleId);
+      //console.log("Content ID:", contentId);
 
       return getSubmoduleContentById(
         clientId,
@@ -62,75 +65,84 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
   const { data: directVideoData, isLoading: isLoadingDirectVideo } = useQuery({
     queryKey: ["video-content-direct", clientId, contentId],
     queryFn: () => {
-      console.log("=== FETCHING DIRECT VIDEO DATA ===");
-      console.log("Video ID:", videoData.video_content);
-      return getContentById(clientId, "video-tutorials", videoData.video_content);
+      //console.log("=== FETCHING DIRECT VIDEO DATA ===");
+      //console.log("Video ID:", videoData.video_content);
+      return getContentById(
+        clientId,
+        "video-tutorials",
+        videoData.video_content
+      );
     },
-    enabled: !!videoData && !videoData.description && !videoData.details?.description,
+    enabled:
+      !!videoData && !videoData.description && !videoData.details?.description,
   });
-  console.log("=== VIDEO DATA FETCHED ===");  
-  console.log("Video Data:", videoData);
-  console.log("Direct Video Data:", directVideoData);
+  //console.log("=== VIDEO DATA FETCHED ===");
+  //console.log("Video Data:", videoData);
+  //console.log("Direct Video Data:", directVideoData);
   // Populate form with existing data
   useEffect(() => {
     // Use direct video data if available and has description, otherwise use submodule data
-    const dataToUse = (directVideoData && directVideoData.description) ? directVideoData : videoData;
-    
+    const dataToUse =
+      directVideoData && directVideoData.description
+        ? directVideoData
+        : videoData;
+
     if (dataToUse) {
-      console.log("=== LOADED VIDEO DATA FOR EDITING ===");
-      console.log("Using data source:", directVideoData && directVideoData.description ? "Direct API" : "Submodule API");
-      console.log("Full video data:", JSON.stringify(dataToUse, null, 2));
+      //console.log("=== LOADED VIDEO DATA FOR EDITING ===");
+      //console.log("Using data source:", directVideoData && directVideoData.description ? "Direct API" : "Submodule API");
+      //console.log("Full video data:", JSON.stringify(dataToUse, null, 2));
 
       // Try multiple possible data structures
       let contentDetails = dataToUse;
-      
+
       // Check if data is nested under 'details'
       if (dataToUse.details) {
         contentDetails = dataToUse.details;
-        console.log("Using nested details:", JSON.stringify(contentDetails, null, 2));
+        //console.log("Using nested details:", JSON.stringify(contentDetails, null, 2));
       }
 
       // Extract values with fallbacks
-      const titleValue = 
-        contentDetails.title || 
-        dataToUse.title || 
+      const titleValue =
+        contentDetails.title ||
+        dataToUse.title ||
         contentDetails.content_title ||
-        dataToUse.content_title || 
+        dataToUse.content_title ||
         "";
 
-      const marksValue = 
-        contentDetails.marks?.toString() || 
-        dataToUse.marks?.toString() || 
+      const marksValue =
+        contentDetails.marks?.toString() ||
+        dataToUse.marks?.toString() ||
         contentDetails.total_marks?.toString() ||
-        dataToUse.total_marks?.toString() || videoData.marks?.toString() ||
+        dataToUse.total_marks?.toString() ||
+        videoData.marks?.toString() ||
         "";
 
-      const videoUrlValue = 
-        contentDetails.video_url || 
-        dataToUse.video_url || 
+      const videoUrlValue =
+        contentDetails.video_url ||
+        dataToUse.video_url ||
         contentDetails.url ||
         dataToUse.url ||
         "";
-      
+
       // Try multiple possible locations for description
-      const descriptionValue = 
-        contentDetails.description || 
-        dataToUse.description || 
-        contentDetails.content || 
-        dataToUse.content || 
+      const descriptionValue =
+        contentDetails.description ||
+        dataToUse.description ||
+        contentDetails.content ||
+        dataToUse.content ||
         contentDetails.video_description ||
         dataToUse.video_description ||
         contentDetails.details?.description ||
         "";
 
-      console.log("=== EXTRACTED VALUES ===");
-      console.log("Title:", titleValue);
-      console.log("Marks:", marksValue);
-      console.log("Video URL:", videoUrlValue);
-      console.log("Description:", descriptionValue ? `Found (${descriptionValue.length} chars)` : "Not found");
-      
+      //console.log("=== EXTRACTED VALUES ===");
+      //console.log("Title:", titleValue);
+      //console.log("Marks:", marksValue);
+      //console.log("Video URL:", videoUrlValue);
+      //console.log("Description:", descriptionValue ? `Found (${descriptionValue.length} chars)` : "Not found");
+
       if (descriptionValue) {
-        console.log("Description preview:", descriptionValue.substring(0, 200) + "...");
+        //console.log("Description preview:", descriptionValue.substring(0, 200) + "...");
       }
 
       // Set form values
@@ -139,19 +151,19 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
       setVideoUrl(videoUrlValue);
       setDescription(descriptionValue);
 
-      console.log("=== FORM STATE UPDATED ===");
-      console.log("Form populated successfully");
+      //console.log("=== FORM STATE UPDATED ===");
+      //console.log("Form populated successfully");
     }
   }, [videoData, directVideoData]);
 
   const updateMutation = useMutation({
     mutationFn: (data: VideoContentUpdateData) => {
-      console.log("=== UPDATING VIDEO ===");
-      console.log("Client ID:", clientId);
-      console.log("Course ID:", courseId);
-      console.log("Submodule ID:", submoduleId);
-      console.log("Content ID:", contentId);
-      console.log("Update data:", data);
+      //console.log("=== UPDATING VIDEO ===");
+      //console.log("Client ID:", clientId);
+      //console.log("Course ID:", courseId);
+      //console.log("Submodule ID:", submoduleId);
+      //console.log("Content ID:", contentId);
+      //console.log("Update data:", data);
 
       return updateContentById(
         clientId,
@@ -161,7 +173,7 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
       );
     },
     onSuccess: () => {
-      console.log("✅ Video updated successfully!");
+      //console.log("✅ Video updated successfully!");
       success("Video Updated", "Video content updated successfully!");
       if (onSuccess) {
         onSuccess();
@@ -169,7 +181,7 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
       onBack();
     },
     onError: (error: Error) => {
-      console.error("❌ Failed to update video:", error);
+      //console.error("❌ Failed to update video:", error);
       showError(
         "Update Failed",
         error.message || "Failed to update video content"
@@ -215,8 +227,8 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
       description: description.trim() || undefined,
     };
 
-    console.log("=== SAVING VIDEO WITH DATA ===");
-    console.log("Content data to save:", contentData);
+    //console.log("=== SAVING VIDEO WITH DATA ===");
+    //console.log("Content data to save:", contentData);
 
     updateMutation.mutate(contentData);
   };

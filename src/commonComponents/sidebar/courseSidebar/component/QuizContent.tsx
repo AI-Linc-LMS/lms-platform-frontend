@@ -12,7 +12,7 @@ export interface Quiz {
 }
 
 interface QuizContentProps {
-  quizzes: Quiz[]; 
+  quizzes: Quiz[];
   selectedQuizId: number;
   onSelect: (quizId: number) => void;
 }
@@ -22,8 +22,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
   selectedQuizId,
   onSelect,
 }) => {
-  
-  console.log(Quizzes);
+  //console.log(Quizzes);
   // If loading, show a loading state
   if (Quizzes.length === 0) {
     return (
@@ -37,7 +36,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
   }
 
   const quizzes = Quizzes;
-  
+
   return (
     <div>
       <h2 className="text-lg font-semibold text-gray-800">
@@ -51,14 +50,13 @@ const QuizContent: React.FC<QuizContentProps> = ({
         {quizzes.map((quiz, idx) => {
           const isSelected = quiz.id === selectedQuizId;
           const isLastItem = idx === quizzes.length - 1;
-          
+
           // If this quiz is selected and we have API data, get the question count from API
-          const questionCount = isSelected && quiz.questions
-            
+          const questionCount = isSelected && quiz.questions;
+
           // Use a placeholder submissions count based on API data if available
-          const submissions = isSelected && quizzes 
-            ? (quiz.questions * 10) 
-            : quiz.submissions;
+          const submissions =
+            isSelected && quizzes ? quiz.questions * 10 : quiz.submissions;
 
           return (
             <div

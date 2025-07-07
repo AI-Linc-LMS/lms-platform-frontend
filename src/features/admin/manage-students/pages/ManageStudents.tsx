@@ -20,13 +20,13 @@ interface StudentFormData {
 }
 
 const ManageStudents = () => {
-//   const navigate = useNavigate();
+  //   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [filters, setFilters] = useState<FilterCriteria>({
     courses: [],
-    searchTerm: ""
+    searchTerm: "",
   });
   const [students, setStudents] = useState<Student[]>([
     {
@@ -34,48 +34,48 @@ const ManageStudents = () => {
       name: "Avish Shetty",
       email: "avishvshetty@gmail.com",
       mobileNumber: "+91 9839487393",
-      enrolledCourses: ["Deployment in ML", "Full-Stack Development"]
+      enrolledCourses: ["Deployment in ML", "Full-Stack Development"],
     },
     {
       id: 2,
       name: "Avish Shetty",
       email: "avishvshetty@gmail.com",
       mobileNumber: "+91 9839487393",
-      enrolledCourses: ["Deployment in ML"]
+      enrolledCourses: ["Deployment in ML"],
     },
     {
       id: 3,
       name: "Avish Shetty",
       email: "avishvshetty@gmail.com",
       mobileNumber: "+91 9839487393",
-      enrolledCourses: ["Deployment in ML", "Front-End Development"]
+      enrolledCourses: ["Deployment in ML", "Front-End Development"],
     },
     {
       id: 4,
       name: "Avish Shetty",
       email: "avishvshetty@gmail.com",
       mobileNumber: "+91 9839487393",
-      enrolledCourses: ["Deployment in ML", "Back-End Development"]
+      enrolledCourses: ["Deployment in ML", "Back-End Development"],
     },
     {
       id: 5,
       name: "Avish Shetty",
       email: "avishvshetty@gmail.com",
       mobileNumber: "+91 9839487393",
-      enrolledCourses: ["Deployment in ML"]
+      enrolledCourses: ["Deployment in ML"],
     },
     {
       id: 6,
       name: "Avish Shetty",
       email: "avishvshetty@gmail.com",
       mobileNumber: "+91 9839487393",
-      enrolledCourses: ["Deployment in ML", "Full-Stack Development"]
-    }
+      enrolledCourses: ["Deployment in ML", "Full-Stack Development"],
+    },
   ]);
 
-//   const handleBackToMain = () => {
-//     navigate("/");
-//   };
+  //   const handleBackToMain = () => {
+  //     navigate("/");
+  //   };
 
   const handleAddStudent = () => {
     setIsAddModalOpen(true);
@@ -83,20 +83,20 @@ const ManageStudents = () => {
 
   const handleAddStudentSubmit = (studentData: StudentFormData) => {
     const newStudent: Student = {
-      id: Math.max(...students.map(s => s.id)) + 1,
-      ...studentData
+      id: Math.max(...students.map((s) => s.id)) + 1,
+      ...studentData,
     };
-    setStudents(prev => [...prev, newStudent]);
+    setStudents((prev) => [...prev, newStudent]);
   };
 
-  const handleEditStudent = (studentId: number) => {
+  const handleEditStudent = () => {
     // TODO: Implement edit student functionality
-    console.log("Edit student:", studentId);
+    //console.log("Edit student:", studentId);
   };
 
   const handleDeleteStudent = (studentId: number) => {
     if (window.confirm("Are you sure you want to delete this student?")) {
-      setStudents(prev => prev.filter(student => student.id !== studentId));
+      setStudents((prev) => prev.filter((student) => student.id !== studentId));
     }
   };
 
@@ -105,15 +105,18 @@ const ManageStudents = () => {
     setSearchTerm(newFilters.searchTerm);
   };
 
-  const filteredStudents = students.filter(student => {
+  const filteredStudents = students.filter((student) => {
     // Search filter
-    const matchesSearch = 
+    const matchesSearch =
       student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.email.toLowerCase().includes(searchTerm.toLowerCase());
 
     // Course filter
-    const matchesCourses = filters.courses.length === 0 || 
-      filters.courses.some(course => student.enrolledCourses.includes(course));
+    const matchesCourses =
+      filters.courses.length === 0 ||
+      filters.courses.some((course) =>
+        student.enrolledCourses.includes(course)
+      );
 
     return matchesSearch && matchesCourses;
   });
@@ -148,7 +151,9 @@ const ManageStudents = () => {
               Back to Main
             </button> */}
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Manage Students</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Manage Students
+              </h1>
             </div>
           </div>
         </div>
@@ -170,12 +175,12 @@ const ManageStudents = () => {
 
             {/* Filter and Add Student Buttons */}
             <div className="flex items-center gap-3">
-              <button 
+              <button
                 onClick={() => setIsFilterModalOpen(true)}
                 className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
-                  hasActiveFilters 
-                    ? 'border-[#255C79] bg-[#255C79] text-white' 
-                    : 'border-gray-300 hover:bg-gray-50'
+                  hasActiveFilters
+                    ? "border-[#255C79] bg-[#255C79] text-white"
+                    : "border-gray-300 hover:bg-gray-50"
                 }`}
               >
                 <FiFilter className="w-4 h-4" />
@@ -211,7 +216,7 @@ const ManageStudents = () => {
                       onClick={() => {
                         const newFilters = {
                           ...filters,
-                          courses: filters.courses.filter(c => c !== course)
+                          courses: filters.courses.filter((c) => c !== course),
                         };
                         setFilters(newFilters);
                       }}
@@ -239,7 +244,10 @@ const ManageStudents = () => {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="text-left py-4 px-6 text-sm font-medium text-gray-700 uppercase tracking-wider">
-                    <input type="checkbox" className="rounded border-gray-300" />
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-300"
+                    />
                   </th>
                   <th className="text-left py-4 px-6 text-sm font-medium text-gray-700 uppercase tracking-wider">
                     Name
@@ -261,15 +269,26 @@ const ManageStudents = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredStudents.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 px-6 text-center text-gray-500">
-                      {searchTerm || hasActiveFilters ? "No students found matching your criteria." : "No students found."}
+                    <td
+                      colSpan={6}
+                      className="py-8 px-6 text-center text-gray-500"
+                    >
+                      {searchTerm || hasActiveFilters
+                        ? "No students found matching your criteria."
+                        : "No students found."}
                     </td>
                   </tr>
                 ) : (
                   filteredStudents.map((student) => (
-                    <tr key={student.id} className="hover:bg-gray-50 transition-colors">
+                    <tr
+                      key={student.id}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
                       <td className="py-4 px-6">
-                        <input type="checkbox" className="rounded border-gray-300" />
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300"
+                        />
                       </td>
                       <td className="py-4 px-6 text-sm text-gray-900">
                         {student.name}
@@ -295,7 +314,7 @@ const ManageStudents = () => {
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => handleEditStudent(student.id)}
+                            onClick={() => handleEditStudent()}
                             className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
                             title="Edit Student"
                           >
@@ -337,4 +356,4 @@ const ManageStudents = () => {
   );
 };
 
-export default ManageStudents; 
+export default ManageStudents;

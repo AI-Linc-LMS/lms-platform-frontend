@@ -12,7 +12,7 @@ export const logActivityEvent = (event: string, data?: unknown): void => {
   const timestamp = new Date().toISOString();
   const logEntry = `[${timestamp}] ${event}${data ? ': ' + JSON.stringify(data) : ''}`;
   
-  //console.log(logEntry);
+  ////console.log(logEntry);
   
   // Store in memory for retrieval
   activeDebugEvents.push(logEntry);

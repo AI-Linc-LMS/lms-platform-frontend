@@ -77,18 +77,12 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
   // Log component props for debugging
   useEffect(() => {
-    console.log("VideoCard - Component Props:", {
-      contentId,
-      courseId,
-      isQueryEnabled: !!contentId && !!courseId,
-    });
-
     // Check for potential issues with the API parameters
     if (contentId === undefined || contentId === null || contentId <= 0) {
-      console.error("VideoCard - Invalid contentId:", contentId);
+      //console.error("VideoCard - Invalid contentId:", contentId);
     }
     if (courseId === undefined || courseId === null || courseId <= 0) {
-      console.error("VideoCard - Invalid courseId:", courseId);
+      //console.error("VideoCard - Invalid courseId:", courseId);
     }
   }, [contentId, courseId]);
 
@@ -109,36 +103,27 @@ const VideoCard: React.FC<VideoCardProps> = ({
     }
 
     if (!data) {
-      console.log("VideoCard - No data returned from API");
+      //console.log("VideoCard - No data returned from API");
       return;
     }
-
-    // Log detailed info about response
-    console.log("VideoCard - Full API response:", data);
-    console.log("VideoCard - Response structure:", {
-      responseType: typeof data,
-      hasDetails: !!(data as CourseContentResponse).details,
-      hasVideoUrl: !!(data as CourseContentResponse).details?.video_url,
-      availableFields: Object.keys(data as CourseContentResponse),
-    });
 
     // Type assertion - we know the structure at this point
     const responseData = data as CourseContentResponse;
 
     // Check if details object exists
     if (!responseData.details) {
-      console.log("VideoCard - Missing details object in response data");
+      //console.log("VideoCard - Missing details object in response data");
       return;
     }
 
     // Process video URL from response data
     if (!responseData.details.video_url) {
-      console.log("VideoCard - Missing video_url in details object");
+      //console.log("VideoCard - Missing video_url in details object");
       return;
     }
 
     const videoUrl = String(responseData.details.video_url);
-    console.log("VideoCard - Original Video URL:", videoUrl);
+    //console.log("VideoCard - Original Video URL:", videoUrl);
 
     // Process the URL
     let processedUrl = videoUrl;
@@ -157,11 +142,11 @@ const VideoCard: React.FC<VideoCardProps> = ({
       if (match && match[1]) {
         const videoId = match[1];
         processedUrl = `https://player.vimeo.com/video/${videoId}?badge=0&autopause=0&player_id=0&app_id=58479`;
-        console.log("VideoCard - Converted to player URL:", processedUrl);
+        //console.log("VideoCard - Converted to player URL:", processedUrl);
       }
     }
 
-    console.log("VideoCard - Final Processed URL:", processedUrl);
+    //console.log("VideoCard - Final Processed URL:", processedUrl);
     setProcessedVideoUrl(processedUrl);
   }, [data, useDebugMode]);
 
@@ -186,15 +171,9 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
     // Continue with existing completion logic
     if (clientId && courseId && contentId) {
-      await submitContent(clientId, courseId, contentId, "VideoTutorial", {})
-        .then((status) => {
-          console.log("Video completion submitted successfully:", status);
-        })
-        .catch((error) => {
-          console.error("Failed to submit video completion:", error);
-        });
+      await submitContent(clientId, courseId, contentId, "VideoTutorial", {});
     }
-    console.log("Video completed! Loading next video...");
+    //console.log("Video completed! Loading next video...");
     setTimeout(() => {
       nextContent();
     }, 1500);
@@ -227,8 +206,8 @@ const VideoCard: React.FC<VideoCardProps> = ({
       }
 
       return parse(wrapWithDiv(processedContent));
-    } catch (error) {
-      console.error("Error parsing HTML content:", error);
+    } catch {
+      //console.error("Error parsing HTML content:", error);
       return (
         <div className="p-3 bg-red-100 border border-red-300 rounded text-red-700">
           Error rendering content. Please try refreshing the page.
@@ -257,7 +236,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
   // If API error, show error message with debug option
   if (error && !useDebugMode) {
-    console.error("VideoCard - Error loading data:", error);
+    //console.error("VideoCard - Error loading data:", error);
     return (
       <div className="text-red-500 p-4">
         <div>Error loading video: {String(error)}</div>
@@ -378,8 +357,8 @@ const VideoCard: React.FC<VideoCardProps> = ({
                 fill="#255C79"
               />
               <path
-                fill-rule="evenodd"
-                clip-rule="evenodd"
+                fillRule="evenodd"
+                clipRule="evenodd"
                 d="M2.96767 9.48508C3.36893 9.46777 3.71261 9.76963 3.74721 10.1698L4.71881 21.4063C4.78122 22.1281 4.21268 22.7502 3.48671 22.7502C2.80289 22.7502 2.25 22.1954 2.25 21.5129V10.2344C2.25 9.83275 2.5664 9.5024 2.96767 9.48508Z"
                 fill="#255C79"
               />
@@ -389,13 +368,13 @@ const VideoCard: React.FC<VideoCardProps> = ({
           </button>
           {/* <button className="flex items-center text-gray-500 cursor-pointer">
             <svg className="mt-1.5" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path fill-rule="evenodd" clip-rule="evenodd" d="M12.4382 21.2216C12.2931 21.2682 12.1345 21.2569 11.9998 21.192C11.8523 21.1209 11.7548 20.9968 11.7197 20.8618L11.244 19.0279C11.0777 18.3866 10.8354 17.768 10.5235 17.184C10.0392 16.2773 9.30632 15.58 8.62647 14.9942L7.18773 13.7544C6.96475 13.5622 6.8474 13.2742 6.87282 12.9802L7.68498 3.58754C7.72601 3.11303 8.12244 2.75 8.59635 2.75H13.245C16.3813 2.75 19.0238 4.93226 19.5306 7.86285L20.2361 11.9426C20.3332 12.5041 19.9014 13.0158 19.3348 13.0158H14.1537C13.1766 13.0158 12.4344 13.8924 12.5921 14.8553L13.2548 18.8998C13.3456 19.4539 13.3197 20.0208 13.1787 20.5642C13.1072 20.8399 12.8896 21.0766 12.5832 21.175L12.4382 21.2216L12.6676 21.9356L12.4382 21.2216ZM11.3486 22.5433C11.8312 22.7758 12.3873 22.8135 12.897 22.6497L13.042 22.6031L12.8126 21.8891L13.042 22.6031C13.819 22.3535 14.4252 21.7328 14.6307 20.9408C14.8241 20.1952 14.8596 19.4174 14.7351 18.6573L14.0724 14.6128C14.0639 14.561 14.1038 14.5158 14.1537 14.5158H19.3348C20.8341 14.5158 21.9695 13.1635 21.7142 11.687L21.0087 7.60725C20.3708 3.91896 17.0712 1.25 13.245 1.25H8.59635C7.3427 1.25 6.29852 2.20975 6.19056 3.45832L5.3784 12.851C5.31149 13.6247 5.62022 14.3837 6.20855 14.8907L7.64729 16.1305C8.3025 16.6951 8.85404 17.2423 9.20042 17.8908C9.45699 18.3711 9.65573 18.8789 9.79208 19.4046L10.2678 21.2384C10.417 21.8137 10.8166 22.2869 11.3486 22.5433ZM2.96767 14.5151C3.36893 14.5324 3.71261 14.2306 3.74721 13.8304L4.71881 2.59389C4.78122 1.8721 4.21268 1.25 3.48671 1.25C2.80289 1.25 2.25 1.80474 2.25 2.48726V13.7658C2.25 14.1674 2.5664 14.4978 2.96767 14.5151Z" fill="#255C79" />
+              <path fillRule="evenodd" clipRule="evenodd" d="M12.4382 21.2216C12.2931 21.2682 12.1345 21.2569 11.9998 21.192C11.8523 21.1209 11.7548 20.9968 11.7197 20.8618L11.244 19.0279C11.0777 18.3866 10.8354 17.768 10.5235 17.184C10.0392 16.2773 9.30632 15.58 8.62647 14.9942L7.18773 13.7544C6.96475 13.5622 6.8474 13.2742 6.87282 12.9802L7.68498 3.58754C7.72601 3.11303 8.12244 2.75 8.59635 2.75H13.245C16.3813 2.75 19.0238 4.93226 19.5306 7.86285L20.2361 11.9426C20.3332 12.5041 19.9014 13.0158 19.3348 13.0158H14.1537C13.1766 13.0158 12.4344 13.8924 12.5921 14.8553L13.2548 18.8998C13.3456 19.4539 13.3197 20.0208 13.1787 20.5642C13.1072 20.8399 12.8896 21.0766 12.5832 21.175L12.4382 21.2216L12.6676 21.9356L12.4382 21.2216ZM11.3486 22.5433C11.8312 22.7758 12.3873 22.8135 12.897 22.6497L13.042 22.6031L12.8126 21.8891L13.042 22.6031C13.819 22.3535 14.4252 21.7328 14.6307 20.9408C14.8241 20.1952 14.8596 19.4174 14.7351 18.6573L14.0724 14.6128C14.0639 14.561 14.1038 14.5158 14.1537 14.5158H19.3348C20.8341 14.5158 21.9695 13.1635 21.7142 11.687L21.0087 7.60725C20.3708 3.91896 17.0712 1.25 13.245 1.25H8.59635C7.3427 1.25 6.29852 2.20975 6.19056 3.45832L5.3784 12.851C5.31149 13.6247 5.62022 14.3837 6.20855 14.8907L7.64729 16.1305C8.3025 16.6951 8.85404 17.2423 9.20042 17.8908C9.45699 18.3711 9.65573 18.8789 9.79208 19.4046L10.2678 21.2384C10.417 21.8137 10.8166 22.2869 11.3486 22.5433ZM2.96767 14.5151C3.36893 14.5324 3.71261 14.2306 3.74721 13.8304L4.71881 2.59389C4.78122 1.8721 4.21268 1.25 3.48671 1.25C2.80289 1.25 2.25 1.80474 2.25 2.48726V13.7658C2.25 14.1674 2.5664 14.4978 2.96767 14.5151Z" fill="#255C79" />
             </svg>
 
           </button> */}
         </div>
         <div>
-          <button 
+          <button
             onClick={handleReportIssue}
             className="flex flex-row gap-2 md:gap-3 cursor-pointer hover:opacity-80 transition-opacity"
           >
@@ -416,8 +395,8 @@ const VideoCard: React.FC<VideoCardProps> = ({
                 fill="#AE0606"
               />
               <path
-                fill-rule="evenodd"
-                clip-rule="evenodd"
+                fillRule="evenodd"
+                clipRule="evenodd"
                 d="M7.2944 2.97643C8.36631 1.61493 9.50182 0.75 11 0.75C12.4981 0.75 13.6336 1.61493 14.7056 2.97643C15.7598 4.31544 16.8769 6.29622 18.3063 8.83053L18.7418 9.60267C19.9234 11.6976 20.8566 13.3523 21.3468 14.6804C21.8478 16.0376 21.9668 17.2699 21.209 18.3569C20.4736 19.4118 19.2466 19.8434 17.6991 20.0471C16.1576 20.25 14.0845 20.25 11.4248 20.25H10.5752C7.91552 20.25 5.84239 20.25 4.30082 20.0471C2.75331 19.8434 1.52637 19.4118 0.790989 18.3569C0.0331793 17.2699 0.152183 16.0376 0.653135 14.6804C1.14334 13.3523 2.07658 11.6977 3.25818 9.6027L3.69361 8.83067C5.123 6.29629 6.24019 4.31547 7.2944 2.97643ZM8.47297 3.90432C7.49896 5.14148 6.43704 7.01988 4.96495 9.62994L4.60129 10.2747C3.37507 12.4488 2.50368 13.9986 2.06034 15.1998C1.6227 16.3855 1.68338 17.0141 2.02148 17.4991C2.38202 18.0163 3.05873 18.3706 4.49659 18.5599C5.92858 18.7484 7.9026 18.75 10.6363 18.75H11.3636C14.0974 18.75 16.0714 18.7484 17.5034 18.5599C18.9412 18.3706 19.6179 18.0163 19.9785 17.4991C20.3166 17.0141 20.3773 16.3855 19.9396 15.1998C19.4963 13.9986 18.6249 12.4488 17.3987 10.2747L17.035 9.62993C15.5629 7.01987 14.501 5.14148 13.527 3.90431C12.562 2.67865 11.8126 2.25 11 2.25C10.1874 2.25 9.43793 2.67865 8.47297 3.90432Z"
                 fill="#AE0606"
               />
@@ -566,9 +545,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
       </div>
 
       {/* Floating Ask AI Button */}
-      <FloatingAIButton
-        onClick={() => console.log("Floating AI Button clicked")}
-      />
+      <FloatingAIButton onClick={() => {}} />
 
       {/* Report Issue Modal */}
       <ReportIssueModal

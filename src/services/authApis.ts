@@ -56,7 +56,7 @@ axiosAuthInstance.interceptors.response.use(
   (error) => {
     // Check if the error is due to an expired token (status 401)
     if (error.response && error.response.status === 401) {
-      console.log("Token expired or invalid. Logging out...");
+      //console.log("Token expired or invalid. Logging out...");
 
       // Avoid multiple redirects
       if (window.location.pathname === "/login") {
@@ -128,13 +128,7 @@ export const googleLogin = async (googleToken: string, clientId: number) => {
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      // Log detailed error information for debugging
-      console.error("Google login API error:", {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-      });
+      
 
       // For 500 errors, throw a more specific error
       if (error.response?.status === 500) {

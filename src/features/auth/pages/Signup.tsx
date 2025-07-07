@@ -247,7 +247,7 @@ const Signup: React.FC = () => {
 
       navigate(`/otp?email=${encodeURIComponent(formData.email)}`);
     } catch (error) {
-      console.error("Signup error:", error);
+      //console.error("Signup error:", error);
 
       const errorMessage =
         error instanceof Error
@@ -312,8 +312,9 @@ const Signup: React.FC = () => {
                       required
                       value={formData.first_name}
                       onChange={handleChange}
-                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("first_name") ? "border-red-500" : ""
-                        }`}
+                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${
+                        getFieldError("first_name") ? "border-red-500" : ""
+                      }`}
                       placeholder="John"
                     />
                   </div>
@@ -340,8 +341,9 @@ const Signup: React.FC = () => {
                       required
                       value={formData.last_name}
                       onChange={handleChange}
-                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("last_name") ? "border-red-500" : ""
-                        }`}
+                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${
+                        getFieldError("last_name") ? "border-red-500" : ""
+                      }`}
                       placeholder="Doe"
                     />
                   </div>
@@ -369,8 +371,9 @@ const Signup: React.FC = () => {
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("email") ? "border-red-500" : ""
-                      }`}
+                    className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${
+                      getFieldError("email") ? "border-red-500" : ""
+                    }`}
                     placeholder="example@email.com"
                   />
                 </div>
@@ -397,8 +400,9 @@ const Signup: React.FC = () => {
                     required
                     value={formData.phone}
                     onChange={handleChange}
-                    className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("phone") ? "border-red-500" : ""
-                      }`}
+                    className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${
+                      getFieldError("phone") ? "border-red-500" : ""
+                    }`}
                     placeholder="+91 945323XXXX"
                     maxLength={20}
                   />
@@ -427,8 +431,9 @@ const Signup: React.FC = () => {
                       required
                       value={formData.password}
                       onChange={handleChange}
-                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("password") ? "border-red-500" : ""
-                        }`}
+                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${
+                        getFieldError("password") ? "border-red-500" : ""
+                      }`}
                       placeholder="Create a password"
                     />
                     <button
@@ -531,10 +536,11 @@ const Signup: React.FC = () => {
                       required
                       value={formData.confirm_password}
                       onChange={handleChange}
-                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("confirm_password")
+                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${
+                        getFieldError("confirm_password")
                           ? "border-red-500"
                           : ""
-                        }`}
+                      }`}
                       placeholder="Confirm your password"
                     />
                   </div>
