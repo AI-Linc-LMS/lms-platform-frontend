@@ -37,6 +37,12 @@ export interface AssessmentListItem {
   is_active: boolean;
 }
 
+// Interface for assessment submission payload
+interface AssessmentSubmissionPayload {
+  response_sheet: QuizSectionResponse;
+  referral_code?: string;
+}
+
 export const getInstructions = async (clientId: number, assessmentId: string): Promise<AssessmentDetails> => {
   try {
     const res = await axiosInstance.get(
@@ -108,11 +114,12 @@ export const getAllAssessments = async (clientId: number): Promise<AssessmentLis
 export const startAssessment = async (
   clientId: number,
   assessmentId: string,
-  phoneNumber?: string
+  phoneNumber?: string,
+  referralCode?: string
 ) => {
   try {
     const res = await axiosInstance.get(
-      `assessment/api/client/${clientId}/start-assessment/${assessmentId}/?phone_number=${phoneNumber ?? ""}`
+      `assessment/api/client/${clientId}/start-assessment/${assessmentId}/?phone_number=${phoneNumber ?? ""}/?ref=${referralCode ?? ""}`
     );
     return res.data;
   } catch (error) {
@@ -141,14 +148,22 @@ export const startAssessment = async (
 export const submitFinalAssessment = async (
   clientId: number,
   assessmentId: string,
-  userAnswers: QuizSectionResponse
+  userAnswers: QuizSectionResponse,
+  referralCode?: string
 ) => {
   try {
+    const payload: AssessmentSubmissionPayload = {
+      response_sheet: userAnswers,
+    };
+
+    // Add referral code if provided
+    if (referralCode) {
+      payload.referral_code = referralCode;
+    }
+
     const res = await axiosInstance.put(
       `/assessment/api/client/${clientId}/assessment-submission/${assessmentId}/final/`,
-      {
-        response_sheet: userAnswers,
-      }
+      payload
     );
     return res.data;
   } catch (error) {
@@ -177,15 +192,23 @@ export const submitFinalAssessment = async (
 export const updateAfterEachQuestion = async (
   clientId: number,
   assessmentId: string,
-  userAnswers: QuizSectionResponse
+  userAnswers: QuizSectionResponse,
+  referralCode?: string
 ) => {
   console.log("userAnswers", userAnswers);
   try {
+    const payload: AssessmentSubmissionPayload = {
+      response_sheet: userAnswers,
+    };
+
+    // Add referral code if provided
+    if (referralCode) {
+      payload.referral_code = referralCode;
+    }
+
     const res = await axiosInstance.post(
       `/assessment/api/client/${clientId}/assessment-submission/${assessmentId}/`,
-      {
-        response_sheet: userAnswers,
-      }
+      payload
     );
     return res.data;
   } catch (error) {

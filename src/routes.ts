@@ -1,4 +1,5 @@
 import Jobs from "./features/jobs/pages/Jobs";
+import JobDetail from "./features/jobs/pages/JobDetail";
 import Learn from "./features/learn/pages/Learn";
 import Live from "./features/live/pages/Live";
 // Might have potential bug
@@ -75,13 +76,18 @@ const routes: RouteConfig[] = [
     isPrivate: true,
   },
   {
+    path: "/assessment/quiz",
+    component: ShortAssessment,
+    isPrivate: true,
+  },
+  {
     path: "/assessment/phone-verification",
     component: PhoneVerificationPage,
     isPrivate: true,
   },
   {
-    path: "/assessment/quiz",
-    component: ShortAssessment,
+    path: "/assessment/phone-verification/:ref",
+    component: PhoneVerificationPage,
     isPrivate: true,
   },
   {
@@ -93,6 +99,11 @@ const routes: RouteConfig[] = [
     path: "/jobs",
     component: Jobs,
     isPrivate: true,
+  },
+  {
+    path: "/jobs/:jobId",
+    component: JobDetail,
+    isPrivate: false,
   },
   {
     path: "/courses",
@@ -177,7 +188,7 @@ const routes: RouteConfig[] = [
     isPrivate: true,
   },
   {
-    path: "/ai-linc-scholarship-test",
+    path: "/assessment/:assessmentId/:ref",
     component: InstructionPage,
     isPrivate: true,
   },

@@ -5,7 +5,7 @@ export interface WorkshopRegistrationData {
   phone_number: string;
   registered_at: string;
   workshop_name: string;
-  session_number: number | null;
+  session_number: string | null;
   referal_code: string | null;
   attended_webinars: string;
   is_assessment_attempted: string;
@@ -17,7 +17,13 @@ export interface WorkshopRegistrationData {
   second_call_status: string;
   second_call_comment: string;
   amount_paid: number;
+  amount_pending: string;
   updated_at?: string;
+  score: string;
+  offered_scholarship_percentage: string;
+  offered_amount: string;
+  submitted_at: string;
+  assessment_status: string;
   edithistory?: Record<string, {
     changes: Record<string, string | null>;
     edited_by: string;
@@ -49,6 +55,15 @@ export interface FilterState {
   second_call_status: string;
   second_call_comment: string;
   amount_paid: string;
+  amount_pending: string;
+  score: string;
+  offered_scholarship_percentage: string;
+  offered_amount: string;
+  submitted_at: {
+    start: string;
+    end: string;
+  };
+  assessment_status: string;
   registered_at: {
     start: string;
     end: string;

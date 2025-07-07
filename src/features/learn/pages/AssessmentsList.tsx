@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate} from "react-router-dom";
 import {
   getAllAssessments,
   AssessmentListItem,
@@ -19,6 +19,7 @@ const AssessmentsList: React.FC = () => {
   const navigate = useNavigate();
   const clientId = import.meta.env.VITE_CLIENT_ID;
 
+
   const {
     data: assessments,
     isLoading,
@@ -33,7 +34,8 @@ const AssessmentsList: React.FC = () => {
   });
 
   const handleStartAssessment = (assessmentSlug: string) => {
-    navigate(`/assessment/${assessmentSlug}`);
+    const baseUrl = `/assessment/${assessmentSlug}`;
+    navigate(baseUrl);
   };
 
   if (isLoading) {
