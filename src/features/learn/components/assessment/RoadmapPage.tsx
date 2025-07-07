@@ -408,10 +408,10 @@ const RoadmapPage = () => {
           assessmentPaymentState.step === "error"
             ? "creating"
             : (assessmentPaymentState.step as
-                | "creating"
-                | "processing"
-                | "verifying"
-                | "complete")
+              | "creating"
+              | "processing"
+              | "verifying"
+              | "complete")
         }
         onClose={() => {
           // Handle processing modal close if needed
