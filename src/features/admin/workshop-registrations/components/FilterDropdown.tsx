@@ -78,13 +78,7 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
     setSearchTerm("");
 
     const filterValue = newSelected.join(",");
-    console.log("FilterDropdown Toggle:", {
-      column,
-      option,
-      newSelected,
-      filterValue,
-      action: selectedOptions.includes(option) ? "deselected" : "selected",
-    });
+    
 
     onChange(column, filterValue);
   };

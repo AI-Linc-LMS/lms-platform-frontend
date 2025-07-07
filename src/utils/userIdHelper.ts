@@ -17,7 +17,7 @@ export const getAuthenticatedUserId = (): string | null => {
     }
     return null;
   } catch (error) {
-    console.error('Error parsing user data from localStorage:', error);
+    //console.error('Error parsing user data from localStorage:', error);
     return null;
   }
 };
@@ -56,7 +56,7 @@ export const getAnonymousUserId = (): string => {
     
     return anonymousId;
   } catch (error) {
-    console.error('Error handling anonymous user ID:', error);
+    //console.error('Error handling anonymous user ID:', error);
     // Fallback to a session-based clean ID if localStorage fails
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
@@ -85,7 +85,7 @@ export const clearAnonymousUserId = (): void => {
   try {
     localStorage.removeItem('anonymous_user_id');
   } catch (error) {
-    console.error('Error clearing anonymous user ID:', error);
+    //console.error('Error clearing anonymous user ID:', error);
   }
 };
 
@@ -98,7 +98,7 @@ export const regenerateAnonymousUserId = (): string => {
     localStorage.removeItem('anonymous_user_id');
     return getAnonymousUserId(); // This will generate a new clean ID
   } catch (error) {
-    console.error('Error regenerating anonymous user ID:', error);
+    //console.error('Error regenerating anonymous user ID:', error);
     return uuidv4(); // Fallback to direct UUID generation
   }
 }; 

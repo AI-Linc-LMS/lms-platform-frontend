@@ -163,14 +163,14 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   const handleCopyReferralCode = async (code: string) => {
     try {
       if (!isValidReferralCode(code)) {
-        console.warn("Invalid referral code:", code);
+        //console.warn("Invalid referral code:", code);
         return;
       }
       await navigator.clipboard.writeText(code);
       setCopiedCode(code);
       setTimeout(() => setCopiedCode(null), 2000);
-    } catch (err) {
-      console.error("Failed to copy referral code:", err);
+    } catch {
+      //console.error("Failed to copy referral code:", err);
     }
   };
 
@@ -235,11 +235,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
                   setFirstCallStatus(opt.value);
                 if (field === "second_call_status")
                   setSecondCallStatus(opt.value);
-                console.log("Status changed:", {
-                  field,
-                  value: opt.value,
-                  id: entry.id,
-                });
+                
                 setQuickStatusDropdown(null);
                 setCooldown((prev) => ({ ...prev, [field]: true }));
                 setTimeout(
@@ -379,13 +375,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
               setSecondCallStatus(modalSecondCallStatus);
               setSecondCallComment(modalSecondCallComment);
               setModalOpen(false);
-              console.log("Modal Save:", {
-                id: entry.id,
-                first_call_status: modalFirstCallStatus,
-                first_call_comment: modalFirstCallComment,
-                second_call_status: modalSecondCallStatus,
-                second_call_comment: modalSecondCallComment,
-              });
+             
               // Call API to update the data
               updateMutation.mutate({
                 first_call_status: modalFirstCallStatus,

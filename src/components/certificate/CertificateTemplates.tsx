@@ -69,7 +69,7 @@ const CertificateTemplates = forwardRef<
       // Restore original border radius
       element.style.borderRadius = originalBorderRadius;
     } catch (error) {
-      console.error("Error generating PDF:", error);
+      //console.error("Error generating PDF:", error);
     } finally {
       setIsDownloading(false);
     }

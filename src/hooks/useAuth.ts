@@ -6,7 +6,7 @@ import { setUser } from '../redux/slices/userSlice';
 import { login, LoginCredentials } from '../services/authApis';
 import { clearAnonymousUserId } from '../utils/userIdHelper';
 import { useAuthRedirect } from '../contexts/AuthRedirectContext';
-import { logRedirectInfo, handlePostLoginNavigation, waitForAuthState } from '../utils/authRedirectUtils';
+import { handlePostLoginNavigation, waitForAuthState } from '../utils/authRedirectUtils';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
@@ -20,8 +20,8 @@ export const useAuth = () => {
       dispatch(loginStart());
     },
     onSuccess: async (data) => {
-      console.log('Login successful, user data:', data.user);
-      console.log('User role:', data.user.role);
+      //console.log('Login successful, user data:', data.user);
+      //console.log('User role:', data.user.role);
       
       dispatch(loginSuccess({
         user: data.user,
@@ -48,7 +48,7 @@ export const useAuth = () => {
         isAuthenticated: true,
       };
       
-      console.log('Setting user payload:', userPayload);
+      //console.log('Setting user payload:', userPayload);
       dispatch(setUser(userPayload));
       
       // Wait for authentication state to be properly set
@@ -56,11 +56,9 @@ export const useAuth = () => {
       
       // Redirect to intended path if available, otherwise go to home
       if (intendedPath) {
-        logRedirectInfo(intendedPath, '/', 'Redirecting after login');
         await handlePostLoginNavigation(intendedPath, navigate, true);
         clearIntendedPath(); // Clear the intended path after redirecting
       } else {
-        logRedirectInfo(null, '/', 'No intended path, going to home');
         await handlePostLoginNavigation('/', navigate, true);
       }
     },

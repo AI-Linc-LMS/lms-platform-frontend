@@ -163,7 +163,7 @@ function CourseVideo() {
         body: JSON.stringify({ videoId, progress })
       });
     } catch (error) {
-      console.error('Failed to save progress:', error);
+      //console.error('Failed to save progress:', error);
     }
   };
 

@@ -25,11 +25,7 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
       setSubject("");
       setDescription("");
       onClose();
-    },
-    onError: (error) => {
-      // Handle error - you might want to show a toast notification here
-      console.error("Failed to report issue:", error);
-    },
+    }
   });
 
   const handleSubmit = (e: React.FormEvent) => {
