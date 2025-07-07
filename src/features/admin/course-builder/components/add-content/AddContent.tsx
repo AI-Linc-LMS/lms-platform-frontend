@@ -191,7 +191,7 @@ const AddContent: React.FC<AddContentProps> = ({
     const selected = contentItems.find(
       (item) => String(item.id) === String(selectedContent)
     );
-    console.log("selected", selected);
+    //console.log("selected", selected);
     if (selected) {
       // First set the content
       onContentSelect(selected);

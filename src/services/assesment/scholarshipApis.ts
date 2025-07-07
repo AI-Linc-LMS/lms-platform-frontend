@@ -37,12 +37,6 @@ export const getScholarshipRedemptionDetails = async (
   } catch (error) {
     if (error instanceof Error) {
       const axiosError = error as ApiError;
-      console.error("Failed to fetch scholarship redemption details:", error);
-      console.error("Error details:", {
-        message: axiosError.message,
-        response: axiosError.response?.data,
-        status: axiosError.response?.status,
-      });
 
       throw new Error(
         (axiosError.response?.data?.detail as string) ||

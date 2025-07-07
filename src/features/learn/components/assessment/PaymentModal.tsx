@@ -173,12 +173,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
       // 1. Create order from backend - IMPORTANT: Specify COURSE payment type
       const orderData = await createOrder(
-        clientId, 
-        coursePrice, 
+        clientId,
+        coursePrice,
         PaymentType.COURSE, // Explicitly specify this is a COURSE payment
         {
           courseAccess: true,
-          scholarshipPercentage: scholarshipPercentage
+          scholarshipPercentage: scholarshipPercentage,
         }
       );
 
@@ -252,7 +252,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                   setShowSuccessModal(true);
                   hideToast();
                 } catch (error) {
-                  console.error("Error showing success modal:", error);
+                  //console.error("Error showing success modal:", error);
                   setShowProcessingModal(false);
                   hideToast();
                 }
@@ -265,7 +265,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           } catch (error) {
             setShowProcessingModal(false);
             hideToast();
-            console.error("Payment verification error:", error);
+            //console.error("Payment verification error:", error);
             const errorMessage =
               error instanceof Error
                 ? error.message
@@ -288,7 +288,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 "Payment process was cancelled by user."
               );
             } catch (error) {
-              console.error("Error handling modal dismiss:", error);
+              //console.error("Error handling modal dismiss:", error);
               setShowProcessingModal(false);
               hideToast();
             }
@@ -309,7 +309,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     } catch (error) {
       setShowProcessingModal(false);
       hideToast();
-      console.error("Payment error:", error);
+      //console.error("Payment error:", error);
 
       let errorMessage =
         "An unexpected error occurred during payment processing.";

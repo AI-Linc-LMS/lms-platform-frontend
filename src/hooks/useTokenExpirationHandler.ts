@@ -32,7 +32,7 @@ const getTokenExpirationTime = (token: string): number => {
     // Convert exp to milliseconds
     return exp ? exp * 1000 : 0;
   } catch (error) {
-    console.error('Error decoding token:', error);
+    //console.error('Error decoding token:', error);
     return 0;
   }
 };
@@ -56,7 +56,7 @@ const getTokenIssueTime = (token: string): number => {
     // Convert iat to milliseconds
     return iat ? iat * 1000 : 0;
   } catch (error) {
-    console.error('Error getting token issue time:', error);
+    //console.error('Error getting token issue time:', error);
     return 0;
   }
 };
@@ -69,7 +69,7 @@ export const useTokenExpirationHandler = () => {
   const handleTokenRefresh = useCallback(async () => {
     try {
       if (!clientId) {
-        console.error('Client ID not available, cannot refresh token');
+        //console.error('Client ID not available, cannot refresh token');
         return false;
       }
 
@@ -98,10 +98,10 @@ export const useTokenExpirationHandler = () => {
       // Update Redux store
       dispatch(setUser(updatedUser));
       
-      console.log('Token refreshed successfully');
+      //console.log('Token refreshed successfully');
       return true;
     } catch (error) {
-      console.error('Error refreshing token:', error);
+      //console.error('Error refreshing token:', error);
       return false;
     }
   }, [dispatch, clientId]);
@@ -120,7 +120,7 @@ export const useTokenExpirationHandler = () => {
       // Get token expiration time by decoding it
       const expirationTime = getTokenExpirationTime(accessToken);
       if (!expirationTime) {
-        console.warn('Could not decode token expiration time');
+        //console.warn('Could not decode token expiration time');
         return;
       }
       
@@ -134,32 +134,32 @@ export const useTokenExpirationHandler = () => {
         const tokenLifetimeMs = expirationTime - issueTime;
         // Set refresh threshold to 90% of token lifetime
         refreshThresholdMs = tokenLifetimeMs * (1 - REFRESH_PERCENTAGE);
-        console.log(`Token lifetime: ${Math.floor(tokenLifetimeMs / 1000)} seconds, will refresh ${Math.floor(refreshThresholdMs / 1000)} seconds before expiration`);
+        //console.log(`Token lifetime: ${Math.floor(tokenLifetimeMs / 1000)} seconds, will refresh ${Math.floor(refreshThresholdMs / 1000)} seconds before expiration`);
       }
       
       // Calculate time until expiration
       const timeUntilExpiration = expirationTime - currentTime;
-      console.log(`Token expires in ${Math.floor(timeUntilExpiration / 1000)} seconds`);
+      //console.log(`Token expires in ${Math.floor(timeUntilExpiration / 1000)} seconds`);
       
       // If token is within refresh threshold of expiration, try to refresh it
       if (timeUntilExpiration > 0 && timeUntilExpiration < refreshThresholdMs) {
-        console.log('Token approaching expiration, attempting refresh...');
+        //console.log('Token approaching expiration, attempting refresh...');
         await handleTokenRefresh();
         return;
       }
       
       // If token has expired, try refresh or log out
       if (timeUntilExpiration <= 0) {
-        console.log('Token has expired. Attempting final refresh...');
+        //console.log('Token has expired. Attempting final refresh...');
         const refreshSuccess = await handleTokenRefresh();
         
         if (!refreshSuccess) {
-          console.log('Final refresh failed. Logging out...');
+          //console.log('Final refresh failed. Logging out...');
           performLogout();
         }
       }
     } catch (error) {
-      console.error('Error checking token expiration:', error);
+      //console.error('Error checking token expiration:', error);
     }
   }, [dispatch, navigate, handleTokenRefresh]);
   

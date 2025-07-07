@@ -16,10 +16,10 @@ import './ProblemCard.css';
 import Comments from '../../../../../commonComponents/components/Comments';
 import Submissions from './components/Submissions';
 import Description from './components/Description';
-import ConsoleTestCases from './components/ConsoleTestCases';
 import { useEffect, useState } from "react";
 import './ProblemCard.css';
 import { CustomTestCase, ProblemData, TestCase } from "./problem.types";
+import ConsoleTestCases from './components/ConsoleTestCases';
 import React from "react";
 
 interface ProblemCardProps {
@@ -84,12 +84,12 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     const saved = localStorage.getItem('ide-theme');
     return saved ? saved === 'dark' : false;
   });
-  const [results, setResults] = useState<null | { success: boolean; message: string }>(null);
+  const [, setResults] = useState<{ success: boolean; message: string } | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("description");
-  const [isConsoleOpen, setIsConsoleOpen] = useState(true);
-  const [consoleHeight, setConsoleHeight] = useState(200);
+  const [isconsoleOpen, setIsconsoleOpen] = useState(true);
+  const [consoleHeight, setconsoleHeight] = useState(200);
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [isResizing, setIsResizing] = useState(false);
   const [isDropdownHovered, setIsDropdownHovered] = useState(false);
@@ -184,7 +184,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       setTestCases(formattedTestCases);
     }
   }, [data]);
-  console.log('testCases', testCases);
+  //console.log('testCases', testCases);
 
   const getSelectedLanguageId = () => {
     if (!data?.details?.template_code || !selectedLanguage) return 0;
@@ -255,8 +255,8 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       });
       setIsRunning(false);
     },
-    onError: (error) => {
-      console.error("Error running code:", error);
+    onError: () => {
+      //console.error("Error running code:", error);
       setResults({
         success: false,
         message: "Error running code. Please try again."
@@ -287,8 +287,8 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       });
       setIsRunning(false);
     },
-    onError: (error) => {
-      console.error("Error running custom code:", error);
+    onError: () => {
+      //console.error("Error running custom code:", error);
       setCustomTestCase({
         input: customInput,
         status: "failed",
@@ -323,7 +323,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
       // If the submission was successful, call onComplete to mark the problem as complete
       if (success && onComplete) {
-        console.log("Solution was accepted! Calling onComplete callback");
+        //console.log("Solution was accepted! Calling onComplete callback");
         setIsSubmitSuccess(true);
       } else {
         setSubmitResult({
@@ -337,8 +337,8 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       setIsSubmitting(false);
       setIsRunning(false);
     },
-    onError: (error) => {
-      console.error("Error submitting code:", error);
+    onError: () => {
+      //console.error("Error submitting code:", error);
       setResults({
         success: false,
         message: "Error submitting code. Please try again."
@@ -349,9 +349,9 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   });
 
   // Log results for debugging
-  console.log("Results:", results);
-  console.log("Custom Test Case:", customTestCase);
-  console.log("Coding Problem", data);
+  //console.log("Results:", results);
+  //console.log("Custom Test Case:", customTestCase);
+  //console.log("Coding Problem", data);
 
   if (isLoading) {
     return (
@@ -444,8 +444,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         setIsSubmitting(false);
         setIsRunning(false);
       }
-    } catch (error) {
-      console.error("Error running code:", error);
+    } catch {
       setResults({
         success: false,
         message: "Error running code. Please try again."
@@ -462,7 +461,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     localStorage.setItem('ide-theme', newTheme ? 'dark' : 'light');
   };
 
-  // Handle console resize
+  // Handle //console resize
   const startResizing = (e: React.MouseEvent) => {
     setIsResizing(true);
     document.addEventListener('mousemove', handleMouseMove);
@@ -479,7 +478,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
         // Set minimum and maximum heights
         if (newHeight >= 100 && newHeight <= containerRect.height - 100) {
-          setConsoleHeight(newHeight);
+          setconsoleHeight(newHeight);
         }
       }
     }
@@ -491,8 +490,8 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     document.removeEventListener('mouseup', stopResizing);
   };
 
-  const toggleConsole = () => {
-    setIsConsoleOpen(!isConsoleOpen);
+  const toggleconsole = () => {
+    setIsconsoleOpen(!isconsoleOpen);
   };
 
   return (
@@ -692,7 +691,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
             </div>
           </div>
 
-          <div className="monaco-editor-wrapper" style={{ height: isConsoleOpen ? `calc(100% - ${consoleHeight}px)` : "100%" }}>
+          <div className="monaco-editor-wrapper" style={{ height: isconsoleOpen ? `calc(100% - ${consoleHeight}px)` : "100%" }}>
             <Editor
               height="100%"
               language={selectedLanguage === 'python' ? 'python' :
@@ -719,12 +718,12 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
             />
           </div>
 
-          {/* Resizable console panel */}
-          <div className="console-toggle" onClick={toggleConsole}>
-            {isConsoleOpen ? "▼" : "▲"} Console
+          {/* Resizable //console panel */}
+          <div className="console-toggle" onClick={toggleconsole}>
+            {isconsoleOpen ? "▼" : "▲"} console
           </div>
 
-          {isConsoleOpen && (
+          {isconsoleOpen && (
             <ConsoleTestCases
               testCases={testCases}
               activeTestCase={activeTestCase}

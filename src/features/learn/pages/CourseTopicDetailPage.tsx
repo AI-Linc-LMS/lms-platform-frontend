@@ -44,23 +44,32 @@ export interface SubmoduleData {
   weekNo: number;
 }
 
-
 const CourseTopicDetailPage: React.FC = () => {
-  const { courseId, submoduleId } = useParams<{ courseId: string; submoduleId: string }>();
+  const { courseId, submoduleId } = useParams<{
+    courseId: string;
+    submoduleId: string;
+  }>();
   const navigate = useNavigate();
   const [currentContentIndex, setCurrentContentIndex] = useState(0);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [selectedQuizId, setSelectedQuizId] = useState<number>(1);
   const [selectedArticleId, setSelectedArticleId] = useState<number>(1);
-  const [selectedProblemId, setSelectedProblemId] = useState<string | undefined>();
-  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
+  const [selectedProblemId, setSelectedProblemId] = useState<
+    string | undefined
+  >();
+  const [selectedProjectId, setSelectedProjectId] = useState<
+    string | undefined
+  >();
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<number>(0);
   const [activeSidebarLabel, setActiveSidebarLabel] = useState<string>("All");
-  const [isSidebarContentOpen, setIsSidebarContentOpen] = useState<boolean>(true);
+  const [isSidebarContentOpen, setIsSidebarContentOpen] =
+    useState<boolean>(true);
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const [selectedContentId, setSelectedContentId] = useState<number | undefined>();
+  const [selectedContentId, setSelectedContentId] = useState<
+    number | undefined
+  >();
 
-  console.log("activeSidebarLabel", activeSidebarLabel);
+  //console.log("activeSidebarLabel", activeSidebarLabel);
   // Effect to close sidebar on mobile
   useEffect(() => {
     if (isMobile) {
@@ -71,9 +80,18 @@ const CourseTopicDetailPage: React.FC = () => {
   }, [isMobile]);
 
   // Fetch submodule data
-  const { data: submoduleData, isLoading: isSubmoduleLoading, error: submoduleError } = useQuery<SubmoduleData>({
-    queryKey: ['submodule', submoduleId],
-    queryFn: () => getSubmoduleById(1, parseInt(courseId || "0"), parseInt(submoduleId || "0")),
+  const {
+    data: submoduleData,
+    isLoading: isSubmoduleLoading,
+    error: submoduleError,
+  } = useQuery<SubmoduleData>({
+    queryKey: ["submodule", submoduleId],
+    queryFn: () =>
+      getSubmoduleById(
+        1,
+        parseInt(courseId || "0"),
+        parseInt(submoduleId || "0")
+      ),
     enabled: !!courseId && !!submoduleId,
   });
 
@@ -82,7 +100,9 @@ const CourseTopicDetailPage: React.FC = () => {
     if (submoduleData?.data) {
       // Only set the first video as selected if we're in the Videos section
       if (activeSidebarLabel === "Videos") {
-        const firstVideo = submoduleData.data.find(content => content.content_type === 'VideoTutorial');
+        const firstVideo = submoduleData.data.find(
+          (content) => content.content_type === "VideoTutorial"
+        );
         if (firstVideo) {
           setSelectedVideoId(firstVideo.id.toString());
           setCurrentContentIndex(submoduleData.data.indexOf(firstVideo));
@@ -90,43 +110,52 @@ const CourseTopicDetailPage: React.FC = () => {
       }
 
       // Find the first problem
-      const firstProblem = submoduleData.data.find(content => content.content_type === 'CodingProblem');
+      const firstProblem = submoduleData.data.find(
+        (content) => content.content_type === "CodingProblem"
+      );
       if (firstProblem) {
         setSelectedProblemId(firstProblem.id.toString());
       }
 
       // Find the first quiz
-      const firstQuiz = submoduleData.data.find(content => content.content_type === 'Quiz');
+      const firstQuiz = submoduleData.data.find(
+        (content) => content.content_type === "Quiz"
+      );
       if (firstQuiz) {
         setSelectedQuizId(firstQuiz.id);
       }
 
       // Find the first article
-      const firstArticle = submoduleData.data.find(content => content.content_type === 'Article');
+      const firstArticle = submoduleData.data.find(
+        (content) => content.content_type === "Article"
+      );
       if (firstArticle) {
         setSelectedArticleId(firstArticle.id);
       }
 
       // Find the first assignment
-      const firstAssignment = submoduleData.data.find(content => content.content_type === 'Assignment');
+      const firstAssignment = submoduleData.data.find(
+        (content) => content.content_type === "Assignment"
+      );
       if (firstAssignment) {
         setSelectedAssignmentId(firstAssignment.id);
       }
 
       // Find the first development project
-      const firstDevelopment = submoduleData.data.find(content => content.content_type === 'Development');
+      const firstDevelopment = submoduleData.data.find(
+        (content) => content.content_type === "Development"
+      );
       if (firstDevelopment) {
         setSelectedProjectId(firstDevelopment.id.toString());
       }
     }
   }, [submoduleData, activeSidebarLabel]);
 
-
   // Props objects for each content type
   const videoProps = {
     selectedVideoId,
     onVideoClick: (id: string) => {
-      console.log("Video Clicked - ID:", id);
+      //console.log("Video Clicked - ID:", id);
       setSelectedVideoId(id);
       const videoIndex = submoduleData?.data?.findIndex(
         (content: SubmoduleContent) => content.id.toString() === id
@@ -135,13 +164,13 @@ const CourseTopicDetailPage: React.FC = () => {
         setCurrentContentIndex(videoIndex);
       }
     },
-    videos: [] // Empty array since the actual videos are handled in CourseSidebarContent
+    videos: [], // Empty array since the actual videos are handled in CourseSidebarContent
   };
 
   const quizProps = {
     selectedQuizId,
     onSelectQuiz: (id: number) => {
-      console.log("Quiz Selected - ID:", id);
+      //console.log("Quiz Selected - ID:", id);
       setSelectedQuizId(id);
       const quizIndex = submoduleData?.data?.findIndex(
         (content: SubmoduleContent) => content.id === id
@@ -150,13 +179,13 @@ const CourseTopicDetailPage: React.FC = () => {
         setCurrentContentIndex(quizIndex);
       }
     },
-    quizzes: [] // Empty array since the actual quizzes are handled in CourseSidebarContent
+    quizzes: [], // Empty array since the actual quizzes are handled in CourseSidebarContent
   };
 
   const problemProps = {
     selectedProblemId,
     onProblemSelect: (id: string) => {
-      console.log("Problem Selected - ID:", id);
+      //console.log("Problem Selected - ID:", id);
       setSelectedProblemId(id);
       const problemIndex = submoduleData?.data?.findIndex(
         (content: SubmoduleContent) => content.id.toString() === id
@@ -165,13 +194,13 @@ const CourseTopicDetailPage: React.FC = () => {
         setCurrentContentIndex(problemIndex);
       }
     },
-    problems: [] // Empty array since the actual problems are handled in CourseSidebarContent
+    problems: [], // Empty array since the actual problems are handled in CourseSidebarContent
   };
 
   const articleProps = {
     selectedArticleId,
     onArticleClick: (id: number) => {
-      console.log("Article Selected - ID:", id);
+      //console.log("Article Selected - ID:", id);
       setSelectedArticleId(id);
       const articleIndex = submoduleData?.data?.findIndex(
         (content: SubmoduleContent) => content.id === id
@@ -180,13 +209,13 @@ const CourseTopicDetailPage: React.FC = () => {
         setCurrentContentIndex(articleIndex);
       }
     },
-    articles: [] // Empty array since the actual articles are handled in CourseSidebarContent
+    articles: [], // Empty array since the actual articles are handled in CourseSidebarContent
   };
 
   const developmentProps = {
     selectedProjectId,
     onProjectSelect: (id: string) => {
-      console.log("Project Selected - ID:", id);
+      //console.log("Project Selected - ID:", id);
       setSelectedProjectId(id);
       const projectIndex = submoduleData?.data?.findIndex(
         (content: SubmoduleContent) => content.id.toString() === id
@@ -200,7 +229,7 @@ const CourseTopicDetailPage: React.FC = () => {
   const subjectiveProps = {
     selectedAssignmentId,
     onAssignmentClick: (id: number) => {
-      console.log("Assignment Selected - ID:", id);
+      //console.log("Assignment Selected - ID:", id);
       setSelectedAssignmentId(id);
       const assignmentIndex = submoduleData?.data?.findIndex(
         (content: SubmoduleContent) => content.id === id
@@ -209,7 +238,7 @@ const CourseTopicDetailPage: React.FC = () => {
         setCurrentContentIndex(assignmentIndex);
       }
     },
-    assignments: [] // Empty array since the actual assignments are handled in CourseSidebarContent
+    assignments: [], // Empty array since the actual assignments are handled in CourseSidebarContent
   };
 
   // Handle navigation to next content item
@@ -227,7 +256,9 @@ const CourseTopicDetailPage: React.FC = () => {
   };
 
   const getNextTopicTitle = () => {
-    return submoduleData?.data?.[currentContentIndex + 1]?.title || "Next Content";
+    return (
+      submoduleData?.data?.[currentContentIndex + 1]?.title || "Next Content"
+    );
   };
 
   // Handle sidebar label selection
@@ -241,7 +272,7 @@ const CourseTopicDetailPage: React.FC = () => {
     setIsSidebarContentOpen(true);
 
     // Find the first content of the selected type
-    const firstContent = submoduleData?.data?.find(content => {
+    const firstContent = submoduleData?.data?.find((content) => {
       switch (label) {
         case "All":
           return true;
@@ -290,7 +321,16 @@ const CourseTopicDetailPage: React.FC = () => {
     }
   };
 
-  const handleContentSelect = (contentId: number, contentType: "VideoTutorial" | "CodingProblem" | "Development" | "Assignment" | "Article" | "Quiz") => {
+  const handleContentSelect = (
+    contentId: number,
+    contentType:
+      | "VideoTutorial"
+      | "CodingProblem"
+      | "Development"
+      | "Assignment"
+      | "Article"
+      | "Quiz"
+  ) => {
     // For "All" tab - only close sidebar on second click of the same content
     // For other tabs - close sidebar on first click
     if (activeSidebarLabel === "All") {
@@ -304,7 +344,9 @@ const CourseTopicDetailPage: React.FC = () => {
     }
 
     setSelectedContentId(contentId);
-    setCurrentContentIndex(submoduleData?.data?.findIndex(content => content.id === contentId) ?? 0);
+    setCurrentContentIndex(
+      submoduleData?.data?.findIndex((content) => content.id === contentId) ?? 0
+    );
 
     // Update the selected ID based on the content type without changing activeSidebarLabel
     switch (contentType) {
@@ -330,11 +372,16 @@ const CourseTopicDetailPage: React.FC = () => {
   };
 
   // Function to update video progress
-  const updateVideoProgress = (videoId: string, progressPercent: number): void => {
+  const updateVideoProgress = (
+    videoId: string,
+    progressPercent: number
+  ): void => {
     if (submoduleData?.data) {
       const updatedData = [...submoduleData.data];
       const videoIndex = updatedData.findIndex(
-        content => content.content_type === 'VideoTutorial' && content.id.toString() === videoId
+        (content) =>
+          content.content_type === "VideoTutorial" &&
+          content.id.toString() === videoId
       );
 
       if (videoIndex !== -1) {
@@ -342,14 +389,14 @@ const CourseTopicDetailPage: React.FC = () => {
         if (progressPercent >= 95) {
           updatedData[videoIndex] = {
             ...updatedData[videoIndex],
-            status: 'complete'
+            status: "complete",
           };
         } else if (progressPercent > 0) {
           // Mark as in_progress with progress percentage
           updatedData[videoIndex] = {
             ...updatedData[videoIndex],
-            status: 'in_progress',
-            progress_percentage: progressPercent
+            status: "in_progress",
+            progress_percentage: progressPercent,
           };
         }
 
@@ -359,15 +406,17 @@ const CourseTopicDetailPage: React.FC = () => {
         if (submoduleData) {
           const newSubmoduleData: SubmoduleData = {
             ...submoduleData,
-            data: updatedData
+            data: updatedData,
           };
           // This line would trigger a re-render of all components using submoduleData
           // In a real app, you'd use a state management system or context API
-          const w = window as unknown as { temporarySubmoduleData: SubmoduleData };
+          const w = window as unknown as {
+            temporarySubmoduleData: SubmoduleData;
+          };
           w.temporarySubmoduleData = newSubmoduleData;
 
           // Force re-render sidebar components
-          setSelectedVideoId(prevId => {
+          setSelectedVideoId((prevId) => {
             if (prevId === videoId) return prevId; // No change to avoid unnecessary re-renders
             return videoId; // Change to force re-render
           });
@@ -377,65 +426,75 @@ const CourseTopicDetailPage: React.FC = () => {
   };
 
   // Update the updateProblemStatus function to take an optional parameter to skip API calls
-  const updateProblemStatus = (problemId: string, status: string, updateBackend: boolean = true): void => {
-    console.log(`Updating problem ${problemId} status to ${status}, updateBackend=${updateBackend}`);
+  const updateProblemStatus = (
+    problemId: string,
+    status: string,
+    updateBackend: boolean = true
+  ): void => {
+    //console.log(`Updating problem ${problemId} status to ${status}, updateBackend=${updateBackend}`);
 
     if (submoduleData?.data) {
       const updatedData = [...submoduleData.data];
       const problemIndex = updatedData.findIndex(
-        content => content.content_type === 'CodingProblem' && content.id.toString() === problemId
+        (content) =>
+          content.content_type === "CodingProblem" &&
+          content.id.toString() === problemId
       );
 
       if (problemIndex !== -1) {
-        console.log(`Found problem at index ${problemIndex}`);
+        //console.log(`Found problem at index ${problemIndex}`);
         // First update the state in memory for immediate UI feedback
         updatedData[problemIndex] = {
           ...updatedData[problemIndex],
-          status: status
+          status: status,
         };
 
         // Update submodule data with new status
         if (submoduleData) {
           const newSubmoduleData: SubmoduleData = {
             ...submoduleData,
-            data: updatedData
+            data: updatedData,
           };
 
           // Local update for immediate UI feedback
-          const w = window as unknown as { temporarySubmoduleData: SubmoduleData };
+          const w = window as unknown as {
+            temporarySubmoduleData: SubmoduleData;
+          };
           w.temporarySubmoduleData = newSubmoduleData;
 
           // Force re-render sidebar components
-          setSelectedProblemId(prevId => {
+          setSelectedProblemId((prevId) => {
             if (prevId === problemId) return prevId; // No change to avoid unnecessary re-renders
             return problemId; // Change to force re-render
           });
 
           // Then make API call to persist the change in the backend if requested
           if (updateBackend) {
-            console.log(`Making API call to update problem ${problemId} status to ${status}`);
-
-
+            //console.log(`Making API call to update problem ${problemId} status to ${status}`);
           }
         }
       } else {
-        console.error(`Problem with ID ${problemId} not found in submoduleData`);
+        //console.error(`Problem with ID ${problemId} not found in submoduleData`);
       }
     } else {
-      console.error("No submoduleData available");
+      //console.error("No submoduleData available");
     }
   };
 
   const handleStartNextQuiz = () => {
     if (!submoduleData?.data) return;
     // Get all quizzes sorted by order
-    const quizzes = submoduleData.data.filter(c => c.content_type === 'Quiz').sort((a, b) => a.order - b.order);
-    const currentQuizIdx = quizzes.findIndex(q => q.id === currentContent.id);
+    const quizzes = submoduleData.data
+      .filter((c) => c.content_type === "Quiz")
+      .sort((a, b) => a.order - b.order);
+    const currentQuizIdx = quizzes.findIndex((q) => q.id === currentContent.id);
 
     // Try to go to the next quiz
     if (currentQuizIdx !== -1 && currentQuizIdx < quizzes.length - 1) {
       const nextQuiz = quizzes[currentQuizIdx + 1];
-      setCurrentContentIndex(submoduleData.data.findIndex(c => c.id === nextQuiz.id));
+      setCurrentContentIndex(
+        submoduleData.data.findIndex((c) => c.id === nextQuiz.id)
+      );
       setSelectedQuizId(nextQuiz.id);
       return;
     }
@@ -491,12 +550,15 @@ const CourseTopicDetailPage: React.FC = () => {
 
   // Find the current content item
   const currentContent = submoduleData.data[currentContentIndex];
-  console.log("Current Content ID:", currentContent?.id);
-  console.log("Current Content Type:", currentContent?.content_type);
-  console.log("Active Sidebar Label:", activeSidebarLabel);
+  //console.log("Current Content ID:", currentContent?.id);
+  //console.log("Current Content Type:", currentContent?.content_type);
+  //console.log("Active Sidebar Label:", activeSidebarLabel);
 
   return (
-    <div style={{ paddingBottom: isMobile ? "calc(60px + 1.5rem)" : "2rem" }} className="relative min-h-screen">
+    <div
+      style={{ paddingBottom: isMobile ? "calc(60px + 1.5rem)" : "2rem" }}
+      className="relative min-h-screen"
+    >
       <BackToPreviousPage />
 
       <div className="flex flex-col md:flex-row mt-4 relative">
@@ -563,11 +625,17 @@ const CourseTopicDetailPage: React.FC = () => {
 
         {/* Main Content */}
         <div
-          className={`flex-1 mt-6 px-4 md:px-0 ${isMobile ? 'w-full mb-4' : ''} ${isSidebarContentOpen && !isMobile ? "md:ml-12" : ""} overflow-hidden`}
+          className={`flex-1 mt-6 px-4 md:px-0 ${
+            isMobile ? "w-full mb-4" : ""
+          } ${
+            isSidebarContentOpen && !isMobile ? "md:ml-12" : ""
+          } overflow-hidden`}
         >
           {isMobile && (
             <div className="mb-4">
-              <h2 className="text-lg font-semibold text-[#255C79]">{currentContent.title}</h2>
+              <h2 className="text-lg font-semibold text-[#255C79]">
+                {currentContent.title}
+              </h2>
               <div className="text-xs text-gray-500 flex items-center gap-2">
                 <span>{`Week ${submoduleData.weekNo}`}</span>
                 <span>•</span>
@@ -583,14 +651,27 @@ const CourseTopicDetailPage: React.FC = () => {
               className="fixed top-20 right-4 z-20 bg-[#255C79] text-white rounded-full shadow-md p-3 hover:bg-[#1a4057] transition"
               title="Open Course Contents"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h7"
+                />
               </svg>
             </button>
           )}
 
           {/* Content display based on active tab */}
-          <div className={`mb-20 md:mb-0 ${!isSidebarContentOpen ? "ml-12" : ""}`}>
+          <div
+            className={`mb-20 md:mb-0 ${!isSidebarContentOpen ? "ml-12" : ""}`}
+          >
             {currentContent?.content_type === "VideoTutorial" && (
               <VideoCard
                 currentWeek={{ title: `Week ${submoduleData?.weekNo || 1}` }}
@@ -612,11 +693,11 @@ const CourseTopicDetailPage: React.FC = () => {
                 isSidebarContentOpen={isSidebarContentOpen}
                 contentId={currentContent.id}
                 courseId={parseInt(courseId || "0")}
-                onSubmit={(code) => {
-                  console.log("Submitted code:", code);
+                onSubmit={() => {
+                  //console.log("Submitted code:", code);
                 }}
                 onComplete={() => {
-                  console.log("Problem completed!");
+                  //console.log("Problem completed!");
                   updateProblemStatus(currentContent.id.toString(), "complete");
                 }}
               />
@@ -634,7 +715,7 @@ const CourseTopicDetailPage: React.FC = () => {
                 contentId={currentContent.id}
                 courseId={parseInt(courseId || "0")}
                 onMarkComplete={() => {
-                  console.log("Marked as completed");
+                  //console.log("Marked as completed");
                 }}
               />
             )}
@@ -654,6 +735,7 @@ const CourseTopicDetailPage: React.FC = () => {
                 initialJs=""
                 difficulty="Medium"
                 onSubmit={(html, css, js) => {
+                  
                   console.log("Submitted development project:", { html, css, js });
                 }}
               />

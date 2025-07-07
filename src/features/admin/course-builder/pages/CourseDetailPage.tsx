@@ -59,17 +59,15 @@ const CourseDetailPage: React.FC = () => {
     queryFn: () => viewCourseDetails(clientId, Number(courseId)),
   });
 
-
   const [isPublished, setIsPublished] = useState<boolean>(
     courseDetails?.published || false
   );
 
-  useEffect(() => { 
+  useEffect(() => {
     if (courseDetails) {
       setIsPublished(courseDetails.published);
     }
   }, [courseDetails]);
-
 
   // Delete course mutation
   const deleteCourseMutation = useMutation({
@@ -78,12 +76,12 @@ const CourseDetailPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       navigate("/admin/courses");
     },
-    onError: (error: Error) => {
-      console.error("Failed to delete course:", error);
+    onError: () => {
+      //console.error("Failed to delete course:", error);
       // You might want to show an error toast here
     },
   });
-  console.log("isPublished:", isPublished);
+  //console.log("isPublished:", isPublished);
   // Update course mutation (for publishing)
   const updateCourseMutation = useMutation({
     mutationFn: (data: { published: boolean }) => {
@@ -109,7 +107,7 @@ const CourseDetailPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["courseDetails", courseId] });
-      console.log("Course updated successfully", isPublished);
+      //console.log("Course updated successfully", isPublished);
       if (isPublished) {
         success(
           "Course Unpublished",
@@ -122,7 +120,7 @@ const CourseDetailPage: React.FC = () => {
       }
     },
     onError: (error: Error) => {
-      console.error("Failed to update course:", error);
+      //console.error("Failed to update course:", error);
       showError("Update Failed", `Failed to publish course: ${error.message}`);
     },
   });
@@ -141,8 +139,8 @@ const CourseDetailPage: React.FC = () => {
       setIsTopicModalOpen(false);
       success("Topic Created", "New topic has been successfully created.");
     },
-    onError: (error: Error) => {
-      console.error("Failed to create module:", error);
+    onError: () => {
+      //console.error("Failed to create module:", error);
       showError("Creation Failed", "Failed to create topic. Please try again.");
     },
   });
@@ -173,8 +171,8 @@ const CourseDetailPage: React.FC = () => {
         "New subtopic has been successfully created."
       );
     },
-    onError: (error: Error) => {
-      console.error("Failed to create submodule:", error);
+    onError: () => {
+      //console.error("Failed to create submodule:", error);
       showError(
         "Creation Failed",
         "Failed to create subtopic. Please try again."
@@ -191,8 +189,8 @@ const CourseDetailPage: React.FC = () => {
       setIsDeleteTopicModalOpen(false);
       success("Topic Deleted", "The topic has been successfully deleted.");
     },
-    onError: (error: Error) => {
-      console.error("Failed to delete module:", error);
+    onError: () => {
+      //console.error("Failed to delete module:", error);
       showError("Delete Failed", "Failed to delete topic. Please try again.");
     },
   });
@@ -214,8 +212,8 @@ const CourseDetailPage: React.FC = () => {
       };
 
       createModuleMutation.mutate(moduleData);
-    } catch (error) {
-      console.error("Error processing topic data:", error);
+    } catch {
+      //console.error("Error processing topic data:", error);
       showError(
         "Processing Error",
         "Failed to create topic. Please check your input and try again."
