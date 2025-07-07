@@ -8,20 +8,10 @@ export const getEnrolledCourses = async (clientId: number) => {
     );
 
     return response.data;
-  } catch (error: any) {
-    // Log the error details
-    console.error("Failed to fetch enrolled courses:", error);
-    console.error("Error details:", {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-    });
-
-    // You can throw a custom error if you want
+  } catch (error: unknown) {
+    // Failed to fetch enrolled courses
     throw new Error(
-      error?.response?.data?.detail ||
-        error?.message ||
-        "Failed to fetch enrolled courses"
+      error instanceof Error ? error.message : "Failed to fetch enrolled courses"
     );
   }
 };
@@ -33,22 +23,43 @@ export const getContinueLearningCourses = async (clientId: number) => {
       `/api/clients/${clientId}/student/continue-learning-courses/`
     );
 
-    console.log("Continue Learning Courses:", response.data); // Log the response data
     return response.data;
-  } catch (error: any) {
-    // Log the error details
-    console.error("Failed to fetch continue learning courses:", error);
-    console.error("Error details:", {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-    });
-
-    // You can throw a custom error if you want
+  } catch (error: unknown) {
+    // Failed to fetch continue learning courses
     throw new Error(
-      error?.response?.data?.detail ||
-        error?.message ||
-        "Failed to fetch enrolled courses"
+      error instanceof Error ? error.message : "Failed to fetch continue learning courses"
+    );
+  }
+};
+
+export const likeOrUnlikeCourse = async (clientId: number, courseId: number) => {
+  try {
+    const response = await axiosInstance.post(
+      `/lms/clients/${clientId}/courses/${courseId}/toggle-like/`
+    );
+    return response.data;
+  } catch (error: unknown) {
+    // Failed to like or unlike course
+    throw new Error(
+      error instanceof Error ? error.message : "Failed to like or unlike course"
+    );
+  }
+};
+
+export const reportIssue = async (clientId: number, subject: string, description: string) => {
+  try {
+    const response = await axiosInstance.post(
+      `/api/clients/${clientId}/report-issue/`,
+      {
+        subject,
+        description
+      }
+    );
+    return response.data;
+  } catch (error: unknown) {
+    // Failed to report issue
+    throw new Error(
+      error instanceof Error ? error.message : "Failed to report issue"
     );
   }
 };

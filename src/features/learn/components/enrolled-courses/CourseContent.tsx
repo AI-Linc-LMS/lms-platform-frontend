@@ -23,7 +23,7 @@ const CourseContent: React.FC<CourseContentProps> = ({course, isLoading, error})
     y: 0,
   });
 
-  
+  const clientId = import.meta.env.VITE_CLIENT_ID;
 
   const handleMouseEnter = (index: number, e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -164,7 +164,12 @@ const CourseContent: React.FC<CourseContentProps> = ({course, isLoading, error})
       )}
 
       <CourseStatistics course={course} />
-      <CourseActions />
+      <CourseActions 
+        courseId={course.course_id ?? 3} 
+        clientId={clientId} 
+        likeCount={course.liked_count ?? 100} 
+        isLiked={course.is_liked_by_current_user ?? false} 
+      />
       <div className="mt-4 md:mt-8">
         {course?.modules?.map((module: Module) => (
           <CollapsibleCourseModule

@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getCourseContent } from "../../../../../services/enrolled-courses-content/courseContentApis";
 import { submitContent } from "../../../../../services/enrolled-courses-content/submitApis";
 import Comments from "../../../../../commonComponents/components/Comments";
+import ReportIssueModal from "../../enrolled-courses/ReportIssueModal";
 import parse from "html-react-parser";
 
 interface VideoCardProps {
@@ -52,7 +53,8 @@ export interface Comment {
 }
 
 // Define a sample Vimeo URL for testing
-const SAMPLE_VIMEO_URL = "https://player.vimeo.com/video/1048123643?badge=0&autopause=0&player_id=0&app_id=58479";
+const SAMPLE_VIMEO_URL =
+  "https://player.vimeo.com/video/1048123643?badge=0&autopause=0&player_id=0&app_id=58479";
 
 const VideoCard: React.FC<VideoCardProps> = ({
   currentWeek,
@@ -65,30 +67,33 @@ const VideoCard: React.FC<VideoCardProps> = ({
   onProgressUpdate,
 }) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
-  const [activeTab, setActiveTab] = useState<"description" | "comments">("description");
+  const [activeTab, setActiveTab] = useState<"description" | "comments">(
+    "description"
+  );
   const [processedVideoUrl, setProcessedVideoUrl] = useState<string>("");
   const [useDirectHtml, setUseDirectHtml] = useState(true);
   const [useDebugMode, setUseDebugMode] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // Log component props for debugging
   useEffect(() => {
-    console.log('VideoCard - Component Props:', {
+    console.log("VideoCard - Component Props:", {
       contentId,
       courseId,
-      isQueryEnabled: !!contentId && !!courseId
+      isQueryEnabled: !!contentId && !!courseId,
     });
 
     // Check for potential issues with the API parameters
     if (contentId === undefined || contentId === null || contentId <= 0) {
-      console.error('VideoCard - Invalid contentId:', contentId);
+      console.error("VideoCard - Invalid contentId:", contentId);
     }
     if (courseId === undefined || courseId === null || courseId <= 0) {
-      console.error('VideoCard - Invalid courseId:', courseId);
+      console.error("VideoCard - Invalid courseId:", courseId);
     }
   }, [contentId, courseId]);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['video', contentId],
+    queryKey: ["video", contentId],
     queryFn: () => getCourseContent(1, courseId, contentId),
     enabled: !!contentId && !!courseId,
     retry: 3,
@@ -104,17 +109,17 @@ const VideoCard: React.FC<VideoCardProps> = ({
     }
 
     if (!data) {
-      console.log('VideoCard - No data returned from API');
+      console.log("VideoCard - No data returned from API");
       return;
     }
 
     // Log detailed info about response
-    console.log('VideoCard - Full API response:', data);
-    console.log('VideoCard - Response structure:', {
+    console.log("VideoCard - Full API response:", data);
+    console.log("VideoCard - Response structure:", {
       responseType: typeof data,
       hasDetails: !!(data as CourseContentResponse).details,
       hasVideoUrl: !!(data as CourseContentResponse).details?.video_url,
-      availableFields: Object.keys(data as CourseContentResponse)
+      availableFields: Object.keys(data as CourseContentResponse),
     });
 
     // Type assertion - we know the structure at this point
@@ -122,45 +127,43 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
     // Check if details object exists
     if (!responseData.details) {
-      console.log('VideoCard - Missing details object in response data');
+      console.log("VideoCard - Missing details object in response data");
       return;
     }
 
     // Process video URL from response data
     if (!responseData.details.video_url) {
-      console.log('VideoCard - Missing video_url in details object');
+      console.log("VideoCard - Missing video_url in details object");
       return;
     }
 
     const videoUrl = String(responseData.details.video_url);
-    console.log('VideoCard - Original Video URL:', videoUrl);
+    console.log("VideoCard - Original Video URL:", videoUrl);
 
     // Process the URL
     let processedUrl = videoUrl;
 
     // Clean HTML entities
-    processedUrl = processedUrl.replace(/&amp;/g, '&');
+    processedUrl = processedUrl.replace(/&amp;/g, "&");
 
     // Handle Vimeo URLs
-    if (processedUrl.includes('vimeo.com') && !processedUrl.includes('player.vimeo.com')) {
+    if (
+      processedUrl.includes("vimeo.com") &&
+      !processedUrl.includes("player.vimeo.com")
+    ) {
       const vimeoRegex = /vimeo.com\/(\d+)/;
       const match = processedUrl.match(vimeoRegex);
 
       if (match && match[1]) {
         const videoId = match[1];
         processedUrl = `https://player.vimeo.com/video/${videoId}?badge=0&autopause=0&player_id=0&app_id=58479`;
-        console.log('VideoCard - Converted to player URL:', processedUrl);
+        console.log("VideoCard - Converted to player URL:", processedUrl);
       }
     }
 
-    console.log('VideoCard - Final Processed URL:', processedUrl);
+    console.log("VideoCard - Final Processed URL:", processedUrl);
     setProcessedVideoUrl(processedUrl);
-
   }, [data, useDebugMode]);
-
-
-
-
 
   // Handle video progress updates
   const handleProgressUpdate = (progress: number) => {
@@ -183,15 +186,15 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
     // Continue with existing completion logic
     if (clientId && courseId && contentId) {
-      await submitContent(clientId, courseId, contentId, 'VideoTutorial', {})
-        .then(status => {
-          console.log('Video completion submitted successfully:', status);
+      await submitContent(clientId, courseId, contentId, "VideoTutorial", {})
+        .then((status) => {
+          console.log("Video completion submitted successfully:", status);
         })
-        .catch(error => {
-          console.error('Failed to submit video completion:', error);
+        .catch((error) => {
+          console.error("Failed to submit video completion:", error);
         });
     }
-    console.log('Video completed! Loading next video...');
+    console.log("Video completed! Loading next video...");
     setTimeout(() => {
       nextContent();
     }, 1500);
@@ -210,29 +213,32 @@ const VideoCard: React.FC<VideoCardProps> = ({
       let processedContent = htmlContent;
 
       // Check if we have HTML content
-      if (htmlContent.includes('<') && htmlContent.includes('>')) {
+      if (htmlContent.includes("<") && htmlContent.includes(">")) {
         // Remove any style tags but keep other content
-        processedContent = htmlContent.replace(/<style[\s\S]*?<\/style>/gi, '');
+        processedContent = htmlContent.replace(/<style[\s\S]*?<\/style>/gi, "");
 
         // Extract content from body tag if present
-        const bodyMatch = processedContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        const bodyMatch = processedContent.match(
+          /<body[^>]*>([\s\S]*?)<\/body>/i
+        );
         if (bodyMatch && bodyMatch[1]) {
           processedContent = bodyMatch[1].trim();
         }
       }
 
-      // For debugging
-      console.log('Processed content:', processedContent.substring(0, 100) + '...');
-
       return parse(wrapWithDiv(processedContent));
     } catch (error) {
-      console.error('Error parsing HTML content:', error);
+      console.error("Error parsing HTML content:", error);
       return (
         <div className="p-3 bg-red-100 border border-red-300 rounded text-red-700">
           Error rendering content. Please try refreshing the page.
         </div>
       );
     }
+  };
+
+  const handleReportIssue = () => {
+    setIsReportModalOpen(true);
   };
 
   // If loading, show loading state
@@ -251,7 +257,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
   // If API error, show error message with debug option
   if (error && !useDebugMode) {
-    console.error('VideoCard - Error loading data:', error);
+    console.error("VideoCard - Error loading data:", error);
     return (
       <div className="text-red-500 p-4">
         <div>Error loading video: {String(error)}</div>
@@ -266,7 +272,10 @@ const VideoCard: React.FC<VideoCardProps> = ({
   }
 
   // If no data or missing video_url, show message with debug option
-  if ((!data || !(data as CourseContentResponse).details?.video_url) && !useDebugMode) {
+  if (
+    (!data || !(data as CourseContentResponse).details?.video_url) &&
+    !useDebugMode
+  ) {
     return (
       <div className="text-gray-500 p-4">
         <div>No video content available.</div>
@@ -285,20 +294,21 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
   // Get video title and description (from data or use defaults)
   const videoTitle = useDebugMode
-    ? 'Debug Video'
-    : ((data as CourseContentResponse)?.details?.title || currentTopic.title);
+    ? "Debug Video"
+    : (data as CourseContentResponse)?.details?.title || currentTopic.title;
 
   const videoDescription = useDebugMode
-    ? 'This is a debug video to test the Vimeo player functionality.'
-    : ((data as CourseContentResponse)?.details?.description || '');
-
+    ? "This is a debug video to test the Vimeo player functionality."
+    : (data as CourseContentResponse)?.details?.description || "";
 
   return (
     <div className="flex-1 max-w-full">
       {/* Week and Topic Navigation */}
       <div className="bg-gray-100 p-3 md:p-4 rounded-t-2xl">
         <div className="flex items-center space-x-2 text-sm md:text-base overflow-hidden">
-          <span className="text-gray-500 whitespace-nowrap">{currentWeek.title}</span>
+          <span className="text-gray-500 whitespace-nowrap">
+            {currentWeek.title}
+          </span>
           <span className="text-gray-500">›</span>
           <span className="font-medium truncate">{currentTopic.title}</span>
 
@@ -315,8 +325,15 @@ const VideoCard: React.FC<VideoCardProps> = ({
         title={videoTitle}
         onComplete={handleVideoComplete}
         onProgressUpdate={handleProgressUpdate}
-        videoId={useDebugMode ? "debug-video-id" : (data as CourseContentResponse)?.details?.video_id || ""}
-        isFirstWatch={!(data as CourseContentResponse)?.status || (data as CourseContentResponse)?.status !== 'complete'}
+        videoId={
+          useDebugMode
+            ? "debug-video-id"
+            : (data as CourseContentResponse)?.details?.video_id || ""
+        }
+        isFirstWatch={
+          !(data as CourseContentResponse)?.status ||
+          (data as CourseContentResponse)?.status !== "complete"
+        }
       />
 
       {/* Next Button */}
@@ -325,7 +342,9 @@ const VideoCard: React.FC<VideoCardProps> = ({
           onClick={nextContent}
           className="px-3 md:px-4 py-2 bg-[#255C79] text-white text-sm md:text-base rounded-xl flex items-center cursor-pointer"
         >
-          <span className="truncate max-w-[150px] md:max-w-none">Next: {getNextTopicTitle()}</span>
+          <span className="truncate max-w-[150px] md:max-w-none">
+            Next: {getNextTopicTitle()}
+          </span>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
@@ -347,9 +366,23 @@ const VideoCard: React.FC<VideoCardProps> = ({
       <div className="flex justify-between items-center my-4 px-2 md:px-0">
         <div className="flex items-center space-x-2">
           <button className="flex items-center text-[#343A40] cursor-pointer">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M20.2699 16.265L20.9754 12.1852C21.1516 11.1662 20.368 10.2342 19.335 10.2342H14.1539C13.6404 10.2342 13.2494 9.77328 13.3325 9.26598L13.9952 5.22142C14.1028 4.56435 14.0721 3.892 13.9049 3.24752C13.7664 2.71364 13.3545 2.28495 12.8128 2.11093L12.6678 2.06435C12.3404 1.95918 11.9831 1.98365 11.6744 2.13239C11.3347 2.29611 11.0861 2.59473 10.994 2.94989L10.5183 4.78374C10.3669 5.36723 10.1465 5.93045 9.86218 6.46262C9.44683 7.24017 8.80465 7.86246 8.13711 8.43769L6.69838 9.67749C6.29272 10.0271 6.07968 10.5506 6.12584 11.0844L6.93801 20.4771C7.0125 21.3386 7.7328 22 8.59658 22H13.2452C16.7265 22 19.6975 19.5744 20.2699 16.265Z" fill="#255C79" />
-              <path fill-rule="evenodd" clip-rule="evenodd" d="M2.96767 9.48508C3.36893 9.46777 3.71261 9.76963 3.74721 10.1698L4.71881 21.4063C4.78122 22.1281 4.21268 22.7502 3.48671 22.7502C2.80289 22.7502 2.25 22.1954 2.25 21.5129V10.2344C2.25 9.83275 2.5664 9.5024 2.96767 9.48508Z" fill="#255C79" />
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20.2699 16.265L20.9754 12.1852C21.1516 11.1662 20.368 10.2342 19.335 10.2342H14.1539C13.6404 10.2342 13.2494 9.77328 13.3325 9.26598L13.9952 5.22142C14.1028 4.56435 14.0721 3.892 13.9049 3.24752C13.7664 2.71364 13.3545 2.28495 12.8128 2.11093L12.6678 2.06435C12.3404 1.95918 11.9831 1.98365 11.6744 2.13239C11.3347 2.29611 11.0861 2.59473 10.994 2.94989L10.5183 4.78374C10.3669 5.36723 10.1465 5.93045 9.86218 6.46262C9.44683 7.24017 8.80465 7.86246 8.13711 8.43769L6.69838 9.67749C6.29272 10.0271 6.07968 10.5506 6.12584 11.0844L6.93801 20.4771C7.0125 21.3386 7.7328 22 8.59658 22H13.2452C16.7265 22 19.6975 19.5744 20.2699 16.265Z"
+                fill="#255C79"
+              />
+              <path
+                fill-rule="evenodd"
+                clip-rule="evenodd"
+                d="M2.96767 9.48508C3.36893 9.46777 3.71261 9.76963 3.74721 10.1698L4.71881 21.4063C4.78122 22.1281 4.21268 22.7502 3.48671 22.7502C2.80289 22.7502 2.25 22.1954 2.25 21.5129V10.2344C2.25 9.83275 2.5664 9.5024 2.96767 9.48508Z"
+                fill="#255C79"
+              />
             </svg>
 
             <span className="text-sm md:text-base">368</span>
@@ -362,7 +395,10 @@ const VideoCard: React.FC<VideoCardProps> = ({
           </button> */}
         </div>
         <div>
-          <button className="flex flex-row gap-2 md:gap-3 cursor-pointer">
+          <button 
+            onClick={handleReportIssue}
+            className="flex flex-row gap-2 md:gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+          >
             <svg
               width="22"
               height="21"
@@ -398,19 +434,21 @@ const VideoCard: React.FC<VideoCardProps> = ({
         <nav className="-mb-px flex space-x-4 md:space-x-8 overflow-x-auto">
           <button
             onClick={() => setActiveTab("description")}
-            className={`whitespace-nowrap py-3 md:py-4 px-1 border-b-2 font-medium text-xs md:text-sm ${activeTab === "description"
-              ? "border-[#255C79] text-[#255C79]"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
+            className={`whitespace-nowrap py-3 md:py-4 px-1 border-b-2 font-medium text-xs md:text-sm ${
+              activeTab === "description"
+                ? "border-[#255C79] text-[#255C79]"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
           >
             Description
           </button>
           <button
             onClick={() => setActiveTab("comments")}
-            className={`whitespace-nowrap py-3 md:py-4 px-1 border-b-2 font-medium text-xs md:text-sm ${activeTab === "comments"
-              ? "border-[#255C79] text-[#255C79]"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
+            className={`whitespace-nowrap py-3 md:py-4 px-1 border-b-2 font-medium text-xs md:text-sm ${
+              activeTab === "comments"
+                ? "border-[#255C79] text-[#255C79]"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
           >
             Comments
           </button>
@@ -431,13 +469,17 @@ const VideoCard: React.FC<VideoCardProps> = ({
               <div className="mb-3 flex items-center space-x-2">
                 <span className="text-xs">Render method:</span>
                 <button
-                  className={`px-2 py-1 text-xs rounded ${useDirectHtml ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                  className={`px-2 py-1 text-xs rounded ${
+                    useDirectHtml ? "bg-blue-500 text-white" : "bg-gray-200"
+                  }`}
                   onClick={() => setUseDirectHtml(true)}
                 >
                   Direct HTML
                 </button>
                 <button
-                  className={`px-2 py-1 text-xs rounded ${!useDirectHtml ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                  className={`px-2 py-1 text-xs rounded ${
+                    !useDirectHtml ? "bg-blue-500 text-white" : "bg-gray-200"
+                  }`}
                   onClick={() => setUseDirectHtml(false)}
                 >
                   HTML Parser
@@ -452,22 +494,27 @@ const VideoCard: React.FC<VideoCardProps> = ({
                 <div
                   className="course-description rendered-html-content"
                   dangerouslySetInnerHTML={{
-                    __html: videoDescription ?
-                      // Keep only the content inside the body tag
-                      videoDescription.replace(/<body[^>]*>([\s\S]*?)<\/body>/i, '$1')
-                        // Remove all style tags
-                        .replace(/<style[\s\S]*?<\/style>/gi, '')
-                        // Remove the title as we're already showing it separately
-                        .replace(/<h1[^>]*>.*?<\/h1>/i, '')
-                      : ''
+                    __html: videoDescription
+                      ? // Keep only the content inside the body tag
+                        videoDescription
+                          .replace(/<body[^>]*>([\s\S]*?)<\/body>/i, "$1")
+                          // Remove all style tags
+                          .replace(/<style[\s\S]*?<\/style>/gi, "")
+                          // Remove the title as we're already showing it separately
+                          .replace(/<h1[^>]*>.*?<\/h1>/i, "")
+                      : "",
                   }}
                 />
               ) : (
                 // Parser-based approach
                 <div className="course-description">
-                  {videoDescription ? parseHtmlContent(videoDescription) :
-                    <p className="text-gray-500 italic">No description available</p>
-                  }
+                  {videoDescription ? (
+                    parseHtmlContent(videoDescription)
+                  ) : (
+                    <p className="text-gray-500 italic">
+                      No description available
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -522,10 +569,15 @@ const VideoCard: React.FC<VideoCardProps> = ({
       <FloatingAIButton
         onClick={() => console.log("Floating AI Button clicked")}
       />
+
+      {/* Report Issue Modal */}
+      <ReportIssueModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        clientId={Number(clientId)}
+      />
     </div>
   );
 };
 
 export default VideoCard;
-
-
