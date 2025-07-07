@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import React, { useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   getInstructions,
   AssessmentDetails,
@@ -10,11 +10,19 @@ import InstructionVector from "../../../../public/updated_illustrations.png";
 import linkdln from "../../../../public/linkdln.png";
 import certificate from "../../../../public/preview-certificate.png";
 import score from "../../../../public/score-card.png";
+import { getReferralCode } from "../../../utils/referralUtils";
 
 const InstructionPage: React.FC = () => {
   const navigate = useNavigate();
-  const { assessmentId } = useParams<{ assessmentId: string }>();
+  const { assessmentId, ref } = useParams<{
+    assessmentId: string;
+    ref?: string;
+  }>();
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const [searchParams] = useSearchParams();
+
+  // Get referral code from URL path parameter first, then from search params as fallback
+  const referralCode = ref || getReferralCode(searchParams);
 
   // Use assessment ID from URL params or redirect to assessments list
   const currentAssessmentId = assessmentId;
@@ -98,8 +106,12 @@ const InstructionPage: React.FC = () => {
   }
 
   const handleStartAssessment = () => {
+    // Navigate to phone verification and pass referral code through state
     navigate("/assessment/phone-verification", {
-      state: { assessmentId: currentAssessmentId },
+      state: {
+        assessmentId: currentAssessmentId,
+        referralCode: referralCode || null,
+      },
     });
   };
 
@@ -364,7 +376,7 @@ const InstructionPage: React.FC = () => {
 
               {assessmentData?.status === "submitted" ? (
                 <button
-                  onClick={handleResumeAssessment}
+                  onClick={handleStartAssessment}
                   className="px-8 py-4 bg-green-600 text-white rounded-xl font-semibold text-lg hover:bg-green-700 transition-colors"
                 >
                   View Results

@@ -236,9 +236,11 @@ const PhoneVerificationPage: React.FC = () => {
   const location = useLocation();
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const dropdownRef = useRef<HTMLDivElement>(null);
-  
+
   // Get assessment ID from location state or fallback to default
-  const assessmentId = location.state?.assessmentId || "ai-linc-scholarship-test";
+  const assessmentId =
+    location.state?.assessmentId || "ai-linc-scholarship-test";
+  const referralCode = location.state?.referralCode;
 
   const [selectedCountryCode, setSelectedCountryCode] = useState("+91");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -247,29 +249,38 @@ const PhoneVerificationPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Filter countries based on search query
-  const filteredCountries = countryCodes.filter(country =>
-    country.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    country.code.includes(searchQuery)
+  const filteredCountries = countryCodes.filter(
+    (country) =>
+      country.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      country.code.includes(searchQuery)
   );
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsDropdownOpen(false);
         setSearchQuery(""); // Clear search when closing
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
   const startAssessmentMutation = useMutation({
-    mutationFn: (phone: string) =>
-      startAssessment(clientId, assessmentId, phone),
+    mutationFn: ({
+      phone,
+      referralCode,
+    }: {
+      phone: string;
+      referralCode: string | undefined;
+    }) => startAssessment(clientId, assessmentId, phone, referralCode),
     onSuccess: (data) => {
       console.log("Assessment started successfully:", data);
       navigate("/assessment/quiz", { state: { assessmentId } });
@@ -284,9 +295,10 @@ const PhoneVerificationPage: React.FC = () => {
     const value = e.target.value.replace(/\D/g, ""); // Only allow digits
     setPhoneNumber(value);
     // Basic validation - adjust regex based on selected country
-    const isValid = selectedCountryCode === "+91" ? 
-      /^\d{10}$/.test(value) : // Indian numbers
-      /^\d{7,15}$/.test(value); // General international format
+    const isValid =
+      selectedCountryCode === "+91"
+        ? /^\d{10}$/.test(value) // Indian numbers
+        : /^\d{7,15}$/.test(value); // General international format
     setIsPhoneValid(isValid);
   };
 
@@ -295,20 +307,26 @@ const PhoneVerificationPage: React.FC = () => {
     setIsDropdownOpen(false);
     setSearchQuery(""); // Clear search after selection
     // Revalidate phone number with new country code
-    const isValid = countryCode === "+91" ? 
-      /^\d{10}$/.test(phoneNumber) : 
-      /^\d{7,15}$/.test(phoneNumber);
+    const isValid =
+      countryCode === "+91"
+        ? /^\d{10}$/.test(phoneNumber)
+        : /^\d{7,15}$/.test(phoneNumber);
     setIsPhoneValid(isValid);
   };
 
   const handleStartAssessment = () => {
     if (isPhoneValid) {
       const fullPhoneNumber = `${selectedCountryCode}${phoneNumber}`;
-      startAssessmentMutation.mutate(fullPhoneNumber);
+      startAssessmentMutation.mutate({
+        phone: fullPhoneNumber,
+        referralCode: referralCode || undefined,
+      });
     }
   };
 
-  const selectedCountry = countryCodes.find(c => c.code === selectedCountryCode);
+  const selectedCountry = countryCodes.find(
+    (c) => c.code === selectedCountryCode
+  );
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center p-3 sm:p-4">
@@ -316,11 +334,21 @@ const PhoneVerificationPage: React.FC = () => {
         <div className="text-center mb-6 sm:mb-8">
           {/* Icon */}
           <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#E8F4F8] rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
-            <svg className="w-8 h-8 sm:w-10 sm:h-10 text-[#255C79]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            <svg
+              className="w-8 h-8 sm:w-10 sm:h-10 text-[#255C79]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              ></path>
             </svg>
           </div>
-          
+
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 px-2">
             Before we Begin, Enter your Phone Number!
           </h1>
@@ -331,7 +359,7 @@ const PhoneVerificationPage: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Phone Number<span className="text-red-500 ml-1">*</span>
             </label>
-            
+
             <div className="flex flex-col sm:flex-row">
               {/* Country Code Dropdown */}
               <div className="relative mb-2 sm:mb-0" ref={dropdownRef}>
@@ -341,14 +369,28 @@ const PhoneVerificationPage: React.FC = () => {
                   className="relative flex items-center justify-between w-full sm:w-auto px-3 py-3 border border-gray-300 rounded-xl sm:rounded-l-xl sm:rounded-r-none bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79] transition-colors"
                 >
                   <div className="flex items-center">
-                    <span className="mr-2 text-lg">{selectedCountry?.flag}</span>
-                    <span className="text-sm font-medium text-gray-700">{selectedCountryCode}</span>
+                    <span className="mr-2 text-lg">
+                      {selectedCountry?.flag}
+                    </span>
+                    <span className="text-sm font-medium text-gray-700">
+                      {selectedCountryCode}
+                    </span>
                     <span className="ml-2 text-xs text-gray-500 hidden sm:inline">
                       {selectedCountry?.country}
                     </span>
                   </div>
-                  <svg className="w-4 h-4 ml-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                  <svg
+                    className="w-4 h-4 ml-2 text-gray-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    ></path>
                   </svg>
                 </button>
 
@@ -358,8 +400,18 @@ const PhoneVerificationPage: React.FC = () => {
                     {/* Search Input */}
                     <div className="p-3 border-b border-gray-200">
                       <div className="relative">
-                        <svg className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        <svg
+                          className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                          ></path>
                         </svg>
                         <input
                           type="text"
@@ -370,7 +422,7 @@ const PhoneVerificationPage: React.FC = () => {
                         />
                       </div>
                     </div>
-                    
+
                     {/* Countries List */}
                     <div className="max-h-48 sm:max-h-60 overflow-y-auto">
                       {filteredCountries.length > 0 ? (
@@ -381,8 +433,12 @@ const PhoneVerificationPage: React.FC = () => {
                             className="w-full flex items-center px-3 sm:px-4 py-3 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none transition-colors"
                           >
                             <span className="mr-3 text-lg">{country.flag}</span>
-                            <span className="text-sm font-medium text-gray-900 mr-2 flex-1 truncate">{country.country}</span>
-                            <span className="text-xs sm:text-sm text-gray-500 flex-shrink-0">{country.code}</span>
+                            <span className="text-sm font-medium text-gray-900 mr-2 flex-1 truncate">
+                              {country.country}
+                            </span>
+                            <span className="text-xs sm:text-sm text-gray-500 flex-shrink-0">
+                              {country.code}
+                            </span>
                           </button>
                         ))
                       ) : (
@@ -405,7 +461,7 @@ const PhoneVerificationPage: React.FC = () => {
                 maxLength={15}
               />
             </div>
-            
+
             {phoneNumber && !isPhoneValid && (
               <p className="mt-2 text-sm text-red-600">
                 Please enter a valid phone number
@@ -422,7 +478,9 @@ const PhoneVerificationPage: React.FC = () => {
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
           >
-            {startAssessmentMutation.isPending ? "Starting Assessment..." : "Start Assessment"}
+            {startAssessmentMutation.isPending
+              ? "Starting Assessment..."
+              : "Start Assessment"}
           </button>
         </div>
       </div>
@@ -430,4 +488,4 @@ const PhoneVerificationPage: React.FC = () => {
   );
 };
 
-export default PhoneVerificationPage; 
+export default PhoneVerificationPage;

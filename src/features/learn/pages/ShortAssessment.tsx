@@ -7,6 +7,7 @@ import {
   QuestionDisplay,
   NavigationButtons
 } from "../components/assessment";
+import ReferralCodeDisplay from "../components/assessment/ReferralCodeDisplay";
 
 const ShortAssessment: React.FC = () => {
   const { assessmentId } = useParams<{ assessmentId?: string }>();
@@ -33,6 +34,7 @@ const ShortAssessment: React.FC = () => {
     questionsData,
     questionsLoading,
     questionsError,
+    referralCode,
 
     // Actions
     handleOptionSelect,
@@ -72,25 +74,31 @@ const ShortAssessment: React.FC = () => {
   }
 
   return (
-    <div className="bg-[#F8F9FA] min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <AssessmentHeader
-          timeRemaining={timeRemaining}
-          assessmentId={currentAssessmentId}
+    <div className="min-h-screen bg-[#F8F9FA] p-4">
+      <div className="max-w-7xl mx-auto">
+        <AssessmentHeader 
+          timeRemaining={timeRemaining} 
+          assessmentId={currentAssessmentId} 
+        />
+        
+        {/* Display referral code if present */}
+        <ReferralCodeDisplay 
+          referralCode={referralCode} 
+          className="mb-4"
         />
 
-        <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-          {/* Left Sidebar - Question Navigation */}
-          <QuestionNavigation
-            questionsData={questionsData}
-            navigateToQuestion={navigateToQuestion}
-            getQuestionButtonStyle={getQuestionButtonStyle}
-            getAnsweredCount={getAnsweredCount}
-            getRemainingCount={getRemainingCount}
-          />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+          <div className="lg:col-span-1">
+            <QuestionNavigation
+              questionsData={questionsData}
+              getQuestionButtonStyle={getQuestionButtonStyle}
+              navigateToQuestion={navigateToQuestion}
+              getAnsweredCount={getAnsweredCount}
+              getRemainingCount={getRemainingCount}
+            />
+          </div>
 
-          {/* Main Content */}
-          <div className="flex-1 bg-white rounded-lg p-4 sm:p-6 shadow-sm">
+          <div className="lg:col-span-3">
             <QuestionDisplay
               currentQuestion={currentQuestion}
               currentQuestionIndex={currentQuestionIndex}
@@ -99,13 +107,13 @@ const ShortAssessment: React.FC = () => {
               handleOptionSelect={handleOptionSelect}
             />
 
-            {/* Navigation Buttons */}
             <NavigationButtons
               currentQuestionIndex={currentQuestionIndex}
-              selectedOption={selectedOption}
               handleBack={handleBack}
               handleNext={handleNext}
               handleFinishAssessment={handleFinishAssessment}
+              answeredCount={getAnsweredCount()}
+              totalQuestions={questionsData.length}
             />
           </div>
         </div>

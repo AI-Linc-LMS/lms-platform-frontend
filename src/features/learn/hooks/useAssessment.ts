@@ -1,10 +1,12 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   startAssessment,
   submitFinalAssessment,
   updateAfterEachQuestion,
 } from "../../../services/assesment/assesmentApis";
+import { getReferralCode, clearStoredReferralCode } from "../../../utils/referralUtils";
 
 export interface Question {
   id: number;
@@ -40,6 +42,10 @@ interface SectionResponse {
 export const useAssessment = (assessmentId?: string) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const currentAssessmentId = assessmentId || "ai-linc-scholarship-test";
+  const [searchParams] = useSearchParams();
+  
+  // Capture referral code from URL parameters or localStorage
+  const referralCode = getReferralCode(searchParams);
   
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -71,9 +77,14 @@ export const useAssessment = (assessmentId?: string) => {
 
   const finalSubmitMutation = useMutation({
     mutationFn: (answers: QuizSectionResponse) =>
-      submitFinalAssessment(clientId, finalAssessmentId, answers),
+      submitFinalAssessment(clientId, finalAssessmentId, answers, referralCode || undefined),
     onSuccess: (data) => {
       console.log("Final assessment submitted successfully:", data);
+      if (referralCode) {
+        console.log("Assessment submitted with referral code:", referralCode);
+        // Clear the referral code after successful submission
+        clearStoredReferralCode();
+      }
       if (data) {
         setAssessmentResult({
           score: data.score || 0,
@@ -91,7 +102,7 @@ export const useAssessment = (assessmentId?: string) => {
 
   const updateAnswerMutation = useMutation({
     mutationFn: (answers: QuizSectionResponse) =>
-      updateAfterEachQuestion(clientId, finalAssessmentId, answers),
+      updateAfterEachQuestion(clientId, finalAssessmentId, answers, referralCode || undefined),
     onSuccess: (data) => {
       console.log("Answer updated successfully:", data);
     },
@@ -195,6 +206,9 @@ export const useAssessment = (assessmentId?: string) => {
           finalSubmitMutation.mutate(userAnswers, {
             onSuccess: (data) => {
               console.log("Assessment auto-submitted successfully:", data);
+              if (referralCode) {
+                console.log("Assessment auto-submitted with referral code:", referralCode);
+              }
               if (data) {
                 setAssessmentResult({
                   score: data.score || 0,
@@ -214,10 +228,19 @@ export const useAssessment = (assessmentId?: string) => {
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [isCompleted, userAnswers]);
+  }, [isCompleted, userAnswers, referralCode]);
 
   const handleOptionSelect = (option: string) => {
     setSelectedOption(option);
+    updateAnswerMutation.mutate(userAnswers, {
+      onSuccess: () => {
+        console.log("Answer updated successfully after question change");
+      },
+      onError: (error) => {
+        console.error("Error updating answer:", error);
+      },
+    });
+    
     setUserAnswers((prev) => {
       if (!questions || !questionsData[currentQuestionIndex]) return prev;
       try {
@@ -238,32 +261,12 @@ export const useAssessment = (assessmentId?: string) => {
 
   const handleNext = () => {
     if (currentQuestionIndex < questionsData.length - 1) {
-      updateAnswerMutation.mutate(userAnswers, {
-        onSuccess: () => {
-          console.log("Answer updated successfully after question change");
-          setCurrentQuestionIndex(currentQuestionIndex + 1);
-        },
-        onError: (error) => {
-          console.error("Error updating answer:", error);
-          setCurrentQuestionIndex(currentQuestionIndex + 1);
-        },
-      });
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
   };
 
   const handleBack = () => {
-    if (currentQuestionIndex > 0) {
-      updateAnswerMutation.mutate(userAnswers, {
-        onSuccess: () => {
-          console.log("Answer updated successfully after question change");
-          setCurrentQuestionIndex(currentQuestionIndex - 1);
-        },
-        onError: (error) => {
-          console.error("Error updating answer:", error);
-          setCurrentQuestionIndex(currentQuestionIndex - 1);
-        },
-      });
-    }
+    setCurrentQuestionIndex(currentQuestionIndex - 1);
   };
 
   const navigateToQuestion = (index: number) => {
@@ -272,6 +275,9 @@ export const useAssessment = (assessmentId?: string) => {
 
   const handleFinishAssessment = () => {
     console.log("Submitted userAnswers:", userAnswers);
+    if (referralCode) {
+      console.log("Finishing assessment with referral code:", referralCode);
+    }
     finalSubmitMutation.mutate(userAnswers, {
       onSuccess: () => {
         console.log("Final assessment submitted successfully");
@@ -337,6 +343,7 @@ export const useAssessment = (assessmentId?: string) => {
     questions,
     questionsLoading,
     questionsError,
+    referralCode,
 
     // Actions
     handleOptionSelect,

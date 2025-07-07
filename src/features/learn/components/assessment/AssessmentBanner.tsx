@@ -1,7 +1,8 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getAssessmentStatus } from "../../../../services/assesment/assesmentApis";
 import { useQuery } from "@tanstack/react-query";
+import { addReferralCodeToUrl, getReferralCode } from "../../../../utils/referralUtils";
 
 interface AssessmentBannerProps {
   assessmentId?: string;
@@ -15,7 +16,11 @@ const AssessmentBanner: React.FC<AssessmentBannerProps> = ({
   description = "Get added to the placement pool or get a scholarship to become eligible"
 }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const clientId = import.meta.env.VITE_CLIENT_ID;
+
+  // Get referral code to preserve it during navigation
+  const referralCode = getReferralCode(searchParams);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["assessment-banner", assessmentId],
@@ -28,14 +33,19 @@ const AssessmentBanner: React.FC<AssessmentBannerProps> = ({
 
   const handleTakeAssessment = () => {
     if (data?.status === "submitted") {
-      navigate("/assessment/quiz", { state: { assessmentId } });
+      const baseUrl = "/assessment/quiz";
+      const urlWithReferral = addReferralCodeToUrl(baseUrl, referralCode);
+      navigate(urlWithReferral, { state: { assessmentId } });
     } else {
       // Navigate to the specific assessment instruction page
+      let baseUrl: string;
       if (assessmentId === "ai-linc-scholarship-test") {
-        navigate("/ai-linc-scholarship-test");
+        baseUrl = "/ai-linc-scholarship-test";
       } else {
-        navigate(`/assessment/${assessmentId}`);
+        baseUrl = `/assessment/${assessmentId}`;
       }
+      const urlWithReferral = addReferralCodeToUrl(baseUrl, referralCode);
+      navigate(urlWithReferral);
     }
   };
 
