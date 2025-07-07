@@ -267,7 +267,7 @@ The frontend automatically handles the layout configuration:
 <ArticleCard 
   contentId={123}
   courseId={456}
-  onMarkComplete={() => console.log('Completed!')}
+  onMarkComplete={() => //console.log('Completed!')}
 />
 ```
 

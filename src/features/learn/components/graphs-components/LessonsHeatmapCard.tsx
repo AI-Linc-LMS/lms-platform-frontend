@@ -43,7 +43,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
     queryKey: ["activityData"],
     queryFn: () => getUserActivityHeatmapData(1),
   });
-  //console.log("apiData", apiData);
+  ////console.log("apiData", apiData);
   const [monthOffset, setMonthOffset] = useState(0);
   const [year, setYear] = useState(getYear(new Date()));
   const [isMobile, setIsMobile] = useState(false);

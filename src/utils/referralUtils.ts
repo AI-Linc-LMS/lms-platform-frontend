@@ -21,7 +21,7 @@ export const getReferralCodeFromUrl = (searchParams: URLSearchParams): string | 
 export const storeReferralCode = (referralCode: string): void => {
   if (referralCode) {
     localStorage.setItem(REFERRAL_CODE_KEY, referralCode);
-    console.log("Referral code stored:", referralCode);
+    //console.log("Referral code stored:", referralCode);
   }
 };
 
@@ -38,7 +38,7 @@ export const getStoredReferralCode = (): string | null => {
  */
 export const clearStoredReferralCode = (): void => {
   localStorage.removeItem(REFERRAL_CODE_KEY);
-  console.log("Referral code cleared from storage");
+  //console.log("Referral code cleared from storage");
 };
 
 /**

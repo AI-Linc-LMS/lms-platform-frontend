@@ -63,8 +63,7 @@ const Jobs: React.FC = () => {
         }
 
         setJobs(jobs);
-      } catch (error) {
-        console.error('Error fetching jobs:', error);
+      } catch {
         setError('Unable to load jobs. Using sample data instead.');
         setJobs(mockJobs);
       } finally {
@@ -81,8 +80,6 @@ const Jobs: React.FC = () => {
   }, []);
 
   const handleSearch = () => {
-    // Search functionality will be implemented
-    console.log('Searching for:', searchQuery);
   };
 
   const handleClearFilters = () => {

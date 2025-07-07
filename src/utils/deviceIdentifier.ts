@@ -39,7 +39,7 @@ export const getSessionId = (): string => {
     return sessionId;
   } catch (error) {
     // Fallback if localStorage is not available
-    console.error('Failed to get/create session ID:', error);
+    //console.error('Failed to get/create session ID:', error);
     return `session-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
   }
 };
@@ -62,7 +62,7 @@ export const getDeviceId = (): string => {
     return deviceId;
   } catch (error) {
     // Fallback if localStorage is not available
-    console.error('Failed to get/create device ID:', error);
+    //console.error('Failed to get/create device ID:', error);
     return `device-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
   }
 };
@@ -152,7 +152,7 @@ export const getDeviceInfo = (): DeviceInfo => {
       language: navigator.language
     };
   } catch (error) {
-    console.error('Failed to get device info:', error);
+    //console.error('Failed to get device info:', error);
     return {
       browser: 'unknown',
       os: 'unknown',

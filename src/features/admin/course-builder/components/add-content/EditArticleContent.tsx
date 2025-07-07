@@ -49,11 +49,11 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
       contentId,
     ],
     queryFn: () => {
-      console.log("=== FETCHING ARTICLE DATA FOR EDIT ===");
-      console.log("Client ID:", clientId);
-      console.log("Course ID:", courseId);
-      console.log("Submodule ID:", submoduleId);
-      console.log("Content ID:", contentId);
+      //console.log("=== FETCHING ARTICLE DATA FOR EDIT ===");
+      //console.log("Client ID:", clientId);
+      //console.log("Course ID:", courseId);
+      //console.log("Submodule ID:", submoduleId);
+      //console.log("Content ID:", contentId);
 
       return getSubmoduleContentById(
         clientId,
@@ -68,8 +68,8 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
   // Populate form with existing data
   useEffect(() => {
     if (articleData) {
-      console.log("=== LOADED ARTICLE DATA FOR EDITING ===");
-      console.log("Article data:", articleData);
+      //console.log("=== LOADED ARTICLE DATA FOR EDITING ===");
+      //console.log("Article data:", articleData);
 
       const contentDetails = articleData.details || articleData;
 
@@ -86,23 +86,17 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
       if (editorRef.current && content) {
         editorRef.current.innerHTML = content;
       }
-
-      console.log("Form populated with:", {
-        title: contentDetails.title || articleData.title,
-        marks: contentDetails.marks || articleData.marks,
-        content: content,
-      });
     }
   }, [articleData]);
 
   const updateMutation = useMutation({
     mutationFn: (data: ArticleContentUpdateData) => {
-      console.log("=== UPDATING ARTICLE ===");
-      console.log("Client ID:", clientId);
-      console.log("Course ID:", courseId);
-      console.log("Submodule ID:", submoduleId);
-      console.log("Content ID:", contentId);
-      console.log("Update data:", data);
+      //console.log("=== UPDATING ARTICLE ===");
+      //console.log("Client ID:", clientId);
+      //console.log("Course ID:", courseId);
+      //console.log("Submodule ID:", submoduleId);
+      //console.log("Content ID:", contentId);
+      //console.log("Update data:", data);
 
       return updateSubmoduleContent(
         clientId,
@@ -113,7 +107,7 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
       );
     },
     onSuccess: () => {
-      console.log("✅ Article updated successfully!");
+      //console.log("✅ Article updated successfully!");
       success("Article Updated", "Article content updated successfully!");
       
       // Invalidate all relevant queries to refresh the UI
@@ -139,7 +133,7 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
       onBack();
     },
     onError: (error: Error) => {
-      console.error("❌ Failed to update article:", error);
+      //console.error("❌ Failed to update article:", error);
       showError(
         "Update Failed",
         error.message || "Failed to update article content"
@@ -169,12 +163,6 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
       return;
     }
 
-    console.log("=== SAVING ARTICLE UPDATE ===");
-    console.log("Form data:", {
-      title: title.trim(),
-      marks: marksNumber,
-      content: answer.trim(),
-    });
 
     const contentData: ArticleContentUpdateData = {
       title: title.trim(),

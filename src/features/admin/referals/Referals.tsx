@@ -48,7 +48,7 @@ const Referals = () => {
       setCopiedLinkId(referralId);
       setTimeout(() => setCopiedLinkId(null), 2000);
     } catch (err) {
-      console.error("Failed to copy link:", err);
+      //console.error("Failed to copy link:", err);
     }
   };
 
