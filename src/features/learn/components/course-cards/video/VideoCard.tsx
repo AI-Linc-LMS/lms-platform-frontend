@@ -473,16 +473,16 @@ const VideoCard: React.FC<VideoCardProps> = ({
             </div>
 
             {/* Debug toggle button */}
-            <div className="mt-2">
+            {/* <div className="mt-2">
               <button
                 onClick={() => setUseDebugMode(prev => !prev)}
                 className="text-xs px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
               >
                 {useDebugMode ? "Hide Debug Info" : "Show Debug Info"}
               </button>
-            </div>
+            </div> */}
 
-            {useDebugMode && (
+            {/* {useDebugMode && (
               <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
                 <p className="font-medium mb-1">Debug Info:</p>
                 <p>Content length: {videoDescription?.length || 0} characters</p>
@@ -498,7 +498,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
                   </pre>
                 </div>
               </div>
-            )}
+            )} */}
             {/* <div className="min-w-full">
 
               <div
