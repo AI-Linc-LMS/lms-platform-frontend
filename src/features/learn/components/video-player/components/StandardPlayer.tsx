@@ -8,7 +8,7 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
   title,
   onComplete,
   isFirstWatch = false,
-  activityCompletionThreshold = 95,
+  activityCompletionThreshold = 100,
   onProgressUpdate,
   onVideoLoad,
   videoSize,
