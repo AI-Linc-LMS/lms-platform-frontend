@@ -46,7 +46,7 @@ const HoursSpentCard = ({
     }));
   }, [data]);
 
-  
+
   // Calculate max hours for Y-axis
   const maxHours = useMemo(() => {
     if (!data?.hours_spent?.length) return 24;
@@ -58,7 +58,8 @@ const HoursSpentCard = ({
   // Calculate total hours
   const totalHours = useMemo(() => {
     if (!data?.hours_spent?.length) return 0;
-    return data.hours_spent.reduce((sum, hours) => sum + hours, 0);
+    const total = data.hours_spent.reduce((sum, hours) => sum + hours, 0);
+    return Number(total.toFixed(1));
   }, [data]);
 
   // Format date for X-axis
@@ -147,7 +148,7 @@ const HoursSpentCard = ({
               axisLine={false}
               tickLine={false}
               tick={{ fill: "#6B7280", fontSize: 10 }}
-              ticks={[0, error ? 12 : Math.floor(maxHours/2), error ? 24 : maxHours]}
+              ticks={[0, error ? 12 : Math.floor(maxHours / 2), error ? 24 : maxHours]}
               tickMargin={5}
             />
 
