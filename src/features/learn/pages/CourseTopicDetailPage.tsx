@@ -79,13 +79,41 @@ const CourseTopicDetailPage: React.FC = () => {
 
   // Set default selected content when submodule data changes
   useEffect(() => {
-    if (submoduleData?.data) {
+    if (submoduleData?.data && submoduleData.data.length > 0) {
+      // Set the first content item as the default selected content
+      const firstContent = submoduleData.data[0];
+      setSelectedContentId(firstContent.id);
+      setCurrentContentIndex(0);
+
       // Only set the first video as selected if we're in the Videos section
       if (activeSidebarLabel === "Videos") {
         const firstVideo = submoduleData.data.find(content => content.content_type === 'VideoTutorial');
         if (firstVideo) {
           setSelectedVideoId(firstVideo.id.toString());
           setCurrentContentIndex(submoduleData.data.indexOf(firstVideo));
+          setSelectedContentId(firstVideo.id);
+        }
+      } else {
+        // For other tabs or "All" tab, set the appropriate selected content based on the first item
+        switch (firstContent.content_type) {
+          case "VideoTutorial":
+            setSelectedVideoId(firstContent.id.toString());
+            break;
+          case "CodingProblem":
+            setSelectedProblemId(firstContent.id.toString());
+            break;
+          case "Development":
+            setSelectedProjectId(firstContent.id.toString());
+            break;
+          case "Assignment":
+            setSelectedAssignmentId(firstContent.id);
+            break;
+          case "Article":
+            setSelectedArticleId(firstContent.id);
+            break;
+          case "Quiz":
+            setSelectedQuizId(firstContent.id);
+            break;
         }
       }
 
@@ -128,6 +156,7 @@ const CourseTopicDetailPage: React.FC = () => {
     onVideoClick: (id: string) => {
       console.log("Video Clicked - ID:", id);
       setSelectedVideoId(id);
+      setSelectedContentId(parseInt(id));
       const videoIndex = submoduleData?.data?.findIndex(
         (content: SubmoduleContent) => content.id.toString() === id
       );
@@ -143,6 +172,7 @@ const CourseTopicDetailPage: React.FC = () => {
     onSelectQuiz: (id: number) => {
       console.log("Quiz Selected - ID:", id);
       setSelectedQuizId(id);
+      setSelectedContentId(id);
       const quizIndex = submoduleData?.data?.findIndex(
         (content: SubmoduleContent) => content.id === id
       );
@@ -158,6 +188,7 @@ const CourseTopicDetailPage: React.FC = () => {
     onProblemSelect: (id: string) => {
       console.log("Problem Selected - ID:", id);
       setSelectedProblemId(id);
+      setSelectedContentId(parseInt(id));
       const problemIndex = submoduleData?.data?.findIndex(
         (content: SubmoduleContent) => content.id.toString() === id
       );
@@ -173,6 +204,7 @@ const CourseTopicDetailPage: React.FC = () => {
     onArticleClick: (id: number) => {
       console.log("Article Selected - ID:", id);
       setSelectedArticleId(id);
+      setSelectedContentId(id);
       const articleIndex = submoduleData?.data?.findIndex(
         (content: SubmoduleContent) => content.id === id
       );
@@ -188,6 +220,7 @@ const CourseTopicDetailPage: React.FC = () => {
     onProjectSelect: (id: string) => {
       console.log("Project Selected - ID:", id);
       setSelectedProjectId(id);
+      setSelectedContentId(parseInt(id));
       const projectIndex = submoduleData?.data?.findIndex(
         (content: SubmoduleContent) => content.id.toString() === id
       );
@@ -202,6 +235,7 @@ const CourseTopicDetailPage: React.FC = () => {
     onAssignmentClick: (id: number) => {
       console.log("Assignment Selected - ID:", id);
       setSelectedAssignmentId(id);
+      setSelectedContentId(id);
       const assignmentIndex = submoduleData?.data?.findIndex(
         (content: SubmoduleContent) => content.id === id
       );
@@ -219,9 +253,33 @@ const CourseTopicDetailPage: React.FC = () => {
     const nextIndex = currentContentIndex + 1;
     if (nextIndex < submoduleData.data.length) {
       setCurrentContentIndex(nextIndex);
-      // Update the selected video ID if we're in the Videos section
-      if (activeSidebarLabel === "Videos") {
-        setSelectedVideoId(submoduleData.data[nextIndex].id.toString());
+      
+      // Get the next content item
+      const nextContentItem = submoduleData.data[nextIndex];
+      
+      // Update the selected content ID for sidebar highlighting
+      setSelectedContentId(nextContentItem.id);
+      
+      // Update the appropriate selected ID based on the content type
+      switch (nextContentItem.content_type) {
+        case "VideoTutorial":
+          setSelectedVideoId(nextContentItem.id.toString());
+          break;
+        case "CodingProblem":
+          setSelectedProblemId(nextContentItem.id.toString());
+          break;
+        case "Development":
+          setSelectedProjectId(nextContentItem.id.toString());
+          break;
+        case "Assignment":
+          setSelectedAssignmentId(nextContentItem.id);
+          break;
+        case "Article":
+          setSelectedArticleId(nextContentItem.id);
+          break;
+        case "Quiz":
+          setSelectedQuizId(nextContentItem.id);
+          break;
       }
     }
   };
@@ -265,6 +323,7 @@ const CourseTopicDetailPage: React.FC = () => {
     if (firstContent) {
       const contentIndex = submoduleData?.data?.indexOf(firstContent) ?? 0;
       setCurrentContentIndex(contentIndex);
+      setSelectedContentId(firstContent.id);
 
       // Update the selected ID based on the content type
       switch (label) {
@@ -437,6 +496,7 @@ const CourseTopicDetailPage: React.FC = () => {
       const nextQuiz = quizzes[currentQuizIdx + 1];
       setCurrentContentIndex(submoduleData.data.findIndex(c => c.id === nextQuiz.id));
       setSelectedQuizId(nextQuiz.id);
+      setSelectedContentId(nextQuiz.id);
       return;
     }
 
@@ -445,6 +505,7 @@ const CourseTopicDetailPage: React.FC = () => {
     if (nextIndex < submoduleData.data.length) {
       setCurrentContentIndex(nextIndex);
       const nextContent = submoduleData.data[nextIndex];
+      setSelectedContentId(nextContent.id);
       // Optionally update the selected ID for the next content type
       switch (nextContent.content_type) {
         case "Quiz":
