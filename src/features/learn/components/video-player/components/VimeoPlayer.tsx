@@ -8,7 +8,7 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
   title,
   onComplete,
   isFirstWatch = false,
-  activityCompletionThreshold = 95,
+  activityCompletionThreshold = 100,
   onProgressUpdate,
   onVideoLoad,
   seekDisabledMessage = "You cannot skip ahead on first watch",
