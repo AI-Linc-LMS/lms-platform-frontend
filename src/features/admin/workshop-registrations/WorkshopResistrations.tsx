@@ -90,7 +90,6 @@ const WorkshopRegistration = () => {
     column: keyof FilterState,
     value: string | { start: string; end: string }
   ) => {
-    console.log("Filter Update:", { column, value, type: typeof value });
     setFilters((prev) => ({ ...prev, [column]: value }));
     setPage(1);
   };
