@@ -13,7 +13,7 @@ export function VideoPlayer({
   title,
   onComplete,
   isFirstWatch = false,
-  activityCompletionThreshold = 95,
+  activityCompletionThreshold = 100,
   onProgressUpdate,
   videoId,
   onSaveProgress,
