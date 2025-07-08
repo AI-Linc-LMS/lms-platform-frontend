@@ -19,7 +19,7 @@ export const filterWorkshopData = (
   
   return workshopData.filter((entry) => {
     // Global search
-    const globalSearch = `${entry.name} ${entry.email}`
+    const globalSearch = `${entry.name || ''} ${entry.email || ''}`
       .toLowerCase()
       .includes(search.toLowerCase());
 
@@ -140,10 +140,14 @@ export const filterWorkshopData = (
     const attendedWebinarsMatch = (() => {
       if (!filters.attended_webinars) return true;
       const filterVal = filters.attended_webinars.trim();
+      const attendedValue = typeof entry.attended_webinars === 'boolean' 
+        ? entry.attended_webinars.toString() 
+        : (entry.attended_webinars || '');
+      
       if (filterVal.includes(',')) {
-        return matchesSelectedOptions(entry.attended_webinars, filterVal);
+        return matchesSelectedOptions(attendedValue, filterVal);
       } else {
-        return matchesSearchString(entry.attended_webinars, filterVal);
+        return matchesSearchString(attendedValue, filterVal);
       }
     })();
 
@@ -154,7 +158,7 @@ export const filterWorkshopData = (
         return matchesSelectedOptions(entry.is_assessment_attempted, filterVal);
       } else {
         // Use exact match for attempted/not_attempted
-        return entry.is_assessment_attempted.toLowerCase() === filterVal.toLowerCase();
+        return entry.is_assessment_attempted?.toLowerCase() === filterVal.toLowerCase();
       }
     })();
 
@@ -165,7 +169,7 @@ export const filterWorkshopData = (
         return matchesSelectedOptions(entry.is_certificate_amount_paid, filterVal);
       } else {
         // Use exact match for paid/not_paid
-        return entry.is_certificate_amount_paid.toLowerCase() === filterVal.toLowerCase();
+        return entry.is_certificate_amount_paid?.toLowerCase() === filterVal.toLowerCase();
       }
     })();
 
@@ -176,7 +180,7 @@ export const filterWorkshopData = (
         return matchesSelectedOptions(entry.is_prebooking_amount_paid, filterVal);
       } else {
         // Use exact match for paid/not_paid
-        return entry.is_prebooking_amount_paid.toLowerCase() === filterVal.toLowerCase();
+        return entry.is_prebooking_amount_paid?.toLowerCase() === filterVal.toLowerCase();
       }
     })();
 
@@ -187,7 +191,7 @@ export const filterWorkshopData = (
         return matchesSelectedOptions(entry.is_course_amount_paid, filterVal);
       } else {
         // Use exact match for paid/not_paid
-        return entry.is_course_amount_paid.toLowerCase() === filterVal.toLowerCase();
+        return entry.is_course_amount_paid?.toLowerCase() === filterVal.toLowerCase();
       }
     })();
 
@@ -203,7 +207,7 @@ export const filterWorkshopData = (
 
     const firstCallCommentMatch =
       !filters.first_call_comment ||
-      entry.first_call_comment.toLowerCase().includes(filters.first_call_comment.toLowerCase());
+      (entry.first_call_comment && entry.first_call_comment.toLowerCase().includes(filters.first_call_comment.toLowerCase()));
 
     const secondCallStatusMatch = (() => {
       if (!filters.second_call_status) return true;
@@ -217,7 +221,7 @@ export const filterWorkshopData = (
 
     const secondCallCommentMatch =
       !filters.second_call_comment ||
-      entry.second_call_comment.toLowerCase().includes(filters.second_call_comment.toLowerCase());
+      (entry.second_call_comment && entry.second_call_comment.toLowerCase().includes(filters.second_call_comment.toLowerCase()));
 
     const amountPaidMatch = (() => {
       if (!filters.amount_paid) return true;
@@ -319,34 +323,6 @@ export const filterWorkshopData = (
       (!submittedStartDate || (submittedDate && submittedDate >= submittedStartDate)) &&
       (!submittedEndDate || (submittedDate && submittedDate <= submittedEndDate));
 
-    // Debug logging for filter results
-    const allMatches = {
-      nameMatch,
-      emailMatch,
-      phoneMatch,
-      workshopMatch,
-      sessionMatch,
-      referralMatch,
-      attendedWebinarsMatch,
-      assessmentAttemptedMatch,
-      certificatePaidMatch,
-      prebookingPaidMatch,
-      coursePaidMatch,
-      firstCallStatusMatch,
-      firstCallCommentMatch,
-      secondCallStatusMatch,
-      secondCallCommentMatch,
-      amountPaidMatch,
-      amountPendingMatch,
-      scoreMatch,
-      scholarshipPercentageMatch,
-      offeredAmountMatch,
-      assessmentStatusMatch,
-      dateMatch,
-      updatedDateMatch,
-      submittedDateMatch,
-    };
-
     // Final match
     const finalResult = (
       nameMatch &&
@@ -374,16 +350,6 @@ export const filterWorkshopData = (
       updatedDateMatch &&
       submittedDateMatch
     );
-
-    // Debug logging for failed matches
-    if (!finalResult && (filters.name || filters.email || filters.phone_number || filters.workshop_name)) {
-      console.log('Filter Match Failed:', {
-        entryName: entry.name,
-        entryEmail: entry.email,
-        allMatches,
-        activeFilters: Object.entries(filters).filter(([, v]) => v && (typeof v === 'string' ? v !== '' : true))
-      });
-    }
 
     return finalResult;
   });
