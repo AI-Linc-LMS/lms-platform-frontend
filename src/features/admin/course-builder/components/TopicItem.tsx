@@ -8,9 +8,11 @@ import {
   deleteCourseSubmodule,
   getSubmoduleContent,
   deleteSubmoduleContent,
+  reorderSubmoduleContent,
+  updateSubmoduleContent,
 } from "../../../../services/admin/courseApis";
 import { DeleteConfirmationModal } from "./DeleteConfirmationModal";
-import ContentItem from "./ContentItem";
+import { SortableContentItem } from "./ContentItem";
 import { useToast } from "../../../../contexts/ToastContext";
 // Import edit components
 import EditVideoContent from "./add-content/EditVideoContent";
@@ -18,6 +20,25 @@ import EditArticleContent from "./add-content/EditArticleContent";
 import EditQuizContent from "./add-content/EditQuizContent";
 import EditAssignmentContent from "./add-content/EditAssignmentContent";
 import EditCodingProblemContent from "./add-content/EditCodingProblemContent";
+// Import drag and drop components
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import {
+  restrictToVerticalAxis,
+} from "@dnd-kit/modifiers";
 
 interface TopicItemProps {
   courseId: string;
@@ -392,11 +413,24 @@ const SubtopicContentList: React.FC<{
     type: string;
   } | null>(null);
 
+  // Add drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   interface SubmoduleContentItem {
     id: number;
     title: string;
     marks?: number;
     content_type: string;
+    order: number;
   }
 
   const { data: contents = [], isLoading } = useQuery<SubmoduleContentItem[]>({
@@ -404,6 +438,70 @@ const SubtopicContentList: React.FC<{
     queryFn: () => getSubmoduleContent(clientId, courseId, submoduleId),
     enabled: !!submoduleId,
   });
+
+  // Sort contents by order
+  const sortedContents = [...contents].sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  // Reorder content mutation
+  const reorderContentMutation = useMutation({
+    mutationFn: async (newOrder: SubmoduleContentItem[]) => {
+      // Try using the bulk reorder endpoint first
+      try {
+        const reorderData = {
+          contents: newOrder.map((item, index) => ({
+            id: item.id,
+            order: index + 1,
+          })),
+        };
+        return await reorderSubmoduleContent(clientId, courseId, submoduleId, reorderData);
+      } catch {
+        // If bulk reorder fails, fall back to individual updates
+        console.log("Bulk reorder failed, falling back to individual updates");
+        const updatePromises = newOrder.map(async (item, index) => {
+          const newOrderValue = index + 1;
+          // Use a basic content update that only updates the order
+          return await updateSubmoduleContent(clientId, courseId, submoduleId, item.id, {
+            title: item.title,
+            marks: item.marks || 0,
+            order: newOrderValue,
+          } as any);
+        });
+        return await Promise.all(updatePromises);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["submodule-content", clientId, courseId, submoduleId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["courseDetails", courseId] });
+      success("Content Reordered", "Content has been successfully reordered.");
+    },
+    onError: (error: Error) => {
+      console.error("Failed to reorder content:", error);
+      showError("Reorder Failed", "Failed to reorder content. Please try again.");
+    },
+  });
+
+  // Handle drag end
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = sortedContents.findIndex((item) => item.id.toString() === active.id);
+      const newIndex = sortedContents.findIndex((item) => item.id.toString() === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newOrder = arrayMove(sortedContents, oldIndex, newIndex);
+        // Optimistically update the UI
+        queryClient.setQueryData(
+          ["submodule-content", clientId, courseId, submoduleId],
+          newOrder
+        );
+        // Persist the change
+        reorderContentMutation.mutate(newOrder);
+      }
+    }
+  };
 
   // Add detailed logging when contents change
   useEffect(() => {
@@ -612,17 +710,30 @@ const SubtopicContentList: React.FC<{
   return (
     <>
       <div className="pl-8">
-        {contents.map((item) => (
-          <ContentItem
-            key={item.id}
-            id={item.id}
-            title={item.title}
-            marks={item.marks}
-            contentType={item.content_type}
-            onEdit={(id) => handleEditContent(id, item.content_type)}
-            onDelete={(id) => handleDeleteContent(id, item.content_type)}
-          />
-        ))}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+          modifiers={[restrictToVerticalAxis]}
+        >
+          <SortableContext
+            items={sortedContents.map((item) => item.id.toString())}
+            strategy={verticalListSortingStrategy}
+          >
+            {sortedContents.map((item) => (
+              <SortableContentItem
+                key={item.id}
+                id={item.id}
+                title={item.title}
+                marks={item.marks}
+                contentType={item.content_type}
+                onEdit={(id) => handleEditContent(id, item.content_type)}
+                onDelete={(id) => handleDeleteContent(id, item.content_type)}
+                isDraggable={true}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
       </div>
 
       {/* Delete Content Confirmation Modal */}

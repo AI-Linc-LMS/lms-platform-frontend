@@ -736,3 +736,41 @@ export const updateCodingProblemContent = async (
 // PUT is for complete replacement of a resource
 // PATCH is for partial updates to a resource
 // This API seems to use PUT for updates, which is common in many REST APIs
+
+export interface ContentReorderItem {
+  id: number;
+  order: number;
+}
+
+export interface ContentReorderData {
+  contents: ContentReorderItem[];
+}
+
+export const reorderSubmoduleContent = async (
+  clientId: number,
+  courseId: number,
+  submoduleId: number,
+  reorderData: ContentReorderData
+) => {
+  try {
+    const res = await axiosInstance.patch(
+      `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/submodules/${submoduleId}/contents/reorder/`,
+      reorderData
+    );
+    console.log("reorder submodule content:", res);
+    return res.data;
+  } catch (error: unknown) {
+    const apiError = error as ApiError;
+    console.error("Failed to reorder submodule content:", apiError);
+    console.error("Error details:", {
+      message: apiError.message,
+      response: apiError.response?.data,
+      status: apiError.response?.status,
+    });
+    throw new Error(
+      apiError.response?.data?.detail ||
+        apiError.message ||
+        "Failed to reorder submodule content"
+    );
+  }
+};
