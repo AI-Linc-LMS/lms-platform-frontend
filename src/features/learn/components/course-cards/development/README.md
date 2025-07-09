@@ -40,7 +40,7 @@ The CourseTopicDetailPage component uses the CodeMirrorDevelopmentCard by defaul
 If you encounter issues with the editor:
 
 1. Make sure all dependencies are installed
-2. Check for console errors in the browser
+2. Check for //console errors in the browser
 3. Try clearing the browser cache
 4. If using the monaco editor and experiencing performance issues, try switching to the CodeMirror implementation
 

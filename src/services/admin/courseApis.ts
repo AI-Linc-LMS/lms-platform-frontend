@@ -41,16 +41,11 @@ export const getCourses = async (clientId: number) => {
     const res = await axiosInstance.get(
       `/admin-dashboard/api/clients/${clientId}/courses/`
     );
-    console.log("get admin Course:", res);
+    //console.log("get admin Course:", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to fetch all courses:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+    
 
     throw new Error(
       apiError.response?.data?.detail ||
@@ -69,17 +64,11 @@ export const createCourse = async (
       `/admin-dashboard/api/clients/${clientId}/courses/`,
       courseData
     );
-    console.log("create course", res);
+    //console.log("create course", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to create course:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
-
+   
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -98,17 +87,11 @@ export const updateCourse = async (
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/`,
       courseData
     );
-    console.log("update course", res);
+    //console.log("update course", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to update course:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
-
+    
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -122,16 +105,11 @@ export const deleteCourse = async (clientId: number, courseId: number) => {
     const res = await axiosInstance.delete(
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/`
     );
-    console.log("delete course", res);
+    //console.log("delete course", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to delete course:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+   
 
     throw new Error(
       apiError.response?.data?.detail ||
@@ -146,16 +124,11 @@ export const getCourseModules = async (clientId: number, courseId: number) => {
     const res = await axiosInstance.get(
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/modules/`
     );
-    console.log("get admin Course modules:", res);
+    //console.log("get admin Course modules:", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to fetch course modules:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+    
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -174,16 +147,11 @@ export const createCourseModule = async (
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/modules/`,
       moduleData
     );
-    console.log("create course module", res);
+    //console.log("create course module", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to create course module:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+    
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -203,16 +171,11 @@ export const updateCourseModule = async (
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/modules/${moduleId}/`,
       moduleData
     );
-    console.log("update course module", res);
+    //console.log("update course module", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to update course module:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+    
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -230,16 +193,11 @@ export const deleteCourseModule = async (
     const res = await axiosInstance.delete(
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/modules/${moduleId}/`
     );
-    console.log("delete course module", res);
+    //console.log("delete course module", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to delete course module:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+   
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -257,16 +215,11 @@ export const getCourseSubmodules = async (
     const res = await axiosInstance.get(
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/modules/${moduleId}/submodules/`
     );
-    console.log("get admin Course submodules:", res);
+    //console.log("get admin Course submodules:", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to fetch course submodules:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+    
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -286,16 +239,11 @@ export const createCourseSubmodule = async (
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/modules/${moduleId}/submodules/`,
       submoduleData
     );
-    console.log("create course submodule", res);
+    //console.log("create course submodule", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to create course submodule:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+    
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -316,16 +264,11 @@ export const updateCourseSubmodule = async (
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/modules/${moduleId}/submodules/${submoduleId}/`,
       submoduleData
     );
-    console.log("update course submodule", res);
+    //console.log("update course submodule", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to update course submodule:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+    
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -344,16 +287,11 @@ export const deleteCourseSubmodule = async (
     const res = await axiosInstance.delete(
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/modules/${moduleId}/submodules/${submoduleId}/`
     );
-    console.log("delete course submodule", res);
+    //console.log("delete course submodule", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to delete course submodule:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+    
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -367,16 +305,11 @@ export const viewCourseDetails = async (clientId: number, courseId: number) => {
     const res = await axiosInstance.get(
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/view-course-details/`
     );
-    console.log("get admin Course details:", res);
+    //console.log("get admin Course details:", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to fetch view course details:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+    
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -403,16 +336,11 @@ export const addSubmoduleContent = async (
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/submodules/${submoduleId}/contents/`,
       contentData
     );
-    console.log("add admin Submodule content:", res);
+    //console.log("add admin Submodule content:", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to add submodule content:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+   
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -430,16 +358,11 @@ export const getSubmoduleContent = async (
     const res = await axiosInstance.get(
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/submodules/${submoduleId}/contents/`
     );
-    console.log("get admin Submodule content:", res);
+    //console.log("get admin Submodule content:", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to fetch submodule content:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+    
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -458,16 +381,11 @@ export const deleteSubmoduleContent = async (
     const res = await axiosInstance.delete(
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/submodules/${submoduleId}/contents/${contentId}/`
     );
-    console.log("delete submodule content:", res);
+    //console.log("delete submodule content:", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to delete submodule content:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+   
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -543,16 +461,11 @@ export const getSubmoduleContentById = async (
     const res = await axiosInstance.get(
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/submodules/${submoduleId}/contents/${contentId}/`
     );
-    console.log("get submodule content by id:", res);
+    //console.log("get submodule content by id:", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to fetch submodule content by id:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+   
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -573,16 +486,11 @@ export const updateSubmoduleContent = async (
       `/admin-dashboard/api/clients/${clientId}/courses/${courseId}/submodules/${submoduleId}/contents/${contentId}/`,
       contentData
     );
-    console.log("update submodule content:", res);
+    //console.log("update submodule content:", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to update submodule content:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+    
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -602,16 +510,11 @@ export const updateVideoContent = async (
       `/admin-dashboard/api/clients/${clientId}/video-tutorials/${contentId}/`,
       contentData
     );
-    console.log("update video content:", res);
+    //console.log("update video content:", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to update video content:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+   
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -630,16 +533,11 @@ export const updateArticleContent = async (
       `/admin-dashboard/api/clients/${clientId}/articles/${contentId}/`,
       contentData
     );
-    console.log("update article content:", res);
+    //console.log("update article content:", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to update article content:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+    
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -658,16 +556,11 @@ export const updateQuizContent = async (
       `/admin-dashboard/api/clients/${clientId}/quizzes/${contentId}/`,
       contentData
     );
-    console.log("update quiz content:", res);
+    //console.log("update quiz content:", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to update quiz content:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+    
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -686,16 +579,11 @@ export const updateAssignmentContent = async (
       `/admin-dashboard/api/clients/${clientId}/assignments/${contentId}/`,
       contentData
     );
-    console.log("update assignment content:", res);
+    //console.log("update assignment content:", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to update assignment content:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+    
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||
@@ -714,16 +602,11 @@ export const updateCodingProblemContent = async (
       `/admin-dashboard/api/clients/${clientId}/coding-problems/${contentId}/`,
       contentData
     );
-    console.log("update coding problem content:", res);
+    //console.log("update coding problem content:", res);
     return res.data;
   } catch (error: unknown) {
     const apiError = error as ApiError;
-    console.error("Failed to update coding problem content:", apiError);
-    console.error("Error details:", {
-      message: apiError.message,
-      response: apiError.response?.data,
-      status: apiError.response?.status,
-    });
+   
     throw new Error(
       apiError.response?.data?.detail ||
         apiError.message ||

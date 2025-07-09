@@ -5,7 +5,7 @@ import { setUser } from '../redux/slices/userSlice';
 import { googleLogin } from '../services/authApis';
 import { clearAnonymousUserId } from '../utils/userIdHelper';
 import { useAuthRedirect } from '../contexts/AuthRedirectContext';
-import { logRedirectInfo, handlePostLoginNavigation, waitForAuthState } from '../utils/authRedirectUtils';
+import { handlePostLoginNavigation, waitForAuthState } from '../utils/authRedirectUtils';
 import axios from 'axios';
 
 export const useGoogleAuth = () => {
@@ -23,7 +23,7 @@ export const useGoogleAuth = () => {
 
       const { access_token, refresh_token, user } = await googleLogin(googleToken, clientId);
 
-      console.log('Google login response:', { access_token, refresh_token, user });
+      //console.log('Google login response:', { access_token, refresh_token, user });
       
       // Store token in localStorage
       localStorage.setItem('token', access_token);
@@ -52,15 +52,13 @@ export const useGoogleAuth = () => {
 
       // Redirect to intended path if available, otherwise go to home
       if (intendedPath) {
-        logRedirectInfo(intendedPath, '/', 'Redirecting after Google login');
         await handlePostLoginNavigation(intendedPath, navigate, true);
         clearIntendedPath(); // Clear the intended path after redirecting
       } else {
-        logRedirectInfo(null, '/', 'No intended path, going to home after Google login');
         await handlePostLoginNavigation('/', navigate, true);
       }
     } catch (err) {
-      console.error('Google login error:', err);
+      //console.error('Google login error:', err);
       setIsLoading(false);
       
       // Enhanced error handling

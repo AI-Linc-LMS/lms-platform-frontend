@@ -86,8 +86,8 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
       setIsCompleted(!isCompleted);
       onMarkComplete();
       navigate(0);
-    } catch (err) {
-      console.log(err);
+    } catch {
+      //console.log(err);
       // handle error
     }
   };
@@ -126,11 +126,11 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
       }
 
       // For debugging
-      console.log('Processed article content:', processedContent.substring(0, 100) + '...');
+      //console.log('Processed article content:', processedContent.substring(0, 100) + '...');
 
       return parse(wrapWithDiv(processedContent));
-    } catch (error) {
-      console.error('Error parsing HTML content:', error);
+    } catch {
+      //console.error('Error parsing HTML content:', error);
       return (
         <div className="p-3 bg-red-100 border border-red-300 rounded text-red-700">
           Error rendering content. Please try refreshing the page.
@@ -156,7 +156,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
     // Check for template first
     const templateName = articleData.details?.template || articleData.template;
     if (templateName && templateName in ARTICLE_LAYOUT_TEMPLATES) {
-      console.log(`Using template: ${templateName}`);
+      //console.log(`Using template: ${templateName}`);
       baseConfig = getLayoutTemplate(templateName);
     } else {
       baseConfig = ARTICLE_LAYOUT_TEMPLATES.DEFAULT;
@@ -165,7 +165,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
     // Check for custom layout config
     const backendConfig = articleData.details?.layout_config || articleData.layout_config;
     if (backendConfig && validateLayoutConfig(backendConfig)) {
-      console.log('Using custom layout config from backend');
+      //console.log('Using custom layout config from backend');
       customConfig = backendConfig;
     }
 
@@ -285,13 +285,6 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
 
   const layoutConfig = getLayoutConfig();
 
-  // Debug logging
-  console.log('Article data:', {
-    template: articleData.template || articleData.details?.template,
-    hasLayoutConfig: !!(articleData.layout_config || articleData.details?.layout_config),
-    layoutConfig
-  });
-
   return (
     <div className={layoutConfig.container?.className || ''} style={layoutConfig.container?.style}>
       {renderHeader(layoutConfig)}
@@ -299,7 +292,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
 
       {/* Floating Ask AI Button - always rendered */}
       <FloatingAIButton
-        onClick={() => console.log("Floating AI Button clicked")}
+        onClick={() => {}}
       />
 
       {renderActions(layoutConfig)}

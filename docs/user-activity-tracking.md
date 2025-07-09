@@ -278,9 +278,9 @@ The application includes a floating debug panel that can be used to monitor acti
 7. The session ID is displayed to help identify the current browser session
 8. View historical activity records in the debug panel's "Historical Activity" section
 
-### Console Debugging
+### //console Debugging
 
-The system logs detailed information to the browser console:
+The system logs detailed information to the browser //console:
 
 - Activity state changes
 - API calls and responses
@@ -297,7 +297,7 @@ The system logs detailed information to the browser console:
 To verify time tracking accuracy:
 
 1. Use the debug panel's "Direct API Call" button to send current activity data
-2. Check the browser console for detailed timing information including:
+2. Check the browser //console for detailed timing information including:
    - Base total time spent (excluding current session)
    - Current session duration in seconds
    - Combined total time in seconds
@@ -338,7 +338,7 @@ If API calls aren't visible in the network tab:
 
 1. Check environment variables (VITE_API_URL, VITE_CLIENT_ID)
 2. Use the "Direct API Call" button to force an immediate API call
-3. Check the console for detailed error messages
+3. Check the //console for detailed error messages
 4. Verify authentication token is valid
 
 ### Data Not Appearing in Backend
@@ -356,7 +356,7 @@ If user activity isn't being tracked correctly:
 
 1. Check if UserActivityProvider is wrapping the application
 2. Verify event listeners are working (focus, blur, visibility)
-3. Check browser console for errors
+3. Check browser //console for errors
 4. Try using the debug panel to simulate events
 
 ### Multi-Device Issues
@@ -375,19 +375,19 @@ If the daily reset isn't working correctly:
 1. Check localStorage for the `lastActivityResetDate` value
 2. Verify that the current date comparison logic is working
 3. Check historical data storage in localStorage
-4. Monitor console logs for daily reset events
+4. Monitor //console logs for daily reset events
 5. Try clearing localStorage and refreshing if reset is stuck
 
 ### Time Tracking Accuracy Issues
 
 If time tracking seems inaccurate:
 
-1. Check the console logs for active session calculations and validation messages
+1. Check the //console logs for active session calculations and validation messages
 2. Verify that the floating timer shows both current session and total time
 3. Use the Direct API Call feature to check what's being sent to the backend
 4. Look for any discrepancies between displayed time and API payload
 5. Check if any browser extensions might be interfering with tab focus events
-6. Verify that time validation is working correctly by checking console logs
+6. Verify that time validation is working correctly by checking //console logs
 7. Test with different browsers to identify browser-specific issues
 
 ## Best Practices

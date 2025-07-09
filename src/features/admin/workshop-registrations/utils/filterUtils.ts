@@ -14,7 +14,7 @@ export const filterWorkshopData = (
   });
   
   if (activeFilters.length > 0) {
-    console.log('Active Filters:', activeFilters);
+    //console.log('Active Filters:', activeFilters);
   }
   
   return workshopData.filter((entry) => {
@@ -38,17 +38,7 @@ export const filterWorkshopData = (
       if (!safeValue) return false;
       const selectedOptions = filterValue.split(',').map(opt => opt.trim().toLowerCase());
       const matches = selectedOptions.includes(safeValue.toLowerCase());
-      
-      // Debug logging for OR query
-      if (selectedOptions.length > 1) {
-        console.log('OR Query Debug:', {
-          fieldValue: safeValue,
-          selectedOptions,
-          matches,
-          filterValue
-        });
-      }
-      
+       
       return matches;
     };
 
@@ -67,11 +57,7 @@ export const filterWorkshopData = (
       if (filterVal.includes(',')) {
         // Multi-select: match any selected value exactly (OR query)
         const result = matchesSelectedOptions(entry.name, filterVal);
-        console.log('Name OR Query:', {
-          entryName: entry.name,
-          filterValue: filterVal,
-          result
-        });
+        
         return result;
       } else {
         // Single search string: substring match
@@ -111,12 +97,7 @@ export const filterWorkshopData = (
       if (filterVal.includes(',')) {
         // Multi-select: match any selected value exactly (OR query)
         const result = matchesSelectedOptions(entry.workshop_name, filterVal);
-        console.log('Workshop OR Query:', {
-          entryName: entry.name,
-          workshopName: entry.workshop_name,
-          filterValue: filterVal,
-          result
-        });
+       
         return result;
       } else {
         // Single search string: substring match
@@ -348,7 +329,6 @@ export const filterWorkshopData = (
       (!submittedStartDate || (submittedDate && submittedDate >= submittedStartDate)) &&
       (!submittedEndDate || (submittedDate && submittedDate <= submittedEndDate));
 
-    // Final match
     const finalResult = (
       nameMatch &&
       emailMatch &&
