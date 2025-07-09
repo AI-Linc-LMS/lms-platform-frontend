@@ -118,8 +118,19 @@ export const startAssessment = async (
   referralCode?: string
 ) => {
   try {
+    // Build query params correctly (single "?" followed by "&" separators)
+    const params = new URLSearchParams();
+    if (phoneNumber) {
+      params.append("phone_number", phoneNumber);
+    }
+    if (referralCode) {
+      params.append("ref", referralCode);
+    }
+
+    const queryString = params.toString();
+
     const res = await axiosInstance.get(
-      `assessment/api/client/${clientId}/start-assessment/${assessmentId}/?phone_number=${phoneNumber ?? ""}/?ref=${referralCode ?? ""}`
+      `assessment/api/client/${clientId}/start-assessment/${assessmentId}/${queryString ? "?" + queryString : ""}`
     );
     return res.data;
   } catch (error) {
