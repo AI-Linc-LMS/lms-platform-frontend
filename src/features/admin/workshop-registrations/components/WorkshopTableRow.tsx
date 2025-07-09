@@ -461,11 +461,15 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
         <td className="p-3">
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
-              entry.attended_webinars,
+              typeof entry.attended_webinars === "boolean"
+                ? entry.attended_webinars.toString()
+                : entry.attended_webinars || "",
               "true/false"
             )}`}
           >
-            {entry.attended_webinars || "N/A"}
+            {typeof entry.attended_webinars === "boolean"
+              ? entry.attended_webinars.toString()
+              : entry.attended_webinars || "N/A"}
           </span>
         </td>
         <td className="p-3">
