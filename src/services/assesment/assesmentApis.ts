@@ -53,12 +53,6 @@ export const getInstructions = async (clientId: number, assessmentId: string): P
     if (error instanceof Error) {
       // AxiosError type guard
       const axiosError = error as ApiError;
-      console.error("Failed to fetch assessment details:", error);
-      console.error("Error details:", {
-        message: axiosError.message,
-        response: axiosError.response?.data,
-        status: axiosError.response?.status,
-      });
 
       // You can throw a custom error if you want
       throw new Error(
@@ -79,9 +73,8 @@ export const getAllAssessments = async (clientId: number): Promise<AssessmentLis
       `/assessment/api/client/${clientId}/active-assessments/`
     );
     return res.data;
-  } catch (error) {
+  } catch {
     // If the API endpoint doesn't exist, return a static list of known assessments
-    console.warn("Assessments list API not available, using fallback list:", error);
     
     // Fallback list of known assessments - this can be configured
     const fallbackAssessments: AssessmentListItem[] = [
@@ -137,12 +130,6 @@ export const startAssessment = async (
     if (error instanceof Error) {
       // AxiosError type guard
       const axiosError = error as ApiError;
-      console.error("Failed to start assessment:", error);
-      console.error("Error details:", {
-        message: axiosError.message,
-        response: axiosError.response?.data,
-        status: axiosError.response?.status,
-      });
 
       // You can throw a custom error if you want
       throw new Error(
@@ -181,12 +168,6 @@ export const submitFinalAssessment = async (
     if (error instanceof Error) {
       // AxiosError type guard
       const axiosError = error as ApiError;
-      console.error("Failed to submit final assessment:", error);
-      console.error("Error details:", {
-        message: axiosError.message,
-        response: axiosError.response?.data,
-        status: axiosError.response?.status,
-      });
 
       // You can throw a custom error if you want
       throw new Error(
@@ -206,7 +187,6 @@ export const updateAfterEachQuestion = async (
   userAnswers: QuizSectionResponse,
   referralCode?: string
 ) => {
-  console.log("userAnswers", userAnswers);
   try {
     const payload: AssessmentSubmissionPayload = {
       response_sheet: userAnswers,
@@ -226,12 +206,6 @@ export const updateAfterEachQuestion = async (
     if (error instanceof Error) {
       // AxiosError type guard
       const axiosError = error as ApiError;
-      console.error("Failed to update after each question:", error);
-      console.error("Error details:", {
-        message: axiosError.message,
-        response: axiosError.response?.data,
-        status: axiosError.response?.status,
-      });
 
       // You can throw a custom error if you want
       throw new Error(
@@ -258,12 +232,6 @@ export const getAssessmentStatus = async (
     if (error instanceof Error) {
       // AxiosError type guard
       const axiosError = error as ApiError;
-      console.error("Failed to get assessment status:", error);
-      console.error("Error details:", {
-        message: axiosError.message,
-        response: axiosError.response?.data,
-        status: axiosError.response?.status,
-      });
 
       // You can throw a custom error if you want
       throw new Error(
@@ -290,12 +258,13 @@ export const redeemScholarship = async (
     if (error instanceof Error) {
       // AxiosError type guard
       const axiosError = error as ApiError;
-      console.error("Failed to redeem scholarship:", error);
-      console.error("Error details:", {
-        message: axiosError.message,
-        response: axiosError.response?.data,
-        status: axiosError.response?.status,
-      });
+      throw new Error(
+        (axiosError.response?.data?.detail as string) ||
+          axiosError.message ||
+          "Failed to redeem scholarship"
+      );
+    } else {
+      throw new Error("An unknown error occurred");
     }
   }
 };
@@ -309,16 +278,7 @@ export const getRoadmapPaymentStatus = async (
       `/assessment/api/client/${clientId}/payment-status/${programId}/`
     );
     return res.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      // AxiosError type guard
-      const axiosError = error as ApiError;
-      console.error("Failed to get roadmap payment status:", error);
-      console.error("Error details:", {
-        message: axiosError.message,
-        response: axiosError.response?.data,
-        status: axiosError.response?.status,
-      });
-    }
+  } catch {
+    throw new Error("An unknown error occurred");
   }
 };

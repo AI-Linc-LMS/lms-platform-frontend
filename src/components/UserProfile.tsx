@@ -69,8 +69,8 @@ const ProfileSettings = () => {
         "Your profile has been updated successfully!"
       );
     },
-    onError: (error) => {
-      console.error("Failed to update user:", error);
+    onError: () => {
+      //console.error("Failed to update user:", error);
       setIsSaving(false);
       showErrorToast(
         "Update Failed",
@@ -176,8 +176,8 @@ const ProfileSettings = () => {
       await cleanupPromise;
       window.history.replaceState(null, "", "/login");
       window.location.reload();
-    } catch (error) {
-      console.error("Error during logout:", error);
+    } catch {
+      //console.error("Error during logout:", error);
       showErrorToast(
         "Logout Error",
         "Failed to logout properly. Please try again."
@@ -212,10 +212,14 @@ const ProfileSettings = () => {
 
   return (
     <div className="p-4 sm:p-6 rounded-lg w-full max-w-7xl mx-auto">
-      <h2 className="text-xl sm:text-2xl font-bold mb-4 px-2">Profile Settings</h2>
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 px-2">
+        Profile Settings
+      </h2>
 
       <div className="border-1 border-gray-300 shadow-sm rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6 min-h-screen">
-        <div className="text-lg sm:text-xl font-bold text-[#257195]">My Profile</div>
+        <div className="text-lg sm:text-xl font-bold text-[#257195]">
+          My Profile
+        </div>
 
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
@@ -228,7 +232,9 @@ const ProfileSettings = () => {
               <div className="text-base sm:text-lg font-semibold">
                 {formData.first_name} {formData.last_name}
               </div>
-              <div className="text-sm text-gray-500 break-all">{formData.email}</div>
+              <div className="text-sm text-gray-500 break-all">
+                {formData.email}
+              </div>
             </div>
           </div>
           <div className="flex justify-center sm:justify-end">
@@ -262,7 +268,11 @@ const ProfileSettings = () => {
                 "Save"
               ) : (
                 <>
-                  <img src={editIcon} alt="Edit" className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <img
+                    src={editIcon}
+                    alt="Edit"
+                    className="w-3 h-3 sm:w-4 sm:h-4"
+                  />
                   <span>Edit</span>
                 </>
               )}
@@ -281,8 +291,9 @@ const ProfileSettings = () => {
               value={formData.first_name}
               onChange={handleChange}
               readOnly={!editable}
-              className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${editable ? "border-[#255C79]" : "border-gray-300"
-                } focus:outline-none`}
+              className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${
+                editable ? "border-[#255C79]" : "border-gray-300"
+              } focus:outline-none`}
             />
           </div>
 
@@ -296,8 +307,9 @@ const ProfileSettings = () => {
               value={formData.last_name}
               onChange={handleChange}
               readOnly={!editable}
-              className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${editable ? "border-[#255C79]" : "border-gray-300"
-                } focus:outline-none`}
+              className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${
+                editable ? "border-[#255C79]" : "border-gray-300"
+              } focus:outline-none`}
             />
           </div>
 
@@ -343,8 +355,9 @@ const ProfileSettings = () => {
               value={formData.phone_number || ""}
               onChange={handleChange}
               readOnly={!editable}
-              className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${editable ? "border-[#255C79]" : "border-gray-300"
-                } focus:outline-none`}
+              className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${
+                editable ? "border-[#255C79]" : "border-gray-300"
+              } focus:outline-none`}
             />
           </div>
 
@@ -358,8 +371,9 @@ const ProfileSettings = () => {
               value={formData.date_of_birth || ""}
               onChange={handleChange}
               readOnly={!editable}
-              className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${editable ? "border-[#255C79]" : "border-gray-300"
-                } focus:outline-none`}
+              className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${
+                editable ? "border-[#255C79]" : "border-gray-300"
+              } focus:outline-none`}
             />
           </div>
 
@@ -373,8 +387,9 @@ const ProfileSettings = () => {
               onChange={handleChange}
               readOnly={!editable}
               rows={3}
-              className={`w-full border rounded px-3 py-2 text-sm sm:text-base resize-none ${editable ? "border-[#255C79]" : "border-gray-300"
-                } focus:outline-none`}
+              className={`w-full border rounded px-3 py-2 text-sm sm:text-base resize-none ${
+                editable ? "border-[#255C79]" : "border-gray-300"
+              } focus:outline-none`}
             />
           </div>
 
@@ -389,8 +404,9 @@ const ProfileSettings = () => {
               onChange={handleChange}
               readOnly={!editable}
               placeholder="https://linkedin.com/in/yourprofile"
-              className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${editable ? "border-[#255C79]" : "border-gray-300"
-                } focus:outline-none`}
+              className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${
+                editable ? "border-[#255C79]" : "border-gray-300"
+              } focus:outline-none`}
             />
           </div>
 
@@ -405,8 +421,9 @@ const ProfileSettings = () => {
               onChange={handleChange}
               readOnly={!editable}
               placeholder="https://github.com/yourusername"
-              className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${editable ? "border-[#255C79]" : "border-gray-300"
-                } focus:outline-none`}
+              className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${
+                editable ? "border-[#255C79]" : "border-gray-300"
+              } focus:outline-none`}
             />
           </div>
         </div>
@@ -423,12 +440,14 @@ const ProfileSettings = () => {
               <button
                 type="button"
                 onClick={() => handleToggle("emailNotification")}
-                className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors duration-300 ${formData.emailNotification ? "bg-green-500" : "bg-gray-300"
-                  }`}
+                className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors duration-300 ${
+                  formData.emailNotification ? "bg-green-500" : "bg-gray-300"
+                }`}
               >
                 <div
-                  className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${formData.emailNotification ? "translate-x-5" : ""
-                    }`}
+                  className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
+                    formData.emailNotification ? "translate-x-5" : ""
+                  }`}
                 />
               </button>
             </div>
@@ -438,12 +457,14 @@ const ProfileSettings = () => {
               <button
                 type="button"
                 onClick={() => handleToggle("inAppNotification")}
-                className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors duration-300 ${formData.inAppNotification ? "bg-green-500" : "bg-gray-300"
-                  }`}
+                className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors duration-300 ${
+                  formData.inAppNotification ? "bg-green-500" : "bg-gray-300"
+                }`}
               >
                 <div
-                  className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${formData.inAppNotification ? "translate-x-5" : ""
-                    }`}
+                  className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
+                    formData.inAppNotification ? "translate-x-5" : ""
+                  }`}
                 />
               </button>
             </div>

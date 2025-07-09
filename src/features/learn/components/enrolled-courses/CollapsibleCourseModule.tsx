@@ -42,11 +42,11 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const navigate = useNavigate();
-  
+
   // Helper function to navigate to topic detail page
   const navigateToTopicDetail = (courseId: string, submoduleId: string) => {
-    console.log("courseId", courseId);
-    console.log("submoduleId", submoduleId);
+    //console.log("courseId", courseId);
+    //console.log("submoduleId", submoduleId);
     navigate(`/learn/course/${courseId}/${submoduleId}`);
   };
 
@@ -69,8 +69,9 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
   return (
     <>
       <div>
-        <h2 className="text-xl font-semibold text-[#257195] p-4">Week {week.weekNo}</h2>
-
+        <h2 className="text-xl font-semibold text-[#257195] p-4">
+          Week {week.weekNo}
+        </h2>
       </div>
       <div className="mb-4 md:mb-6 border border-gray-100 rounded-[22px] shadow-sm">
         {/* Week Header */}
@@ -109,9 +110,9 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
                   <path
                     d="M15 7L8 1L1 7"
                     stroke="#343A40"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   />
                 </svg>
               </span>
@@ -127,9 +128,9 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
                   <path
                     d="M15 1L8 7L1 1"
                     stroke="#343A40"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   />
                 </svg>
               </span>
@@ -138,9 +139,11 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
         </div>
 
         {/* Collapsible Content */}
-        <div 
+        <div
           className={`transition-all duration-500 ease-in-out transform origin-top overflow-hidden ${
-            isOpen ? 'max-h-[2000px] opacity-100 scale-100' : 'max-h-0 opacity-0 scale-98'
+            isOpen
+              ? "max-h-[2000px] opacity-100 scale-100"
+              : "max-h-0 opacity-0 scale-98"
           }`}
         >
           <div className="px-3 md:px-4 pb-3 md:pb-4">
@@ -165,7 +168,6 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
                     <button
                       className="px-4 py-2 bg-[#D7EFF6] rounded-xl border border-[#80C9E0] text-[#264D64] cursor-pointer"
                       onClick={() => navigateToTopicDetail(week.id, module.id)}
-
                     >
                       Start Now
                     </button>
@@ -215,7 +217,7 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
                 {/* Content items */}
                 <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
                   {module.content
-                    .filter(item => item.count > 0)
+                    .filter((item) => item.count > 0)
                     .map((item, idx) => (
                       <div
                         key={`${module.id}-${item.type}-${idx}`}

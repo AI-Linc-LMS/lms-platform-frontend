@@ -25,7 +25,6 @@ export const ActiveFiltersDisplay: React.FC<ActiveFiltersDisplayProps> = ({
 
   // Helper function to format filter value for display
   const formatFilterValue = (
-    key: string,
     value: string | { start: string; end: string }
   ) => {
     if (typeof value === "string") {
@@ -86,7 +85,7 @@ export const ActiveFiltersDisplay: React.FC<ActiveFiltersDisplayProps> = ({
       </div>
       <div className="flex flex-wrap gap-2">
         {activeFilters.map(([key, value]) => {
-          const displayValue = formatFilterValue(key, value);
+          const displayValue = formatFilterValue(value);
           if (!displayValue) return null;
 
           return (

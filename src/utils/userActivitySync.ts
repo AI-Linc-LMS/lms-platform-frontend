@@ -54,7 +54,7 @@ export const syncUserActivity = async (
         timestamp: activityData.timestamp
       });
     } catch (error) {
-      console.error('Failed to sync activity data:', error);
+      //console.error('Failed to sync activity data:', error);
       logActivityEvent('Failed to sync activity data, storing locally', { error: (error as Error).message });
       // If online but API call failed, store locally
       storeActivityDataLocally(activityData);
@@ -72,17 +72,17 @@ export const syncUserActivity = async (
 export const setupActivitySyncListeners = (): void => {
   // Try to sync when coming back online
   window.addEventListener('online', async () => {
-    console.log('Device back online, attempting to sync activity data');
+    //console.log('Device back online, attempting to sync activity data');
     try {
       await syncOfflineActivityData();
     } catch (error) {
-      console.error('Failed to sync offline data when coming back online:', error);
+      //console.error('Failed to sync offline data when coming back online:', error);
     }
   });
 
   // Store current data when going offline
   window.addEventListener('offline', () => {
-    console.log('Device offline, activity data will be stored locally');
+    //console.log('Device offline, activity data will be stored locally');
   });
 };
 

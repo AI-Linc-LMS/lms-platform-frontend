@@ -252,7 +252,7 @@ export const createPreciseActivityPayload = (
 
 ## Testing the Fix
 
-### 1. Check Console Logs
+### 1. Check //console Logs
 Look for these log messages to verify the fix is working:
 ```
 Activity data ready to send: {...}
@@ -319,7 +319,7 @@ On the backend, you should now receive:
 ## Troubleshooting
 
 ### If Time Still Appears Inaccurate
-1. Check browser console for any error messages
+1. Check browser //console for any error messages
 2. Verify environment variables (`VITE_API_URL`, `VITE_CLIENT_ID`) are set
 3. Check Network tab to see if API calls are being made with correct data
 4. Verify the backend is processing the `time-spend-seconds` field
@@ -328,7 +328,7 @@ On the backend, you should now receive:
 
 ### If Session-End Data is Not Being Sent
 1. Verify that session-end API calls appear in Network tab when switching tabs
-2. Check console logs for "Sending immediate session-end data" messages
+2. Check //console logs for "Sending immediate session-end data" messages
 3. Ensure the session duration is greater than 0 (very short sessions are filtered out)
 4. Test page unload scenarios to verify beacon API calls
 5. Check for any JavaScript errors that might prevent the API calls

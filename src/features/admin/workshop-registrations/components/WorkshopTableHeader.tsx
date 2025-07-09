@@ -83,12 +83,6 @@ const MultiSelectDropdown: React.FC<{
     setSearchTerm("");
 
     const filterValue = newSelected.join(",");
-    console.log("MultiSelectDropdown Toggle:", {
-      option: opt,
-      newSelected,
-      filterValue,
-      action: selectedOptions.includes(opt) ? "deselected" : "selected",
-    });
 
     onChange(filterValue);
   };
