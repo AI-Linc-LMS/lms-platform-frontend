@@ -362,35 +362,86 @@ export const filterWorkshopData = (
   });
 };
 
-export const exportToExcel = (filteredData: WorkshopRegistrationData[]) => {
-  const exportData = filteredData.map((entry, index) => ({
-    "Serial No.": index + 1,
-    Name: entry.name,
-    Email: entry.email,
-    "Mobile Number": entry.phone_number,
-    "Workshop Name": entry.workshop_name,
-    "Session Number": entry.session_number || "N/A",
-    "Session Date": entry.session_date || "N/A",
-    "Referral Code": entry.referal_code || "N/A",
-    "Registered At": entry.registered_at,
-    "Attended Webinars": entry.attended_webinars || "N/A",
-    "Assessment Attempted": entry.is_assessment_attempted || "N/A",
-    "Certificate Amount Paid": entry.is_certificate_amount_paid || "N/A",
-    "Prebooking Amount Paid": entry.is_prebooking_amount_paid || "N/A",
-    "Course Amount Paid": entry.is_course_amount_paid || "N/A",
-    "First Call Status": entry.first_call_status || "N/A",
-    "First Call Comment": entry.first_call_comment || "N/A",
-    "Second Call Status": entry.second_call_status || "N/A",
-    "Second Call Comment": entry.second_call_comment || "N/A",
-    "Follow Up Comment": entry.follow_up_comment || "N/A",
-    "Amount Paid": entry.amount_paid || "N/A",
-    "Amount Pending": entry.amount_pending || "N/A",
-    "Score": entry.score || "N/A",
-    "Offered Scholarship Percentage": entry.offered_scholarship_percentage || "N/A",
-    "Offered Amount": entry.offered_amount || "N/A",
-    "Submitted At": entry.submitted_at && entry.submitted_at !== "" ? entry.submitted_at : "N/A",
-    "Assessment Status": entry.assessment_status || "N/A",
-  }));
+export const exportToExcel = (
+  filteredData: WorkshopRegistrationData[], 
+  visibleColumns: string[]
+) => {
+  // Define column mappings using the actual column keys
+  const columnMappings: Record<string, (entry: WorkshopRegistrationData, index: number) => string | number | boolean> = {
+    "name": (entry) => entry.name,
+    "email": (entry) => entry.email,
+    "phone_number": (entry) => entry.phone_number,
+    "workshop_name": (entry) => entry.workshop_name,
+    "session_number": (entry) => entry.session_number || "N/A",
+    "session_date": (entry) => entry.session_date || "N/A",
+    "referal_code": (entry) => entry.referal_code || "N/A",
+    "registered_at": (entry) => entry.registered_at,
+    "updated_at": (entry) => entry.updated_at || "N/A",
+    "attended_webinars": (entry) => entry.attended_webinars || "N/A",
+    "is_assessment_attempted": (entry) => entry.is_assessment_attempted || "N/A",
+    "is_certificate_amount_paid": (entry) => entry.is_certificate_amount_paid || "N/A",
+    "is_prebooking_amount_paid": (entry) => entry.is_prebooking_amount_paid || "N/A",
+    "is_course_amount_paid": (entry) => entry.is_course_amount_paid || "N/A",
+    "first_call_status": (entry) => entry.first_call_status || "N/A",
+    "first_call_comment": (entry) => entry.first_call_comment || "N/A",
+    "second_call_status": (entry) => entry.second_call_status || "N/A",
+    "second_call_comment": (entry) => entry.second_call_comment || "N/A",
+    "follow_up_comment": (entry) => entry.follow_up_comment || "N/A",
+    "amount_paid": (entry) => entry.amount_paid || "N/A",
+    "amount_pending": (entry) => entry.amount_pending || "N/A",
+    "score": (entry) => entry.score || "N/A",
+    "offered_scholarship_percentage": (entry) => entry.offered_scholarship_percentage || "N/A",
+    "offered_amount": (entry) => entry.offered_amount || "N/A",
+    "submitted_at": (entry) => entry.submitted_at && entry.submitted_at !== "" ? entry.submitted_at : "N/A",
+    "assessment_status": (entry) => entry.assessment_status || "N/A",
+  };
+
+  // Define display names for export headers
+  const displayNames: Record<string, string> = {
+    "name": "Name",
+    "email": "Email",
+    "phone_number": "Mobile Number",
+    "workshop_name": "Workshop Name",
+    "session_number": "Session Number",
+    "session_date": "Session Date",
+    "referal_code": "Referral Code",
+    "registered_at": "Registered At",
+    "updated_at": "Updated At",
+    "attended_webinars": "Attended Webinars",
+    "is_assessment_attempted": "Assessment Attempted",
+    "is_certificate_amount_paid": "Certificate Amount Paid",
+    "is_prebooking_amount_paid": "Prebooking Amount Paid",
+    "is_course_amount_paid": "Course Amount Paid",
+    "first_call_status": "First Call Status",
+    "first_call_comment": "First Call Comment",
+    "second_call_status": "Second Call Status",
+    "second_call_comment": "Second Call Comment",
+    "follow_up_comment": "Follow Up Comment",
+    "amount_paid": "Amount Paid",
+    "amount_pending": "Amount Pending",
+    "score": "Score",
+    "offered_scholarship_percentage": "Offered Scholarship Percentage",
+    "offered_amount": "Offered Amount",
+    "submitted_at": "Submitted At",
+    "assessment_status": "Assessment Status",
+  };
+
+  const exportData = filteredData.map((entry, index) => {
+    const exportRow: Record<string, string | number | boolean> = {};
+    
+    // Add serial number as first column
+    exportRow["Serial No."] = index + 1;
+    
+    // Only include columns that are visible
+    visibleColumns.forEach(column => {
+      if (columnMappings[column]) {
+        const displayName = displayNames[column] || column;
+        exportRow[displayName] = columnMappings[column](entry, index);
+      }
+    });
+    
+    return exportRow;
+  });
 
   const worksheet = XLSX.utils.json_to_sheet(exportData);
   const workbook = XLSX.utils.book_new();

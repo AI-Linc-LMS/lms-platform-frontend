@@ -162,7 +162,11 @@ const WorkshopRegistration = () => {
     [search, workshopData, filters]
   );
 
-  const handleExport = () => exportToExcel(filteredData);
+  const handleExport = () => {
+    // Combine permanent columns with visible columns for export
+    const allVisibleColumns = [...permanentColumns, ...visibleColumns];
+    exportToExcel(filteredData, allVisibleColumns);
+  };
 
   const updateFilter = (
     column: keyof FilterState,
