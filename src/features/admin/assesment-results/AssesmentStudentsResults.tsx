@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { getAssesmentStudentResults } from "../../../services/admin/workshopRegistrationApis";
-import AssessmentReferralGenerator from "./AssessmentReferralGenerator";
+// import AssessmentReferralGenerator from "./AssessmentReferralGenerator";
 import ReferralAnalytics from "./ReferralAnalytics";
 import * as XLSX from "xlsx";
 
@@ -27,6 +27,7 @@ interface AssesmentStudentResultsData {
   status: string;
   amount: number;
   referral_code?: string; // Adding referral code field
+  referal_code?: string;
 }
 
 const AssesmentStudentResults = () => {
@@ -34,7 +35,7 @@ const AssesmentStudentResults = () => {
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [showReferralGenerator, setShowReferralGenerator] = useState(false);
+  // const [showReferralGenerator, setShowReferralGenerator] = useState(false);
   const pageSize = 15;
 
   const {
@@ -54,7 +55,7 @@ const AssesmentStudentResults = () => {
       const name = entry?.userprofile?.user?.name || "";
       const email = entry?.userprofile?.user?.email || "";
       const assessmentTitle = entry?.assessment?.title || "";
-      const referralCode = entry?.referral_code || "";
+      const referralCode = entry?.referral_code || entry?.referal_code || "";
 
       return `${name} ${email} ${assessmentTitle} ${referralCode}`
         .toLowerCase()
@@ -71,7 +72,7 @@ const AssesmentStudentResults = () => {
 
   // Count referrals vs direct submissions
   const referralStats = useMemo(() => {
-    const withReferral = assessmentData.filter(entry => entry?.referral_code).length;
+    const withReferral = assessmentData.filter(entry => entry?.referral_code || entry?.referal_code).length;
     const direct = assessmentData.length - withReferral;
     return { withReferral, direct };
   }, [assessmentData]);
@@ -89,7 +90,7 @@ const AssesmentStudentResults = () => {
         : "N/A",
       Amount: entry?.amount ? `₹${entry.amount.toLocaleString()}` : "N/A",
       Status: entry?.status || "N/A",
-      "Referral Code": entry?.referral_code || "Direct",
+      "Referral Code": entry?.referral_code || entry?.referal_code || "Direct",
       "Submitted At": entry?.submitted_at
         ? new Date(entry.submitted_at).toLocaleString()
         : "N/A",
@@ -159,7 +160,7 @@ const AssesmentStudentResults = () => {
       <h1 className="text-xl md:text-2xl font-bold mb-6">Assessment Results</h1>
 
       {/* Referral Generator Section */}
-      <div className="mb-6">
+      {/* <div className="mb-6">
         <button
           onClick={() => setShowReferralGenerator(!showReferralGenerator)}
           className="flex items-center gap-2 bg-[#255C79] text-white px-4 py-2 rounded-lg hover:bg-[#1E4A63] transition-colors font-medium"
@@ -179,14 +180,14 @@ const AssesmentStudentResults = () => {
             />
           </svg>
           {showReferralGenerator ? "Hide" : "Generate"} Referral URLs
-        </button>
+        </button> */}
         
-        {showReferralGenerator && (
-          <div className="mt-4">
-            <AssessmentReferralGenerator />
-          </div>
-        )}
-      </div>
+        {/* {showReferralGenerator && (
+          <div className="mt-4"> */}
+            {/* <AssessmentReferralGenerator /> */}
+          {/* </div> */}
+        {/* // )} */}
+      {/* </div> */}
 
       {/* Referral Analytics Section */}
       <div className="mb-6">
@@ -318,9 +319,9 @@ const AssesmentStudentResults = () => {
                   </span>
                 </td>
                 <td className="p-3">
-                  {entry?.referral_code ? (
+                  {entry?.referral_code || entry?.referal_code ? (
                     <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium font-mono">
-                      {entry.referral_code}
+                      {entry.referral_code || entry.referal_code}
                     </span>
                   ) : (
                     <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">

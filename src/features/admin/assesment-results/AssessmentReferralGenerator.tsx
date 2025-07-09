@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { FiCopy, FiCheck, FiExternalLink, FiLink, FiPlus, FiUser } from "react-icons/fi";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { createReferral } from "../../../services/admin/workshopRegistrationApis";
+import { getAllAssessments } from "../../../services/assesment/assesmentApis";
 import { ReferralData } from "../../../types/referral";
 
 interface AssessmentReferralGeneratorProps {
@@ -11,7 +12,17 @@ interface AssessmentReferralGeneratorProps {
 const AssessmentReferralGenerator: React.FC<AssessmentReferralGeneratorProps> = ({ 
   className = "" 
 }) => {
-  const [assessmentId, setAssessmentId] = useState("ai-linc-scholarship-test");
+  // Fetch assessments list
+  const clientId = import.meta.env.VITE_CLIENT_ID;
+  const { data: assessments = [] } = useQuery({
+    queryKey: ["assessments-list", clientId],
+    queryFn: () => getAllAssessments(clientId),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const [assessmentId, setAssessmentId] = useState(
+    assessments[0]?.slug || "ai-linc-scholarship-test"
+  );
   const [referralCode, setReferralCode] = useState("");
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -25,7 +36,6 @@ const AssessmentReferralGenerator: React.FC<AssessmentReferralGeneratorProps> = 
   });
   const [errors, setErrors] = useState<Partial<typeof formData>>({});
 
-  const clientId = import.meta.env.VITE_CLIENT_ID;
   const queryClient = useQueryClient();
 
   // Create referral mutation
@@ -127,21 +137,22 @@ const AssessmentReferralGenerator: React.FC<AssessmentReferralGeneratorProps> = 
       </div>
 
       <div className="space-y-4">
-        {/* Assessment ID Input */}
+        {/* Assessment Selector */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Assessment ID
+            Select Assessment
           </label>
-          <input
-            type="text"
+          <select
             value={assessmentId}
             onChange={(e) => setAssessmentId(e.target.value)}
-            placeholder="e.g., ai-linc-scholarship-test"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            The unique identifier for the assessment
-          </p>
+          >
+            {assessments.map((ass) => (
+              <option key={ass.slug} value={ass.slug}>
+                {ass.title}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Referral Code Section */}
