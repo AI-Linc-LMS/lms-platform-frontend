@@ -7,7 +7,7 @@ export interface WorkshopRegistrationData {
   workshop_name: string;
   session_number: string | null;
   referal_code: string | null;
-  attended_webinars: string;
+  attended_webinars: string | boolean;
   is_assessment_attempted: string;
   is_certificate_amount_paid: string;
   is_prebooking_amount_paid: string;
