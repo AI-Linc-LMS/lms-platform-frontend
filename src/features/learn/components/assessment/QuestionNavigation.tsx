@@ -17,16 +17,16 @@ const QuestionNavigation: React.FC<QuestionNavigationProps> = ({
   getRemainingCount,
 }) => {
   return (
-    <div className="w-full md:w-1/4 bg-white rounded-lg p-4 sm:p-6 shadow-sm h-fit mb-4 md:mb-0">
+    <div className="w-full bg-white rounded-lg p-4 sm:p-6 shadow-sm h-fit mb-4 lg:mb-0">
       <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">
         Questions
       </h3>
-      <div className="grid grid-cols-4 sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-4 xl:grid-cols-5 gap-2">
         {questionsData.map((_, index) => (
           <button
             key={index}
             onClick={() => navigateToQuestion(index)}
-            className={`py-2 px-2 sm:px-3 rounded-md border text-xs sm:text-sm font-medium transition ${getQuestionButtonStyle(
+            className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-md border text-xs sm:text-sm font-medium transition-all duration-200 hover:scale-105 ${getQuestionButtonStyle(
               index
             )}`}
           >
