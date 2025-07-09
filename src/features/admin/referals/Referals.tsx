@@ -22,10 +22,12 @@ import {
   ReferralFormData,
 } from "../../../types/referral";
 import { getAllAssessments } from "../../../services/assesment/assesmentApis";
+import { useToast } from "../../../contexts/ToastContext";
 
 const Referals = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const queryClient = useQueryClient();
+  const { error: showError } = useToast();
 
   // State for search, modal, and editing
   const [searchTerm, setSearchTerm] = useState("");
@@ -65,8 +67,9 @@ const Referals = () => {
       await navigator.clipboard.writeText(link);
       setCopiedLinkId(referralId);
       setTimeout(() => setCopiedLinkId(null), 2000);
-    } catch (err) {
+    } catch {
       //console.error("Failed to copy link:", err);
+      showError("Failed to copy link");
     }
   };
 
