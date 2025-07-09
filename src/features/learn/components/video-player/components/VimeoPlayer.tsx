@@ -1,7 +1,7 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { VimeoPlayerProps } from '../types';
-import { CircularProgress } from './CircularProgress';
-import { processVimeoUrl } from '../utils/formatters';
+import React, { useRef, useState, useEffect } from "react";
+import { VimeoPlayerProps } from "../types";
+import { CircularProgress } from "./CircularProgress";
+import { processVimeoUrl } from "../utils/formatters";
 
 export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
   videoUrl,
@@ -14,7 +14,7 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
   seekDisabledMessage = "You cannot skip ahead on first watch",
   savedProgress = 0,
   videoId,
-  onSaveProgress
+  onSaveProgress,
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [progressPercent, setProgressPercent] = useState(0);
@@ -25,7 +25,9 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
   const [videoDuration, setVideoDuration] = useState(0);
   const [hasAppliedSavedProgress, setHasAppliedSavedProgress] = useState(false);
   const [showContinuePrompt, setShowContinuePrompt] = useState(false);
-  const progressSaveInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const progressSaveInterval = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
 
   // Handle iframe load event
   const handleIframeLoad = () => {
@@ -37,21 +39,21 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
     if (iframeRef.current && iframeRef.current.contentWindow) {
       setTimeout(() => {
         // Subscribe to events needed for tracking
-        const events = ['play', 'pause', 'timeupdate', 'seeked', 'ended'];
+        const events = ["play", "pause", "timeupdate", "seeked", "ended"];
 
-        events.forEach(event => {
+        events.forEach((event) => {
           const message = JSON.stringify({
-            method: 'addEventListener',
-            value: event
+            method: "addEventListener",
+            value: event,
           });
-          iframeRef.current?.contentWindow?.postMessage(message, '*');
+          iframeRef.current?.contentWindow?.postMessage(message, "*");
         });
 
         // Get video duration - important for progress restoration
         const getDuration = JSON.stringify({
-          method: 'getDuration'
+          method: "getDuration",
         });
-        iframeRef.current?.contentWindow?.postMessage(getDuration, '*');
+        iframeRef.current?.contentWindow?.postMessage(getDuration, "*");
       }, 500);
     }
   };
@@ -59,8 +61,13 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
   // Effect to check for saved progress and show the continue prompt
   useEffect(() => {
     // Need both iframe ref and video duration before we can apply progress
-    if (iframeRef.current && savedProgress > 0 && !hasAppliedSavedProgress && videoDuration > 0) {
-      console.log(`VimeoPlayer: Ready to apply saved progress ${savedProgress.toFixed(1)}% for ${videoId}`);
+    if (
+      iframeRef.current &&
+      savedProgress > 0 &&
+      !hasAppliedSavedProgress &&
+      videoDuration > 0
+    ) {
+      //console.log(`VimeoPlayer: Ready to apply saved progress ${savedProgress.toFixed(1)}% for ${videoId}`);
 
       // Only show continue prompt if there's significant progress (more than 5% and less than 95%)
       if (savedProgress > 5 && savedProgress < 95) {
@@ -70,47 +77,56 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
         applyProgressAndStartPlayback(savedProgress);
       }
     }
-  }, [savedProgress, hasAppliedSavedProgress, videoDuration, activityCompletionThreshold, videoId]);
+  }, [
+    savedProgress,
+    hasAppliedSavedProgress,
+    videoDuration,
+    activityCompletionThreshold,
+    videoId,
+  ]);
 
   // Apply saved progress and start playback
   const applyProgressAndStartPlayback = (percent: number) => {
     if (iframeRef.current?.contentWindow && videoDuration > 0) {
       const timeToSet = (videoDuration * percent) / 100;
-      console.log(`VimeoPlayer: Applying saved progress: ${percent.toFixed(1)}%, setting time to: ${timeToSet.toFixed(1)}s for ${videoId}`);
+      //console.log(`VimeoPlayer: Applying saved progress: ${percent.toFixed(1)}%, setting time to: ${timeToSet.toFixed(1)}s for ${videoId}`);
 
       // For first watch, we should only restore progress if it's allowed
       // (not jumping ahead of what they've seen)
-      if (!isFirstWatch || (isFirstWatch && percent < activityCompletionThreshold)) {
+      if (
+        !isFirstWatch ||
+        (isFirstWatch && percent < activityCompletionThreshold)
+      ) {
         // Set state variables first
         setLastKnownTime(timeToSet);
         setHasAppliedSavedProgress(true);
 
         // Seek to saved position using Vimeo API
         const seekToMessage = JSON.stringify({
-          method: 'setCurrentTime',
-          value: timeToSet
+          method: "setCurrentTime",
+          value: timeToSet,
         });
-        iframeRef.current.contentWindow.postMessage(seekToMessage, '*');
+        iframeRef.current.contentWindow.postMessage(seekToMessage, "*");
 
         // Force double-check after a moment to make sure it really applied
         setTimeout(() => {
           if (iframeRef.current?.contentWindow) {
             // Check current time
             const getCurrentTime = JSON.stringify({
-              method: 'getCurrentTime'
+              method: "getCurrentTime",
             });
-            iframeRef.current.contentWindow.postMessage(getCurrentTime, '*');
+            iframeRef.current.contentWindow.postMessage(getCurrentTime, "*");
 
             // Reapply if needed
-            iframeRef.current.contentWindow.postMessage(seekToMessage, '*');
+            iframeRef.current.contentWindow.postMessage(seekToMessage, "*");
           }
         }, 500);
 
         // Start playback
         const playMessage = JSON.stringify({
-          method: 'play'
+          method: "play",
         });
-        iframeRef.current.contentWindow.postMessage(playMessage, '*');
+        iframeRef.current.contentWindow.postMessage(playMessage, "*");
       }
     }
     // Close the prompt
@@ -125,7 +141,7 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
       if (lastKnownTime > 0 && !hasMarkedComplete) {
         const currentPercent = (lastKnownTime / videoDuration) * 100;
         if (currentPercent > 1 && currentPercent < 99) {
-          console.log(`VimeoPlayer: Saving initial progress for ${videoId}: ${currentPercent.toFixed(1)}%`);
+          //console.log(`VimeoPlayer: Saving initial progress for ${videoId}: ${currentPercent.toFixed(1)}%`);
           onSaveProgress(videoId, currentPercent);
         }
       }
@@ -136,7 +152,7 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
           const currentPercent = (lastKnownTime / videoDuration) * 100;
           // Only save if we have meaningful progress and it's less than completion threshold
           if (currentPercent > 1 && currentPercent < 99) {
-            console.log(`VimeoPlayer: Saving progress (interval) for ${videoId}: ${currentPercent.toFixed(1)}%`);
+            //console.log(`VimeoPlayer: Saving progress (interval) for ${videoId}: ${currentPercent.toFixed(1)}%`);
             onSaveProgress(videoId, currentPercent);
           }
         }
@@ -150,15 +166,27 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
       }
 
       // Save final progress when component unmounts
-      if (onSaveProgress && videoId && lastKnownTime > 0 && videoDuration > 0 && !hasMarkedComplete) {
+      if (
+        onSaveProgress &&
+        videoId &&
+        lastKnownTime > 0 &&
+        videoDuration > 0 &&
+        !hasMarkedComplete
+      ) {
         const finalPercent = (lastKnownTime / videoDuration) * 100;
         if (finalPercent > 1 && finalPercent < 99) {
-          console.log(`VimeoPlayer: Saving final progress for ${videoId}: ${finalPercent.toFixed(1)}%`);
+          //console.log(`VimeoPlayer: Saving final progress for ${videoId}: ${finalPercent.toFixed(1)}%`);
           onSaveProgress(videoId, finalPercent);
         }
       }
     };
-  }, [onSaveProgress, videoId, lastKnownTime, videoDuration, hasMarkedComplete]);
+  }, [
+    onSaveProgress,
+    videoId,
+    lastKnownTime,
+    videoDuration,
+    hasMarkedComplete,
+  ]);
 
   // Effect to handle Vimeo messages including duration responses
   useEffect(() => {
@@ -170,7 +198,7 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
           if (!iframe || !iframe.contentWindow) return;
 
           // Create a style element to inject
-          const styleEl = document.createElement('style');
+          const styleEl = document.createElement("style");
           styleEl.textContent = `
             /* Hide the seek bar's handle to prevent clicking/dragging */
             .vp-progress, .vp-progress-bar {
@@ -215,19 +243,19 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
                 iframe.contentDocument.head.appendChild(styleEl);
               }
             } catch (err) {
-              console.error('VideoPlayer - Error injecting styles:', err);
+              //console.error('VideoPlayer - Error injecting styles:', err);
             }
           };
 
           // Try immediately and also wait for load
           injectStyles();
-          iframe.addEventListener('load', injectStyles);
+          iframe.addEventListener("load", injectStyles);
 
           return () => {
-            iframe.removeEventListener('load', injectStyles);
+            iframe.removeEventListener("load", injectStyles);
           };
         } catch (err) {
-          console.error('VideoPlayer - Error setting up seekbar disabling:', err);
+          //console.error('VideoPlayer - Error setting up seekbar disabling:', err);
         }
       };
 
@@ -235,22 +263,21 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
     }
 
     const handleVimeoMessage = (event: MessageEvent) => {
-      if (!event.origin.includes('vimeo.com')) return;
+      if (!event.origin.includes("vimeo.com")) return;
 
       try {
-        const data = typeof event.data === 'string'
-          ? JSON.parse(event.data)
-          : event.data;
+        const data =
+          typeof event.data === "string" ? JSON.parse(event.data) : event.data;
 
         // Handle duration response - critical for progress restoration
-        if (data.method === 'getDuration' && typeof data.value === 'number') {
+        if (data.method === "getDuration" && typeof data.value === "number") {
           if (data.value > 0) {
-            console.log(`VimeoPlayer: Got duration ${data.value.toFixed(1)}s for ${videoId}`);
+            //console.log(`VimeoPlayer: Got duration ${data.value.toFixed(1)}s for ${videoId}`);
             setVideoDuration(data.value);
 
             // Once we have duration, we can check if we need to apply progress
             if (savedProgress > 0 && !hasAppliedSavedProgress) {
-              console.log('VimeoPlayer: Got duration, now can check for applying progress');
+              //console.log('VimeoPlayer: Got duration, now can check for applying progress');
               if (savedProgress > 5 && savedProgress < 95) {
                 setShowContinuePrompt(true);
               } else {
@@ -261,27 +288,33 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
         }
 
         // Check if getCurrentTime response shows we need to reapply seek position
-        if (data.method === 'getCurrentTime' && typeof data.value === 'number') {
-          if (hasAppliedSavedProgress && Math.abs(data.value - lastKnownTime) > 2) {
-            console.log('VimeoPlayer: Had to reapply progress, time wasn\'t set correctly');
+        if (
+          data.method === "getCurrentTime" &&
+          typeof data.value === "number"
+        ) {
+          if (
+            hasAppliedSavedProgress &&
+            Math.abs(data.value - lastKnownTime) > 2
+          ) {
+            //console.log('VimeoPlayer: Had to reapply progress, time wasn\'t set correctly');
             const seekToMessage = JSON.stringify({
-              method: 'setCurrentTime',
-              value: lastKnownTime
+              method: "setCurrentTime",
+              value: lastKnownTime,
             });
-            iframeRef.current?.contentWindow?.postMessage(seekToMessage, '*');
+            iframeRef.current?.contentWindow?.postMessage(seekToMessage, "*");
           }
         }
 
         // For progress tracking, need to handle timeupdate and playProgress events
-        if (data.event === 'playProgress' || data.event === 'timeupdate') {
+        if (data.event === "playProgress" || data.event === "timeupdate") {
           // Extract percent and time from different event formats
           let percent = 0;
           let currentTime = 0;
 
-          if (data.data && typeof data.data.percent === 'number') {
+          if (data.data && typeof data.data.percent === "number") {
             percent = data.data.percent * 100;
 
-            if (typeof data.data.seconds === 'number') {
+            if (typeof data.data.seconds === "number") {
               currentTime = data.data.seconds;
 
               // Prevent false progress updates in first-time view
@@ -292,13 +325,19 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
                 // Update last known time only if it's natural progression
                 if (currentTime > lastKnownTime && !isSignificantJump) {
                   setLastKnownTime(currentTime);
-                } else if (isSignificantJump && iframeRef.current?.contentWindow) {
+                } else if (
+                  isSignificantJump &&
+                  iframeRef.current?.contentWindow
+                ) {
                   // Revert back to last known position if there's a suspicious jump forward
                   const seekBackMessage = JSON.stringify({
-                    method: 'setCurrentTime',
-                    value: lastKnownTime
+                    method: "setCurrentTime",
+                    value: lastKnownTime,
                   });
-                  iframeRef.current.contentWindow.postMessage(seekBackMessage, '*');
+                  iframeRef.current.contentWindow.postMessage(
+                    seekBackMessage,
+                    "*"
+                  );
 
                   // Show warning
                   setShowSeekWarning(true);
@@ -312,7 +351,11 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
                 setLastKnownTime(currentTime);
               }
             }
-          } else if (data.data && typeof data.data.seconds === 'number' && typeof data.data.duration === 'number') {
+          } else if (
+            data.data &&
+            typeof data.data.seconds === "number" &&
+            typeof data.data.duration === "number"
+          ) {
             currentTime = data.data.seconds;
             percent = (currentTime / data.data.duration) * 100;
 
@@ -321,12 +364,18 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
               const isSignificantJump = currentTime > lastKnownTime + 3;
               if (currentTime > lastKnownTime && !isSignificantJump) {
                 setLastKnownTime(currentTime);
-              } else if (isSignificantJump && iframeRef.current?.contentWindow) {
+              } else if (
+                isSignificantJump &&
+                iframeRef.current?.contentWindow
+              ) {
                 const seekBackMessage = JSON.stringify({
-                  method: 'setCurrentTime',
-                  value: lastKnownTime
+                  method: "setCurrentTime",
+                  value: lastKnownTime,
                 });
-                iframeRef.current.contentWindow.postMessage(seekBackMessage, '*');
+                iframeRef.current.contentWindow.postMessage(
+                  seekBackMessage,
+                  "*"
+                );
                 setShowSeekWarning(true);
                 setTimeout(() => setShowSeekWarning(false), 3000);
                 return;
@@ -345,11 +394,18 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
             }
 
             // Check if video has reached the completion threshold percentage - prevent cheating by checking jump
-            const isNaturalCompletion = !isFirstWatch ||
-              (currentTime >= (videoDuration * activityCompletionThreshold / 100) &&
+            const isNaturalCompletion =
+              !isFirstWatch ||
+              (currentTime >=
+                (videoDuration * activityCompletionThreshold) / 100 &&
                 Math.abs(currentTime - lastKnownTime) < 3);
 
-            if (percent >= activityCompletionThreshold && !hasMarkedComplete && isFirstCompletion && isNaturalCompletion) {
+            if (
+              percent >= activityCompletionThreshold &&
+              !hasMarkedComplete &&
+              isFirstCompletion &&
+              isNaturalCompletion
+            ) {
               if (onComplete) {
                 onComplete();
                 setHasMarkedComplete(true);
@@ -360,26 +416,37 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
         }
 
         // For first watch, prevent seeking ahead of the last watched point
-        if (isFirstWatch && data.event === 'seeked' && iframeRef.current && data.data) {
+        if (
+          isFirstWatch &&
+          data.event === "seeked" &&
+          iframeRef.current &&
+          data.data
+        ) {
           const seekedTo = data.data.seconds || 0;
 
           // If user tried to seek ahead of what they've watched
-          if (seekedTo > lastKnownTime + 2) { // Allow small buffer for seeking
+          if (seekedTo > lastKnownTime + 2) {
+            // Allow small buffer for seeking
             // Show warning
             setShowSeekWarning(true);
             setTimeout(() => setShowSeekWarning(false), 3000);
 
             // Seek back to last known position
             const seekBackMessage = JSON.stringify({
-              method: 'setCurrentTime',
-              value: lastKnownTime
+              method: "setCurrentTime",
+              value: lastKnownTime,
             });
-            iframeRef.current.contentWindow?.postMessage(seekBackMessage, '*');
+            iframeRef.current.contentWindow?.postMessage(seekBackMessage, "*");
           }
         }
 
         // Also handle end event for backward compatibility
-        if (data.event === 'ended' && onComplete && !hasMarkedComplete && isFirstCompletion) {
+        if (
+          data.event === "ended" &&
+          onComplete &&
+          !hasMarkedComplete &&
+          isFirstCompletion
+        ) {
           onComplete();
           setHasMarkedComplete(true);
           setIsFirstCompletion(false);
@@ -387,29 +454,31 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
           setLastKnownTime(0); // Reset for next viewing
         }
       } catch (e) {
-        console.error('VideoPlayer - Error processing Vimeo message:', e);
+        //console.error('VideoPlayer - Error processing Vimeo message:', e);
       }
     };
 
     // Add the event listener
-    window.addEventListener('message', handleVimeoMessage);
+    window.addEventListener("message", handleVimeoMessage);
 
     // Setup Vimeo API communication after iframe is loaded
     if (iframeRef.current && iframeRef.current.contentWindow) {
       // Initialize communication for events
-      ['timeupdate', 'progress', 'playProgress', 'seeked'].forEach(eventName => {
-        const message = JSON.stringify({
-          method: 'addEventListener',
-          value: eventName
-        });
-        iframeRef.current?.contentWindow?.postMessage(message, '*');
-      });
+      ["timeupdate", "progress", "playProgress", "seeked"].forEach(
+        (eventName) => {
+          const message = JSON.stringify({
+            method: "addEventListener",
+            value: eventName,
+          });
+          iframeRef.current?.contentWindow?.postMessage(message, "*");
+        }
+      );
 
       // Get current time to initialize
       const getCurrentTime = JSON.stringify({
-        method: 'getCurrentTime'
+        method: "getCurrentTime",
       });
-      iframeRef.current.contentWindow.postMessage(getCurrentTime, '*');
+      iframeRef.current.contentWindow.postMessage(getCurrentTime, "*");
 
       // Poll for duration more frequently to ensure we get it
       const durationPoll = setInterval(() => {
@@ -420,20 +489,33 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
 
         // Request duration
         const getDuration = JSON.stringify({
-          method: 'getDuration'
+          method: "getDuration",
         });
-        iframeRef.current?.contentWindow?.postMessage(getDuration, '*');
+        iframeRef.current?.contentWindow?.postMessage(getDuration, "*");
       }, 1000);
 
       // Clear interval when component unmounts
       return () => {
-        window.removeEventListener('message', handleVimeoMessage);
+        window.removeEventListener("message", handleVimeoMessage);
         clearInterval(durationPoll);
       };
     }
 
-    return () => window.removeEventListener('message', handleVimeoMessage);
-  }, [onComplete, activityCompletionThreshold, hasMarkedComplete, onProgressUpdate, isFirstWatch, lastKnownTime, seekDisabledMessage, isFirstCompletion, videoDuration, hasAppliedSavedProgress, savedProgress, videoId]);
+    return () => window.removeEventListener("message", handleVimeoMessage);
+  }, [
+    onComplete,
+    activityCompletionThreshold,
+    hasMarkedComplete,
+    onProgressUpdate,
+    isFirstWatch,
+    lastKnownTime,
+    seekDisabledMessage,
+    isFirstCompletion,
+    videoDuration,
+    hasAppliedSavedProgress,
+    savedProgress,
+    videoId,
+  ]);
 
   // Reset component state when video URL changes
   useEffect(() => {
@@ -489,9 +571,12 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
       {showContinuePrompt && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 z-30">
           <div className="bg-gray-800 p-6 rounded-lg max-w-md text-center">
-            <h3 className="text-white text-lg font-semibold mb-4">Continue Watching?</h3>
+            <h3 className="text-white text-lg font-semibold mb-4">
+              Continue Watching?
+            </h3>
             <p className="text-gray-200 mb-4">
-              You were at {savedProgress.toFixed(0)}% of this video. Would you like to continue from where you left off?
+              You were at {savedProgress.toFixed(0)}% of this video. Would you
+              like to continue from where you left off?
             </p>
             <div className="flex justify-center space-x-4">
               <button
@@ -515,4 +600,4 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
       )}
     </div>
   );
-}; 
+};

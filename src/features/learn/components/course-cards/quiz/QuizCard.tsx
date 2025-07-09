@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { useQuery } from '@tanstack/react-query';
-import { getCourseContent, pastSubmissions } from '../../../../../services/enrolled-courses-content/courseContentApis';
-import { useMediaQuery } from '../../../../../hooks/useMediaQuery';
+import { useQuery } from "@tanstack/react-query";
+import {
+  getCourseContent,
+  pastSubmissions,
+} from "../../../../../services/enrolled-courses-content/courseContentApis";
+import { useMediaQuery } from "../../../../../hooks/useMediaQuery";
 import { submitContent } from "../../../../../services/enrolled-courses-content/submitApis";
 import topbg from "../../../../../commonComponents/icons/enrolled-courses/quiz/topbg.png";
 import leftbg from "../../../../../commonComponents/icons/enrolled-courses/quiz/leftbg.png";
@@ -62,7 +65,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
   quizData: injectedData,
   onSubmission,
   onStartNextQuiz,
-  isVisible = true
+  isVisible = true,
 }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [alreadyCompleted, setAlreadyCompleted] = useState(false);
@@ -81,14 +84,18 @@ const QuizCard: React.FC<QuizCardProps> = ({
   const [attemptSwitchLoading, setAttemptSwitchLoading] = useState(false);
   const [totalAttempts, setTotalAttempts] = useState(0);
 
-  const { data: fetchedData, isLoading, error } = useQuery<QuizData>({
-    queryKey: ['quiz', contentId],
+  const {
+    data: fetchedData,
+    isLoading,
+    error,
+  } = useQuery<QuizData>({
+    queryKey: ["quiz", contentId],
     queryFn: () => getCourseContent(1, courseId, contentId),
     enabled: !!contentId && !!courseId && !injectedData,
   });
 
   useEffect(() => {
-    console.log("fetchedData", fetchedData?.status);
+    //console.log("fetchedData", fetchedData?.status);
     if (fetchedData?.status === "complete") {
       setAlreadyCompleted(true);
     }
@@ -96,19 +103,21 @@ const QuizCard: React.FC<QuizCardProps> = ({
 
   // Use either injected data or fetched data
   const data = injectedData || fetchedData;
-  const optionLetters = ['A', 'B', 'C', 'D'];
+  const optionLetters = ["A", "B", "C", "D"];
 
-  //console.log("userAnswers", userAnswers);
+  ////console.log("userAnswers", userAnswers);
   useEffect(() => {
     if (data?.details?.mcqs) {
       setTotalQuestions(data.details.mcqs.length);
       // Initialize user answers array
-      setUserAnswers(data.details.mcqs.map((_, index) => ({
-        questionId: data.details.mcqs[index].id,
-        isCorrect: false,
-        questionIndex: index,
-        selectedOption: null,
-      })));
+      setUserAnswers(
+        data.details.mcqs.map((_, index) => ({
+          questionId: data.details.mcqs[index].id,
+          isCorrect: false,
+          questionIndex: index,
+          selectedOption: null,
+        }))
+      );
     }
   }, [data]);
 
@@ -120,7 +129,11 @@ const QuizCard: React.FC<QuizCardProps> = ({
         totalSeconds -= 1;
         const minutesLeft = Math.floor(totalSeconds / 60);
         const secondsLeft = totalSeconds % 60;
-        setFormattedTime(`${minutesLeft.toString().padStart(2, '0')}:${secondsLeft.toString().padStart(2, '0')}`);
+        setFormattedTime(
+          `${minutesLeft.toString().padStart(2, "0")}:${secondsLeft
+            .toString()
+            .padStart(2, "0")}`
+        );
       } else {
         clearInterval(interval);
       }
@@ -135,7 +148,11 @@ const QuizCard: React.FC<QuizCardProps> = ({
       pastSubmissions(1, courseId, contentId)
         .then((data) => {
           // Sort by created_at descending, take first 8
-          const sorted = [...data].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          const sorted = [...data].sort(
+            (a, b) =>
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime()
+          );
           setTotalAttempts(sorted.length);
           setPastAttempts(sorted.slice(0, 8));
           setSelectedAttemptIndex(0); // latest
@@ -146,8 +163,10 @@ const QuizCard: React.FC<QuizCardProps> = ({
   }, [quizCompleted, alreadyCompleted, courseId, contentId]);
 
   // Use selected attempt's answers for review
-  const reviewUserAnswers = quizCompleted || alreadyCompleted ? pastAttempts[selectedAttemptIndex]?.custom_dimension?.userAnswers
-    : userAnswers;
+  const reviewUserAnswers =
+    quizCompleted || alreadyCompleted
+      ? pastAttempts[selectedAttemptIndex]?.custom_dimension?.userAnswers
+      : userAnswers;
 
   if (isLoading || (alreadyCompleted && loadingAttempts)) {
     return (
@@ -233,25 +252,31 @@ const QuizCard: React.FC<QuizCardProps> = ({
   const handleRetryQuiz = () => {
     setQuizCompleted(false);
     setAlreadyCompleted(false);
-    setUserAnswers(data.details.mcqs.map((_, index) => ({
-      questionId: data.details.mcqs[index].id,
-      questionIndex: index,
-      selectedOption: null,
-      isCorrect: false
-    })));
+    setUserAnswers(
+      data.details.mcqs.map((_, index) => ({
+        questionId: data.details.mcqs[index].id,
+        questionIndex: index,
+        selectedOption: null,
+        isCorrect: false,
+      }))
+    );
     setCurrentQuestionIndex(0);
     setSelectedOption(null);
-  }
+  };
 
   const mcqs = data.details.mcqs;
   const currentQuestion = mcqs[currentQuestionIndex];
 
-  const updateUserAnswer = (index: number, option: string, isCorrect: boolean) => {
+  const updateUserAnswer = (
+    index: number,
+    option: string,
+    isCorrect: boolean
+  ) => {
     const updatedAnswers = [...userAnswers];
     updatedAnswers[index] = {
       ...updatedAnswers[index],
       selectedOption: option,
-      isCorrect
+      isCorrect,
     };
     setUserAnswers(updatedAnswers);
   };
@@ -260,23 +285,23 @@ const QuizCard: React.FC<QuizCardProps> = ({
     setSelectedOption(option);
     const isCorrect = option === currentQuestion.correct_option;
     updateUserAnswer(currentQuestionIndex, option, isCorrect);
-    //console.log("option", option);
+    ////console.log("option", option);
     // Update userAnswers state
   };
 
   const handleNext = () => {
     // Mark as submitted internally to track answers
     setSubmitted(true);
-    setTotalSubmissions(prev => prev + 1);
+    setTotalSubmissions((prev) => prev + 1);
 
     const isCorrect = selectedOption === currentQuestion.correct_option;
-    //console.log("isCorrect", isCorrect);
-    //console.log("selectedOption", selectedOption);
-    //console.log("currentQuestion", currentQuestion);
+    ////console.log("isCorrect", isCorrect);
+    ////console.log("selectedOption", selectedOption);
+    ////console.log("currentQuestion", currentQuestion);
     // Update userAnswers state with selection
     updateUserAnswer(currentQuestionIndex, selectedOption!, isCorrect);
 
-    //console.log("userAnswers", userAnswers);
+    ////console.log("userAnswers", userAnswers);
 
     // Notify parent component about submission
     if (onSubmission) {
@@ -293,9 +318,9 @@ const QuizCard: React.FC<QuizCardProps> = ({
 
   const handleFinish = () => {
     setSubmitted(true);
-    setTotalSubmissions(prev => prev + 1);
-    //console.log("selectedOption", selectedOption);
-    //console.log("currentQuestion", currentQuestion);
+    setTotalSubmissions((prev) => prev + 1);
+    ////console.log("selectedOption", selectedOption);
+    ////console.log("currentQuestion", currentQuestion);
     const isCorrect = selectedOption === currentQuestion.correct_option;
 
     // Update userAnswers state with selection
@@ -307,7 +332,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
     }
 
     finishQuiz();
-  }
+  };
 
   const navigateToNext = () => {
     const nextIndex = currentQuestionIndex + 1;
@@ -318,12 +343,14 @@ const QuizCard: React.FC<QuizCardProps> = ({
 
   const finishQuiz = async () => {
     // Calculate total score when quiz is completed
-    const response = await submitContent(1, courseId, contentId, "Quiz", { userAnswers });
-    //console.log("response", response);
+    const response = await submitContent(1, courseId, contentId, "Quiz", {
+      userAnswers,
+    });
+    ////console.log("response", response);
     if (response === 201) {
       setQuizCompleted(true);
     } else {
-      //console.log("error", response);
+      ////console.log("error", response);
     }
   };
 
@@ -342,7 +369,6 @@ const QuizCard: React.FC<QuizCardProps> = ({
       setSubmitted(!!userAnswers[currentQuestionIndex - 1].selectedOption);
     }
   };
-
 
   const getQuestionButtonStyle = (index: number) => {
     const answer = userAnswers[index];
@@ -391,7 +417,8 @@ const QuizCard: React.FC<QuizCardProps> = ({
               <span>{totalSubmissions} Submissions</span>
             </div>
             <p className="text-xs text-gray-500">
-              {data.details.instructions || "Solve real world questions and gain insight knowledge."}
+              {data.details.instructions ||
+                "Solve real world questions and gain insight knowledge."}
             </p>
           </div>
           <span className="text-[14px]">⏱ {formattedTime}</span>
@@ -406,8 +433,14 @@ const QuizCard: React.FC<QuizCardProps> = ({
                   navigateToQuestion(index);
                 }
               }}
-              className={`py-2 rounded-md border text-sm ${getQuestionButtonStyle(index)}`}
-              disabled={submitted && currentQuestionIndex !== index && !userAnswers[index].selectedOption}
+              className={`py-2 rounded-md border text-sm ${getQuestionButtonStyle(
+                index
+              )}`}
+              disabled={
+                submitted &&
+                currentQuestionIndex !== index &&
+                !userAnswers[index].selectedOption
+              }
             >
               {index + 1}
             </button>
@@ -422,20 +455,22 @@ const QuizCard: React.FC<QuizCardProps> = ({
       <div className="flex w-full">
         {/* Left Sidebar: Question Numbers */}
         <div className="w-1/3 min-w-[120px] bg-white rounded-lg md:mr-8">
-          <h3 className="text-2xl font-semibold mb-4 text-[#255C79]">Your Quiz Review</h3>
+          <h3 className="text-2xl font-semibold mb-4 text-[#255C79]">
+            Your Quiz Review
+          </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {userAnswersArg.map((answer, idx) => {
               const isCurrent = idx === currentQuestionIndex;
-              let btnClass = '';
+              let btnClass = "";
               if (answer.selectedOption) {
                 btnClass = answer.isCorrect
-                  ? 'bg-green-100 border-green-500 text-green-700'
-                  : 'bg-red-100 border-red-500 text-red-700';
+                  ? "bg-green-100 border-green-500 text-green-700"
+                  : "bg-red-100 border-red-500 text-red-700";
               } else {
-                btnClass = 'bg-gray-100 border-gray-300 text-gray-400';
+                btnClass = "bg-gray-100 border-gray-300 text-gray-400";
               }
               if (isCurrent) {
-                btnClass += ' ring-2 ring-[#255C79]';
+                btnClass += " ring-2 ring-[#255C79]";
               }
               return (
                 <button
@@ -452,49 +487,71 @@ const QuizCard: React.FC<QuizCardProps> = ({
         {/* Right Panel: Question Review */}
         <div className="flex-1 bg-white rounded-lg p-6">
           <div className="flex justify-between items-center mb-4">
-            <span className="text-sm text-gray-500">Question {currentQuestionIndex + 1}</span>
+            <span className="text-sm text-gray-500">
+              Question {currentQuestionIndex + 1}
+            </span>
             <span className="text-xs bg-blue-100 text-[#255C79] px-2 py-1 rounded">
               {currentQuestion.difficulty_level}
             </span>
           </div>
-          <h3 className="text-lg font-semibold mb-4">{currentQuestion.question_text}</h3>
-          <div className={`grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-8`}>
+          <h3 className="text-lg font-semibold mb-4">
+            {currentQuestion.question_text}
+          </h3>
+          <div
+            className={`grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-8`}
+          >
             {currentQuestion.options.map((option, idx) => {
               const optionLetter = optionLetters[idx];
-              const isSelected = userAnswersArg[currentQuestionIndex].selectedOption === optionLetter;
+              const isSelected =
+                userAnswersArg[currentQuestionIndex].selectedOption ===
+                optionLetter;
               const isCorrect = optionLetter === currentQuestion.correct_option;
               return (
                 <div
                   key={idx}
-                  className={`border rounded-lg p-3 md:p-4 text-sm md:text-base flex items-center ${isSelected && isCorrect
-                    ? "border-green-600 bg-green-50"
-                    : isSelected && !isCorrect
+                  className={`border rounded-lg p-3 md:p-4 text-sm md:text-base flex items-center ${
+                    isSelected && isCorrect
+                      ? "border-green-600 bg-green-50"
+                      : isSelected && !isCorrect
                       ? "border-red-600 bg-red-50"
                       : isCorrect
-                        ? "border-green-600 bg-green-50"
-                        : "bg-white border-gray-200"
-                    }`}
+                      ? "border-green-600 bg-green-50"
+                      : "bg-white border-gray-200"
+                  }`}
                 >
-                  <span className="font-medium mr-2">{optionLetter}.</span> {option}
+                  <span className="font-medium mr-2">{optionLetter}.</span>{" "}
+                  {option}
                   {isCorrect && <span className="ml-2 text-green-600">✓</span>}
-                  {isSelected && !isCorrect && <span className="ml-2 text-red-600">✗</span>}
+                  {isSelected && !isCorrect && (
+                    <span className="ml-2 text-red-600">✗</span>
+                  )}
                 </div>
               );
             })}
           </div>
           <div className="mb-4 bg-gray-50 rounded-lg">
             <div className="text-sm font-medium text-gray-700">
-              {userAnswersArg[currentQuestionIndex].isCorrect ?
-                <span className="text-green-600">Your response was correct!</span> :
-                <span className="text-red-600">Your response was incorrect. The correct answer is {currentQuestion.correct_option}.</span>
-              }
+              {userAnswersArg[currentQuestionIndex].isCorrect ? (
+                <span className="text-green-600">
+                  Your response was correct!
+                </span>
+              ) : (
+                <span className="text-red-600">
+                  Your response was incorrect. The correct answer is{" "}
+                  {currentQuestion.correct_option}.
+                </span>
+              )}
             </div>
           </div>
           {/* Explanation Section */}
           {currentQuestion.explanation && (
             <div className="mb-4 p-4 bg-white border rounded-lg">
-              <div className="text-lg font-semibold text-gray-700 mb-1">Explanation</div>
-              <div className="text-md text-gray-700">{currentQuestion.explanation}</div>
+              <div className="text-lg font-semibold text-gray-700 mb-1">
+                Explanation
+              </div>
+              <div className="text-md text-gray-700">
+                {currentQuestion.explanation}
+              </div>
             </div>
           )}
           <div className="flex justify-between mt-6">
@@ -534,42 +591,63 @@ const QuizCard: React.FC<QuizCardProps> = ({
   if (quizCompleted || alreadyCompleted) {
     // Calculate score for selected attempt
     const selectedAttemptUserAnswers = reviewUserAnswers || [];
-    const selectedAttemptScore = selectedAttemptUserAnswers.filter((a: any) => a.isCorrect).length;
+    const selectedAttemptScore = selectedAttemptUserAnswers.filter(
+      (a: any) => a.isCorrect
+    ).length;
     const selectedAttemptTotal = selectedAttemptUserAnswers.length;
 
     return (
       <div className="mb-8">
-        {alreadyCompleted && <div className="flex items-center justify-between w-full bg-transparent py-4">
-          <div className="flex items-center gap-4">
-            <span className="text-3xl font-bold text-[#222]">Quiz {data?.order || ''}</span>
-            <span className="px-8 py-1 border border-gray-500 rounded-lg text-sm text-gray-500 ">{mcqs.length} Questions</span>
-            <span className="px-8 py-1 border border-gray-500 rounded-lg text-sm text-gray-500 ">{totalAttempts} Submissions</span>
-          </div>
-          <button
-            className="md:px-28 py-3 bg-[#255C79] text-white rounded-lg font-semibold text-base hover:bg-[#1a4a5f] transition"
-            onClick={handleRetryQuiz}
-          >
-            Retry the Quiz
-          </button>
-        </div>}
-        {/* Top Banner */}
-        {quizCompleted && <div
-          className="flex flex-col items-center justify-center py-8 px-4 md:px-0 w-full rounded-3xl"
-          style={{
-            backgroundImage: `url(${topbg})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-          }}
-        >
-          <div className="flex flex-col items-center">
-            <div>
-              <img src={tickicon} alt="tickicon" className="w-50 h-40" loading="lazy" />
+        {alreadyCompleted && (
+          <div className="flex items-center justify-between w-full bg-transparent py-4">
+            <div className="flex items-center gap-4">
+              <span className="text-3xl font-bold text-[#222]">
+                Quiz {data?.order || ""}
+              </span>
+              <span className="px-8 py-1 border border-gray-500 rounded-lg text-sm text-gray-500 ">
+                {mcqs.length} Questions
+              </span>
+              <span className="px-8 py-1 border border-gray-500 rounded-lg text-sm text-gray-500 ">
+                {totalAttempts} Submissions
+              </span>
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2 ">Quiz Submitted Successfully</h2>
-            <button className="mt-4 px-6 py-2 bg-white text-[#255C79] rounded-md font-medium text-sm md:text-base hover:bg-[#1a4a5f]">View Overall Results</button>
+            <button
+              className="md:px-28 py-3 bg-[#255C79] text-white rounded-lg font-semibold text-base hover:bg-[#1a4a5f] transition"
+              onClick={handleRetryQuiz}
+            >
+              Retry the Quiz
+            </button>
           </div>
-        </div>}
+        )}
+        {/* Top Banner */}
+        {quizCompleted && (
+          <div
+            className="flex flex-col items-center justify-center py-8 px-4 md:px-0 w-full rounded-3xl"
+            style={{
+              backgroundImage: `url(${topbg})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+            }}
+          >
+            <div className="flex flex-col items-center">
+              <div>
+                <img
+                  src={tickicon}
+                  alt="tickicon"
+                  className="w-50 h-40"
+                  loading="lazy"
+                />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2 ">
+                Quiz Submitted Successfully
+              </h2>
+              <button className="mt-4 px-6 py-2 bg-white text-[#255C79] rounded-md font-medium text-sm md:text-base hover:bg-[#1a4a5f]">
+                View Overall Results
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Second Row: Score and Next Challenge */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 py-6 md:py-8">
@@ -580,30 +658,43 @@ const QuizCard: React.FC<QuizCardProps> = ({
               className="absolute -left-10 top-[-250px] w-[150%] h-[300%] rotate-[-25deg] z-0 rounded-3xl"
               style={{
                 backgroundImage: `url(${leftbg})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
                 opacity: 0.8, // Adjust this to control visibility
               }}
             ></div>
 
             {/*left Content */}
             <div className="relative z-10 flex flex-col justify-between h-full">
-              <div className="text-3xl font-semibold text-[#12293A] mt-1">Your Score</div>
+              <div className="text-3xl font-semibold text-[#12293A] mt-1">
+                Your Score
+              </div>
 
               <div className="md:text-8xl font-bold text-[#2A8CB0]">
                 {selectedAttemptScore}
-                <span className="text-5xl text-[#12293A]"> out of {selectedAttemptTotal}</span> </div>
+                <span className="text-5xl text-[#12293A]">
+                  {" "}
+                  out of {selectedAttemptTotal}
+                </span>{" "}
+              </div>
             </div>
             <div>
-              <img src={trophy} alt="trophy" className="relative w-60 h-50 rotate-[-30deg] top-[60px] left-[50px]" loading="lazy" />
+              <img
+                src={trophy}
+                alt="trophy"
+                className="relative w-60 h-50 rotate-[-30deg] top-[60px] left-[50px]"
+                loading="lazy"
+              />
             </div>
           </div>
 
           {/* Next Challenge Section */}
           <div className="flex flex-row justify-between bg-[#D7EFF6] rounded-lg p-6 shadow">
             <div className="flex flex-col justify-between">
-              <div className="md:text-3xl font-semibold text-[#12293A]">Ready for Your Next Challenge?</div>
+              <div className="md:text-3xl font-semibold text-[#12293A]">
+                Ready for Your Next Challenge?
+              </div>
               <button
                 className="px-6 py-4 bg-[#255C79] text-white rounded-md font-medium text-sm md:text-base hover:bg-[#1a4a5f]"
                 onClick={onStartNextQuiz}
@@ -612,7 +703,12 @@ const QuizCard: React.FC<QuizCardProps> = ({
               </button>
             </div>
             <div>
-              <img src={challenge} alt="trophy" className="relative w-70 h-50 left-[40px]" loading="lazy" />
+              <img
+                src={challenge}
+                alt="trophy"
+                className="relative w-70 h-50 left-[40px]"
+                loading="lazy"
+              />
             </div>
           </div>
         </div>
@@ -627,13 +723,17 @@ const QuizCard: React.FC<QuizCardProps> = ({
                 key={attempt.id}
                 onClick={() => handleAttemptSwitch(idx)}
                 className={`border rounded-lg px-6 py-3 text-left transition font-semibold shadow-sm
-                  ${idx === selectedAttemptIndex
-                    ? 'border-blue-400 bg-blue-50 text-[#12293A] ring-2 ring-blue-200'
-                    : 'border-gray-200 bg-white text-gray-500 hover:border-blue-300'}
+                  ${
+                    idx === selectedAttemptIndex
+                      ? "border-blue-400 bg-blue-50 text-[#12293A] ring-2 ring-blue-200"
+                      : "border-gray-200 bg-white text-gray-500 hover:border-blue-300"
+                  }
                 `}
               >
                 <div className="text-base font-semibold">Attempt {idx + 1}</div>
-                <div className="text-xs text-gray-400">Date: {new Date(attempt.created_at).toLocaleDateString()}</div>
+                <div className="text-xs text-gray-400">
+                  Date: {new Date(attempt.created_at).toLocaleDateString()}
+                </div>
               </button>
             ))
           )}
@@ -661,7 +761,10 @@ const QuizCard: React.FC<QuizCardProps> = ({
                 <div className="h-6 w-2/3 bg-gray-200 rounded mb-6" />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-8">
                   {Array.from({ length: 4 }).map((_, idx) => (
-                    <div key={idx} className="h-10 w-full bg-gray-200 rounded" />
+                    <div
+                      key={idx}
+                      className="h-10 w-full bg-gray-200 rounded"
+                    />
                   ))}
                 </div>
                 <div className="mb-4 bg-gray-100 rounded-lg h-10 w-full" />
@@ -684,12 +787,16 @@ const QuizCard: React.FC<QuizCardProps> = ({
   }
 
   return (
-    <div className={`${isMobile ? 'flex flex-col w-full' : 'flex gap-6 ml-2'}`}>
+    <div className={`${isMobile ? "flex flex-col w-full" : "flex gap-6 ml-2"}`}>
       {/* Left Panel - Hidden on mobile */}
       {!isSidebarContentOpen && !isMobile && renderSidebar()}
 
       {/* Right Panel */}
-      <div className={`${isMobile ? "w-full pb-2" : (isSidebarContentOpen ? "w-full" : "w-2/3")}`}>
+      <div
+        className={`${
+          isMobile ? "w-full pb-2" : isSidebarContentOpen ? "w-full" : "w-2/3"
+        }`}
+      >
         <div className="mb-4">
           <h2 className="text-lg font-semibold text-[#255C79] mb-1">
             {data.content_title}
@@ -716,7 +823,11 @@ const QuizCard: React.FC<QuizCardProps> = ({
           {currentQuestion.question_text}
         </h3>
 
-        <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'} gap-3 md:gap-4 mb-4 md:mb-6`}>
+        <div
+          className={`grid ${
+            isMobile ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"
+          } gap-3 md:gap-4 mb-4 md:mb-6`}
+        >
           {currentQuestion.options.map((option, idx) => {
             const optionLetter = optionLetters[idx];
             const isSelected = selectedOption === optionLetter;
@@ -725,12 +836,14 @@ const QuizCard: React.FC<QuizCardProps> = ({
               <div
                 key={idx}
                 onClick={() => handleOptionSelect(optionLetter)}
-                className={`cursor-pointer border rounded-lg p-3 md:p-4 transition text-sm md:text-base ${isSelected
-                  ? "border-[#255C79] bg-blue-50"
-                  : "bg-white border-gray-200"
-                  }`}
+                className={`cursor-pointer border rounded-lg p-3 md:p-4 transition text-sm md:text-base ${
+                  isSelected
+                    ? "border-[#255C79] bg-blue-50"
+                    : "bg-white border-gray-200"
+                }`}
               >
-                <span className="font-medium mr-2">{optionLetter}.</span> {option}
+                <span className="font-medium mr-2">{optionLetter}.</span>{" "}
+                {option}
               </div>
             );
           })}
@@ -750,31 +863,37 @@ const QuizCard: React.FC<QuizCardProps> = ({
             <button
               onClick={handleNext}
               disabled={selectedOption === null}
-              className={`px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium ml-auto ${selectedOption === null
-                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                : "bg-[#255C79] text-white hover:bg-[#1a4a5f]"
-                }`}
+              className={`px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium ml-auto ${
+                selectedOption === null
+                  ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                  : "bg-[#255C79] text-white hover:bg-[#1a4a5f]"
+              }`}
             >
               Next
             </button>
           )}
 
-          {currentQuestionIndex === mcqs.length - 1 && userAnswers.some(answer => answer.selectedOption === null) && (
-            <span className="ml-auto text-xs text-red-500 font-medium">Attempt all questions before finishing quiz</span>
-          )}
+          {currentQuestionIndex === mcqs.length - 1 &&
+            userAnswers.some((answer) => answer.selectedOption === null) && (
+              <span className="ml-auto text-xs text-red-500 font-medium">
+                Attempt all questions before finishing quiz
+              </span>
+            )}
 
-          {currentQuestionIndex === mcqs.length - 1 && userAnswers.every(answer => answer.selectedOption !== null) && (
-            <button
-              onClick={handleFinish}
-              disabled={selectedOption === null}
-              className={`px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium ml-auto ${selectedOption === null
-                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                : "bg-[#255C79] text-white hover:bg-[#1a4a5f]"
+          {currentQuestionIndex === mcqs.length - 1 &&
+            userAnswers.every((answer) => answer.selectedOption !== null) && (
+              <button
+                onClick={handleFinish}
+                disabled={selectedOption === null}
+                className={`px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium ml-auto ${
+                  selectedOption === null
+                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                    : "bg-[#255C79] text-white hover:bg-[#1a4a5f]"
                 }`}
-            >
-              Finish Quiz
-            </button>
-          )}
+              >
+                Finish Quiz
+              </button>
+            )}
         </div>
 
         {/* Timer */}

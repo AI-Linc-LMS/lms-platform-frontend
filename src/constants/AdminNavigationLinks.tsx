@@ -68,24 +68,12 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
   },
   {
     id: 5,
-    title: "Referals",
+    title: "Referrals",
     links: [
       {
         id: 1,
-        title: "Referals",
+        title: "Referrals",
         href: "/admin/referals",
-        icon: <ReferalsController />,
-      },
-    ],
-  },
-  {
-    id: 6,
-    title: "Assessment Referrals",
-    links: [
-      {
-        id: 1,
-        title: "Assessment Referrals",
-        href: "/admin/assessment-referrals",
         icon: <ReferalsController />,
       },
     ],

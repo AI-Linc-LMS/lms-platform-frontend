@@ -98,16 +98,13 @@ function Otp() {
 
     setLoading(true);
     try {
-      console.log("enteredOtp", enteredOtp);
+      //console.log("enteredOtp", enteredOtp);
 
       // Call the actual OTP verification API
       const clientId = import.meta.env.VITE_CLIENT_ID;
       await verifyOtp(enteredOtp, clientId, email);
 
-      success(
-        "OTP Verified",
-        "Your account has been successfully verified!"
-      );
+      success("OTP Verified", "Your account has been successfully verified!");
       navigate("/login");
 
       // Clean up localStorage
@@ -116,7 +113,7 @@ function Otp() {
       // Navigate to next page after successful verification
       // navigate("/dashboard");
     } catch (err) {
-      console.error("OTP verification error:", err);
+      //console.error("OTP verification error:", err);
       const errorMessage =
         err instanceof Error
           ? err.message
@@ -148,7 +145,7 @@ function Otp() {
         `A new OTP has been sent to ${email}. Please check your email.`
       );
     } catch (err: unknown) {
-      console.error("Resend OTP error:", err);
+      //console.error("Resend OTP error:", err);
 
       // Reset timer on error
       setTimeLeft(0);
@@ -245,10 +242,11 @@ function Otp() {
               <button
                 onClick={handleResendOtp}
                 disabled={isResendDisabled || resendLoading}
-                className={`font-medium ${isResendDisabled || resendLoading
+                className={`font-medium ${
+                  isResendDisabled || resendLoading
                     ? "text-gray-400 cursor-not-allowed"
                     : "text-black hover:underline"
-                  }`}
+                }`}
               >
                 {resendLoading ? "Sending..." : "Resend OTP"}
               </button>
