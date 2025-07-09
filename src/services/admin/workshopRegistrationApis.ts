@@ -71,3 +71,15 @@ export const editRegistration = async (clientId: string, registrationId: string,
     throw error;
   }
 }
+
+export const uploadAttendanceData = async (clientId: string, attendanceData: any[]) => {
+  try {
+    const response = await axiosInstance.post(`/api/clients/${clientId}/workshop-attendance/`, {
+      attendance_data: attendanceData
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to upload attendance data:', error);
+    throw error;
+  }
+}

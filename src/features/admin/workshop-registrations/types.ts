@@ -6,6 +6,7 @@ export interface WorkshopRegistrationData {
   registered_at: string;
   workshop_name: string;
   session_number: string | null;
+  session_date: string | null;
   referal_code: string | null;
   attended_webinars: string | boolean;
   is_assessment_attempted: string;
@@ -16,6 +17,7 @@ export interface WorkshopRegistrationData {
   first_call_comment: string;
   second_call_status: string;
   second_call_comment: string;
+  follow_up_comment: string;
   amount_paid: number;
   amount_pending: string;
   updated_at?: string;
@@ -44,6 +46,7 @@ export interface FilterState {
   phone_number: string;
   workshop_name: string;
   session_number: string;
+  session_date: string;
   referal_code: string;
   attended_webinars: string;
   is_assessment_attempted: string;
@@ -54,6 +57,7 @@ export interface FilterState {
   first_call_comment: string;
   second_call_status: string;
   second_call_comment: string;
+  follow_up_comment: string;
   amount_paid: string;
   amount_pending: string;
   score: string;
@@ -72,4 +76,22 @@ export interface FilterState {
     start: string;
     end: string;
   };
+} 
+
+export interface AttendanceData {
+  name: string;
+  email: string;
+  phone_number: string;
+  workshop_name: string;
+  session_number: string;
+  attended: boolean;
+  attendance_date: string;
+  notes?: string;
+}
+
+export interface CSVUploadResponse {
+  success: boolean;
+  message: string;
+  processed_count?: number;
+  errors?: string[];
 } 
