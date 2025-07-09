@@ -14,6 +14,7 @@ import {
   WorkshopTableRow,
   NoDataState,
   Pagination,
+  ActiveFiltersDisplay,
 } from "./components";
 
 const WorkshopRegistration = () => {
@@ -23,6 +24,83 @@ const WorkshopRegistration = () => {
   const pageSize = 15;
   const [filters, setFilters] = useState<FilterState>(getInitialFilterState());
   const [openFilter, setOpenFilter] = useState<keyof FilterState | null>(null);
+
+  // Column visibility state
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+
+  // Permanent columns that are always visible
+  const permanentColumns = [
+    "name",
+    "email",
+    "phone_number",
+    "referal_code",
+    "is_course_amount_paid",
+    "registered_at",
+  ];
+
+  // Column configuration for optional columns
+  const columnConfigs = [
+    { key: "workshop_name", label: "Workshop Name", defaultVisible: true },
+    { key: "session_number", label: "Session", defaultVisible: true },
+    { key: "session_date", label: "Session Date", defaultVisible: true },
+    { key: "attended_webinars", label: "Attendee", defaultVisible: true },
+    {
+      key: "is_assessment_attempted",
+      label: "Assessment",
+      defaultVisible: true,
+    },
+    {
+      key: "is_certificate_amount_paid",
+      label: "Certificate Paid",
+      defaultVisible: true,
+    },
+    {
+      key: "is_prebooking_amount_paid",
+      label: "Prebooking Paid",
+      defaultVisible: true,
+    },
+    {
+      key: "first_call_status",
+      label: "1st Call Status",
+      defaultVisible: true,
+    },
+    {
+      key: "first_call_comment",
+      label: "1st Call Comment",
+      defaultVisible: true,
+    },
+    {
+      key: "second_call_status",
+      label: "2nd Call Status",
+      defaultVisible: true,
+    },
+    {
+      key: "second_call_comment",
+      label: "2nd Call Comment",
+      defaultVisible: true,
+    },
+    {
+      key: "follow_up_comment",
+      label: "Follow Up Comment",
+      defaultVisible: true,
+    },
+    { key: "amount_paid", label: "Amount Paid", defaultVisible: true },
+    { key: "amount_pending", label: "Amount Pending", defaultVisible: true },
+    { key: "score", label: "Score", defaultVisible: true },
+    {
+      key: "offered_scholarship_percentage",
+      label: "Scholarship %",
+      defaultVisible: true,
+    },
+    { key: "offered_amount", label: "Offered Amount", defaultVisible: true },
+    {
+      key: "assessment_status",
+      label: "Assessment Status",
+      defaultVisible: true,
+    },
+    { key: "updated_at", label: "Updated At", defaultVisible: true },
+    { key: "submitted_at", label: "Submitted At", defaultVisible: true },
+  ];
 
   // Create individual refs for each filter column
   const filterRefs = {
@@ -97,9 +175,12 @@ const WorkshopRegistration = () => {
   const clearFilter = (column: keyof FilterState) => {
     setFilters((prev) => ({
       ...prev,
-      [column]: (column === "registered_at" || column === "submitted_at" || column === "updated_at") 
-        ? { start: "", end: "" } 
-        : "",
+      [column]:
+        column === "registered_at" ||
+        column === "submitted_at" ||
+        column === "updated_at"
+          ? { start: "", end: "" }
+          : "",
     }));
   };
 
@@ -127,7 +208,18 @@ const WorkshopRegistration = () => {
         onExport={handleExport}
         hasActiveFilters={hasActiveFilters(filters)}
         onClearAllFilters={clearAllFilters}
+        clientId={clientId}
+        columnConfigs={columnConfigs}
+        visibleColumns={visibleColumns}
+        onColumnVisibilityChange={setVisibleColumns}
       />
+
+      <ActiveFiltersDisplay
+        filters={filters}
+        onClearFilter={clearFilter}
+        onClearAllFilters={clearAllFilters}
+      />
+
       <div className="mb-4 text-sm text-gray-600">
         {hasActiveFilters(filters) || search ? (
           <>
@@ -143,7 +235,7 @@ const WorkshopRegistration = () => {
       <div className="flex flex-col bg-white shadow rounded flex-1 min-h-0">
         {/* Scrollable table container */}
         <div className="flex-1 overflow-auto min-h-0">
-          <table className="w-full text-sm text-left min-w-[1400px]">
+          <table className="w-full text-sm text-left">
             <WorkshopTableHeader
               filters={filters}
               openFilter={openFilter}
@@ -154,11 +246,18 @@ const WorkshopRegistration = () => {
               onUpdateFilter={updateFilter}
               onClearFilter={clearFilter}
               data={workshopData}
+              visibleColumns={visibleColumns}
+              permanentColumns={permanentColumns}
             />
             <tbody>
               {paginatedData.length > 0 ? (
                 paginatedData.map((entry) => (
-                  <WorkshopTableRow key={entry.id} entry={entry} />
+                  <WorkshopTableRow
+                    key={entry.id}
+                    entry={entry}
+                    visibleColumns={visibleColumns}
+                    permanentColumns={permanentColumns}
+                  />
                 ))
               ) : (
                 <NoDataState hasActiveFilters={hasActiveFilters(filters)} />

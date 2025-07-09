@@ -30,12 +30,12 @@ export const AuthRedirectProvider: React.FC<AuthRedirectProviderProps> = ({
   const [intendedPath, setIntendedPathState] = useState<string | null>(null);
 
   const setIntendedPath = (path: string | null) => {
-    console.log("[AuthRedirectContext] Setting intended path:", path);
+    //console.log("[AuthRedirectContext] Setting intended path:", path);
     setIntendedPathState(path);
   };
 
   const clearIntendedPath = () => {
-    console.log("[AuthRedirectContext] Clearing intended path");
+    //console.log("[AuthRedirectContext] Clearing intended path");
     setIntendedPathState(null);
   };
 

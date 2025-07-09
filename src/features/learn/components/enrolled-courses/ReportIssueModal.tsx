@@ -23,13 +23,10 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
   const reportMutation = useMutation({
     mutationFn: () => reportIssue(clientId, subject, description),
     onSuccess: () => {
-      setIsSuccess(true);
-      setCountdown(5);
-    },
-    onError: (error) => {
-      // Handle error - you might want to show a toast notification here
-      console.error("Failed to report issue:", error);
-    },
+      setSubject("");
+      setDescription("");
+      onClose();
+    }
   });
 
   // Handle countdown and auto-close

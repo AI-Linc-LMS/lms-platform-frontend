@@ -9,7 +9,10 @@ import AddSubjectiveContent from "./AddSubjectiveContent";
 import AddQuizContent from "./AddQuizContent";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ContentData } from "../../../../../services/admin/courseApis";
-import { addSubmoduleContent, getSubmoduleContent } from "../../../../../services/admin/courseApis";
+import {
+  addSubmoduleContent,
+  getSubmoduleContent,
+} from "../../../../../services/admin/courseApis";
 import { ContentIdType } from "../../../../../services/admin/contentApis";
 import { useToast } from "../../../../../contexts/ToastContext";
 
@@ -60,19 +63,22 @@ const ContentManager: React.FC<{
     mutationFn: (data: ContentData) =>
       addSubmoduleContent(clientId, courseId, submoduleId, data),
     onSuccess: () => {
-      success("Content Saved", "Content has been successfully added to the submodule!");
+      success(
+        "Content Saved",
+        "Content has been successfully added to the submodule!"
+      );
       setShowAddNew(false);
-      
+
       // Invalidate and refetch relevant queries to update the UI immediately
       queryClient.invalidateQueries({
         queryKey: ["submodule-content", clientId, courseId, submoduleId],
       });
-      
+
       // Also invalidate the submodule data query used by the learning interface
       queryClient.invalidateQueries({
         queryKey: ["submodule", clientId, courseId, submoduleId],
       });
-      
+
       // Invalidate course modules query to update counts
       queryClient.invalidateQueries({
         queryKey: ["course-modules", clientId, courseId],
@@ -95,12 +101,12 @@ const ContentManager: React.FC<{
     if (!existingContent || !Array.isArray(existingContent)) {
       return 1; // Start with 1 if no existing content
     }
-    
+
     // Find the maximum order value and add 1
     const maxOrder = existingContent.reduce((max, content) => {
       return Math.max(max, content.order || 0);
     }, 0);
-    
+
     return maxOrder + 1;
   };
 
@@ -115,7 +121,7 @@ const ContentManager: React.FC<{
     if (contentIdField) {
       body[contentIdField] = selectedContentId;
     }
-    console.log("body", body);
+    //console.log("body", body);
     uploadMutation.mutate(body as unknown as ContentData);
   };
 
@@ -128,7 +134,7 @@ const ContentManager: React.FC<{
   };
 
   const handleContentSelect = (content: { id: number; title: string }) => {
-    console.log("content", content);
+    //console.log("content", content);
     setSelectedContentId(content.id);
     setSelectedContent(content);
     setAutoTriggerSave(true);

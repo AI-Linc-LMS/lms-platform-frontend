@@ -11,13 +11,6 @@ export const getFullPath = (pathname: string, search: string): string => {
   return pathname + search;
 };
 
-export const logRedirectInfo = (intendedPath: string | null, currentPath: string, action: string) => {
-  console.log(`[Auth Redirect] ${action}:`, {
-    intendedPath,
-    currentPath,
-    timestamp: new Date().toISOString()
-  });
-};
 
 /**
  * Detects if the current device is mobile
@@ -42,22 +35,22 @@ export const handleMobileNavigation = (
   const isMobile = isMobileDevice();
   const currentPath = window.location.pathname;
   
-  console.log('[Mobile Navigation] Navigating to:', path, 'isMobile:', isMobile, 'replace:', replace, 'forceReload:', forceReload);
-  console.log('[Mobile Navigation] Current path:', currentPath);
+  //console.log('[Mobile Navigation] Navigating to:', path, 'isMobile:', isMobile, 'replace:', replace, 'forceReload:', forceReload);
+  //console.log('[Mobile Navigation] Current path:', currentPath);
   
   // Prevent unnecessary redirects to the same page
   if (currentPath === path) {
-    console.log('[Mobile Navigation] Already on target path, skipping navigation');
+    //console.log('[Mobile Navigation] Already on target path, skipping navigation');
     return;
   }
   
   if (isMobile && forceReload) {
     // Only use window.location.href when explicitly requested (like after successful login)
-    console.log('[Mobile Navigation] Using window.location.href for:', path);
+    //console.log('[Mobile Navigation] Using window.location.href for:', path);
     window.location.href = path;
   } else {
     // Use React Router navigation for most cases
-    console.log('[Navigation] Using React Router navigate for:', path);
+    //console.log('[Navigation] Using React Router navigate for:', path);
     navigate(path, { replace });
   }
 };
@@ -78,10 +71,10 @@ export const waitForAuthState = (timeoutMs: number = 500): Promise<void> => {
       attempts++;
       
       if (user && token) {
-        console.log('[Auth State] Authentication state found, proceeding with navigation');
+        //console.log('[Auth State] Authentication state found, proceeding with navigation');
         resolve();
       } else if (attempts >= maxAttempts) {
-        console.log('[Auth State] Timeout reached, proceeding with navigation anyway');
+        //console.log('[Auth State] Timeout reached, proceeding with navigation anyway');
         resolve();
       } else {
         setTimeout(checkAuth, 50);
@@ -112,17 +105,17 @@ export const waitForAuthStatePersistence = (timeoutMs: number = 1000): Promise<v
         try {
           const userData = JSON.parse(user);
           if (userData && userData.isAuthenticated) {
-            console.log('[Auth Persistence] Authentication state verified and persisted');
+            //console.log('[Auth Persistence] Authentication state verified and persisted');
             resolve();
             return;
           }
         } catch {
-          console.log('[Auth Persistence] User data not properly formatted, continuing checks');
+          //console.log('[Auth Persistence] User data not properly formatted, continuing checks');
         }
       }
       
       if (attempts >= maxAttempts) {
-        console.log('[Auth Persistence] Timeout reached, proceeding with navigation anyway');
+        //console.log('[Auth Persistence] Timeout reached, proceeding with navigation anyway');
         resolve();
       } else {
         setTimeout(checkAuthPersistence, 100);
@@ -144,21 +137,21 @@ export const handlePostLoginNavigation = async (
 ): Promise<void> => {
   const isMobile = isMobileDevice();
   
-  console.log('[Post-Login Navigation] Handling navigation to:', path, 'isMobile:', isMobile);
+  //console.log('[Post-Login Navigation] Handling navigation to:', path, 'isMobile:', isMobile);
   
   if (isMobile) {
     // On mobile, wait for authentication state to be properly persisted
-    console.log('[Post-Login Navigation] Waiting for auth state persistence on mobile');
+    //console.log('[Post-Login Navigation] Waiting for auth state persistence on mobile');
     await waitForAuthStatePersistence(1500); // Longer timeout for mobile
     
     // Add a small additional delay to ensure localStorage is fully synced
     await new Promise(resolve => setTimeout(resolve, 200));
     
-    console.log('[Post-Login Navigation] Using window.location.href for mobile navigation');
+    //console.log('[Post-Login Navigation] Using window.location.href for mobile navigation');
     window.location.href = path;
   } else {
     // On desktop, use regular navigation
-    console.log('[Post-Login Navigation] Using React Router navigate for desktop');
+    //console.log('[Post-Login Navigation] Using React Router navigate for desktop');
     navigate(path, { replace });
   }
 }; 

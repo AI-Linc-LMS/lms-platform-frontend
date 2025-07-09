@@ -1,26 +1,35 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import JobCard from '../components/JobCard';
-import JobFilters from '../components/JobFilters';
-import FeaturedCompanies from '../components/FeaturedCompanies';
-import { Job } from '../types/jobs.types';
-import { mockJobs } from '../data/mockJobs';
-import { fetchAIJobs, fetchRemoteJobs, fetchAllJobs, fetchTechJobs, bookmarkJob, getBookmarkedJobs } from '../../../api/jobsApiService';
-import JobApplicationModal from '../components/JobApplicationModal';
+import React, { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import JobCard from "../components/JobCard";
+import JobFilters from "../components/JobFilters";
+import FeaturedCompanies from "../components/FeaturedCompanies";
+import { Job } from "../types/jobs.types";
+import { mockJobs } from "../data/mockJobs";
+import {
+  fetchAIJobs,
+  fetchRemoteJobs,
+  fetchAllJobs,
+  fetchTechJobs,
+  bookmarkJob,
+  getBookmarkedJobs,
+} from "../../../api/jobsApiService";
+import JobApplicationModal from "../components/JobApplicationModal";
 
 const Jobs: React.FC = () => {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [locationFilter, setLocationFilter] = useState('');
-  const [jobTypeFilter, setJobTypeFilter] = useState('');
-  const [experienceFilter, setExperienceFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
+  const [jobTypeFilter, setJobTypeFilter] = useState("");
+  const [experienceFilter, setExperienceFilter] = useState("");
   const [salaryFilter, setSalaryFilter] = useState({ min: 0, max: 200000 });
   const [remoteFilter, setRemoteFilter] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [bookmarkedJobs, setBookmarkedJobs] = useState<string[]>([]);
   const [jobs, setJobs] = useState<Job[]>(mockJobs);
   const [loading, setLoading] = useState(false);
-  const [dataSource, setDataSource] = useState<'sample-jobs' | 'ai-jobs' | 'remote-jobs' | 'all-jobs' | 'tech-jobs'>('sample-jobs');
+  const [dataSource, setDataSource] = useState<
+    "sample-jobs" | "ai-jobs" | "remote-jobs" | "all-jobs" | "tech-jobs"
+  >("sample-jobs");
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -38,33 +47,40 @@ const Jobs: React.FC = () => {
         let jobs: Job[] = [];
 
         switch (dataSource) {
-          case 'sample-jobs':
+          case "sample-jobs":
             setError(null);
             jobs = mockJobs;
             break;
-          case 'ai-jobs':
+          case "ai-jobs":
             jobs = await fetchAIJobs();
-            setSuccessMessage('✅ AI jobs loaded from enhanced database (External APIs blocked by browser security)');
+            setSuccessMessage(
+              "✅ AI jobs loaded from enhanced database (External APIs blocked by browser security)"
+            );
             break;
-          case 'remote-jobs':
+          case "remote-jobs":
             jobs = await fetchRemoteJobs();
-            setSuccessMessage('✅ Remote jobs loaded from enhanced database (External APIs blocked by browser security)');
+            setSuccessMessage(
+              "✅ Remote jobs loaded from enhanced database (External APIs blocked by browser security)"
+            );
             break;
-          case 'all-jobs':
+          case "all-jobs":
             jobs = await fetchAllJobs();
-            setSuccessMessage('✅ All jobs loaded from enhanced database (External APIs blocked by browser security)');
+            setSuccessMessage(
+              "✅ All jobs loaded from enhanced database (External APIs blocked by browser security)"
+            );
             break;
-          case 'tech-jobs':
+          case "tech-jobs":
             jobs = await fetchTechJobs();
-            setSuccessMessage('✅ Tech jobs loaded from enhanced database (External APIs blocked by browser security)');
+            setSuccessMessage(
+              "✅ Tech jobs loaded from enhanced database (External APIs blocked by browser security)"
+            );
             break;
           default:
             jobs = mockJobs;
         }
 
         setJobs(jobs);
-      } catch (error) {
-        console.error('Error fetching jobs:', error);
+      } catch {
         setError('Unable to load jobs. Using sample data instead.');
         setJobs(mockJobs);
       } finally {
@@ -81,13 +97,11 @@ const Jobs: React.FC = () => {
   }, []);
 
   const handleSearch = () => {
-    // Search functionality will be implemented
-    console.log('Searching for:', searchQuery);
   };
 
   const handleClearFilters = () => {
-    setJobTypeFilter('');
-    setExperienceFilter('');
+    setJobTypeFilter("");
+    setExperienceFilter("");
     setSalaryFilter({ min: 0, max: 200000 });
     setRemoteFilter(false);
   };
@@ -96,8 +110,8 @@ const Jobs: React.FC = () => {
     const success = bookmarkJob(jobId);
     if (success) {
       setBookmarkedJobs(getBookmarkedJobs());
-      setSuccessMessage('Job bookmark updated successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setSuccessMessage("Job bookmark updated successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
     }
   };
 
@@ -107,8 +121,8 @@ const Jobs: React.FC = () => {
   };
 
   const handleApplicationSuccess = () => {
-    setSuccessMessage('Application submitted successfully!');
-    setTimeout(() => setSuccessMessage(''), 3000);
+    setSuccessMessage("Application submitted successfully!");
+    setTimeout(() => setSuccessMessage(""), 3000);
   };
 
   const isBookmarked = (jobId: string) => {
@@ -118,13 +132,20 @@ const Jobs: React.FC = () => {
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {
       // Search query filter
-      if (searchQuery && !job.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !job.company.toLowerCase().includes(searchQuery.toLowerCase())) {
+      if (
+        searchQuery &&
+        !job.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !job.company.toLowerCase().includes(searchQuery.toLowerCase())
+      ) {
+
         return false;
       }
 
       // Location filter
-      if (locationFilter && !job.location.toLowerCase().includes(locationFilter.toLowerCase())) {
+      if (
+        locationFilter &&
+        !job.location.toLowerCase().includes(locationFilter.toLowerCase())
+      ) {
         return false;
       }
 
@@ -144,13 +165,24 @@ const Jobs: React.FC = () => {
       }
 
       // Salary filter
-      if (job.salary && (job.salary.min < salaryFilter.min || job.salary.max > salaryFilter.max)) {
+      if (
+        job.salary &&
+        (job.salary.min < salaryFilter.min || job.salary.max > salaryFilter.max)
+      ) {
         return false;
       }
 
       return true;
     });
-  }, [jobs, searchQuery, locationFilter, jobTypeFilter, experienceFilter, remoteFilter, salaryFilter]);
+  }, [
+    jobs,
+    searchQuery,
+    locationFilter,
+    jobTypeFilter,
+    experienceFilter,
+    remoteFilter,
+    salaryFilter,
+  ]);
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
@@ -322,6 +354,7 @@ const Jobs: React.FC = () => {
                 </div>
                 <div className="text-sm sm:text-base text-[#6C757D]">Active Jobs</div>
               </div>
+
               <div className="text-center">
                 <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#255C79] mb-2">
                   5,000+
@@ -510,6 +543,7 @@ const Jobs: React.FC = () => {
           </div>
         </div>
 
+
         {/* Featured Companies */}
         <div className="bg-white">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -534,4 +568,4 @@ const Jobs: React.FC = () => {
   );
 };
 
-export default Jobs; 
+export default Jobs;

@@ -26,7 +26,6 @@ import CertificatePortal from "./components/certificate/CertificatePortal";
 import PhoneVerificationPage from "./features/learn/pages/PhoneVerificationPage";
 import RoadmapPage from "./features/learn/components/assessment/RoadmapPage";
 import Referals from "./features/admin/referals/Referals";
-import AssessmentReferals from "./features/admin/referals/AssessmentReferals";
 
 export interface RouteConfig {
   path: string;
@@ -163,12 +162,7 @@ const routes: RouteConfig[] = [
     isPrivate: true,
     requiredRole: "admin_or_instructor",
   },
-  {
-    path: "/admin/assessment-referrals",
-    component: AssessmentReferals,
-    isPrivate: true,
-    requiredRole: "admin_or_instructor",
-  },
+
   {
     path: "/continue-learning",
     component: ContinueLearningAll,

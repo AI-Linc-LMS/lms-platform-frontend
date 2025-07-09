@@ -84,10 +84,10 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout:
     
     // Enhanced error logging
     if (isCORSError(error)) {
-      console.warn('🚫 CORS Error detected - External API blocked by browser security policy');
-      console.warn('💡 In production, use a backend proxy or serverless function to avoid CORS');
+      //console.warn('🚫 CORS Error detected - External API blocked by browser security policy');
+      //console.warn('💡 In production, use a backend proxy or serverless function to avoid CORS');
     } else if (isNetworkError(error)) {
-      console.warn('🌐 Network Error detected - API may be unreachable');
+      //console.warn('🌐 Network Error detected - API may be unreachable');
     }
     
     throw error;
@@ -425,8 +425,8 @@ const isNetworkError = (error: unknown): boolean => {
 const fetchRemotiveJobs = async (category: string = ''): Promise<Job[]> => {
   try {
     const url = `${API_CONFIG.remotive.baseUrl}?category=${category}&limit=20`;
-    console.log('🔍 Attempting to fetch from Remotive API:', url);
-    console.log('⚠️  Note: This may fail due to CORS restrictions in browser');
+    //console.log('🔍 Attempting to fetch from Remotive API:', url);
+    //console.log('⚠️  Note: This may fail due to CORS restrictions in browser');
 
     const response = await fetchWithTimeout(url);
     
@@ -435,7 +435,7 @@ const fetchRemotiveJobs = async (category: string = ''): Promise<Job[]> => {
     }
 
     const data: RemotiveResponse = await response.json();
-    console.log(`✅ Remotive API success! Returned ${data.jobs?.length || 0} jobs`);
+    //console.log(`✅ Remotive API success! Returned ${data.jobs?.length || 0} jobs`);
 
     return data.jobs?.map((job): Job => ({
       id: `remotive-${job.id}`,
@@ -470,13 +470,13 @@ const fetchRemotiveJobs = async (category: string = ''): Promise<Job[]> => {
     })) || [];
   } catch (error) {
     if (isCORSError(error)) {
-      console.warn('🚫 Remotive API blocked by CORS policy');
-      console.warn('💡 This is expected when calling external APIs directly from browser');
-      console.warn('🔄 Falling back to enhanced mock data...');
+      //console.warn('🚫 Remotive API blocked by CORS policy');
+      //console.warn('💡 This is expected when calling external APIs directly from browser');
+      //console.warn('🔄 Falling back to enhanced mock data...');
     } else if (isNetworkError(error)) {
-      console.warn('🌐 Remotive API network error:', error instanceof Error ? error.message : 'Unknown error');
+      //console.warn('🌐 Remotive API network error:', error instanceof Error ? error.message : 'Unknown error');
     } else {
-      console.warn('❌ Remotive API failed:', error instanceof Error ? error.message : 'Unknown error');
+      //console.warn('❌ Remotive API failed:', error instanceof Error ? error.message : 'Unknown error');
     }
     throw error;
   }
@@ -491,7 +491,7 @@ const simulateNetworkDelay = (min: number = 800, max: number = 2000): Promise<vo
 // Main API Functions
 export const fetchAIJobs = async (): Promise<Job[]> => {
   try {
-    console.log('🤖 Fetching AI jobs from multiple sources...');
+    //console.log('🤖 Fetching AI jobs from multiple sources...');
     
     // Add realistic loading delay
     await simulateNetworkDelay();
@@ -507,49 +507,49 @@ export const fetchAIJobs = async (): Promise<Job[]> => {
       );
       
       if (aiFilteredJobs.length > 0) {
-        console.log(`🎉 Found ${aiFilteredJobs.length} real AI jobs`);
+        //console.log(`🎉 Found ${aiFilteredJobs.length} real AI jobs`);
         return aiFilteredJobs;
       }
     } catch {
-      console.warn('Real API failed, using enhanced mock data');
+      //console.warn('Real API failed, using enhanced mock data');
     }
     
     // Fallback to enhanced mock data
-    console.log('📋 Using enhanced AI job database');
+    //console.log('📋 Using enhanced AI job database');
     return generateEnhancedMockJobs('ai');
   } catch {
-    console.error('❌ AI jobs fetch failed');
+    //console.error('❌ AI jobs fetch failed');
     return generateEnhancedMockJobs('ai');
   }
 };
 
 export const fetchRemoteJobs = async (): Promise<Job[]> => {
   try {
-    console.log('🌍 Fetching remote jobs from multiple sources...');
+    //console.log('🌍 Fetching remote jobs from multiple sources...');
     
     await simulateNetworkDelay();
     
     try {
       const remotiveJobs = await fetchRemotiveJobs('');
       if (remotiveJobs.length > 0) {
-        console.log(`🎉 Found ${remotiveJobs.length} real remote jobs`);
+        //console.log(`🎉 Found ${remotiveJobs.length} real remote jobs`);
         return remotiveJobs.slice(0, 15);
       }
     } catch {
-      console.warn('Real API failed, using enhanced mock data');
+      //console.warn('Real API failed, using enhanced mock data');
     }
     
-    console.log('📋 Using enhanced remote job database');
+    //console.log('📋 Using enhanced remote job database');
     return generateEnhancedMockJobs('remote');
   } catch {
-    console.error('❌ Remote jobs fetch failed');
+    //console.error('❌ Remote jobs fetch failed');
     return generateEnhancedMockJobs('remote');
   }
 };
 
 export const fetchAllJobs = async (): Promise<Job[]> => {
   try {
-    console.log('📋 Fetching all jobs from multiple sources...');
+    //console.log('📋 Fetching all jobs from multiple sources...');
     
     await simulateNetworkDelay();
     
@@ -559,41 +559,41 @@ export const fetchAllJobs = async (): Promise<Job[]> => {
         // Mix real jobs with enhanced mock data
         const mockJobs = generateEnhancedMockJobs('all');
         const combinedJobs = [...remotiveJobs.slice(0, 10), ...mockJobs.slice(0, 15)];
-        console.log(`🎉 Found ${combinedJobs.length} total jobs (real + enhanced)`);
+        //console.log(`🎉 Found ${combinedJobs.length} total jobs (real + enhanced)`);
         return combinedJobs;
       }
     } catch {
-      console.warn('Real API failed, using enhanced mock data');
+      //console.warn('Real API failed, using enhanced mock data');
     }
     
-    console.log('📋 Using enhanced job database');
+    //console.log('📋 Using enhanced job database');
     return generateEnhancedMockJobs('all');
   } catch {
-    console.error('❌ All jobs fetch failed');
+    //console.error('❌ All jobs fetch failed');
     return generateEnhancedMockJobs('all');
   }
 };
 
 export const fetchTechJobs = async (): Promise<Job[]> => {
   try {
-    console.log('💻 Fetching tech jobs from multiple sources...');
+    //console.log('💻 Fetching tech jobs from multiple sources...');
     
     await simulateNetworkDelay();
     
     try {
       const remotiveJobs = await fetchRemotiveJobs('software-dev');
       if (remotiveJobs.length > 0) {
-        console.log(`🎉 Found ${remotiveJobs.length} real tech jobs`);
+        //console.log(`🎉 Found ${remotiveJobs.length} real tech jobs`);
         return remotiveJobs;
       }
     } catch {
-      console.warn('Real API failed, using enhanced mock data');
+      //console.warn('Real API failed, using enhanced mock data');
     }
     
-    console.log('📋 Using enhanced tech job database');
+    //console.log('📋 Using enhanced tech job database');
     return generateEnhancedMockJobs('tech');
   } catch {
-    console.error('❌ Tech jobs fetch failed');
+    //console.error('❌ Tech jobs fetch failed');
     return generateEnhancedMockJobs('tech');
   }
 };
@@ -609,10 +609,10 @@ export const bookmarkJob = (jobId: string): boolean => {
       : [...bookmarked, jobId];
     
     localStorage.setItem(STORAGE_KEYS.bookmarkedJobs, JSON.stringify(updatedBookmarks));
-    console.log(`📌 Job ${jobId} ${isBookmarked ? 'removed from' : 'added to'} bookmarks`);
+    //console.log(`📌 Job ${jobId} ${isBookmarked ? 'removed from' : 'added to'} bookmarks`);
     return !isBookmarked;
   } catch (error) {
-    console.error('❌ Failed to update bookmarks:', error);
+    //console.error('❌ Failed to update bookmarks:', error);
     return false;
   }
 };
@@ -622,7 +622,7 @@ export const getBookmarkedJobs = (): string[] => {
     const bookmarked = localStorage.getItem(STORAGE_KEYS.bookmarkedJobs);
     return bookmarked ? JSON.parse(bookmarked) : [];
   } catch (error) {
-    console.error('❌ Failed to get bookmarked jobs:', error);
+    //console.error('❌ Failed to get bookmarked jobs:', error);
     return [];
   }
 };
@@ -642,7 +642,7 @@ export const applyToJob = (jobId: string, applicationData: {
     // Check if already applied
     const alreadyApplied = appliedJobs.some(app => app.jobId === jobId);
     if (alreadyApplied) {
-      console.log(`⚠️ Already applied to job ${jobId}`);
+      //console.log(`⚠️ Already applied to job ${jobId}`);
       return false;
     }
     
@@ -655,10 +655,10 @@ export const applyToJob = (jobId: string, applicationData: {
     
     const updatedApplications = [...appliedJobs, application];
     localStorage.setItem(STORAGE_KEYS.appliedJobs, JSON.stringify(updatedApplications));
-    console.log(`✅ Applied to job ${jobId}`);
+    //console.log(`✅ Applied to job ${jobId}`);
     return true;
   } catch (error) {
-    console.error('❌ Failed to save job application:', error);
+    //console.error('❌ Failed to save job application:', error);
     return false;
   }
 };
@@ -679,7 +679,7 @@ export const getAppliedJobs = (): Array<{
     const applied = localStorage.getItem(STORAGE_KEYS.appliedJobs);
     return applied ? JSON.parse(applied) : [];
   } catch (error) {
-    console.error('❌ Failed to get applied jobs:', error);
+    //console.error('❌ Failed to get applied jobs:', error);
     return [];
   }
 };
@@ -692,10 +692,10 @@ export const updateApplicationStatus = (jobId: string, status: 'submitted' | 're
     );
     
     localStorage.setItem(STORAGE_KEYS.appliedJobs, JSON.stringify(updatedJobs));
-    console.log(`✅ Updated application status for job ${jobId} to ${status}`);
+    //console.log(`✅ Updated application status for job ${jobId} to ${status}`);
     return true;
   } catch (error) {
-    console.error('❌ Failed to update application status:', error);
+    //console.error('❌ Failed to update application status:', error);
     return false;
   }
 };
@@ -713,10 +713,10 @@ export const saveSearch = (searchQuery: string, filters: JobFilters): boolean =>
     
     const updatedSearches = [...savedSearches, search];
     localStorage.setItem(STORAGE_KEYS.savedSearches, JSON.stringify(updatedSearches));
-    console.log(`💾 Saved search: ${searchQuery}`);
+    //console.log(`💾 Saved search: ${searchQuery}`);
     return true;
   } catch {
-    console.error('❌ Failed to save search');
+    //console.error('❌ Failed to save search');
     return false;
   }
 };
@@ -732,7 +732,7 @@ export const getSavedSearches = (): Array<{
     const saved = localStorage.getItem(STORAGE_KEYS.savedSearches);
     return saved ? JSON.parse(saved) : [];
   } catch {
-    console.error('❌ Failed to get saved searches');
+    //console.error('❌ Failed to get saved searches');
     return [];
   }
 };
@@ -742,10 +742,10 @@ export const deleteSearch = (searchId: string): boolean => {
     const savedSearches = getSavedSearches();
     const updatedSearches = savedSearches.filter(search => search.id !== searchId);
     localStorage.setItem(STORAGE_KEYS.savedSearches, JSON.stringify(updatedSearches));
-    console.log(`🗑️ Deleted search ${searchId}`);
+    //console.log(`🗑️ Deleted search ${searchId}`);
     return true;
   } catch (error) {
-    console.error('❌ Failed to delete search:', error);
+    //console.error('❌ Failed to delete search:', error);
     return false;
   }
 };
@@ -765,10 +765,10 @@ export const saveUserProfile = (profile: {
 }): boolean => {
   try {
     localStorage.setItem(STORAGE_KEYS.userProfile, JSON.stringify(profile));
-    console.log('✅ User profile saved');
+    //console.log('✅ User profile saved');
     return true;
   } catch (error) {
-    console.error('❌ Failed to save user profile:', error);
+    //console.error('❌ Failed to save user profile:', error);
     return false;
   }
 };
@@ -789,7 +789,7 @@ export const getUserProfile = (): {
     const profile = localStorage.getItem(STORAGE_KEYS.userProfile);
     return profile ? JSON.parse(profile) : null;
   } catch (error) {
-    console.error('❌ Failed to get user profile:', error);
+    //console.error('❌ Failed to get user profile:', error);
     return null;
   }
 };
@@ -821,7 +821,7 @@ export const getJobStats = (): {
       recentActivity: [] // Could be enhanced with activity tracking
     };
   } catch (error) {
-    console.error('❌ Failed to get job stats:', error);
+    //console.error('❌ Failed to get job stats:', error);
     return {
       totalBookmarked: 0,
       totalApplied: 0,
