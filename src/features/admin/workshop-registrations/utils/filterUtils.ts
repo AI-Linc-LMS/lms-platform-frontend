@@ -25,16 +25,24 @@ export const filterWorkshopData = (
 
     if (!globalSearch) return false;
 
+    // Helper function to safely convert value to string for comparison
+    const safeToString = (value: string | number | boolean | null | undefined): string => {
+      if (value === null || value === undefined) return '';
+      return String(value);
+    };
+
     // Helper function to check if value matches any of the selected options
-    const matchesSelectedOptions = (value: string, filterValue: string) => {
+    const matchesSelectedOptions = (value: string | null | undefined, filterValue: string) => {
       if (!filterValue) return true;
+      const safeValue = safeToString(value);
+      if (!safeValue) return false;
       const selectedOptions = filterValue.split(',').map(opt => opt.trim().toLowerCase());
-      const matches = selectedOptions.includes(value.toLowerCase());
+      const matches = selectedOptions.includes(safeValue.toLowerCase());
       
       // Debug logging for OR query
       if (selectedOptions.length > 1) {
         console.log('OR Query Debug:', {
-          fieldValue: value,
+          fieldValue: safeValue,
           selectedOptions,
           matches,
           filterValue
@@ -45,9 +53,11 @@ export const filterWorkshopData = (
     };
 
     // Helper function to check if value matches search string (for when user is searching)
-    const matchesSearchString = (value: string, filterValue: string) => {
+    const matchesSearchString = (value: string | null | undefined, filterValue: string) => {
       if (!filterValue) return true;
-      return value.toLowerCase().includes(filterValue.toLowerCase());
+      const safeValue = safeToString(value);
+      if (!safeValue) return false;
+      return safeValue.toLowerCase().includes(filterValue.toLowerCase());
     };
 
     // Column filters
@@ -89,7 +99,7 @@ export const filterWorkshopData = (
         return matchesSelectedOptions(entry.phone_number, filterVal);
       } else {
         // Single search string: substring match
-        return entry.phone_number.includes(filterVal);
+        return matchesSearchString(entry.phone_number, filterVal);
       }
     })();
 
@@ -122,6 +132,17 @@ export const filterWorkshopData = (
         return matchesSelectedOptions(sessionValue, filterVal);
       } else {
         return matchesSearchString(sessionValue, filterVal);
+      }
+    })();
+
+    const sessionDateMatch = (() => {
+      if (!filters.session_date) return true;
+      const filterVal = filters.session_date.trim();
+      const sessionDateValue = entry.session_date?.toString() || '';
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions(sessionDateValue, filterVal);
+      } else {
+        return matchesSearchString(sessionDateValue, filterVal);
       }
     })();
 
@@ -222,6 +243,10 @@ export const filterWorkshopData = (
     const secondCallCommentMatch =
       !filters.second_call_comment ||
       (entry.second_call_comment && entry.second_call_comment.toLowerCase().includes(filters.second_call_comment.toLowerCase()));
+
+    const followUpCommentMatch =
+      !filters.follow_up_comment ||
+      (entry.follow_up_comment && entry.follow_up_comment.toLowerCase().includes(filters.follow_up_comment.toLowerCase()));
 
     const amountPaidMatch = (() => {
       if (!filters.amount_paid) return true;
@@ -330,6 +355,7 @@ export const filterWorkshopData = (
       phoneMatch &&
       workshopMatch &&
       sessionMatch &&
+      sessionDateMatch &&
       referralMatch &&
       attendedWebinarsMatch &&
       assessmentAttemptedMatch &&
@@ -340,6 +366,7 @@ export const filterWorkshopData = (
       firstCallCommentMatch &&
       secondCallStatusMatch &&
       secondCallCommentMatch &&
+      followUpCommentMatch &&
       amountPaidMatch &&
       amountPendingMatch &&
       scoreMatch &&
@@ -363,6 +390,7 @@ export const exportToExcel = (filteredData: WorkshopRegistrationData[]) => {
     "Mobile Number": entry.phone_number,
     "Workshop Name": entry.workshop_name,
     "Session Number": entry.session_number || "N/A",
+    "Session Date": entry.session_date || "N/A",
     "Referral Code": entry.referal_code || "N/A",
     "Registered At": entry.registered_at,
     "Attended Webinars": entry.attended_webinars || "N/A",
@@ -374,6 +402,7 @@ export const exportToExcel = (filteredData: WorkshopRegistrationData[]) => {
     "First Call Comment": entry.first_call_comment || "N/A",
     "Second Call Status": entry.second_call_status || "N/A",
     "Second Call Comment": entry.second_call_comment || "N/A",
+    "Follow Up Comment": entry.follow_up_comment || "N/A",
     "Amount Paid": entry.amount_paid || "N/A",
     "Amount Pending": entry.amount_pending || "N/A",
     "Score": entry.score || "N/A",
@@ -395,6 +424,7 @@ export const getInitialFilterState = (): FilterState => ({
   phone_number: "",
   workshop_name: "",
   session_number: "",
+  session_date: "",
   referal_code: "",
   attended_webinars: "",
   is_assessment_attempted: "",
@@ -405,6 +435,7 @@ export const getInitialFilterState = (): FilterState => ({
   first_call_comment: "",
   second_call_status: "",
   second_call_comment: "",
+  follow_up_comment: "",
   amount_paid: "",
   amount_pending: "",
   score: "",
