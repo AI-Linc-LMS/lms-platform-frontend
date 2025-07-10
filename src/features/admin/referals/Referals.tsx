@@ -21,7 +21,6 @@ import {
   ReferralData,
   ReferralFormData,
 } from "../../../types/referral";
-import { getAllAssessments } from "../../../services/assesment/assesmentApis";
 import { useToast } from "../../../contexts/ToastContext";
 
 const Referals = () => {
@@ -42,22 +41,12 @@ const Referals = () => {
   // New: referral type state
   const [selectedReferralType, setSelectedReferralType] = useState("workshop");
 
-  // Fetch assessments list
-  const { data: assessments = [] } = useQuery({
-    queryKey: ["assessments-list", clientId],
-    queryFn: () => getAllAssessments(clientId),
-    staleTime: 5 * 60 * 1000,
-  });
-
   // Function to generate referral link based on type
   const generateReferralLink = (referralCode: string) => {
-    if (selectedReferralType.startsWith("assessment-")) {
-      const assessmentId = selectedReferralType.replace("assessment-", "");
-      return `${
-        window.location.origin
-      }/assessment/${assessmentId}?ref=${encodeURIComponent(referralCode)}`;
+    if (selectedReferralType === "assessment") {
+      return `https://ailinc.com/assessment?ref=${encodeURIComponent(referralCode)}`;
     } else {
-      return `https://ailinc.com/workshop-registration?ref=${referralCode}`;
+      return `https://ailinc.com/workshop-registration?ref=${encodeURIComponent(referralCode)}`;
     }
   };
 
@@ -167,21 +156,14 @@ const Referals = () => {
             />
           </div>
 
-          {/* Referral Type Dropdown */}
+          {/* Referral Type Dropdown (only 2 options) */}
           <select
             value={selectedReferralType}
             onChange={(e) => setSelectedReferralType(e.target.value)}
             className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none"
           >
             <option value="workshop">Workshop Registration</option>
-            {assessments.map((ass) => (
-              <option
-                key={`assessment-${ass.slug}`}
-                value={`assessment-${ass.slug}`}
-              >
-                Assessment: {ass.title}
-              </option>
-            ))}
+            <option value="assessment">Assessment</option>
           </select>
 
           <button
@@ -286,11 +268,10 @@ const Referals = () => {
                                     referral.id.toString()
                                   )
                                 }
-                                className={`p-1.5 rounded-md transition-colors ${
-                                  isCopied
+                                className={`p-1.5 rounded-md transition-colors ${isCopied
                                     ? "text-green-600 bg-green-50"
                                     : "text-gray-500 hover:text-blue-600 hover:bg-blue-50"
-                                }`}
+                                  }`}
                                 title={isCopied ? "Copied!" : "Copy link"}
                               >
                                 {isCopied ? (
@@ -502,9 +483,8 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, name: e.target.value }))
               }
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${
-                errors.name ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${errors.name ? "border-red-500" : "border-gray-300"
+                }`}
               placeholder="Enter full name"
               disabled={isLoading}
             />
@@ -527,9 +507,8 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, email: e.target.value }))
               }
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${
-                errors.email ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${errors.email ? "border-red-500" : "border-gray-300"
+                }`}
               placeholder="Enter email address"
               disabled={isLoading}
             />
@@ -555,9 +534,8 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
                   phone_number: e.target.value,
                 }))
               }
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${
-                errors.phone_number ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${errors.phone_number ? "border-red-500" : "border-gray-300"
+                }`}
               placeholder="Enter phone number"
               disabled={isLoading}
             />
@@ -583,9 +561,8 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
                   referral_code: e.target.value,
                 }))
               }
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${
-                errors.referral_code ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${errors.referral_code ? "border-red-500" : "border-gray-300"
+                }`}
               placeholder="Enter referral code"
               disabled={isLoading}
             />
