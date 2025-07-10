@@ -126,11 +126,11 @@ const AssessmentReferals = () => {
             <input type="text" placeholder="Search by name, email, or referral code..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none" />
           </div>
           {/* Assessment selector */}
-          <select value={assessmentSlug} onChange={(e)=> setAssessmentSlug(e.target.value)} className="w-full sm:w-80 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none" >
+          {/* <select value={assessmentSlug} onChange={(e)=> setAssessmentSlug(e.target.value)} className="w-full sm:w-80 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none" >
             {assessments.map(ass => (
               <option key={ass.slug} value={ass.slug}>{ass.title}</option>
             ))}
-          </select>
+          </select> */}
           {/* Create button */}
           <button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2 bg-[#255C79] text-white px-6 py-3 rounded-lg hover:bg-[#1E4A63] transition-colors font-medium"><FiPlus className="w-5 h-5" />Create Referral</button>
         </div>
