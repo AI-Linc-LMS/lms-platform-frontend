@@ -52,7 +52,7 @@ const AssessmentReferals = () => {
 
   // Generate assessment referral link
   const generateReferralLink = (referralCode: string) => {
-    return `${window.location.origin}/assessment/${assessmentSlug}?ref=${encodeURIComponent(referralCode)}`;
+    return `https://ailinc.com/assessment?ref=${encodeURIComponent(referralCode)}`;
   };
 
   // Copy link
