@@ -48,7 +48,7 @@ const ConsoleTestCases: React.FC<ConsoleTestCasesProps> = ({
 }) => {
   const consoleRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to console when test cases are running
+  // Scroll to //console when test cases are running
   useEffect(() => {
     if (isRunning && consoleRef.current) {
       consoleRef.current.scrollIntoView({ behavior: 'smooth' });

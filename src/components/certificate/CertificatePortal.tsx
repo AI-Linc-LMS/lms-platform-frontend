@@ -15,7 +15,7 @@ const CertificatePortal: React.FC = () => {
   const [selectedCertificate, setSelectedCertificate] =
     useState<Certificate | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  console.log(isMobile);
+  //console.log(isMobile);
   // Ref to access CertificateTemplates methods
   const certificateRef = useRef<CertificateTemplatesRef>(null);
 
@@ -24,12 +24,6 @@ const CertificatePortal: React.FC = () => {
     const checkIfMobile = () => {
       const mobile = window.innerWidth <= 768;
       setIsMobile(mobile);
-      console.log(
-        "Mobile detection:",
-        mobile,
-        "Screen width:",
-        window.innerWidth
-      );
     };
 
     checkIfMobile();
@@ -58,7 +52,7 @@ const CertificatePortal: React.FC = () => {
   const handleViewCertificate = async (certificate: Certificate) => {
     // If on mobile, directly download the certificate
     if (isMobile) {
-      console.log("Mobile download triggered for:", certificate.name);
+      //console.log("Mobile download triggered for:", certificate.name);
       setIsDownloading(true);
 
       try {
@@ -69,13 +63,13 @@ const CertificatePortal: React.FC = () => {
         await new Promise((resolve) => setTimeout(resolve, 300));
 
         if (certificateRef.current) {
-          console.log("Certificate ref found, downloading...");
+          //console.log("Certificate ref found, downloading...");
           await certificateRef.current.downloadPDF();
         } else {
-          console.error("Certificate ref not found after waiting");
+          //console.error("Certificate ref not found after waiting");
         }
-      } catch (error) {
-        console.error("Download failed:", error);
+      } catch {
+        //console.error("Download failed:", error);
       } finally {
         setIsDownloading(false);
       }
@@ -426,8 +420,8 @@ const CertificatePortal: React.FC = () => {
                         setIsDownloading(true);
                         try {
                           await certificateRef.current?.downloadPDF();
-                        } catch (error) {
-                          console.error("Download failed:", error);
+                        } catch {
+                          //console.error("Download failed:", error);
                         } finally {
                           setIsDownloading(false);
                         }

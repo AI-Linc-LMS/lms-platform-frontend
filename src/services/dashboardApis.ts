@@ -36,7 +36,7 @@ export const getDailyLeaderboard = async (
   clientId: number
 ): Promise<DailyLeaderboardResponse> => {
   try {
-    console.log(`Fetching leaderboard for client ID: ${clientId}`);
+    //console.log(`Fetching leaderboard for client ID: ${clientId}`);
 
     const res = await axiosInstance.get(
       `/api/clients/${clientId}/student/daily-progress-leaderboard/`,
@@ -47,16 +47,10 @@ export const getDailyLeaderboard = async (
       }
     );
 
-    console.log("Leaderboard API response:", res.data);
+    //console.log("Leaderboard API response:", res.data);
     return res.data;
   } catch (error: any) {
-    // Log the full error for debugging
-    console.error("Failed to fetch leaderboard:", error);
-    console.error("Error details:", {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-    });
+    
 
     // You can throw a custom error if you want
     throw new Error(
@@ -74,15 +68,10 @@ export const getUserActivityHeatmapData = async (clientId: number) => {
       `/api/clients/${clientId}/student/user-activity-heatmap/`
     );
 
-    console.log("User activity heatmap API response:", res.data);
+    //console.log("User activity heatmap API response:", res.data);
     return res.data;
   } catch (error: any) {
-    console.error("Failed to fetch user activity heatmap:", error);
-    console.error("Error details:", {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-    });
+    
 
     // You can throw a custom error if you want
     throw new Error(
@@ -100,16 +89,10 @@ export const getUserDailyTimeSpentData = async (clientId: number = 1) => {
       `/api/clients/${clientId}/student/user-daily-time-spent/`
     );
 
-    console.log("User daily time spent API response:", res.data);
+    //console.log("User daily time spent API response:", res.data);
     return res.data;
   } catch (error: any) {
-    // Log the error details
-    console.error("Failed to fetch user daily time spent:", error);
-    console.error("Error details:", {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-    });
+    
 
     // You can throw a custom error if you want
     throw new Error(
@@ -129,16 +112,10 @@ export const getLeaderboardData = async (
       `/api/clients/${clientId}/overall-leaderboard/`
     );
 
-    console.log("Leaderboard API response:", res.data);
+    //console.log("Leaderboard API response:", res.data);
     return res.data;
   } catch (error: any) {
-    // Log the error details
-    console.error("Failed to fetch leaderboard:", error);
-    console.error("Error details:", {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-    });
+    
 
     // You can throw a custom error if you want
     throw new Error(
@@ -158,16 +135,10 @@ export const getStreakTableData = async (
       `/api/clients/${clientId}/student/monthly-streak/`
     );
 
-    console.log("Streak table API response:", res.data);
+    //console.log("Streak table API response:", res.data);
     return res.data;
   } catch (error: any) {
-    // Log the error details
-    console.error("Failed to fetch streak table:", error);
-    console.error("Error details:", {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-    });
+   
 
     // You can throw a custom error if you want
     throw new Error(
@@ -185,16 +156,10 @@ export const getHoursSpentData = async (clientId: number = 1, range: number = 7)
       `/api/clients/${clientId}/student/hours-spent-graph/?range=last-${range}-days`
     );
 
-    console.log("Hours spent data API response:", res.data);
+    //console.log("Hours spent data API response:", res.data);
     return res.data;
   } catch (error: any) {
-    // Log the error details
-    console.error("Failed to fetch hours spent data:", error);
-    console.error("Error details:", {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-    });
+    
 
     // You can throw a custom error if you want
     throw new Error(

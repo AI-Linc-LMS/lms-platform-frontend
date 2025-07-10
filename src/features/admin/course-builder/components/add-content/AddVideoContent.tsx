@@ -33,7 +33,7 @@ const AddVideoContent: React.FC<AddVideoContentProps> = ({
       uploadContent(clientId, "video-tutorials", data),
     onSuccess: () => {
       success("Video Uploaded", "Video content uploaded successfully!");
-      
+
       // Invalidate all content-related queries to refresh the UI
       queryClient.invalidateQueries({
         predicate: (query) => {
@@ -46,7 +46,7 @@ const AddVideoContent: React.FC<AddVideoContentProps> = ({
           );
         },
       });
-      
+
       onBack();
     },
     onError: (error: Error) => {
@@ -72,8 +72,8 @@ const AddVideoContent: React.FC<AddVideoContentProps> = ({
       showError("Validation Error", "Please enter marks");
       return;
     }
-    
-    console.log(title, marks, video_url, description);
+
+    //console.log(title, marks, video_url, description);
     const contentData: VideoContentData = {
       title: title.trim(),
       marks: parseInt(marks, 10),

@@ -27,10 +27,14 @@ const SECOND_CALL_STATUS_OPTIONS = [
 
 interface WorkshopTableRowProps {
   entry: WorkshopRegistrationData;
+  visibleColumns?: string[];
+  permanentColumns?: string[];
 }
 
 export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   entry,
+  visibleColumns = [],
+  permanentColumns = [],
 }) => {
   const [copiedCode, setCopiedCode] = React.useState<string | null>(null);
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -87,6 +91,13 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   // Add state for edit history modal
   const [editHistoryOpen, setEditHistoryOpen] = useState(false);
 
+  // Add state for comment modal
+  const [commentModalOpen, setCommentModalOpen] = useState(false);
+  const [selectedComment, setSelectedComment] = useState<{
+    type: "first_call" | "second_call" | "follow_up";
+    text: string;
+  } | null>(null);
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString(undefined, {
       year: "numeric",
@@ -103,6 +114,16 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     return comment.length > maxLength
       ? `${comment.substring(0, maxLength)}...`
       : comment;
+  };
+
+  const handleCommentClick = (
+    comment: string,
+    type: "first_call" | "second_call" | "follow_up"
+  ) => {
+    if (comment && comment.length > 25) {
+      setSelectedComment({ type, text: comment });
+      setCommentModalOpen(true);
+    }
   };
 
   // Add scroll event listener to close tooltip
@@ -129,6 +150,24 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
       }
     };
   }, [tooltipData.show]);
+
+  // Add click outside handler for status dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (quickStatusDropdown) {
+        const target = event.target as Element;
+        const dropdownContainer = target.closest(".status-dropdown-container");
+        if (!dropdownContainer) {
+          setQuickStatusDropdown(null);
+        }
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [quickStatusDropdown]);
 
   const getStatusBadgeClass = (status: string, type: "true/false" | "call") => {
     if (type === "true/false") {
@@ -163,14 +202,14 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   const handleCopyReferralCode = async (code: string) => {
     try {
       if (!isValidReferralCode(code)) {
-        console.warn("Invalid referral code:", code);
+        //console.warn("Invalid referral code:", code);
         return;
       }
       await navigator.clipboard.writeText(code);
       setCopiedCode(code);
       setTimeout(() => setCopiedCode(null), 2000);
-    } catch (err) {
-      console.error("Failed to copy referral code:", err);
+    } catch {
+      //console.error("Failed to copy referral code:", err);
     }
   };
 
@@ -188,7 +227,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     options: { value: string; color: string }[],
     field: "first_call_status" | "second_call_status"
   ) => (
-    <div className="relative inline-block w-[170px]">
+    <div className="relative inline-block w-[170px] status-dropdown-container">
       <button
         className={`flex items-start gap-2 px-3 py-2 rounded border text-xs font-medium bg-gray-50 border-gray-300 text-gray-800 w-full transition-colors duration-150 items-center"
           ${
@@ -235,11 +274,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
                   setFirstCallStatus(opt.value);
                 if (field === "second_call_status")
                   setSecondCallStatus(opt.value);
-                console.log("Status changed:", {
-                  field,
-                  value: opt.value,
-                  id: entry.id,
-                });
+                
                 setQuickStatusDropdown(null);
                 setCooldown((prev) => ({ ...prev, [field]: true }));
                 setTimeout(
@@ -379,13 +414,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
               setSecondCallStatus(modalSecondCallStatus);
               setSecondCallComment(modalSecondCallComment);
               setModalOpen(false);
-              console.log("Modal Save:", {
-                id: entry.id,
-                first_call_status: modalFirstCallStatus,
-                first_call_comment: modalFirstCallComment,
-                second_call_status: modalSecondCallStatus,
-                second_call_comment: modalSecondCallComment,
-              });
+             
               // Call API to update the data
               updateMutation.mutate({
                 first_call_status: modalFirstCallStatus,
@@ -403,7 +432,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   );
 
   useEffect(() => {
-    if (modalOpen) {
+    if (modalOpen || commentModalOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -411,7 +440,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [modalOpen]);
+  }, [modalOpen, commentModalOpen]);
 
   const renderReferralCode = () => {
     if (!entry.referal_code) {
@@ -452,147 +481,317 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     );
   };
 
+  // Helper function to render table cells based on column visibility
+  const renderTableCell = (columnKey: string) => {
+    if (
+      !permanentColumns.includes(columnKey) &&
+      !visibleColumns.includes(columnKey)
+    ) {
+      return null;
+    }
+
+    switch (columnKey) {
+      case "name":
+        return (
+          <td key={columnKey} className="p-3">
+            {entry.name}
+          </td>
+        );
+      case "email":
+        return (
+          <td key={columnKey} className="p-3">
+            {entry.email}
+          </td>
+        );
+      case "phone_number":
+        return (
+          <td key={columnKey} className="p-3">
+            {entry.phone_number}
+          </td>
+        );
+      case "workshop_name":
+        return (
+          <td key={columnKey} className="p-3">
+            <span className="text-xs text-[10px]">{entry.workshop_name}</span>
+          </td>
+        );
+      case "session_number":
+        return (
+          <td key={columnKey} className="p-3">
+            <span className="bg-green-100 items-center justify-center text-center text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+              {entry.session_number || 1}
+            </span>
+          </td>
+        );
+      case "session_date":
+        return (
+          <td key={columnKey} className="p-3">
+            <span className="text-xs font-medium">
+              {entry.session_date ? formatDate(entry.session_date) : "N/A"}
+            </span>
+          </td>
+        );
+      case "referal_code":
+        return (
+          <td key={columnKey} className="p-3">
+            {renderReferralCode()}
+          </td>
+        );
+      case "attended_webinars":
+        return (
+          <td key={columnKey} className="p-3">
+            <span
+              className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
+                typeof entry.attended_webinars === "boolean"
+                  ? entry.attended_webinars.toString()
+                  : entry.attended_webinars || "",
+                "true/false"
+              )}`}
+            >
+              {typeof entry.attended_webinars === "boolean"
+                ? entry.attended_webinars.toString()
+                : entry.attended_webinars || "N/A"}
+            </span>
+          </td>
+        );
+      case "is_assessment_attempted":
+        return (
+          <td key={columnKey} className="p-3">
+            <span
+              className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
+                entry.is_assessment_attempted,
+                "true/false"
+              )}`}
+            >
+              {entry.is_assessment_attempted || "N/A"}
+            </span>
+          </td>
+        );
+      case "is_certificate_amount_paid":
+        return (
+          <td key={columnKey} className="p-3">
+            <span
+              className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
+                entry.is_certificate_amount_paid,
+                "true/false"
+              )}`}
+            >
+              {entry.is_certificate_amount_paid || "N/A"}
+            </span>
+          </td>
+        );
+      case "is_prebooking_amount_paid":
+        return (
+          <td key={columnKey} className="p-3">
+            <span
+              className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
+                entry.is_prebooking_amount_paid,
+                "true/false"
+              )}`}
+            >
+              {entry.is_prebooking_amount_paid || "N/A"}
+            </span>
+          </td>
+        );
+      case "is_course_amount_paid":
+        return (
+          <td key={columnKey} className="p-3">
+            <span
+              className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
+                entry.is_course_amount_paid,
+                "true/false"
+              )}`}
+            >
+              {entry.is_course_amount_paid || "N/A"}
+            </span>
+          </td>
+        );
+      case "first_call_status":
+        return (
+          <td key={columnKey} className="p-3">
+            {renderStatusDropdown(
+              firstCallStatus || "N/A",
+              FIRST_CALL_STATUS_OPTIONS,
+              "first_call_status"
+            )}
+          </td>
+        );
+      case "first_call_comment":
+        return (
+          <td key={columnKey} className="p-3">
+            <div
+              className="text-sm text-gray-700 cursor-pointer hover:text-blue-600 transition-colors"
+              onClick={() =>
+                handleCommentClick(entry.first_call_comment || "", "first_call")
+              }
+            >
+              {truncateComment(entry.first_call_comment || "")}
+              {entry.first_call_comment &&
+                entry.first_call_comment.length > 25 && (
+                  <span className="text-blue-600 text-xs ml-1">See more</span>
+                )}
+            </div>
+          </td>
+        );
+      case "second_call_status":
+        return (
+          <td key={columnKey} className="p-3">
+            {renderStatusDropdown(
+              secondCallStatus || "N/A",
+              SECOND_CALL_STATUS_OPTIONS,
+              "second_call_status"
+            )}
+          </td>
+        );
+      case "second_call_comment":
+        return (
+          <td key={columnKey} className="p-3">
+            <div
+              className="text-sm text-gray-700 cursor-pointer hover:text-blue-600 transition-colors"
+              onClick={() =>
+                handleCommentClick(
+                  entry.second_call_comment || "",
+                  "second_call"
+                )
+              }
+            >
+              {truncateComment(entry.second_call_comment || "")}
+              {entry.second_call_comment &&
+                entry.second_call_comment.length > 25 && (
+                  <span className="text-blue-600 text-xs ml-1">See more</span>
+                )}
+            </div>
+          </td>
+        );
+      case "follow_up_comment":
+        return (
+          <td key={columnKey} className="p-3">
+            <div
+              className="text-sm text-gray-700 cursor-pointer hover:text-blue-600 transition-colors"
+              onClick={() =>
+                handleCommentClick(entry.follow_up_comment || "", "follow_up")
+              }
+            >
+              {truncateComment(entry.follow_up_comment || "")}
+              {entry.follow_up_comment &&
+                entry.follow_up_comment.length > 25 && (
+                  <span className="text-blue-600 text-xs ml-1">See more</span>
+                )}
+            </div>
+          </td>
+        );
+      case "amount_paid":
+        return (
+          <td key={columnKey} className="p-3">
+            <span className="text-xs font-medium">
+              {entry.amount_paid ?? "N/A"}
+            </span>
+          </td>
+        );
+      case "amount_pending":
+        return (
+          <td key={columnKey} className="p-3">
+            <span className="text-xs font-medium">
+              {entry.amount_pending || "N/A"}
+            </span>
+          </td>
+        );
+      case "score":
+        return (
+          <td key={columnKey} className="p-3">
+            <span className="text-xs font-medium">{entry.score || "N/A"}</span>
+          </td>
+        );
+      case "offered_scholarship_percentage":
+        return (
+          <td key={columnKey} className="p-3">
+            <span className="text-xs font-medium">
+              {entry.offered_scholarship_percentage || "N/A"}
+            </span>
+          </td>
+        );
+      case "offered_amount":
+        return (
+          <td key={columnKey} className="p-3">
+            <span className="text-xs font-medium">
+              {entry.offered_amount || "N/A"}
+            </span>
+          </td>
+        );
+      case "assessment_status":
+        return (
+          <td key={columnKey} className="p-3">
+            <span
+              className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
+                entry.assessment_status || "N/A",
+                "true/false"
+              )}`}
+            >
+              {entry.assessment_status || "N/A"}
+            </span>
+          </td>
+        );
+      case "registered_at":
+        return (
+          <td key={columnKey} className="p-3">
+            {formatDate(entry.registered_at)}
+          </td>
+        );
+      case "updated_at":
+        return (
+          <td key={columnKey} className="p-3">
+            {formatDate(entry.updated_at || "N/A")}
+          </td>
+        );
+      case "submitted_at":
+        return (
+          <td key={columnKey} className="p-3">
+            {entry.submitted_at && entry.submitted_at !== ""
+              ? formatDate(entry.submitted_at)
+              : "N/A"}
+          </td>
+        );
+      default:
+        return null;
+    }
+  };
+
+  // Define column order
+  const columnOrder = [
+    "name",
+    "email",
+    "phone_number",
+    "workshop_name",
+    "session_number",
+    "session_date",
+    "referal_code",
+    "attended_webinars",
+    "is_assessment_attempted",
+    "is_certificate_amount_paid",
+    "is_prebooking_amount_paid",
+    "is_course_amount_paid",
+    "first_call_status",
+    "first_call_comment",
+    "second_call_status",
+    "second_call_comment",
+    "follow_up_comment",
+    "amount_paid",
+    "amount_pending",
+    "score",
+    "offered_scholarship_percentage",
+    "offered_amount",
+    "assessment_status",
+    "registered_at",
+    "updated_at",
+    "submitted_at",
+  ];
+
   return (
     <>
       {modalOpen && renderEditModal()}
       <tr className="border-t">
-        <td className="p-3">{entry.name}</td>
-        <td className="p-3">{entry.email}</td>
-        <td className="p-3">{entry.phone_number}</td>
-        <td className="p-3">
-          <span className="text-xs text-[10px]">{entry.workshop_name}</span>
-        </td>
-        <td className="p-3">
-          <span className="bg-green-100 items-center justify-center text-center text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-            {entry.session_number || 1}
-          </span>
-        </td>
-        <td className="p-3">{renderReferralCode()}</td>
-        <td className="p-3">
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
-              entry.attended_webinars,
-              "true/false"
-            )}`}
-          >
-            {entry.attended_webinars || "N/A"}
-          </span>
-        </td>
-        <td className="p-3">
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
-              entry.is_assessment_attempted,
-              "true/false"
-            )}`}
-          >
-            {entry.is_assessment_attempted || "N/A"}
-          </span>
-        </td>
-        <td className="p-3">
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
-              entry.is_certificate_amount_paid,
-              "true/false"
-            )}`}
-          >
-            {entry.is_certificate_amount_paid || "N/A"}
-          </span>
-        </td>
-        <td className="p-3">
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
-              entry.is_prebooking_amount_paid,
-              "true/false"
-            )}`}
-          >
-            {entry.is_prebooking_amount_paid || "N/A"}
-          </span>
-        </td>
-        <td className="p-3">
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
-              entry.is_course_amount_paid,
-              "true/false"
-            )}`}
-          >
-            {entry.is_course_amount_paid || "N/A"}
-          </span>
-        </td>
-        <td className="p-3">
-          {renderStatusDropdown(
-            firstCallStatus || "N/A",
-            FIRST_CALL_STATUS_OPTIONS,
-            "first_call_status"
-          )}
-        </td>
-        <td className="p-3">
-          <span className="text-sm text-gray-700 cursor-help">
-            {truncateComment(entry.first_call_comment || "")}
-          </span>
-          {entry.first_call_comment && entry.first_call_comment.length > 25 && (
-            <div className="absolute bottom-full left-0 -top-20 mb-2 h-[90px] w-[300px] px-4 py-2 bg-white text-gray-800 text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-normal max-w-md z-50 border border-gray-200 shadow-lg">
-              {entry.first_call_comment}
-            </div>
-          )}
-        </td>
-        <td className="p-3">
-          {renderStatusDropdown(
-            secondCallStatus || "N/A",
-            SECOND_CALL_STATUS_OPTIONS,
-            "second_call_status"
-          )}
-        </td>
-        <td className="p-3">
-          <span className="text-sm text-gray-700 cursor-help">
-            {truncateComment(entry.second_call_comment || "")}
-          </span>
-          {entry.second_call_comment &&
-            entry.second_call_comment.length > 25 && (
-              <div className="absolute bottom-full left-0 mb-2 h-[100px] w-[300px] px-4 py-2 bg-white text-gray-800 text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-normal max-w-md z-50 border border-gray-200 shadow-lg">
-                {entry.second_call_comment}
-              </div>
-            )}
-        </td>
-        <td className="p-3">
-          <span className="text-xs font-medium">
-            {entry.amount_paid ?? "N/A"}
-          </span>
-        </td>
-        <td className="p-3">
-          <span className="text-xs font-medium">
-            {entry.amount_pending || "N/A"}
-          </span>
-        </td>
-        <td className="p-3">
-          <span className="text-xs font-medium">{entry.score || "N/A"}</span>
-        </td>
-        <td className="p-3">
-          <span className="text-xs font-medium">
-            {entry.offered_scholarship_percentage || "N/A"}
-          </span>
-        </td>
-        <td className="p-3">
-          <span className="text-xs font-medium">
-            {entry.offered_amount || "N/A"}
-          </span>
-        </td>
-        <td className="p-3">
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
-              entry.assessment_status || "N/A",
-              "true/false"
-            )}`}
-          >
-            {entry.assessment_status || "N/A"}
-          </span>
-        </td>
-        <td className="p-3">{formatDate(entry.registered_at)}</td>
-        <td className="p-3">{formatDate(entry.updated_at || "N/A")}</td>
-        <td className="p-3">
-          {entry.submitted_at && entry.submitted_at !== ""
-            ? formatDate(entry.submitted_at)
-            : "N/A"}
-        </td>
+        {columnOrder.map((columnKey) => renderTableCell(columnKey))}
+        {/* Action column is always visible */}
         <td className="p-3 text-center w-[120px] min-w-[120px] flex gap-2 items-center justify-center">
           <button
             className="text-gray-400 hover:text-blue-600"
@@ -683,6 +882,43 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
                   No edit history available.
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Comment Modal */}
+      {commentModalOpen && selectedComment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50 backdrop-blur-xs">
+          <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-2xl relative border border-blue-100">
+            <button
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+              onClick={() => setCommentModalOpen(false)}
+            >
+              <FiX className="w-6 h-6" />
+            </button>
+            <h2 className="text-2xl font-bold mb-6">
+              {selectedComment.type === "first_call"
+                ? "First Call"
+                : selectedComment.type === "second_call"
+                ? "Second Call"
+                : "Follow Up"}{" "}
+              Comment
+            </h2>
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-gray-800 whitespace-pre-wrap break-words">
+                  {selectedComment.text}
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end mt-8">
+              <button
+                className="px-5 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 font-semibold"
+                onClick={() => setCommentModalOpen(false)}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

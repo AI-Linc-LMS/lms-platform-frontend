@@ -15,11 +15,6 @@ const GoogleSignupButton = () => {
       script.onload = () => {
         initializeGoogleSignUp();
       };
-      script.onerror = () => {
-        console.error(
-          "Failed to load Google authentication script. Please try again later."
-        );
-      };
       document.body.appendChild(script);
     };
 

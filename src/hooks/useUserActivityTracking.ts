@@ -49,7 +49,7 @@ export const useUserActivityTracking = (): UserActivityData => {
       if (totalTimeStr) {
         const totalTime = parseInt(totalTimeStr, 10);
         if (!isNaN(totalTime) && totalTime > 0) {
-          console.log(`Recovered total time from backup: ${totalTime}s`);
+          //console.log(`Recovered total time from backup: ${totalTime}s`);
           return totalTime;
         }
       }
@@ -60,11 +60,11 @@ export const useUserActivityTracking = (): UserActivityData => {
         const lastActivity = JSON.parse(lastActivityStr);
         if (lastActivity && typeof lastActivity.totalTimeSpent === 'number') {
           // The totalTimeSpent here already includes any active session duration
-          console.log(`Recovered total time from last activity: ${lastActivity.totalTimeSpent}s`);
+          //console.log(`Recovered total time from last activity: ${lastActivity.totalTimeSpent}s`);
           
           // Log if there was an active session at the time of backup
           if (lastActivity.activeSessionDuration) {
-            console.log(`Backup included active session of: ${lastActivity.activeSessionDuration}s`);
+            //console.log(`Backup included active session of: ${lastActivity.activeSessionDuration}s`);
           }
           
           return lastActivity.totalTimeSpent;
@@ -76,7 +76,7 @@ export const useUserActivityTracking = (): UserActivityData => {
       if (sessionBackupStr) {
         const sessionBackup = JSON.parse(sessionBackupStr);
         if (sessionBackup && typeof sessionBackup.totalTimeSpent === 'number') {
-          console.log(`Recovered total time from session backup: ${sessionBackup.totalTimeSpent}s`);
+          //console.log(`Recovered total time from session backup: ${sessionBackup.totalTimeSpent}s`);
           return sessionBackup.totalTimeSpent;
         }
       }
@@ -84,7 +84,7 @@ export const useUserActivityTracking = (): UserActivityData => {
       // If we reach here, no valid data was found
       return 0;
     } catch (error) {
-      console.error('Error recovering activity data from localStorage', error);
+      //console.error('Error recovering activity data from localStorage', error);
       return 0;
     }
   };

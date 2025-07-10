@@ -43,8 +43,11 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
     mutationFn: (data: SubjectiveContentData) =>
       uploadContent(clientId, "assignments", data),
     onSuccess: () => {
-      success("Assignment Saved", "Assignment content has been successfully uploaded!");
-      
+      success(
+        "Assignment Saved",
+        "Assignment content has been successfully uploaded!"
+      );
+
       // Invalidate all content-related queries to refresh the UI
       queryClient.invalidateQueries({
         predicate: (query) => {
@@ -57,11 +60,14 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
           );
         },
       });
-      
+
       onBack();
     },
     onError: (error: Error) => {
-      showError("Upload Failed", error.message || "Failed to save assignment content");
+      showError(
+        "Upload Failed",
+        error.message || "Failed to save assignment content"
+      );
     },
   });
 
@@ -81,7 +87,7 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
       showError("Validation Error", "Please enter marks");
       return;
     }
-    console.log(title, marks, question);
+    //console.log(title, marks, question);
     const contentData: SubjectiveContentData = {
       title: title.trim(),
       marks: parseInt(marks, 10),
@@ -90,7 +96,7 @@ const AddSubjectiveContent: React.FC<AddSubjectiveContentProps> = ({
       duration: duration,
     };
 
-    console.log({ title, marks, question });
+    //console.log({ title, marks, question });
     uploadMutation.mutate(contentData);
   };
 

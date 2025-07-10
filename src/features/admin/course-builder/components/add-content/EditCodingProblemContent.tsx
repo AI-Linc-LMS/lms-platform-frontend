@@ -50,11 +50,11 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
         contentId,
       ],
       queryFn: () => {
-        console.log("=== FETCHING CODING PROBLEM DATA FOR EDIT ===");
-        console.log("Client ID:", clientId);
-        console.log("Course ID:", courseId);
-        console.log("Submodule ID:", submoduleId);
-        console.log("Content ID:", contentId);
+        //console.log("=== FETCHING CODING PROBLEM DATA FOR EDIT ===");
+        //console.log("Client ID:", clientId);
+        //console.log("Course ID:", courseId);
+        //console.log("Submodule ID:", submoduleId);
+        //console.log("Content ID:", contentId);
 
         return getSubmoduleContentById(
           clientId,
@@ -69,8 +69,8 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
   // Populate form with existing data
   useEffect(() => {
     if (codingProblemData) {
-      console.log("=== LOADED CODING PROBLEM DATA FOR EDITING ===");
-      console.log("Coding problem data:", codingProblemData);
+      //console.log("=== LOADED CODING PROBLEM DATA FOR EDITING ===");
+      //console.log("Coding problem data:", codingProblemData);
 
       const contentDetails = codingProblemData.details || codingProblemData;
 
@@ -97,26 +97,17 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
       ) {
         setTestCases(codingProblemData.test_cases);
       }
-
-      console.log("Form populated with:", {
-        title: contentDetails.title || codingProblemData.title,
-        marks: contentDetails.marks || codingProblemData.marks,
-        problem_statement:
-          contentDetails.problem_statement ||
-          codingProblemData.problem_statement,
-        test_cases: contentDetails.test_cases || codingProblemData.test_cases,
-      });
     }
   }, [codingProblemData]);
 
   const updateMutation = useMutation({
     mutationFn: (data: CodingProblemContentUpdateData) => {
-      console.log("=== UPDATING CODING PROBLEM ===");
-      console.log("Client ID:", clientId);
-      console.log("Course ID:", courseId);
-      console.log("Submodule ID:", submoduleId);
-      console.log("Content ID:", contentId);
-      console.log("Update data:", data);
+      //console.log("=== UPDATING CODING PROBLEM ===");
+      //console.log("Client ID:", clientId);
+      //console.log("Course ID:", courseId);
+      //console.log("Submodule ID:", submoduleId);
+      //console.log("Content ID:", contentId);
+      //console.log("Update data:", data);
 
       return updateSubmoduleContent(
         clientId,
@@ -127,7 +118,7 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
       );
     },
     onSuccess: () => {
-      console.log("✅ Coding problem updated successfully!");
+      //console.log("✅ Coding problem updated successfully!");
       success(
         "Coding Problem Updated",
         "Coding problem content updated successfully!"
@@ -156,7 +147,7 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
       onBack();
     },
     onError: (error: Error) => {
-      console.error("❌ Failed to update coding problem:", error);
+      //console.error("❌ Failed to update coding problem:", error);
       showError(
         "Update Failed",
         error.message || "Failed to update coding problem content"
@@ -204,14 +195,6 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
         return;
       }
     }
-
-    console.log("=== SAVING CODING PROBLEM UPDATE ===");
-    console.log("Form data:", {
-      title: title.trim(),
-      marks: marksNumber,
-      problem_statement: problemStatement.trim(),
-      test_cases: testCases,
-    });
 
     const contentData: CodingProblemContentUpdateData = {
       title: title.trim(),
