@@ -50,11 +50,11 @@ export const sendActivityData = async (data: ActivityData): Promise<void> => {
     // When ready, uncomment this code and replace with the actual endpoint
     /*
     await activityTrackingInstance.post('/user-activity', data);
-    console.log('Activity data sent successfully');
+    //console.log('Activity data sent successfully');
     */
     
     // For now, just log the data that would be sent
-    console.log('Activity data ready to send:', data);
+    //console.log('Activity data ready to send:', data);
     
     // Format API data for the current backend endpoint
     const apiData = {
@@ -70,14 +70,14 @@ export const sendActivityData = async (data: ActivityData): Promise<void> => {
     const clientId = import.meta.env.VITE_CLIENT_ID;
     const endpoint = `/activity/clients/${clientId}/activity-log/`;
     
-    console.log('Sending to endpoint:', endpoint);
-    console.log('Formatted data:', apiData);
+    //console.log('Sending to endpoint:', endpoint);
+    //console.log('Formatted data:', apiData);
     
     // Send the actual API call
     await activityTrackingInstance.post(endpoint, apiData);
-    console.log('Activity data sent successfully');
+    //console.log('Activity data sent successfully');
   } catch (error) {
-    console.error('Failed to send activity data:', error);
+    //console.error('Failed to send activity data:', error);
     throw error;
   }
 };
@@ -101,7 +101,7 @@ export const storeActivityDataLocally = (data: ActivityData): void => {
     
     localStorage.setItem('offlineActivityData', JSON.stringify(offlineData));
   } catch (error) {
-    console.error('Failed to store activity data locally:', error);
+    //console.error('Failed to store activity data locally:', error);
   }
 };
 
@@ -136,11 +136,11 @@ export const syncOfflineActivityData = async (): Promise<void> => {
     });
     
     await Promise.all(promises);
-    console.log('Offline activity data synced successfully');
+    //console.log('Offline activity data synced successfully');
     
     // Clear synced data
     localStorage.removeItem('offlineActivityData');
   } catch (error) {
-    console.error('Failed to sync offline activity data:', error);
+    //console.error('Failed to sync offline activity data:', error);
   }
 }; 

@@ -33,7 +33,7 @@ const AssessmentReferals = () => {
   const { data: assessments = [] } = useQuery({
     queryKey: ["assessments-list", clientId],
     queryFn: () => getAllAssessments(clientId),
-    staleTime: 5*60*1000,
+    staleTime: 5 * 60 * 1000,
   });
   // ensure slug matches list if not existing
   React.useEffect(() => {
@@ -52,7 +52,7 @@ const AssessmentReferals = () => {
 
   // Generate assessment referral link
   const generateReferralLink = (referralCode: string) => {
-    return `${window.location.origin}/assessment/${assessmentSlug}?ref=${encodeURIComponent(referralCode)}`;
+    return `https://ailinc.com/assessment?ref=${encodeURIComponent(referralCode)}`;
   };
 
   // Copy link
@@ -126,11 +126,11 @@ const AssessmentReferals = () => {
             <input type="text" placeholder="Search by name, email, or referral code..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none" />
           </div>
           {/* Assessment selector */}
-          <select value={assessmentSlug} onChange={(e)=> setAssessmentSlug(e.target.value)} className="w-full sm:w-80 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none" >
+          {/* <select value={assessmentSlug} onChange={(e)=> setAssessmentSlug(e.target.value)} className="w-full sm:w-80 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none" >
             {assessments.map(ass => (
               <option key={ass.slug} value={ass.slug}>{ass.title}</option>
             ))}
-          </select>
+          </select> */}
           {/* Create button */}
           <button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2 bg-[#255C79] text-white px-6 py-3 rounded-lg hover:bg-[#1E4A63] transition-colors font-medium"><FiPlus className="w-5 h-5" />Create Referral</button>
         </div>
@@ -189,12 +189,12 @@ const AssessmentReferals = () => {
         {/* Create/Edit Modal */}
         {isCreateModalOpen || editingReferral ? (
           <ReferralModal isOpen={Boolean(isCreateModalOpen || editingReferral)} onClose={() => { setIsCreateModalOpen(false); setEditingReferral(null); }} onSubmit={(data) => {
-              if (editingReferral) {
-                updateMutation.mutate({ id: editingReferral.id.toString(), data });
-              } else {
-                createMutation.mutate(data);
-              }
-            }} referral={editingReferral} isLoading={createMutation.isPending || updateMutation.isPending} />
+            if (editingReferral) {
+              updateMutation.mutate({ id: editingReferral.id.toString(), data });
+            } else {
+              createMutation.mutate(data);
+            }
+          }} referral={editingReferral} isLoading={createMutation.isPending || updateMutation.isPending} />
         ) : null}
 
         {/* Delete Confirmation */}

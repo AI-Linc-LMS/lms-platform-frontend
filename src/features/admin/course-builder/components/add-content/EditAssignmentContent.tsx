@@ -42,11 +42,11 @@ const EditAssignmentContent: React.FC<EditAssignmentContentProps> = ({
       contentId,
     ],
     queryFn: () => {
-      console.log("=== FETCHING ASSIGNMENT DATA FOR EDIT ===");
-      console.log("Client ID:", clientId);
-      console.log("Course ID:", courseId);
-      console.log("Submodule ID:", submoduleId);
-      console.log("Content ID:", contentId);
+      //console.log("=== FETCHING ASSIGNMENT DATA FOR EDIT ===");
+      //console.log("Client ID:", clientId);
+      //console.log("Course ID:", courseId);
+      //console.log("Submodule ID:", submoduleId);
+      //console.log("Content ID:", contentId);
 
       return getSubmoduleContentById(
         clientId,
@@ -61,8 +61,8 @@ const EditAssignmentContent: React.FC<EditAssignmentContentProps> = ({
   // Populate form with existing data
   useEffect(() => {
     if (assignmentData) {
-      console.log("=== LOADED ASSIGNMENT DATA FOR EDITING ===");
-      console.log("Assignment data:", assignmentData);
+      //console.log("=== LOADED ASSIGNMENT DATA FOR EDITING ===");
+      //console.log("Assignment data:", assignmentData);
 
       const contentDetails = assignmentData.details || assignmentData;
 
@@ -76,24 +76,17 @@ const EditAssignmentContent: React.FC<EditAssignmentContentProps> = ({
         contentDetails.description || assignmentData.description || ""
       );
       setDueDate(contentDetails.due_date || assignmentData.due_date || "");
-
-      console.log("Form populated with:", {
-        title: contentDetails.title || assignmentData.title,
-        marks: contentDetails.marks || assignmentData.marks,
-        description: contentDetails.description || assignmentData.description,
-        due_date: contentDetails.due_date || assignmentData.due_date,
-      });
     }
   }, [assignmentData]);
 
   const updateMutation = useMutation({
     mutationFn: (data: AssignmentContentUpdateData) => {
-      console.log("=== UPDATING ASSIGNMENT ===");
-      console.log("Client ID:", clientId);
-      console.log("Course ID:", courseId);
-      console.log("Submodule ID:", submoduleId);
-      console.log("Content ID:", contentId);
-      console.log("Update data:", data);
+      //console.log("=== UPDATING ASSIGNMENT ===");
+      //console.log("Client ID:", clientId);
+      //console.log("Course ID:", courseId);
+      //console.log("Submodule ID:", submoduleId);
+      //console.log("Content ID:", contentId);
+      //console.log("Update data:", data);
 
       return updateSubmoduleContent(
         clientId,
@@ -104,7 +97,7 @@ const EditAssignmentContent: React.FC<EditAssignmentContentProps> = ({
       );
     },
     onSuccess: () => {
-      console.log("✅ Assignment updated successfully!");
+      //console.log("✅ Assignment updated successfully!");
       success("Assignment Updated", "Assignment content updated successfully!");
       
       // Invalidate all relevant queries to refresh the UI
@@ -130,7 +123,7 @@ const EditAssignmentContent: React.FC<EditAssignmentContentProps> = ({
       onBack();
     },
     onError: (error: Error) => {
-      console.error("❌ Failed to update assignment:", error);
+      //console.error("❌ Failed to update assignment:", error);
       showError(
         "Update Failed",
         error.message || "Failed to update assignment content"
@@ -160,13 +153,6 @@ const EditAssignmentContent: React.FC<EditAssignmentContentProps> = ({
       return;
     }
 
-    console.log("=== SAVING ASSIGNMENT UPDATE ===");
-    console.log("Form data:", {
-      title: title.trim(),
-      marks: marksNumber,
-      description: description.trim(),
-      due_date: dueDate,
-    });
 
     const contentData: AssignmentContentUpdateData = {
       title: title.trim(),

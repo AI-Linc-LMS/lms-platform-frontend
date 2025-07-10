@@ -25,7 +25,8 @@ const PaymentCardSection: React.FC<{
 
   // Modal states
   const [showNanodegreeModal, setShowNanodegreeModal] = useState(false);
-  const [showNanoDegreeCourseModal, setShowNanoDegreeCourseModal] = useState(false);
+  const [showNanoDegreeCourseModal, setShowNanoDegreeCourseModal] =
+    useState(false);
   const [showFlagshipModal, setShowFlagshipModal] = useState(false);
   const [showFlagshipCourseModal, setShowFlagshipCourseModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -74,17 +75,21 @@ const PaymentCardSection: React.FC<{
   }, [toast.show, toast.type]);
 
   // Query for seat booking payment status
-  const { data: roadmapPaymentStatus, refetch: refetchNanodegreeStatus } = useQuery({
-    queryKey: ["roadmap-payment-status", clientId, assessmentId],
-    queryFn: () => getRoadmapPaymentStatus(clientId, "nanodegree"),
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    staleTime: 0,
-    enabled: !!clientId,
-  });
+  const { data: roadmapPaymentStatus, refetch: refetchNanodegreeStatus } =
+    useQuery({
+      queryKey: ["roadmap-payment-status", clientId, assessmentId],
+      queryFn: () => getRoadmapPaymentStatus(clientId, "nanodegree"),
+      refetchOnWindowFocus: true,
+      refetchOnMount: true,
+      staleTime: 0,
+      enabled: !!clientId,
+    });
 
   // Query for course payment status (separate from seat booking)
-  const { data: nanodegreeCoursePaymentStatus, refetch: refetchNanodegreeCourseStatus } = useQuery({
+  const {
+    data: nanodegreeCoursePaymentStatus,
+    refetch: refetchNanodegreeCourseStatus,
+  } = useQuery({
     queryKey: ["nanodegree-course-payment-status", clientId, assessmentId],
     queryFn: () => getRoadmapPaymentStatus(clientId, "nanodegree-course"),
     refetchOnWindowFocus: true,
@@ -93,17 +98,21 @@ const PaymentCardSection: React.FC<{
     enabled: !!clientId,
   });
 
-  const { data: roadmapPaymentStatusFlagship, refetch: refetchFlagshipStatus } = useQuery({
-    queryKey: ["roadmap-payment-status-flagship", clientId, assessmentId],
-    queryFn: () => getRoadmapPaymentStatus(clientId, "flagship"),
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    staleTime: 0,
-    enabled: !!clientId,
-  });
+  const { data: roadmapPaymentStatusFlagship, refetch: refetchFlagshipStatus } =
+    useQuery({
+      queryKey: ["roadmap-payment-status-flagship", clientId, assessmentId],
+      queryFn: () => getRoadmapPaymentStatus(clientId, "flagship"),
+      refetchOnWindowFocus: true,
+      refetchOnMount: true,
+      staleTime: 0,
+      enabled: !!clientId,
+    });
 
   // Query for flagship course payment status (separate from seat booking)
-  const { data: flagshipCoursePaymentStatus, refetch: refetchFlagshipCourseStatus } = useQuery({
+  const {
+    data: flagshipCoursePaymentStatus,
+    refetch: refetchFlagshipCourseStatus,
+  } = useQuery({
     queryKey: ["flagship-course-payment-status", clientId, assessmentId],
     queryFn: () => getRoadmapPaymentStatus(clientId, "flagship-course"),
     refetchOnWindowFocus: true,
@@ -113,7 +122,8 @@ const PaymentCardSection: React.FC<{
   });
 
   const isNanodegreeSeatBooked = roadmapPaymentStatus?.status === "paid";
-  const isNanodegreeCoursePaid = nanodegreeCoursePaymentStatus?.status === "paid";
+  const isNanodegreeCoursePaid =
+    nanodegreeCoursePaymentStatus?.status === "paid";
   const isFlagshipSeatBooked = roadmapPaymentStatusFlagship?.status === "paid";
   const isFlagshipCoursePaid = flagshipCoursePaymentStatus?.status === "paid";
 
@@ -123,7 +133,7 @@ const PaymentCardSection: React.FC<{
   const { paymentState: nanodegreePaymentState, initiateNanodegreePayment } =
     useNanodegreePayment({
       onSuccess: (result: PaymentResult) => {
-        console.log("Nanodegree seat booking successful:", result);
+        //console.log("Nanodegree seat booking successful:", result);
         setPaymentResult({
           paymentId: result.paymentId,
           orderId: result.orderId,
@@ -136,24 +146,24 @@ const PaymentCardSection: React.FC<{
           "Seat Booked Successfully!",
           "Your Nanodegree seat has been reserved. You can now pay for the full course."
         );
-        
+
         // Invalidate and refetch payment status queries
         queryClient.invalidateQueries({
-          queryKey: ["roadmap-payment-status", clientId, assessmentId]
+          queryKey: ["roadmap-payment-status", clientId, assessmentId],
         });
         refetchNanodegreeStatus();
-        
+
         // Also refetch after a short delay to ensure backend processing is complete
         setTimeout(() => {
           refetchNanodegreeStatus();
         }, 2000);
       },
       onError: (error: string) => {
-        console.error("Nanodegree seat booking failed:", error);
+        //console.error("Nanodegree seat booking failed:", error);
         showToast("error", "Payment Failed", error);
       },
       onDismiss: () => {
-        console.log("Nanodegree seat booking dismissed");
+        //console.log("Nanodegree seat booking dismissed");
         showToast(
           "warning",
           "Payment Cancelled",
@@ -165,7 +175,7 @@ const PaymentCardSection: React.FC<{
   const { paymentState: nanodegreeCoursePaymentState, initiateCoursePayment } =
     useCoursePayment({
       onSuccess: (result: PaymentResult) => {
-        console.log("Nanodegree course payment successful:", result);
+        //console.log("Nanodegree course payment successful:", result);
         setPaymentResult({
           paymentId: result.paymentId,
           orderId: result.orderId,
@@ -178,24 +188,28 @@ const PaymentCardSection: React.FC<{
           "Course Payment Successful!",
           "Your Nanodegree course access has been confirmed."
         );
-        
+
         // Invalidate and refetch payment status queries
         queryClient.invalidateQueries({
-          queryKey: ["nanodegree-course-payment-status", clientId, assessmentId]
+          queryKey: [
+            "nanodegree-course-payment-status",
+            clientId,
+            assessmentId,
+          ],
         });
         refetchNanodegreeCourseStatus();
-        
+
         // Also refetch after a short delay to ensure backend processing is complete
         setTimeout(() => {
           refetchNanodegreeCourseStatus();
         }, 2000);
       },
       onError: (error: string) => {
-        console.error("Nanodegree course payment failed:", error);
+        //console.error("Nanodegree course payment failed:", error);
         showToast("error", "Payment Failed", error);
       },
       onDismiss: () => {
-        console.log("Nanodegree course payment dismissed");
+        //console.log("Nanodegree course payment dismissed");
         showToast(
           "warning",
           "Payment Cancelled",
@@ -207,7 +221,7 @@ const PaymentCardSection: React.FC<{
   const { paymentState: flagshipPaymentState, initiateFlagshipPayment } =
     useFlagshipPayment({
       onSuccess: (result: PaymentResult) => {
-        console.log("Flagship seat booking successful:", result);
+        //console.log("Flagship seat booking successful:", result);
         setPaymentResult({
           paymentId: result.paymentId,
           orderId: result.orderId,
@@ -220,24 +234,24 @@ const PaymentCardSection: React.FC<{
           "Seat Booked Successfully!",
           "Your Flagship seat has been reserved. You can now pay for the full course."
         );
-        
+
         // Invalidate and refetch payment status queries
         queryClient.invalidateQueries({
-          queryKey: ["roadmap-payment-status-flagship", clientId, assessmentId]
+          queryKey: ["roadmap-payment-status-flagship", clientId, assessmentId],
         });
         refetchFlagshipStatus();
-        
+
         // Also refetch after a short delay to ensure backend processing is complete
         setTimeout(() => {
           refetchFlagshipStatus();
         }, 2000);
       },
       onError: (error: string) => {
-        console.error("Flagship seat booking failed:", error);
+        //console.error("Flagship seat booking failed:", error);
         showToast("error", "Payment Failed", error);
       },
       onDismiss: () => {
-        console.log("Flagship seat booking dismissed");
+        //console.log("Flagship seat booking dismissed");
         showToast(
           "warning",
           "Payment Cancelled",
@@ -247,47 +261,49 @@ const PaymentCardSection: React.FC<{
     });
 
   // Add flagship course payment hook
-  const { paymentState: flagshipCoursePaymentState, initiateCoursePayment: initiateFlagshipCoursePayment } =
-    useCoursePayment({
-      onSuccess: (result: PaymentResult) => {
-        console.log("Flagship course payment successful:", result);
-        setPaymentResult({
-          paymentId: result.paymentId,
-          orderId: result.orderId,
-          amount: result.amount,
-          type: "flagship-course",
-        });
-        setShowSuccessModal(true);
-        showToast(
-          "success",
-          "Course Payment Successful!",
-          "Your Flagship Career Launchpad access has been confirmed."
-        );
-        
-        // Invalidate and refetch payment status queries
-        queryClient.invalidateQueries({
-          queryKey: ["flagship-course-payment-status", clientId, assessmentId]
-        });
+  const {
+    paymentState: flagshipCoursePaymentState,
+    initiateCoursePayment: initiateFlagshipCoursePayment,
+  } = useCoursePayment({
+    onSuccess: (result: PaymentResult) => {
+      //console.log("Flagship course payment successful:", result);
+      setPaymentResult({
+        paymentId: result.paymentId,
+        orderId: result.orderId,
+        amount: result.amount,
+        type: "flagship-course",
+      });
+      setShowSuccessModal(true);
+      showToast(
+        "success",
+        "Course Payment Successful!",
+        "Your Flagship Career Launchpad access has been confirmed."
+      );
+
+      // Invalidate and refetch payment status queries
+      queryClient.invalidateQueries({
+        queryKey: ["flagship-course-payment-status", clientId, assessmentId],
+      });
+      refetchFlagshipCourseStatus();
+
+      // Also refetch after a short delay to ensure backend processing is complete
+      setTimeout(() => {
         refetchFlagshipCourseStatus();
-        
-        // Also refetch after a short delay to ensure backend processing is complete
-        setTimeout(() => {
-          refetchFlagshipCourseStatus();
-        }, 2000);
-      },
-      onError: (error: string) => {
-        console.error("Flagship course payment failed:", error);
-        showToast("error", "Payment Failed", error);
-      },
-      onDismiss: () => {
-        console.log("Flagship course payment dismissed");
-        showToast(
-          "warning",
-          "Payment Cancelled",
-          "Payment was cancelled. You can try again anytime."
-        );
-      },
-    });
+      }, 2000);
+    },
+    onError: (error: string) => {
+      //console.error("Flagship course payment failed:", error);
+      showToast("error", "Payment Failed", error);
+    },
+    onDismiss: () => {
+      //console.log("Flagship course payment dismissed");
+      showToast(
+        "warning",
+        "Payment Cancelled",
+        "Payment was cancelled. You can try again anytime."
+      );
+    },
+  });
 
   const handleNanodegreePayment = () => {
     if (isNanodegreeCoursePaid) {
@@ -298,7 +314,7 @@ const PaymentCardSection: React.FC<{
       );
       return;
     }
-    
+
     if (isNanodegreeSeatBooked) {
       // Seat is booked, now pay for the course
       setShowNanoDegreeCourseModal(true);
@@ -317,7 +333,7 @@ const PaymentCardSection: React.FC<{
       );
       return;
     }
-    
+
     if (isFlagshipSeatBooked) {
       // Seat is booked, now pay for the course
       setShowFlagshipCourseModal(true);
@@ -374,17 +390,21 @@ const PaymentCardSection: React.FC<{
 
   const confirmFlagshipCoursePayment = () => {
     setShowFlagshipCourseModal(false);
-    initiateFlagshipCoursePayment(clientId, redeemData?.payable_amount-999 || 9001, {
-      prefill: {
-        name: user.full_name || "User",
-        email: user.email || "",
-      },
-      metadata: {
-        assessmentId: assessmentId,
-        type_id: "flagship-course",
-        payment_type: "COURSE",
-      },
-    });
+    initiateFlagshipCoursePayment(
+      clientId,
+      redeemData?.payable_amount - 999 || 9001,
+      {
+        prefill: {
+          name: user.full_name || "User",
+          email: user.email || "",
+        },
+        metadata: {
+          assessmentId: assessmentId,
+          type_id: "flagship-course",
+          payment_type: "COURSE",
+        },
+      }
+    );
   };
 
   const handleSuccessModalClose = () => {
@@ -414,7 +434,7 @@ const PaymentCardSection: React.FC<{
   const flagshipCoursePurchaseData = {
     percentage_scholarship: redeemData?.percentage_scholarship || 90,
     total_amount: redeemData?.total_amount || 120000,
-    payable_amount: redeemData?.payable_amount-999 || 9001,
+    payable_amount: redeemData?.payable_amount - 999 || 9001,
   };
 
   // Helper function to get button text and style for Nanodegree
@@ -450,7 +470,9 @@ const PaymentCardSection: React.FC<{
       };
     } else if (isFlagshipSeatBooked) {
       return {
-        text: `Seat Booked, Now Pay for Course ₹${redeemData?.payable_amount-999 || 9001}`,
+        text: `Seat Booked, Now Pay for Course ₹${
+          redeemData?.payable_amount - 999 || 9001
+        }`,
         disabled: false,
         className: "bg-[#14212B] text-white hover:bg-[#223344]",
       };
@@ -504,7 +526,8 @@ const PaymentCardSection: React.FC<{
             {isNanodegreeSeatBooked && !isNanodegreeCoursePaid && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
                 <p className="text-xs text-blue-700 text-center">
-                  <strong>Seat Reserved!</strong> Complete your enrollment by paying for the full course.
+                  <strong>Seat Reserved!</strong> Complete your enrollment by
+                  paying for the full course.
                 </p>
               </div>
             )}
@@ -607,7 +630,8 @@ const PaymentCardSection: React.FC<{
               <>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
                   <p className="text-xs text-blue-700 text-center">
-                    <strong>Seat Reserved!</strong> Complete your enrollment by paying for the full course.
+                    <strong>Seat Reserved!</strong> Complete your enrollment by
+                    paying for the full course.
                   </p>
                 </div>
                 <div className="text-sm sm:text-lg text-[#0ea5e9] font-bold mb-1">
@@ -688,7 +712,10 @@ const PaymentCardSection: React.FC<{
       </div>
 
       {/* Show message if payment is done */}
-      {(isNanodegreeSeatBooked || isNanodegreeCoursePaid || isFlagshipSeatBooked || isFlagshipCoursePaid) && (
+      {(isNanodegreeSeatBooked ||
+        isNanodegreeCoursePaid ||
+        isFlagshipSeatBooked ||
+        isFlagshipCoursePaid) && (
         <div className="w-full flex justify-center mt-6">
           <span className="text-gray-500 text-base text-center w-full max-w-2xl border-t border-gray-200 pt-4 block font-medium">
             {isNanodegreeCoursePaid
@@ -754,7 +781,10 @@ const PaymentCardSection: React.FC<{
           flagshipPaymentState.step === "error" ||
           flagshipCoursePaymentState.step === "error"
             ? "creating"
-            : ((nanodegreePaymentState.step || nanodegreeCoursePaymentState.step || flagshipPaymentState.step || flagshipCoursePaymentState.step) as
+            : ((nanodegreePaymentState.step ||
+                nanodegreeCoursePaymentState.step ||
+                flagshipPaymentState.step ||
+                flagshipCoursePaymentState.step) as
                 | "creating"
                 | "processing"
                 | "verifying"

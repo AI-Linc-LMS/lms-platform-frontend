@@ -28,6 +28,8 @@ interface WorkshopTableHeaderProps {
   ) => void;
   onClearFilter: (column: keyof FilterState) => void;
   data?: WorkshopRegistrationData[];
+  visibleColumns?: string[];
+  permanentColumns?: string[];
 }
 
 // Reusable MultiSelectDropdown component
@@ -81,12 +83,6 @@ const MultiSelectDropdown: React.FC<{
     setSearchTerm("");
 
     const filterValue = newSelected.join(",");
-    console.log("MultiSelectDropdown Toggle:", {
-      option: opt,
-      newSelected,
-      filterValue,
-      action: selectedOptions.includes(opt) ? "deselected" : "selected",
-    });
 
     onChange(filterValue);
   };
@@ -207,110 +203,120 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
   onUpdateFilter,
   onClearFilter,
   data = [],
+  visibleColumns = [],
+  permanentColumns = [],
 }) => {
   const filterConfigs = [
-    { column: "name", label: "Name", placeholder: "Filter by name..." },
-    { column: "email", label: "Email", placeholder: "Filter by email..." },
+    { column: "name", label: "Name" },
+    { column: "email", label: "Email" },
     {
       column: "phone_number",
       label: "Mobile Number",
-      placeholder: "Filter by phone...",
     },
     {
       column: "workshop_name",
       label: "Workshop Name",
-      placeholder: "Filter by workshop...",
     },
     {
       column: "session_number",
       label: "Session",
-      placeholder: "Filter by session...",
+    },
+    {
+      column: "session_date",
+      label: "Session Date",
     },
     {
       column: "referal_code",
       label: "Referral Code",
-      placeholder: "Filter by referral code...",
     },
     {
       column: "attended_webinars",
-      label: "Webinars",
-      placeholder: "Filter by webinars...",
+      label: "Attendee",
     },
     {
       column: "is_assessment_attempted",
       label: "Assessment",
-      placeholder: "Filter by assessment...",
     },
     {
       column: "is_certificate_amount_paid",
       label: "Certificate Paid",
-      placeholder: "Filter by certificate payment...",
     },
     {
       column: "is_prebooking_amount_paid",
       label: "Prebooking Paid",
-      placeholder: "Filter by prebooking payment...",
     },
     {
       column: "is_course_amount_paid",
       label: "Course Paid",
-      placeholder: "Filter by course payment...",
     },
     {
       column: "first_call_status",
       label: "1st Call Status",
-      placeholder: "Filter by first call status...",
       enum: FIRST_CALL_STATUS_OPTIONS,
     },
     {
       column: "first_call_comment",
       label: "1st Call Comment",
-      placeholder: "Filter by first call comment...",
     },
     {
       column: "second_call_status",
       label: "2nd Call Status",
-      placeholder: "Filter by second call status...",
       enum: SECOND_CALL_STATUS_OPTIONS,
     },
     {
       column: "second_call_comment",
       label: "2nd Call Comment",
-      placeholder: "Filter by second call comment...",
+    },
+    {
+      column: "follow_up_comment",
+      label: "Follow Up Comment",
     },
     {
       column: "amount_paid",
       label: "Amount Paid",
-      placeholder: "Filter by amount paid...",
     },
     {
       column: "amount_pending",
       label: "Amount Pending",
-      placeholder: "Filter by amount pending...",
     },
     {
       column: "score",
       label: "Score",
-      placeholder: "Filter by score...",
     },
     {
       column: "offered_scholarship_percentage",
       label: "Scholarship %",
-      placeholder: "Filter by scholarship percentage...",
     },
     {
       column: "offered_amount",
       label: "Offered Amount",
-      placeholder: "Filter by offered amount...",
     },
     {
       column: "assessment_status",
       label: "Assessment Status",
-      placeholder: "Filter by assessment status...",
+    },
+    {
+      column: "registered_at",
+      label: "Registered At",
+      isDate: true,
+    },
+    {
+      column: "updated_at",
+      label: "Updated At",
+      isDate: true,
+    },
+    {
+      column: "submitted_at",
+      label: "Submitted At",
+      isDate: true,
     },
   ];
 
-  const commentFields = ["first_call_comment", "second_call_comment"];
+  const commentFields = [
+    "first_call_comment",
+    "second_call_comment",
+    "follow_up_comment",
+  ];
 
   // Helper to get all unique values for a field from a filtered dataset
   const getUniqueFieldValues = (
@@ -346,197 +352,110 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
   return (
     <thead className="bg-gray-100">
       <tr>
-        {filterConfigs.map((config) => (
-          <th
-            key={config.column}
-            className={[
-              "p-3 relative",
-              (config.column === "first_call_status" ||
-                config.column === "second_call_status") &&
-                "w-[170px] min-w-[170px]",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-          >
-            <div className="flex items-center gap-1">
-              <span>{config.label}</span>
-              {!commentFields.includes(config.column) && (
-                <button
-                  type="button"
-                  className={`ml-1 p-1 rounded hover:bg-gray-200 ${
-                    openFilter === config.column
-                      ? "text-blue-600"
-                      : "text-gray-400"
-                  }`}
-                  onClick={() =>
-                    onToggleFilter(
+        {filterConfigs
+          .filter(
+            (config) =>
+              permanentColumns.includes(config.column) ||
+              visibleColumns.includes(config.column)
+          )
+          .map((config) => (
+            <th
+              key={config.column}
+              className={[
+                "p-3 relative",
+                (config.column === "first_call_status" ||
+                  config.column === "second_call_status") &&
+                  "w-[170px] min-w-[170px]",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              <div className="flex items-center gap-1">
+                <span>{config.label}</span>
+                {!commentFields.includes(config.column) && (
+                  <button
+                    type="button"
+                    className={`ml-1 p-1 rounded hover:bg-gray-200 ${
                       openFilter === config.column
-                        ? null
-                        : (config.column as keyof FilterState)
-                    )
-                  }
-                >
-                  <FiFilter className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-            {/* Popover filter UI */}
-            {openFilter === config.column &&
-              !commentFields.includes(config.column) && (
-                <div
-                  ref={(el) => {
-                    popoverRefs.current[config.column] = el;
-                  }}
-                  className="absolute left-0 top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
-                >
-                  {config.enum ? (
-                    <MultiSelectDropdown
-                      value={
-                        filters[config.column as keyof FilterState] as string
-                      }
-                      onChange={(value) =>
-                        onUpdateFilter(
-                          config.column as keyof FilterState,
-                          value
-                        )
-                      }
-                      data={config.enum.map((e) => e.value)}
-                      colorMap={Object.fromEntries(
-                        config.enum.map((e) => [e.value, e.color])
-                      )}
-                    />
-                  ) : (
-                    <MultiSelectDropdown
-                      value={
-                        filters[config.column as keyof FilterState] as string
-                      }
-                      onChange={(value) =>
-                        onUpdateFilter(
-                          config.column as keyof FilterState,
-                          value
-                        )
-                      }
-                      data={getUniqueFieldValues(
-                        config.column as keyof WorkshopRegistrationData,
-                        data
-                      )}
-                    />
-                  )}
-                </div>
-              )}
-          </th>
-        ))}
-        <th className="p-3 relative min-w-[160px]">
-          <div className="flex items-center gap-1">
-            <span>Registered At</span>
-            <button
-              type="button"
-              className={`ml-1 p-1 rounded hover:bg-gray-200 ${
-                openFilter === "registered_at"
-                  ? "text-blue-600"
-                  : "text-gray-400"
-              }`}
-              onClick={() =>
-                onToggleFilter(
-                  openFilter === "registered_at" ? null : "registered_at"
-                )
-              }
-            >
-              <FiFilter className="w-4 h-4" />
-            </button>
-          </div>
-          {openFilter === "registered_at" && (
-            <div
-              ref={(el) => {
-                popoverRefs.current["registered_at"] = el;
-              }}
-              className="absolute right-2 top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
-            >
-              <DateFilterDropdown
-                column="registered_at"
-                value={filters.registered_at}
-                isOpen={true}
-                onChange={(column, value) => onUpdateFilter(column, value)}
-                onClear={onClearFilter}
-                filterRef={filterRefs.registered_at!}
-              />
-            </div>
-          )}
-        </th>
-        <th className="p-3 relative min-w-[160px]">
-          <div className="flex items-center gap-1">
-            <span>Updated At</span>
-            <button
-              type="button"
-              className={`ml-1 p-1 rounded hover:bg-gray-200 ${
-                openFilter === "updated_at" ? "text-blue-600" : "text-gray-400"
-              }`}
-              onClick={() =>
-                onToggleFilter(
-                  openFilter === "updated_at"
-                    ? null
-                    : ("updated_at" as keyof FilterState)
-                )
-              }
-            >
-              <FiFilter className="w-4 h-4" />
-            </button>
-          </div>
-          {openFilter === "updated_at" && (
-            <div
-              ref={(el) => {
-                popoverRefs.current["updated_at"] = el;
-              }}
-              className="absolute right-2 top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
-            >
-              <DateFilterDropdown
-                column={"updated_at" as keyof FilterState}
-                value={filters.updated_at || { start: "", end: "" }}
-                isOpen={true}
-                onChange={(column, value) => onUpdateFilter(column, value)}
-                onClear={onClearFilter}
-                filterRef={filterRefs.updated_at!}
-              />
-            </div>
-          )}
-        </th>
-        <th className="p-3 relative min-w-[160px]">
-          <div className="flex items-center gap-1">
-            <span>Submitted At</span>
-            <button
-              type="button"
-              className={`ml-1 p-1 rounded hover:bg-gray-200 ${
-                openFilter === "submitted_at" ? "text-blue-600" : "text-gray-400"
-              }`}
-              onClick={() =>
-                onToggleFilter(
-                  openFilter === "submitted_at"
-                    ? null
-                    : ("submitted_at" as keyof FilterState)
-                )
-              }
-            >
-              <FiFilter className="w-4 h-4" />
-            </button>
-          </div>
-          {openFilter === "submitted_at" && (
-            <div
-              ref={(el) => {
-                popoverRefs.current["submitted_at"] = el;
-              }}
-              className="absolute right-2 top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
-            >
-              <DateFilterDropdown
-                column={"submitted_at" as keyof FilterState}
-                value={filters.submitted_at || { start: "", end: "" }}
-                isOpen={true}
-                onChange={(column, value) => onUpdateFilter(column, value)}
-                onClear={onClearFilter}
-                filterRef={filterRefs.submitted_at!}
-              />
-            </div>
-          )}
-        </th>
+                        ? "text-blue-600"
+                        : "text-gray-400"
+                    }`}
+                    onClick={() =>
+                      onToggleFilter(
+                        openFilter === config.column
+                          ? null
+                          : (config.column as keyof FilterState)
+                      )
+                    }
+                  >
+                    <FiFilter className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              {/* Popover filter UI */}
+              {openFilter === config.column &&
+                !commentFields.includes(config.column) && (
+                  <div
+                    ref={(el) => {
+                      popoverRefs.current[config.column] = el;
+                    }}
+                    className="absolute left-0 top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
+                  >
+                    {config.isDate ? (
+                      <DateFilterDropdown
+                        column={config.column as keyof FilterState}
+                        value={
+                          (filters[config.column as keyof FilterState] as {
+                            start: string;
+                            end: string;
+                          }) || { start: "", end: "" }
+                        }
+                        isOpen={true}
+                        onChange={(column, value) =>
+                          onUpdateFilter(column, value)
+                        }
+                        onClear={onClearFilter}
+                        filterRef={
+                          filterRefs[config.column as keyof FilterState]!
+                        }
+                      />
+                    ) : config.enum ? (
+                      <MultiSelectDropdown
+                        value={
+                          filters[config.column as keyof FilterState] as string
+                        }
+                        onChange={(value) =>
+                          onUpdateFilter(
+                            config.column as keyof FilterState,
+                            value
+                          )
+                        }
+                        data={config.enum.map((e) => e.value)}
+                        colorMap={Object.fromEntries(
+                          config.enum.map((e) => [e.value, e.color])
+                        )}
+                      />
+                    ) : (
+                      <MultiSelectDropdown
+                        value={
+                          filters[config.column as keyof FilterState] as string
+                        }
+                        onChange={(value) =>
+                          onUpdateFilter(
+                            config.column as keyof FilterState,
+                            value
+                          )
+                        }
+                        data={getUniqueFieldValues(
+                          config.column as keyof WorkshopRegistrationData,
+                          data
+                        )}
+                      />
+                    )}
+                  </div>
+                )}
+            </th>
+          ))}
         {/* Action column header */}
         <th className="p-3 text-center w-[80px] min-w-[80px]">Action</th>
       </tr>
