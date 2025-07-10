@@ -23,9 +23,17 @@ export interface WorkshopRegistrationData {
   updated_at?: string;
   score: string;
   offered_scholarship_percentage: string;
+  platform_amount: string;
   offered_amount: string;
+  assignment_submitted_at: string;
+  referral_code_assessment: string | null;
   submitted_at: string;
   assessment_status: string;
+  payment_history?: Array<{
+    type: string;
+    amount: string | number;
+    date: string;
+  }>;
   edithistory?: Record<string, {
     changes: Record<string, string | null>;
     edited_by: string;
@@ -38,6 +46,8 @@ export interface EditRegistrationData {
   first_call_comment?: string;
   second_call_status?: string;
   second_call_comment?: string;
+  follow_up_comment?: string;
+  offered_amount?: string;
 }
 
 export interface FilterState {
@@ -62,7 +72,13 @@ export interface FilterState {
   amount_pending: string;
   score: string;
   offered_scholarship_percentage: string;
+  platform_amount: string;
   offered_amount: string;
+  assignment_submitted_at: {
+    start: string;
+    end: string;
+  };
+  referral_code_assessment: string;
   submitted_at: {
     start: string;
     end: string;
