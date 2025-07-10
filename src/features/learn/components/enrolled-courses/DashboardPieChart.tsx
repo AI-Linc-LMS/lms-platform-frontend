@@ -24,32 +24,37 @@ interface ApiResponse {
   [key: string]: number; // For any other fields that might be present
 }
 
-const DashboardPieChart = ({courseId}:{courseId:number}) => {
+const DashboardPieChart = ({ courseId }: { courseId: number }) => {
   const { data, isLoading, error } = useQuery({
     queryKey: ["DashboardPieChart"],
     queryFn: () => getCourseDashboard(1, courseId),
   });
 
-  // Add console log to see the raw API response
-  console.log("API Response for DashboardPieChart:", data);
+  // Add //console log to see the raw API response
+  //console.log("API Response for DashboardPieChart:", data);
 
   // Process API data to match our component structure
   const processApiData = (apiData: ApiResponse): DashboardData => {
     // Extract progress values from API response
     const {
       article_progress = 0,
-      video_progress = 0, 
+      video_progress = 0,
       coding_problem_progress = 0,
       quiz_progress = 0,
-      total_progress = 0
+      total_progress = 0,
     } = apiData || {};
-    
+
     return {
       totalCompletion: total_progress,
       categories: [
         { name: "Article", value: article_progress, color: "#3875F9", ring: 0 },
         { name: "Video", value: video_progress, color: "#EED21B", ring: 1 },
-        { name: "Problems", value: coding_problem_progress, color: "#417845", ring: 2 },
+        {
+          name: "Problems",
+          value: coding_problem_progress,
+          color: "#417845",
+          ring: 2,
+        },
         { name: "Quiz", value: quiz_progress, color: "#2A8CB0", ring: 3 },
       ],
     };
@@ -212,7 +217,9 @@ const DashboardPieChart = ({courseId}:{courseId:number}) => {
   return (
     <div className="flex flex-col gap-4 items-center justify-center mx-auto">
       <div className="w-full rounded-3xl bg-[#EFF9FC] border border-[#80C9E0] p-3 md:p-4 shadow-sm">
-        <h1 className="font-sans text-base md:text-[18px] text-[#343A40]">Dashboard</h1>
+        <h1 className="font-sans text-base md:text-[18px] text-[#343A40]">
+          Dashboard
+        </h1>
         <p className="text-[#495057] font-normal text-xs md:text-[12px] font-sans">
           A simple overview of your status.
         </p>

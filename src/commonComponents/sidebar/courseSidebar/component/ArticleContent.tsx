@@ -10,7 +10,6 @@ export interface ArticleItem {
   status: string;
 }
 
-
 interface ArticleContentProps {
   articles: ArticleItem[];
   onArticleClick?: (id: number) => void;
@@ -22,7 +21,7 @@ const ArticleContent = ({
   onArticleClick,
   selectedArticleId,
 }: ArticleContentProps) => {
-  console.log("articles", articles);
+  //console.log("articles", articles);
   return (
     <div>
       <h2 className="text-lg font-semibold text-gray-800">
@@ -41,15 +40,17 @@ const ArticleContent = ({
             <div
               key={item.id}
               onClick={() => onArticleClick?.(item.id)}
-              className={`cursor-pointer p-3 flex justify-between items-center transition ${isSelected ? "bg-blue-50 border-blue-300" : "hover:shadow"
-                } ${!isLastItem ? "border-b border-gray-300" : ""}`}
+              className={`cursor-pointer p-3 flex justify-between items-center transition ${
+                isSelected ? "bg-blue-50 border-blue-300" : "hover:shadow"
+              } ${!isLastItem ? "border-b border-gray-300" : ""}`}
             >
               <div className="flex items-start gap-3">
                 <img src={articleIcon} alt="icon" className="w-5 h-5 mt-1" />
                 <div>
                   <h3
-                    className={`text-sm font-medium ${isSelected ? "text-[#007B9F]" : "text-gray-800"
-                      }`}
+                    className={`text-sm font-medium ${
+                      isSelected ? "text-[#007B9F]" : "text-gray-800"
+                    }`}
                   >
                     {item.title}
                   </h3>

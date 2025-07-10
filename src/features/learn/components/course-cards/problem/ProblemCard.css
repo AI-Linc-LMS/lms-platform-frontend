@@ -424,7 +424,7 @@ input:checked + .toggle-slider {
   position: relative;
 }
 
-/* Console section */
+/* console section */
 .console-toggle {
   background-color: #f3f4f6;
   border-top: 1px solid #e0e0e0;

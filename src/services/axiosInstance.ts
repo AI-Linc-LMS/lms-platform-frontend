@@ -41,8 +41,8 @@ const getTokenExpirationTime = (token: string): number => {
     
     // Convert to milliseconds and return
     return exp ? exp * 1000 : 0;
-  } catch (error) {
-    console.error('Error decoding token:', error);
+  } catch {
+    //console.error('Error decoding token:', error);
     return 0;
   }
 };
@@ -103,14 +103,14 @@ axiosInstance.interceptors.request.use(
         if (token) {
           if (isTokenExpired(token)) {
             // Token is expired, attempt refresh before sending request
-            console.log('Token expired, request will be handled by response interceptor');
+            //console.log('Token expired, request will be handled by response interceptor');
           } else if (isTokenAboutToExpire(token)) {
             // Token will expire soon, log warning but continue with request
-            console.log('Token is about to expire, consider refreshing soon');
+            //console.log('Token is about to expire, consider refreshing soon');
           }
         }
-      } catch (error) {
-        console.error('Error parsing user data', error);
+      } catch {
+        //console.error('Error parsing user data', error);
         token = null;
       }
     }
@@ -178,7 +178,7 @@ axiosInstance.interceptors.response.use(
           throw new Error('Client ID not available, cannot refresh token');
         }
         
-        console.log('Attempting to refresh token due to 401 error');
+        //console.log('Attempting to refresh token due to 401 error');
         
         // Attempt to refresh the token
         const response = await refreshToken(refreshTokenValue, clientId);
@@ -206,13 +206,13 @@ axiosInstance.interceptors.response.use(
         // Reset refreshing flag
         isRefreshing = false;
         
-        console.log('Token refresh successful, retrying original request');
+        //console.log('Token refresh successful, retrying original request');
         
         // Retry the original request
         return axiosInstance(originalRequest);
       } catch (refreshError) {
         // If refresh fails, clear user data and redirect to login
-        console.log('Token refresh failed. Logging out...', refreshError);
+        //console.log('Token refresh failed. Logging out...', refreshError);
         
         // Process queued requests with error
         processQueue(refreshError as Error, null);

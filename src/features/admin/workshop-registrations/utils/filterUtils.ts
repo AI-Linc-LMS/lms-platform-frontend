@@ -14,40 +14,40 @@ export const filterWorkshopData = (
   });
   
   if (activeFilters.length > 0) {
-    console.log('Active Filters:', activeFilters);
+    //console.log('Active Filters:', activeFilters);
   }
   
   return workshopData.filter((entry) => {
     // Global search
-    const globalSearch = `${entry.name} ${entry.email}`
+    const globalSearch = `${entry.name || ''} ${entry.email || ''}`
       .toLowerCase()
       .includes(search.toLowerCase());
 
     if (!globalSearch) return false;
 
+    // Helper function to safely convert value to string for comparison
+    const safeToString = (value: string | number | boolean | null | undefined): string => {
+      if (value === null || value === undefined) return '';
+      return String(value);
+    };
+
     // Helper function to check if value matches any of the selected options
-    const matchesSelectedOptions = (value: string, filterValue: string) => {
+    const matchesSelectedOptions = (value: string | null | undefined, filterValue: string) => {
       if (!filterValue) return true;
+      const safeValue = safeToString(value);
+      if (!safeValue) return false;
       const selectedOptions = filterValue.split(',').map(opt => opt.trim().toLowerCase());
-      const matches = selectedOptions.includes(value.toLowerCase());
-      
-      // Debug logging for OR query
-      if (selectedOptions.length > 1) {
-        console.log('OR Query Debug:', {
-          fieldValue: value,
-          selectedOptions,
-          matches,
-          filterValue
-        });
-      }
-      
+      const matches = selectedOptions.includes(safeValue.toLowerCase());
+       
       return matches;
     };
 
     // Helper function to check if value matches search string (for when user is searching)
-    const matchesSearchString = (value: string, filterValue: string) => {
+    const matchesSearchString = (value: string | null | undefined, filterValue: string) => {
       if (!filterValue) return true;
-      return value.toLowerCase().includes(filterValue.toLowerCase());
+      const safeValue = safeToString(value);
+      if (!safeValue) return false;
+      return safeValue.toLowerCase().includes(filterValue.toLowerCase());
     };
 
     // Column filters
@@ -57,11 +57,7 @@ export const filterWorkshopData = (
       if (filterVal.includes(',')) {
         // Multi-select: match any selected value exactly (OR query)
         const result = matchesSelectedOptions(entry.name, filterVal);
-        console.log('Name OR Query:', {
-          entryName: entry.name,
-          filterValue: filterVal,
-          result
-        });
+        
         return result;
       } else {
         // Single search string: substring match
@@ -89,7 +85,7 @@ export const filterWorkshopData = (
         return matchesSelectedOptions(entry.phone_number, filterVal);
       } else {
         // Single search string: substring match
-        return entry.phone_number.includes(filterVal);
+        return matchesSearchString(entry.phone_number, filterVal);
       }
     })();
 
@@ -101,12 +97,7 @@ export const filterWorkshopData = (
       if (filterVal.includes(',')) {
         // Multi-select: match any selected value exactly (OR query)
         const result = matchesSelectedOptions(entry.workshop_name, filterVal);
-        console.log('Workshop OR Query:', {
-          entryName: entry.name,
-          workshopName: entry.workshop_name,
-          filterValue: filterVal,
-          result
-        });
+       
         return result;
       } else {
         // Single search string: substring match
@@ -125,6 +116,17 @@ export const filterWorkshopData = (
       }
     })();
 
+    const sessionDateMatch = (() => {
+      if (!filters.session_date) return true;
+      const filterVal = filters.session_date.trim();
+      const sessionDateValue = entry.session_date?.toString() || '';
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions(sessionDateValue, filterVal);
+      } else {
+        return matchesSearchString(sessionDateValue, filterVal);
+      }
+    })();
+
     const referralMatch = (() => {
       if (!filters.referal_code) return true;
       const filterVal = filters.referal_code.trim();
@@ -140,10 +142,14 @@ export const filterWorkshopData = (
     const attendedWebinarsMatch = (() => {
       if (!filters.attended_webinars) return true;
       const filterVal = filters.attended_webinars.trim();
+      const attendedValue = typeof entry.attended_webinars === 'boolean' 
+        ? entry.attended_webinars.toString() 
+        : (entry.attended_webinars || '');
+      
       if (filterVal.includes(',')) {
-        return matchesSelectedOptions(entry.attended_webinars, filterVal);
+        return matchesSelectedOptions(attendedValue, filterVal);
       } else {
-        return matchesSearchString(entry.attended_webinars, filterVal);
+        return matchesSearchString(attendedValue, filterVal);
       }
     })();
 
@@ -154,7 +160,7 @@ export const filterWorkshopData = (
         return matchesSelectedOptions(entry.is_assessment_attempted, filterVal);
       } else {
         // Use exact match for attempted/not_attempted
-        return entry.is_assessment_attempted.toLowerCase() === filterVal.toLowerCase();
+        return entry.is_assessment_attempted?.toLowerCase() === filterVal.toLowerCase();
       }
     })();
 
@@ -165,7 +171,7 @@ export const filterWorkshopData = (
         return matchesSelectedOptions(entry.is_certificate_amount_paid, filterVal);
       } else {
         // Use exact match for paid/not_paid
-        return entry.is_certificate_amount_paid.toLowerCase() === filterVal.toLowerCase();
+        return entry.is_certificate_amount_paid?.toLowerCase() === filterVal.toLowerCase();
       }
     })();
 
@@ -176,7 +182,7 @@ export const filterWorkshopData = (
         return matchesSelectedOptions(entry.is_prebooking_amount_paid, filterVal);
       } else {
         // Use exact match for paid/not_paid
-        return entry.is_prebooking_amount_paid.toLowerCase() === filterVal.toLowerCase();
+        return entry.is_prebooking_amount_paid?.toLowerCase() === filterVal.toLowerCase();
       }
     })();
 
@@ -187,7 +193,7 @@ export const filterWorkshopData = (
         return matchesSelectedOptions(entry.is_course_amount_paid, filterVal);
       } else {
         // Use exact match for paid/not_paid
-        return entry.is_course_amount_paid.toLowerCase() === filterVal.toLowerCase();
+        return entry.is_course_amount_paid?.toLowerCase() === filterVal.toLowerCase();
       }
     })();
 
@@ -203,7 +209,7 @@ export const filterWorkshopData = (
 
     const firstCallCommentMatch =
       !filters.first_call_comment ||
-      entry.first_call_comment.toLowerCase().includes(filters.first_call_comment.toLowerCase());
+      (entry.first_call_comment && entry.first_call_comment.toLowerCase().includes(filters.first_call_comment.toLowerCase()));
 
     const secondCallStatusMatch = (() => {
       if (!filters.second_call_status) return true;
@@ -217,7 +223,11 @@ export const filterWorkshopData = (
 
     const secondCallCommentMatch =
       !filters.second_call_comment ||
-      entry.second_call_comment.toLowerCase().includes(filters.second_call_comment.toLowerCase());
+      (entry.second_call_comment && entry.second_call_comment.toLowerCase().includes(filters.second_call_comment.toLowerCase()));
+
+    const followUpCommentMatch =
+      !filters.follow_up_comment ||
+      (entry.follow_up_comment && entry.follow_up_comment.toLowerCase().includes(filters.follow_up_comment.toLowerCase()));
 
     const amountPaidMatch = (() => {
       if (!filters.amount_paid) return true;
@@ -319,41 +329,13 @@ export const filterWorkshopData = (
       (!submittedStartDate || (submittedDate && submittedDate >= submittedStartDate)) &&
       (!submittedEndDate || (submittedDate && submittedDate <= submittedEndDate));
 
-    // Debug logging for filter results
-    const allMatches = {
-      nameMatch,
-      emailMatch,
-      phoneMatch,
-      workshopMatch,
-      sessionMatch,
-      referralMatch,
-      attendedWebinarsMatch,
-      assessmentAttemptedMatch,
-      certificatePaidMatch,
-      prebookingPaidMatch,
-      coursePaidMatch,
-      firstCallStatusMatch,
-      firstCallCommentMatch,
-      secondCallStatusMatch,
-      secondCallCommentMatch,
-      amountPaidMatch,
-      amountPendingMatch,
-      scoreMatch,
-      scholarshipPercentageMatch,
-      offeredAmountMatch,
-      assessmentStatusMatch,
-      dateMatch,
-      updatedDateMatch,
-      submittedDateMatch,
-    };
-
-    // Final match
     const finalResult = (
       nameMatch &&
       emailMatch &&
       phoneMatch &&
       workshopMatch &&
       sessionMatch &&
+      sessionDateMatch &&
       referralMatch &&
       attendedWebinarsMatch &&
       assessmentAttemptedMatch &&
@@ -364,6 +346,7 @@ export const filterWorkshopData = (
       firstCallCommentMatch &&
       secondCallStatusMatch &&
       secondCallCommentMatch &&
+      followUpCommentMatch &&
       amountPaidMatch &&
       amountPendingMatch &&
       scoreMatch &&
@@ -375,47 +358,90 @@ export const filterWorkshopData = (
       submittedDateMatch
     );
 
-    // Debug logging for failed matches
-    if (!finalResult && (filters.name || filters.email || filters.phone_number || filters.workshop_name)) {
-      console.log('Filter Match Failed:', {
-        entryName: entry.name,
-        entryEmail: entry.email,
-        allMatches,
-        activeFilters: Object.entries(filters).filter(([, v]) => v && (typeof v === 'string' ? v !== '' : true))
-      });
-    }
-
     return finalResult;
   });
 };
 
-export const exportToExcel = (filteredData: WorkshopRegistrationData[]) => {
-  const exportData = filteredData.map((entry, index) => ({
-    "Serial No.": index + 1,
-    Name: entry.name,
-    Email: entry.email,
-    "Mobile Number": entry.phone_number,
-    "Workshop Name": entry.workshop_name,
-    "Session Number": entry.session_number || "N/A",
-    "Referral Code": entry.referal_code || "N/A",
-    "Registered At": entry.registered_at,
-    "Attended Webinars": entry.attended_webinars || "N/A",
-    "Assessment Attempted": entry.is_assessment_attempted || "N/A",
-    "Certificate Amount Paid": entry.is_certificate_amount_paid || "N/A",
-    "Prebooking Amount Paid": entry.is_prebooking_amount_paid || "N/A",
-    "Course Amount Paid": entry.is_course_amount_paid || "N/A",
-    "First Call Status": entry.first_call_status || "N/A",
-    "First Call Comment": entry.first_call_comment || "N/A",
-    "Second Call Status": entry.second_call_status || "N/A",
-    "Second Call Comment": entry.second_call_comment || "N/A",
-    "Amount Paid": entry.amount_paid || "N/A",
-    "Amount Pending": entry.amount_pending || "N/A",
-    "Score": entry.score || "N/A",
-    "Offered Scholarship Percentage": entry.offered_scholarship_percentage || "N/A",
-    "Offered Amount": entry.offered_amount || "N/A",
-    "Submitted At": entry.submitted_at && entry.submitted_at !== "" ? entry.submitted_at : "N/A",
-    "Assessment Status": entry.assessment_status || "N/A",
-  }));
+export const exportToExcel = (
+  filteredData: WorkshopRegistrationData[], 
+  visibleColumns: string[]
+) => {
+  // Define column mappings using the actual column keys
+  const columnMappings: Record<string, (entry: WorkshopRegistrationData, index: number) => string | number | boolean> = {
+    "name": (entry) => entry.name,
+    "email": (entry) => entry.email,
+    "phone_number": (entry) => entry.phone_number,
+    "workshop_name": (entry) => entry.workshop_name,
+    "session_number": (entry) => entry.session_number || "N/A",
+    "session_date": (entry) => entry.session_date || "N/A",
+    "referal_code": (entry) => entry.referal_code || "N/A",
+    "registered_at": (entry) => entry.registered_at,
+    "updated_at": (entry) => entry.updated_at || "N/A",
+    "attended_webinars": (entry) => entry.attended_webinars || "N/A",
+    "is_assessment_attempted": (entry) => entry.is_assessment_attempted || "N/A",
+    "is_certificate_amount_paid": (entry) => entry.is_certificate_amount_paid || "N/A",
+    "is_prebooking_amount_paid": (entry) => entry.is_prebooking_amount_paid || "N/A",
+    "is_course_amount_paid": (entry) => entry.is_course_amount_paid || "N/A",
+    "first_call_status": (entry) => entry.first_call_status || "N/A",
+    "first_call_comment": (entry) => entry.first_call_comment || "N/A",
+    "second_call_status": (entry) => entry.second_call_status || "N/A",
+    "second_call_comment": (entry) => entry.second_call_comment || "N/A",
+    "follow_up_comment": (entry) => entry.follow_up_comment || "N/A",
+    "amount_paid": (entry) => entry.amount_paid || "N/A",
+    "amount_pending": (entry) => entry.amount_pending || "N/A",
+    "score": (entry) => entry.score || "N/A",
+    "offered_scholarship_percentage": (entry) => entry.offered_scholarship_percentage || "N/A",
+    "offered_amount": (entry) => entry.offered_amount || "N/A",
+    "submitted_at": (entry) => entry.submitted_at && entry.submitted_at !== "" ? entry.submitted_at : "N/A",
+    "assessment_status": (entry) => entry.assessment_status || "N/A",
+  };
+
+  // Define display names for export headers
+  const displayNames: Record<string, string> = {
+    "name": "Name",
+    "email": "Email",
+    "phone_number": "Mobile Number",
+    "workshop_name": "Workshop Name",
+    "session_number": "Session Number",
+    "session_date": "Session Date",
+    "referal_code": "Referral Code",
+    "registered_at": "Registered At",
+    "updated_at": "Updated At",
+    "attended_webinars": "Attended Webinars",
+    "is_assessment_attempted": "Assessment Attempted",
+    "is_certificate_amount_paid": "Certificate Amount Paid",
+    "is_prebooking_amount_paid": "Prebooking Amount Paid",
+    "is_course_amount_paid": "Course Amount Paid",
+    "first_call_status": "First Call Status",
+    "first_call_comment": "First Call Comment",
+    "second_call_status": "Second Call Status",
+    "second_call_comment": "Second Call Comment",
+    "follow_up_comment": "Follow Up Comment",
+    "amount_paid": "Amount Paid",
+    "amount_pending": "Amount Pending",
+    "score": "Score",
+    "offered_scholarship_percentage": "Offered Scholarship Percentage",
+    "offered_amount": "Offered Amount",
+    "submitted_at": "Submitted At",
+    "assessment_status": "Assessment Status",
+  };
+
+  const exportData = filteredData.map((entry, index) => {
+    const exportRow: Record<string, string | number | boolean> = {};
+    
+    // Add serial number as first column
+    exportRow["Serial No."] = index + 1;
+    
+    // Only include columns that are visible
+    visibleColumns.forEach(column => {
+      if (columnMappings[column]) {
+        const displayName = displayNames[column] || column;
+        exportRow[displayName] = columnMappings[column](entry, index);
+      }
+    });
+    
+    return exportRow;
+  });
 
   const worksheet = XLSX.utils.json_to_sheet(exportData);
   const workbook = XLSX.utils.book_new();
@@ -429,6 +455,7 @@ export const getInitialFilterState = (): FilterState => ({
   phone_number: "",
   workshop_name: "",
   session_number: "",
+  session_date: "",
   referal_code: "",
   attended_webinars: "",
   is_assessment_attempted: "",
@@ -439,6 +466,7 @@ export const getInitialFilterState = (): FilterState => ({
   first_call_comment: "",
   second_call_status: "",
   second_call_comment: "",
+  follow_up_comment: "",
   amount_paid: "",
   amount_pending: "",
   score: "",

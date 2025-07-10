@@ -49,11 +49,11 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
       contentId,
     ],
     queryFn: () => {
-      console.log("=== FETCHING QUIZ DATA FOR EDIT ===");
-      console.log("Client ID:", clientId);
-      console.log("Course ID:", courseId);
-      console.log("Submodule ID:", submoduleId);
-      console.log("Content ID:", contentId);
+      //console.log("=== FETCHING QUIZ DATA FOR EDIT ===");
+      //console.log("Client ID:", clientId);
+      //console.log("Course ID:", courseId);
+      //console.log("Submodule ID:", submoduleId);
+      //console.log("Content ID:", contentId);
 
       return getSubmoduleContentById(
         clientId,
@@ -68,8 +68,8 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
   // Populate form with existing data
   useEffect(() => {
     if (quizData) {
-      console.log("=== LOADED QUIZ DATA FOR EDITING ===");
-      console.log("Quiz data:", quizData);
+      //console.log("=== LOADED QUIZ DATA FOR EDITING ===");
+      //console.log("Quiz data:", quizData);
 
       const contentDetails = quizData.details || quizData;
 
@@ -84,22 +84,17 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
         setQuestions(quizData.questions);
       }
 
-      console.log("Form populated with:", {
-        title: contentDetails.title || quizData.title,
-        marks: contentDetails.marks || quizData.marks,
-        questions: contentDetails.questions || quizData.questions,
-      });
     }
   }, [quizData]);
 
   const updateMutation = useMutation({
     mutationFn: (data: QuizContentUpdateData) => {
-      console.log("=== UPDATING QUIZ ===");
-      console.log("Client ID:", clientId);
-      console.log("Course ID:", courseId);
-      console.log("Submodule ID:", submoduleId);
-      console.log("Content ID:", contentId);
-      console.log("Update data:", data);
+      //console.log("=== UPDATING QUIZ ===");
+      //console.log("Client ID:", clientId);
+      //console.log("Course ID:", courseId);
+      //console.log("Submodule ID:", submoduleId);
+      //console.log("Content ID:", contentId);
+      //console.log("Update data:", data);
 
       return updateSubmoduleContent(
         clientId,
@@ -110,7 +105,7 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
       );
     },
     onSuccess: () => {
-      console.log("✅ Quiz updated successfully!");
+      //console.log("✅ Quiz updated successfully!");
       success("Quiz Updated", "Quiz content updated successfully!");
       
       // Invalidate all relevant queries to refresh the UI
@@ -136,7 +131,7 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
       onBack();
     },
     onError: (error: Error) => {
-      console.error("❌ Failed to update quiz:", error);
+      //console.error("❌ Failed to update quiz:", error);
       showError(
         "Update Failed",
         error.message || "Failed to update quiz content"
@@ -187,12 +182,6 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
       }
     }
 
-    console.log("=== SAVING QUIZ UPDATE ===");
-    console.log("Form data:", {
-      title: title.trim(),
-      marks: marksNumber,
-      questions,
-    });
 
     const contentData: QuizContentUpdateData = {
       title: title.trim(),
