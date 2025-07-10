@@ -33,7 +33,7 @@ const AssessmentReferals = () => {
   const { data: assessments = [] } = useQuery({
     queryKey: ["assessments-list", clientId],
     queryFn: () => getAllAssessments(clientId),
-    staleTime: 5*60*1000,
+    staleTime: 5 * 60 * 1000,
   });
   // ensure slug matches list if not existing
   React.useEffect(() => {
@@ -189,12 +189,12 @@ const AssessmentReferals = () => {
         {/* Create/Edit Modal */}
         {isCreateModalOpen || editingReferral ? (
           <ReferralModal isOpen={Boolean(isCreateModalOpen || editingReferral)} onClose={() => { setIsCreateModalOpen(false); setEditingReferral(null); }} onSubmit={(data) => {
-              if (editingReferral) {
-                updateMutation.mutate({ id: editingReferral.id.toString(), data });
-              } else {
-                createMutation.mutate(data);
-              }
-            }} referral={editingReferral} isLoading={createMutation.isPending || updateMutation.isPending} />
+            if (editingReferral) {
+              updateMutation.mutate({ id: editingReferral.id.toString(), data });
+            } else {
+              createMutation.mutate(data);
+            }
+          }} referral={editingReferral} isLoading={createMutation.isPending || updateMutation.isPending} />
         ) : null}
 
         {/* Delete Confirmation */}
