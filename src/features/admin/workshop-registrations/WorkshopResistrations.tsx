@@ -42,7 +42,6 @@ const WorkshopRegistration = () => {
   const columnConfigs = [
     { key: "workshop_name", label: "Workshop Name", defaultVisible: true },
     { key: "session_number", label: "Session", defaultVisible: true },
-    { key: "session_date", label: "Session Date", defaultVisible: true },
     { key: "attended_webinars", label: "Attendee", defaultVisible: true },
     {
       key: "is_assessment_attempted",
@@ -93,6 +92,17 @@ const WorkshopRegistration = () => {
       defaultVisible: true,
     },
     { key: "offered_amount", label: "Offered Amount", defaultVisible: true },
+    { key: "platform_amount", label: "Platform Amount", defaultVisible: true },
+    {
+      key: "assignment_submitted_at",
+      label: "Assignment Submitted At",
+      defaultVisible: true,
+    },
+    {
+      key: "referral_code_assessment",
+      label: "Referral Code Assessment",
+      defaultVisible: true,
+    },
     {
       key: "assessment_status",
       label: "Assessment Status",
@@ -124,9 +134,13 @@ const WorkshopRegistration = () => {
     score: useRef<HTMLDivElement>(null),
     offered_scholarship_percentage: useRef<HTMLDivElement>(null),
     offered_amount: useRef<HTMLDivElement>(null),
+    platform_amount: useRef<HTMLDivElement>(null),
+    assignment_submitted_at: useRef<HTMLDivElement>(null),
+    referral_code_assessment: useRef<HTMLDivElement>(null),
     submitted_at: useRef<HTMLDivElement>(null),
     assessment_status: useRef<HTMLDivElement>(null),
     registered_at: useRef<HTMLDivElement>(null),
+    updated_at: useRef<HTMLDivElement>(null),
   };
 
   useEffect(() => {
@@ -182,7 +196,8 @@ const WorkshopRegistration = () => {
       [column]:
         column === "registered_at" ||
         column === "submitted_at" ||
-        column === "updated_at"
+        column === "updated_at" ||
+        column === "assignment_submitted_at"
           ? { start: "", end: "" }
           : "",
     }));
