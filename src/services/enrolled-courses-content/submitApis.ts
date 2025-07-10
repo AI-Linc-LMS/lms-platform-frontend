@@ -32,11 +32,11 @@ export const submitContent = async (
 
     const res = await axiosInstance.post(url, data);
     
-    console.log("submit content",res);
+    //console.log("submit content",res);
     return res.status;
 
   } catch (error: unknown) {
-    console.error("Failed to submit content:", error);
+    //console.error("Failed to submit content:", error);
     if (error instanceof AxiosError) {
       throw new Error(
         error?.response?.data?.detail ||
@@ -79,10 +79,10 @@ export const runCode = async (
     };
     
     const response = await axiosInstance.post(url, data);
-    console.log("Run code response:", response);
+    //console.log("Run code response:", response);
     return response.data;
   } catch (error: unknown) {
-    console.error("Failed to run code:", error);
+    //console.error("Failed to run code:", error);
     if (error instanceof AxiosError) {
       throw new Error(
         error?.response?.data?.detail ||
@@ -122,10 +122,10 @@ export const runCustomCode = async (
     };
     
     const response = await axiosInstance.post(url, data);
-    console.log("Run custom code response:", response);
+    //console.log("Run custom code response:", response);
     return response.data;
   } catch (error: unknown) {
-    console.error("Failed to run custom code:", error);
+    //console.error("Failed to run custom code:", error);
     if (error instanceof AxiosError) {
       throw new Error(
         error?.response?.data?.detail ||
@@ -159,22 +159,22 @@ export const submitCode = async (
       language_id,
     };
     
-    console.log("Submitting code with data:", data);
+    //console.log("Submitting code with data:", data);
     const response = await axiosInstance.post(url, data);
     
     if (response.data && response.data.status === "Accepted") {
       try {
-        console.log("Submission was successful, marking problem as complete");
+        //console.log("Submission was successful, marking problem as complete");
         // const statusUpdateUrl = `/activity/clients/${clientId}/courses/${courseId}/content/${contentId}/?activity_type=CodingProblem&sub_type=updateStatus`;
         // await axiosInstance.post(statusUpdateUrl, { status: "complete" });
       } catch (statusError) {
-        console.error("Failed to automatically mark problem as complete:", statusError);
+        //console.error("Failed to automatically mark problem as complete:", statusError);
       }
     }
-    console.log("Submit code response:", response);
+    //console.log("Submit code response:", response);
     return response.data;
   } catch (error: unknown) {
-    console.error("Failed to submit code:", error);
+    //console.error("Failed to submit code:", error);
     if (error instanceof AxiosError) {
       throw new Error(
         error?.response?.data?.detail ||
@@ -205,12 +205,12 @@ export const submitCode = async (
 //       "updateStatus"
 //     );
     
-//     console.log("Update content status response:", result);
+//     //console.log("Update content status response:", result);
 //     return result === 200 || result === 201;
 //   } catch (error: unknown) {
-//     console.error("Failed to update content status:", error);
+//     //console.error("Failed to update content status:", error);
 //     if (error instanceof AxiosError) {
-//       console.error("API Error Details:", {
+//       //console.error("API Error Details:", {
 //         response: error.response?.data,
 //         status: error.response?.status,
 //         message: error.message
@@ -242,10 +242,10 @@ export const submitCode = async (
 //     const url = `/activity/clients/${clientId}/courses/${courseId}/content/${contentId}/status/?activity_type=${activityType}`;
     
 //     const response = await axiosInstance.get(url);
-//     console.log("Get content status response:", response.data);
+//     //console.log("Get content status response:", response.data);
 //     return response.data;
 //   } catch (error: unknown) {
-//     console.error("Failed to get content status:", error);
+//     //console.error("Failed to get content status:", error);
 //     if (error instanceof AxiosError) {
 //       throw new Error(
 //         error?.response?.data?.detail ||
@@ -277,13 +277,13 @@ export const getSubmissionHistory = async (
   try {
     const url = `/activity/clients/${clientId}/courses/${courseId}/content/${contentId}/submissions/?activity_type=CodingProblem`;
     
-    console.log(`Fetching submission history from: ${url}`);
+    //console.log(`Fetching submission history from: ${url}`);
     const response = await axiosInstance.get(url);
-    console.log("Submission history response:", response.data);
+    //console.log("Submission history response:", response.data);
     
     return response.data.submissions || [];
   } catch (error: unknown) {
-    console.error("Failed to fetch submission history:", error);
+    //console.error("Failed to fetch submission history:", error);
     if (error instanceof AxiosError) {
       throw new Error(
         error?.response?.data?.detail ||

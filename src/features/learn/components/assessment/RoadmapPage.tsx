@@ -121,13 +121,13 @@ const RoadmapPage = () => {
       await new Promise((resolve) => setTimeout(resolve, 300));
 
       if (certificateRef.current) {
-        console.log("Certificate ref found, downloading...");
+        //console.log("Certificate ref found, downloading...");
         await certificateRef.current.downloadPDF();
       } else {
-        console.error("Certificate ref not found after waiting");
+        //console.error("Certificate ref not found after waiting");
       }
     } catch (error) {
-      console.error("Download failed:", error);
+      //console.error("Download failed:", error);
     } finally {
       setIsDownloading(false);
     }
@@ -167,7 +167,7 @@ const RoadmapPage = () => {
   const { paymentState: assessmentPaymentState, initiateAssessmentPayment } =
     useAssessmentPayment({
       onSuccess: (result: PaymentResult) => {
-        console.log("Certificate payment successful:", result);
+        //console.log("Certificate payment successful:", result);
         setPaymentResult({
           paymentId: result.paymentId,
           orderId: result.orderId,
@@ -181,11 +181,11 @@ const RoadmapPage = () => {
         );
       },
       onError: (error: string) => {
-        console.error("Certificate payment failed:", error);
+        //console.error("Certificate payment failed:", error);
         showToast("error", "Payment Failed", error);
       },
       onDismiss: () => {
-        console.log("Certificate payment dismissed");
+        //console.log("Certificate payment dismissed");
         showToast(
           "warning",
           "Payment Cancelled",
@@ -309,7 +309,9 @@ const RoadmapPage = () => {
                 >
                   Download Certificate
                 </button>
-                <span className="text-sm text-gray-500 italic text-center max-w-md font-sans px-2 mt-2">(You'll be required to pay Rs 49/- for the certificate)</span>
+                <span className="text-sm text-gray-500 italic text-center max-w-md font-sans px-2 mt-2">
+                  (You'll be required to pay Rs 49/- for the certificate)
+                </span>
               </div>
             ) : (
               <button
@@ -408,10 +410,10 @@ const RoadmapPage = () => {
           assessmentPaymentState.step === "error"
             ? "creating"
             : (assessmentPaymentState.step as
-              | "creating"
-              | "processing"
-              | "verifying"
-              | "complete")
+                | "creating"
+                | "processing"
+                | "verifying"
+                | "complete")
         }
         onClose={() => {
           // Handle processing modal close if needed

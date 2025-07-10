@@ -32,11 +32,11 @@ import { useCoursePayment } from '../../hooks/useRazorpayPayment';
 const CoursePaymentComponent = () => {
   const { paymentState, initiateCoursePayment } = useCoursePayment({
     onSuccess: (result) => {
-      console.log('Payment successful:', result);
+      //console.log('Payment successful:', result);
       // Handle success (e.g., redirect to course)
     },
     onError: (error) => {
-      console.error('Payment failed:', error);
+      //console.error('Payment failed:', error);
       // Handle error (e.g., show error message)
     }
   });
@@ -77,8 +77,8 @@ import { useRazorpayPayment, PaymentType } from '../../hooks/useRazorpayPayment'
 
 const GenericPaymentComponent = () => {
   const { paymentState, initiatePayment, createPaymentConfig } = useRazorpayPayment({
-    onSuccess: (result) => console.log('Success:', result),
-    onError: (error) => console.error('Error:', error)
+    onSuccess: (result) => //console.log('Success:', result),
+    onError: (error) => //console.error('Error:', error)
   });
 
   const handlePayment = () => {
@@ -121,8 +121,8 @@ const handleDirectPayment = async () => {
 
   await paymentService.processPayment(
     config,
-    (result) => console.log('Success:', result),
-    (error) => console.error('Error:', error)
+    (result) => //console.log('Success:', result),
+    (error) => //console.error('Error:', error)
   );
 };
 ```
@@ -220,7 +220,7 @@ const { paymentState } = useCoursePayment({
 
 // Check error state
 if (paymentState.isError) {
-  console.log('Payment error:', paymentState.error);
+  //console.log('Payment error:', paymentState.error);
 }
 ```
 
@@ -322,7 +322,7 @@ All hooks return:
 Enable debug logging by setting:
 ```tsx
 const paymentService = RazorpayService.getInstance();
-// Service automatically logs detailed information to console
+// Service automatically logs detailed information to //console
 ```
 
 ## License

@@ -5,13 +5,13 @@
 //   const [showModal, setShowModal] = useState(false);
 
 //   const handleEnroll = () => {
-//     console.log('User enrolled in the course');
+//     //console.log('User enrolled in the course');
 //     setShowModal(false);
 //     // Additional enrollment logic here
 //   };
 
 //   const handleDecline = () => {
-//     console.log('User declined enrollment');
+//     //console.log('User declined enrollment');
 //     setShowModal(false);
 //     // Additional decline logic here
 //   };
@@ -103,4 +103,4 @@
 //   );
 // };
 
-// export default CourseDetails; 
+// export default CourseDetails;

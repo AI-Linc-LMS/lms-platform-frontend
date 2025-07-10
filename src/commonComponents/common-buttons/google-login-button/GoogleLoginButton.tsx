@@ -41,7 +41,11 @@ const GoogleLoginButton = () => {
   useEffect(() => {
     const loadGoogleScript = () => {
       // Check if script is already loaded
-      if (document.querySelector("script[src='https://accounts.google.com/gsi/client']")) {
+      if (
+        document.querySelector(
+          "script[src='https://accounts.google.com/gsi/client']"
+        )
+      ) {
         setIsScriptLoaded(true);
         initializeGoogleSignIn();
         return;
@@ -52,16 +56,18 @@ const GoogleLoginButton = () => {
       script.async = true;
       script.defer = true;
       script.onload = () => {
-        console.log('[Google Auth] Script loaded successfully');
+        //console.log('[Google Auth] Script loaded successfully');
         setIsScriptLoaded(true);
         // Add a small delay for mobile browsers
         setTimeout(() => {
           initializeGoogleSignIn();
         }, 100);
       };
-      script.onerror = (e) => {
-        console.error("Failed to load Google authentication script:", e);
-        setInitError("Failed to load Google authentication script. Please try again later.");
+      script.onerror = () => {
+        //console.error("Failed to load Google authentication script:", e);
+        setInitError(
+          "Failed to load Google authentication script. Please try again later."
+        );
       };
       document.body.appendChild(script);
     };
@@ -81,13 +87,15 @@ const GoogleLoginButton = () => {
   const initializeGoogleSignIn = () => {
     try {
       if (!window.google?.accounts?.id) {
-        console.error('[Google Auth] Google accounts object not available');
-        setInitError("Google authentication not available. Please refresh the page.");
+        //console.error('[Google Auth] Google accounts object not available');
+        setInitError(
+          "Google authentication not available. Please refresh the page."
+        );
         return;
       }
 
-      console.log('[Google Auth] Initializing Google Sign-In');
-      
+      //console.log('[Google Auth] Initializing Google Sign-In');
+
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: handleGoogleResponse,
@@ -99,35 +107,38 @@ const GoogleLoginButton = () => {
       setTimeout(() => {
         const buttonElement = document.getElementById("google-signin-btn");
         if (buttonElement) {
-          window.google!.accounts.id.renderButton(
-            buttonElement,
-            {
-              theme: "outline",
-              size: "large",
-              width: 300,
-              text: "signin_with",
-              logo_alignment: "center",
-            }
-          );
-          console.log('[Google Auth] Button rendered successfully');
+          window.google!.accounts.id.renderButton(buttonElement, {
+            theme: "outline",
+            size: "large",
+            width: 300,
+            text: "signin_with",
+            logo_alignment: "center",
+          });
+          //console.log('[Google Auth] Button rendered successfully');
         } else {
-          console.error('[Google Auth] Button element not found');
-          setInitError("Unable to render Google sign-in button. Please refresh the page.");
+          //console.error('[Google Auth] Button element not found');
+          setInitError(
+            "Unable to render Google sign-in button. Please refresh the page."
+          );
         }
       }, 50);
-    } catch (error) {
-      console.error('[Google Auth] Error initializing Google Sign-In:', error);
-      setInitError("Error initializing Google authentication. Please refresh the page.");
+    } catch {
+      //console.error('[Google Auth] Error initializing Google Sign-In:', error);
+      setInitError(
+        "Error initializing Google authentication. Please refresh the page."
+      );
     }
   };
 
   const handleGoogleResponse = (response: { credential: string }) => {
-    console.log('[Google Auth] Received response from Google');
+    //console.log('[Google Auth] Received response from Google');
     if (response.credential) {
       handleGoogleLogin(response.credential);
     } else {
-      console.error('[Google Auth] No credential received from Google');
-      setInitError("No authentication data received from Google. Please try again.");
+      //console.error('[Google Auth] No credential received from Google');
+      setInitError(
+        "No authentication data received from Google. Please try again."
+      );
     }
   };
 
