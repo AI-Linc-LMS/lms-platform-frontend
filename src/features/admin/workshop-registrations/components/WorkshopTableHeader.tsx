@@ -14,6 +14,10 @@ const SECOND_CALL_STATUS_OPTIONS = [
   { value: "Follow-up needed", color: "bg-yellow-400" },
   { value: "Denied", color: "bg-red-500" },
 ];
+const ASSESSMENT_ATTEMPTED_OPTIONS = [
+  { value: "attempted", color: "bg-green-500" },
+  { value: "not_attempted", color: "bg-yellow-400" },
+];
 
 interface WorkshopTableHeaderProps {
   filters: FilterState;
@@ -207,109 +211,55 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
   permanentColumns = [],
 }) => {
   const filterConfigs = [
+    // Personal details
     { column: "name", label: "Name" },
     { column: "email", label: "Email" },
-    {
-      column: "phone_number",
-      label: "Mobile Number",
-    },
-    {
-      column: "workshop_name",
-      label: "Workshop Name",
-    },
-    {
-      column: "session_number",
-      label: "Session",
-    },
-    {
-      column: "session_date",
-      label: "Session Date",
-    },
-    {
-      column: "referal_code",
-      label: "Referral Code",
-    },
-    {
-      column: "attended_webinars",
-      label: "Attendee",
-    },
+    { column: "phone_number", label: "Mobile Number" },
+    { column: "workshop_name", label: "Workshop Name" },
+    { column: "session_number", label: "Session" },
+    { column: "referal_code", label: "Referral Code" },
+    // Assessment details
+    { column: "attended_webinars", label: "Attendee" },
     {
       column: "is_assessment_attempted",
       label: "Assessment",
+      enum: ASSESSMENT_ATTEMPTED_OPTIONS,
     },
+    { column: "score", label: "Score" },
+    { column: "offered_scholarship_percentage", label: "Scholarship %" },
     {
-      column: "is_certificate_amount_paid",
-      label: "Certificate Paid",
+      column: "assignment_submitted_at",
+      label: "Assignment Submitted At",
+      isDate: true,
     },
-    {
-      column: "is_prebooking_amount_paid",
-      label: "Prebooking Paid",
-    },
-    {
-      column: "is_course_amount_paid",
-      label: "Course Paid",
-    },
+    { column: "referral_code_assessment", label: "Referral Code Assessment" },
+    { column: "assessment_status", label: "Assessment Status" },
+    // Payment details
+    { column: "is_certificate_amount_paid", label: "Certificate Paid" },
+    { column: "is_prebooking_amount_paid", label: "Prebooking Paid" },
+    { column: "is_course_amount_paid", label: "Course Paid" },
+    { column: "amount_paid", label: "Amount Paid" },
+    { column: "amount_pending", label: "Amount Pending" },
+    { column: "offered_amount", label: "Offered Amount" },
+    { column: "platform_amount", label: "Platform Amount" },
+    // Comment and status
     {
       column: "first_call_status",
       label: "1st Call Status",
       enum: FIRST_CALL_STATUS_OPTIONS,
     },
-    {
-      column: "first_call_comment",
-      label: "1st Call Comment",
-    },
+    { column: "first_call_comment", label: "1st Call Comment" },
     {
       column: "second_call_status",
       label: "2nd Call Status",
       enum: SECOND_CALL_STATUS_OPTIONS,
     },
-    {
-      column: "second_call_comment",
-      label: "2nd Call Comment",
-    },
-    {
-      column: "follow_up_comment",
-      label: "Follow Up Comment",
-    },
-    {
-      column: "amount_paid",
-      label: "Amount Paid",
-    },
-    {
-      column: "amount_pending",
-      label: "Amount Pending",
-    },
-    {
-      column: "score",
-      label: "Score",
-    },
-    {
-      column: "offered_scholarship_percentage",
-      label: "Scholarship %",
-    },
-    {
-      column: "offered_amount",
-      label: "Offered Amount",
-    },
-    {
-      column: "assessment_status",
-      label: "Assessment Status",
-    },
-    {
-      column: "registered_at",
-      label: "Registered At",
-      isDate: true,
-    },
-    {
-      column: "updated_at",
-      label: "Updated At",
-      isDate: true,
-    },
-    {
-      column: "submitted_at",
-      label: "Submitted At",
-      isDate: true,
-    },
+    { column: "second_call_comment", label: "2nd Call Comment" },
+    { column: "follow_up_comment", label: "Follow Up Comment" },
+    // Dates
+    { column: "registered_at", label: "Registered At", isDate: true },
+    { column: "updated_at", label: "Updated At", isDate: true },
+    { column: "submitted_at", label: "Submitted At", isDate: true },
   ];
 
   const commentFields = [
@@ -329,6 +279,13 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
       if (val && typeof val === "string") values.add(val);
       if (val && typeof val === "number") values.add(val.toString());
     });
+
+    // Special handling for assessment field to include default values
+    if (field === "is_assessment_attempted") {
+      values.add("not_attempted");
+      values.add("attempted");
+    }
+
     return Array.from(values);
   };
 
