@@ -251,6 +251,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     "second_call_status",
     "second_call_comment",
     "follow_up_comment",
+    "follow_up_date",
     // Dates
     "registered_at",
     "updated_at",

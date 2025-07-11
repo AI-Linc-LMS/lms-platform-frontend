@@ -366,6 +366,19 @@ export const filterWorkshopData = (
       (!submittedStartDate || (submittedDate && submittedDate >= submittedStartDate)) &&
       (!submittedEndDate || (submittedDate && submittedDate <= submittedEndDate));
 
+    // Date range filter for follow_up_date
+    const followUpDate = entry.follow_up_date && entry.follow_up_date !== "" ? new Date(entry.follow_up_date) : null;
+    const followUpStartDate = filters.follow_up_date && filters.follow_up_date.start
+      ? new Date(filters.follow_up_date.start + "T00:00:00")
+      : null;
+    const followUpEndDate = filters.follow_up_date && filters.follow_up_date.end
+      ? new Date(filters.follow_up_date.end + "T23:59:59")
+      : null;
+
+    const followUpDateMatch =
+      (!followUpStartDate || (followUpDate && followUpDate >= followUpStartDate)) &&
+      (!followUpEndDate || (followUpDate && followUpDate <= followUpEndDate));
+
     const finalResult = (
       nameMatch &&
       emailMatch &&
@@ -395,7 +408,8 @@ export const filterWorkshopData = (
       assessmentStatusMatch &&
       dateMatch &&
       updatedDateMatch &&
-      submittedDateMatch
+      submittedDateMatch &&
+      followUpDateMatch
     );
 
     return finalResult;
@@ -427,6 +441,7 @@ export const exportToExcel = (
     "second_call_status": (entry) => entry.second_call_status || "N/A",
     "second_call_comment": (entry) => entry.second_call_comment || "N/A",
     "follow_up_comment": (entry) => entry.follow_up_comment || "N/A",
+    "follow_up_date": (entry) => entry.follow_up_date && entry.follow_up_date !== "" ? entry.follow_up_date : "N/A",
     "amount_paid": (entry) => entry.amount_paid || "N/A",
     "amount_pending": (entry) => entry.amount_pending || "N/A",
     "score": (entry) => entry.score || "N/A",
@@ -460,6 +475,7 @@ export const exportToExcel = (
     "second_call_status": "Second Call Status",
     "second_call_comment": "Second Call Comment",
     "follow_up_comment": "Follow Up Comment",
+    "follow_up_date": "Follow Up Date",
     "amount_paid": "Amount Paid",
     "amount_pending": "Amount Pending",
     "score": "Score",
@@ -513,6 +529,7 @@ export const getInitialFilterState = (): FilterState => ({
   second_call_status: "",
   second_call_comment: "",
   follow_up_comment: "",
+  follow_up_date: { start: "", end: "" },
   amount_paid: "",
   amount_pending: "",
   score: "",
