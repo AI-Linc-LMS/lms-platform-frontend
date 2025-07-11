@@ -26,6 +26,7 @@ import CertificatePortal from "./components/certificate/CertificatePortal";
 import PhoneVerificationPage from "./features/learn/pages/PhoneVerificationPage";
 import RoadmapPage from "./features/learn/components/assessment/RoadmapPage";
 import Referals from "./features/admin/referals/Referals";
+import PartialPaymentPage from "./features/learn/pages/PartialPaymentPage";
 
 export interface RouteConfig {
   path: string;
@@ -196,6 +197,16 @@ const routes: RouteConfig[] = [
   {
     path: "/roadmap/:assessmentId",
     component: RoadmapPage,
+    isPrivate: true,
+  },
+  {
+    path: "/flagship-program-payment",
+    component: PartialPaymentPage,
+    isPrivate: true,
+  },
+  {
+    path: "/nanodegree-program-payment",
+    component: PartialPaymentPage,
     isPrivate: true,
   },
 ];
