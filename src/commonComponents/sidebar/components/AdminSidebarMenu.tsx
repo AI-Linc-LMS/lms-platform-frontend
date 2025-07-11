@@ -10,6 +10,7 @@ interface AdminSidebarMenuProps {
 
 const AdminSidebarMenu = ({ isExpanded }: AdminSidebarMenuProps) => {
   const location = useLocation();
+  const isActive = location.pathname === '/admin/payment-links';
 
   return (
     <div
@@ -24,17 +25,29 @@ const AdminSidebarMenu = ({ isExpanded }: AdminSidebarMenuProps) => {
         />
       ))}
 
-      <Link
-        to="/admin/payment-links"
-        className={`flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 hover:text-gray-900 ${
-          location.pathname === '/admin/payment-links'
-            ? 'bg-gray-100 text-gray-900'
-            : 'text-gray-600'
-        }`}
-      >
-        <FiLink className="mr-3 h-5 w-5" />
-        Payment Links
-      </Link>
+      <div className="w-full pt-2">
+        <Link
+          to="/admin/payment-links"
+          className={`flex items-center w-full px-4 py-2.5 text-base transition-colors ${
+            isActive
+              ? 'text-[#255C79] bg-[#E5EEF2] font-medium'
+              : 'text-[#536066] hover:bg-[#E5EEF2]/50 font-normal'
+          }`}
+        >
+          <div className="flex items-center">
+            <FiLink 
+              className={`w-[22px] h-[22px] min-w-[22px] ${
+                isActive 
+                  ? 'stroke-[#255C79] stroke-[1.5]' 
+                  : 'stroke-[#536066] stroke-1'
+              }`}
+            />
+            {isExpanded && (
+              <span className="ml-3 whitespace-nowrap">Payment Links</span>
+            )}
+          </div>
+        </Link>
+      </div>
     </div>
   );
 };
