@@ -8,6 +8,7 @@ import { PaymentResult } from "../../../services/payment/razorpayService";
 import PaymentProcessingModal from "../components/assessment/PaymentProcessingModal";
 import PaymentSuccessModal from "../components/assessment/PaymentSuccessModal";
 import PaymentToast from "../components/assessment/PaymentToast";
+import { decodePaymentLink } from "../../../utils/paymentLinkUtils";
 
 // Define program types
 type ProgramType = "flagship-program" | "nanodegree-program";
@@ -37,9 +38,10 @@ const PartialPaymentPage: React.FC = () => {
   // Get client ID from environment variables
   const clientId = Number(import.meta.env.VITE_CLIENT_ID) || 1;
 
-  // Get amount from URL parameters
-  const amountFromUrl = searchParams.get("amount");
-  const amount = amountFromUrl ? parseInt(amountFromUrl, 10) : 0;
+  // Get and decode payment data from URL
+  const encodedData = searchParams.get("data");
+  const decodedData = encodedData ? decodePaymentLink(encodedData) : null;
+  const amount = decodedData?.amount || 0;
 
   // Payment states
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -120,28 +122,39 @@ const PartialPaymentPage: React.FC = () => {
     },
   };
 
-  // Validate program type and amount
-  const currentProgram = programType ? programConfigs[programType as ProgramType] : null;
-
+  // Validate encoded data and show appropriate errors
   useEffect(() => {
-    if (!currentProgram) {
+    if (!programType) {
       showToast("error", "Invalid Program", "Please select either flagship-program or nanodegree-program.");
       setTimeout(() => navigate("/"), 3000);
       return;
     }
 
-    if (!amountFromUrl) {
-      showToast("error", "Missing Amount", "Please provide a payment amount in the URL.");
+    if (!encodedData) {
+      showToast("error", "Invalid Link", "This payment link appears to be invalid.");
+      setTimeout(() => navigate("/"), 3000);
+      return;
+    }
+
+    if (!decodedData) {
+      showToast("error", "Invalid or Expired Link", "This payment link is either invalid or has expired.");
+      setTimeout(() => navigate("/"), 3000);
+      return;
+    }
+
+    // Validate program type matches the encoded data
+    if (decodedData.programType !== programType) {
+      showToast("error", "Invalid Program", "The program type in the URL does not match the payment link.");
       setTimeout(() => navigate("/"), 3000);
       return;
     }
 
     if (amount <= 0) {
-      showToast("error", "Invalid Amount", "Please provide a valid payment amount greater than 0.");
+      showToast("error", "Invalid Amount", "The payment amount is invalid.");
       setTimeout(() => navigate("/"), 3000);
       return;
     }
-  }, [currentProgram, amount, amountFromUrl, navigate]);
+  }, [programType, encodedData, decodedData, amount, navigate]);
 
   // Payment hook
   const { paymentState, initiatePartialPayment } = usePartialPayment({
@@ -155,7 +168,7 @@ const PartialPaymentPage: React.FC = () => {
       showToast(
         "success",
         "Payment Successful!",
-        `Your partial payment for ${currentProgram?.title} has been processed successfully.`
+        `Your partial payment for ${programConfigs[decodedData?.programType as ProgramType]?.title} has been processed successfully.`
       );
     },
     onError: (error: string) => {
@@ -171,7 +184,7 @@ const PartialPaymentPage: React.FC = () => {
   });
 
   const handlePayment = () => {
-    if (!clientId || !currentProgram || !programType) {
+    if (!clientId || !decodedData || !programType) {
       showToast("error", "Authentication Error", "Please log in to continue with payment.");
       return;
     }
@@ -184,11 +197,11 @@ const PartialPaymentPage: React.FC = () => {
       },
       metadata: {
         payment_type: "COURSE",
-        type_id: currentProgram.type_id // This will be "flagship-course" or "nanodegree"
+        type_id: programConfigs[decodedData.programType as ProgramType]?.type_id // This will be "flagship-course" or "nanodegree"
       }
     };
 
-    initiatePartialPayment(clientId, amount, currentProgram.type_id, paymentConfig);
+    initiatePartialPayment(clientId, amount, programConfigs[decodedData.programType as ProgramType]?.type_id, paymentConfig);
   };
 
   const handleSuccessModalClose = () => {
@@ -199,7 +212,7 @@ const PartialPaymentPage: React.FC = () => {
   };
 
   // Update the error UI component
-  if (!currentProgram) {
+  if (!programType) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -216,17 +229,46 @@ const PartialPaymentPage: React.FC = () => {
     );
   }
 
-  if (!amountFromUrl || amount <= 0) {
+  if (!encodedData) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Invalid Payment Link</h2>
+          <p className="text-gray-600 mb-4">This payment link appears to be invalid.</p>
+          <button
+            onClick={() => navigate("/")}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!decodedData) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Invalid or Expired Link</h2>
+          <p className="text-gray-600 mb-4">This payment link is either invalid or has expired.</p>
+          <button
+            onClick={() => navigate("/")}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (amount <= 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Invalid Payment Amount</h2>
-          <p className="text-gray-600 mb-4">
-            {!amountFromUrl 
-              ? "Please provide a payment amount in the URL."
-              : "Please provide a valid payment amount greater than 0."
-            }
-          </p>
+          <p className="text-gray-600 mb-4">The payment amount is invalid.</p>
           <button
             onClick={() => navigate("/")}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -242,83 +284,83 @@ const PartialPaymentPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
           <button
             onClick={() => navigate("/")}
             className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
           >
-            <FiArrowLeft className="w-5 h-5 mr-2" />
+            <FiArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
             Back to Dashboard
           </button>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           {/* Program Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-8">
-            <div className="flex items-center justify-between">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 sm:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
               <div>
-                <h1 className="text-3xl font-bold mb-2">{currentProgram.title}</h1>
-                <p className="text-blue-100 text-lg">{currentProgram.subtitle}</p>
+                <h1 className="text-2xl sm:text-3xl font-bold mb-2">{programConfigs[decodedData.programType as ProgramType]?.title}</h1>
+                <p className="text-blue-100 text-base sm:text-lg">{programConfigs[decodedData.programType as ProgramType]?.subtitle}</p>
               </div>
-              <div className="text-right">
-                <div className="text-4xl font-bold">₹{amount.toLocaleString()}</div>
+              <div className="text-left sm:text-right">
+                <div className="text-3xl sm:text-4xl font-bold">₹{amount.toLocaleString()}</div>
                 <div className="text-blue-100">Partial Payment</div>
               </div>
             </div>
           </div>
 
           {/* Program Details */}
-          <div className="p-8">
-            <div className="grid md:grid-cols-2 gap-8">
+          <div className="p-4 sm:p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
               {/* Left Column - Program Info */}
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Program Overview</h2>
-                <p className="text-gray-600 mb-6">{currentProgram.description}</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Program Overview</h2>
+                <p className="text-gray-600 mb-4 sm:mb-6">{programConfigs[decodedData.programType as ProgramType]?.description}</p>
 
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">What You'll Get:</h3>
-                <ul className="space-y-3">
-                  {currentProgram.features.map((feature, index) => (
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">What You'll Get:</h3>
+                <ul className="space-y-2 sm:space-y-3">
+                  {programConfigs[decodedData.programType as ProgramType]?.features.map((feature, index) => (
                     <li key={index} className="flex items-start">
-                      <FiCheck className="w-5 h-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" />
-                      <span className="text-gray-700">{feature}</span>
+                      <FiCheck className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 mr-2 sm:mr-3 flex-shrink-0" />
+                      <span className="text-sm sm:text-base text-gray-700">{feature}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
               {/* Right Column - Payment Info */}
-              <div className="bg-gray-50 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Summary</h3>
+              <div className="bg-gray-50 rounded-xl p-4 sm:p-6">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Payment Summary</h3>
                 
-                <div className="space-y-4 mb-6">
-                  <div className="flex justify-between">
+                <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+                  <div className="flex justify-between text-sm sm:text-base">
                     <span className="text-gray-600">Program:</span>
-                    <span className="font-medium">{currentProgram.title}</span>
+                    <span className="font-medium">{programConfigs[decodedData.programType as ProgramType]?.title}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm sm:text-base">
                     <span className="text-gray-600">Payment Type:</span>
                     <span className="font-medium">Partial Payment</span>
                   </div>
-                  <div className="flex justify-between text-lg font-semibold">
+                  <div className="flex justify-between text-base sm:text-lg font-semibold">
                     <span className="text-gray-900">Amount:</span>
                     <span className="text-gray-900">₹{amount.toLocaleString()}</span>
                   </div>
                 </div>
 
-                <div className="border-t pt-4 mb-6">
-                  <div className="flex items-center text-sm text-gray-600 mb-2">
-                    <FiShield className="w-4 h-4 mr-2" />
+                <div className="border-t pt-4 mb-4 sm:mb-6">
+                  <div className="flex items-center text-xs sm:text-sm text-gray-600 mb-2">
+                    <FiShield className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                     Secure payment powered by Razorpay
                   </div>
-                  <div className="flex items-center text-sm text-gray-600 mb-2">
-                    <FiClock className="w-4 h-4 mr-2" />
+                  <div className="flex items-center text-xs sm:text-sm text-gray-600 mb-2">
+                    <FiClock className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                     7-day refund guarantee
                   </div>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <FiAward className="w-4 h-4 mr-2" />
+                  <div className="flex items-center text-xs sm:text-sm text-gray-600">
+                    <FiAward className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                     Instant access after payment
                   </div>
                 </div>
@@ -326,12 +368,12 @@ const PartialPaymentPage: React.FC = () => {
                 <button
                   onClick={handlePayment}
                   disabled={paymentState.isProcessing}
-                  className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  className="w-full bg-blue-600 text-white py-3 px-4 sm:px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm sm:text-base"
                 >
                   {paymentState.isProcessing ? "Processing..." : `Pay ₹${amount.toLocaleString()}`}
                 </button>
 
-                <p className="text-xs text-gray-500 text-center mt-4">
+                <p className="text-xs text-gray-500 text-center mt-3 sm:mt-4">
                   By clicking "Pay", you agree to our Terms of Service and Privacy Policy
                 </p>
               </div>

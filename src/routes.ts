@@ -27,6 +27,7 @@ import PhoneVerificationPage from "./features/learn/pages/PhoneVerificationPage"
 import RoadmapPage from "./features/learn/components/assessment/RoadmapPage";
 import Referals from "./features/admin/referals/Referals";
 import PartialPaymentPage from "./features/learn/pages/PartialPaymentPage";
+import PaymentLinkGeneratorPage from "./features/admin/pages/PaymentLinkGeneratorPage";
 
 export interface RouteConfig {
   path: string;
@@ -160,6 +161,12 @@ const routes: RouteConfig[] = [
   {
     path: "/admin/courses/:courseId",
     component: AdminCourseDetailPage,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/payment-links",
+    component: PaymentLinkGeneratorPage,
     isPrivate: true,
     requiredRole: "admin_or_instructor",
   },
