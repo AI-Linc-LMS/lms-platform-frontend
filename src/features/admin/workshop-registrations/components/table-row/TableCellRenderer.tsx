@@ -1,6 +1,6 @@
 import React from "react";
 import { WorkshopRegistrationData } from "../../types";
-import { FiCopy, FiCheck } from "react-icons/fi";
+import { FiCopy, FiCheck, FiEdit2 } from "react-icons/fi";
 import { isValidReferralCode } from "../../../../../utils/referralUtils";
 
 interface TableCellRendererProps {
@@ -31,6 +31,7 @@ interface TableCellRendererProps {
   getAmountColor: (amount: string | number | null | undefined) => string;
   formatDate: (dateString: string) => string;
   openOfferedAmountModal: () => void;
+  handleEditFollowUpDate: (entry: WorkshopRegistrationData) => void;
   FIRST_CALL_STATUS_OPTIONS: { value: string; color: string }[];
   SECOND_CALL_STATUS_OPTIONS: { value: string; color: string }[];
   visibleColumns?: string[];
@@ -55,6 +56,7 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
   getAmountColor,
   formatDate,
   openOfferedAmountModal,
+  handleEditFollowUpDate,
   FIRST_CALL_STATUS_OPTIONS,
   SECOND_CALL_STATUS_OPTIONS,
   visibleColumns = [],
@@ -252,7 +254,9 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
     case "score":
       return (
         <td key={columnKey} className="p-3">
-          <span className="text-xs text-yellow-900 p-2 rounded-full bg-yellow-300 font-medium">{entry.score || "N/A"}</span>
+          <span className="text-xs text-yellow-900 p-2 rounded-full bg-yellow-300 font-medium">
+            {entry.score || "N/A"}
+          </span>
         </td>
       );
     case "offered_scholarship_percentage":
@@ -406,6 +410,26 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
           </div>
         </td>
       );
+    case "follow_up_date":
+      return (
+        <td key={columnKey} className="p-3">
+          <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-2">
+              {entry.follow_up_date && entry.follow_up_date !== ""
+                ? formatDate(entry.follow_up_date)
+                : "N/A"}
+            </div>
+            <button
+              onClick={() => handleEditFollowUpDate(entry)}
+              className="text-blue-500 hover:text-blue-700 bg-blue-100 rounded-full p-1"
+              title="Edit follow-up date"
+            >
+              <FiEdit2 className="w-3 h-3" />
+            </button>
+          </div>
+        </td>
+      );
+
     case "registered_at":
       return (
         <td key={columnKey} className="p-3">

@@ -10,6 +10,7 @@ export const SECOND_CALL_STATUS_OPTIONS = [
   { value: "Converted", color: "bg-green-500" },
   { value: "Follow-up needed", color: "bg-yellow-400" },
   { value: "Denied", color: "bg-red-500" },
+  { value: "Good to hire", color: "bg-blue-500" },
   { value: "N/A", color: "bg-gray-400" },
 ];
 

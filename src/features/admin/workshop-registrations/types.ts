@@ -18,6 +18,7 @@ export interface WorkshopRegistrationData {
   second_call_status: string;
   second_call_comment: string;
   follow_up_comment: string;
+  follow_up_date: string | null;
   amount_paid: number;
   amount_pending: string;
   updated_at?: string;
@@ -47,6 +48,7 @@ export interface EditRegistrationData {
   second_call_status?: string;
   second_call_comment?: string;
   follow_up_comment?: string;
+  follow_up_date?: string;
   offered_amount?: string;
 }
 
@@ -68,6 +70,10 @@ export interface FilterState {
   second_call_status: string;
   second_call_comment: string;
   follow_up_comment: string;
+  follow_up_date: {
+    start: string;
+    end: string;
+  };
   amount_paid: string;
   amount_pending: string;
   score: string;

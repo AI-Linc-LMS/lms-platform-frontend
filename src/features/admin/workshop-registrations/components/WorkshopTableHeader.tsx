@@ -1,6 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { FilterState, WorkshopRegistrationData } from "../types";
-import { DateFilterDropdown } from "./FilterDropdown";
+import {
+  DateFilterDropdown,
+  FollowUpDateFilterDropdown,
+} from "./FilterDropdown";
 import { FiCheck, FiFilter } from "react-icons/fi";
 
 const FIRST_CALL_STATUS_OPTIONS = [
@@ -8,11 +11,14 @@ const FIRST_CALL_STATUS_OPTIONS = [
   { value: "Connected, denied interview", color: "bg-red-500" },
   { value: "Couldn't Connect", color: "bg-yellow-400" },
   { value: "Call back requested", color: "bg-green-500" },
+  { value: "N/A", color: "bg-gray-400" },
 ];
 const SECOND_CALL_STATUS_OPTIONS = [
   { value: "Converted", color: "bg-green-500" },
   { value: "Follow-up needed", color: "bg-yellow-400" },
   { value: "Denied", color: "bg-red-500" },
+  { value: "Good to hire", color: "bg-blue-500" },
+  { value: "N/A", color: "bg-gray-400" },
 ];
 const ASSESSMENT_ATTEMPTED_OPTIONS = [
   { value: "attempted", color: "bg-green-500" },
@@ -256,6 +262,7 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
     },
     { column: "second_call_comment", label: "2nd Call Comment" },
     { column: "follow_up_comment", label: "Follow Up Comment" },
+    { column: "follow_up_date", label: "Follow Up Date", isDate: true },
     // Dates
     { column: "registered_at", label: "Registered At", isDate: true },
     { column: "updated_at", label: "Updated At", isDate: true },
@@ -322,7 +329,7 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
                 "p-3 relative",
                 (config.column === "first_call_status" ||
                   config.column === "second_call_status") &&
-                  "w-[170px] min-w-[170px]",
+                  "w-[150px] min-w-[150px]",
               ]
                 .filter(Boolean)
                 .join(" ")}
@@ -332,10 +339,10 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
                 {!commentFields.includes(config.column) && (
                   <button
                     type="button"
-                    className={`ml-1 p-1 rounded hover:bg-gray-200 ${
+                    className={`p-1 rounded hover:bg-gray-400 ${
                       openFilter === config.column
-                        ? "text-blue-600"
-                        : "text-gray-400"
+                        ? "text-blue-600 bg-blue-200"
+                        : "text-black"
                     }`}
                     onClick={() =>
                       onToggleFilter(
@@ -359,23 +366,43 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
                     className="absolute left-0 top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
                   >
                     {config.isDate ? (
-                      <DateFilterDropdown
-                        column={config.column as keyof FilterState}
-                        value={
-                          (filters[config.column as keyof FilterState] as {
-                            start: string;
-                            end: string;
-                          }) || { start: "", end: "" }
-                        }
-                        isOpen={true}
-                        onChange={(column, value) =>
-                          onUpdateFilter(column, value)
-                        }
-                        onClear={onClearFilter}
-                        filterRef={
-                          filterRefs[config.column as keyof FilterState]!
-                        }
-                      />
+                      config.column === "follow_up_date" ? (
+                        <FollowUpDateFilterDropdown
+                          column={config.column as keyof FilterState}
+                          value={
+                            (filters[config.column as keyof FilterState] as {
+                              start: string;
+                              end: string;
+                            }) || { start: "", end: "" }
+                          }
+                          isOpen={true}
+                          onChange={(column, value) =>
+                            onUpdateFilter(column, value)
+                          }
+                          onClear={onClearFilter}
+                          filterRef={
+                            filterRefs[config.column as keyof FilterState]!
+                          }
+                        />
+                      ) : (
+                        <DateFilterDropdown
+                          column={config.column as keyof FilterState}
+                          value={
+                            (filters[config.column as keyof FilterState] as {
+                              start: string;
+                              end: string;
+                            }) || { start: "", end: "" }
+                          }
+                          isOpen={true}
+                          onChange={(column, value) =>
+                            onUpdateFilter(column, value)
+                          }
+                          onClear={onClearFilter}
+                          filterRef={
+                            filterRefs[config.column as keyof FilterState]!
+                          }
+                        />
+                      )
                     ) : config.enum ? (
                       <MultiSelectDropdown
                         value={
