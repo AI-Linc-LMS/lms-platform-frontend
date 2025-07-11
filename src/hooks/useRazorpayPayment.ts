@@ -394,4 +394,35 @@ export const useFlagshipPayment = (options: UseRazorpayPaymentOptions = {}) => {
   };
 };
 
+export const usePartialPayment = (options: UseRazorpayPaymentOptions = {}) => {
+  const paymentHook = useRazorpayPayment(options);
+
+  const initiatePartialPayment = useCallback((
+    clientId: number,
+    amount: number,
+    type_id: string,
+    overrides?: Partial<PaymentConfig>
+  ) => {
+    const config = paymentHook.createPaymentConfig(
+      PaymentType.COURSE,
+      clientId,
+      amount,
+      {
+        ...overrides,
+        metadata: {
+          ...overrides?.metadata,
+          partial_amount: amount,
+        },
+      },
+      type_id // Use the type_id directly without modification
+    );
+    return paymentHook.initiatePayment(config);
+  }, [paymentHook]);
+
+  return {
+    ...paymentHook,
+    initiatePartialPayment,
+  };
+};
+
 export default useRazorpayPayment; 
