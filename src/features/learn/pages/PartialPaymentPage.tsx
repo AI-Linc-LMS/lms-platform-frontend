@@ -19,7 +19,6 @@ interface ProgramConfig {
   features: string[];
   color: string;
   type_id: string;
-  minAmount: number;
 }
 
 const PartialPaymentPage: React.FC = () => {
@@ -38,9 +37,9 @@ const PartialPaymentPage: React.FC = () => {
   // Get client ID from environment variables
   const clientId = Number(import.meta.env.VITE_CLIENT_ID) || 1;
 
-  // Get amount from URL parameters with better validation
+  // Get amount from URL parameters
   const amountFromUrl = searchParams.get("amount");
-  const amount = amountFromUrl ? Math.max(0, parseInt(amountFromUrl, 10)) : 0;
+  const amount = amountFromUrl ? parseInt(amountFromUrl, 10) : 0;
 
   // Payment states
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -101,8 +100,7 @@ const PartialPaymentPage: React.FC = () => {
         "Certificate + career readiness report",
       ],
       color: "#f59e0b",
-      type_id: "flagship-course",
-      minAmount: 5000,
+      type_id: "flagship-course"
     },
     "nanodegree-program": {
       title: "AI-LINC Nanodegree Program",
@@ -118,14 +116,13 @@ const PartialPaymentPage: React.FC = () => {
         "Certificate + career readiness report",
       ],
       color: "#2563eb",
-      type_id: "nanodegree",
-      minAmount: 2500,
+      type_id: "nanodegree"
     },
   };
 
   // Validate program type and amount
   const currentProgram = programType ? programConfigs[programType as ProgramType] : null;
-  
+
   useEffect(() => {
     if (!currentProgram) {
       showToast("error", "Invalid Program", "Please select either flagship-program or nanodegree-program.");
@@ -139,12 +136,8 @@ const PartialPaymentPage: React.FC = () => {
       return;
     }
 
-    if (amount < currentProgram.minAmount) {
-      showToast(
-        "error", 
-        "Invalid Amount", 
-        `Minimum payment amount for ${currentProgram.title} is ₹${currentProgram.minAmount.toLocaleString()}.`
-      );
+    if (amount <= 0) {
+      showToast("error", "Invalid Amount", "Please provide a valid payment amount greater than 0.");
       setTimeout(() => navigate("/"), 3000);
       return;
     }
@@ -211,7 +204,7 @@ const PartialPaymentPage: React.FC = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Invalid Program</h2>
-          <p className="text-gray-600 mb-4">The requested program type is not valid.</p>
+          <p className="text-gray-600 mb-4">Please select either flagship-program or nanodegree-program.</p>
           <button
             onClick={() => navigate("/")}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -223,7 +216,7 @@ const PartialPaymentPage: React.FC = () => {
     );
   }
 
-  if (!amountFromUrl || amount < currentProgram.minAmount) {
+  if (!amountFromUrl || amount <= 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -231,7 +224,7 @@ const PartialPaymentPage: React.FC = () => {
           <p className="text-gray-600 mb-4">
             {!amountFromUrl 
               ? "Please provide a payment amount in the URL."
-              : `Minimum payment amount for ${currentProgram.title} is ₹${currentProgram.minAmount.toLocaleString()}.`
+              : "Please provide a valid payment amount greater than 0."
             }
           </p>
           <button
