@@ -48,6 +48,7 @@ export interface EditRegistrationData {
   second_call_status?: string;
   second_call_comment?: string;
   follow_up_comment?: string;
+  follow_up_date?: string;
   offered_amount?: string;
 }
 

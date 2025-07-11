@@ -329,7 +329,7 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
                 "p-3 relative",
                 (config.column === "first_call_status" ||
                   config.column === "second_call_status") &&
-                  "w-[170px] min-w-[170px]",
+                  "w-[150px] min-w-[150px]",
               ]
                 .filter(Boolean)
                 .join(" ")}
@@ -339,10 +339,10 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
                 {!commentFields.includes(config.column) && (
                   <button
                     type="button"
-                    className={`ml-1 p-1 rounded hover:bg-gray-200 ${
+                    className={`p-1 rounded hover:bg-gray-400 ${
                       openFilter === config.column
-                        ? "text-blue-600"
-                        : "text-gray-400"
+                        ? "text-blue-600 bg-blue-200"
+                        : "text-black"
                     }`}
                     onClick={() =>
                       onToggleFilter(
