@@ -252,7 +252,9 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
     case "score":
       return (
         <td key={columnKey} className="p-3">
-          <span className="text-xs text-yellow-900 p-2 rounded-full bg-yellow-300 font-medium">{entry.score || "N/A"}</span>
+          <span className="text-xs text-yellow-900 p-2 rounded-full bg-yellow-300 font-medium">
+            {entry.score || "N/A"}
+          </span>
         </td>
       );
     case "offered_scholarship_percentage":
@@ -404,6 +406,14 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
               <span className="text-blue-600 text-xs ml-1">See more</span>
             )}
           </div>
+        </td>
+      );
+    case "follow_up_date":
+      return (
+        <td key={columnKey} className="p-3">
+          {entry.follow_up_date && entry.follow_up_date !== ""
+            ? formatDate(entry.follow_up_date)
+            : "N/A"}
         </td>
       );
     case "registered_at":
