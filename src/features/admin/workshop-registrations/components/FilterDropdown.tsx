@@ -78,7 +78,6 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
     setSearchTerm("");
 
     const filterValue = newSelected.join(",");
-    
 
     onChange(column, filterValue);
   };
@@ -227,37 +226,202 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
   onClear,
   filterRef,
 }) => {
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  };
+
+  const getYesterdayDate = () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().split("T")[0];
+  };
+
+  const handleTodayClick = () => {
+    const today = getTodayDate();
+    onChange(column, { start: today, end: today });
+  };
+
+  const handleYesterdayClick = () => {
+    const yesterday = getYesterdayDate();
+    onChange(column, { start: yesterday, end: yesterday });
+  };
+
+  if (!isOpen) return null;
+  return (
+    <div ref={filterRef} className="space-y-3">
+      {/* Quick Date Options */}
+      <div className="space-y-2">
+        <label className="block text-xs text-gray-500 mb-1">
+          Quick Options
+        </label>
+        <div className="flex gap-2">
+          <button
+            onClick={handleTodayClick}
+            className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+          >
+            Today
+          </button>
+          <button
+            onClick={handleYesterdayClick}
+            className="px-3 py-1 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors"
+          >
+            Yesterday
+          </button>
+        </div>
+      </div>
+
+      {/* Custom Date Range */}
+      <div className="space-y-2">
+        <label className="block text-xs text-gray-500 mb-1">Custom Range</label>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">From Date</label>
+          <input
+            type="date"
+            value={value.start}
+            onChange={(e) =>
+              onChange(column, {
+                ...value,
+                start: e.target.value,
+              })
+            }
+            className="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">To Date</label>
+          <input
+            type="date"
+            value={value.end}
+            onChange={(e) =>
+              onChange(column, {
+                ...value,
+                end: e.target.value,
+              })
+            }
+            className="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+      </div>
+
+      {(value.start || value.end) && (
+        <button
+          onClick={() => onClear(column)}
+          className="text-xs text-gray-600 hover:text-gray-800 transition-colors"
+        >
+          Clear filter
+        </button>
+      )}
+    </div>
+  );
+};
+
+interface FollowUpDateFilterDropdownProps {
+  column: keyof FilterState;
+  value: { start: string; end: string };
+  isOpen: boolean;
+  onChange: (
+    column: keyof FilterState,
+    value: { start: string; end: string }
+  ) => void;
+  onClear: (column: keyof FilterState) => void;
+  filterRef: React.RefObject<HTMLDivElement | null>;
+}
+
+export const FollowUpDateFilterDropdown: React.FC<
+  FollowUpDateFilterDropdownProps
+> = ({ column, value, isOpen, onChange, onClear, filterRef }) => {
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  };
+
+  const getTomorrowDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split("T")[0];
+  };
+
+  const getNextWeekDate = () => {
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    return nextWeek.toISOString().split("T")[0];
+  };
+
+  const handleTodayClick = () => {
+    const today = getTodayDate();
+    onChange(column, { start: today, end: today });
+  };
+
+  const handleTomorrowClick = () => {
+    const tomorrow = getTomorrowDate();
+    onChange(column, { start: tomorrow, end: tomorrow });
+  };
+
+  const handleNextWeekClick = () => {
+    const today = getTodayDate();
+    const nextWeek = getNextWeekDate();
+    onChange(column, { start: today, end: nextWeek });
+  };
+
   if (!isOpen) return null;
   return (
     <div ref={filterRef} className="space-y-2">
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">From Date</label>
-        <input
-          type="date"
-          value={value.start}
-          onChange={(e) =>
-            onChange(column, {
-              ...value,
-              start: e.target.value,
-            })
-          }
-          className="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-        />
+      <div className="space-y-2">
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={handleTodayClick}
+            className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors text-left"
+          >
+            🔴 Today (Urgent)
+          </button>
+          <button
+            onClick={handleTomorrowClick}
+            className="px-3 py-1 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors text-left"
+          >
+            🟠 Tomorrow (High Priority)
+          </button>
+          <button
+            onClick={handleNextWeekClick}
+            className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors text-left"
+          >
+            🔵 This Week
+          </button>
+        </div>
       </div>
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">To Date</label>
-        <input
-          type="date"
-          value={value.end}
-          onChange={(e) =>
-            onChange(column, {
-              ...value,
-              end: e.target.value,
-            })
-          }
-          className="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-        />
+
+      {/* Custom Date Range */}
+      <div className="space-y-2">
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">From Date</label>
+          <input
+            type="date"
+            value={value.start}
+            onChange={(e) =>
+              onChange(column, {
+                ...value,
+                start: e.target.value,
+              })
+            }
+            className="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">To Date</label>
+          <input
+            type="date"
+            value={value.end}
+            onChange={(e) =>
+              onChange(column, {
+                ...value,
+                end: e.target.value,
+              })
+            }
+            className="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
       </div>
+
       {(value.start || value.end) && (
         <button
           onClick={() => onClear(column)}

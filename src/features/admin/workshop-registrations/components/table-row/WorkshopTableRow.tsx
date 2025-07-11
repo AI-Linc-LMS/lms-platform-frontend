@@ -9,6 +9,7 @@ import {
   EditModal,
   EditOfferedAmountModal,
   PaymentHistoryModal,
+  EditFollowUpDateModal,
 } from "../modals";
 import {
   TableCellRenderer,
@@ -63,6 +64,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   const [followUpComment, setFollowUpComment] = useState(
     entry.follow_up_comment || ""
   );
+
   const [offeredAmount, setOfferedAmount] = useState(
     entry.offered_amount || ""
   );
@@ -104,6 +106,9 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   } | null>(null);
   const [offeredAmountModalOpen, setOfferedAmountModalOpen] = useState(false);
   const [paymentHistoryOpen, setPaymentHistoryOpen] = useState(false);
+  const [followUpDateModalOpen, setFollowUpDateModalOpen] = useState(false);
+  const [selectedEntryForDateEdit, setSelectedEntryForDateEdit] =
+    useState<WorkshopRegistrationData | null>(null);
 
   const handleCommentClick = (
     comment: string,
@@ -159,6 +164,28 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   const openOfferedAmountModal = () => {
     setModalOfferedAmount(offeredAmount);
     setOfferedAmountModalOpen(true);
+  };
+
+  const handleEditFollowUpDate = (entry: WorkshopRegistrationData) => {
+    setSelectedEntryForDateEdit(entry);
+    setFollowUpDateModalOpen(true);
+  };
+
+  const handleSaveFollowUpDate = (date: string) => {
+    if (selectedEntryForDateEdit) {
+      updateMutation.mutate(
+        { follow_up_date: date },
+        {
+          onSuccess: () => {
+            // Update the entry's follow_up_date in the local state
+            if (selectedEntryForDateEdit.id === entry.id) {
+              // Update the entry object directly
+              entry.follow_up_date = date;
+            }
+          },
+        }
+      );
+    }
   };
 
   // Add scroll event listener to close tooltip
@@ -251,6 +278,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     "second_call_status",
     "second_call_comment",
     "follow_up_comment",
+    "follow_up_date",
     // Dates
     "registered_at",
     "updated_at",
@@ -297,6 +325,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
             getAmountColor={getAmountColor}
             formatDate={formatDate}
             openOfferedAmountModal={openOfferedAmountModal}
+            handleEditFollowUpDate={handleEditFollowUpDate}
             FIRST_CALL_STATUS_OPTIONS={FIRST_CALL_STATUS_OPTIONS}
             SECOND_CALL_STATUS_OPTIONS={SECOND_CALL_STATUS_OPTIONS}
             visibleColumns={visibleColumns}
@@ -391,6 +420,13 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
         transactions={
           Array.isArray(entry.payment_history) ? entry.payment_history : []
         }
+      />
+
+      <EditFollowUpDateModal
+        isOpen={followUpDateModalOpen}
+        onClose={() => setFollowUpDateModalOpen(false)}
+        entry={selectedEntryForDateEdit || entry}
+        onSave={handleSaveFollowUpDate}
       />
     </>
   );
