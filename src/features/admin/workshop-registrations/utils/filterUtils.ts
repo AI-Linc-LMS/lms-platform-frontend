@@ -156,11 +156,12 @@ export const filterWorkshopData = (
     const assessmentAttemptedMatch = (() => {
       if (!filters.is_assessment_attempted) return true;
       const filterVal = filters.is_assessment_attempted.trim();
+      const assessmentValue = entry.is_assessment_attempted || "not_attempted";
       if (filterVal.includes(',')) {
-        return matchesSelectedOptions(entry.is_assessment_attempted, filterVal);
+        return matchesSelectedOptions(assessmentValue, filterVal);
       } else {
         // Use exact match for attempted/not_attempted
-        return entry.is_assessment_attempted?.toLowerCase() === filterVal.toLowerCase();
+        return assessmentValue.toLowerCase() === filterVal.toLowerCase();
       }
     })();
 
@@ -280,6 +281,42 @@ export const filterWorkshopData = (
       }
     })();
 
+    const platformAmountMatch = (() => {
+      if (!filters.platform_amount) return true;
+      const filterVal = filters.platform_amount.trim();
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions(entry.platform_amount, filterVal);
+      } else {
+        return matchesSearchString(entry.platform_amount, filterVal);
+      }
+    })();
+
+    const assignmentSubmittedAtMatch = (() => {
+      if (!filters.assignment_submitted_at) return true;
+      const assignmentDate = entry.assignment_submitted_at && entry.assignment_submitted_at !== "" ? new Date(entry.assignment_submitted_at) : null;
+      const startDate = filters.assignment_submitted_at.start
+        ? new Date(filters.assignment_submitted_at.start + "T00:00:00")
+        : null;
+      const endDate = filters.assignment_submitted_at.end
+        ? new Date(filters.assignment_submitted_at.end + "T23:59:59")
+        : null;
+
+      return (
+        (!startDate || (assignmentDate && assignmentDate >= startDate)) &&
+        (!endDate || (assignmentDate && assignmentDate <= endDate))
+      );
+    })();
+
+    const referralCodeAssessmentMatch = (() => {
+      if (!filters.referral_code_assessment) return true;
+      const filterVal = filters.referral_code_assessment.trim();
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions(entry.referral_code_assessment, filterVal);
+      } else {
+        return matchesSearchString(entry.referral_code_assessment, filterVal);
+      }
+    })();
+
     const assessmentStatusMatch = (() => {
       if (!filters.assessment_status) return true;
       const filterVal = filters.assessment_status.trim();
@@ -352,6 +389,9 @@ export const filterWorkshopData = (
       scoreMatch &&
       scholarshipPercentageMatch &&
       offeredAmountMatch &&
+      platformAmountMatch &&
+      assignmentSubmittedAtMatch &&
+      referralCodeAssessmentMatch &&
       assessmentStatusMatch &&
       dateMatch &&
       updatedDateMatch &&
@@ -378,7 +418,7 @@ export const exportToExcel = (
     "registered_at": (entry) => entry.registered_at,
     "updated_at": (entry) => entry.updated_at || "N/A",
     "attended_webinars": (entry) => entry.attended_webinars || "N/A",
-    "is_assessment_attempted": (entry) => entry.is_assessment_attempted || "N/A",
+    "is_assessment_attempted": (entry) => entry.is_assessment_attempted || "not_attempted",
     "is_certificate_amount_paid": (entry) => entry.is_certificate_amount_paid || "N/A",
     "is_prebooking_amount_paid": (entry) => entry.is_prebooking_amount_paid || "N/A",
     "is_course_amount_paid": (entry) => entry.is_course_amount_paid || "N/A",
@@ -391,7 +431,10 @@ export const exportToExcel = (
     "amount_pending": (entry) => entry.amount_pending || "N/A",
     "score": (entry) => entry.score || "N/A",
     "offered_scholarship_percentage": (entry) => entry.offered_scholarship_percentage || "N/A",
+    "platform_amount": (entry) => entry.platform_amount || "N/A",
     "offered_amount": (entry) => entry.offered_amount || "N/A",
+    "assignment_submitted_at": (entry) => entry.assignment_submitted_at && entry.assignment_submitted_at !== "" ? entry.assignment_submitted_at : "N/A",
+    "referral_code_assessment": (entry) => entry.referral_code_assessment || "N/A",
     "submitted_at": (entry) => entry.submitted_at && entry.submitted_at !== "" ? entry.submitted_at : "N/A",
     "assessment_status": (entry) => entry.assessment_status || "N/A",
   };
@@ -421,7 +464,10 @@ export const exportToExcel = (
     "amount_pending": "Amount Pending",
     "score": "Score",
     "offered_scholarship_percentage": "Offered Scholarship Percentage",
+    "platform_amount": "Platform Amount",
     "offered_amount": "Offered Amount",
+    "assignment_submitted_at": "Assignment Submitted At",
+    "referral_code_assessment": "Referral Code Assessment",
     "submitted_at": "Submitted At",
     "assessment_status": "Assessment Status",
   };
@@ -471,7 +517,10 @@ export const getInitialFilterState = (): FilterState => ({
   amount_pending: "",
   score: "",
   offered_scholarship_percentage: "",
+  platform_amount: "",
   offered_amount: "",
+  assignment_submitted_at: { start: "", end: "" },
+  referral_code_assessment: "",
   submitted_at: { start: "", end: "" },
   assessment_status: "",
   registered_at: { start: "", end: "" },
