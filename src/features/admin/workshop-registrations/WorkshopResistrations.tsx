@@ -83,6 +83,11 @@ const WorkshopRegistration = () => {
       label: "Follow Up Comment",
       defaultVisible: true,
     },
+    {
+      key: "follow_up_date",
+      label: "Follow Up Date",
+      defaultVisible: true,
+    },
     { key: "amount_paid", label: "Amount Paid", defaultVisible: true },
     { key: "amount_pending", label: "Amount Pending", defaultVisible: true },
     { key: "score", label: "Score", defaultVisible: true },
@@ -141,6 +146,8 @@ const WorkshopRegistration = () => {
     assessment_status: useRef<HTMLDivElement>(null),
     registered_at: useRef<HTMLDivElement>(null),
     updated_at: useRef<HTMLDivElement>(null),
+    follow_up_comment: useRef<HTMLDivElement>(null),
+    follow_up_date: useRef<HTMLDivElement>(null),
   };
 
   useEffect(() => {
@@ -197,7 +204,8 @@ const WorkshopRegistration = () => {
         column === "registered_at" ||
         column === "submitted_at" ||
         column === "updated_at" ||
-        column === "assignment_submitted_at"
+        column === "assignment_submitted_at" ||
+        column === "follow_up_date"
           ? { start: "", end: "" }
           : "",
     }));
