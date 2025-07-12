@@ -19,10 +19,11 @@ export interface DeviceInfo {
 // Storage key for the session ID
 const SESSION_ID_KEY = 'sessionId';
 const DEVICE_ID_KEY = 'deviceId';
+const SESSION_START_TIME_KEY = 'sessionStartTime';
 
 /**
  * Generates a unique session ID for the current browser session
- * or retrieves the existing one from localStorage
+ * Maintains the same session ID throughout a single user session
  * @returns Session ID string
  */
 export const getSessionId = (): string => {
@@ -34,13 +35,56 @@ export const getSessionId = (): string => {
     if (!sessionId) {
       sessionId = `session-${uuidv4()}`;
       localStorage.setItem(SESSION_ID_KEY, sessionId);
+      // Also store when this session started
+      localStorage.setItem(SESSION_START_TIME_KEY, Date.now().toString());
     }
     
     return sessionId;
-  } catch (error) {
+  } catch {
     // Fallback if localStorage is not available
-    //console.error('Failed to get/create session ID:', error);
     return `session-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+  }
+};
+
+/**
+ * Generates a new session ID and clears the old one
+ * This should be called when starting a completely new session
+ * @returns New session ID string
+ */
+export const generateNewSessionId = (): string => {
+  try {
+    const sessionId = `session-${uuidv4()}`;
+    localStorage.setItem(SESSION_ID_KEY, sessionId);
+    localStorage.setItem(SESSION_START_TIME_KEY, Date.now().toString());
+    return sessionId;
+  } catch {
+    // Fallback if localStorage is not available
+    return `session-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+  }
+};
+
+/**
+ * Gets the current session ID from localStorage (if it exists)
+ * @returns Current session ID or null if none exists
+ */
+export const getCurrentSessionId = (): string | null => {
+  try {
+    return localStorage.getItem(SESSION_ID_KEY);
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Clears the current session ID from localStorage
+ * This should be called when a session actually ends
+ */
+export const clearCurrentSessionId = (): void => {
+  try {
+    localStorage.removeItem(SESSION_ID_KEY);
+    localStorage.removeItem(SESSION_START_TIME_KEY);
+  } catch {
+    // Silently fail if localStorage is not available
   }
 };
 
@@ -60,9 +104,8 @@ export const getDeviceId = (): string => {
     }
     
     return deviceId;
-  } catch (error) {
+  } catch {
     // Fallback if localStorage is not available
-    //console.error('Failed to get/create device ID:', error);
     return `device-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
   }
 };
@@ -151,8 +194,7 @@ export const getDeviceInfo = (): DeviceInfo => {
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       language: navigator.language
     };
-  } catch (error) {
-    //console.error('Failed to get device info:', error);
+  } catch {
     return {
       browser: 'unknown',
       os: 'unknown',
