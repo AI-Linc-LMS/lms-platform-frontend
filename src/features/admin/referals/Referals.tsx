@@ -21,7 +21,6 @@ import {
   ReferralData,
   ReferralFormData,
 } from "../../../types/referral";
-import { getAllAssessments } from "../../../services/assesment/assesmentApis";
 import { useToast } from "../../../contexts/ToastContext";
 
 const Referals = () => {
@@ -42,20 +41,12 @@ const Referals = () => {
   // New: referral type state
   const [selectedReferralType, setSelectedReferralType] = useState("workshop");
 
-  // Fetch assessments list
-  const { data: assessments = [] } = useQuery({
-    queryKey: ["assessments-list", clientId],
-    queryFn: () => getAllAssessments(clientId),
-    staleTime: 5 * 60 * 1000,
-  });
+  // Removed assessments query
 
   // Function to generate referral link based on type
   const generateReferralLink = (referralCode: string) => {
-    if (selectedReferralType.startsWith("assessment-")) {
-      const assessmentId = selectedReferralType.replace("assessment-", "");
-      return `${
-        window.location.origin
-      }/assessment/${assessmentId}?ref=${encodeURIComponent(referralCode)}`;
+    if (selectedReferralType === "assessment") {
+      return `https://ailinc.com/assessment?ref=${encodeURIComponent(referralCode)}`;
     } else {
       return `https://ailinc.com/workshop-registration?ref=${referralCode}`;
     }
@@ -174,14 +165,7 @@ const Referals = () => {
             className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none"
           >
             <option value="workshop">Workshop Registration</option>
-            {assessments.map((ass) => (
-              <option
-                key={`assessment-${ass.slug}`}
-                value={`assessment-${ass.slug}`}
-              >
-                Assessment: {ass.title}
-              </option>
-            ))}
+            <option value="assessment">Assessment</option>
           </select>
 
           <button
