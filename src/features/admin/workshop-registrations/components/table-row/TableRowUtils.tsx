@@ -98,3 +98,4 @@ export const getStatusColor = (value: string, type: "first" | "second") => {
   const found = options.find((opt) => opt.value === value);
   return found ? found.color : "bg-gray-300";
 };
+ 

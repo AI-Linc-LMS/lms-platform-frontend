@@ -38,7 +38,7 @@ export const filterWorkshopData = (
       if (!safeValue) return false;
       const selectedOptions = filterValue.split(',').map(opt => opt.trim().toLowerCase());
       const matches = selectedOptions.includes(safeValue.toLowerCase());
-       
+      
       return matches;
     };
 

@@ -28,6 +28,7 @@ import RoadmapPage from "./features/learn/components/assessment/RoadmapPage";
 import Referals from "./features/admin/referals/Referals";
 import PartialPaymentPage from "./features/learn/pages/PartialPaymentPage";
 import PaymentLinkGeneratorPage from "./features/admin/pages/PaymentLinkGeneratorPage";
+import EmailSelfServe from "./features/admin/emailSend/EmailSelfServe";
 
 export interface RouteConfig {
   path: string;
@@ -131,6 +132,12 @@ const routes: RouteConfig[] = [
   {
     path: "/admin/dashboard",
     component: Dashboard,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/email-send",
+    component: EmailSelfServe,
     isPrivate: true,
     requiredRole: "admin_or_instructor",
   },
