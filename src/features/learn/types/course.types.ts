@@ -14,11 +14,10 @@ export interface CourseProgress {
 }
 
 export interface Instructor {
-  id: number;
+  id: string;
   name: string;
   bio?: string;
-  linkedin?: string;
-  profile_pic?: string;
+  linkedin_profile?: string;
   profile_pic_url?: string;
 }
 
