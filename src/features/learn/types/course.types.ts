@@ -19,6 +19,7 @@ export interface Instructor {
   bio?: string;
   linkedin_profile?: string;
   profile_pic_url?: string;
+  website?: string;
 }
 
 export interface Submodule {

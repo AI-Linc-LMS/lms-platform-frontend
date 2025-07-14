@@ -3,6 +3,7 @@ import { Course, Instructor, Module, Submodule } from "../../types/course.types"
 import CourseStatistics from "./CourseStatistics";
 import CourseActions from "./CourseActions";
 import CollapsibleCourseModule from "./CollapsibleCourseModule";
+import { FaLinkedin } from "react-icons/fa";
 
 interface CourseContentProps {
   course: Course;
@@ -10,7 +11,82 @@ interface CourseContentProps {
   error: Error | null;
 }
 
-const CourseContent: React.FC<CourseContentProps> = ({course, isLoading, error}) => {
+// Modify the InstructorsSection to include more instructors
+const InstructorsSection: React.FC = () => {
+  // Define mock instructors specific to this course
+  const mockInstructors: Instructor[] = [
+    {
+      id: "1",
+      name: "Yamini Bandi",
+      bio: "AI Product Development Specialist with expertise in Agentic AI systems and innovative digital product design.",
+      linkedin_profile: "https://www.linkedin.com/in/yaminibandi",
+      profile_pic_url: "https://media.licdn.com/dms/image/v2/D5603AQGnJXGVLD3l6A/profile-displayphoto-shrink_800_800/B56ZUU9NlaGsBs-/0/1739813346507?e=1758153600&v=beta&t=CZixxbB8N4P00hjhzaC0EZqF1MZp7KJqSYNK76lkXQs",
+      website: "https://yaminibandi.ai"
+    },
+    {
+      id: "2",
+      name: "Shubham Lal",
+      bio: "Senior AI Engineer with extensive experience in building autonomous agents and intelligent product ecosystems.",
+      linkedin_profile: "https://www.linkedin.com/in/shubhamlal/",
+      profile_pic_url: "https://media.licdn.com/dms/image/v2/D5603AQFkca3e8sWiJg/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1704275354618?e=1758153600&v=beta&t=KMRMCixWPfNmy9TXMKV81hAS6DBTGo120y38mU1FDjM",
+      website: "https://shubhamlal.tech"
+    },
+    {
+      id: "3",
+      name: "Divyansh Dubey ",
+
+      bio: "Machine Learning Research Lead specializing in advanced AI algorithms and autonomous system design.",
+      linkedin_profile: "https://www.linkedin.com/in/divyansh-dubey/",
+      profile_pic_url: "https://media.licdn.com/dms/image/v2/C4D03AQFTKsUzbzTaow/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1661867320805?e=1758153600&v=beta&t=WYy1yfOd1S6UjcyKj2Vnl2U9Zsipw7QjmsfwdhipcrY",
+      website: "https://emilyrodriguez.ai"
+    },
+    {
+      id: "4",
+      name: "Abirami Sukumaran",
+      bio: "AI Product Manager with expertise in developing intelligent software solutions and AI strategy.",
+      linkedin_profile: "https://www.linkedin.com/in/abiramisukumaran/",
+      profile_pic_url: "https://media.licdn.com/dms/image/v2/C5603AQFGooYQlpfsiA/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1600277251078?e=1758153600&v=beta&t=TateWcCJTZWeS3FHwfTJ209ajFfUFEKofgNqFM3c5DQ",
+      website: "https://alexchen.tech"
+    },
+
+  ];
+
+  return (
+    <div className="mt-6 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+      <h2 className="text-xl font-semibold text-gray-800 mb-5">Course Instructors</h2>
+      <div className="grid grid-cols-2 gap-5">
+        {mockInstructors.map((instructor) => (
+          <div
+            key={instructor.id}
+            className="bg-white rounded-xl p-4 text-center"
+          >
+            <div className="mb-3">
+              <img
+                src={instructor.profile_pic_url || '/default-avatar.png'}
+                alt={instructor.name}
+                className="w-24 h-24 rounded-full object-cover mx-auto"
+              />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-1">{instructor.name}</h3>
+            <p className="text-sm text-gray-600 mb-2 line-clamp-2">{instructor.bio}</p>
+            {instructor.linkedin_profile && (
+              <a
+                href={instructor.linkedin_profile}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center text-[#0A66C2] hover:text-[#005582] transition-colors"
+              >
+                <FaLinkedin className="mr-1" /> LinkedIn Profile
+              </a>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const CourseContent: React.FC<CourseContentProps> = ({ course, isLoading, error }) => {
   const [tooltipInfo, setTooltipInfo] = useState<{
     visible: boolean;
     index: number;
@@ -159,17 +235,20 @@ const CourseContent: React.FC<CourseContentProps> = ({course, isLoading, error})
               {course?.instructors?.[tooltipInfo.index]?.bio}
             </p>
           </div>
-          </div>
-       
+        </div>
       )}
 
       <CourseStatistics course={course} />
-      <CourseActions 
-        courseId={course.course_id ?? 3} 
-        clientId={clientId} 
-        likeCount={course.liked_count ?? 100} 
-        isLiked={course.is_liked_by_current_user ?? false} 
+      <CourseActions
+        courseId={course.course_id ?? 3}
+        clientId={clientId}
+        likeCount={course.liked_count ?? 100}
+        isLiked={course.is_liked_by_current_user ?? false}
       />
+
+      {/* Always show InstructorsSection with mock data */}
+      <InstructorsSection />
+
       <div className="mt-4 md:mt-8">
         {course?.modules?.map((module: Module) => (
           <CollapsibleCourseModule
