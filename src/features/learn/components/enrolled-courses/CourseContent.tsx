@@ -34,7 +34,6 @@ const InstructorsSection: React.FC = () => {
     {
       id: "3",
       name: "Divyansh Dubey ",
-
       bio: "Machine Learning Research Lead specializing in advanced AI algorithms and autonomous system design.",
       linkedin_profile: "https://www.linkedin.com/in/divyansh-dubey/",
       profile_pic_url: "https://media.licdn.com/dms/image/v2/C4D03AQFTKsUzbzTaow/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1661867320805?e=1758153600&v=beta&t=WYy1yfOd1S6UjcyKj2Vnl2U9Zsipw7QjmsfwdhipcrY",
@@ -48,14 +47,28 @@ const InstructorsSection: React.FC = () => {
       profile_pic_url: "https://media.licdn.com/dms/image/v2/C5603AQFGooYQlpfsiA/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1600277251078?e=1758153600&v=beta&t=TateWcCJTZWeS3FHwfTJ209ajFfUFEKofgNqFM3c5DQ",
       website: "https://alexchen.tech"
     },
-
   ];
+
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Determine which instructors to display
+  const displayedInstructors = isExpanded ? mockInstructors : mockInstructors.slice(0, 2);
 
   return (
     <div className="mt-6 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-      <h2 className="text-xl font-semibold text-gray-800 mb-5">Course Instructors</h2>
+      <div className="flex justify-between items-center mb-5">
+        <h2 className="text-xl font-semibold text-gray-800">Course Instructors</h2>
+        {mockInstructors.length > 2 && (
+          <button 
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            {isExpanded ? 'Collapse' : `View All (${mockInstructors.length})`}
+          </button>
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-5">
-        {mockInstructors.map((instructor) => (
+        {displayedInstructors.map((instructor) => (
           <div
             key={instructor.id}
             className="bg-white rounded-xl p-4 text-center"
