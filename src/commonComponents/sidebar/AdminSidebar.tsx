@@ -14,7 +14,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isExpanded, toggleSidebar }
       } rounded-lg text-black px-0 flex flex-col items-center py-4 transition-all duration-300 ease-in-out`}
     >
       <SidebarLogo isExpanded={isExpanded} onClickArrow={toggleSidebar} />
-      <nav className="flex w-full flex-col space-y-2">
+      <nav className="flex w-full flex-col">
         <AdminSidebarMenu isExpanded={isExpanded} />
       </nav>
     </div>
