@@ -32,7 +32,7 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
       setSelectedOptions(
         value
           ? value
-              .split(",")
+              .split("|||")
               .map((v) => v.trim())
               .filter(Boolean)
           : []
@@ -68,8 +68,10 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
 
   const handleOptionToggle = (option: string) => {
     let newSelected: string[];
-    if (selectedOptions.includes(option)) {
-      newSelected = selectedOptions.filter((item) => item !== option);
+    if (selectedOptions.map((v) => v.trim()).includes(option.trim())) {
+      newSelected = selectedOptions.filter(
+        (item) => item.trim() !== option.trim()
+      );
     } else {
       newSelected = [...selectedOptions, option];
     }
@@ -77,7 +79,7 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
     // Clear search term after selecting an option
     setSearchTerm("");
 
-    const filterValue = newSelected.join(",");
+    const filterValue = newSelected.join("|||");
 
     onChange(column, filterValue);
   };
@@ -126,62 +128,46 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
         {selectedOptionsInData.length > 0 || filteredNonSelected.length > 0 ? (
           <>
             {/* Selected options section - always show if there are selected options */}
-            {selectedOptionsInData.length > 0 && (
-              <>
-                {selectedOptionsInData.map((option) => (
-                  <label
-                    key={option}
-                    className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded cursor-pointer bg-blue-50 border-l-2 border-blue-500"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedOptions.includes(option)}
-                      onChange={() => handleOptionToggle(option)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-blue-700 font-medium flex-1 truncate">
-                      {option}
-                    </span>
-                    <FiCheck className="w-4 h-4 text-blue-600" />
-                  </label>
-                ))}
-                {/* Show "All Selected" message when all options are selected */}
-                {filteredNonSelected.length === 0 &&
-                  selectedOptionsInData.length > 0 && (
-                    <div className="px-2 py-1 bg-green-50 border-t border-b border-green-200">
-                      <span className="text-xs text-green-600 font-medium">
-                        ✓ All options selected
-                      </span>
-                    </div>
-                  )}
-                {/* Separator between selected and non-selected */}
-                {filteredNonSelected.length > 0 && (
-                  <div className="px-2 py-1 bg-gray-100 border-t border-b border-gray-200">
-                    <span className="text-xs text-gray-500 font-medium">
-                      Other Options
-                    </span>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* Non-selected options section */}
-            {filteredNonSelected.map((option) => (
+            {selectedOptionsInData.map((option) => (
               <label
                 key={option}
-                className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded cursor-pointer bg-blue-50 border-l-2 border-blue-500"
               >
                 <input
                   type="checkbox"
-                  checked={selectedOptions.includes(option)}
+                  checked={selectedOptions
+                    .map((v) => v.trim())
+                    .includes(option.trim())}
                   onChange={() => handleOptionToggle(option)}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700 flex-1 truncate">
+                <span className="text-sm text-blue-700 font-medium flex-1 truncate">
                   {option}
                 </span>
+                {selectedOptions
+                  .map((v) => v.trim())
+                  .includes(option.trim()) && (
+                  <FiCheck className="w-4 h-4 text-blue-600" />
+                )}
               </label>
             ))}
+            {/* Show "All Selected" message when all options are selected */}
+            {filteredNonSelected.length === 0 &&
+              selectedOptionsInData.length > 0 && (
+                <div className="px-2 py-1 bg-green-50 border-t border-b border-green-200">
+                  <span className="text-xs text-green-600 font-medium">
+                    ✓ All options selected
+                  </span>
+                </div>
+              )}
+            {/* Separator between selected and non-selected */}
+            {filteredNonSelected.length > 0 && (
+              <div className="px-2 py-1 bg-gray-100 border-t border-b border-gray-200">
+                <span className="text-xs text-gray-500 font-medium">
+                  Other Options
+                </span>
+              </div>
+            )}
           </>
         ) : (
           <div className="text-sm text-gray-500 p-2 text-center">

@@ -14,7 +14,7 @@ const AdminSidebarMenu = ({ isExpanded }: AdminSidebarMenuProps) => {
 
   return (
     <div
-      className={`${isExpanded ? 'px-2' : 'px-2'} h-full w-full flex flex-col gap-2 divide-y-[0.5px] divide-[#D3D3D318] items-center my-14`}
+      className={`${isExpanded ? 'px-2' : 'px-2'} h-full w-full flex flex-col divide-y-[0.5px] divide-[#D3D3D318] items-center`}
     >
       {AdminNavigationLinks.map((link: SidebarLinkInfo) => (
         <SidebarList
@@ -25,10 +25,10 @@ const AdminSidebarMenu = ({ isExpanded }: AdminSidebarMenuProps) => {
         />
       ))}
 
-      <div className="w-full pt-2">
+      <div className="w-full">
         <Link
           to="/admin/payment-links"
-          className={`flex items-center w-full px-4 py-2.5 text-base transition-colors ${
+          className={`flex items-center w-full px-4 text-base transition-colors ${
             isActive
               ? 'text-[#255C79] bg-[#E5EEF2] font-medium'
               : 'text-[#536066] hover:bg-[#E5EEF2]/50 font-normal'

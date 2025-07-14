@@ -170,6 +170,7 @@ const WorkshopRegistration = () => {
     data: workshopData = [],
     isLoading,
     error,
+    refetch,
   } = useQuery<WorkshopRegistrationData[]>({
     queryKey: ["workshopRegistrations", clientId],
     queryFn: () => getWorkshopRegistrations(clientId),
@@ -284,6 +285,7 @@ const WorkshopRegistration = () => {
                     entry={entry}
                     visibleColumns={visibleColumns}
                     permanentColumns={permanentColumns}
+                    refetch={refetch}
                   />
                 ))
               ) : (
