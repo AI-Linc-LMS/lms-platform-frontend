@@ -32,14 +32,21 @@ export const filterWorkshopData = (
     };
 
     // Helper function to check if value matches any of the selected options
-    const matchesSelectedOptions = (value: string | null | undefined, filterValue: string) => {
+    const matchesSelectedOptions = (value: unknown, filterValue: string) => {
       if (!filterValue) return true;
-      const safeValue = safeToString(value);
-      if (!safeValue) return false;
       const selectedOptions = filterValue.split(',').map(opt => opt.trim().toLowerCase());
-      const matches = selectedOptions.includes(safeValue.toLowerCase());
-      
-      return matches;
+      if (selectedOptions.includes('n/a')) {
+        if (
+          value == null ||
+          (typeof value === 'string' && (value.trim() === '' || value.trim().toLowerCase() === 'n/a'))
+        ) {
+          return true;
+        }
+        return false;
+      }
+      const safeValue = value == null ? '' : String(value);
+      if (!safeValue) return false;
+      return selectedOptions.includes(safeValue.toLowerCase());
     };
 
     // Helper function to check if value matches search string (for when user is searching)
@@ -204,6 +211,10 @@ export const filterWorkshopData = (
       if (filterVal.includes(',')) {
         return matchesSelectedOptions(entry.first_call_status, filterVal);
       } else {
+        // For single value, check if it's "N/A"
+        if (filterVal.toLowerCase() === 'n/a') {
+          return !entry.first_call_status || entry.first_call_status.toLowerCase() === 'n/a';
+        }
         return matchesSearchString(entry.first_call_status, filterVal);
       }
     })();
@@ -218,6 +229,10 @@ export const filterWorkshopData = (
       if (filterVal.includes(',')) {
         return matchesSelectedOptions(entry.second_call_status, filterVal);
       } else {
+        // For single value, check if it's "N/A"
+        if (filterVal.toLowerCase() === 'n/a') {
+          return !entry.second_call_status || entry.second_call_status.toLowerCase() === 'n/a';
+        }
         return matchesSearchString(entry.second_call_status, filterVal);
       }
     })();

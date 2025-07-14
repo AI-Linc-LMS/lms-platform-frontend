@@ -1,6 +1,6 @@
 export const FIRST_CALL_STATUS_OPTIONS = [
-  { value: "Connected, scheduled interview", color: "bg-green-500" },
-  { value: "Connected, denied interview", color: "bg-red-500" },
+  { value: "Connected scheduled interview", color: "bg-green-500" },
+  { value: "Connected denied interview", color: "bg-red-500" },
   { value: "Couldn't Connect", color: "bg-yellow-400" },
   { value: "Call back requested", color: "bg-green-500" },
   { value: "N/A", color: "bg-gray-400" },
@@ -63,14 +63,14 @@ export const getStatusBadgeClass = (
   }
   if (type === "call") {
     if (
-      status === "Connected, scheduled interview" ||
+      status === "Connected scheduled interview" ||
       status === "Call back requested" ||
       status === "Converted"
     )
       return "bg-green-100 text-green-800";
     if (status === "Couldn't Connect" || status === "Follow-up needed")
       return "bg-yellow-100 text-yellow-800";
-    if (status === "Connected, denied interview" || status === "Denied")
+    if (status === "Connected denied interview" || status === "Denied")
       return "bg-red-100 text-red-800";
     if (status === "N/A") return "bg-gray-100 text-gray-600";
     return "bg-gray-100 text-gray-600";
