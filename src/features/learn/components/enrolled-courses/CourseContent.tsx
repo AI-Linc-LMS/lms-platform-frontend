@@ -33,7 +33,7 @@ const InstructorsSection: React.FC = () => {
     },
     {
       id: "3",
-      name: "Divyansh Dubey ",
+      name: "Divyansh Dubey",
       bio: "Machine Learning Research Lead specializing in advanced AI algorithms and autonomous system design.",
       linkedin_profile: "https://www.linkedin.com/in/divyansh-dubey/",
       profile_pic_url: "https://media.licdn.com/dms/image/v2/C4D03AQFTKsUzbzTaow/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1661867320805?e=1758153600&v=beta&t=WYy1yfOd1S6UjcyKj2Vnl2U9Zsipw7QjmsfwdhipcrY",
@@ -55,41 +55,41 @@ const InstructorsSection: React.FC = () => {
   const displayedInstructors = isExpanded ? mockInstructors : mockInstructors.slice(0, 2);
 
   return (
-    <div className="mt-6 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-      <div className="flex justify-between items-center mb-5">
-        <h2 className="text-xl font-semibold text-gray-800">Course Instructors</h2>
+    <div className="mt-6 bg-white rounded-2xl p-4 md:p-6 border border-gray-100 shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-4 md:mb-5">
+        <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-2 md:mb-0">Course Instructors</h2>
         {mockInstructors.length > 2 && (
           <button 
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+            className="text-xs md:text-sm text-blue-600 hover:text-blue-800 transition-colors"
           >
             {isExpanded ? 'Collapse' : `View All (${mockInstructors.length})`}
           </button>
         )}
       </div>
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-5">
         {displayedInstructors.map((instructor) => (
           <div
             key={instructor.id}
-            className="bg-white rounded-xl p-4 text-center"
+            className="bg-white rounded-xl p-3 md:p-4 text-center border border-gray-100 hover:shadow-sm transition-all"
           >
-            <div className="mb-3">
+            <div className="mb-2 md:mb-3">
               <img
                 src={instructor.profile_pic_url || '/default-avatar.png'}
                 alt={instructor.name}
-                className="w-24 h-24 rounded-full object-cover mx-auto"
+                className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover mx-auto"
               />
             </div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-1">{instructor.name}</h3>
-            <p className="text-sm text-gray-600 mb-2 line-clamp-2">{instructor.bio}</p>
+            <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-1">{instructor.name}</h3>
+            <p className="text-xs md:text-sm text-gray-600 mb-2 line-clamp-2">{instructor.bio}</p>
             {instructor.linkedin_profile && (
               <a
                 href={instructor.linkedin_profile}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center text-[#0A66C2] hover:text-[#005582] transition-colors"
+                className="inline-flex items-center justify-center text-[#0A66C2] hover:text-[#005582] transition-colors text-xs md:text-sm"
               >
-                <FaLinkedin className="mr-1" /> LinkedIn Profile
+                <FaLinkedin className="mr-1 w-4 h-4" /> LinkedIn Profile
               </a>
             )}
           </div>
