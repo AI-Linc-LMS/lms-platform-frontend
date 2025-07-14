@@ -90,3 +90,19 @@ export const uploadAttendanceData = async (clientId: string, attendanceData: any
     throw error;
   }
 }
+
+export const htmlEmail = async (clientId: string, data: string) => {
+  try {
+    console.log(clientId, data);
+    const response = await axiosInstance.post(`/admin-dashboard/api/clients/${clientId}/ai/format-email-body/`,
+      {
+        "raw_body": data 
+      }
+    );
+    return response.data;
+  } catch (error: unknown) {
+    throw new Error(
+      error instanceof Error ? error.message : "Failed to format email body"
+    );
+  }
+} 

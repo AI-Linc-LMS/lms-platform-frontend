@@ -121,6 +121,9 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
     );
   };
 
+  const formatNumber = (value: number, digits = 2) =>
+    typeof value === "number" && !isNaN(value) ? value.toFixed(digits) : "N/A";
+
   switch (columnKey) {
     case "name":
       return (
@@ -237,7 +240,7 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
               entry.amount_paid
             )}`}
           >
-            {entry.amount_paid ?? "N/A"}
+            {formatNumber(entry.amount_paid)}
           </span>
         </td>
       );
@@ -247,7 +250,7 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium text-amber-800 bg-amber-100`}
           >
-            {entry.amount_pending || "N/A"}
+            {formatNumber(Number(entry.amount_pending))}
           </span>
         </td>
       );
@@ -276,7 +279,7 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
                 offeredAmount
               )}`}
             >
-              {offeredAmount || "N/A"}
+              {formatNumber(Number(offeredAmount))}
             </span>
             <button
               className="p-1 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 transition-colors duration-200 flex items-center justify-center"
@@ -309,7 +312,7 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
               entry.platform_amount
             )}`}
           >
-            {entry.platform_amount || "N/A"}
+            {formatNumber(Number(entry.platform_amount))}
           </span>
         </td>
       );
