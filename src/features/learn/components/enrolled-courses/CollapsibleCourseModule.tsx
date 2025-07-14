@@ -6,7 +6,6 @@ import {
   CodeIcon,
   FAQIcon,
 } from "../../../../commonComponents/icons/learnIcons/CourseIcons";
-import { FaLinkedin } from "react-icons/fa";
 
 // Types for the component
 export interface ContentItem {
@@ -47,36 +46,56 @@ interface CollapsibleCourseModuleProps {
 }
 
 // Mock Instructor Data
-const mockInstructors: Instructor[] = [
-  {
-    id: "1",
-    name: "Dr. Emily Rodriguez",
-    bio: "Senior Software Engineer with 12 years of experience in machine learning and AI. Currently leading engineering teams at a top-tier tech company.",
-    linkedin_profile: "https://www.linkedin.com/in/emilyrodriguez",
-    profile_pic_url: "https://randomuser.me/api/portraits/women/44.jpg"
-  },
-  {
-    id: "2", 
-    name: "Alex Chen",
-    bio: "Full-stack developer and tech educator with expertise in modern web technologies. Passionate about making complex concepts accessible.",
-    linkedin_profile: "https://www.linkedin.com/in/alexchen",
-    profile_pic_url: "https://randomuser.me/api/portraits/men/32.jpg"
-  },
-  {
-    id: "3",
-    name: "Sarah Thompson",
-    bio: "Cloud computing expert and former Google engineer. Specializes in scalable system design and cloud infrastructure.",
-    linkedin_profile: "https://www.linkedin.com/in/sarahthompson",
-    profile_pic_url: "https://randomuser.me/api/portraits/women/68.jpg"
-  },
-  {
-    id: "4",
-    name: "Michael Wong",
-    bio: "Cybersecurity specialist with extensive experience in enterprise security solutions. Regular speaker at international tech conferences.",
-    linkedin_profile: "https://www.linkedin.com/in/michaelwong",
-    profile_pic_url: "https://randomuser.me/api/portraits/men/85.jpg"
-  }
-];
+// const mockInstructors: Instructor[] = [
+//   {
+//     id: "1",
+//     name: "Dr. Emily Rodriguez",
+//     bio: "Senior Software Engineer with 12 years of experience in machine learning and AI. Currently leading engineering teams at a top-tier tech company.",
+//     linkedin_profile: "https://www.linkedin.com/in/emilyrodriguez",
+//     profile_pic_url: "https://randomuser.me/api/portraits/women/44.jpg",
+//     website: "https://emilyrodriguez.com"
+//   } as Instructor,
+//   {
+//     id: "2", 
+//     name: "Alex Chen",
+//     bio: "Full-stack developer and tech educator with expertise in modern web technologies. Passionate about making complex concepts accessible.",
+//     linkedin_profile: "https://www.linkedin.com/in/alexchen",
+//     profile_pic_url: "https://randomuser.me/api/portraits/men/32.jpg",
+//     website: "https://alexchen.dev"
+//   } as Instructor,
+//   {
+//     id: "3",
+//     name: "Sarah Thompson",
+//     bio: "Cloud computing expert and former Google engineer. Specializes in scalable system design and cloud infrastructure.",
+//     linkedin_profile: "https://www.linkedin.com/in/sarahthompson",
+//     profile_pic_url: "https://randomuser.me/api/portraits/women/68.jpg",
+//     website: "https://sarahthompson.tech"
+//   } as Instructor,
+//   {
+//     id: "4",
+//     name: "Michael Wong",
+//     bio: "Cybersecurity specialist with extensive experience in enterprise security solutions. Regular speaker at international tech conferences.",
+//     linkedin_profile: "https://www.linkedin.com/in/michaelwong",
+//     profile_pic_url: "https://randomuser.me/api/portraits/men/85.jpg",
+//     website: "https://michaelwong.security"
+//   } as Instructor,
+//   {
+//     id: "5",
+//     name: "Dr. Rachel Kim",
+//     bio: "Data science researcher with a Ph.D. in Computational Statistics. Expert in predictive modeling and machine learning algorithms.",
+//     linkedin_profile: "https://www.linkedin.com/in/rachelkim",
+//     profile_pic_url: "https://randomuser.me/api/portraits/women/79.jpg",
+//     website: "https://rachelkim.ai"
+//   } as Instructor,
+//   {
+//     id: "6",
+//     name: "David Patel",
+//     bio: "Senior Data Engineer with expertise in big data technologies and real-time analytics. Passionate about solving complex data challenges.",
+//     linkedin_profile: "https://www.linkedin.com/in/davidpatel",
+//     profile_pic_url: "https://randomuser.me/api/portraits/men/61.jpg",
+//     website: "https://davidpatel.data"
+//   } as Instructor
+// ];
 
 const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
   week,
@@ -85,16 +104,11 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const navigate = useNavigate();
 
-  // Modify modules to include instructors
-  const modulesWithInstructors = week.modules.map(module => ({
-    ...module,
-    instructors: mockInstructors.slice(0, 2) // Add first two instructors to each module
-  }));
+  // Remove the modulesWithInstructors mapping
+  const modulesWithoutInstructors = week.modules;
 
   // Helper function to navigate to topic detail page
   const navigateToTopicDetail = (courseId: string, submoduleId: string) => {
-    //console.log("courseId", courseId);
-    //console.log("submoduleId", submoduleId);
     navigate(`/learn/course/${courseId}/${submoduleId}`);
   };
 
@@ -194,7 +208,7 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
             }`}
         >
           <div className="px-3 md:px-4 pb-3 md:pb-4">
-            {modulesWithInstructors.map((module) => (
+            {modulesWithoutInstructors.map((module) => (
               <div
                 key={module.id}
                 className="mb-3 md:mb-4 border-b border-[#DEE2E6] pb-3"
@@ -277,47 +291,6 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
                       </div>
                     ))}
                 </div>
-
-                {/* Instructor Section */}
-                {module.instructors && module.instructors.length > 0 && (
-                  <div className="mt-4 border-t border-[#DEE2E6] pt-3">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Course Instructors</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                      {module.instructors.map((instructor) => (
-                        <div 
-                          key={instructor.id} 
-                          className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl"
-                        >
-                          <div className="flex-shrink-0">
-                            <img 
-                              src={instructor.profile_pic_url || '/default-avatar.png'} 
-                              alt={instructor.name} 
-                              className="w-12 h-12 rounded-full object-cover"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <h5 className="text-sm font-medium text-gray-800">{instructor.name}</h5>
-                            {instructor.bio && (
-                              <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                                {instructor.bio}
-                              </p>
-                            )}
-                            {instructor.linkedin_profile && (
-                              <a 
-                                href={instructor.linkedin_profile} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center text-[#0A66C2] text-xs mt-1 hover:underline"
-                              >
-                                <FaLinkedin className="mr-1" /> LinkedIn Profile
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             ))}
           </div>
