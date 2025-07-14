@@ -3,7 +3,6 @@ import { useState, useMemo } from "react";
 import { getAssesmentStudentResults } from "../../../services/admin/workshopRegistrationApis";
 // import AssessmentReferralGenerator from "./AssessmentReferralGenerator";
 import ReferralAnalytics from "./ReferralAnalytics";
-import * as XLSX from "xlsx";
 
 interface AssesmentStudentResultsData {
   id: number;
@@ -76,31 +75,6 @@ const AssesmentStudentResults = () => {
     const direct = assessmentData.length - withReferral;
     return { withReferral, direct };
   }, [assessmentData]);
-
-  const handleExport = () => {
-    const exportData = filteredData.map((entry, index) => ({
-      "Serial No.": index + 1,
-      Name: entry?.userprofile?.user?.name || "N/A",
-      Email: entry?.userprofile?.user?.email || "N/A",
-      "Mobile Number": entry?.userprofile?.phone_number || "N/A",
-      "Assessment Title": entry?.assessment?.title || "N/A",
-      Score: entry?.score ? `${entry.score}%` : "N/A",
-      "Scholarship Percentage": entry?.offered_scholarship_percentage
-        ? `${entry.offered_scholarship_percentage}%`
-        : "N/A",
-      Amount: entry?.amount ? `₹${entry.amount.toLocaleString()}` : "N/A",
-      Status: entry?.status || "N/A",
-      "Referral Code": entry?.referral_code || entry?.referal_code || "Direct",
-      "Submitted At": entry?.submitted_at
-        ? new Date(entry.submitted_at).toLocaleString()
-        : "N/A",
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Assessment Results");
-    XLSX.writeFile(workbook, "assessment_results.xlsx");
-  };
 
   if (isLoading) return <div className="p-6">Loading...</div>;
   if (error) return <div className="p-6">Error loading assessment results</div>;
@@ -221,7 +195,7 @@ const AssesmentStudentResults = () => {
           }}
           className="p-2 border rounded w-full sm:max-w-sm"
         />
-        <button
+        {/* <button
           onClick={handleExport}
           className="flex items-center gap-2 bg-[#5FA564] text-white px-4 py-2 rounded text-sm max-w-[120px]"
           title="Export to Excel"
@@ -241,7 +215,7 @@ const AssesmentStudentResults = () => {
             />
           </svg>
           <span className="inline text-white">Export</span>
-        </button>
+        </button> */}
       </div>
 
       <div className="mb-4 text-sm text-gray-600">

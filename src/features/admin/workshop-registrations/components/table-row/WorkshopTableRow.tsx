@@ -262,6 +262,13 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     "workshop_name",
     "session_number",
     "referal_code",
+    // Call details
+    "first_call_status",
+    "first_call_comment",
+    "second_call_status",
+    "second_call_comment",
+    "follow_up_comment",
+    "follow_up_date",
     // Assessment details
     "attended_webinars",
     "is_assessment_attempted",
@@ -278,13 +285,6 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     "amount_pending",
     "offered_amount",
     "platform_amount",
-    // Comment and status
-    "first_call_status",
-    "first_call_comment",
-    "second_call_status",
-    "second_call_comment",
-    "follow_up_comment",
-    "follow_up_date",
     // Dates
     "registered_at",
     "updated_at",
