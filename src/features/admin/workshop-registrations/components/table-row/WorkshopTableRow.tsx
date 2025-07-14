@@ -27,12 +27,14 @@ interface WorkshopTableRowProps {
   entry: WorkshopRegistrationData;
   visibleColumns?: string[];
   permanentColumns?: string[];
+  refetch: () => void; // Add this line
 }
 
 export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   entry,
   visibleColumns = [],
   permanentColumns = [],
+  refetch,
 }) => {
   const [copiedCode, setCopiedCode] = React.useState<string | null>(null);
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -42,9 +44,13 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
       editRegistration(clientId, entry.id.toString(), data),
     onSuccess: () => {
       setModalOpen(false);
+       // Refetch data after successful update
     },
     onError: () => {
       setModalOpen(false);
+    },
+    onSettled: () => {
+      refetch();
     },
   });
 
