@@ -54,7 +54,7 @@ const MultiSelectDropdown: React.FC<{
   const selectedOptions =
     typeof value === "string" && value
       ? value
-          .split("|||")
+          .split(",")
           .map((v) => v.trim())
           .filter(Boolean)
       : [];
@@ -92,7 +92,7 @@ const MultiSelectDropdown: React.FC<{
     // Clear search term after selecting an option
     setSearchTerm("");
 
-    const filterValue = newSelected.join("|||");
+    const filterValue = newSelected.join(",");
 
     onChange(filterValue);
   };
