@@ -32,7 +32,7 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
       setSelectedOptions(
         value
           ? value
-              .split("|||")
+              .split(",")
               .map((v) => v.trim())
               .filter(Boolean)
           : []
@@ -79,7 +79,7 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
     // Clear search term after selecting an option
     setSearchTerm("");
 
-    const filterValue = newSelected.join("|||");
+    const filterValue = newSelected.join(",");
 
     onChange(column, filterValue);
   };
