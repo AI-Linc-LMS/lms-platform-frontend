@@ -27,12 +27,14 @@ interface WorkshopTableRowProps {
   entry: WorkshopRegistrationData;
   visibleColumns?: string[];
   permanentColumns?: string[];
+  refetch: () => void; // Add this line
 }
 
 export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   entry,
   visibleColumns = [],
   permanentColumns = [],
+  refetch,
 }) => {
   const [copiedCode, setCopiedCode] = React.useState<string | null>(null);
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -42,9 +44,13 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
       editRegistration(clientId, entry.id.toString(), data),
     onSuccess: () => {
       setModalOpen(false);
+       // Refetch data after successful update
     },
     onError: () => {
       setModalOpen(false);
+    },
+    onSettled: () => {
+      refetch();
     },
   });
 
@@ -256,6 +262,13 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     "workshop_name",
     "session_number",
     "referal_code",
+    // Call details
+    "first_call_status",
+    "first_call_comment",
+    "second_call_status",
+    "second_call_comment",
+    "follow_up_comment",
+    "follow_up_date",
     // Assessment details
     "attended_webinars",
     "is_assessment_attempted",
@@ -272,13 +285,6 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     "amount_pending",
     "offered_amount",
     "platform_amount",
-    // Comment and status
-    "first_call_status",
-    "first_call_comment",
-    "second_call_status",
-    "second_call_comment",
-    "follow_up_comment",
-    "follow_up_date",
     // Dates
     "registered_at",
     "updated_at",

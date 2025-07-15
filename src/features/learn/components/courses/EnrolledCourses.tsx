@@ -76,10 +76,10 @@ const transformCourseData = (reduxCourse: EnrolledCourse): CardCourse => {
     updated_at: reduxCourse.updated_at,
     instructors:
       reduxCourse.instructors?.map((instructor) => ({
-        id: instructor.id,
+        id: instructor.id.toString(),
         name: instructor.name,
         bio: instructor.bio,
-        linkedin: instructor.linkedin,
+        linkedin_profile: instructor.linkedin,
         profile_pic_url: instructor.profile_pic_url,
       })) || [],
     stats: reduxCourse.stats
