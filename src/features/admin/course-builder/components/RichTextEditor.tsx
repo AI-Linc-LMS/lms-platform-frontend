@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState } from "react";
 
 interface RichTextEditorProps {
   value: string;
@@ -13,14 +13,13 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value,
   onChange,
   placeholder = "Enter description...",
-  label = "Description",
   disabled = false,
   className = ""
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const fontSizeDropdownRef = useRef<HTMLDivElement>(null);
   const colorPickerRef = useRef<HTMLDivElement>(null);
-  
+
   const [showPlaceholder, setShowPlaceholder] = useState(true);
   const [fontSize, setFontSize] = useState(14);
   const [textColor, setTextColor] = useState("#2D3748");
@@ -47,12 +46,14 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const isContentEmpty = (content: string) => {
     if (!content) return true;
     const trimmed = content.trim();
-    return trimmed === "" || 
-           trimmed === "<br>" || 
-           trimmed === "<div></div>" || 
-           trimmed === "<p></p>" ||
-           trimmed === "<div><br></div>" ||
-           trimmed === "<p><br></p>";
+    return (
+      trimmed === "" ||
+      trimmed === "<br>" ||
+      trimmed === "<div></div>" ||
+      trimmed === "<p></p>" ||
+      trimmed === "<div><br></div>" ||
+      trimmed === "<p><br></p>"
+    );
   };
 
   // Initialize editor content and handle updates
@@ -60,14 +61,14 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     if (editorRef.current) {
       const currentContent = editorRef.current.innerHTML;
       const isEmpty = isContentEmpty(value);
-      
+
       // Only update innerHTML if the content has actually changed
       // This prevents cursor position issues during editing
       if (currentContent !== value && (value || !isInitialized)) {
         editorRef.current.innerHTML = value || "";
         setIsInitialized(true);
       }
-      
+
       setShowPlaceholder(isEmpty);
     }
   }, [value, isInitialized]);
@@ -85,17 +86,23 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   // Click outside handlers
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (fontSizeDropdownRef.current && !fontSizeDropdownRef.current.contains(event.target as Node)) {
+      if (
+        fontSizeDropdownRef.current &&
+        !fontSizeDropdownRef.current.contains(event.target as Node)
+      ) {
         setFontSizeDropdownOpen(false);
       }
-      if (colorPickerRef.current && !colorPickerRef.current.contains(event.target as Node)) {
+      if (
+        colorPickerRef.current &&
+        !colorPickerRef.current.contains(event.target as Node)
+      ) {
         setShowColorPicker(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -104,16 +111,16 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     if (editorRef.current && !disabled) {
       const selection = window.getSelection();
       const range = selection?.getRangeAt(0);
-      
+
       editorRef.current.focus();
-      
+
       if (selection && range) {
         selection.removeAllRanges();
         selection.addRange(range);
       }
-      
+
       document.execCommand(command, false, value);
-      
+
       const content = editorRef.current.innerHTML;
       onChange(content);
       setShowPlaceholder(isContentEmpty(content));
@@ -134,7 +141,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
     if (disabled) return;
-    
+
     const content = e.currentTarget.innerHTML;
     onChange(content);
     const isEmpty = isContentEmpty(content);
@@ -144,12 +151,12 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const focusEditor = () => {
     if (editorRef.current && !disabled) {
       editorRef.current.focus();
-      
+
       // Hide placeholder when focused, even if empty
       if (showPlaceholder) {
         setShowPlaceholder(false);
       }
-      
+
       const range = document.createRange();
       const selection = window.getSelection();
       if (selection) {
@@ -180,26 +187,37 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   return (
     <div className={`space-y-2 ${className}`}>
-      <label className="text-sm font-medium text-gray-700">{label}</label>
-      
+
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 p-2 border border-gray-300 rounded-t bg-gray-50">
         {/* Font Size Dropdown */}
         <div className="relative" ref={fontSizeDropdownRef}>
           <button
             type="button"
-            onClick={() => !disabled && setFontSizeDropdownOpen(!fontSizeDropdownOpen)}
+            onClick={() =>
+              !disabled && setFontSizeDropdownOpen(!fontSizeDropdownOpen)
+            }
             className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={disabled}
           >
             {fontSize}px
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </button>
 
           {fontSizeDropdownOpen && !disabled && (
-            <div className="absolute top-full left-0 mt-1 bg-white shadow-lg rounded-md border z-10 max-h-40 overflow-y-auto">
+            <div className={`absolute top-full left-0 mt-1 bg-white shadow-lg rounded-md border z-10 min max-h-40 overflow-y-auto`}>
               {fontSizeOptions.map((size) => (
                 <button
                   key={size}
@@ -263,24 +281,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         >
           U
         </button>
-
-        <button
-          type="button"
-          className="cursor-pointer hover:bg-gray-200 p-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={() => execCommand("insertUnorderedList")}
-          disabled={disabled}
-        >
-          • List
-        </button>
-
-        <button
-          type="button"
-          className="cursor-pointer hover:bg-gray-200 p-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={() => execCommand("insertOrderedList")}
-          disabled={disabled}
-        >
-          1. List
-        </button>
       </div>
 
       {/* Editor */}
@@ -291,13 +291,13 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           onInput={handleInput}
           onFocus={focusEditor}
           onBlur={handleBlur}
-          className={`w-full min-h-[120px] max-h-[300px] overflow-y-auto p-3 border border-gray-300 rounded-b focus:outline-none focus:ring-1 focus:ring-gray-500 ${
-            disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+          className={`w-full min-h-[191px] max-h-[300px] overflow-y-auto p-3 border border-gray-300 rounded-b focus:outline-none focus:ring-1 focus:ring-gray-500 ${
+            disabled ? "bg-gray-100 cursor-not-allowed" : "bg-white"
           }`}
           style={{ fontSize: `${fontSize}px`, color: textColor }}
           suppressContentEditableWarning={true}
         />
-        
+
         {showPlaceholder && (
           <div
             className="absolute top-3 left-3 text-gray-400 pointer-events-none"
@@ -311,4 +311,4 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   );
 };
 
-export default RichTextEditor; 
+export default RichTextEditor;

@@ -1,5 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useToast } from "../../../contexts/ToastContext";
+import RichTextEditor from "../course-builder/components/RichTextEditor";
+import { htmlEmail } from "../../../services/admin/workshopRegistrationApis";
 
 interface EmailData {
   email: string;
@@ -13,6 +15,7 @@ interface EmailTemplate {
 }
 
 const EmailSelfServe: React.FC = () => {
+  const clientId = import.meta.env.VITE_CLIENT_ID;
   const [emailData, setEmailData] = useState<EmailData[]>([]);
   const [emailTemplate, setEmailTemplate] = useState<EmailTemplate>({
     subject: "",
@@ -20,6 +23,14 @@ const EmailSelfServe: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
+  const [htmlPreview, setHtmlPreview] = useState<string>(
+    `<div style="font-family: Arial, sans-serif; padding: 24px; background: #f9f9f9;">
+      <h2 style="color: #2d3748;">Welcome to AI Linc!</h2>
+      <p style="color: #4a5568;">This is a <b>sample HTML email</b> preview. You can use <span style='color: #3182ce;'>bold</span>, <i>italic</i>, <u>underline</u>, and even <span style='color: #38a169;'>colored text</span>!</p>
+      <p style="margin-top: 24px;">Best regards,<br/>The AI Linc Team</p>
+    </div>`
+  );
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { success: showSuccessToast, error: showErrorToast } = useToast();
 
@@ -66,6 +77,21 @@ const EmailSelfServe: React.FC = () => {
     reader.readAsText(file);
   };
 
+  const handlePreviewHtml = async () => {
+    setIsPreviewLoading(true);
+    try {
+      // Replace line breaks with literal \n before sending to API
+      const processedBody = emailTemplate.body.replace(/\n/g, "\\n");
+      const response = await htmlEmail(clientId, processedBody);
+      setHtmlPreview(response.html || response || "");
+    } catch {
+      showErrorToast("Error", "Failed to format email body");
+      setHtmlPreview("");
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
   const handleSendEmails = async () => {
     if (!emailData.length || !emailTemplate.subject || !emailTemplate.body) {
       alert("Please upload emails and fill in subject and body.");
@@ -73,37 +99,12 @@ const EmailSelfServe: React.FC = () => {
     }
 
     setIsLoading(true);
-    console.log(emailData, emailTemplate);
     try {
       // Simulate API call - replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate 2 second delay
-
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       // Here you would integrate with your email service API
-      // const response = await fetch("/api/send-bulk-emails", {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      //   body: JSON.stringify({
-      //     emails: emailData,
-      //     template: emailTemplate,
-      //   }),
-      // });
-      // if (response.ok) {
-      //   setSentEmailCount(emailData.length);
-      //   setShowSuccessPopup(true);
-      //   // Reset form
-      //   setEmailData([]);
-      //   setEmailTemplate({ subject: "", body: "" });
-      //   setUploadedFileName("");
-      //   if (fileInputRef.current) {
-      //     fileInputRef.current.value = "";
-      //   }
-      // } else {
-      //   throw new Error("Failed to send emails");
-      // }
+      // await fetch('/api/send-bulk-emails', { ... })
 
-      // For demo purposes - show success toast
       showSuccessToast(
         "Emails Sent Successfully!",
         `Successfully sent ${emailData.length} emails to your recipients.`
@@ -112,11 +113,11 @@ const EmailSelfServe: React.FC = () => {
       setEmailData([]);
       setEmailTemplate({ subject: "", body: "" });
       setUploadedFileName("");
+      setHtmlPreview("");
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
-    } catch (error) {
-      console.error("Error sending emails:", error);
+    } catch {
       showErrorToast(
         "Error Sending Emails",
         "Failed to send emails. Please try again."
@@ -139,7 +140,7 @@ const EmailSelfServe: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+    <div className="mx-auto p-6 bg-white rounded-lg shadow-lg">
       <div className="flex justify-between items-start mb-8">
         <h1 className="text-3xl font-bold text-gray-800">Bulk Email Sender</h1>
         <button
@@ -219,15 +220,42 @@ const EmailSelfServe: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Body *
             </label>
-            <textarea
-              value={emailTemplate.body}
-              onChange={(e) =>
-                setEmailTemplate((prev) => ({ ...prev, body: e.target.value }))
-              }
-              rows={8}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter email body content..."
-            />
+            <div className="flex gap-4 w-full justify-between">
+              <div className="w-full">
+                <RichTextEditor
+                  value={emailTemplate.body}
+                  onChange={(value: string) =>
+                    setEmailTemplate({ ...emailTemplate, body: value })
+                  }
+                  placeholder="Enter email body content..."
+                />
+              </div>
+              {/* HTML Preview */}
+              <div className="w-full">
+                {htmlPreview && (
+                  <div className="border border-gray-300 rounded p-4 bg-gray-50">
+                    <div className="mb-2 text-xs text-gray-500 font-semibold">
+                      HTML Preview
+                    </div>
+                    <div dangerouslySetInnerHTML={{ __html: htmlPreview }} />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button
+                type="button"
+                onClick={handlePreviewHtml}
+                disabled={isPreviewLoading || !emailTemplate.body}
+                className={`px-4 py-2 rounded bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors ${
+                  isPreviewLoading || !emailTemplate.body
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
+                }`}
+              >
+                {isPreviewLoading ? "Generating Preview..." : "Preview as HTML"}
+              </button>
+            </div>
           </div>
         </div>
       </div>

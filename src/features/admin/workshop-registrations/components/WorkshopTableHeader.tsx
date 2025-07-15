@@ -54,7 +54,7 @@ const MultiSelectDropdown: React.FC<{
   const selectedOptions =
     typeof value === "string" && value
       ? value
-          .split(",")
+          .split("|||")
           .map((v) => v.trim())
           .filter(Boolean)
       : [];
@@ -84,15 +84,15 @@ const MultiSelectDropdown: React.FC<{
   // On option toggle, update filter state (table data) and clear search
   const handleToggle = (opt: string) => {
     let newSelected: string[];
-    if (selectedOptions.includes(opt)) {
-      newSelected = selectedOptions.filter((o) => o !== opt);
+    if (selectedOptions.map((v) => v.trim()).includes(opt.trim())) {
+      newSelected = selectedOptions.filter((o) => o.trim() !== opt.trim());
     } else {
       newSelected = [...selectedOptions, opt];
     }
     // Clear search term after selecting an option
     setSearchTerm("");
 
-    const filterValue = newSelected.join(",");
+    const filterValue = newSelected.join("|||");
 
     onChange(filterValue);
   };
@@ -126,7 +126,9 @@ const MultiSelectDropdown: React.FC<{
                   >
                     <input
                       type="checkbox"
-                      checked={selectedOptions.includes(opt)}
+                      checked={selectedOptions
+                        .map((v) => v.trim())
+                        .includes(opt.trim())}
                       onChange={() => handleToggle(opt)}
                       className="rounded border-gray-300 text-blue-600"
                     />
@@ -138,7 +140,11 @@ const MultiSelectDropdown: React.FC<{
                     <span className="text-sm text-blue-700 font-medium flex-1">
                       {opt}
                     </span>
-                    <FiCheck className="w-4 h-4 text-blue-600" />
+                    {selectedOptions
+                      .map((v) => v.trim())
+                      .includes(opt.trim()) && (
+                      <FiCheck className="w-4 h-4 text-blue-600" />
+                    )}
                   </label>
                 ))}
                 {/* Show "All Selected" message when all options are selected */}
@@ -169,7 +175,9 @@ const MultiSelectDropdown: React.FC<{
               >
                 <input
                   type="checkbox"
-                  checked={selectedOptions.includes(opt)}
+                  checked={selectedOptions
+                    .map((v) => v.trim())
+                    .includes(opt.trim())}
                   onChange={() => handleToggle(opt)}
                   className="rounded border-gray-300 text-blue-600"
                 />
@@ -179,6 +187,9 @@ const MultiSelectDropdown: React.FC<{
                   ></span>
                 )}
                 <span className="text-sm text-gray-700 flex-1">{opt}</span>
+                {selectedOptions.map((v) => v.trim()).includes(opt.trim()) && (
+                  <FiCheck className="w-4 h-4 text-blue-600" />
+                )}
               </label>
             ))}
           </>
@@ -224,6 +235,21 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
     { column: "workshop_name", label: "Workshop Name" },
     { column: "session_number", label: "Session" },
     { column: "referal_code", label: "Referral Code" },
+    // Call details
+    {
+      column: "first_call_status",
+      label: "1st Call Status",
+      enum: FIRST_CALL_STATUS_OPTIONS,
+    },
+    { column: "first_call_comment", label: "1st Call Comment" },
+    {
+      column: "second_call_status",
+      label: "2nd Call Status",
+      enum: SECOND_CALL_STATUS_OPTIONS,
+    },
+    { column: "second_call_comment", label: "2nd Call Comment" },
+    { column: "follow_up_comment", label: "Follow Up Comment" },
+    { column: "follow_up_date", label: "Follow Up Date", isDate: true },
     // Assessment details
     { column: "attended_webinars", label: "Attendee" },
     {
@@ -249,20 +275,6 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
     { column: "offered_amount", label: "Offered Amount" },
     { column: "platform_amount", label: "Platform Amount" },
     // Comment and status
-    {
-      column: "first_call_status",
-      label: "1st Call Status",
-      enum: FIRST_CALL_STATUS_OPTIONS,
-    },
-    { column: "first_call_comment", label: "1st Call Comment" },
-    {
-      column: "second_call_status",
-      label: "2nd Call Status",
-      enum: SECOND_CALL_STATUS_OPTIONS,
-    },
-    { column: "second_call_comment", label: "2nd Call Comment" },
-    { column: "follow_up_comment", label: "Follow Up Comment" },
-    { column: "follow_up_date", label: "Follow Up Date", isDate: true },
     // Dates
     { column: "registered_at", label: "Registered At", isDate: true },
     { column: "updated_at", label: "Updated At", isDate: true },
@@ -314,7 +326,7 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
   }, [openFilter, onToggleFilter]);
 
   return (
-    <thead className="bg-gray-100">
+    <thead className="bg-gray-100 sticky top-0 z-10">
       <tr>
         {filterConfigs
           .filter(
@@ -326,7 +338,7 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
             <th
               key={config.column}
               className={[
-                "p-3 relative",
+                "p-3 sticky top-0 z-10 bg-gray-100",
                 (config.column === "first_call_status" ||
                   config.column === "second_call_status") &&
                   "w-[150px] min-w-[150px]",
