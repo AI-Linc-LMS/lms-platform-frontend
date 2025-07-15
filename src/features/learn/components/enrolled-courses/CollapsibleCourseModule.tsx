@@ -21,6 +21,15 @@ export interface CourseModule {
   completed?: number; // Percentage completed
   started?: boolean;
   content: ContentItem[];
+  instructors?: Instructor[]; // Add this line
+}
+
+export interface Instructor { // Add this interface
+  id: string;
+  name: string;
+  bio?: string;
+  linkedin_profile?: string;
+  profile_pic_url?: string;
 }
 
 export interface CourseWeek {
@@ -36,6 +45,58 @@ interface CollapsibleCourseModuleProps {
   defaultOpen?: boolean;
 }
 
+// Mock Instructor Data
+// const mockInstructors: Instructor[] = [
+//   {
+//     id: "1",
+//     name: "Dr. Emily Rodriguez",
+//     bio: "Senior Software Engineer with 12 years of experience in machine learning and AI. Currently leading engineering teams at a top-tier tech company.",
+//     linkedin_profile: "https://www.linkedin.com/in/emilyrodriguez",
+//     profile_pic_url: "https://randomuser.me/api/portraits/women/44.jpg",
+//     website: "https://emilyrodriguez.com"
+//   } as Instructor,
+//   {
+//     id: "2", 
+//     name: "Alex Chen",
+//     bio: "Full-stack developer and tech educator with expertise in modern web technologies. Passionate about making complex concepts accessible.",
+//     linkedin_profile: "https://www.linkedin.com/in/alexchen",
+//     profile_pic_url: "https://randomuser.me/api/portraits/men/32.jpg",
+//     website: "https://alexchen.dev"
+//   } as Instructor,
+//   {
+//     id: "3",
+//     name: "Sarah Thompson",
+//     bio: "Cloud computing expert and former Google engineer. Specializes in scalable system design and cloud infrastructure.",
+//     linkedin_profile: "https://www.linkedin.com/in/sarahthompson",
+//     profile_pic_url: "https://randomuser.me/api/portraits/women/68.jpg",
+//     website: "https://sarahthompson.tech"
+//   } as Instructor,
+//   {
+//     id: "4",
+//     name: "Michael Wong",
+//     bio: "Cybersecurity specialist with extensive experience in enterprise security solutions. Regular speaker at international tech conferences.",
+//     linkedin_profile: "https://www.linkedin.com/in/michaelwong",
+//     profile_pic_url: "https://randomuser.me/api/portraits/men/85.jpg",
+//     website: "https://michaelwong.security"
+//   } as Instructor,
+//   {
+//     id: "5",
+//     name: "Dr. Rachel Kim",
+//     bio: "Data science researcher with a Ph.D. in Computational Statistics. Expert in predictive modeling and machine learning algorithms.",
+//     linkedin_profile: "https://www.linkedin.com/in/rachelkim",
+//     profile_pic_url: "https://randomuser.me/api/portraits/women/79.jpg",
+//     website: "https://rachelkim.ai"
+//   } as Instructor,
+//   {
+//     id: "6",
+//     name: "David Patel",
+//     bio: "Senior Data Engineer with expertise in big data technologies and real-time analytics. Passionate about solving complex data challenges.",
+//     linkedin_profile: "https://www.linkedin.com/in/davidpatel",
+//     profile_pic_url: "https://randomuser.me/api/portraits/men/61.jpg",
+//     website: "https://davidpatel.data"
+//   } as Instructor
+// ];
+
 const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
   week,
   defaultOpen = false,
@@ -43,10 +104,11 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const navigate = useNavigate();
 
+  // Remove the modulesWithInstructors mapping
+  const modulesWithoutInstructors = week.modules;
+
   // Helper function to navigate to topic detail page
   const navigateToTopicDetail = (courseId: string, submoduleId: string) => {
-    //console.log("courseId", courseId);
-    //console.log("submoduleId", submoduleId);
     navigate(`/learn/course/${courseId}/${submoduleId}`);
   };
 
@@ -140,14 +202,13 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
 
         {/* Collapsible Content */}
         <div
-          className={`transition-all duration-500 ease-in-out transform origin-top overflow-hidden ${
-            isOpen
+          className={`transition-all duration-500 ease-in-out transform origin-top overflow-hidden ${isOpen
               ? "max-h-[2000px] opacity-100 scale-100"
               : "max-h-0 opacity-0 scale-98"
-          }`}
+            }`}
         >
           <div className="px-3 md:px-4 pb-3 md:pb-4">
-            {week.modules.map((module) => (
+            {modulesWithoutInstructors.map((module) => (
               <div
                 key={module.id}
                 className="mb-3 md:mb-4 border-b border-[#DEE2E6] pb-3"
