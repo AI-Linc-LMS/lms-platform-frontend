@@ -83,7 +83,7 @@ const EmailSelfServe: React.FC = () => {
       // Replace line breaks with literal \n before sending to API
       const processedBody = emailTemplate.body.replace(/\n/g, "\\n");
       const response = await htmlEmail(clientId, processedBody);
-      setHtmlPreview(response.html || response || "");
+      setHtmlPreview(response.formatted_html || response || "");
     } catch {
       showErrorToast("Error", "Failed to format email body");
       setHtmlPreview("");
@@ -221,7 +221,7 @@ const EmailSelfServe: React.FC = () => {
               Body *
             </label>
             <div className="flex gap-4 w-full justify-between">
-              <div className="w-full">
+              <div className="w-full h-[360px]">
                 <RichTextEditor
                   value={emailTemplate.body}
                   onChange={(value: string) =>
@@ -233,11 +233,14 @@ const EmailSelfServe: React.FC = () => {
               {/* HTML Preview */}
               <div className="w-full">
                 {htmlPreview && (
-                  <div className="border border-gray-300 rounded p-4 bg-gray-50">
+                  <div className="border border-gray-300 rounded p-4 bg-gray-50 h-[360px]">
                     <div className="mb-2 text-xs text-gray-500 font-semibold">
                       HTML Preview
                     </div>
-                    <div dangerouslySetInnerHTML={{ __html: htmlPreview }} />
+                    <div
+                      dangerouslySetInnerHTML={{ __html: htmlPreview }}
+                      className="h-[310px] overflow-y-auto"
+                    />
                   </div>
                 )}
               </div>
