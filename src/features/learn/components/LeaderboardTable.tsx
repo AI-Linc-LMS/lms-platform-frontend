@@ -32,7 +32,10 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
       'ailinc dev', 
       'ai-linc dev',
       'ailinc admin',
-      'ai linc'
+      'ai linc',
+      'Daksh Rajput',
+      'Soumic Sarkar',
+      'i learning'
     ];
     return !namesToExclude.includes(item.name.toLowerCase());
   });
