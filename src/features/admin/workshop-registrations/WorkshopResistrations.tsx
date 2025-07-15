@@ -4,7 +4,7 @@ import { getWorkshopRegistrations } from "../../../services/admin/workshopRegist
 import { WorkshopRegistrationData, FilterState } from "./types";
 import {
   filterWorkshopData,
-  exportToExcel,
+  //exportToExcel,
   getInitialFilterState,
   hasActiveFilters,
 } from "./utils/filterUtils";
@@ -41,23 +41,6 @@ const WorkshopRegistration = () => {
   // Column configuration for optional columns
   const columnConfigs = [
     { key: "workshop_name", label: "Workshop Name", defaultVisible: true },
-    { key: "session_number", label: "Session", defaultVisible: true },
-    { key: "attended_webinars", label: "Attendee", defaultVisible: true },
-    {
-      key: "is_assessment_attempted",
-      label: "Assessment",
-      defaultVisible: true,
-    },
-    {
-      key: "is_certificate_amount_paid",
-      label: "Certificate Paid",
-      defaultVisible: true,
-    },
-    {
-      key: "is_prebooking_amount_paid",
-      label: "Prebooking Paid",
-      defaultVisible: true,
-    },
     {
       key: "first_call_status",
       label: "1st Call Status",
@@ -83,11 +66,25 @@ const WorkshopRegistration = () => {
       label: "Follow Up Comment",
       defaultVisible: true,
     },
+    { key: "follow_up_date", label: "Follow Up Date", defaultVisible: true },
+    { key: "session_number", label: "Session", defaultVisible: true },
+    { key: "attended_webinars", label: "Attendee", defaultVisible: true },
     {
-      key: "follow_up_date",
-      label: "Follow Up Date",
+      key: "is_assessment_attempted",
+      label: "Assessment",
       defaultVisible: true,
     },
+    {
+      key: "is_certificate_amount_paid",
+      label: "Certificate Paid",
+      defaultVisible: true,
+    },
+    {
+      key: "is_prebooking_amount_paid",
+      label: "Prebooking Paid",
+      defaultVisible: true,
+    },
+    // The rest of the columns
     { key: "amount_paid", label: "Amount Paid", defaultVisible: true },
     { key: "amount_pending", label: "Amount Pending", defaultVisible: true },
     { key: "score", label: "Score", defaultVisible: true },
@@ -170,6 +167,7 @@ const WorkshopRegistration = () => {
     data: workshopData = [],
     isLoading,
     error,
+    refetch,
   } = useQuery<WorkshopRegistrationData[]>({
     queryKey: ["workshopRegistrations", clientId],
     queryFn: () => getWorkshopRegistrations(clientId),
@@ -183,11 +181,11 @@ const WorkshopRegistration = () => {
     [search, workshopData, filters]
   );
 
-  const handleExport = () => {
-    // Combine permanent columns with visible columns for export
-    const allVisibleColumns = [...permanentColumns, ...visibleColumns];
-    exportToExcel(filteredData, allVisibleColumns);
-  };
+  // const handleExport = () => {
+  //   // Combine permanent columns with visible columns for export
+  //   const allVisibleColumns = [...permanentColumns, ...visibleColumns];
+  //   exportToExcel(filteredData, allVisibleColumns);
+  // };
 
   const updateFilter = (
     column: keyof FilterState,
@@ -232,7 +230,7 @@ const WorkshopRegistration = () => {
       <SearchAndExport
         search={search}
         onSearchChange={setSearch}
-        onExport={handleExport}
+        // onExport={handleExport}
         hasActiveFilters={hasActiveFilters(filters)}
         onClearAllFilters={clearAllFilters}
         clientId={clientId}
@@ -261,7 +259,7 @@ const WorkshopRegistration = () => {
       </div>
       <div className="flex flex-col bg-white shadow rounded flex-1 min-h-0">
         {/* Scrollable table container */}
-        <div className="flex-1 overflow-auto min-h-0">
+        <div className="flex-1 max-h-[100vh] overflow-auto min-h-0">
           <table className="w-full text-sm text-left">
             <WorkshopTableHeader
               filters={filters}
@@ -284,6 +282,7 @@ const WorkshopRegistration = () => {
                     entry={entry}
                     visibleColumns={visibleColumns}
                     permanentColumns={permanentColumns}
+                    refetch={refetch}
                   />
                 ))
               ) : (
