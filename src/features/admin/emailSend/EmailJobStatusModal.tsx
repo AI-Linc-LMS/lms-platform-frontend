@@ -28,6 +28,7 @@ const EmailJobStatusModal: React.FC<EmailJobStatusModalProps> = ({
   const failed = Array.isArray(jobStatus?.failed_emails)
     ? jobStatus.failed_emails.length
     : 0;
+  const percent = total > 0 ? Math.round((success / total) * 100) : 0;
 
   return (
     <div
@@ -44,7 +45,7 @@ const EmailJobStatusModal: React.FC<EmailJobStatusModalProps> = ({
               <div className="text-lg font-medium text-gray-800">
                 <b>Task Name:</b>{" "}
                 {typeof jobStatus.task_name === "string"
-                  ? jobStatus.task_name
+                  ? jobStatus.task_name.substring(0, 20) + "..."
                   : "Untitled Task"}
               </div>
               <div className="text-right">
@@ -82,7 +83,42 @@ const EmailJobStatusModal: React.FC<EmailJobStatusModalProps> = ({
             Loading status...
           </div>
         )}
-        <div className="flex gap-3 justify-end mt-4">
+        <div className="flex gap-3 mt-4 py-2">
+          {jobStatus && jobStatus.status === "IN_PROGRESS" && (
+            <div className="w-full relative mt-auto mb-1 h-3">
+              <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-4 rounded-full transition-all duration-300"
+                  style={{
+                    width: `${percent}%`,
+                    background:
+                      percent === 100
+                        ? "#22c55e"
+                        : "linear-gradient(90deg, #22c55e 0%, #bef264 100%)",
+                    position: "relative",
+                  }}
+                >
+                  {percent === 100 && (
+                    <span
+                      className="absolute left-0 top-0 h-full w-full pointer-events-none"
+                      style={{
+                        animation: "shine 1.2s linear infinite",
+                        background:
+                          "linear-gradient(120deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0) 100%)",
+                        backgroundSize: "200% 100%",
+                      }}
+                    ></span>
+                  )}
+                </div>
+              </div>
+              <style>{`
+                @keyframes shine {
+                  0% { background-position: -200% 0; }
+                  100% { background-position: 200% 0; }
+                }
+              `}</style>
+            </div>
+          )}
           {jobStatus && jobStatus.status !== "COMPLETED" && (
             <button
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 font-medium"
