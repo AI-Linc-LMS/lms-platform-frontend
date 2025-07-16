@@ -11,6 +11,7 @@ const FIRST_CALL_STATUS_OPTIONS = [
   { value: "Connected denied interview", color: "bg-red-500" },
   { value: "Couldn't Connect", color: "bg-yellow-400" },
   { value: "Call back requested", color: "bg-green-500" },
+  { value: "Career Counselling", color: "bg-blue-500" },
   { value: "N/A", color: "bg-gray-400" },
 ];
 const SECOND_CALL_STATUS_OPTIONS = [
