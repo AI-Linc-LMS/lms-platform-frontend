@@ -44,7 +44,7 @@ const EmailSelfServe: React.FC = () => {
   );
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [taskName, setTaskName] = useState("");
-  const [showStatusModal, setShowStatusModal] = useState(true);
+  const [showStatusModal, setShowStatusModal] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<Record<string, unknown> | null>(
     null
@@ -325,7 +325,7 @@ const EmailSelfServe: React.FC = () => {
         </h2>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="text-sm font-medium text-gray-700">
               Subject *
             </label>
             <input
@@ -337,7 +337,7 @@ const EmailSelfServe: React.FC = () => {
                   subject: e.target.value,
                 }))
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 mt-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter email subject"
             />
           </div>
@@ -370,13 +370,15 @@ const EmailSelfServe: React.FC = () => {
                 )}
               </div>
             </div>
-            <div className="flex gap-2 mt-4">
+            <div className="flex mt-4">
               <button
                 type="button"
                 onClick={handlePreviewHtml}
-                disabled={isPreviewLoading || !emailTemplate.email_body}
+                disabled={
+                  isPreviewLoading || emailTemplate.email_body.length === 0
+                }
                 className={`px-4 py-2 rounded bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors ${
-                  isPreviewLoading || !emailTemplate.email_body
+                  isPreviewLoading || emailTemplate.email_body.length === 0
                     ? "opacity-50 cursor-not-allowed"
                     : ""
                 }`}
