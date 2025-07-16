@@ -1,6 +1,7 @@
 import axiosInstance from "../axiosInstance";
 import { ReferralData } from "../../types/referral";
 import { EditRegistrationData} from "../../features/admin/workshop-registrations/types";
+import { JobData } from "../../features/admin/emailSend/EmailSelfServe";
 
 export const getWorkshopRegistrations = async (clientId: string) => {
   try {
@@ -106,3 +107,49 @@ export const htmlEmail = async (clientId: string, data: string) => {
     );
   }
 } 
+
+export const createEmailJob = async (clientId: string, data: JobData) => {
+  try {
+    const response = await axiosInstance.post(`/admin-dashboard/api/clients/${clientId}/email-jobs/`, data);
+    return response.data;
+  } catch (error: unknown) {
+    throw new Error(
+      error instanceof Error ? error.message : "Failed to create email job"
+    );
+  }
+}
+
+export const getEmailJobsStatus = async (clientId: string, jobId: string) => {
+  try {
+    const response = await axiosInstance.get(`/admin-dashboard/api/clients/${clientId}/email-jobs/${jobId}/`);
+    return response.data;
+  } catch (error: unknown) {
+    throw new Error(
+      error instanceof Error ? error.message : "Failed to get email jobs"
+    );
+  }
+}
+
+export const getEmailJobs = async (clientId: string) => {
+  try {
+    const response = await axiosInstance.get(`/admin-dashboard/api/clients/${clientId}/email-jobs/`);
+    return response.data;
+  } catch (error: unknown) {
+    throw new Error(
+      error instanceof Error ? error.message : "Failed to get email jobs"
+    );
+  }
+}
+
+export const restartFailedJob = async (clientId: string, jobId: string) => {
+  try {
+    const response = await axiosInstance.post(`/admin-dashboard/api/clients/${clientId}/email-jobs/${jobId}/`, {
+      "job_id": jobId
+    });
+    return response.data;
+  } catch (error: unknown) {
+    throw new Error(
+      error instanceof Error ? error.message : "Failed to restart failed job"
+    );
+  }
+}

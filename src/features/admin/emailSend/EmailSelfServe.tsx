@@ -1,17 +1,29 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useToast } from "../../../contexts/ToastContext";
 import RichTextEditor from "../course-builder/components/RichTextEditor";
-import { htmlEmail } from "../../../services/admin/workshopRegistrationApis";
+import {
+  createEmailJob,
+  htmlEmail,
+  getEmailJobsStatus,
+  restartFailedJob,
+} from "../../../services/admin/workshopRegistrationApis";
+import { useMutation } from "@tanstack/react-query";
+import EmailJobStatusModal from "./EmailJobStatusModal";
+
+export interface JobData {
+  task_name: string;
+  emails: string[];
+  subject: string;
+  email_body: string;
+}
 
 interface EmailData {
   email: string;
-  name?: string;
-  [key: string]: string | undefined;
 }
 
 interface EmailTemplate {
   subject: string;
-  body: string;
+  email_body: string;
 }
 
 const EmailSelfServe: React.FC = () => {
@@ -19,7 +31,7 @@ const EmailSelfServe: React.FC = () => {
   const [emailData, setEmailData] = useState<EmailData[]>([]);
   const [emailTemplate, setEmailTemplate] = useState<EmailTemplate>({
     subject: "",
-    body: "",
+    email_body: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
@@ -31,8 +43,67 @@ const EmailSelfServe: React.FC = () => {
     </div>`
   );
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [taskName, setTaskName] = useState("");
+  const [showStatusModal, setShowStatusModal] = useState(true);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [jobStatus, setJobStatus] = useState<Record<string, unknown> | null>(
+    null
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { success: showSuccessToast, error: showErrorToast } = useToast();
+
+  // Add a constant for localStorage key
+  const LOCAL_STORAGE_KEY = "emailJobStatus";
+
+  const createJobMutation = useMutation({
+    mutationFn: (jobData: JobData) => createEmailJob(clientId, jobData),
+    onSuccess: (data) => {
+      // data should contain job id
+      const returnedJobId = data?.task_id;
+      setJobId(returnedJobId);
+      setShowStatusModal(true);
+      // Save to localStorage
+      window.localStorage.setItem(
+        LOCAL_STORAGE_KEY,
+        JSON.stringify({ jobId: returnedJobId })
+      );
+      setEmailData([]);
+      setEmailTemplate({ subject: "", email_body: "" });
+      setUploadedFileName("");
+      setHtmlPreview("");
+      setTaskName("");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      showSuccessToast(
+        "Emails Sent Successfully!",
+        "Successfully sent emails to your recipients."
+      );
+    },
+    onError: () => {
+      showErrorToast(
+        "Error Sending Emails",
+        "Failed to send emails. Please try again."
+      );
+    },
+  });
+
+  const restartJobMutation = useMutation({
+    mutationFn: (jobId: string) => restartFailedJob(clientId, jobId),
+    onSuccess: () => {
+      showSuccessToast("Job Restarted", "Failed emails will be resent.");
+      handleRefreshStatus();
+    },
+    onError: () => {
+      showErrorToast("Error", "Failed to restart job.");
+    },
+  });
+
+  const handleRestartFailedEmails = () => {
+    if (jobId) {
+      restartJobMutation.mutate(jobId);
+    }
+  };
 
   const parseCSV = (csvText: string): EmailData[] => {
     const lines = csvText.split("\n");
@@ -81,9 +152,9 @@ const EmailSelfServe: React.FC = () => {
     setIsPreviewLoading(true);
     try {
       // Replace line breaks with literal \n before sending to API
-      const processedBody = emailTemplate.body.replace(/\n/g, "\\n");
+      const processedBody = emailTemplate.email_body.replace(/\n/g, "\\n");
       const response = await htmlEmail(clientId, processedBody);
-      setHtmlPreview(response.html || response || "");
+      setHtmlPreview(response.formatted_html || response || "");
     } catch {
       showErrorToast("Error", "Failed to format email body");
       setHtmlPreview("");
@@ -93,38 +164,37 @@ const EmailSelfServe: React.FC = () => {
   };
 
   const handleSendEmails = async () => {
-    if (!emailData.length || !emailTemplate.subject || !emailTemplate.body) {
+    if (
+      !emailData.length ||
+      !taskName ||
+      !emailTemplate.subject ||
+      !emailTemplate.email_body
+    ) {
       alert("Please upload emails and fill in subject and body.");
       return;
     }
 
     setIsLoading(true);
-    try {
-      // Simulate API call - replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      // Here you would integrate with your email service API
-      // await fetch('/api/send-bulk-emails', { ... })
-
-      showSuccessToast(
-        "Emails Sent Successfully!",
-        `Successfully sent ${emailData.length} emails to your recipients.`
-      );
-      // Reset form
-      setEmailData([]);
-      setEmailTemplate({ subject: "", body: "" });
-      setUploadedFileName("");
-      setHtmlPreview("");
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    } catch {
-      showErrorToast(
-        "Error Sending Emails",
-        "Failed to send emails. Please try again."
-      );
-    } finally {
-      setIsLoading(false);
-    }
+    const createJobData: JobData = {
+      task_name: taskName || "Welcome Email Campaign",
+      emails: emailData.map((email) => email.email),
+      subject: emailTemplate.subject,
+      email_body: emailTemplate.email_body,
+    };
+    createJobMutation.mutate(createJobData, {
+      onSettled: () => {
+        setEmailData([]);
+        setEmailTemplate({ subject: "", email_body: "" });
+        setUploadedFileName("");
+        setHtmlPreview("");
+        setTaskName("");
+        showSuccessToast(
+          "Emails Sent Successfully!",
+          `Successfully sent ${emailData.length} emails to your recipients.`
+        );
+      },
+    });
+    setIsLoading(false);
   };
 
   const downloadSampleCSV = () => {
@@ -139,10 +209,54 @@ const EmailSelfServe: React.FC = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  const fetchJobStatus = async (id: string) => {
+    if (!id) return;
+    try {
+      const status = await getEmailJobsStatus(clientId, id);
+      setJobStatus(status);
+    } catch {
+      setJobStatus(null);
+    }
+  };
+
+  // On mount, check localStorage for jobId
+  useEffect(() => {
+    const stored = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.jobId) {
+          setJobId(parsed.jobId);
+          setShowStatusModal(true);
+        }
+      } catch {
+        // Ignore JSON parse errors
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showStatusModal && jobId) {
+      fetchJobStatus(jobId);
+    }
+  }, [showStatusModal, jobId]);
+
+  const handleRefreshStatus = () => {
+    if (jobId) fetchJobStatus(jobId);
+  };
+
+  // When modal is closed, clear localStorage
+  const handleCloseModal = () => {
+    setShowStatusModal(false);
+    setJobId(null);
+    setJobStatus(null);
+    window.localStorage.removeItem(LOCAL_STORAGE_KEY);
+  };
+
   return (
     <div className="mx-auto p-6 bg-white rounded-lg shadow-lg">
       <div className="flex justify-between items-start mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Bulk Email Sender</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Bulk Email Sender</h1>
         <button
           onClick={downloadSampleCSV}
           className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
@@ -166,7 +280,7 @@ const EmailSelfServe: React.FC = () => {
 
       {/* Email Upload Section */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">
+        <h2 className="text-lg font-semibold text-gray-700 mb-4">
           1. Upload Email List
         </h2>
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 pt-10 text-center">
@@ -192,11 +306,22 @@ const EmailSelfServe: React.FC = () => {
           )}
         </div>
       </div>
-
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold text-gray-700 mb-4">
+          2. Task Name
+        </h2>
+        <input
+          type="text"
+          value={taskName}
+          onChange={(e) => setTaskName(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Enter a task name..."
+        />
+      </div>
       {/* Email Composition Section */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">
-          2. Compose Email
+        <h2 className="text-lg font-semibold text-gray-700 mb-4">
+          3. Compose Email
         </h2>
         <div className="space-y-4">
           <div>
@@ -221,11 +346,11 @@ const EmailSelfServe: React.FC = () => {
               Body *
             </label>
             <div className="flex gap-4 w-full justify-between">
-              <div className="w-full">
+              <div className="w-full h-[360px]">
                 <RichTextEditor
-                  value={emailTemplate.body}
+                  value={emailTemplate.email_body}
                   onChange={(value: string) =>
-                    setEmailTemplate({ ...emailTemplate, body: value })
+                    setEmailTemplate({ ...emailTemplate, email_body: value })
                   }
                   placeholder="Enter email body content..."
                 />
@@ -233,11 +358,14 @@ const EmailSelfServe: React.FC = () => {
               {/* HTML Preview */}
               <div className="w-full">
                 {htmlPreview && (
-                  <div className="border border-gray-300 rounded p-4 bg-gray-50">
+                  <div className="border border-gray-300 rounded p-4 bg-gray-50 h-[360px]">
                     <div className="mb-2 text-xs text-gray-500 font-semibold">
                       HTML Preview
                     </div>
-                    <div dangerouslySetInnerHTML={{ __html: htmlPreview }} />
+                    <div
+                      dangerouslySetInnerHTML={{ __html: htmlPreview }}
+                      className="h-[310px] overflow-y-auto"
+                    />
                   </div>
                 )}
               </div>
@@ -246,9 +374,9 @@ const EmailSelfServe: React.FC = () => {
               <button
                 type="button"
                 onClick={handlePreviewHtml}
-                disabled={isPreviewLoading || !emailTemplate.body}
+                disabled={isPreviewLoading || !emailTemplate.email_body}
                 className={`px-4 py-2 rounded bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors ${
-                  isPreviewLoading || !emailTemplate.body
+                  isPreviewLoading || !emailTemplate.email_body
                     ? "opacity-50 cursor-not-allowed"
                     : ""
                 }`}
@@ -273,13 +401,13 @@ const EmailSelfServe: React.FC = () => {
             disabled={
               !emailData.length ||
               !emailTemplate.subject ||
-              !emailTemplate.body ||
+              !emailTemplate.email_body ||
               isLoading
             }
             className={`px-6 py-3 rounded-lg font-medium transition-colors ${
               !emailData.length ||
               !emailTemplate.subject ||
-              !emailTemplate.body ||
+              !emailTemplate.email_body ||
               isLoading
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : "bg-green-500 hover:bg-green-600 text-white"
@@ -289,6 +417,15 @@ const EmailSelfServe: React.FC = () => {
           </button>
         </div>
       </div>
+      <EmailJobStatusModal
+        open={showStatusModal}
+        onClose={handleCloseModal}
+        jobStatus={jobStatus}
+        onRefresh={handleRefreshStatus}
+        onResend={handleRestartFailedEmails}
+        isResending={restartJobMutation.isPending}
+        isRefreshing={false} // You can set this to true if you add a loading state for refresh
+      />
     </div>
   );
 };
