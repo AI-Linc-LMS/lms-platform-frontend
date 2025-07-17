@@ -10,6 +10,7 @@ import {
   deleteSubmoduleContent,
   reorderSubmoduleContent,
   updateSubmoduleContent,
+  updateCourseModule,
 } from "../../../../services/admin/courseApis";
 import { DeleteConfirmationModal } from "./DeleteConfirmationModal";
 import { SortableContentItem } from "./ContentItem";
@@ -64,6 +65,11 @@ export const TopicItem: React.FC<TopicItemProps> = ({
   // Add state for collapsible functionality
   const [isExpanded, setIsExpanded] = useState(false); // Default to collapsed for cleaner view
   
+  // Add edit topic state
+  const [isEditingTopic, setIsEditingTopic] = useState(false);
+  const [editedTopicTitle, setEditedTopicTitle] = useState(topic.title);
+  const [editedTopicWeek, setEditedTopicWeek] = useState(Number(topic.week));
+
   const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("videos");
   const [selectedSubtopicId, setSelectedSubtopicId] = useState<number | null>(
@@ -75,6 +81,102 @@ export const TopicItem: React.FC<TopicItemProps> = ({
   const [expandedSubtopicId, setExpandedSubtopicId] = useState<number | null>(
     null
   );
+
+  // Define an interface for the course details
+  interface CourseModule {
+    id: number;
+    title: string;
+    weekno: number;
+    submodules?: {
+      id: number;
+      title: string;
+      description?: string;
+      order?: number;
+    }[];
+    description?: string;
+    completion_percentage?: number;
+  }
+
+  // Update topic mutation
+  const updateTopicMutation = useMutation({
+    mutationFn: () => updateCourseModule(
+      clientId, 
+      Number(courseId), 
+      Number(topic.id), 
+      { 
+        title: editedTopicTitle, 
+        weekno: editedTopicWeek,
+        description: topic.description || '' // Add optional description
+      }
+    ),
+    onSuccess: (updatedTopic) => {
+      console.log("Topic update response:", updatedTopic);
+      
+      // Invalidate multiple query keys
+      queryClient.invalidateQueries({ 
+        queryKey: ["courseDetails", courseId],
+        exact: false  // This will invalidate all queries that start with this key
+      });
+      
+      // Manually update the cache if possible
+      queryClient.setQueryData(
+        ["courseDetails", courseId], 
+        (oldData: CourseModule[] | undefined) => {
+          if (!oldData) return oldData;
+          
+          // Deep clone the old data to avoid direct mutation
+          const newData = JSON.parse(JSON.stringify(oldData));
+          
+          // Find and update the specific topic
+          const topicIndex = newData.findIndex((m: CourseModule) => m.id === Number(topic.id));
+          if (topicIndex !== -1) {
+            newData[topicIndex] = {
+              ...newData[topicIndex],
+              title: editedTopicTitle,
+              weekno: editedTopicWeek
+            };
+          }
+          
+          return newData;
+        }
+      );
+      
+      // Force a refetch to ensure data consistency
+      queryClient.refetchQueries({ 
+        queryKey: ["courseDetails", courseId],
+        exact: false 
+      });
+
+      success("Topic Updated", "The topic has been successfully updated.");
+      setIsEditingTopic(false);
+    },
+    onError: (error: Error) => {
+      console.error("Failed to update topic:", error);
+      showError("Update Failed", "Failed to update topic. Please try again.");
+    }
+  });
+
+  const handleSaveTopic = () => {
+    // Validate inputs
+    if (!editedTopicTitle.trim()) {
+      showError("Validation Error", "Topic title cannot be empty.");
+      return;
+    }
+
+    if (editedTopicWeek <= 0) {
+      showError("Validation Error", "Week number must be a positive number.");
+      return;
+    }
+
+    updateTopicMutation.mutate();
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingTopic(false);
+    // Reset to original values
+    setEditedTopicTitle(topic.title);
+    setEditedTopicWeek(Number(topic.week));
+  };
 
   // Delete subtopic mutation
   const deleteSubtopicMutation = useMutation({
@@ -287,26 +389,72 @@ export const TopicItem: React.FC<TopicItemProps> = ({
                 </svg>
               </button>
               
-              <h3 className="text-lg font-semibold">{topic.title}</h3>
-              <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-md">
-                Week {topic.week}
-              </div>
-              <button className="text-gray-500">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+              {isEditingTopic ? (
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="text" 
+                    value={editedTopicTitle}
+                    onChange={(e) => setEditedTopicTitle(e.target.value)}
+                    className="border rounded px-2 py-1 text-lg font-semibold w-64"
+                    placeholder="Topic Title"
                   />
-                </svg>
-              </button>
+                  <input 
+                    type="number" 
+                    value={editedTopicWeek}
+                    onChange={(e) => {
+                      const weekValue = Number(e.target.value);
+                      setEditedTopicWeek(isNaN(weekValue) ? 1 : weekValue);
+                    }}
+                    className="border rounded px-2 py-1 w-20 text-center"
+                    placeholder="Week"
+                    min="1"
+                  />
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={handleSaveTopic}
+                      className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                      disabled={updateTopicMutation.isPending}
+                    >
+                      Save
+                    </button>
+                    <button 
+                      onClick={handleCancelEdit}
+                      className="bg-gray-200 text-gray-700 px-3 py-1 rounded hover:bg-gray-300"
+                      disabled={updateTopicMutation.isPending}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h3 className="text-lg font-semibold">{topic.title}</h3>
+                  <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-md">
+                    Week {topic.week}
+                  </div>
+                  {!isEditingTopic && (
+                    <button 
+                      onClick={() => setIsEditingTopic(true)} 
+                      className="text-gray-500"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </>
+              )}
             </div>
             <p className="text-sm text-gray-500 mt-1 ml-9">
               Marks: - | {topic.subtopics.length} subtopic{topic.subtopics.length !== 1 ? 's' : ''}
