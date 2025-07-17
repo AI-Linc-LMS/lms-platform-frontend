@@ -8,6 +8,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import EmailJobStatusModal from "./EmailJobStatusModal";
 import EmailJobsHistoryModal, { EmailJob } from "./EmailJobsHistoryModal";
 import EmailForm from "./EmailForm";
+import AccessDenied from "../../../components/AccessDenied";
+import { useRole } from "../../../hooks/useRole";
 
 const EmailSelfServe: React.FC = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -142,6 +144,12 @@ const EmailSelfServe: React.FC = () => {
       JSON.stringify({ jobId: jobId })
     );
   };
+
+  const { isSuperAdmin } = useRole();
+
+  if (!isSuperAdmin) {
+    return <AccessDenied />;
+  }
 
   return (
     <>

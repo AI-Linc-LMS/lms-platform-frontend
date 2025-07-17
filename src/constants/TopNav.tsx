@@ -22,7 +22,7 @@ const TopNav: React.FC = () => {
   const dispatch = useDispatch();
 
   const userId = user.id;
-  const { isAdminOrInstructor } = useRole();
+  const { isAdminOrInstructor, isSuperAdmin } = useRole();
 
   const toggleDropdown = () => {
     setShowDropdown(!showDropdown);
@@ -39,7 +39,7 @@ const TopNav: React.FC = () => {
 
       // Navigate to login using mobile navigation
       handleMobileNavigation("/login", navigate, true, false);
-    } catch (error) {
+    } catch {
       //console.error("Error during logout:", error);
       handleMobileNavigation("/login", navigate, true, false);
     }
@@ -74,7 +74,7 @@ const TopNav: React.FC = () => {
 
       <div className="flex items-center gap-5">
         {/* Admin Button - Only visible to admin and instructor users */}
-        {isAdminOrInstructor && (
+        {(isAdminOrInstructor || isSuperAdmin) && (
           <Link
             to="/admin/dashboard"
             className="bg-[#17627A] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#124F65] transition-colors"

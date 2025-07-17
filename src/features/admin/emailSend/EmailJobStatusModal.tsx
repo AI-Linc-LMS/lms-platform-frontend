@@ -36,6 +36,14 @@ const EmailJobStatusModal: React.FC<EmailJobStatusModalProps> = ({
       style={{ background: "rgba(240, 240, 240, 0.85)" }}
     >
       <div className="bg-white rounded-xl shadow-2xl p-8 min-w-[500px] max-w-[95vw] relative border border-gray-200">
+        {/* Close (X) button */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 text-2xl font-bold focus:outline-none"
+          aria-label="Close"
+        >
+          ×
+        </button>
         <h2 className="text-xl font-bold mb-6 text-gray-800">
           Email Job Status
         </h2>
