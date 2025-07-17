@@ -26,7 +26,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   }
 
   // If user is authenticated but not admin or instructor, show access denied
-  if (user.role !== "admin" && user.role !== "instructor") {
+  if (user.role !== "admin" && user.role !== "instructor" && user.role !== "superadmin") {
     //console.log('AdminRoute - User is not admin or instructor, showing access denied');
     return <AccessDenied />;
   }
