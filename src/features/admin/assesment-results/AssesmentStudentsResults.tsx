@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { getAssesmentStudentResults } from "../../../services/admin/workshopRegistrationApis";
-// import AssessmentReferralGenerator from "./AssessmentReferralGenerator";
 import ReferralAnalytics from "./ReferralAnalytics";
 
 interface AssesmentStudentResultsData {
@@ -71,7 +70,9 @@ const AssesmentStudentResults = () => {
 
   // Count referrals vs direct submissions
   const referralStats = useMemo(() => {
-    const withReferral = assessmentData.filter(entry => entry?.referral_code || entry?.referal_code).length;
+    const withReferral = assessmentData.filter(
+      (entry) => entry?.referral_code || entry?.referal_code
+    ).length;
     const direct = assessmentData.length - withReferral;
     return { withReferral, direct };
   }, [assessmentData]);
@@ -129,6 +130,7 @@ const AssesmentStudentResults = () => {
     }
   };
 
+
   return (
     <div className="p-4 md:p-6 bg-gray-50 min-h-screen">
       <h1 className="text-xl md:text-2xl font-bold mb-6">Assessment Results</h1>
@@ -155,12 +157,12 @@ const AssesmentStudentResults = () => {
           </svg>
           {showReferralGenerator ? "Hide" : "Generate"} Referral URLs
         </button> */}
-        
-        {/* {showReferralGenerator && (
+
+      {/* {showReferralGenerator && (
           <div className="mt-4"> */}
-            {/* <AssessmentReferralGenerator /> */}
-          {/* </div> */}
-        {/* // )} */}
+      {/* <AssessmentReferralGenerator /> */}
+      {/* </div> */}
+      {/* // )} */}
       {/* </div> */}
 
       {/* Referral Analytics Section */}
@@ -171,16 +173,24 @@ const AssesmentStudentResults = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <h3 className="text-sm font-medium text-gray-700">Total Submissions</h3>
-          <p className="text-2xl font-bold text-gray-900">{assessmentData.length}</p>
+          <h3 className="text-sm font-medium text-gray-700">
+            Total Submissions
+          </h3>
+          <p className="text-2xl font-bold text-gray-900">
+            {assessmentData.length}
+          </p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <h3 className="text-sm font-medium text-gray-700">Via Referral</h3>
-          <p className="text-2xl font-bold text-blue-600">{referralStats.withReferral}</p>
+          <p className="text-2xl font-bold text-blue-600">
+            {referralStats.withReferral}
+          </p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <h3 className="text-sm font-medium text-gray-700">Direct</h3>
-          <p className="text-2xl font-bold text-green-600">{referralStats.direct}</p>
+          <p className="text-2xl font-bold text-green-600">
+            {referralStats.direct}
+          </p>
         </div>
       </div>
 

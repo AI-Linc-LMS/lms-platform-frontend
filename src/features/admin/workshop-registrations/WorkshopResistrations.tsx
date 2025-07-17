@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { getWorkshopRegistrations } from "../../../services/admin/workshopRegistrationApis";
 import { WorkshopRegistrationData, FilterState } from "./types";
 import {
+  exportToExcel,
   filterWorkshopData,
   //exportToExcel,
   getInitialFilterState,
@@ -181,11 +182,11 @@ const WorkshopRegistration = () => {
     [search, workshopData, filters]
   );
 
-  // const handleExport = () => {
-  //   // Combine permanent columns with visible columns for export
-  //   const allVisibleColumns = [...permanentColumns, ...visibleColumns];
-  //   exportToExcel(filteredData, allVisibleColumns);
-  // };
+  const handleExport = () => {
+    // Combine permanent columns with visible columns for export
+    const allVisibleColumns = [...permanentColumns, ...visibleColumns];
+    exportToExcel(filteredData, allVisibleColumns);
+  };
 
   const updateFilter = (
     column: keyof FilterState,
@@ -230,7 +231,7 @@ const WorkshopRegistration = () => {
       <SearchAndExport
         search={search}
         onSearchChange={setSearch}
-        // onExport={handleExport}
+        onExport={handleExport}
         hasActiveFilters={hasActiveFilters(filters)}
         onClearAllFilters={clearAllFilters}
         clientId={clientId}
