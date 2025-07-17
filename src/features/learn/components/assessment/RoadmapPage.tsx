@@ -240,7 +240,7 @@ const RoadmapPage = () => {
       } else {
         //console.error("Certificate ref not found after waiting");
       }
-    } catch (error) {
+    } catch {
       //console.error("Download failed:", error);
     } finally {
       setIsDownloading(false);
@@ -458,12 +458,12 @@ const RoadmapPage = () => {
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-[inset_0_4px_8px_rgba(0,0,0,0.1)] shadow-gray-300 border border-gray-300 ring-1 ring-white/40 py-4 sm:py-5 w-full mx-auto">
           {/* Performance Report Section */}
           <PerformanceReport data={perfReportData} />
-          <div className="w-full bg-yellow-50 border-l-4 border-yellow-500 p-4 mt-4 rounded-r-lg shadow-md">
-            <div className="flex items-center justify-between">
+          <div className="w-full bg-yellow-50 border-r-4 border-yellow-500 p-4 mt-4 rounded-r-lg shadow-md">
+            <div className="flex items-center justify-end">
               <div className="flex items-center space-x-4">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-10 w-10 text-yellow-600"
+                  className="h-6 w-6 text-yellow-600"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
@@ -474,54 +474,48 @@ const RoadmapPage = () => {
                   />
                 </svg>
                 <div>
-                  <h3 className="text-lg font-semibold text-yellow-800">
+                  <h3 className="text-sm font-semibold text-yellow-800">
                     Scholarship Offer
                   </h3>
-                  <div className="flex items-center space-x-2 mt-2">
-                    {/* Countdown Boxes */}
+                  <div className="flex items-center space-x-1 mt-1">
+                    {/* Compact Countdown Boxes */}
                     <div className="flex flex-col items-center">
-                      <span className="text-2xl font-bold text-yellow-700 bg-white rounded-lg px-3 py-1 shadow-md">
+                      <span className="text-sm font-bold text-yellow-700 bg-white rounded-lg px-2 py-0.5 shadow-md">
                         {countdown.days}
                       </span>
-                      <span className="text-xs text-yellow-600 mt-1">Days</span>
+                      <span className="text-[10px] text-yellow-600 mt-0.5">D</span>
                     </div>
-                    <div className="text-2xl font-bold text-yellow-700">:</div>
+                    <div className="text-sm font-bold text-yellow-700">:</div>
                     <div className="flex flex-col items-center">
-                      <span className="text-2xl font-bold text-yellow-700 bg-white rounded-lg px-3 py-1 shadow-md">
+                      <span className="text-sm font-bold text-yellow-700 bg-white rounded-lg px-2 py-0.5 shadow-md">
                         {countdown.hours}
                       </span>
-                      <span className="text-xs text-yellow-600 mt-1">Hours</span>
+                      <span className="text-[10px] text-yellow-600 mt-0.5">H</span>
                     </div>
-                    <div className="text-2xl font-bold text-yellow-700">:</div>
+                    <div className="text-sm font-bold text-yellow-700">:</div>
                     <div className="flex flex-col items-center">
-                      <span className="text-2xl font-bold text-yellow-700 bg-white rounded-lg px-3 py-1 shadow-md">
+                      <span className="text-sm font-bold text-yellow-700 bg-white rounded-lg px-2 py-0.5 shadow-md">
                         {countdown.minutes}
                       </span>
-                      <span className="text-xs text-yellow-600 mt-1">Minutes</span>
+                      <span className="text-[10px] text-yellow-600 mt-0.5">M</span>
                     </div>
-                    <div className="text-2xl font-bold text-yellow-700">:</div>
+                    <div className="text-sm font-bold text-yellow-700">:</div>
                     <div className="flex flex-col items-center">
-                      <span className="text-2xl font-bold text-yellow-700 bg-white rounded-lg px-3 py-1 shadow-md">
+                      <span className="text-sm font-bold text-yellow-700 bg-white rounded-lg px-2 py-0.5 shadow-md">
                         {countdown.seconds}
                       </span>
-                      <span className="text-xs text-yellow-600 mt-1">Seconds</span>
+                      <span className="text-[10px] text-yellow-600 mt-0.5">S</span>
                     </div>
                   </div>
-                  <p className="text-sm text-yellow-600 mt-2">
-                    Hurry! Claim your scholarship before it expires
+                  <p className="text-xs text-yellow-600 mt-1">
+                    Hurry! Claim your scholarship
                   </p>
                 </div>
               </div>
-              {/* <button
-                      onClick={handleLockScholarship}
-                      className="bg-yellow-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-yellow-600 transition-colors duration-300 shadow-md"
-                    >
-                      Lock Scholarship
-                    </button> */}
             </div>
             {timeRemaining === 'Scholarship Expired' && (
-              <div className="mt-2 text-red-600 font-medium">
-                Your scholarship offer has expired. Contact support for assistance.
+              <div className="mt-1 text-red-600 font-medium text-xs">
+                Scholarship offer has expired
               </div>
             )}
           </div>
