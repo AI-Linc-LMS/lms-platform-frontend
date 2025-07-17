@@ -8,6 +8,8 @@ import i from "../../../../commonComponents/icons/admin/dashboard/exclamation-ci
 import StudentRanking from "../components/RankingTable";
 import TimeSpentGraph from "../components/TimeSpentGraph";
 import StudentDailyActivityChart from "../components/StudentActivityChart";
+import { useRole } from "../../../../hooks/useRole";
+import AccessDenied from "../../../../components/AccessDenied";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -38,6 +40,12 @@ const Dashboard = () => {
     navigate("/");
   };
 
+  const { isSuperAdmin } = useRole();
+
+  if (!isSuperAdmin) {
+    return <AccessDenied />;
+  }
+  
   return (
     <div>
       <div className="flex justify-between items-center mb-8">

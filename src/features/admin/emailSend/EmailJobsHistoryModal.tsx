@@ -59,8 +59,10 @@ const EmailJobsHistoryModal: React.FC<EmailJobsHistoryModalProps> = ({
         return "⏳";
       case "FAILED":
         return "✗";
+      case "PENDING":
+        return "⏳";
       default:
-        return "?";
+        return "";
     }
   };
 
