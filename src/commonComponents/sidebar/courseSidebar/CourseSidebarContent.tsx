@@ -7,7 +7,7 @@ import ProblemContent from "./component/ProblemContent";
 import closeSidebarIcon from "../../../assets/course_sidebar_assets/closeSidebarIcon.png";
 import QuizContent, { Quiz } from "./component/QuizContent";
 import DevelopmentContent from "./component/DevelopmentContent";
-import { developmentProjectsDummy } from "./component/data/mockDevelopmentData";
+// import { developmentProjectsDummy } from "./component/data/mockDevelopmentData";
 import { useMediaQuery } from "../../../hooks/useMediaQuery";
 import SubjectiveContent, {
   AssignmentItem,
@@ -391,7 +391,7 @@ const CourseSidebarContent = ({
         )}
         {activeLabel === "Development" && developmentProps && (
           <DevelopmentContent
-            projects={developmentProjectsDummy}
+            projects={[]}
             selectedProjectId={developmentProps.selectedProjectId}
             onProjectSelect={(id) => {
               handleContentClick(parseInt(id), "Development");
