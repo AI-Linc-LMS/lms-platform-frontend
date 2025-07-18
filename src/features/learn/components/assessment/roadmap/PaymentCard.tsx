@@ -324,6 +324,36 @@ const PaymentCardSection: React.FC<{
     }
   };
 
+  const handleDirectFullPayment = (programType: 'nanodegree' | 'flagship') => {
+    if (programType === 'nanodegree') {
+      // If nanodegree course is already paid, show a toast
+      if (isNanodegreeCoursePaid) {
+        showToast(
+          "success",
+          "Already Purchased",
+          "You have already purchased the complete Nanodegree program."
+        );
+        return;
+      }
+
+      // Directly initiate full course payment without seat booking
+      setShowNanoDegreeCourseModal(true);
+    } else if (programType === 'flagship') {
+      // If flagship course is already paid, show a toast
+      if (isFlagshipCoursePaid) {
+        showToast(
+          "success",
+          "Already Purchased",
+          "You have already purchased the complete Flagship Career Launchpad."
+        );
+        return;
+      }
+
+      // Directly initiate full course payment without seat booking
+      setShowFlagshipCourseModal(true);
+    }
+  };
+
   const handleFlagshipPayment = () => {
     if (isFlagshipCoursePaid) {
       showToast(
@@ -359,8 +389,11 @@ const PaymentCardSection: React.FC<{
   };
 
   const confirmNanodegreeCoursePayment = () => {
+    // Subtract the seat booking amount (₹499) from the total course fee
+    const courseRemainingAmount = 4500 - 499;
+    
     setShowNanoDegreeCourseModal(false);
-    initiateCoursePayment(clientId, 4500, {
+    initiateCoursePayment(clientId, courseRemainingAmount, {
       prefill: {
         name: user.full_name || "User",
         email: user.email || "",
@@ -389,10 +422,13 @@ const PaymentCardSection: React.FC<{
   };
 
   const confirmFlagshipCoursePayment = () => {
+    // Subtract the seat booking amount (₹999) from the total course fee
+    const courseRemainingAmount = (redeemData?.payable_amount - 999) || 9001;
+    
     setShowFlagshipCourseModal(false);
     initiateFlagshipCoursePayment(
       clientId,
-      redeemData?.payable_amount - 999 || 9001,
+      courseRemainingAmount,
       {
         prefill: {
           name: user.full_name || "User",
@@ -422,7 +458,8 @@ const PaymentCardSection: React.FC<{
   const nanodegreeCoursePurchaseData = {
     percentage_scholarship: 0,
     total_amount: 4999,
-    payable_amount: 4500,
+    payable_amount: 4500, // Full course fee
+    seat_booking_amount: 499, // Seat booking amount
   };
 
   const flagshipPurchaseData = {
@@ -434,7 +471,8 @@ const PaymentCardSection: React.FC<{
   const flagshipCoursePurchaseData = {
     percentage_scholarship: redeemData?.percentage_scholarship || 90,
     total_amount: redeemData?.total_amount || 120000,
-    payable_amount: redeemData?.payable_amount - 999 || 9001,
+    payable_amount: redeemData?.payable_amount - 999 || 9001, // Remaining course fee
+    seat_booking_amount: 999, // Seat booking amount
   };
 
   // Helper function to get button text and style for Nanodegree
@@ -447,9 +485,9 @@ const PaymentCardSection: React.FC<{
       };
     } else if (isNanodegreeSeatBooked) {
       return {
-        text: "Seat Booked, Now Pay for Course ₹4500",
+        text: `Pay Remaining Course Fee ₹${4500}`,
         disabled: false,
-        className: "bg-[#14212B] text-white hover:bg-[#223344]",
+        className: "bg-green-600 text-white hover:bg-green-700",
       };
     } else {
       return {
@@ -470,11 +508,11 @@ const PaymentCardSection: React.FC<{
       };
     } else if (isFlagshipSeatBooked) {
       return {
-        text: `Seat Booked, Now Pay for Course ₹${
+        text: `Pay Remaining Course Fee ₹${
           redeemData?.payable_amount - 999 || 9001
         }`,
         disabled: false,
-        className: "bg-[#14212B] text-white hover:bg-[#223344]",
+        className: "bg-green-600 text-white hover:bg-green-700",
       };
     } else {
       return {
@@ -577,6 +615,30 @@ const PaymentCardSection: React.FC<{
                 Fully refundable within 7 days
               </span>
             </div>
+            {!isNanodegreeCoursePaid && (
+              <div className="mt-2 sm:mt-3 space-y-2">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                  <p className="text-xs sm:text-sm text-green-800 mb-2">
+                    {isNanodegreeSeatBooked 
+                      ? "Complete your enrollment with the remaining course fee" 
+                      : "Want to skip the seat booking and get full course access immediately?"}
+                  </p>
+                  <button
+                    onClick={() => handleDirectFullPayment('nanodegree')}
+                    className="w-full bg-green-600 text-white font-semibold py-2 sm:py-3 rounded-lg shadow hover:bg-green-700 transition-colors duration-200 text-sm sm:text-base"
+                  >
+                    {isNanodegreeSeatBooked 
+                      ? `Pay Remaining Course Fee (₹4500)` 
+                      : `Pay Full Course Fee (₹4999)`}
+                  </button>
+                  <p className="text-xs text-green-600 mt-1">
+                    {isNanodegreeSeatBooked 
+                      ? "Complete your Nanodegree program enrollment" 
+                      : "Instant access to entire Nanodegree program"}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Flagship Card */}
@@ -707,6 +769,30 @@ const PaymentCardSection: React.FC<{
                 Fully refundable within 7 days
               </span>
             </div>
+            {!isFlagshipCoursePaid && (
+              <div className="mt-2 sm:mt-3 space-y-2">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
+                  <p className="text-xs sm:text-sm text-yellow-800 mb-2">
+                    {isFlagshipSeatBooked 
+                      ? "Complete your enrollment with the remaining course fee" 
+                      : "Ready to unlock the full Flagship Career Launchpad experience?"}
+                  </p>
+                  <button
+                    onClick={() => handleDirectFullPayment('flagship')}
+                    className="w-full bg-yellow-600 text-white font-semibold py-2 sm:py-3 rounded-lg shadow hover:bg-yellow-700 transition-colors duration-200 text-sm sm:text-base"
+                  >
+                    {isFlagshipSeatBooked 
+                      ? `Pay Remaining Course Fee (₹${redeemData?.payable_amount - 999 || 9001})` 
+                      : `Pay Full Course Fee (₹${redeemData?.payable_amount ?? 10000})`}
+                  </button>
+                  <p className="text-xs text-yellow-600 mt-1">
+                    {isFlagshipSeatBooked 
+                      ? "Complete your Flagship Career Launchpad enrollment" 
+                      : "Immediate access to mentorship and career support"}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
