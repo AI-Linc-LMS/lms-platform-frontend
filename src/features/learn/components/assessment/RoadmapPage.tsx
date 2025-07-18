@@ -44,6 +44,9 @@ import {
 import { certificateFallbackData } from "./data/assessmentData";
 import { redeemScholarship } from "../../../../services/assesment/assesmentApis";
 
+// Add this import for countdown timer
+import { differenceInDays, addDays } from 'date-fns';
+
 const RoadmapPage = () => {
   const navigate = useNavigate();
   const { assessmentId } = useParams<{ assessmentId: string }>();
@@ -115,6 +118,117 @@ const RoadmapPage = () => {
     enabled: !!clientId && !!currentAssessmentId,
   });
 
+  // Add countdown timer state
+  const [scholarshipExpiryDate, setScholarshipExpiryDate] = useState<Date | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<string>('');
+
+  // Add useEffect to set scholarship expiry date
+  useEffect(() => {
+    // Use the current date as the starting point for scholarship expiry
+    const expiryDate = redeemData?.stats?.assessment_date
+      ? addDays(new Date(redeemData.stats.assessment_date), 7)
+      : addDays(new Date(), 7);
+
+    setScholarshipExpiryDate(expiryDate);
+  }, [redeemData]);
+
+  // Modify the time remaining calculation
+  useEffect(() => {
+    const updateTimeRemaining = () => {
+      if (scholarshipExpiryDate) {
+        const now = new Date();
+        const daysLeft = differenceInDays(scholarshipExpiryDate, now);
+
+        if (daysLeft >= 0) {
+          // More precise formatting
+          const hoursLeft = Math.floor(
+            (scholarshipExpiryDate.getTime() - now.getTime()) / (1000 * 60 * 60)
+          ) % 24;
+
+          const minutesLeft = Math.floor(
+            (scholarshipExpiryDate.getTime() - now.getTime()) / (1000 * 60)
+          ) % 60;
+
+          // Construct detailed time remaining string
+          let timeRemainingStr = '';
+          if (daysLeft > 0) {
+            timeRemainingStr += `${daysLeft} day${daysLeft !== 1 ? 's' : ''} `;
+          }
+          timeRemainingStr += `${hoursLeft} hour${hoursLeft !== 1 ? 's' : ''} `;
+          timeRemainingStr += `${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''}`;
+
+          setTimeRemaining(timeRemainingStr.trim());
+        } else {
+          setTimeRemaining('Scholarship Expired');
+        }
+      } else {
+        // If no expiry date is set, set a default 7-day period from now
+        setTimeRemaining('7 days');
+      }
+    };
+
+    // Initial update
+    updateTimeRemaining();
+
+    // Update every minute
+    const intervalId = setInterval(updateTimeRemaining, 60000);
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
+  }, [scholarshipExpiryDate]);
+
+  // State for countdown
+  const [countdown, setCountdown] = useState({
+    days: 7,
+    hours: 0,
+    minutes: 0,
+    seconds: 0
+  });
+
+  // Countdown effect
+  useEffect(() => {
+    // Set initial expiry date to 7 days from now
+    const expiryDate = addDays(new Date(), 7);
+
+    const countdownInterval = setInterval(() => {
+      const now = new Date();
+      const difference = expiryDate.getTime() - now.getTime();
+
+      if (difference > 0) {
+        const d = Math.floor(difference / (1000 * 60 * 60 * 24));
+        const h = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const m = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((difference % (1000 * 60)) / 1000);
+
+        setCountdown({ days: d, hours: h, minutes: m, seconds: s });
+      } else {
+        clearInterval(countdownInterval);
+        setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      }
+    }, 1000);
+
+    // Cleanup interval
+    return () => clearInterval(countdownInterval);
+  }, []);
+
+  // Add a function to lock scholarship
+  // const handleLockScholarship = async () => {
+  // try {
+  // TODO: Implement actual backend call to lock scholarship
+  //   showToast(
+  //     "success", 
+  //     "Scholarship Locked", 
+  //     "Your scholarship has been locked. You can now complete the payment later."
+  //   );
+  // } catch (error) {
+  // showToast(
+  //   "error", 
+  //   "Lock Failed", 
+  //   "Unable to lock scholarship. Please try again."
+  // );
+  // }
+  // };
+
   const handleDownloadCertificate = async () => {
     setIsDownloading(true);
     try {
@@ -126,7 +240,7 @@ const RoadmapPage = () => {
       } else {
         //console.error("Certificate ref not found after waiting");
       }
-    } catch (error) {
+    } catch {
       //console.error("Download failed:", error);
     } finally {
       setIsDownloading(false);
@@ -312,6 +426,8 @@ const RoadmapPage = () => {
                 <span className="text-sm text-gray-500 italic text-center max-w-md font-sans px-2 mt-2">
                   (You'll be required to pay Rs 49/- for the certificate)
                 </span>
+                {/* Scholarship Countdown Section */}
+
               </div>
             ) : (
               <button
@@ -342,12 +458,74 @@ const RoadmapPage = () => {
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-[inset_0_4px_8px_rgba(0,0,0,0.1)] shadow-gray-300 border border-gray-300 ring-1 ring-white/40 py-4 sm:py-5 w-full mx-auto">
           {/* Performance Report Section */}
           <PerformanceReport data={perfReportData} />
+          <div className="w-full bg-yellow-50 border-r-4 border-yellow-500 p-4 mt-4 rounded-r-lg shadow-md">
+            <div className="flex items-center justify-end">
+              <div className="flex items-center space-x-4">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-yellow-600"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <div>
+                  <h3 className="text-sm font-semibold text-yellow-800">
+                    Scholarship Offer
+                  </h3>
+                  <div className="flex items-center space-x-1 mt-1">
+                    {/* Compact Countdown Boxes */}
+                    <div className="flex flex-col items-center">
+                      <span className="text-sm font-bold text-yellow-700 bg-white rounded-lg px-2 py-0.5 shadow-md">
+                        {countdown.days}
+                      </span>
+                      <span className="text-[10px] text-yellow-600 mt-0.5">D</span>
+                    </div>
+                    <div className="text-sm font-bold text-yellow-700">:</div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-sm font-bold text-yellow-700 bg-white rounded-lg px-2 py-0.5 shadow-md">
+                        {countdown.hours}
+                      </span>
+                      <span className="text-[10px] text-yellow-600 mt-0.5">H</span>
+                    </div>
+                    <div className="text-sm font-bold text-yellow-700">:</div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-sm font-bold text-yellow-700 bg-white rounded-lg px-2 py-0.5 shadow-md">
+                        {countdown.minutes}
+                      </span>
+                      <span className="text-[10px] text-yellow-600 mt-0.5">M</span>
+                    </div>
+                    <div className="text-sm font-bold text-yellow-700">:</div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-sm font-bold text-yellow-700 bg-white rounded-lg px-2 py-0.5 shadow-md">
+                        {countdown.seconds}
+                      </span>
+                      <span className="text-[10px] text-yellow-600 mt-0.5">S</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-yellow-600 mt-1">
+                    Hurry! Claim your scholarship
+                  </p>
+                </div>
+              </div>
+            </div>
+            {timeRemaining === 'Scholarship Expired' && (
+              <div className="mt-1 text-red-600 font-medium text-xs">
+                Scholarship offer has expired
+              </div>
+            )}
+          </div>
 
           <div className="flex flex-col lg:flex-row mt-6 sm:mt-8 lg:mt-10 w-full min-h-[200px] sm:min-h-[222px] justify-evenly items-center gap-4 sm:gap-6 lg:gap-2 px-3">
             <AccuracyBarChart data={accuracyBarData} />
             <ScoreArc score={score} max={max} />
             <RatingBars data={ratingBarData} />
           </div>
+
 
           {/* Divider */}
           <div className="border-t border-gray-300 my-6 sm:my-8 lg:my-10 mx-4 sm:mx-6 lg:mx-7"></div>
@@ -410,10 +588,10 @@ const RoadmapPage = () => {
           assessmentPaymentState.step === "error"
             ? "creating"
             : (assessmentPaymentState.step as
-                | "creating"
-                | "processing"
-                | "verifying"
-                | "complete")
+              | "creating"
+              | "processing"
+              | "verifying"
+              | "complete")
         }
         onClose={() => {
           // Handle processing modal close if needed

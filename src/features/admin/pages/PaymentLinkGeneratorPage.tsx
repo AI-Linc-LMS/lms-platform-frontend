@@ -1,7 +1,15 @@
 import React from 'react';
 import PaymentLinkGenerator from '../components/PaymentLinkGenerator';
+import { useRole } from '../../../hooks/useRole';
+import AccessDenied from '../../../components/AccessDenied';
 
 const PaymentLinkGeneratorPage: React.FC = () => {
+  const { isSuperAdmin } = useRole();
+
+  if (!isSuperAdmin) {
+    return <AccessDenied />;
+  }
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -22,7 +30,6 @@ const PaymentLinkGeneratorPage: React.FC = () => {
               <h3 className="font-medium text-gray-900 mb-2">Payment Link Security</h3>
               <ul className="list-disc list-inside space-y-1 text-sm">
                 <li>Links are encrypted and cannot be tampered with</li>
-                <li>Each link expires after 30 minutes</li>
                 <li>Links are tracked with admin information for audit</li>
               </ul>
             </div>
@@ -34,7 +41,6 @@ const PaymentLinkGeneratorPage: React.FC = () => {
                 <li>Enter the payment amount</li>
                 <li>Generate and copy the secure payment link</li>
                 <li>Share the link with the student immediately</li>
-                <li>Remind students that links expire in 30 minutes</li>
               </ul>
             </div>
           </div>

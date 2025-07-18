@@ -3,14 +3,17 @@ import { FiCopy, FiCheck } from 'react-icons/fi';
 import { generateEncodedPaymentLink } from '../../../utils/paymentLinkUtils';
 import { useSelector } from 'react-redux';
 import { UserState } from '../../learn/components/assessment/types/assessmentTypes';
+import AccessDenied from '../../../components/AccessDenied';
+import { useRole } from '../../../hooks/useRole';
 
 const PaymentLinkGenerator: React.FC = () => {
   const [amount, setAmount] = useState<string>('');
   const [programType, setProgramType] = useState<'flagship-program' | 'nanodegree-program'>('flagship-program');
   const [copied, setCopied] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string>('');
-  
+  const { isSuperAdmin } = useRole();
   const user = useSelector((state: { user: UserState }) => state.user);
+
 
   const handleGenerateLink = () => {
     const numericAmount = parseInt(amount, 10);
@@ -38,6 +41,10 @@ const PaymentLinkGenerator: React.FC = () => {
       console.error('Failed to copy link:', error);
     }
   };
+
+  if (!isSuperAdmin) {
+    return <AccessDenied />;
+  }
 
   return (
     <div className="bg-white rounded-lg shadow p-6">

@@ -3,6 +3,8 @@ import { useState } from "react";
 import { FiSearch, FiFilter, FiEdit2, FiTrash2 } from "react-icons/fi";
 import AddStudentModal from "../components/AddStudentModal";
 import FilterModal, { FilterCriteria } from "../components/FilterModal";
+import AccessDenied from "../../../../components/AccessDenied";
+import { useRole } from "../../../../hooks/useRole";
 
 interface Student {
   id: number;
@@ -122,6 +124,12 @@ const ManageStudents = () => {
   });
 
   const hasActiveFilters = filters.courses.length > 0;
+
+  const { isSuperAdmin } = useRole();
+
+  if (!isSuperAdmin) {
+    return <AccessDenied />;
+  }
 
   return (
     <div className="min-h-screen  p-6">

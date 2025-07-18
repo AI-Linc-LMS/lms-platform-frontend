@@ -1,7 +1,7 @@
 import axiosInstance from "../axiosInstance";
 import { ReferralData } from "../../types/referral";
 import { EditRegistrationData} from "../../features/admin/workshop-registrations/types";
-import { JobData } from "../../features/admin/emailSend/EmailSelfServe";
+import { JobData } from "../../features/admin/emailSend/EmailForm";
 
 export const getWorkshopRegistrations = async (clientId: string) => {
   try {
