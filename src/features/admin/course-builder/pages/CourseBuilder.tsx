@@ -12,6 +12,8 @@ import quizIcon from "../../../../commonComponents/icons/admin/content/QuizIcon.
 import assignmentIcon from "../../../../commonComponents/icons/admin/content/SubjectiveIcon.png";
 import codingProblemIcon from "../../../../commonComponents/icons/admin/content/ProblemIcon.png";
 import { useToast } from "../../../../contexts/ToastContext";
+import AccessDenied from "../../../../components/AccessDenied";
+import { useRole } from "../../../../hooks/useRole";
 
 interface Course {
   id: number;
@@ -121,7 +123,6 @@ const AdminDashboard: React.FC = () => {
       );
     }) || [];
 
-
   const createCourseMutation = useMutation({
     mutationFn: (courseData: CourseData) => createCourse(clientId, courseData),
     onSuccess: () => {
@@ -150,7 +151,6 @@ const AdminDashboard: React.FC = () => {
           errorMessage = formattedError;
         }
       } catch {
-       
         //console.log("Error parsing error message:", e);
       }
 
@@ -237,6 +237,7 @@ const AdminDashboard: React.FC = () => {
   const clearSearch = () => {
     setSearchQuery("");
   };
+  const { isSuperAdmin } = useRole();
 
   if (isLoading) {
     return (
@@ -297,11 +298,21 @@ const AdminDashboard: React.FC = () => {
     );
   }
 
+
+  if (!isSuperAdmin) {
+    return <AccessDenied />;
+  }
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold" onClick={() => navigate("/admin/dashboard")}>Course Builder</h1>
+          <h1
+            className="text-3xl font-bold"
+            onClick={() => navigate("/admin/dashboard")}
+          >
+            Course Builder
+          </h1>
           <p className="text-gray-600 mt-2">Manage your courses and content</p>
         </div>
       </div>

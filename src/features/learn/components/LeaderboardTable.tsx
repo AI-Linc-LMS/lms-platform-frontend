@@ -33,7 +33,7 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
       'ai-linc dev',
       'ailinc admin',
       'ai linc',
-      'Daksh Rajput',
+      'daksh rajput',
       'Soumic Sarkar',
       'i learning'
     ];

@@ -64,14 +64,14 @@ export const decodePaymentLink = (encodedData: string): PaymentLinkData | null =
     const timestamp = fromBase36(timestampStr) * 1000; // Convert back to milliseconds
     const programType = type === 'f' ? 'flagship-program' : 'nanodegree-program';
 
-    // Validate timestamp (30 minute expiry)
-    const now = Date.now();
-    const validityPeriod = 30 * 60 * 1000; // 30 minutes
+    // Remove timestamp validation
+    // const now = Date.now();
+    // const validityPeriod = 30 * 60 * 1000; // 30 minutes
     
-    if (now - timestamp > validityPeriod) {
-      console.error('Link expired');
-      return null;
-    }
+    // if (now - timestamp > validityPeriod) {
+    //   console.error('Link expired');
+    //   return null;
+    // }
 
     // Reconstruct data
     return {

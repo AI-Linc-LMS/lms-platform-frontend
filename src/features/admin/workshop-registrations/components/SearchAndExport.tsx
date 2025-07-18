@@ -5,11 +5,12 @@ import {
   ColumnVisibilityDropdown,
   ColumnConfig,
 } from "./ColumnVisibilityDropdown";
+import { useRole } from "../../../../hooks/useRole";
 
 interface SearchAndExportProps {
   search: string;
   onSearchChange: (value: string) => void;
-  //onExport: () => void;
+  onExport: () => void;
   hasActiveFilters: boolean;
   onClearAllFilters: () => void;
   clientId: string;
@@ -21,7 +22,7 @@ interface SearchAndExportProps {
 export const SearchAndExport: React.FC<SearchAndExportProps> = ({
   search,
   onSearchChange,
-  //onExport,
+  onExport,
   hasActiveFilters,
   onClearAllFilters,
   clientId,
@@ -29,6 +30,7 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
   visibleColumns,
   onColumnVisibilityChange,
 }) => {
+  const { isSuperAdmin } = useRole();
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -89,7 +91,7 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
             onSuccess={handleSuccess}
             onError={handleError}
           />
-          {/* <button
+          {isSuperAdmin && <button
             onClick={onExport}
             className="flex items-center gap-2 bg-[#5FA564] text-white px-4 py-2 rounded text-sm max-w-[120px]"
             title="Export to Excel"
@@ -109,7 +111,7 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
               />
             </svg>
             <span className="inline text-white">Export</span>
-          </button> */}
+          </button>}
         </div>
       </div>
     </div>
