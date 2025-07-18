@@ -21,10 +21,12 @@ import {
   ReferralData,
   ReferralFormData,
 } from "../../../types/referral";
+import { useToast } from "../../../contexts/ToastContext";
 
 const Referals = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const queryClient = useQueryClient();
+  const { error: showError } = useToast();
 
   // State for search, modal, and editing
   const [searchTerm, setSearchTerm] = useState("");
@@ -36,9 +38,18 @@ const Referals = () => {
   );
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
 
-  // Function to generate referral link
+  // New: referral type state
+  const [selectedReferralType, setSelectedReferralType] = useState("workshop");
+
+  // Removed assessments query
+
+  // Function to generate referral link based on type
   const generateReferralLink = (referralCode: string) => {
-    return `https://ailinc.com/workshop-registration?ref=${referralCode}`;
+    if (selectedReferralType === "assessment") {
+      return `https://ailinc.com/assessment?ref=${encodeURIComponent(referralCode)}`;
+    } else {
+      return `https://ailinc.com/workshop-registration?ref=${referralCode}`;
+    }
   };
 
   // Function to copy link to clipboard
@@ -47,8 +58,9 @@ const Referals = () => {
       await navigator.clipboard.writeText(link);
       setCopiedLinkId(referralId);
       setTimeout(() => setCopiedLinkId(null), 2000);
-    } catch (err) {
-      console.error("Failed to copy link:", err);
+    } catch {
+      //console.error("Failed to copy link:", err);
+      showError("Failed to copy link");
     }
   };
 
@@ -128,11 +140,12 @@ const Referals = () => {
             Referrals Management
           </h1>
           <p className="text-gray-600">
-            Manage your referral program and track referrals
+            Manage your referral program and track referrals for workshops and
+            assessments
           </p>
         </div>
 
-        {/* Search and Create Button */}
+        {/* Search, Link Type Selector, and Create Button */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="relative flex-1">
             <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -144,6 +157,17 @@ const Referals = () => {
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none"
             />
           </div>
+
+          {/* Referral Type Dropdown */}
+          <select
+            value={selectedReferralType}
+            onChange={(e) => setSelectedReferralType(e.target.value)}
+            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none"
+          >
+            <option value="workshop">Workshop Registration</option>
+            <option value="assessment">Assessment</option>
+          </select>
+
           <button
             onClick={() => setIsCreateModalOpen(true)}
             className="flex items-center gap-2 bg-[#255C79] text-white px-6 py-3 rounded-lg hover:bg-[#1E4A63] transition-colors font-medium"

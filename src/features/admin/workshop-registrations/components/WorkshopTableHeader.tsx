@@ -1,18 +1,29 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { FilterState, WorkshopRegistrationData } from "../types";
-import { DateFilterDropdown } from "./FilterDropdown";
+import {
+  DateFilterDropdown,
+  FollowUpDateFilterDropdown,
+} from "./FilterDropdown";
 import { FiCheck, FiFilter } from "react-icons/fi";
 
 const FIRST_CALL_STATUS_OPTIONS = [
-  { value: "Connected, scheduled interview", color: "bg-green-500" },
-  { value: "Connected, denied interview", color: "bg-red-500" },
+  { value: "Connected scheduled interview", color: "bg-green-500" },
+  { value: "Connected denied interview", color: "bg-red-500" },
   { value: "Couldn't Connect", color: "bg-yellow-400" },
   { value: "Call back requested", color: "bg-green-500" },
+  { value: "Career Counselling", color: "bg-blue-500" },
+  { value: "N/A", color: "bg-gray-400" },
 ];
 const SECOND_CALL_STATUS_OPTIONS = [
   { value: "Converted", color: "bg-green-500" },
   { value: "Follow-up needed", color: "bg-yellow-400" },
   { value: "Denied", color: "bg-red-500" },
+  { value: "Good to hire", color: "bg-blue-500" },
+  { value: "N/A", color: "bg-gray-400" },
+];
+const ASSESSMENT_ATTEMPTED_OPTIONS = [
+  { value: "attempted", color: "bg-green-500" },
+  { value: "not_attempted", color: "bg-yellow-400" },
 ];
 
 interface WorkshopTableHeaderProps {
@@ -28,6 +39,8 @@ interface WorkshopTableHeaderProps {
   ) => void;
   onClearFilter: (column: keyof FilterState) => void;
   data?: WorkshopRegistrationData[];
+  visibleColumns?: string[];
+  permanentColumns?: string[];
 }
 
 // Reusable MultiSelectDropdown component
@@ -54,40 +67,30 @@ const MultiSelectDropdown: React.FC<{
   const nonSelectedOptions = uniqueOptions.filter(
     (opt) => !selectedOptions.includes(opt)
   );
-  const filteredNonSelected = searchTerm
-    ? nonSelectedOptions.filter((opt) =>
-        opt.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : nonSelectedOptions;
+
+  // --- NEW: Filter both selected and non-selected options by search term ---
+  const filterBySearch = (opt: string) =>
+    !searchTerm || opt.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredSelected = selectedOptionsInData.filter(filterBySearch);
+  const filteredNonSelected = nonSelectedOptions.filter(filterBySearch);
+  // --- END NEW ---
 
   // On search change, filter dropdown options and table data
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const searchVal = e.target.value;
     setSearchTerm(searchVal);
-
-    // Don't update the filter value when searching - only when selecting options
-    // The search is only for filtering the dropdown options, not the actual data
   };
 
   // On option toggle, update filter state (table data) and clear search
   const handleToggle = (opt: string) => {
     let newSelected: string[];
-    if (selectedOptions.includes(opt)) {
-      newSelected = selectedOptions.filter((o) => o !== opt);
+    if (selectedOptions.map((v) => v.trim()).includes(opt.trim())) {
+      newSelected = selectedOptions.filter((o) => o.trim() !== opt.trim());
     } else {
       newSelected = [...selectedOptions, opt];
     }
-    // Clear search term after selecting an option
     setSearchTerm("");
-
     const filterValue = newSelected.join(",");
-    console.log("MultiSelectDropdown Toggle:", {
-      option: opt,
-      newSelected,
-      filterValue,
-      action: selectedOptions.includes(opt) ? "deselected" : "selected",
-    });
-
     onChange(filterValue);
   };
 
@@ -95,6 +98,14 @@ const MultiSelectDropdown: React.FC<{
     setSearchTerm("");
     onChange("");
   };
+
+  const handleSelectAll = () => {
+    onChange(uniqueOptions.join(","));
+  };
+
+  const allSelected =
+    selectedOptionsInData.length === uniqueOptions.length &&
+    uniqueOptions.length > 0;
 
   return (
     <div className="w-44">
@@ -107,20 +118,43 @@ const MultiSelectDropdown: React.FC<{
           className="w-full p-2 border border-gray-300 rounded text-sm"
         />
       </div>
+      <div className="flex items-center justify-between mb-2">
+        <button
+          onClick={handleSelectAll}
+          className={`text-xs px-2 py-1 rounded ${
+            allSelected
+              ? "bg-green-100 text-green-500 cursor-not-allowed"
+              : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+          }`}
+          disabled={allSelected}
+        >
+          {allSelected ? "All Selected" : "Select All"}
+        </button>
+        {selectedOptions.length > 0 && (
+          <button
+            onClick={handleClear}
+            className="text-xs text-red-600 hover:text-red-800"
+          >
+            Clear all
+          </button>
+        )}
+      </div>
       <div className="max-h-40 overflow-y-auto border border-gray-200 rounded bg-white">
-        {selectedOptionsInData.length > 0 || filteredNonSelected.length > 0 ? (
+        {filteredSelected.length > 0 || filteredNonSelected.length > 0 ? (
           <>
             {/* Selected options section - always show if there are selected options */}
-            {selectedOptionsInData.length > 0 && (
+            {filteredSelected.length > 0 && (
               <>
-                {selectedOptionsInData.map((opt) => (
+                {filteredSelected.map((opt) => (
                   <label
                     key={opt}
                     className="flex items-center space-x-2 p-2 hover:bg-gray-50 cursor-pointer bg-blue-50 border-l-2 border-blue-500"
                   >
                     <input
                       type="checkbox"
-                      checked={selectedOptions.includes(opt)}
+                      checked={selectedOptions
+                        .map((v) => v.trim())
+                        .includes(opt.trim())}
                       onChange={() => handleToggle(opt)}
                       className="rounded border-gray-300 text-blue-600"
                     />
@@ -132,12 +166,16 @@ const MultiSelectDropdown: React.FC<{
                     <span className="text-sm text-blue-700 font-medium flex-1">
                       {opt}
                     </span>
-                    <FiCheck className="w-4 h-4 text-blue-600" />
+                    {selectedOptions
+                      .map((v) => v.trim())
+                      .includes(opt.trim()) && (
+                      <FiCheck className="w-4 h-4 text-blue-600" />
+                    )}
                   </label>
                 ))}
                 {/* Show "All Selected" message when all options are selected */}
                 {filteredNonSelected.length === 0 &&
-                  selectedOptionsInData.length > 0 && (
+                  filteredSelected.length > 0 && (
                     <div className="px-2 py-1 bg-green-50 border-t border-b border-green-200">
                       <span className="text-xs text-green-600 font-medium">
                         ✓ All options selected
@@ -163,7 +201,9 @@ const MultiSelectDropdown: React.FC<{
               >
                 <input
                   type="checkbox"
-                  checked={selectedOptions.includes(opt)}
+                  checked={selectedOptions
+                    .map((v) => v.trim())
+                    .includes(opt.trim())}
                   onChange={() => handleToggle(opt)}
                   className="rounded border-gray-300 text-blue-600"
                 />
@@ -173,6 +213,9 @@ const MultiSelectDropdown: React.FC<{
                   ></span>
                 )}
                 <span className="text-sm text-gray-700 flex-1">{opt}</span>
+                {selectedOptions.map((v) => v.trim()).includes(opt.trim()) && (
+                  <FiCheck className="w-4 h-4 text-blue-600" />
+                )}
               </label>
             ))}
           </>
@@ -182,19 +225,6 @@ const MultiSelectDropdown: React.FC<{
           </div>
         )}
       </div>
-      {selectedOptions.length > 0 && (
-        <div className="mt-2 flex items-center justify-between">
-          <div className="text-xs text-gray-600">
-            {selectedOptions.length} selected
-          </div>
-          <button
-            onClick={handleClear}
-            className="text-xs text-red-600 hover:text-red-800"
-          >
-            Clear all
-          </button>
-        </div>
-      )}
     </div>
   );
 };
@@ -207,110 +237,68 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
   onUpdateFilter,
   onClearFilter,
   data = [],
+  visibleColumns = [],
+  permanentColumns = [],
 }) => {
   const filterConfigs = [
-    { column: "name", label: "Name", placeholder: "Filter by name..." },
-    { column: "email", label: "Email", placeholder: "Filter by email..." },
-    {
-      column: "phone_number",
-      label: "Mobile Number",
-      placeholder: "Filter by phone...",
-    },
-    {
-      column: "workshop_name",
-      label: "Workshop Name",
-      placeholder: "Filter by workshop...",
-    },
-    {
-      column: "session_number",
-      label: "Session",
-      placeholder: "Filter by session...",
-    },
-    {
-      column: "referal_code",
-      label: "Referral Code",
-      placeholder: "Filter by referral code...",
-    },
-    {
-      column: "attended_webinars",
-      label: "Webinars",
-      placeholder: "Filter by webinars...",
-    },
-    {
-      column: "is_assessment_attempted",
-      label: "Assessment",
-      placeholder: "Filter by assessment...",
-    },
-    {
-      column: "is_certificate_amount_paid",
-      label: "Certificate Paid",
-      placeholder: "Filter by certificate payment...",
-    },
-    {
-      column: "is_prebooking_amount_paid",
-      label: "Prebooking Paid",
-      placeholder: "Filter by prebooking payment...",
-    },
-    {
-      column: "is_course_amount_paid",
-      label: "Course Paid",
-      placeholder: "Filter by course payment...",
-    },
+    // Personal details
+    { column: "name", label: "Name" },
+    { column: "email", label: "Email" },
+    { column: "phone_number", label: "Mobile Number" },
+    { column: "workshop_name", label: "Workshop Name" },
+    { column: "session_number", label: "Session" },
+    { column: "referal_code", label: "Referral Code" },
+    // Call details
     {
       column: "first_call_status",
       label: "1st Call Status",
-      placeholder: "Filter by first call status...",
       enum: FIRST_CALL_STATUS_OPTIONS,
     },
-    {
-      column: "first_call_comment",
-      label: "1st Call Comment",
-      placeholder: "Filter by first call comment...",
-    },
+    { column: "first_call_comment", label: "1st Call Comment" },
     {
       column: "second_call_status",
       label: "2nd Call Status",
-      placeholder: "Filter by second call status...",
       enum: SECOND_CALL_STATUS_OPTIONS,
     },
+    { column: "second_call_comment", label: "2nd Call Comment" },
+    { column: "follow_up_comment", label: "Follow Up Comment" },
+    { column: "follow_up_date", label: "Follow Up Date", isDate: true },
+    // Assessment details
+    { column: "attended_webinars", label: "Attendee" },
     {
-      column: "second_call_comment",
-      label: "2nd Call Comment",
-      placeholder: "Filter by second call comment...",
+      column: "is_assessment_attempted",
+      label: "Assessment",
+      enum: ASSESSMENT_ATTEMPTED_OPTIONS,
     },
+    { column: "score", label: "Score" },
+    { column: "offered_scholarship_percentage", label: "Scholarship %" },
     {
-      column: "amount_paid",
-      label: "Amount Paid",
-      placeholder: "Filter by amount paid...",
+      column: "assignment_submitted_at",
+      label: "Assignment Submitted At",
+      isDate: true,
     },
-    {
-      column: "amount_pending",
-      label: "Amount Pending",
-      placeholder: "Filter by amount pending...",
-    },
-    {
-      column: "score",
-      label: "Score",
-      placeholder: "Filter by score...",
-    },
-    {
-      column: "offered_scholarship_percentage",
-      label: "Scholarship %",
-      placeholder: "Filter by scholarship percentage...",
-    },
-    {
-      column: "offered_amount",
-      label: "Offered Amount",
-      placeholder: "Filter by offered amount...",
-    },
-    {
-      column: "assessment_status",
-      label: "Assessment Status",
-      placeholder: "Filter by assessment status...",
-    },
+    { column: "referral_code_assessment", label: "Referral Code Assessment" },
+    { column: "assessment_status", label: "Assessment Status" },
+    // Payment details
+    { column: "is_certificate_amount_paid", label: "Certificate Paid" },
+    { column: "is_prebooking_amount_paid", label: "Prebooking Paid" },
+    { column: "is_course_amount_paid", label: "Course Paid" },
+    { column: "amount_paid", label: "Amount Paid" },
+    { column: "amount_pending", label: "Amount Pending" },
+    { column: "offered_amount", label: "Offered Amount" },
+    { column: "platform_amount", label: "Platform Amount" },
+    // Comment and status
+    // Dates
+    { column: "registered_at", label: "Registered At", isDate: true },
+    { column: "updated_at", label: "Updated At", isDate: true },
+    { column: "submitted_at", label: "Submitted At", isDate: true },
   ];
 
-  const commentFields = ["first_call_comment", "second_call_comment"];
+  const commentFields = [
+    "first_call_comment",
+    "second_call_comment",
+    "follow_up_comment",
+  ];
 
   // Helper to get all unique values for a field from a filtered dataset
   const getUniqueFieldValues = (
@@ -323,6 +311,13 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
       if (val && typeof val === "string") values.add(val);
       if (val && typeof val === "number") values.add(val.toString());
     });
+
+    // Special handling for assessment field to include default values
+    if (field === "is_assessment_attempted") {
+      values.add("not_attempted");
+      values.add("attempted");
+    }
+
     return Array.from(values);
   };
 
@@ -344,199 +339,132 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
   }, [openFilter, onToggleFilter]);
 
   return (
-    <thead className="bg-gray-100">
+    <thead className="bg-gray-100 sticky top-0 z-10">
       <tr>
-        {filterConfigs.map((config) => (
-          <th
-            key={config.column}
-            className={[
-              "p-3 relative",
-              (config.column === "first_call_status" ||
-                config.column === "second_call_status") &&
-                "w-[170px] min-w-[170px]",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-          >
-            <div className="flex items-center gap-1">
-              <span>{config.label}</span>
-              {!commentFields.includes(config.column) && (
-                <button
-                  type="button"
-                  className={`ml-1 p-1 rounded hover:bg-gray-200 ${
-                    openFilter === config.column
-                      ? "text-blue-600"
-                      : "text-gray-400"
-                  }`}
-                  onClick={() =>
-                    onToggleFilter(
+        {filterConfigs
+          .filter(
+            (config) =>
+              permanentColumns.includes(config.column) ||
+              visibleColumns.includes(config.column)
+          )
+          .map((config) => (
+            <th
+              key={config.column}
+              className={[
+                "p-3 sticky top-0 z-10 bg-gray-100",
+                (config.column === "first_call_status" ||
+                  config.column === "second_call_status") &&
+                  "w-[150px] min-w-[150px]",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              <div className="flex items-center gap-1">
+                <span>{config.label}</span>
+                {!commentFields.includes(config.column) && (
+                  <button
+                    type="button"
+                    className={`p-1 rounded hover:bg-gray-400 ${
                       openFilter === config.column
-                        ? null
-                        : (config.column as keyof FilterState)
-                    )
-                  }
-                >
-                  <FiFilter className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-            {/* Popover filter UI */}
-            {openFilter === config.column &&
-              !commentFields.includes(config.column) && (
-                <div
-                  ref={(el) => {
-                    popoverRefs.current[config.column] = el;
-                  }}
-                  className="absolute left-0 top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
-                >
-                  {config.enum ? (
-                    <MultiSelectDropdown
-                      value={
-                        filters[config.column as keyof FilterState] as string
-                      }
-                      onChange={(value) =>
-                        onUpdateFilter(
-                          config.column as keyof FilterState,
-                          value
-                        )
-                      }
-                      data={config.enum.map((e) => e.value)}
-                      colorMap={Object.fromEntries(
-                        config.enum.map((e) => [e.value, e.color])
-                      )}
-                    />
-                  ) : (
-                    <MultiSelectDropdown
-                      value={
-                        filters[config.column as keyof FilterState] as string
-                      }
-                      onChange={(value) =>
-                        onUpdateFilter(
-                          config.column as keyof FilterState,
-                          value
-                        )
-                      }
-                      data={getUniqueFieldValues(
-                        config.column as keyof WorkshopRegistrationData,
-                        data
-                      )}
-                    />
-                  )}
-                </div>
-              )}
-          </th>
-        ))}
-        <th className="p-3 relative min-w-[160px]">
-          <div className="flex items-center gap-1">
-            <span>Registered At</span>
-            <button
-              type="button"
-              className={`ml-1 p-1 rounded hover:bg-gray-200 ${
-                openFilter === "registered_at"
-                  ? "text-blue-600"
-                  : "text-gray-400"
-              }`}
-              onClick={() =>
-                onToggleFilter(
-                  openFilter === "registered_at" ? null : "registered_at"
-                )
-              }
-            >
-              <FiFilter className="w-4 h-4" />
-            </button>
-          </div>
-          {openFilter === "registered_at" && (
-            <div
-              ref={(el) => {
-                popoverRefs.current["registered_at"] = el;
-              }}
-              className="absolute right-2 top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
-            >
-              <DateFilterDropdown
-                column="registered_at"
-                value={filters.registered_at}
-                isOpen={true}
-                onChange={(column, value) => onUpdateFilter(column, value)}
-                onClear={onClearFilter}
-                filterRef={filterRefs.registered_at!}
-              />
-            </div>
-          )}
-        </th>
-        <th className="p-3 relative min-w-[160px]">
-          <div className="flex items-center gap-1">
-            <span>Updated At</span>
-            <button
-              type="button"
-              className={`ml-1 p-1 rounded hover:bg-gray-200 ${
-                openFilter === "updated_at" ? "text-blue-600" : "text-gray-400"
-              }`}
-              onClick={() =>
-                onToggleFilter(
-                  openFilter === "updated_at"
-                    ? null
-                    : ("updated_at" as keyof FilterState)
-                )
-              }
-            >
-              <FiFilter className="w-4 h-4" />
-            </button>
-          </div>
-          {openFilter === "updated_at" && (
-            <div
-              ref={(el) => {
-                popoverRefs.current["updated_at"] = el;
-              }}
-              className="absolute right-2 top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
-            >
-              <DateFilterDropdown
-                column={"updated_at" as keyof FilterState}
-                value={filters.updated_at || { start: "", end: "" }}
-                isOpen={true}
-                onChange={(column, value) => onUpdateFilter(column, value)}
-                onClear={onClearFilter}
-                filterRef={filterRefs.updated_at!}
-              />
-            </div>
-          )}
-        </th>
-        <th className="p-3 relative min-w-[160px]">
-          <div className="flex items-center gap-1">
-            <span>Submitted At</span>
-            <button
-              type="button"
-              className={`ml-1 p-1 rounded hover:bg-gray-200 ${
-                openFilter === "submitted_at" ? "text-blue-600" : "text-gray-400"
-              }`}
-              onClick={() =>
-                onToggleFilter(
-                  openFilter === "submitted_at"
-                    ? null
-                    : ("submitted_at" as keyof FilterState)
-                )
-              }
-            >
-              <FiFilter className="w-4 h-4" />
-            </button>
-          </div>
-          {openFilter === "submitted_at" && (
-            <div
-              ref={(el) => {
-                popoverRefs.current["submitted_at"] = el;
-              }}
-              className="absolute right-2 top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
-            >
-              <DateFilterDropdown
-                column={"submitted_at" as keyof FilterState}
-                value={filters.submitted_at || { start: "", end: "" }}
-                isOpen={true}
-                onChange={(column, value) => onUpdateFilter(column, value)}
-                onClear={onClearFilter}
-                filterRef={filterRefs.submitted_at!}
-              />
-            </div>
-          )}
-        </th>
+                        ? "text-blue-600 bg-blue-200"
+                        : "text-black"
+                    }`}
+                    onClick={() =>
+                      onToggleFilter(
+                        openFilter === config.column
+                          ? null
+                          : (config.column as keyof FilterState)
+                      )
+                    }
+                  >
+                    <FiFilter className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              {/* Popover filter UI */}
+              {openFilter === config.column &&
+                !commentFields.includes(config.column) && (
+                  <div
+                    ref={(el) => {
+                      popoverRefs.current[config.column] = el;
+                    }}
+                    className="absolute left-0 top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
+                  >
+                    {config.isDate ? (
+                      config.column === "follow_up_date" ? (
+                        <FollowUpDateFilterDropdown
+                          column={config.column as keyof FilterState}
+                          value={
+                            (filters[config.column as keyof FilterState] as {
+                              start: string;
+                              end: string;
+                            }) || { start: "", end: "" }
+                          }
+                          isOpen={true}
+                          onChange={(column, value) =>
+                            onUpdateFilter(column, value)
+                          }
+                          onClear={onClearFilter}
+                          filterRef={
+                            filterRefs[config.column as keyof FilterState]!
+                          }
+                        />
+                      ) : (
+                        <DateFilterDropdown
+                          column={config.column as keyof FilterState}
+                          value={
+                            (filters[config.column as keyof FilterState] as {
+                              start: string;
+                              end: string;
+                            }) || { start: "", end: "" }
+                          }
+                          isOpen={true}
+                          onChange={(column, value) =>
+                            onUpdateFilter(column, value)
+                          }
+                          onClear={onClearFilter}
+                          filterRef={
+                            filterRefs[config.column as keyof FilterState]!
+                          }
+                        />
+                      )
+                    ) : config.enum ? (
+                      <MultiSelectDropdown
+                        value={
+                          filters[config.column as keyof FilterState] as string
+                        }
+                        onChange={(value) =>
+                          onUpdateFilter(
+                            config.column as keyof FilterState,
+                            value
+                          )
+                        }
+                        data={config.enum.map((e) => e.value)}
+                        colorMap={Object.fromEntries(
+                          config.enum.map((e) => [e.value, e.color])
+                        )}
+                      />
+                    ) : (
+                      <MultiSelectDropdown
+                        value={
+                          filters[config.column as keyof FilterState] as string
+                        }
+                        onChange={(value) =>
+                          onUpdateFilter(
+                            config.column as keyof FilterState,
+                            value
+                          )
+                        }
+                        data={getUniqueFieldValues(
+                          config.column as keyof WorkshopRegistrationData,
+                          data
+                        )}
+                      />
+                    )}
+                  </div>
+                )}
+            </th>
+          ))}
         {/* Action column header */}
         <th className="p-3 text-center w-[80px] min-w-[80px]">Action</th>
       </tr>

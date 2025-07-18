@@ -23,7 +23,24 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
     },
   });
 
-  if (isLoading || error || !data || data.length === 0) {
+  // Filter out specific backend users that should not be displayed
+  const filteredData = data?.filter((item: LeaderboardItem) => {
+    const namesToExclude = [
+      'shubham lal', 
+      'balbir', 
+      'balbir yadav -[iitb]',
+      'ailinc dev', 
+      'ai-linc dev',
+      'ailinc admin',
+      'ai linc',
+      'daksh rajput',
+      'Soumic Sarkar',
+      'i learning'
+    ];
+    return !namesToExclude.includes(item.name.toLowerCase());
+  });
+
+  if (isLoading || error || !filteredData || filteredData.length === 0) {
     return (
       <div className="flex flex-col transition-all duration-300 p-4 rounded-3xl lg:min-w-[270px] xl:min-w-[350px]">
         <h2 className="text-xl font-semibold text-[#343A40] mb-3">
@@ -31,7 +48,7 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
         </h2>
 
         {
-          (!data || data.length === 0) ?
+          (!filteredData || filteredData.length === 0) ?
             <p className="text-[14px] text-[#495057] mb-8">
               No leaderboard data available
             </p> : <p className="text-[14px] text-[#495057] mb-8">
@@ -131,10 +148,10 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
             </tr>
           </thead>
           <tbody>
-            {data?.map((item: LeaderboardItem, index: number) => {
+            {filteredData?.map((item: LeaderboardItem, index: number) => {
               // Check if this entry is the current user (name is "You")
               const isCurrentUser = item.name === "You";
-              
+
               return (
                 <tr
                   key={index}

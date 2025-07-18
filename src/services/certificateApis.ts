@@ -12,11 +12,6 @@ export interface Certificate {
 }
 
 export const getAvailableCertificates = async (clientId: number): Promise<Certificate[]> => {
-  try {
-    const response = await axiosInstance.get(`/api/clients/${clientId}/user-available-certificates`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching certificates:', error);
-    throw error;
-  }
+  const response = await axiosInstance.get(`/api/clients/${clientId}/user-available-certificates`);
+  return response.data;
 }; 

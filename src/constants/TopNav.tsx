@@ -1,13 +1,13 @@
-import sunIcon from '../commonComponents/icons/nav/sunIcon.png';
-import bellIcon from '../commonComponents/icons/nav/BellIcon.png';
-import userImg from '../commonComponents/icons/nav/User Image.png';
-import { useRef, useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { useDispatch } from 'react-redux';
-import { useNavigate, Link } from 'react-router-dom';
-import { useRole } from '../hooks/useRole';
-import { logout } from '../redux/slices/userSlice';
-import { handleMobileNavigation } from '../utils/authRedirectUtils';
+import sunIcon from "../commonComponents/icons/nav/sunIcon.png";
+import bellIcon from "../commonComponents/icons/nav/BellIcon.png";
+import userImg from "../commonComponents/icons/nav/User Image.png";
+import { useRef, useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
+import { useNavigate, Link } from "react-router-dom";
+import { useRole } from "../hooks/useRole";
+import { logout } from "../redux/slices/userSlice";
+import { handleMobileNavigation } from "../utils/authRedirectUtils";
 
 interface UserState {
   profile_picture?: string;
@@ -22,7 +22,7 @@ const TopNav: React.FC = () => {
   const dispatch = useDispatch();
 
   const userId = user.id;
-  const { isAdminOrInstructor } = useRole();
+  const { isAdminOrInstructor, isSuperAdmin } = useRole();
 
   const toggleDropdown = () => {
     setShowDropdown(!showDropdown);
@@ -38,10 +38,10 @@ const TopNav: React.FC = () => {
       dispatch(logout());
 
       // Navigate to login using mobile navigation
-      handleMobileNavigation('/login', navigate, true, false);
-    } catch (error) {
-      console.error("Error during logout:", error);
-      handleMobileNavigation('/login', navigate, true, false);
+      handleMobileNavigation("/login", navigate, true, false);
+    } catch {
+      //console.error("Error during logout:", error);
+      handleMobileNavigation("/login", navigate, true, false);
     }
   };
 
@@ -56,17 +56,17 @@ const TopNav: React.FC = () => {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  console.log("user", user);
+  //console.log("user", user);
   return (
     <div className="w-full flex justify-between md:justify-end items-center px-4 pt-4">
       <div className="md:hidden">
         {/* <div className="w-12 h-12 bg-[#1A5A7A] text-white rounded-full flex items-center justify-center"> */}
-          {/* <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        {/* <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg> */}
         {/* </div> */}
@@ -74,7 +74,7 @@ const TopNav: React.FC = () => {
 
       <div className="flex items-center gap-5">
         {/* Admin Button - Only visible to admin and instructor users */}
-        {isAdminOrInstructor && (
+        {(isAdminOrInstructor || isSuperAdmin) && (
           <Link
             to="/admin/dashboard"
             className="bg-[#17627A] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#124F65] transition-colors"

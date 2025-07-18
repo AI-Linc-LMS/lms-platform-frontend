@@ -86,9 +86,7 @@ const SortableContentItem: React.FC<ContentItemProps> = ({
         <div>
           <div className="text-sm font-medium text-[#255C79]">{title}</div>
           {contentType !== undefined && (
-            <div className="text-xs text-gray-500">
-              {contentType}
-            </div>
+            <div className="text-xs text-gray-500">{contentType}</div>
           )}
         </div>
       </div>

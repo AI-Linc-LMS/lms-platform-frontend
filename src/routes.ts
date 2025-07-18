@@ -26,6 +26,9 @@ import CertificatePortal from "./components/certificate/CertificatePortal";
 import PhoneVerificationPage from "./features/learn/pages/PhoneVerificationPage";
 import RoadmapPage from "./features/learn/components/assessment/RoadmapPage";
 import Referals from "./features/admin/referals/Referals";
+import PartialPaymentPage from "./features/learn/pages/PartialPaymentPage";
+import PaymentLinkGeneratorPage from "./features/admin/pages/PaymentLinkGeneratorPage";
+import EmailSelfServe from "./features/admin/emailSend/EmailSelfServe";
 
 export interface RouteConfig {
   path: string;
@@ -133,6 +136,12 @@ const routes: RouteConfig[] = [
     requiredRole: "admin_or_instructor",
   },
   {
+    path: "/admin/email-send",
+    component: EmailSelfServe,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
     path: "/admin/workshop-registrations",
     component: WorkshopResistrations,
     isPrivate: true,
@@ -162,6 +171,13 @@ const routes: RouteConfig[] = [
     isPrivate: true,
     requiredRole: "admin_or_instructor",
   },
+  {
+    path: "/admin/payment-links",
+    component: PaymentLinkGeneratorPage,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+
   {
     path: "/continue-learning",
     component: ContinueLearningAll,
@@ -195,6 +211,16 @@ const routes: RouteConfig[] = [
   {
     path: "/roadmap/:assessmentId",
     component: RoadmapPage,
+    isPrivate: true,
+  },
+  {
+    path: "/flagship-program-payment",
+    component: PartialPaymentPage,
+    isPrivate: true,
+  },
+  {
+    path: "/nanodegree-program-payment",
+    component: PartialPaymentPage,
     isPrivate: true,
   },
 ];

@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getStreakTableData, StreakData } from "../../../services/dashboardApis";
+import {
+  getStreakTableData,
+  StreakData,
+} from "../../../services/dashboardApis";
 
 interface StreakTableProps {
   clientId: number;
@@ -10,7 +13,7 @@ const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
   const [activeDays, setActiveDays] = useState<number[]>([]);
 
   const { data, isLoading, error } = useQuery<StreakData>({
-    queryKey: ['streakTable', clientId],
+    queryKey: ["streakTable", clientId],
     queryFn: () => getStreakTableData(clientId),
     refetchOnWindowFocus: false,
     refetchOnMount: false,
@@ -29,10 +32,10 @@ const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
     // Loop through the streak object
     Object.entries(data.streak).forEach(([date, isActive]) => {
       // Skip the 'month' and 'year' properties
-      if (date === 'month' || date === 'year') return;
+      if (date === "month" || date === "year") return;
 
       // Extract the day from the date string (e.g., "2025-04-01" -> 1)
-      const day = parseInt(date.split('-')[2]);
+      const day = parseInt(date.split("-")[2]);
 
       // If the day is active, add it to the array
       if (isActive === true) {
@@ -71,23 +74,30 @@ const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
   }
 
   const days = Array.from({ length: totalDays }, (_, i) => i + 1);
-  //console.log("days", days);
+  ////console.log("days", days);
 
-  if (isLoading || error || !data || !data.streak || Object.keys(data.streak).length === 0) {
+  if (
+    isLoading ||
+    error ||
+    !data ||
+    !data.streak ||
+    Object.keys(data.streak).length === 0
+  ) {
     return (
       <div className="flex flex-col w-full  transition-all duration-300 p-4 rounded-3xl mt-12">
         <h2 className="text-xl font-semibold text-gray-800 mb-3">
           Weekly Streaks
         </h2>
 
-        {
-          (!data || !data.streak || Object.keys(data.streak).length === 0) ?
-            <p className="text-[14px] text-[#495057] mb-8">
-              No Streak data available
-            </p> : <p className="text-[14px] text-gray-500 mb-6">
-              Study everyday to build your streak 💪
-            </p>
-        }
+        {!data || !data.streak || Object.keys(data.streak).length === 0 ? (
+          <p className="text-[14px] text-[#495057] mb-8">
+            No Streak data available
+          </p>
+        ) : (
+          <p className="text-[14px] text-gray-500 mb-6">
+            Study everyday to build your streak 💪
+          </p>
+        )}
         <div className="grid grid-cols-5 gap-4">
           {[...Array(30)].map((_, index) => (
             <div
@@ -114,10 +124,10 @@ const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
           const tooltipText = dayStyles[day].includes("border-[#AE0606]")
             ? "Missed day"
             : dayStyles[day].includes("bg-[#CDE5CE]")
-              ? "Past streak"
-              : dayStyles[day].includes("bg-[#417845]")
-                ? "Current streak"
-                : "";
+            ? "Past streak"
+            : dayStyles[day].includes("bg-[#417845]")
+            ? "Current streak"
+            : "";
 
           return (
             <div

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { getAssesmentStudentResults } from "../../../services/admin/workshopRegistrationApis";
-import * as XLSX from "xlsx";
+import ReferralAnalytics from "./ReferralAnalytics";
 
 interface AssesmentStudentResultsData {
   id: number;
@@ -24,6 +24,8 @@ interface AssesmentStudentResultsData {
   started_at: string;
   status: string;
   amount: number;
+  referral_code?: string; // Adding referral code field
+  referal_code?: string;
 }
 
 const AssesmentStudentResults = () => {
@@ -31,6 +33,7 @@ const AssesmentStudentResults = () => {
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  // const [showReferralGenerator, setShowReferralGenerator] = useState(false);
   const pageSize = 15;
 
   const {
@@ -50,8 +53,9 @@ const AssesmentStudentResults = () => {
       const name = entry?.userprofile?.user?.name || "";
       const email = entry?.userprofile?.user?.email || "";
       const assessmentTitle = entry?.assessment?.title || "";
+      const referralCode = entry?.referral_code || entry?.referal_code || "";
 
-      return `${name} ${email} ${assessmentTitle}`
+      return `${name} ${email} ${assessmentTitle} ${referralCode}`
         .toLowerCase()
         .includes(search.toLowerCase());
     });
@@ -64,29 +68,14 @@ const AssesmentStudentResults = () => {
     });
   }, [search, assessmentData]);
 
-  const handleExport = () => {
-    const exportData = filteredData.map((entry, index) => ({
-      "Serial No.": index + 1,
-      Name: entry?.userprofile?.user?.name || "N/A",
-      Email: entry?.userprofile?.user?.email || "N/A",
-      "Mobile Number": entry?.userprofile?.phone_number || "N/A",
-      "Assessment Title": entry?.assessment?.title || "N/A",
-      Score: entry?.score ? `${entry.score}%` : "N/A",
-      "Scholarship Percentage": entry?.offered_scholarship_percentage
-        ? `${entry.offered_scholarship_percentage}%`
-        : "N/A",
-      Amount: entry?.amount ? `₹${entry.amount.toLocaleString()}` : "N/A",
-      Status: entry?.status || "N/A",
-      "Submitted At": entry?.submitted_at
-        ? new Date(entry.submitted_at).toLocaleString()
-        : "N/A",
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Assessment Results");
-    XLSX.writeFile(workbook, "assessment_results.xlsx");
-  };
+  // Count referrals vs direct submissions
+  const referralStats = useMemo(() => {
+    const withReferral = assessmentData.filter(
+      (entry) => entry?.referral_code || entry?.referal_code
+    ).length;
+    const direct = assessmentData.length - withReferral;
+    return { withReferral, direct };
+  }, [assessmentData]);
 
   if (isLoading) return <div className="p-6">Loading...</div>;
   if (error) return <div className="p-6">Error loading assessment results</div>;
@@ -141,14 +130,74 @@ const AssesmentStudentResults = () => {
     }
   };
 
+
   return (
     <div className="p-4 md:p-6 bg-gray-50 min-h-screen">
       <h1 className="text-xl md:text-2xl font-bold mb-6">Assessment Results</h1>
 
+      {/* Referral Generator Section */}
+      {/* <div className="mb-6">
+        <button
+          onClick={() => setShowReferralGenerator(!showReferralGenerator)}
+          className="flex items-center gap-2 bg-[#255C79] text-white px-4 py-2 rounded-lg hover:bg-[#1E4A63] transition-colors font-medium"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.102m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+            />
+          </svg>
+          {showReferralGenerator ? "Hide" : "Generate"} Referral URLs
+        </button> */}
+
+      {/* {showReferralGenerator && (
+          <div className="mt-4"> */}
+      {/* <AssessmentReferralGenerator /> */}
+      {/* </div> */}
+      {/* // )} */}
+      {/* </div> */}
+
+      {/* Referral Analytics Section */}
+      <div className="mb-6">
+        <ReferralAnalytics assessmentData={assessmentData} />
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <h3 className="text-sm font-medium text-gray-700">
+            Total Submissions
+          </h3>
+          <p className="text-2xl font-bold text-gray-900">
+            {assessmentData.length}
+          </p>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <h3 className="text-sm font-medium text-gray-700">Via Referral</h3>
+          <p className="text-2xl font-bold text-blue-600">
+            {referralStats.withReferral}
+          </p>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <h3 className="text-sm font-medium text-gray-700">Direct</h3>
+          <p className="text-2xl font-bold text-green-600">
+            {referralStats.direct}
+          </p>
+        </div>
+      </div>
+
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <input
           type="text"
-          placeholder="Search by Name, Email, Assessment"
+          placeholder="Search by Name, Email, Assessment, Referral Code"
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -156,7 +205,7 @@ const AssesmentStudentResults = () => {
           }}
           className="p-2 border rounded w-full sm:max-w-sm"
         />
-        <button
+        {/* <button
           onClick={handleExport}
           className="flex items-center gap-2 bg-[#5FA564] text-white px-4 py-2 rounded text-sm max-w-[120px]"
           title="Export to Excel"
@@ -176,7 +225,7 @@ const AssesmentStudentResults = () => {
             />
           </svg>
           <span className="inline text-white">Export</span>
-        </button>
+        </button> */}
       </div>
 
       <div className="mb-4 text-sm text-gray-600">
@@ -193,7 +242,7 @@ const AssesmentStudentResults = () => {
       </div>
 
       <div className="overflow-x-auto bg-white shadow rounded">
-        <table className="w-full text-sm text-left min-w-[900px]">
+        <table className="w-full text-sm text-left min-w-[1100px]">
           <thead className="bg-gray-100">
             <tr>
               <th className="p-3">Name</th>
@@ -204,6 +253,7 @@ const AssesmentStudentResults = () => {
               <th className="p-3">Scholarship %</th>
               <th className="p-3">Amount</th>
               <th className="p-3">Status</th>
+              <th className="p-3">Referral</th>
               <th className="p-3">Submitted At</th>
             </tr>
           </thead>
@@ -251,6 +301,17 @@ const AssesmentStudentResults = () => {
                   >
                     {entry?.status || "N/A"}
                   </span>
+                </td>
+                <td className="p-3">
+                  {entry?.referral_code || entry?.referal_code ? (
+                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium font-mono">
+                      {entry.referral_code || entry.referal_code}
+                    </span>
+                  ) : (
+                    <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
+                      Direct
+                    </span>
+                  )}
                 </td>
                 <td className="p-3 text-xs text-gray-600">
                   {formatDate(entry?.submitted_at)}

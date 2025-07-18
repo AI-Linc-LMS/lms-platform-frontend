@@ -25,7 +25,8 @@ export enum PaymentType {
   CONSULTATION = 'consultation',
   ASSESSMENT = 'assessment',
   WORKSHOP = 'workshop',
-  PREBOOKING = 'PREBOOKING'
+  PREBOOKING = 'PREBOOKING',
+  PARTIAL_PAYMENT = 'PARTIAL_PAYMENT'
 }
 
 export interface CreateOrderResponse {
@@ -388,6 +389,12 @@ export class RazorpayService {
       [PaymentType.PREBOOKING]: {
         name: "AI-LINC Platform",
         description: "Prebooking Fee",
+        currency: "INR",
+        theme: { color: "#255C79" },
+      },
+      [PaymentType.PARTIAL_PAYMENT]: {
+        name: "AI-LINC Platform",
+        description: "Partial Payment",
         currency: "INR",
         theme: { color: "#255C79" },
       },

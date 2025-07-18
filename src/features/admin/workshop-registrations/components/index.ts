@@ -1,6 +1,9 @@
-export { FilterDropdown, DateFilterDropdown } from "./FilterDropdown";
-export { WorkshopTableRow } from "./WorkshopTableRow";
 export { WorkshopTableHeader } from "./WorkshopTableHeader";
-export { NoDataState } from "./NoDataState";
+export { WorkshopTableRow } from "./table-row/WorkshopTableRow";
+export { SearchAndExport } from "./SearchAndExport";
+export { CSVUploadButton } from "./CSVUploadButton";
+export { FilterDropdown } from "./FilterDropdown";
+export { ActiveFiltersDisplay } from "./ActiveFiltersDisplay";
+export { ColumnVisibilityDropdown } from "./ColumnVisibilityDropdown";
 export { Pagination } from "./Pagination";
-export { SearchAndExport } from "./SearchAndExport"; 
+export { NoDataState } from "./NoDataState"; 

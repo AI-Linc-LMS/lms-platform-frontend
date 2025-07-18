@@ -12,6 +12,8 @@ import quizIcon from "../../../../commonComponents/icons/admin/content/QuizIcon.
 import assignmentIcon from "../../../../commonComponents/icons/admin/content/SubjectiveIcon.png";
 import codingProblemIcon from "../../../../commonComponents/icons/admin/content/ProblemIcon.png";
 import { useToast } from "../../../../contexts/ToastContext";
+import AccessDenied from "../../../../components/AccessDenied";
+import { useRole } from "../../../../hooks/useRole";
 
 interface Course {
   id: number;
@@ -121,26 +123,6 @@ const AdminDashboard: React.FC = () => {
       );
     }) || [];
 
-  // Log difficulty levels of existing courses to discover valid values
-  useEffect(() => {
-    if (coursesData && coursesData.length > 0) {
-      console.log("Analyzing existing courses for valid difficulty levels...");
-      const difficultyLevels = coursesData.map(
-        (course: Course) => course.difficulty_level
-      );
-      const uniqueDifficultyLevels = [...new Set(difficultyLevels)];
-      console.log("Found difficulty levels:", uniqueDifficultyLevels);
-
-      // If there are valid difficulty levels, automatically update the dropdown options
-      if (uniqueDifficultyLevels.length > 0) {
-        console.log(
-          "Found valid difficulty levels in existing courses:",
-          uniqueDifficultyLevels
-        );
-      }
-    }
-  }, [coursesData]);
-
   const createCourseMutation = useMutation({
     mutationFn: (courseData: CourseData) => createCourse(clientId, courseData),
     onSuccess: () => {
@@ -149,10 +131,10 @@ const AdminDashboard: React.FC = () => {
       success("Course Created", "New course has been successfully created.");
     },
     onError: (error: Error) => {
-      console.error("Failed to create course:", error);
+      //console.error("Failed to create course:", error);
 
       // Log the complete error object for debugging
-      console.log("Complete error object:", JSON.stringify(error, null, 2));
+      //console.log("Complete error object:", JSON.stringify(error, null, 2));
 
       // Extract error details if available
       let errorMessage = error.message;
@@ -163,58 +145,13 @@ const AdminDashboard: React.FC = () => {
           const errorJson = JSON.parse(
             error.message.substring(error.message.indexOf("{"))
           );
-          console.log("Parsed error JSON:", errorJson);
-
-          // Special handling for difficulty_level errors
-          if (errorJson.difficulty_level) {
-            console.log(
-              "Difficulty level error details:",
-              errorJson.difficulty_level
-            );
-
-            // Check if the error message contains hints about valid choices
-            const errorText = errorJson.difficulty_level[0];
-            if (typeof errorText === "string") {
-              console.log("Error text:", errorText);
-
-              // Try different regex patterns to extract choices
-              let validChoices = null;
-
-              // Pattern 1: "X is not a valid choice. Valid choices are: [a, b, c]"
-              const pattern1 = /valid choice[s]?[.\s]*[^[]*\[(.*?)\]/i;
-              const match1 = errorText.match(pattern1);
-              if (match1 && match1[1]) {
-                validChoices = match1[1].split(",").map((c) => c.trim());
-                console.log("Extracted choices (pattern 1):", validChoices);
-              }
-
-              // Pattern 2: Look for quoted values in the error message
-              const pattern2 = /"([^"]+)"/g;
-              const matches2 = [...errorText.matchAll(pattern2)];
-              if (matches2.length > 1) {
-                // First match is usually the invalid choice
-                validChoices = matches2.map((m) => m[1]);
-                console.log("Extracted choices (pattern 2):", validChoices);
-              }
-
-              if (validChoices) {
-                console.log(
-                  "*** IMPORTANT: Valid choices for difficulty_level appear to be:",
-                  validChoices
-                );
-                console.log("Please update your form to use these values.");
-              }
-            }
-          }
-
           const formattedError = Object.entries(errorJson)
             .map(([field, errors]) => `${field}: ${errors}`)
             .join("\n");
           errorMessage = formattedError;
         }
-      } catch (e) {
-        // If parsing fails, use the original error message
-        console.log("Error parsing error message:", e);
+      } catch {
+        //console.log("Error parsing error message:", e);
       }
 
       showError("Course Creation Failed", errorMessage);
@@ -300,6 +237,7 @@ const AdminDashboard: React.FC = () => {
   const clearSearch = () => {
     setSearchQuery("");
   };
+  const { isSuperAdmin } = useRole();
 
   if (isLoading) {
     return (
@@ -360,11 +298,21 @@ const AdminDashboard: React.FC = () => {
     );
   }
 
+
+  if (!isSuperAdmin) {
+    return <AccessDenied />;
+  }
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold" onClick={() => navigate("/admin/dashboard")}>Course Builder</h1>
+          <h1
+            className="text-3xl font-bold"
+            onClick={() => navigate("/admin/dashboard")}
+          >
+            Course Builder
+          </h1>
           <p className="text-gray-600 mt-2">Manage your courses and content</p>
         </div>
       </div>
