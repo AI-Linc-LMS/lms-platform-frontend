@@ -67,19 +67,18 @@ const MultiSelectDropdown: React.FC<{
   const nonSelectedOptions = uniqueOptions.filter(
     (opt) => !selectedOptions.includes(opt)
   );
-  const filteredNonSelected = searchTerm
-    ? nonSelectedOptions.filter((opt) =>
-        opt.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : nonSelectedOptions;
+
+  // --- NEW: Filter both selected and non-selected options by search term ---
+  const filterBySearch = (opt: string) =>
+    !searchTerm || opt.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredSelected = selectedOptionsInData.filter(filterBySearch);
+  const filteredNonSelected = nonSelectedOptions.filter(filterBySearch);
+  // --- END NEW ---
 
   // On search change, filter dropdown options and table data
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const searchVal = e.target.value;
     setSearchTerm(searchVal);
-
-    // Don't update the filter value when searching - only when selecting options
-    // The search is only for filtering the dropdown options, not the actual data
   };
 
   // On option toggle, update filter state (table data) and clear search
@@ -90,11 +89,8 @@ const MultiSelectDropdown: React.FC<{
     } else {
       newSelected = [...selectedOptions, opt];
     }
-    // Clear search term after selecting an option
     setSearchTerm("");
-
     const filterValue = newSelected.join(",");
-
     onChange(filterValue);
   };
 
@@ -102,6 +98,14 @@ const MultiSelectDropdown: React.FC<{
     setSearchTerm("");
     onChange("");
   };
+
+  const handleSelectAll = () => {
+    onChange(uniqueOptions.join(","));
+  };
+
+  const allSelected =
+    selectedOptionsInData.length === uniqueOptions.length &&
+    uniqueOptions.length > 0;
 
   return (
     <div className="w-44">
@@ -114,13 +118,34 @@ const MultiSelectDropdown: React.FC<{
           className="w-full p-2 border border-gray-300 rounded text-sm"
         />
       </div>
+      <div className="flex items-center justify-between mb-2">
+        <button
+          onClick={handleSelectAll}
+          className={`text-xs px-2 py-1 rounded ${
+            allSelected
+              ? "bg-green-100 text-green-500 cursor-not-allowed"
+              : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+          }`}
+          disabled={allSelected}
+        >
+          {allSelected ? "All Selected" : "Select All"}
+        </button>
+        {selectedOptions.length > 0 && (
+          <button
+            onClick={handleClear}
+            className="text-xs text-red-600 hover:text-red-800"
+          >
+            Clear all
+          </button>
+        )}
+      </div>
       <div className="max-h-40 overflow-y-auto border border-gray-200 rounded bg-white">
-        {selectedOptionsInData.length > 0 || filteredNonSelected.length > 0 ? (
+        {filteredSelected.length > 0 || filteredNonSelected.length > 0 ? (
           <>
             {/* Selected options section - always show if there are selected options */}
-            {selectedOptionsInData.length > 0 && (
+            {filteredSelected.length > 0 && (
               <>
-                {selectedOptionsInData.map((opt) => (
+                {filteredSelected.map((opt) => (
                   <label
                     key={opt}
                     className="flex items-center space-x-2 p-2 hover:bg-gray-50 cursor-pointer bg-blue-50 border-l-2 border-blue-500"
@@ -150,7 +175,7 @@ const MultiSelectDropdown: React.FC<{
                 ))}
                 {/* Show "All Selected" message when all options are selected */}
                 {filteredNonSelected.length === 0 &&
-                  selectedOptionsInData.length > 0 && (
+                  filteredSelected.length > 0 && (
                     <div className="px-2 py-1 bg-green-50 border-t border-b border-green-200">
                       <span className="text-xs text-green-600 font-medium">
                         ✓ All options selected
@@ -200,19 +225,6 @@ const MultiSelectDropdown: React.FC<{
           </div>
         )}
       </div>
-      {selectedOptions.length > 0 && (
-        <div className="mt-2 flex items-center justify-between">
-          <div className="text-xs text-gray-600">
-            {selectedOptions.length} selected
-          </div>
-          <button
-            onClick={handleClear}
-            className="text-xs text-red-600 hover:text-red-800"
-          >
-            Clear all
-          </button>
-        </div>
-      )}
     </div>
   );
 };
