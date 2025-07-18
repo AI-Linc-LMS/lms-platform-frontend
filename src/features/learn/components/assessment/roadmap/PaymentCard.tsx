@@ -487,7 +487,7 @@ const PaymentCardSection: React.FC<{
       return {
         text: `Pay Remaining Course Fee ₹${4500}`,
         disabled: false,
-        className: "bg-green-600 text-white hover:bg-green-700",
+        className: "bg-[#14212B] text-white hover:bg-[#223344]",
       };
     } else {
       return {
@@ -512,7 +512,7 @@ const PaymentCardSection: React.FC<{
           redeemData?.payable_amount - 999 || 9001
         }`,
         disabled: false,
-        className: "bg-green-600 text-white hover:bg-green-700",
+        className: "bg-[#14212B] text-white hover:bg-[#223344]",
       };
     } else {
       return {
@@ -625,7 +625,7 @@ const PaymentCardSection: React.FC<{
                   </p>
                   <button
                     onClick={() => handleDirectFullPayment('nanodegree')}
-                    className="w-full bg-green-600 text-white font-semibold py-2 sm:py-3 rounded-lg shadow hover:bg-green-700 transition-colors duration-200 text-sm sm:text-base"
+                    className="w-full bg-[#14212B] text-white font-semibold py-2 sm:py-3 rounded-lg shadow hover:bg-[#223344] transition-colors duration-200 text-sm sm:text-base"
                   >
                     {isNanodegreeSeatBooked 
                       ? `Pay Remaining Course Fee (₹4500)` 
@@ -779,7 +779,7 @@ const PaymentCardSection: React.FC<{
                   </p>
                   <button
                     onClick={() => handleDirectFullPayment('flagship')}
-                    className="w-full bg-yellow-600 text-white font-semibold py-2 sm:py-3 rounded-lg shadow hover:bg-yellow-700 transition-colors duration-200 text-sm sm:text-base"
+                    className="w-full bg-[#14212B] text-white font-semibold py-2 sm:py-3 rounded-lg shadow hover:bg-[#223344] transition-colors duration-200 text-sm sm:text-base"
                   >
                     {isFlagshipSeatBooked 
                       ? `Pay Remaining Course Fee (₹${redeemData?.payable_amount - 999 || 9001})` 
