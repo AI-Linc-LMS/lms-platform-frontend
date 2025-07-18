@@ -121,8 +121,8 @@ const DevelopmentCard: React.FC<DevelopmentCardProps> = ({
             <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-2 md:mb-0">{title}</h1>
             <div className="flex gap-2 items-center">
               <span className={`px-3 py-1 text-xs md:text-sm rounded-full mb-2 md:mb-0 self-start md:self-auto ${difficulty === "Easy" ? "bg-green-100 text-green-800" :
-                  difficulty === "Medium" ? "bg-yellow-100 text-yellow-800" :
-                    "bg-red-100 text-red-800"
+                difficulty === "Medium" ? "bg-yellow-100 text-yellow-800" :
+                  "bg-red-100 text-red-800"
                 }`}>
                 {difficulty}
               </span>
