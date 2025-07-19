@@ -13,7 +13,7 @@ const Jobs: React.FC = () => {
   const [jobTypeFilter, setJobTypeFilter] = useState("");
   const [experienceFilter, setExperienceFilter] = useState("");
   // Fixed: Increased max salary to accommodate all jobs in mock data
-  const [salaryFilter, setSalaryFilter] = useState({ min: 0, max: 10000000 });
+  const [salaryFilter, setSalaryFilter] = useState({ min: 0, max: 10_00_000 });
   const [remoteFilter, setRemoteFilter] = useState(false);
   const [jobs] = useState<Job[]>(mockJobs);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -129,7 +129,7 @@ const Jobs: React.FC = () => {
     setJobTypeFilter('');
     setExperienceFilter('');
     setRemoteFilter(false);
-    setSalaryFilter({ min: 0, max: 10000000 }); // Reset to accommodate all jobs
+    setSalaryFilter({ min: 0, max: 10_00_000 }); // Reset to accommodate all jobs
   };
 
   return (
@@ -229,7 +229,7 @@ const Jobs: React.FC = () => {
                   <div>Job Type: "{jobTypeFilter}"</div>
                   <div>Experience: "{experienceFilter}"</div>
                   <div>Remote: {remoteFilter ? "Yes" : "No"}</div>
-                  <div>Salary: {salaryFilter.min.toLocaleString()} - {salaryFilter.max.toLocaleString()}</div>
+                  <div>Salary: ₹{salaryFilter.min.toLocaleString()} - ₹{salaryFilter.max.toLocaleString()}</div>
                 </div>
               </div>
             </div>
