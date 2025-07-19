@@ -27,10 +27,10 @@ const JobFilters: React.FC<JobFiltersProps> = ({
   const experienceLevels = ['Entry Level', 'Mid Level', 'Senior Level', 'Executive'];
   const salaryRanges = [
     { label: 'Any', min: 0, max: 200000 },
-    { label: '$30k - $50k', min: 30000, max: 50000 },
-    { label: '$50k - $80k', min: 50000, max: 80000 },
-    { label: '$80k - $120k', min: 80000, max: 120000 },
-    { label: '$120k+', min: 120000, max: 200000 }
+    { label: '₹30k - ₹50k', min: 30000, max: 50000 },
+    { label: '₹50k - ₹80k', min: 50000, max: 80000 },
+    { label: '₹80k - ₹120k', min: 80000, max: 120000 },
+    { label: '₹120k+', min: 120000, max: 200000 }
   ];
 
   const handleClearAllFilters = () => {

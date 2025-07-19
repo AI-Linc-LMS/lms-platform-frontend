@@ -1,4 +1,4 @@
-import React, { useState, useMemo,} from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import JobCard from "../components/JobCard";
 import JobFilters from "../components/JobFilters";
@@ -22,6 +22,7 @@ const Jobs: React.FC = () => {
   const [jobs] = useState<Job[]>(mockJobs);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [visibleJobsCount, setVisibleJobsCount] = useState(9);
 
   // Load bookmarked jobs on component mount
   // useEffect(() => {
@@ -38,6 +39,12 @@ const Jobs: React.FC = () => {
 
   const handleApplicationSuccess = () => {
     // Placeholder for application success logic
+  };
+
+  const handleLoadMore = () => {
+    const remainingJobs = filteredJobs.length - visibleJobsCount;
+    const jobsToLoad = Math.min(remainingJobs, Math.ceil(filteredJobs.length * 0.3)); // Load 30% of remaining jobs
+    setVisibleJobsCount(prevCount => prevCount + jobsToLoad);
   };
 
   // const isBookmarked = (jobId: string) => {
@@ -194,7 +201,7 @@ const Jobs: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-4 sm:space-y-6">
-                  {filteredJobs.map((job) => (
+                  {filteredJobs.slice(0, visibleJobsCount).map((job) => (
                     <JobCard
                       key={job.id}
                       job={job}
@@ -204,6 +211,17 @@ const Jobs: React.FC = () => {
                       onApply={handleApplyToJob}
                     />
                   ))}
+
+                  {visibleJobsCount < filteredJobs.length && (
+                    <div className="text-center mt-8 sm:mt-12">
+                      <button 
+                        onClick={handleLoadMore}
+                        className="px-6 sm:px-8 py-3 sm:py-4 border border-[#255C79] text-[#255C79] rounded-lg hover:bg-[#255C79] hover:text-white transition-colors font-medium"
+                      >
+                        Load More Jobs
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
