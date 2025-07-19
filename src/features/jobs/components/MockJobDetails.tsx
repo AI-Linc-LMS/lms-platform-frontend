@@ -8,7 +8,7 @@ export const completeJobDetails: Job[] = [
     companyLogo: "https://media.licdn.com/dms/image/v2/C510BAQHV31l3RbGCQA/company-logo_200_200/company-logo_200_200/0/1630564230354/cellstrat_logo?e=1755734400&v=beta&t=df_Efc35D-Q3Zjel9JTmm7TPVwDnuJ3JgiqecVLOVqY",
     location: "Bengaluru, Karnataka, India",
     type: "Full-time",
-    experienceLevel: "Senior Level",
+    experienceLevel: "Entry Level",
     salary: {
       min: 600000,
       max: 2400000,
@@ -60,8 +60,8 @@ As a key member of our engineering team, you'll collaborate with cross-functiona
     type: 'Full-time',
     experienceLevel: 'Mid Level',
     salary: {
-      min: 1200000,
-      max: 1500000,
+      min: 30000,
+      max: 150000,
       currency: 'INR'
     },
     description: `CellStrat Inc. is seeking an Expert Frontend Developer to lead frontend development for client projects and our flagship CellVerse product platform. 

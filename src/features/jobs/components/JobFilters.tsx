@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {  } from 'react';
 
 interface JobFiltersProps {
   jobType: string;
@@ -21,10 +21,10 @@ const JobFilters: React.FC<JobFiltersProps> = ({
   remote,
   onRemoteChange,
 }) => {
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  // const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  const jobTypes = ['Full-time', 'Part-time', 'Contract', 'Freelance', 'Internship'];
-  const experienceLevels = ['Entry Level', 'Mid Level', 'Senior Level', 'Executive'];
+  const jobTypes = ['Full-time', 'Part-time', 'Contract',  'Internship'];
+  const experienceLevels = ['Entry Level', 'Mid Level', 'Senior Level'];
   const salaryRanges = [
     { label: 'Any', min: 0, max: 200000 },
     { label: '₹30k - ₹50k', min: 30000, max: 50000 },
@@ -39,7 +39,7 @@ const JobFilters: React.FC<JobFiltersProps> = ({
     onExperienceChange('');  // Reset to 'All Levels'
     onSalaryChange({ min: 0, max: 200000 });  // Reset to 'Any'
     onRemoteChange(false);  // Uncheck remote work
-    setShowAdvancedFilters(false);  // Close advanced filters
+     // Close advanced filters
   };
 
   const hasActiveFilters = jobType || experience || remote || salary.min > 0 || salary.max < 200000;
@@ -168,7 +168,7 @@ const JobFilters: React.FC<JobFiltersProps> = ({
       </div>
 
       {/* Advanced Filters Toggle */}
-      <button
+      {/* <button
         onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
         className="w-full flex items-center justify-between p-3 bg-[#F8F9FA] rounded-lg text-[#495057] hover:bg-[#E9ECEF] transition-colors"
       >
@@ -181,12 +181,11 @@ const JobFilters: React.FC<JobFiltersProps> = ({
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
-      </button>
+      </button> */}
 
       {/* Advanced Filters Content */}
-      {showAdvancedFilters && (
+      {/* {showAdvancedFilters && (
         <div className="mt-4 pt-4 border-t border-[#F8F9FA] space-y-4">
-          {/* Custom Salary Range */}
           <div>
             <label className="block text-sm font-medium text-[#343A40] mb-3">
               Custom Salary Range
@@ -215,7 +214,6 @@ const JobFilters: React.FC<JobFiltersProps> = ({
             </div>
           </div>
 
-          {/* Date Posted */}
           <div>
             <label className="block text-sm font-medium text-[#343A40] mb-3">
               Date Posted
@@ -241,7 +239,7 @@ const JobFilters: React.FC<JobFiltersProps> = ({
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Apply Filters Button (Mobile) */}
       <div className="mt-6 lg:hidden">
