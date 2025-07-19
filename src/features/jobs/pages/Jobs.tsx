@@ -34,7 +34,6 @@ const Jobs: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
-  const [showComingSoonModal] = useState(true);
 
   // Fetch jobs based on selected data source
   useEffect(() => {
@@ -186,55 +185,8 @@ const Jobs: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
-      {/* Coming Soon Modal */}
-      {showComingSoonModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop with blur */}
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-
-          {/* Modal Content */}
-          <div className="relative bg-white rounded-2xl shadow-2xl max-w-md mx-4 p-8 text-center">
-            <div className="mb-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-[#255C79] to-[#17627A] rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6.5" />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Jobs Portal Coming Soon!
-              </h2>
-              <p className="text-gray-600 mb-6">
-                We're working hard to bring you an amazing job search experience.
-                Our jobs portal will be launching soon with exciting opportunities from top companies.
-              </p>
-              <div className="flex items-center justify-center gap-2 text-sm text-gray-500 mb-6">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Expected Launch: Soon</span>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {/* <button
-                onClick={() => setShowComingSoonModal(false)}
-                className="w-full px-6 py-3 bg-gradient-to-r from-[#255C79] to-[#17627A] text-white rounded-lg font-medium hover:from-[#1E4A63] hover:to-[#144F66] transition-all duration-200 shadow-lg hover:shadow-xl"
-              >
-                Preview Demo
-              </button> */}
-              <button
-                onClick={() => navigate('/')}
-                className="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-              >
-                Back to Home
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Content - blurred when modal is open */}
-      <div className={showComingSoonModal ? 'filter blur-sm pointer-events-none' : ''}>
+      {/* Main Content */}
+      <div>
         {/* Hero Section */}
         <div className="bg-gradient-to-br from-[#255C79] to-[#17627A] text-white">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
