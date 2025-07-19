@@ -19,7 +19,7 @@ const JobDetail: React.FC = () => {
     return job;
   }, [jobId, navigate]);
 
-  const [isBookmarked, setIsBookmarked] = useState(mockJobDetail.isBookmarked);
+  // const [isBookmarked, setIsBookmarked] = useState(mockJobDetail.isBookmarked);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
 
@@ -39,10 +39,10 @@ const JobDetail: React.FC = () => {
     alert("Application submitted successfully!");
   };
 
-  const handleBookmark = () => {
-    setIsBookmarked(!isBookmarked);
+  // const handleBookmark = () => {
+  //   setIsBookmarked(!isBookmarked);
     // Here you would typically make an API call to save bookmark status
-  };
+  // };
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
@@ -208,13 +208,12 @@ const JobDetail: React.FC = () => {
                 >
                   Apply Now
                 </button>
-                <button
+                {/* <button
                   onClick={handleBookmark}
-                  className={`w-full sm:w-auto px-6 py-3 rounded-lg transition-colors font-medium ${
-                    isBookmarked
+                  className={`w-full sm:w-auto px-6 py-3 rounded-lg transition-colors font-medium ${isBookmarked
                       ? "bg-[#255C79] text-white"
                       : "border border-[#255C79] text-[#255C79] hover:bg-[#255C79] hover:text-white"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-center gap-2">
                     <svg
@@ -232,10 +231,11 @@ const JobDetail: React.FC = () => {
                     </svg>
                     {isBookmarked ? "Bookmarked" : "Bookmark"}
                   </div>
-                </button>
-                <button className="w-full sm:w-auto px-6 py-3 border border-[#6C757D] text-[#6C757D] rounded-lg hover:bg-[#6C757D] hover:text-white transition-colors font-medium">
+                </button> */}
+                {/* share job */}
+                {/* <button className="w-full sm:w-auto px-6 py-3 border border-[#6C757D] text-[#6C757D] rounded-lg hover:bg-[#6C757D] hover:text-white transition-colors font-medium">
                   Share Job
-                </button>
+                </button> */}
               </div>
             </div>
           </div>
@@ -329,12 +329,12 @@ const JobDetail: React.FC = () => {
                 >
                   Apply Now
                 </button>
-                <button
+                {/* <button
                   onClick={handleBookmark}
                   className="w-full px-6 py-3 border border-[#255C79] text-[#255C79] rounded-lg hover:bg-[#255C79] hover:text-white transition-colors font-medium"
                 >
                   Save for Later
-                </button>
+                </button> */}
               </div>
 
               <div className="mt-6 pt-6 border-t border-[#F8F9FA]">
