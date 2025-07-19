@@ -515,7 +515,7 @@ export const mockJobs: Job[] = [
     tags: ['AI Research', 'AWS', 'NLP', 'Computer Vision', 'Amazon'],
     remote: false,
     postedDate: "2025-07-16",
-    applicationUrl: 'https://amazon.jobs/en/jobs/applied-scientist-ai'
+    applicationUrl: 'https://www.aboutamazon.com/'
   },
   {
     id: '20',
@@ -573,6 +573,6 @@ export const mockJobs: Job[] = [
     tags: ['Alexa', 'Voice AI', 'NLP', 'AWS', 'Amazon'],
     remote: false,
     postedDate: "2025-07-15",
-    applicationUrl: 'https://amazon.jobs/en/jobs/ml-engineer-alexa'
+    applicationUrl: 'https://www.aboutamazon.com/'
   }
 ]; 
