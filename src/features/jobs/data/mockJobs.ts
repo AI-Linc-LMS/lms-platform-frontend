@@ -40,13 +40,13 @@ export const mockJobs: Job[] = [
     id: '2',
     title: 'Expert Frontend Developer',
     company: 'CellStrat Inc.',
-    companyLogo: 'https://via.placeholder.com/60x60/17627A/ffffff?text=CS',
+    companyLogo: 'https://media.licdn.com/dms/image/v2/C510BAQHV31l3RbGCQA/company-logo_200_200/company-logo_200_200/0/1630564230354/cellstrat_logo?e=1755734400&v=beta&t=df_Efc35D-Q3Zjel9JTmm7TPVwDnuJ3JgiqecVLOVqY',
     location: 'Bengaluru, Karnataka, India',
     type: 'Full-time',
     experienceLevel: 'Mid Level',
     salary: {
-      min: 1200000,
-      max: 1500000,
+      min: 30000,
+      max: 150000,
       currency: 'INR'
     },
     description: 'Lead frontend development for client projects and CellVerse product platform. Architect and design frontend repositories with optimal performance and scalability. Build pixel-perfect, responsive web applications using our modern tech stack.',
