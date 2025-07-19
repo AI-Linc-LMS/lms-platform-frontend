@@ -5,6 +5,7 @@ import JobFilters from "../components/JobFilters";
 import { Job } from "../types/jobs.types";
 import { mockJobs } from "../data/mockJobs";
 import JobApplicationModal from "../components/JobApplicationModal";
+import AssessmentInvitationModal from "../components/AssessmentInvitationModal";
 
 const Jobs: React.FC = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ const Jobs: React.FC = () => {
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   // Fixed: Set initial visible jobs to show all available jobs
   const [visibleJobsCount, setVisibleJobsCount] = useState(12);
+  const [showAssessmentModal, setShowAssessmentModal] = useState(false);
 
   const handleSearch = () => {
     // Optional: Add search analytics or validation here
@@ -28,7 +30,7 @@ const Jobs: React.FC = () => {
 
   const handleApplyToJob = (job: Job) => {
     setSelectedJob(job);
-    setShowApplicationModal(true);
+    setShowAssessmentModal(true);
   };
 
   const handleApplicationSuccess = () => {
@@ -318,6 +320,17 @@ const Jobs: React.FC = () => {
             setSelectedJob(null);
           }}
           onSuccess={handleApplicationSuccess}
+        />
+      )}
+      {/* Assessment Invitation Modal */}
+      {selectedJob && (
+        <AssessmentInvitationModal
+          job={selectedJob}
+          isOpen={showAssessmentModal}
+          onClose={() => {
+            setShowAssessmentModal(false);
+            setSelectedJob(null);
+          }}
         />
       )}
     </div>
