@@ -9,7 +9,6 @@ interface JobFiltersProps {
   onSalaryChange: (value: { min: number; max: number }) => void;
   remote: boolean;
   onRemoteChange: (value: boolean) => void;
-  onClearFilters: () => void;
 }
 
 const JobFilters: React.FC<JobFiltersProps> = ({
@@ -21,7 +20,6 @@ const JobFilters: React.FC<JobFiltersProps> = ({
   onSalaryChange,
   remote,
   onRemoteChange,
-  onClearFilters
 }) => {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
@@ -34,6 +32,15 @@ const JobFilters: React.FC<JobFiltersProps> = ({
     { label: '$80k - $120k', min: 80000, max: 120000 },
     { label: '$120k+', min: 120000, max: 200000 }
   ];
+
+  const handleClearAllFilters = () => {
+    // Reset all filters to their default state
+    onJobTypeChange('');  // Reset to 'All Types'
+    onExperienceChange('');  // Reset to 'All Levels'
+    onSalaryChange({ min: 0, max: 200000 });  // Reset to 'Any'
+    onRemoteChange(false);  // Uncheck remote work
+    setShowAdvancedFilters(false);  // Close advanced filters
+  };
 
   const hasActiveFilters = jobType || experience || remote || salary.min > 0 || salary.max < 200000;
 
@@ -51,7 +58,7 @@ const JobFilters: React.FC<JobFiltersProps> = ({
         </div>
         {hasActiveFilters && (
           <button
-            onClick={onClearFilters}
+            onClick={handleClearAllFilters}
             className="text-[#6C757D] hover:text-[#255C79] text-sm font-medium"
           >
             Clear all
@@ -238,8 +245,11 @@ const JobFilters: React.FC<JobFiltersProps> = ({
 
       {/* Apply Filters Button (Mobile) */}
       <div className="mt-6 lg:hidden">
-        <button className="w-full px-4 py-3 bg-[#255C79] text-white rounded-lg hover:bg-[#1E4A63] transition-colors font-medium">
-          Apply Filters
+        <button 
+          onClick={handleClearAllFilters}
+          className="w-full px-4 py-3 bg-[#255C79] text-white rounded-lg hover:bg-[#1E4A63] transition-colors font-medium"
+        >
+          Clear All Filters
         </button>
       </div>
     </div>
