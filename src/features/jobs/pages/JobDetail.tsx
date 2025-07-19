@@ -422,7 +422,14 @@ const JobDetail: React.FC = () => {
                   <span className="font-medium text-[#343A40]">2010</span>
                 </div>
               </div>
-              <button className="w-full mt-4 px-4 py-2 border border-[#DEE2E6] text-[#495057] rounded-lg hover:bg-[#F8F9FA] transition-colors text-sm">
+              <button 
+                onClick={() => {
+                  if (mockJobDetail.website) {
+                    window.open(mockJobDetail.website, '_blank', 'noopener,noreferrer');
+                  }
+                }}
+                className="w-full mt-4 px-4 py-2 border border-[#DEE2E6] text-[#495057] rounded-lg hover:bg-[#F8F9FA] transition-colors text-sm"
+              >
                 View Company Profile
               </button>
             </div>

@@ -21,6 +21,7 @@ export interface Job {
   applicationUrl?: string;
   isBookmarked?: boolean;
   about?: string;
+  website?: string;
 }
 
 export interface JobFilters {
