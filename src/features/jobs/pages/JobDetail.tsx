@@ -1,83 +1,27 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Job } from "../types/jobs.types";
+import React, { useState, useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import JobApplication from "../components/JobApplication";
-
-// interface ApplicationData {
-//   personalInfo: {
-//     firstName: string;
-//     lastName: string;
-//     email: string;
-//     phone: string;
-//     location: string;
-//   };
-//   resume: File | null;
-//   coverLetter: string;
-//   portfolioUrl: string;
-//   linkedinUrl: string;
-//   githubUrl: string;
-//   expectedSalary: string;
-//   availabilityDate: string;
-//   workAuthorization: string;
-//   willingToRelocate: boolean;
-//   additionalInfo: string;
-// }
-
-// Mock job data - in real app, this would come from API
-const mockJobDetail: Job = {
-  id: "1",
-  title: "Senior Frontend Developer",
-  company: "TechCorp Inc.",
-  companyLogo: "https://via.placeholder.com/120x120/255C79/ffffff?text=TC",
-  location: "San Francisco, CA",
-  type: "Full-time",
-  experienceLevel: "Senior Level",
-  salary: {
-    min: 120000,
-    max: 160000,
-    currency: "USD",
-  },
-  description: `We are looking for a Senior Frontend Developer to join our dynamic team and help build amazing user experiences. You will be responsible for developing user-facing applications using React, TypeScript, and modern web technologies.
-
-As a Senior Frontend Developer, you'll work closely with our design and backend teams to create responsive, accessible, and performant web applications. You'll also mentor junior developers and contribute to our technical architecture decisions.
-
-This is an excellent opportunity to work with cutting-edge technologies in a collaborative environment where your ideas and expertise will be valued and implemented.`,
-  requirements: [
-    "5+ years of experience with React and modern JavaScript",
-    "Strong proficiency in TypeScript",
-    "Experience with modern CSS frameworks (Tailwind, Styled Components)",
-    "Knowledge of testing frameworks (Jest, React Testing Library)",
-    "Experience with state management (Redux, Zustand, Context API)",
-    "Familiarity with build tools (Webpack, Vite, Rollup)",
-    "Understanding of web performance optimization",
-    "Experience with version control (Git) and CI/CD pipelines",
-    "Strong problem-solving and debugging skills",
-    "Excellent communication and teamwork abilities",
-  ],
-  benefits: [
-    "Competitive salary with equity package",
-    "Comprehensive health, dental, and vision insurance",
-    "Flexible working hours and remote work options",
-    "Professional development budget ($3,000/year)",
-    "Top-tier equipment and home office setup allowance",
-    "401(k) with company matching",
-    "Unlimited PTO policy",
-    "Catered meals and snacks",
-    "Gym membership reimbursement",
-    "Annual team retreats and company events",
-  ],
-  tags: ["React", "TypeScript", "CSS", "JavaScript", "Redux", "Testing"],
-  remote: true,
-  postedDate: "2024-01-15",
-  applicationDeadline: "2024-02-15",
-  applicationUrl: "https://techcorp.com/apply/1",
-  isBookmarked: false,
-};
+import AssessmentInvitationModal from "../components/AssessmentInvitationModal";
+import { completeJobDetails } from "../components/MockJobDetails";
 
 const JobDetail: React.FC = () => {
   const navigate = useNavigate();
+  const { jobId } = useParams<{ jobId: string }>();
+
+  // Find the job detail based on the jobId from the route
+  const mockJobDetail = useMemo(() => {
+    const job = completeJobDetails.find(job => job.id === jobId);
+    if (!job) {
+      // Redirect to jobs page if job not found
+      navigate("/jobs");
+      return completeJobDetails[0]; // Fallback to first job
+    }
+    return job;
+  }, [jobId, navigate]);
+
   const [isBookmarked, setIsBookmarked] = useState(mockJobDetail.isBookmarked);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [showAssessmentModal, setShowAssessmentModal] = useState(false);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -88,12 +32,10 @@ const JobDetail: React.FC = () => {
   };
 
   const handleApplyNow = () => {
-    setShowApplicationModal(true);
+    setShowAssessmentModal(true);
   };
 
   const handleApplicationSubmit = () => {
-    //console.log('Application submitted:', applicationData);
-    // Here you would typically send the application data to your API
     alert("Application submitted successfully!");
   };
 
@@ -129,13 +71,13 @@ const JobDetail: React.FC = () => {
 
           <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
             {/* Company Logo */}
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden flex-shrink-0 bg-[#F8F9FA] flex items-center justify-center">
+            {/* <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden flex-shrink-0 bg-[#F8F9FA] flex items-center justify-center">
               <img
                 src={mockJobDetail.companyLogo}
                 alt={`${mockJobDetail.company} logo`}
                 className="w-full h-full object-cover"
               />
-            </div>
+            </div> */}
 
             {/* Job Info */}
             <div className="flex-1 w-full">
@@ -220,7 +162,7 @@ const JobDetail: React.FC = () => {
                     Remote
                   </span>
                 )}
-                {mockJobDetail.tags.slice(0, 3).map((tag, index) => (
+                {mockJobDetail.tags.slice(0, 3).map((tag: string, index: number) => (
                   <span
                     key={index}
                     className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#6C757D] text-white rounded-full text-xs sm:text-sm font-medium"
@@ -238,7 +180,7 @@ const JobDetail: React.FC = () => {
               {/* Salary */}
               {mockJobDetail.salary && (
                 <div className="flex items-center gap-3 mb-6">
-                  <svg
+                  {/* <svg
                     className="w-5 h-5 sm:w-6 sm:h-6 text-[#28A745]"
                     fill="none"
                     stroke="currentColor"
@@ -250,9 +192,9 @@ const JobDetail: React.FC = () => {
                       strokeWidth={2}
                       d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
                     />
-                  </svg>
+                  </svg> */}
                   <span className="text-[#28A745] font-bold text-lg sm:text-xl">
-                    ${mockJobDetail.salary.min.toLocaleString()} - $
+                    ₹{mockJobDetail.salary.min.toLocaleString()} - ₹
                     {mockJobDetail.salary.max.toLocaleString()} / year
                   </span>
                 </div>
@@ -313,7 +255,7 @@ const JobDetail: React.FC = () => {
               <div className="prose prose-gray max-w-none">
                 {mockJobDetail.description
                   .split("\n\n")
-                  .map((paragraph, index) => (
+                  .map((paragraph: string, index: number) => (
                     <p
                       key={index}
                       className="text-[#495057] leading-relaxed mb-4 text-sm sm:text-base"
@@ -330,7 +272,7 @@ const JobDetail: React.FC = () => {
                 Requirements
               </h2>
               <ul className="space-y-3">
-                {mockJobDetail.requirements.map((req, index) => (
+                {mockJobDetail.requirements.map((req: string, index: number) => (
                   <li key={index} className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-[#255C79] rounded-full mt-2 flex-shrink-0"></div>
                     <span className="text-[#495057] text-sm sm:text-base">
@@ -348,7 +290,7 @@ const JobDetail: React.FC = () => {
                   Benefits & Perks
                 </h2>
                 <div className="grid grid-cols-1 gap-3">
-                  {mockJobDetail.benefits.map((benefit, index) => (
+                  {mockJobDetail.benefits.map((benefit: string, index: number) => (
                     <div key={index} className="flex items-start gap-3">
                       <svg
                         className="w-4 h-4 sm:w-5 sm:h-5 text-[#28A745] mt-0.5 flex-shrink-0"
@@ -483,6 +425,15 @@ const JobDetail: React.FC = () => {
           job={mockJobDetail}
           onClose={() => setShowApplicationModal(false)}
           onSubmit={handleApplicationSubmit}
+        />
+      )}
+
+      {/* Assessment Invitation Modal */}
+      {showAssessmentModal && (
+        <AssessmentInvitationModal
+          job={mockJobDetail}
+          isOpen={true}
+          onClose={() => setShowAssessmentModal(false)}
         />
       )}
     </div>
