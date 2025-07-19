@@ -266,6 +266,20 @@ const JobDetail: React.FC = () => {
               </div>
             </div>
 
+            {/* Add About Company section after Job Description section */}
+            {mockJobDetail.about && (
+              <div className="bg-white rounded-2xl border border-[#DEE2E6] p-4 sm:p-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-[#343A40] mb-4">
+                  About {mockJobDetail.company}
+                </h2>
+                <div className="prose prose-gray max-w-none">
+                  <p className="text-[#495057] leading-relaxed text-sm sm:text-base">
+                    {mockJobDetail.about}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Requirements */}
             <div className="bg-white rounded-2xl border border-[#DEE2E6] p-4 sm:p-6">
               <h2 className="text-xl sm:text-2xl font-bold text-[#343A40] mb-4">
@@ -390,10 +404,7 @@ const JobDetail: React.FC = () => {
                 </div>
               </div>
               <p className="text-[#495057] text-sm leading-relaxed mb-4">
-                TechCorp Inc. is a leading technology company focused on
-                building innovative solutions that transform how businesses
-                operate. We're committed to creating a diverse and inclusive
-                workplace where everyone can thrive.
+                {mockJobDetail.about || 'Technology Company'}
               </p>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">

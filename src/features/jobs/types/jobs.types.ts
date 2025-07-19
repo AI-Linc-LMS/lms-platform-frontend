@@ -20,6 +20,7 @@ export interface Job {
   applicationDeadline?: string;
   applicationUrl?: string;
   isBookmarked?: boolean;
+  about?: string;
 }
 
 export interface JobFilters {

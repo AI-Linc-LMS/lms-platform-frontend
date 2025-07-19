@@ -47,7 +47,8 @@ As a key member of our engineering team, you'll collaborate with cross-functiona
     postedDate: "2025-07-14",
     applicationDeadline: "2025-08-14",
     applicationUrl: "https://cellstrat.com/careers/senior-ai-engineer",
-    isBookmarked: false
+    isBookmarked: false,
+    about: "CellStrat is a dynamic AI startup specializing in comprehensive AI consulting for US-based clients. We are committed to driving technological innovation through cutting-edge AI solutions, leveraging our expertise in machine learning, data science, and advanced analytics to help businesses transform their operations."
   },
   {
     id: '2',
@@ -143,7 +144,8 @@ The position offers exciting opportunities to work with the latest AI technologi
     postedDate: '2025-07-11',
     applicationDeadline: '2025-08-16',
     applicationUrl: 'https://techinnovate.com/careers/ai-developer',
-    isBookmarked: false
+    isBookmarked: false,
+    about: "Meta is a global technology leader at the forefront of AI innovation, developing groundbreaking solutions that connect people and push the boundaries of artificial intelligence. We are dedicated to creating transformative technologies that have a positive impact on the world, with a focus on research, development, and ethical AI advancement."
   },
   {
     id: '4',
@@ -193,7 +195,8 @@ This role offers the opportunity to make a significant impact on our company's A
     postedDate: '2025-07-17',
     applicationDeadline: '2025-08-17',
     applicationUrl: 'https://techinnovate.com/careers/ai-lead',
-    isBookmarked: false
+    isBookmarked: false,
+    about: "Google is a global technology leader at the forefront of AI innovation, developing groundbreaking solutions that connect people and push the boundaries of artificial intelligence. We are dedicated to creating transformative technologies that have a positive impact on the world, with a focus on research, development, and ethical AI advancement."
   },
   {
     id: '5',
@@ -244,7 +247,8 @@ This is a rare opportunity to be part of something transformational from day one
     postedDate: '2025-07-18',
     applicationDeadline: '2025-08-18',
     applicationUrl: 'https://cenna.com/apply/founding-ai-engineer',
-    isBookmarked: false
+    isBookmarked: false,
+    about: "Cenna is an early-stage AI startup with a vision to revolutionize technology through cutting-edge artificial intelligence solutions. We are passionate about building transformative AI technologies that solve real-world problems, with a focus on innovation, research, and creating scalable, impactful solutions."
   },
   {
     id: '6',
@@ -271,7 +275,8 @@ This is a rare opportunity to be part of something transformational from day one
     remote: true,
     postedDate: '2025-07-19',
     applicationDeadline: '2025-08-19',
-    applicationUrl: 'https://ultrasafeai.com/apply/ai-engineer'
+    applicationUrl: 'https://ultrasafeai.com/apply/ai-engineer',
+    about: "UltraSafe AI is a pioneering company dedicated to developing AI solutions that prioritize security and safety. We are committed to creating intelligent systems that protect and empower, with a focus on ethical AI development and innovative approaches to technological challenges."
   },
   {
     id: '7',
@@ -298,7 +303,8 @@ This is a rare opportunity to be part of something transformational from day one
     remote: false,
     postedDate: '2025-07-20',
     applicationDeadline: '2025-08-20',
-    applicationUrl: 'https://genloop.com/apply/senior-ai-engineer'
+    applicationUrl: 'https://genloop.com/apply/senior-ai-engineer',
+    about: "Genloop is an innovative technology company specializing in advanced AI and machine learning solutions. We are dedicated to pushing the boundaries of technological innovation, with a focus on research, development, and creating transformative AI technologies that drive meaningful change."
   },
   {
     id: '8',
@@ -325,7 +331,8 @@ This is a rare opportunity to be part of something transformational from day one
     remote: false,
     postedDate: '2025-07-21',
     applicationDeadline: '2025-08-21',
-    applicationUrl: 'https://velodata.com/apply/ai-engineer'
+    applicationUrl: 'https://velodata.com/apply/ai-engineer',
+    about: "Velodata Global is a data-driven technology company that transforms complex data into actionable insights. We specialize in AI and machine learning solutions that help businesses make informed decisions, with a commitment to innovation, technological excellence, and driving business growth."
   },
   {
     id: '9',
@@ -352,7 +359,8 @@ This is a rare opportunity to be part of something transformational from day one
     remote: false,
     postedDate: '2025-07-22',
     applicationDeadline: '2025-08-22',
-    applicationUrl: 'https://aisensy.com/apply/ai-engineer'
+    applicationUrl: 'https://aisensy.com/apply/ai-engineer',
+    about: "AiSensy is a cutting-edge AI company focused on developing intelligent communication and automation solutions. We are dedicated to creating innovative technologies that enhance human-machine interaction, with a focus on natural language processing and conversational AI technologies."
   },
   {
     id: '10',
@@ -379,7 +387,8 @@ This is a rare opportunity to be part of something transformational from day one
     remote: false,
     postedDate: '2025-07-23',
     applicationDeadline: '2025-08-23',
-    applicationUrl: 'https://kla.com/apply/ai-engineer'
+    applicationUrl: 'https://kla.com/apply/ai-engineer',
+    about: "KLA is a leading technology company specializing in AI verification and validation techniques. We are committed to driving technological advancement through rigorous AI testing, quality assurance, and innovative approaches to ensuring the reliability and performance of AI systems."
   },
   {
     id: '11',
@@ -406,7 +415,8 @@ This is a rare opportunity to be part of something transformational from day one
     remote: true,
     postedDate: '2025-07-24',
     applicationDeadline: '2025-08-24',
-    applicationUrl: 'https://hike.com/apply/ml-engineer'
+    applicationUrl: 'https://hike.com/apply/ml-engineer',
+    about: "Hike is an innovative technology company that develops advanced machine learning solutions. We are passionate about creating technologies that push the boundaries of what's possible, with a focus on remote collaboration, cutting-edge AI, and solving complex technological challenges."
   },
   {
     id: '12',
@@ -433,7 +443,8 @@ This is a rare opportunity to be part of something transformational from day one
     remote: false,
     postedDate: '2025-07-25',
     applicationDeadline: '2025-08-25',
-    applicationUrl: 'https://indsafri.com/apply/ai-engineer'
+    applicationUrl: 'https://indsafri.com/apply/ai-engineer',
+    about: "Indsafri is a forward-thinking AI company dedicated to developing innovative solutions across various domains. We are committed to driving technological progress through creative problem-solving, advanced AI technologies, and a passion for pushing the boundaries of artificial intelligence."
   },
   {
     id: '13',
@@ -460,7 +471,8 @@ This is a rare opportunity to be part of something transformational from day one
     remote: false,
     postedDate: '2025-07-26',
     applicationDeadline: '2025-08-26',
-    applicationUrl: 'https://eudia.com/apply/ai-engineer'
+    applicationUrl: 'https://eudia.com/apply/ai-engineer',
+    about: "Eudia is a technology company specializing in AI development and innovative solutions. We are dedicated to creating cutting-edge AI technologies that drive meaningful change, with a focus on collaboration, technological innovation, and solving complex business challenges."
   },
   {
     id: '14',
@@ -487,7 +499,8 @@ This is a rare opportunity to be part of something transformational from day one
     remote: false,
     postedDate: '2025-07-27',
     applicationDeadline: '2025-08-27',
-    applicationUrl: 'https://predigle.com/apply/ai-engineer'
+    applicationUrl: 'https://predigle.com/apply/ai-engineer',
+    about: "Predigle is an innovative AI company committed to developing advanced technological solutions. We focus on driving technological progress through analytical thinking, machine learning expertise, and a passion for creating transformative AI technologies."
   },
   {
     id: '15',
@@ -514,7 +527,8 @@ This is a rare opportunity to be part of something transformational from day one
     remote: true,
     postedDate: '2025-07-28',
     applicationDeadline: '2025-08-28',
-    applicationUrl: 'https://mundos.com/apply/ai-fullstack-engineer'
+    applicationUrl: 'https://mundos.com/apply/ai-fullstack-engineer',
+    about: "Mundos is a technology company specializing in comprehensive AI solutions that integrate frontend and backend technologies. We are dedicated to developing innovative, full-stack AI technologies that solve complex business challenges and drive digital transformation."
   },
   {
     id: '16',
@@ -541,7 +555,8 @@ This is a rare opportunity to be part of something transformational from day one
     remote: false,
     postedDate: '2025-07-29',
     applicationDeadline: '2025-08-29',
-    applicationUrl: 'https://appsconnect.com/apply/ai-research-engineer'
+    applicationUrl: 'https://appsconnect.com/apply/ai-research-engineer',
+    about: "APPSeCONNECT is a technology company focused on AI research and development. We are committed to driving technological advancements through innovative research, with a strong emphasis on translating cutting-edge AI research into practical, impactful solutions."
   },
   {
     id: '17',
@@ -568,6 +583,7 @@ This is a rare opportunity to be part of something transformational from day one
     remote: false,
     postedDate: '2025-07-30',
     applicationDeadline: '2025-08-30',
-    applicationUrl: 'https://valuebound.com/apply/ai-engineer'
+    applicationUrl: 'https://valuebound.com/apply/ai-engineer',
+    about: "Valuebound is a technology company dedicated to developing innovative AI solutions. We are committed to driving technological innovation through expert AI development, collaborative approaches, and a passion for creating transformative technologies that make a real-world impact."
   }
 ];
