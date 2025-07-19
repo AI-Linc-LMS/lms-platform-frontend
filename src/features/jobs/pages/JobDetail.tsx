@@ -71,13 +71,13 @@ const JobDetail: React.FC = () => {
 
           <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
             {/* Company Logo */}
-            {/* <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden flex-shrink-0 bg-[#F8F9FA] flex items-center justify-center">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden flex-shrink-0 bg-[#F8F9FA] flex items-center justify-center">
               <img
                 src={mockJobDetail.companyLogo}
                 alt={`${mockJobDetail.company} logo`}
                 className="w-full h-full object-cover"
               />
-            </div> */}
+            </div>
 
             {/* Job Info */}
             <div className="flex-1 w-full">
