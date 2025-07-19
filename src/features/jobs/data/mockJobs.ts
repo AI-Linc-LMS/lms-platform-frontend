@@ -8,7 +8,7 @@ export const mockJobs: Job[] = [
     companyLogo: "https://media.licdn.com/dms/image/v2/C510BAQHV31l3RbGCQA/company-logo_200_200/company-logo_200_200/0/1630564230354/cellstrat_logo?e=1755734400&v=beta&t=df_Efc35D-Q3Zjel9JTmm7TPVwDnuJ3JgiqecVLOVqY",
     location: "Bengaluru, Karnataka, India",
     type: "Full-time",
-    experienceLevel: "Senior Level",
+    experienceLevel: "Entry Level",
     salary: {
       min: 600000,
       max: 2400000,
@@ -414,7 +414,7 @@ export const mockJobs: Job[] = [
     companyLogo: 'https://media.licdn.com/dms/image/v2/C4D0BAQEA7Bh0tbAk2A/company-logo_200_200/company-logo_200_200/0/1654241878632/appseconnectcorp_logo?e=1755734400&v=beta&t=2RPJXyoFADkwE6FqdptcMrG45ItlW_pSO9m1M1xsX18',
     location: 'Greater Kolkata Area',
     type: 'Full-time',
-    experienceLevel: 'Senior Level',
+    experienceLevel: 'Entry Level',
     salary: {
       min: 150000,
       max: 300000,
@@ -439,7 +439,7 @@ export const mockJobs: Job[] = [
     company: 'Valuebound',
     companyLogo: 'https://media.licdn.com/dms/image/v2/D560BAQEDFa_-CuvoVA/company-logo_200_200/B56ZWvaNORGoAQ-/0/1742404638677/valuebound_logo?e=1755734400&v=beta&t=QEqEyY_IzkYXRAng-8Q3aeF0RtqFFiivYJf86jzLZyE',
     location: 'Chennai, Tamil Nadu, India',
-    type: 'Full-time',
+    type: 'Internship',
     experienceLevel: 'Mid Level',
     salary: {
       min: 100000,
