@@ -18,7 +18,7 @@ import {
   Pagination,
   ActiveFiltersDisplay,
 } from "./components";
-import EmailConfirmationModal from "./components/EmailConfirmationModal";
+import EmailConfirmationModal from "./components/modals/EmailConfirmationModal";
 
 const WorkshopRegistration = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -33,6 +33,10 @@ const WorkshopRegistration = () => {
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [selectedEmailsForConfirmation, setSelectedEmailsForConfirmation] =
     useState<string[]>([]);
+  const [freezeColumns, setFreezeColumns] = useState<string[]>([
+    "name",
+    "email",
+  ]);
 
   // Column visibility state
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
@@ -46,6 +50,54 @@ const WorkshopRegistration = () => {
     "is_course_amount_paid",
     "registered_at",
   ];
+
+  // Freeze columns configuration
+  const freezeColumnOptions = [
+    { key: "name", label: "Name", required: true },
+    { key: "email", label: "Email", required: true },
+    { key: "phone_number", label: "Phone", required: false },
+  ];
+
+  // Handle freeze column selection
+  const handleFreezeColumnChange = (columnKey: string, selected: boolean) => {
+    setFreezeColumns((prev) => {
+      let newFreezeColumns = [...prev];
+
+      if (selected) {
+        // Add the column
+        if (!newFreezeColumns.includes(columnKey)) {
+          newFreezeColumns.push(columnKey);
+        }
+
+        // If phone is selected, ensure name and email are also selected
+        if (columnKey === "phone_number") {
+          if (!newFreezeColumns.includes("name")) {
+            newFreezeColumns.push("name");
+          }
+          if (!newFreezeColumns.includes("email")) {
+            newFreezeColumns.push("email");
+          }
+        }
+        if (columnKey === "email") {
+          if (!newFreezeColumns.includes("name")) {
+            newFreezeColumns.push("name");
+          }
+        }
+      } else {
+        // Remove the column
+        newFreezeColumns = newFreezeColumns.filter((col) => col !== columnKey);
+
+        // If removing name or email, also remove phone (since phone requires both)
+        if (columnKey === "name" || columnKey === "email") {
+          newFreezeColumns = newFreezeColumns.filter(
+            (col) => col !== "phone_number"
+          );
+        }
+      }
+
+      return newFreezeColumns;
+    });
+  };
 
   // Column configuration for optional columns
   const columnConfigs = [
@@ -308,6 +360,9 @@ const WorkshopRegistration = () => {
         showSelection={showSelection}
         onToggleSelection={toggleSelectionMode}
         selectedCount={selectedRows.size}
+        freezeColumns={freezeColumns}
+        freezeColumnOptions={freezeColumnOptions}
+        onFreezeColumnChange={handleFreezeColumnChange}
       />
 
       <ActiveFiltersDisplay
@@ -336,7 +391,7 @@ const WorkshopRegistration = () => {
       <div className="flex flex-col bg-white shadow rounded flex-1 min-h-0">
         {/* Scrollable table container */}
         <div className="flex-1 max-h-[100vh] overflow-auto min-h-0">
-          <table className="w-full text-sm text-left">
+          <table className="w-full text-sm text-left border-collapse">
             <WorkshopTableHeader
               filters={filters}
               openFilter={openFilter}
@@ -355,6 +410,7 @@ const WorkshopRegistration = () => {
                 filteredData.every((entry) => selectedRows.has(entry.id))
               }
               onSelectAll={handleSelectAll}
+              freezeColumns={freezeColumns}
             />
             <tbody>
               {paginatedData.length > 0 ? (
@@ -368,6 +424,7 @@ const WorkshopRegistration = () => {
                     isSelected={selectedRows.has(entry.id)}
                     onSelectionChange={handleRowSelection}
                     showSelection={showSelection}
+                    freezeColumns={freezeColumns}
                   />
                 ))
               ) : (
