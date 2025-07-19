@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useRef, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { getWorkshopRegistrations } from "../../../services/admin/workshopRegistrationApis";
 import { WorkshopRegistrationData, FilterState } from "./types";
 import {
@@ -17,14 +18,21 @@ import {
   Pagination,
   ActiveFiltersDisplay,
 } from "./components";
+import EmailConfirmationModal from "./components/EmailConfirmationModal";
 
 const WorkshopRegistration = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 15;
   const [filters, setFilters] = useState<FilterState>(getInitialFilterState());
   const [openFilter, setOpenFilter] = useState<keyof FilterState | null>(null);
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [showSelection, setShowSelection] = useState(false);
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [selectedEmailsForConfirmation, setSelectedEmailsForConfirmation] =
+    useState<string[]>([]);
 
   // Column visibility state
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
@@ -188,6 +196,64 @@ const WorkshopRegistration = () => {
     exportToExcel(filteredData, allVisibleColumns);
   };
 
+  const handleRemoveEmailFromConfirmation = (emailToRemove: string) => {
+    setSelectedEmailsForConfirmation((prev) =>
+      prev.filter((email) => email !== emailToRemove)
+    );
+    // Also remove from the main selectedRows state
+    const entryToRemove = filteredData.find(
+      (entry) => entry.email === emailToRemove
+    );
+    if (entryToRemove) {
+      setSelectedRows((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(entryToRemove.id);
+        return newSet;
+      });
+    }
+  };
+
+  const handleSendEmail = () => {
+    if (selectedRows.size === 0) return;
+
+    const selectedEmails = filteredData
+      .filter((entry) => selectedRows.has(entry.id))
+      .map((entry) => entry.email)
+      .filter((email) => email && email.includes("@"));
+
+    if (selectedEmails.length === 0) return;
+
+    setSelectedEmailsForConfirmation(selectedEmails);
+    setShowEmailConfirmation(true);
+  };
+
+  const handleRowSelection = (entryId: number, selected: boolean) => {
+    setSelectedRows((prev) => {
+      const newSet = new Set(prev);
+      if (selected) {
+        newSet.add(entryId);
+      } else {
+        newSet.delete(entryId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = (selected: boolean) => {
+    if (selected) {
+      setSelectedRows(new Set(filteredData.map((entry) => entry.id)));
+    } else {
+      setSelectedRows(new Set());
+    }
+  };
+
+  const toggleSelectionMode = () => {
+    setShowSelection(!showSelection);
+    if (showSelection) {
+      setSelectedRows(new Set());
+    }
+  };
+
   const updateFilter = (
     column: keyof FilterState,
     value: string | { start: string; end: string }
@@ -238,6 +304,10 @@ const WorkshopRegistration = () => {
         columnConfigs={columnConfigs}
         visibleColumns={visibleColumns}
         onColumnVisibilityChange={setVisibleColumns}
+        onSendEmail={handleSendEmail}
+        showSelection={showSelection}
+        onToggleSelection={toggleSelectionMode}
+        selectedCount={selectedRows.size}
       />
 
       <ActiveFiltersDisplay
@@ -257,6 +327,11 @@ const WorkshopRegistration = () => {
             Total Students Registered: <strong>{workshopData.length}</strong>
           </>
         )}
+        {showSelection && selectedRows.size > 0 && (
+          <span className="ml-4 text-blue-600">
+            • <strong>{selectedRows.size}</strong> selected
+          </span>
+        )}
       </div>
       <div className="flex flex-col bg-white shadow rounded flex-1 min-h-0">
         {/* Scrollable table container */}
@@ -274,6 +349,12 @@ const WorkshopRegistration = () => {
               data={workshopData}
               visibleColumns={visibleColumns}
               permanentColumns={permanentColumns}
+              showSelection={showSelection}
+              isAllSelected={
+                filteredData.length > 0 &&
+                filteredData.every((entry) => selectedRows.has(entry.id))
+              }
+              onSelectAll={handleSelectAll}
             />
             <tbody>
               {paginatedData.length > 0 ? (
@@ -284,6 +365,9 @@ const WorkshopRegistration = () => {
                     visibleColumns={visibleColumns}
                     permanentColumns={permanentColumns}
                     refetch={refetch}
+                    isSelected={selectedRows.has(entry.id)}
+                    onSelectionChange={handleRowSelection}
+                    showSelection={showSelection}
                   />
                 ))
               ) : (
@@ -304,6 +388,21 @@ const WorkshopRegistration = () => {
           />
         </div>
       </div>
+
+      <EmailConfirmationModal
+        isOpen={showEmailConfirmation}
+        onClose={() => setShowEmailConfirmation(false)}
+        onConfirm={() => {
+          setShowEmailConfirmation(false);
+          // Navigate to email self-serve with pre-filled emails
+          navigate("/admin/email-send", {
+            state: { preFilledEmails: selectedEmailsForConfirmation },
+          });
+        }}
+        selectedEmails={selectedEmailsForConfirmation}
+        totalSelected={selectedEmailsForConfirmation.length}
+        onRemoveEmail={handleRemoveEmailFromConfirmation}
+      />
     </div>
   );
 };

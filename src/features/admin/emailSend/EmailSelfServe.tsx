@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import {
   getEmailJobsStatus,
   restartFailedJob,
@@ -11,8 +12,15 @@ import EmailForm from "./EmailForm";
 import AccessDenied from "../../../components/AccessDenied";
 import { useRole } from "../../../hooks/useRole";
 
-const EmailSelfServe: React.FC = () => {
+interface EmailSelfServeProps {
+  preFilledEmails?: string[];
+}
+
+const EmailSelfServe: React.FC<EmailSelfServeProps> = ({
+  preFilledEmails = [],
+}) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const location = useLocation();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(true);
@@ -20,6 +28,19 @@ const EmailSelfServe: React.FC = () => {
   const [jobStatus, setJobStatus] = useState<Record<string, unknown> | null>(
     null
   );
+
+  // Get pre-filled emails from location state or props
+  const emailsFromState =
+    (location.state as { preFilledEmails?: string[] })?.preFilledEmails || [];
+  const finalPreFilledEmails =
+    preFilledEmails.length > 0 ? preFilledEmails : emailsFromState;
+
+  // Update showHistoryModal based on whether we have pre-filled emails
+  useEffect(() => {
+    if (finalPreFilledEmails.length > 0) {
+      setShowHistoryModal(false);
+    }
+  }, [finalPreFilledEmails.length]);
 
   const {
     data: emailJobs,
@@ -158,6 +179,7 @@ const EmailSelfServe: React.FC = () => {
         clientId={clientId}
         onJobCreated={handleJobCreated}
         onViewHistory={handleViewHistory}
+        preFilledEmails={finalPreFilledEmails}
       />
 
       {/* Email Jobs History Modal */}

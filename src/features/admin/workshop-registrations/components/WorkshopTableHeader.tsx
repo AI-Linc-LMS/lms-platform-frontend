@@ -41,6 +41,9 @@ interface WorkshopTableHeaderProps {
   data?: WorkshopRegistrationData[];
   visibleColumns?: string[];
   permanentColumns?: string[];
+  showSelection?: boolean;
+  isAllSelected?: boolean;
+  onSelectAll?: (selected: boolean) => void;
 }
 
 // Reusable MultiSelectDropdown component
@@ -239,6 +242,9 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
   data = [],
   visibleColumns = [],
   permanentColumns = [],
+  showSelection = false,
+  isAllSelected = false,
+  onSelectAll,
 }) => {
   const filterConfigs = [
     // Personal details
@@ -341,6 +347,17 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
   return (
     <thead className="bg-gray-100 sticky top-0 z-10">
       <tr>
+        {/* Selection header */}
+        {showSelection && (
+          <th className="p-3 w-12 sticky top-0 z-10 bg-gray-100">
+            <input
+              type="checkbox"
+              checked={isAllSelected}
+              onChange={(e) => onSelectAll?.(e.target.checked)}
+              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+            />
+          </th>
+        )}
         {filterConfigs
           .filter(
             (config) =>
