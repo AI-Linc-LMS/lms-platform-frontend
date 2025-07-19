@@ -44,8 +44,8 @@ As a key member of our engineering team, you'll collaborate with cross-functiona
     ],
     tags: ["AI", "Machine Learning", "LLM", "Data Science", "Python", "AWS", "Docker"],
     remote: true,
-    postedDate: "2024-01-15",
-    applicationDeadline: "2024-03-15",
+    postedDate: "2025-07-14",
+    applicationDeadline: "2025-08-14",
     applicationUrl: "https://cellstrat.com/careers/senior-ai-engineer",
     isBookmarked: false
   },
@@ -92,8 +92,8 @@ As part of our dynamic team, you'll collaborate closely with backend engineers, 
     ],
     tags: ['Frontend', 'React', 'Next.js', 'Web Development', 'TypeScript', 'Tailwind CSS'],
     remote: true,
-    postedDate: '2024-01-15',
-    applicationDeadline: '2024-03-15',
+    postedDate: '2025-07-15',
+    applicationDeadline: '2025-08-15',
     applicationUrl: 'https://cellstrat.com/careers/expert-frontend-developer',
     isBookmarked: false
   },
@@ -140,8 +140,8 @@ The position offers exciting opportunities to work with the latest AI technologi
     ],
     tags: ['AI', 'Machine Learning', 'Computer Vision', 'Deep Learning', 'Python', 'Azure'],
     remote: false,
-    postedDate: '2024-01-15',
-    applicationDeadline: '2024-02-28',
+    postedDate: '2025-07-11',
+    applicationDeadline: '2025-08-16',
     applicationUrl: 'https://techinnovate.com/careers/ai-developer',
     isBookmarked: false
   },
@@ -190,8 +190,8 @@ This role offers the opportunity to make a significant impact on our company's A
     ],
     tags: ['AI Leadership', 'Machine Learning', 'Computer Vision', 'Innovation', 'Team Management'],
     remote: false,
-    postedDate: '2024-01-15',
-    applicationDeadline: '2024-03-01',
+    postedDate: '2025-07-17',
+    applicationDeadline: '2025-08-17',
     applicationUrl: 'https://techinnovate.com/careers/ai-lead',
     isBookmarked: false
   },
@@ -241,8 +241,8 @@ This is a rare opportunity to be part of something transformational from day one
     ],
     tags: ['AI', 'Founding Engineer', 'Leadership', 'Innovation', 'Startup', 'Equity'],
     remote: false,
-    postedDate: '2024-01-09',
-    applicationDeadline: '2024-02-15',
+    postedDate: '2025-07-18',
+    applicationDeadline: '2025-08-18',
     applicationUrl: 'https://cenna.com/apply/founding-ai-engineer',
     isBookmarked: false
   },
@@ -269,7 +269,8 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['Full remote work', 'Cutting-edge security projects', 'Continuous learning'],
     tags: ['AI', 'Security', 'Remote', 'Machine Learning'],
     remote: true,
-    postedDate: '2024-01-08',
+    postedDate: '2025-07-19',
+    applicationDeadline: '2025-08-19',
     applicationUrl: 'https://ultrasafeai.com/apply/ai-engineer'
   },
   {
@@ -295,7 +296,8 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['Competitive salary', 'Research opportunities', 'Career growth'],
     tags: ['Senior AI', 'Machine Learning', 'Deep Learning', 'Research'],
     remote: false,
-    postedDate: '2024-01-07',
+    postedDate: '2025-07-20',
+    applicationDeadline: '2025-08-20',
     applicationUrl: 'https://genloop.com/apply/senior-ai-engineer'
   },
   {
@@ -321,7 +323,8 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['Hybrid work model', 'Data-driven projects', 'Continuous learning'],
     tags: ['AI', 'Data Science', 'Python', 'Machine Learning'],
     remote: false,
-    postedDate: '2024-01-06',
+    postedDate: '2025-07-21',
+    applicationDeadline: '2025-08-21',
     applicationUrl: 'https://velodata.com/apply/ai-engineer'
   },
   {
@@ -347,7 +350,8 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['Innovative projects', 'Career growth', 'Competitive compensation'],
     tags: ['AI', 'NLP', 'Chatbots', 'Automation'],
     remote: false,
-    postedDate: '2024-01-05',
+    postedDate: '2025-07-22',
+    applicationDeadline: '2025-08-22',
     applicationUrl: 'https://aisensy.com/apply/ai-engineer'
   },
   {
@@ -373,7 +377,8 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['Hybrid work model', 'Learning opportunities', 'Competitive compensation'],
     tags: ['AI', 'Machine Learning', 'Verification', 'Innovation'],
     remote: false,
-    postedDate: '2024-01-04',
+    postedDate: '2025-07-23',
+    applicationDeadline: '2025-08-23',
     applicationUrl: 'https://kla.com/apply/ai-engineer'
   },
   {
@@ -399,7 +404,8 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['Full remote work', 'Flexible hours', 'Continuous learning'],
     tags: ['Machine Learning', 'Remote', 'Python', 'AI'],
     remote: true,
-    postedDate: '2024-01-03',
+    postedDate: '2025-07-24',
+    applicationDeadline: '2025-08-24',
     applicationUrl: 'https://hike.com/apply/ml-engineer'
   },
   {
@@ -425,7 +431,8 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['Hybrid work model', 'Innovative projects', 'Professional growth'],
     tags: ['AI', 'Machine Learning', 'Innovation', 'Technology'],
     remote: false,
-    postedDate: '2024-01-02',
+    postedDate: '2025-07-25',
+    applicationDeadline: '2025-08-25',
     applicationUrl: 'https://indsafri.com/apply/ai-engineer'
   },
   {
@@ -451,7 +458,8 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['On-site work', 'Learning opportunities', 'Competitive compensation'],
     tags: ['AI', 'Engineering', 'Technology', 'Innovation'],
     remote: false,
-    postedDate: '2024-01-01',
+    postedDate: '2025-07-26',
+    applicationDeadline: '2025-08-26',
     applicationUrl: 'https://eudia.com/apply/ai-engineer'
   },
   {
@@ -477,7 +485,8 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['Hybrid work model', 'Cutting-edge projects', 'Professional development'],
     tags: ['AI', 'Machine Learning', 'Innovation', 'Technology'],
     remote: false,
-    postedDate: '2023-12-29',
+    postedDate: '2025-07-27',
+    applicationDeadline: '2025-08-27',
     applicationUrl: 'https://predigle.com/apply/ai-engineer'
   },
   {
@@ -503,7 +512,8 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['Full remote work', 'Flexible hours', 'Comprehensive AI projects'],
     tags: ['AI', 'Fullstack', 'Remote', 'Web Development'],
     remote: true,
-    postedDate: '2023-12-28',
+    postedDate: '2025-07-28',
+    applicationDeadline: '2025-08-28',
     applicationUrl: 'https://mundos.com/apply/ai-fullstack-engineer'
   },
   {
@@ -529,7 +539,8 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['On-site work', 'Research opportunities', 'Competitive compensation'],
     tags: ['AI Research', 'Machine Learning', 'Innovation', 'Academic'],
     remote: false,
-    postedDate: '2023-12-27',
+    postedDate: '2025-07-29',
+    applicationDeadline: '2025-08-29',
     applicationUrl: 'https://appsconnect.com/apply/ai-research-engineer'
   },
   {
@@ -555,7 +566,8 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['On-site work', 'Learning opportunities', 'Competitive compensation'],
     tags: ['AI', 'Machine Learning', 'Technology', 'Innovation'],
     remote: false,
-    postedDate: '2023-12-26',
+    postedDate: '2025-07-30',
+    applicationDeadline: '2025-08-30',
     applicationUrl: 'https://valuebound.com/apply/ai-engineer'
   }
 ];
