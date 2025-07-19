@@ -1,67 +1,23 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Job } from "../types/jobs.types";
+import React, { useState, useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import JobApplication from "../components/JobApplication";
-
-// interface ApplicationData {
-//   personalInfo: {
-//     firstName: string;
-//     lastName: string;
-//     email: string;
-//     phone: string;
-//     location: string;
-//   };
-//   resume: File | null;
-//   coverLetter: string;
-//   portfolioUrl: string;
-//   linkedinUrl: string;
-//   githubUrl: string;
-//   expectedSalary: string;
-//   availabilityDate: string;
-//   workAuthorization: string;
-//   willingToRelocate: boolean;
-//   additionalInfo: string;
-// }
-
-// Mock job data - in real app, this would come from API
-const mockJobDetail: Job = {
-  id: "1",
-  title: "Senior AI Engineer / Data Scientist",
-  company: "CellStrat Inc.",
-  companyLogo: "https://via.placeholder.com/60x60/255C79/ffffff?text=CS",
-  location: "Bengaluru, Karnataka, India",
-  type: "Full-time",
-  experienceLevel: "Senior Level",
-  salary: {
-    min: 600000,
-    max: 2400000,
-    currency: "INR"
-  },
-  description: "CellStrat is a dynamic AI startup specializing in comprehensive AI consulting for US-based clients. Lead AI/ML engineering for global client projects and CellVerse product development. Architect and design scalable AI systems from conception to deployment.",
-  requirements: [
-    "Deep understanding of Large Language Models (LLMs) internals",
-    "Advanced experience with LLM APIs (OpenAI GPT, Claude, Gemini)",
-    "Proven experience building RAG architectures",
-    "Hands-on with vector databases and similarity search",
-    "Expert-level PyTorch and Transformers",
-    "Advanced FastAPI development",
-    "Extensive AWS experience",
-    "Docker for development and deployment",
-    "Expert Python skills"
-  ],
-  benefits: [
-    "Competitive compensation",
-    "ESOP options", 
-    "Cutting-edge AI projects"
-  ],
-  tags: ["AI", "Machine Learning", "LLM", "Data Science"],
-  remote: true,
-  postedDate: "2024-01-15",
-  applicationUrl: "https://cellstrat.com/careers/senior-ai-engineer"
-};
+import { completeJobDetails } from "../components/MockJobDetails";
 
 const JobDetail: React.FC = () => {
   const navigate = useNavigate();
+  const { jobId } = useParams<{ jobId: string }>();
+
+  // Find the job detail based on the jobId from the route
+  const mockJobDetail = useMemo(() => {
+    const job = completeJobDetails.find(job => job.id === jobId);
+    if (!job) {
+      // Redirect to jobs page if job not found
+      navigate("/jobs");
+      return completeJobDetails[0]; // Fallback to first job
+    }
+    return job;
+  }, [jobId, navigate]);
+
   const [isBookmarked, setIsBookmarked] = useState(mockJobDetail.isBookmarked);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
 
@@ -78,8 +34,6 @@ const JobDetail: React.FC = () => {
   };
 
   const handleApplicationSubmit = () => {
-    //console.log('Application submitted:', applicationData);
-    // Here you would typically send the application data to your API
     alert("Application submitted successfully!");
   };
 
@@ -206,7 +160,7 @@ const JobDetail: React.FC = () => {
                     Remote
                   </span>
                 )}
-                {mockJobDetail.tags.slice(0, 3).map((tag, index) => (
+                {mockJobDetail.tags.slice(0, 3).map((tag: string, index: number) => (
                   <span
                     key={index}
                     className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#6C757D] text-white rounded-full text-xs sm:text-sm font-medium"
@@ -299,7 +253,7 @@ const JobDetail: React.FC = () => {
               <div className="prose prose-gray max-w-none">
                 {mockJobDetail.description
                   .split("\n\n")
-                  .map((paragraph, index) => (
+                  .map((paragraph: string, index: number) => (
                     <p
                       key={index}
                       className="text-[#495057] leading-relaxed mb-4 text-sm sm:text-base"
@@ -316,7 +270,7 @@ const JobDetail: React.FC = () => {
                 Requirements
               </h2>
               <ul className="space-y-3">
-                {mockJobDetail.requirements.map((req, index) => (
+                {mockJobDetail.requirements.map((req: string, index: number) => (
                   <li key={index} className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-[#255C79] rounded-full mt-2 flex-shrink-0"></div>
                     <span className="text-[#495057] text-sm sm:text-base">
@@ -334,7 +288,7 @@ const JobDetail: React.FC = () => {
                   Benefits & Perks
                 </h2>
                 <div className="grid grid-cols-1 gap-3">
-                  {mockJobDetail.benefits.map((benefit, index) => (
+                  {mockJobDetail.benefits.map((benefit: string, index: number) => (
                     <div key={index} className="flex items-start gap-3">
                       <svg
                         className="w-4 h-4 sm:w-5 sm:h-5 text-[#28A745] mt-0.5 flex-shrink-0"
