@@ -452,7 +452,7 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
                       ref={(el) => {
                         popoverRefs.current[config.column] = el;
                       }}
-                      className="absolute left-0 top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
+                      className="absolute top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
                     >
                       {config.isDate ? (
                         config.column === "follow_up_date" ? (
