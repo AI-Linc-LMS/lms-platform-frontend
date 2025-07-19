@@ -167,39 +167,6 @@ const AssessmentInvitationModal: React.FC<AssessmentInvitationModalProps> = ({
               </p>
             )}
           </div>
-
-          <div className="space-y-3 text-sm text-[#6C757D] mb-6">
-            <div className="flex items-center gap-2">
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                className="h-5 w-5 text-[#255C79]" 
-                viewBox="0 0 20 20" 
-                fill="currentColor"
-              >
-                <path 
-                  fillRule="evenodd" 
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" 
-                  clipRule="evenodd" 
-                />
-              </svg>
-              <span>30-minute online assessment</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                className="h-5 w-5 text-[#255C79]" 
-                viewBox="0 0 20 20" 
-                fill="currentColor"
-              >
-                <path 
-                  fillRule="evenodd" 
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" 
-                  clipRule="evenodd" 
-                />
-              </svg>
-              <span>Evaluate your skills for the role</span>
-            </div>
-          </div>
         </div>
 
         {/* Action Buttons */}
@@ -232,4 +199,4 @@ const AssessmentInvitationModal: React.FC<AssessmentInvitationModalProps> = ({
   );
 };
 
-export default AssessmentInvitationModal; 
+export default AssessmentInvitationModal;
