@@ -202,9 +202,9 @@ const Jobs: React.FC = () => {
             </div>
             
             {/* Debug info - remove in production */}
-            <div className="text-xs text-[#6C757D] bg-yellow-100 px-2 py-1 rounded">
+            {/* <div className="text-xs text-[#6C757D] bg-yellow-100 px-2 py-1 rounded">
               Debug: Total: {jobs.length}, Filtered: {filteredJobs.length}, Visible: {Math.min(visibleJobsCount, filteredJobs.length)}
-            </div>
+            </div> */}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
@@ -222,7 +222,7 @@ const Jobs: React.FC = () => {
                 />
                 
                 {/* Debug filter values - remove in production */}
-                <div className="mt-4 p-3 bg-gray-100 rounded-lg text-xs">
+                {/* <div className="mt-4 p-3 bg-gray-100 rounded-lg text-xs">
                   <h4 className="font-bold mb-2">Current Filters:</h4>
                   <div>Search: "{searchQuery}"</div>
                   <div>Location: "{locationFilter}"</div>
@@ -230,7 +230,7 @@ const Jobs: React.FC = () => {
                   <div>Experience: "{experienceFilter}"</div>
                   <div>Remote: {remoteFilter ? "Yes" : "No"}</div>
                   <div>Salary: ₹{salaryFilter.min.toLocaleString()} - ₹{salaryFilter.max.toLocaleString()}</div>
-                </div>
+                </div> */}
               </div>
             </div>
 
