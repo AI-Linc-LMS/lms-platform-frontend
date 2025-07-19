@@ -67,9 +67,9 @@ export const mockJobs: Job[] = [
   },
   {
     id: '3',
-    title: 'AI Developer',
-    company: 'TechInnovate',
-    companyLogo: 'https://via.placeholder.com/60x60/28A745/ffffff?text=TI',
+    title: 'Software Engineering Manager, Machine Learning',
+    company: 'Meta',
+    companyLogo: 'https://media.licdn.com/dms/image/v2/C4E0BAQFdNatYGiBelg/company-logo_200_200/company-logo_200_200/0/1636138754252/facebook_logo?e=1755734400&v=beta&t=NJXt8_fRpCeZu5CqhR2fvqz7r9_jEP_j3JtFfwpWqDU',
     location: 'Bengaluru, Karnataka, India',
     type: 'Full-time',
     experienceLevel: 'Mid Level',
@@ -93,11 +93,11 @@ export const mockJobs: Job[] = [
   },
   {
     id: '4',
-    title: 'AI Lead',
-    company: 'TechInnovate',
-    companyLogo: 'https://via.placeholder.com/60x60/6C757D/ffffff?text=TI',
+    title: 'Software Engineer, AI Powered Data, Core ',
+    company: 'Google',
+    companyLogo: 'https://media.licdn.com/dms/image/v2/C4D0BAQHiNSL4Or29cg/company-logo_200_200/company-logo_200_200/0/1631311446380?e=1755734400&v=beta&t=XWd6n1HINc5gnyGh8Ero7dbvgw_ia1OgVYVeGGW-nqs',
     location: 'Bengaluru, Karnataka, India',
-    type: 'Full-time',
+    type: 'Part-time',
     experienceLevel: 'Senior Level',
     salary: {
       min: 150000,

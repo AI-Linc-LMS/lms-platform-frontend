@@ -99,8 +99,8 @@ As part of our dynamic team, you'll collaborate closely with backend engineers, 
   },
   {
     id: '3',
-    title: 'AI Developer',
-    company: 'TechInnovate',
+    title: 'Software Engineering Manager, Machine Learning',
+    company: 'Meta',
     companyLogo: 'https://via.placeholder.com/60x60/28A745/ffffff?text=TI',
     location: 'Bengaluru, Karnataka, India',
     type: 'Full-time',
@@ -110,7 +110,7 @@ As part of our dynamic team, you'll collaborate closely with backend engineers, 
       max: 4000000,
       currency: 'INR'
     },
-    description: `TechInnovate is at the forefront of AI innovation, developing next-generation solutions using foundation models for Image, Video, and Vision-Language Models (VLLMs). We are seeking a talented AI Developer to join our research and development team.
+    description: `Meta is at the forefront of AI innovation, developing next-generation solutions using foundation models for Image, Video, and Vision-Language Models (VLLMs). We are seeking a talented AI Developer to join our research and development team.
 
 In this role, you will work on cutting-edge AI projects involving computer vision, video analysis, and multimodal AI systems. You'll collaborate with our research team to develop and deploy state-of-the-art AI models that push the boundaries of what's possible.
 
@@ -147,8 +147,8 @@ The position offers exciting opportunities to work with the latest AI technologi
   },
   {
     id: '4',
-    title: 'AI Lead',
-    company: 'TechInnovate',
+    title: 'Software Engineer, AI Powered Data, Core',
+    company: 'Google',
     companyLogo: 'https://via.placeholder.com/60x60/6C757D/ffffff?text=TI',
     location: 'Bengaluru, Karnataka, India',
     type: 'Full-time',
@@ -158,7 +158,7 @@ The position offers exciting opportunities to work with the latest AI technologi
       max: 8000000,
       currency: 'INR'
     },
-    description: `TechInnovate is seeking an experienced AI Lead to spearhead our artificial intelligence initiatives and lead a team of talented AI engineers and researchers. This is a strategic leadership role that combines technical expertise with team management responsibilities.
+    description: `Google is seeking an experienced AI Lead to spearhead our artificial intelligence initiatives and lead a team of talented AI engineers and researchers. This is a strategic leadership role that combines technical expertise with team management responsibilities.
 
 As AI Lead, you will be responsible for developing comprehensive AI solutions using foundation models, driving technological innovation, and establishing best practices for our AI development processes. You'll work closely with executive leadership to shape our AI strategy and roadmap.
 
