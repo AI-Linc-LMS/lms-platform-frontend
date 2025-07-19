@@ -27,7 +27,10 @@ interface WorkshopTableRowProps {
   entry: WorkshopRegistrationData;
   visibleColumns?: string[];
   permanentColumns?: string[];
-  refetch: () => void; // Add this line
+  refetch: () => void;
+  isSelected?: boolean;
+  onSelectionChange?: (entryId: number, selected: boolean) => void;
+  showSelection?: boolean;
 }
 
 export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
@@ -35,6 +38,9 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   visibleColumns = [],
   permanentColumns = [],
   refetch,
+  isSelected = false,
+  onSelectionChange,
+  showSelection = false,
 }) => {
   const [copiedCode, setCopiedCode] = React.useState<string | null>(null);
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -44,7 +50,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
       editRegistration(clientId, entry.id.toString(), data),
     onSuccess: () => {
       setModalOpen(false);
-       // Refetch data after successful update
+      // Refetch data after successful update
     },
     onError: () => {
       setModalOpen(false);
@@ -310,7 +316,18 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
 
   return (
     <>
-      <tr className="border-t">
+      <tr className={`border-t ${isSelected ? 'bg-blue-50' : ''}`}>
+        {/* Selection checkbox */}
+        {showSelection && (
+          <td className="p-3 w-12">
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={(e) => onSelectionChange?.(entry.id, e.target.checked)}
+              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+            />
+          </td>
+        )}
         {columnOrder.map((columnKey) => (
           <TableCellRenderer
             key={columnKey}
