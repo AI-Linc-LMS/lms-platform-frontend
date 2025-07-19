@@ -389,8 +389,8 @@ const PaymentCardSection: React.FC<{
   };
 
   const confirmNanodegreeCoursePayment = () => {
-    // Subtract the seat booking amount (₹499) from the total course fee
-    const courseRemainingAmount = 4500 - 499;
+    // Only subtract the seat booking amount if the user has actually paid for seat booking
+    const courseRemainingAmount = isNanodegreeSeatBooked ? 4999 - 499 : 4999;
     
     setShowNanoDegreeCourseModal(false);
     initiateCoursePayment(clientId, courseRemainingAmount, {
@@ -422,8 +422,10 @@ const PaymentCardSection: React.FC<{
   };
 
   const confirmFlagshipCoursePayment = () => {
-    // Subtract the seat booking amount (₹999) from the total course fee
-    const courseRemainingAmount = (redeemData?.payable_amount - 999) || 9001;
+    // Only subtract the seat booking amount if the user has actually paid for seat booking
+    const courseRemainingAmount = isFlagshipSeatBooked 
+      ? (redeemData?.payable_amount - 999) || 9001
+      : redeemData?.payable_amount || 10000;
     
     setShowFlagshipCourseModal(false);
     initiateFlagshipCoursePayment(
@@ -458,8 +460,8 @@ const PaymentCardSection: React.FC<{
   const nanodegreeCoursePurchaseData = {
     percentage_scholarship: 0,
     total_amount: 4999,
-    payable_amount: 4500, // Full course fee
-    seat_booking_amount: 499, // Seat booking amount
+    payable_amount: isNanodegreeSeatBooked ? 4500 : 4999, // Only discount if seat is booked
+    seat_booking_amount: isNanodegreeSeatBooked ? 499 : 0, // Only show if seat is booked
   };
 
   const flagshipPurchaseData = {
@@ -471,8 +473,10 @@ const PaymentCardSection: React.FC<{
   const flagshipCoursePurchaseData = {
     percentage_scholarship: redeemData?.percentage_scholarship || 90,
     total_amount: redeemData?.total_amount || 120000,
-    payable_amount: redeemData?.payable_amount - 999 || 9001, // Remaining course fee
-    seat_booking_amount: 999, // Seat booking amount
+    payable_amount: isFlagshipSeatBooked 
+      ? (redeemData?.payable_amount - 999) || 9001 
+      : redeemData?.payable_amount || 10000, // Only discount if seat is booked
+    seat_booking_amount: isFlagshipSeatBooked ? 999 : 0, // Only show if seat is booked
   };
 
   // Helper function to get button text and style for Nanodegree
@@ -705,7 +709,9 @@ const PaymentCardSection: React.FC<{
                 </div>
                 <div className="flex items-end gap-2 mb-1">
                   <span className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#14212B]">
-                    ₹{redeemData?.payable_amount ?? 10000}
+                    ₹{isFlagshipSeatBooked 
+                      ? (redeemData?.payable_amount - 999) || 9001 
+                      : redeemData?.payable_amount ?? 10000}
                   </span>
                   <span className="text-sm sm:text-base text-gray-400 line-through">
                     ₹{redeemData?.total_amount ?? 120000}
@@ -782,7 +788,7 @@ const PaymentCardSection: React.FC<{
                     className="w-full bg-[#14212B] text-white font-semibold py-2 sm:py-3 rounded-lg shadow hover:bg-[#223344] transition-colors duration-200 text-sm sm:text-base"
                   >
                     {isFlagshipSeatBooked 
-                      ? `Pay Remaining Course Fee (₹${redeemData?.payable_amount - 999 || 9001})` 
+                      ? `Pay Remaining Course Fee (₹${(redeemData?.payable_amount - 999) || 9001})` 
                       : `Pay Full Course Fee (₹${redeemData?.payable_amount ?? 10000})`}
                   </button>
                   <p className="text-xs text-yellow-600 mt-1">
