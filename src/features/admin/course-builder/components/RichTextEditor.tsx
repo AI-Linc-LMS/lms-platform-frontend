@@ -13,8 +13,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value,
   onChange,
   placeholder = "Enter description...",
-  disabled = false,
-  className = ""
+  disabled = false
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const fontSizeDropdownRef = useRef<HTMLDivElement>(null);
@@ -186,7 +185,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   };
 
   return (
-    <div className={`space-y-2 ${className}`}>
+    <div className="space-y-2">
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 p-2 border border-gray-300 rounded-t bg-gray-50">
