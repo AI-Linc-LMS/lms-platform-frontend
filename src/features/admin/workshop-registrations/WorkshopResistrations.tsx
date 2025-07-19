@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useRef, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { getWorkshopRegistrations } from "../../../services/admin/workshopRegistrationApis";
 import { WorkshopRegistrationData, FilterState } from "./types";
 import {
@@ -17,14 +18,25 @@ import {
   Pagination,
   ActiveFiltersDisplay,
 } from "./components";
+import EmailConfirmationModal from "./components/modals/EmailConfirmationModal";
 
 const WorkshopRegistration = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 15;
   const [filters, setFilters] = useState<FilterState>(getInitialFilterState());
   const [openFilter, setOpenFilter] = useState<keyof FilterState | null>(null);
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [showSelection, setShowSelection] = useState(false);
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [selectedEmailsForConfirmation, setSelectedEmailsForConfirmation] =
+    useState<Array<{ email: string; name: string }>>([]);
+  const [freezeColumns, setFreezeColumns] = useState<string[]>([
+    "name",
+    "email",
+  ]);
 
   // Column visibility state
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
@@ -38,6 +50,54 @@ const WorkshopRegistration = () => {
     "is_course_amount_paid",
     "registered_at",
   ];
+
+  // Freeze columns configuration
+  const freezeColumnOptions = [
+    { key: "name", label: "Name", required: true },
+    { key: "email", label: "Email", required: true },
+    { key: "phone_number", label: "Phone", required: false },
+  ];
+
+  // Handle freeze column selection
+  const handleFreezeColumnChange = (columnKey: string, selected: boolean) => {
+    setFreezeColumns((prev) => {
+      let newFreezeColumns = [...prev];
+
+      if (selected) {
+        // Add the column
+        if (!newFreezeColumns.includes(columnKey)) {
+          newFreezeColumns.push(columnKey);
+        }
+
+        // If phone is selected, ensure name and email are also selected
+        if (columnKey === "phone_number") {
+          if (!newFreezeColumns.includes("name")) {
+            newFreezeColumns.push("name");
+          }
+          if (!newFreezeColumns.includes("email")) {
+            newFreezeColumns.push("email");
+          }
+        }
+        if (columnKey === "email") {
+          if (!newFreezeColumns.includes("name")) {
+            newFreezeColumns.push("name");
+          }
+        }
+      } else {
+        // Remove the column
+        newFreezeColumns = newFreezeColumns.filter((col) => col !== columnKey);
+
+        // If removing name or email, also remove phone (since phone requires both)
+        if (columnKey === "name" || columnKey === "email") {
+          newFreezeColumns = newFreezeColumns.filter(
+            (col) => col !== "phone_number"
+          );
+        }
+      }
+
+      return newFreezeColumns;
+    });
+  };
 
   // Column configuration for optional columns
   const columnConfigs = [
@@ -188,6 +248,64 @@ const WorkshopRegistration = () => {
     exportToExcel(filteredData, allVisibleColumns);
   };
 
+  const handleRemoveEmailFromConfirmation = (emailToRemove: string) => {
+    setSelectedEmailsForConfirmation((prev) =>
+      prev.filter((item) => item.email !== emailToRemove)
+    );
+    // Also remove from the main selectedRows state
+    const entryToRemove = filteredData.find(
+      (entry) => entry.email === emailToRemove
+    );
+    if (entryToRemove) {
+      setSelectedRows((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(entryToRemove.id);
+        return newSet;
+      });
+    }
+  };
+
+  const handleSendEmail = () => {
+    if (selectedRows.size === 0) return;
+
+    const selectedRecipients = workshopData
+      .filter((entry) => selectedRows.has(entry.id))
+      .map((entry) => ({ email: entry.email, name: entry.name }))
+      .filter((recipient) => recipient.email && recipient.email.includes("@"));
+
+    if (selectedRecipients.length === 0) return;
+
+    setSelectedEmailsForConfirmation(selectedRecipients);
+    setShowEmailConfirmation(true);
+  };
+
+  const handleRowSelection = (entryId: number, selected: boolean) => {
+    setSelectedRows((prev) => {
+      const newSet = new Set(prev);
+      if (selected) {
+        newSet.add(entryId);
+      } else {
+        newSet.delete(entryId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = (selected: boolean) => {
+    if (selected) {
+      setSelectedRows(new Set(filteredData.map((entry) => entry.id)));
+    } else {
+      setSelectedRows(new Set());
+    }
+  };
+
+  const toggleSelectionMode = () => {
+    setShowSelection(!showSelection);
+    if (showSelection) {
+      setSelectedRows(new Set());
+    }
+  };
+
   const updateFilter = (
     column: keyof FilterState,
     value: string | { start: string; end: string }
@@ -223,7 +341,7 @@ const WorkshopRegistration = () => {
     return <div className="p-6">Error loading workshop registrations</div>;
 
   return (
-    <div className="p-4 md:p-6 bg-gray-50 min-h-screen flex flex-col">
+    <div className="p-4 md:p-6 bg-gray-50 flex flex-col">
       <h1 className="text-xl md:text-2xl font-bold mb-6">
         Workshop Registrations
       </h1>
@@ -238,6 +356,13 @@ const WorkshopRegistration = () => {
         columnConfigs={columnConfigs}
         visibleColumns={visibleColumns}
         onColumnVisibilityChange={setVisibleColumns}
+        onSendEmail={handleSendEmail}
+        showSelection={showSelection}
+        onToggleSelection={toggleSelectionMode}
+        selectedCount={selectedRows.size}
+        freezeColumns={freezeColumns}
+        freezeColumnOptions={freezeColumnOptions}
+        onFreezeColumnChange={handleFreezeColumnChange}
       />
 
       <ActiveFiltersDisplay
@@ -257,11 +382,16 @@ const WorkshopRegistration = () => {
             Total Students Registered: <strong>{workshopData.length}</strong>
           </>
         )}
+        {showSelection && selectedRows.size > 0 && (
+          <span className="ml-4 text-blue-600">
+            • <strong>{selectedRows.size}</strong> selected
+          </span>
+        )}
       </div>
       <div className="flex flex-col bg-white shadow rounded flex-1 min-h-0">
         {/* Scrollable table container */}
         <div className="flex-1 max-h-[100vh] overflow-auto min-h-0">
-          <table className="w-full text-sm text-left">
+          <table className="w-full text-sm text-left border-collapse">
             <WorkshopTableHeader
               filters={filters}
               openFilter={openFilter}
@@ -274,6 +404,13 @@ const WorkshopRegistration = () => {
               data={workshopData}
               visibleColumns={visibleColumns}
               permanentColumns={permanentColumns}
+              showSelection={showSelection}
+              isAllSelected={
+                filteredData.length > 0 &&
+                filteredData.every((entry) => selectedRows.has(entry.id))
+              }
+              onSelectAll={handleSelectAll}
+              freezeColumns={freezeColumns}
             />
             <tbody>
               {paginatedData.length > 0 ? (
@@ -284,6 +421,10 @@ const WorkshopRegistration = () => {
                     visibleColumns={visibleColumns}
                     permanentColumns={permanentColumns}
                     refetch={refetch}
+                    isSelected={selectedRows.has(entry.id)}
+                    onSelectionChange={handleRowSelection}
+                    showSelection={showSelection}
+                    freezeColumns={freezeColumns}
                   />
                 ))
               ) : (
@@ -304,6 +445,21 @@ const WorkshopRegistration = () => {
           />
         </div>
       </div>
+
+      <EmailConfirmationModal
+        isOpen={showEmailConfirmation}
+        onClose={() => setShowEmailConfirmation(false)}
+        onConfirm={() => {
+          setShowEmailConfirmation(false);
+          // Navigate to email self-serve with pre-filled emails
+          navigate("/admin/email-send", {
+            state: { preFilledRecipients: selectedEmailsForConfirmation },
+          });
+        }}
+        selectedRecipients={selectedEmailsForConfirmation}
+        totalSelected={selectedEmailsForConfirmation.length}
+        onRemoveEmail={handleRemoveEmailFromConfirmation}
+      />
     </div>
   );
 };

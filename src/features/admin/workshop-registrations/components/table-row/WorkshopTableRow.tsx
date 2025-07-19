@@ -27,7 +27,11 @@ interface WorkshopTableRowProps {
   entry: WorkshopRegistrationData;
   visibleColumns?: string[];
   permanentColumns?: string[];
-  refetch: () => void; // Add this line
+  refetch: () => void;
+  isSelected?: boolean;
+  onSelectionChange?: (entryId: number, selected: boolean) => void;
+  showSelection?: boolean;
+  freezeColumns?: string[];
 }
 
 export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
@@ -35,6 +39,10 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   visibleColumns = [],
   permanentColumns = [],
   refetch,
+  isSelected = false,
+  onSelectionChange,
+  showSelection = false,
+  freezeColumns = [],
 }) => {
   const [copiedCode, setCopiedCode] = React.useState<string | null>(null);
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -44,7 +52,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
       editRegistration(clientId, entry.id.toString(), data),
     onSuccess: () => {
       setModalOpen(false);
-       // Refetch data after successful update
+      // Refetch data after successful update
     },
     onError: () => {
       setModalOpen(false);
@@ -291,6 +299,38 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     "submitted_at",
   ];
 
+  // Calculate sticky positioning for frozen columns
+  const getStickyPosition = (columnKey: string) => {
+    if (!freezeColumns.includes(columnKey)) return {};
+
+    const frozenIndex = freezeColumns.indexOf(columnKey);
+    let leftPosition = 0;
+
+    // Add selection column width if present
+    if (showSelection) {
+      leftPosition += 40; // 12 * 4 = 48px for w-12
+    }
+
+    // Calculate left position based on frozen column order
+    for (let i = 0; i < frozenIndex; i++) {
+      const prevColumn = freezeColumns[i];
+      // Fixed column widths to match header and eliminate gaps
+      if (prevColumn === "name") leftPosition += 118;
+      else if (prevColumn === "email") leftPosition += 225;
+      else if (prevColumn === "phone_number") leftPosition += 140;
+    }
+
+    return {
+      position: "sticky" as const,
+      left: `${leftPosition}px`,
+      zIndex: 15,
+      backgroundColor: isSelected ? "rgb(239 246 255)" : "rgb(255 255 255)", // bg-blue-50 if selected, bg-white if not
+      borderRight: "1px solid rgb(229 231 235)",
+      borderBottom: "1px solid #000",
+      borderTop: "1px solid #000",
+    };
+  };
+
   const renderStatusDropdown = (
     value: string,
     options: { value: string; color: string }[],
@@ -310,7 +350,28 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
 
   return (
     <>
-      <tr className="border-t">
+      <tr className={`border-t ${isSelected ? "bg-blue-50" : ""}`}>
+        {/* Selection checkbox */}
+        {showSelection && (
+          <td
+            className="p-3 w-12 border-r border-gray-300 border-b border-t"
+            style={{
+              position: "sticky",
+              left: 0,
+              zIndex: 15,
+              backgroundColor: isSelected
+                ? "rgb(239 246 255)"
+                : "rgb(255 255 255)",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={(e) => onSelectionChange?.(entry.id, e.target.checked)}
+              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+            />
+          </td>
+        )}
         {columnOrder.map((columnKey) => (
           <TableCellRenderer
             key={columnKey}
@@ -336,6 +397,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
             SECOND_CALL_STATUS_OPTIONS={SECOND_CALL_STATUS_OPTIONS}
             visibleColumns={visibleColumns}
             permanentColumns={permanentColumns}
+            stickyStyle={getStickyPosition(columnKey)}
           />
         ))}
         <TableRowActions
