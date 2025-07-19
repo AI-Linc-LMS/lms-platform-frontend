@@ -603,5 +603,224 @@ This is a rare opportunity to be part of something transformational from day one
     applicationUrl: 'https://valuebound.com/apply/ai-engineer',
     about: "Valuebound is a technology company dedicated to developing innovative AI solutions. We are committed to driving technological innovation through expert AI development, collaborative approaches, and a passion for creating transformative technologies that make a real-world impact.",
     website: "https://valuebound.com"
+  },
+  {
+    id: '18',
+    title: 'Senior AI/ML Engineer',
+    company: 'Microsoft',
+    companyLogo: "https://media.licdn.com/dms/image/v2/C560BAQE88xCsONDULQ/company-logo_200_200/company-logo_200_200/0/1630652622688/microsoft_logo?e=1755734400&v=beta&t=VJ_mRAaksKE7NmkrVAhDvCdkdvlkdvlkdvlkdvlkdvl",
+    location: 'Hyderabad, Telangana, India',
+    type: 'Full-time',
+    experienceLevel: 'Senior Level',
+    salary: {
+      min: 2000000,
+      max: 5000000,
+      currency: 'INR'
+    },
+    description: `Microsoft is at the forefront of AI innovation, building intelligent systems that empower every person and organization on the planet to achieve more. We are seeking a Senior AI/ML Engineer to join our world-class team in Hyderabad.
+
+In this role, you will work on cutting-edge AI technologies including Azure AI services, Microsoft Copilot, and foundation models that power millions of users worldwide. You'll collaborate with researchers, product managers, and engineers to build scalable AI solutions that solve real-world problems.
+
+As a Senior AI/ML Engineer, you'll have the opportunity to shape the future of AI at Microsoft, working on projects that span natural language processing, computer vision, and multimodal AI systems. You'll be responsible for designing, implementing, and deploying AI models at global scale.`,
+    requirements: [
+      'Deep expertise in machine learning algorithms and AI system design',
+      'Extensive experience with Azure AI services and cloud computing platforms',
+      'Strong proficiency in deep learning frameworks (PyTorch, TensorFlow, ONNX)',
+      'Experience with large language models, transformer architectures, and foundation models',
+      'Expert-level programming skills in Python, C#, and distributed systems',
+      'Comprehensive knowledge of MLOps, CI/CD pipelines, and model deployment',
+      'Experience with containerization technologies (Docker, Kubernetes)',
+      'Strong understanding of AI ethics, responsible AI, and fairness in machine learning',
+      'Experience with high-performance computing and GPU optimization',
+      'Knowledge of data engineering and large-scale data processing',
+      'Excellent problem-solving and analytical thinking skills',
+      '5+ years of experience in AI/ML engineering with proven track record',
+      'Masters or PhD in Computer Science, AI, or related field preferred'
+    ],
+    benefits: [
+      'World-class compensation package with annual bonuses',
+      'Microsoft stock options and equity participation',
+      'Comprehensive health, dental, and vision insurance',
+      'Unlimited learning budget for professional development',
+      'Access to cutting-edge AI research and Microsoft Research collaboration',
+      'Flexible work arrangements and modern office facilities',
+      'Global impact projects reaching billions of users',
+      '30+ days of vacation and personal time off',
+      'Parental leave and family support benefits',
+      'Employee resource groups and inclusive culture initiatives'
+    ],
+    tags: ['AI', 'Azure', 'Machine Learning', 'Cloud', 'Microsoft', 'Deep Learning', 'MLOps'],
+    remote: false,
+    postedDate: '2025-07-18',
+    applicationDeadline: '2025-09-01',
+    applicationUrl: 'https://careers.microsoft.com/ai-engineer',
+    isBookmarked: false,
+    about: "Microsoft is a global technology leader committed to empowering every person and organization on the planet to achieve more. We are at the forefront of AI innovation, developing cutting-edge technologies that transform how people work, learn, and connect. Our AI initiatives span across Azure, Office 365, Windows, and emerging technologies.",
+    website: "https://microsoft.com"
+  },
+  {
+    id: '19',
+    title: 'Applied Scientist, AI',
+    company: 'Amazon',
+    companyLogo: "https://media.licdn.com/dms/image/v2/C560BAQHTvZwCx4p2Qg/company-logo_200_200/company-logo_200_200/0/1630640869849/amazon_logo?e=1755734400&v=beta&t=VJ_mRAaksKE7NmkrVAhDvCdkdvlkdvlkdvlkdvlkdvl",
+    location: 'Bengaluru, Karnataka, India',
+    type: 'Full-time',
+    experienceLevel: 'Senior Level',
+    salary: {
+      min: 1800000,
+      max: 4500000,
+      currency: 'INR'
+    },
+    description: `Amazon is seeking exceptional Applied Scientists to join our AI team and drive innovation across Alexa, AWS AI services, and next-generation AI products. This is an opportunity to work on cutting-edge research that directly impacts millions of customers worldwide.
+
+As an Applied Scientist, you will conduct world-class research in areas including natural language processing, computer vision, recommendation systems, and machine learning. You'll collaborate with cross-functional teams to translate research breakthroughs into production systems that operate at Amazon scale.
+
+You'll have access to vast datasets, state-of-the-art computing resources, and the opportunity to publish your work in top-tier conferences. This role combines the intellectual freedom of academic research with the practical impact of industry applications.`,
+    requirements: [
+      'PhD or Masters degree in Computer Science, Machine Learning, AI, or related field',
+      'Strong research background with publications in top-tier conferences (NeurIPS, ICML, ICLR, ACL, CVPR)',
+      'Deep expertise in machine learning, deep learning, and statistical modeling',
+      'Specialization in one or more areas: NLP, computer vision, recommendation systems, or speech recognition',
+      'Extensive experience with AWS AI/ML services and cloud computing',
+      'Proficiency in Python, Java, C++, and machine learning frameworks',
+      'Experience with large-scale distributed systems and big data technologies',
+      'Strong mathematical foundation in statistics, linear algebra, and optimization',
+      'Proven ability to translate research into production systems',
+      'Experience with A/B testing and experimental design',
+      'Excellent written and verbal communication skills',
+      '4+ years of applied research experience in industry or academia',
+      'Track record of innovation and problem-solving in AI/ML'
+    ],
+    benefits: [
+      'Highly competitive salary with performance-based bonuses',
+      'Amazon Restricted Stock Units (RSUs) with significant upside potential',
+      'Comprehensive health, dental, and vision coverage',
+      'Research publication opportunities and conference attendance',
+      'Access to Amazon\'s vast computing resources and datasets',
+      'Collaboration with world-renowned researchers and scientists',
+      'Career advancement opportunities across Amazon\'s diverse business units',
+      'Relocation assistance and visa sponsorship available',
+      'Employee discount on Amazon products and services',
+      'Flexible work arrangements and sabbatical opportunities'
+    ],
+    tags: ['AI Research', 'AWS', 'NLP', 'Computer Vision', 'Amazon', 'Machine Learning', 'Deep Learning'],
+    remote: false,
+    postedDate: '2025-07-16',
+    applicationDeadline: '2025-09-02',
+    applicationUrl: 'https://amazon.jobs/en/jobs/applied-scientist-ai',
+    isBookmarked: false,
+    about: "Amazon is Earth's Most Customer-Centric Company, leveraging cutting-edge AI and machine learning to enhance customer experiences across all our services. Our AI research spans Alexa, AWS, Prime Video, advertising, logistics, and more, making us one of the world's largest AI research organizations.",
+    website: "https://amazon.com"
+  },
+  {
+    id: '20',
+    title: 'Principal AI Architect',
+    company: 'Microsoft',
+    companyLogo: "https://media.licdn.com/dms/image/v2/C560BAQE88xCsONDULQ/company-logo_200_200/company-logo_200_200/0/1630652622688/microsoft_logo?e=1755734400&v=beta&t=VJ_mRAaksKE7NmkrVAhDvCdkdvlkdvlkdvlkdvlkdvl",
+    location: 'Bengaluru, Karnataka, India',
+    type: 'Full-time',
+    experienceLevel: 'Senior Level',
+    salary: {
+      min: 3000000,
+      max: 7000000,
+      currency: 'INR'
+    },
+    description: `Microsoft is seeking a visionary Principal AI Architect to lead AI architecture and strategy for our flagship products. This is a senior leadership role that combines deep technical expertise with strategic thinking to shape the future of AI at Microsoft.
+
+As Principal AI Architect, you will design and oversee the implementation of scalable AI systems that serve billions of users across Office 365, Azure, Windows, and emerging product ecosystems. You'll work directly with executive leadership to define AI strategy and drive innovation across the organization.
+
+This role offers the opportunity to make a transformational impact on Microsoft's AI capabilities while building and mentoring world-class engineering teams. You'll be at the forefront of AI innovation, working on projects that define the next generation of intelligent computing.`,
+    requirements: [
+      'Extensive experience in AI system architecture, design, and large-scale implementation',
+      'Deep technical knowledge of Azure AI platform, services, and cloud architecture',
+      'Proven experience with enterprise-grade distributed AI systems and microservices',
+      'Strong leadership skills with experience building and mentoring technical teams',
+      'Expertise in AI ethics, responsible AI practices, and governance frameworks',
+      'Advanced knowledge of Kubernetes, containerization, and cloud-native architectures',
+      'Experience with AI model lifecycle management and MLOps at enterprise scale',
+      'Strong understanding of security, privacy, and compliance in AI systems',
+      'Excellent stakeholder management and executive communication skills',
+      'Experience with AI product strategy and roadmap development',
+      'Knowledge of emerging AI technologies and industry trends',
+      '8+ years of AI/ML experience with 3+ years in senior architecture or leadership roles',
+      'Advanced degree in Computer Science, AI, or related field',
+      'Track record of successful AI product launches and business impact'
+    ],
+    benefits: [
+      'Executive-level compensation package with significant equity upside',
+      'Microsoft stock options and long-term incentive plans',
+      'Leadership development programs and executive coaching',
+      'Strategic role with direct impact on company direction and AI strategy',
+      'Budget for team building, innovation projects, and professional development',
+      'Access to Microsoft Research and collaboration with world-class scientists',
+      'Global leadership opportunities and cross-functional exposure',
+      'Comprehensive executive benefits package including health and wellness',
+      'Flexible work arrangements with executive-level accommodations',
+      'Conference speaking opportunities and thought leadership platform',
+      'Sabbatical programs and continuous learning initiatives'
+    ],
+    tags: ['AI Architecture', 'Azure', 'Leadership', 'Enterprise AI', 'Microsoft', 'Strategy', 'Cloud'],
+    remote: false,
+    postedDate: '2025-07-13',
+    applicationDeadline: '2025-09-03',
+    applicationUrl: 'https://careers.microsoft.com/principal-ai-architect',
+    isBookmarked: false,
+    about: "Microsoft is a global technology leader committed to empowering every person and organization on the planet to achieve more. We are at the forefront of AI innovation, developing cutting-edge technologies that transform how people work, learn, and connect. Our AI initiatives span across Azure, Office 365, Windows, and emerging technologies.",
+    website: "https://microsoft.com"
+  },
+  {
+    id: '21',
+    title: 'ML Engineer, Alexa AI',
+    company: 'Amazon',
+    companyLogo: "https://media.licdn.com/dms/image/v2/C560BAQHTvZwCx4p2Qg/company-logo_200_200/company-logo_200_200/0/1630640869849/amazon_logo?e=1755734400&v=beta&t=VJ_mRAaksKE7NmkrVAhDvCdkdvlkdvlkdvlkdvlkdvl",
+    location: 'Chennai, Tamil Nadu, India',
+    type: 'Full-time',
+    experienceLevel: 'Mid Level',
+    salary: {
+      min: 1200000,
+      max: 3000000,
+      currency: 'INR'
+    },
+    description: `Join Amazon's Alexa AI team to build the most advanced voice AI assistant in the world. As an ML Engineer on the Alexa team, you'll work on cutting-edge speech recognition, natural language understanding, and conversational AI technologies that power millions of Alexa-enabled devices globally.
+
+You'll be responsible for developing and deploying machine learning models that enable Alexa to understand, process, and respond to user requests with human-like intelligence. This role involves working with massive datasets, real-time ML systems, and state-of-the-art deep learning techniques.
+
+The Alexa AI team is pushing the boundaries of what's possible in voice technology, working on multilingual understanding, context awareness, and personalized experiences. You'll have the opportunity to directly impact how millions of customers interact with technology every day.`,
+    requirements: [
+      'Strong background in machine learning, deep learning, and natural language processing',
+      'Hands-on experience with speech recognition, speech synthesis, and voice technologies',
+      'Proficiency in Python, Java, and modern ML frameworks (TensorFlow, PyTorch)',
+      'Experience with AWS services including SageMaker, Lambda, and EC2',
+      'Knowledge of large-scale data processing and distributed computing systems',
+      'Understanding of real-time ML systems and low-latency model deployment',
+      'Experience with A/B testing, experimentation, and statistical analysis',
+      'Familiarity with conversational AI and dialogue systems',
+      'Knowledge of transformer architectures and attention mechanisms',
+      'Experience with MLOps, model monitoring, and continuous deployment',
+      'Strong problem-solving skills and ability to work in fast-paced environment',
+      '3+ years of ML engineering experience with production systems',
+      'Bachelor\'s or Master\'s degree in Computer Science, AI, or related field'
+    ],
+    benefits: [
+      'Competitive compensation package with annual performance bonuses',
+      'Amazon stock units with significant growth potential',
+      'Comprehensive health, dental, and vision insurance coverage',
+      'Voice AI innovation opportunities with global impact',
+      'Career growth and advancement within Amazon\'s diverse ecosystem',
+      'Access to cutting-edge AI research and development resources',
+      'Flexible work arrangements and modern development facilities',
+      'Employee discount on Amazon products and Alexa devices',
+      'Professional development budget and conference attendance',
+      'Collaborative work environment with world-class engineers',
+      'Opportunity to work on products used by millions daily'
+    ],
+    tags: ['Alexa', 'Voice AI', 'NLP', 'AWS', 'Amazon', 'Speech Recognition', 'ML Engineering'],
+    remote: false,
+    postedDate: '2025-07-15',
+    applicationDeadline: '2025-09-04',
+    applicationUrl: 'https://amazon.jobs/en/jobs/ml-engineer-alexa',
+    isBookmarked: false,
+    about: "Amazon's Alexa is the world's most popular voice assistant, powered by advanced AI and machine learning technologies. Our team is dedicated to making Alexa more intelligent, helpful, and accessible to customers worldwide, working on breakthrough innovations in voice technology and conversational AI.",
+    website: "https://amazon.com"
   }
 ];

@@ -458,5 +458,121 @@ export const mockJobs: Job[] = [
     remote: false,
     postedDate: "2025-07-26",
     applicationUrl: 'https://valuebound.com/apply/ai-engineer'
+  },
+  {
+    id: '18',
+    title: 'Senior AI/ML Engineer',
+    company: 'Microsoft',
+    companyLogo: 'https://media.licdn.com/dms/image/v2/C560BAQE88xCsONDULQ/company-logo_200_200/company-logo_200_200/0/1630652622688/microsoft_logo?e=1755734400&v=beta&t=VJ_mRAaksKE7NmkrVAhDvCdkdvlkdvlkdvlkdvlkdvl',
+    location: 'Hyderabad, Telangana, India',
+    type: 'Full-time',
+    experienceLevel: 'Senior Level',
+    salary: {
+      min: 2000000,
+      max: 5000000,
+      currency: 'INR'
+    },
+    description: 'Join Microsoft AI team to build next-generation intelligent systems. Work on cutting-edge AI technologies including Azure AI services, Copilot, and foundation models that power millions of users worldwide.',
+    requirements: [
+      'Deep expertise in machine learning and AI systems',
+      'Experience with Azure AI services and cloud platforms',
+      'Strong background in deep learning frameworks (PyTorch, TensorFlow)',
+      'Experience with large language models and transformer architectures',
+      'Proficiency in Python, C#, and distributed systems',
+      'Knowledge of MLOps and AI model deployment',
+      '5+ years of experience in AI/ML engineering'
+    ],
+    benefits: ['World-class compensation', 'Stock options', 'Global impact projects', 'Learning budget'],
+    tags: ['AI', 'Azure', 'Machine Learning', 'Cloud', 'Microsoft'],
+    remote: false,
+    postedDate: "2025-07-18",
+    applicationUrl: 'https://careers.microsoft.com/ai-engineer'
+  },
+  {
+    id: '19',
+    title: 'Applied Scientist, AI',
+    company: 'Amazon',
+    companyLogo: 'https://media.licdn.com/dms/image/v2/C560BAQHTvZwCx4p2Qg/company-logo_200_200/company-logo_200_200/0/1630640869849/amazon_logo?e=1755734400&v=beta&t=VJ_mRAaksKE7NmkrVAhDvCdkdvlkdvlkdvlkdvlkdvl',
+    location: 'Bengaluru, Karnataka, India',
+    type: 'Full-time',
+    experienceLevel: 'Senior Level',
+    salary: {
+      min: 1800000,
+      max: 4500000,
+      currency: 'INR'
+    },
+    description: 'Amazon is seeking Applied Scientists to work on Alexa, AWS AI services, and next-generation AI products. Drive innovation in natural language processing, computer vision, and recommendation systems.',
+    requirements: [
+      'PhD or Masters in Computer Science, AI, or related field',
+      'Strong research background with publications in top-tier conferences',
+      'Expertise in deep learning, NLP, or computer vision',
+      'Experience with AWS AI/ML services',
+      'Proficiency in Python, Java, and machine learning frameworks',
+      'Experience translating research into production systems',
+      '4+ years of applied research experience'
+    ],
+    benefits: ['Competitive salary', 'RSUs', 'Research publication opportunities', 'AWS credits'],
+    tags: ['AI Research', 'AWS', 'NLP', 'Computer Vision', 'Amazon'],
+    remote: false,
+    postedDate: "2025-07-16",
+    applicationUrl: 'https://amazon.jobs/en/jobs/applied-scientist-ai'
+  },
+  {
+    id: '20',
+    title: 'Principal AI Architect',
+    company: 'Microsoft',
+    companyLogo: 'https://media.licdn.com/dms/image/v2/C560BAQE88xCsONDULQ/company-logo_200_200/company-logo_200_200/0/1630652622688/microsoft_logo?e=1755734400&v=beta&t=VJ_mRAaksKE7NmkrVAhDvCdkdvlkdvlkdvlkdvlkdvl',
+    location: 'Bengaluru, Karnataka, India',
+    type: 'Full-time',
+    experienceLevel: 'Senior Level',
+    salary: {
+      min: 3000000,
+      max: 7000000,
+      currency: 'INR'
+    },
+    description: 'Lead AI architecture and strategy for Microsoft\'s flagship products. Design scalable AI systems that serve billions of users across Office 365, Azure, and Windows ecosystems.',
+    requirements: [
+      'Extensive experience in AI system architecture and design',
+      'Deep knowledge of Azure AI platform and services',
+      'Experience with large-scale distributed AI systems',
+      'Strong leadership and technical mentoring skills',
+      'Expertise in AI ethics and responsible AI practices',
+      'Experience with Kubernetes, microservices, and cloud architecture',
+      '8+ years of AI/ML experience with 3+ years in architecture roles'
+    ],
+    benefits: ['Executive compensation', 'Equity participation', 'Global leadership role', 'Innovation budget'],
+    tags: ['AI Architecture', 'Azure', 'Leadership', 'Enterprise AI', 'Microsoft'],
+    remote: false,
+    postedDate: "2025-07-13",
+    applicationUrl: 'https://careers.microsoft.com/principal-ai-architect'
+  },
+  {
+    id: '21',
+    title: 'ML Engineer, Alexa AI',
+    company: 'Amazon',
+    companyLogo: 'https://media.licdn.com/dms/image/v2/C560BAQHTvZwCx4p2Qg/company-logo_200_200/company-logo_200_200/0/1630640869849/amazon_logo?e=1755734400&v=beta&t=VJ_mRAaksKE7NmkrVAhDvCdkdvlkdvlkdvlkdvlkdvl',
+    location: 'Chennai, Tamil Nadu, India',
+    type: 'Full-time',
+    experienceLevel: 'Mid Level',
+    salary: {
+      min: 1200000,
+      max: 3000000,
+      currency: 'INR'
+    },
+    description: 'Join the Alexa AI team to build intelligent voice experiences. Work on speech recognition, natural language understanding, and conversational AI that powers millions of Alexa devices worldwide.',
+    requirements: [
+      'Strong background in machine learning and NLP',
+      'Experience with speech recognition and voice technologies',
+      'Proficiency in Python, Java, and ML frameworks',
+      'Knowledge of AWS services and cloud computing',
+      'Experience with large-scale data processing',
+      'Understanding of real-time ML systems',
+      '3+ years of ML engineering experience'
+    ],
+    benefits: ['Competitive package', 'Stock units', 'Voice AI innovation', 'Career growth'],
+    tags: ['Alexa', 'Voice AI', 'NLP', 'AWS', 'Amazon'],
+    remote: false,
+    postedDate: "2025-07-15",
+    applicationUrl: 'https://amazon.jobs/en/jobs/ml-engineer-alexa'
   }
 ]; 

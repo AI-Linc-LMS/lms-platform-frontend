@@ -13,8 +13,8 @@ const Jobs: React.FC = () => {
   const [locationFilter, setLocationFilter] = useState("");
   const [jobTypeFilter, setJobTypeFilter] = useState("");
   const [experienceFilter, setExperienceFilter] = useState("");
-  // Fixed: Increased max salary to accommodate all jobs in mock data
-  const [salaryFilter, setSalaryFilter] = useState({ min: 0, max: 10_00_000 });
+  // Fixed: Increased max salary to accommodate all jobs including Microsoft and Amazon
+  const [salaryFilter, setSalaryFilter] = useState({ min: 0, max: 1_00_00_000 });
   const [remoteFilter, setRemoteFilter] = useState(false);
   const [jobs] = useState<Job[]>(mockJobs);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -131,7 +131,7 @@ const Jobs: React.FC = () => {
     setJobTypeFilter('');
     setExperienceFilter('');
     setRemoteFilter(false);
-    setSalaryFilter({ min: 0, max: 10_00_000 }); // Reset to accommodate all jobs
+    setSalaryFilter({ min: 0, max: 1_00_00_000 }); // Reset to accommodate all jobs
   };
 
   return (
