@@ -1,6 +1,6 @@
 import { Job } from '../types/jobs.types';
 
-export const mockJobs: Job[] = [
+export const completeJobDetails: Job[] = [
   {
     id: "1",
     title: "Senior AI Engineer / Data Scientist",
@@ -14,27 +14,40 @@ export const mockJobs: Job[] = [
       max: 2400000,
       currency: "INR"
     },
-    description: "CellStrat is a dynamic AI startup specializing in comprehensive AI consulting for US-based clients. Lead AI/ML engineering for global client projects and CellVerse product development. Architect and design scalable AI systems from conception to deployment.",
+    description: `CellStrat is a dynamic AI startup specializing in comprehensive AI consulting for US-based clients. We are seeking a Senior AI Engineer to lead AI/ML engineering for global client projects and CellVerse product development.
+
+In this role, you will architect and design scalable AI systems from conception to deployment. You'll work with cutting-edge technologies including Large Language Models, RAG architectures, and vector databases to build production-ready AI solutions.
+
+As a key member of our engineering team, you'll collaborate with cross-functional teams to deliver innovative AI products that serve our international clientele. This position offers the opportunity to work on diverse projects ranging from NLP applications to computer vision systems.`,
     requirements: [
-      "Deep understanding of Large Language Models (LLMs) internals",
-      "Advanced experience with LLM APIs (OpenAI GPT, Claude, Gemini)",
-      "Proven experience building RAG architectures",
-      "Hands-on with vector databases and similarity search",
-      "Expert-level PyTorch and Transformers",
-      "Advanced FastAPI development",
-      "Extensive AWS experience",
-      "Docker for development and deployment",
-      "Expert Python skills"
+      "Deep understanding of Large Language Models (LLMs) internals and architecture",
+      "Advanced experience with LLM APIs (OpenAI GPT, Claude, Gemini) and fine-tuning",
+      "Proven experience building and optimizing RAG (Retrieval Augmented Generation) architectures",
+      "Hands-on experience with vector databases (Pinecone, Weaviate, Qdrant) and similarity search",
+      "Expert-level PyTorch and Transformers library proficiency",
+      "Advanced FastAPI development and API design patterns",
+      "Extensive AWS experience (SageMaker, Lambda, EC2, S3)",
+      "Docker containerization for development and deployment",
+      "Expert Python skills with strong software engineering practices",
+      "Experience with MLOps tools and CI/CD pipelines for ML models",
+      "Strong understanding of machine learning fundamentals and statistics",
+      "5+ years of experience in AI/ML engineering roles"
     ],
     benefits: [
-      "Competitive compensation",
-      "ESOP options", 
-      "Cutting-edge AI projects"
+      "Competitive compensation package with performance bonuses",
+      "Employee Stock Ownership Plan (ESOP) options with high growth potential", 
+      "Work on cutting-edge AI projects with global impact",
+      "Flexible work arrangements and remote-first culture",
+      "Professional development budget for conferences and courses",
+      "Health insurance and wellness programs",
+      "Collaborative and innovative work environment"
     ],
-    tags: ["AI", "Machine Learning", "LLM", "Data Science"],
+    tags: ["AI", "Machine Learning", "LLM", "Data Science", "Python", "AWS", "Docker"],
     remote: true,
     postedDate: "2024-01-15",
-    applicationUrl: "https://cellstrat.com/careers/senior-ai-engineer"
+    applicationDeadline: "2024-03-15",
+    applicationUrl: "https://cellstrat.com/careers/senior-ai-engineer",
+    isBookmarked: false
   },
   {
     id: '2',
@@ -49,21 +62,40 @@ export const mockJobs: Job[] = [
       max: 1500000,
       currency: 'INR'
     },
-    description: 'Lead frontend development for client projects and CellVerse product platform. Architect and design frontend repositories with optimal performance and scalability. Build pixel-perfect, responsive web applications using our modern tech stack.',
+    description: `CellStrat Inc. is seeking an Expert Frontend Developer to lead frontend development for client projects and our flagship CellVerse product platform. 
+
+You will architect and design frontend repositories with optimal performance and scalability in mind. The role involves building pixel-perfect, responsive web applications using our modern tech stack while ensuring excellent user experience across all devices.
+
+As part of our dynamic team, you'll collaborate closely with backend engineers, designers, and product managers to deliver high-quality solutions. You'll also be responsible for establishing best practices and mentoring junior developers.`,
     requirements: [
-      'Advanced proficiency in Next.js and React.js',
-      'Expert-level Tailwind CSS and ShadCn UI implementation',
-      'Strong experience with React-Query and Zustand',
-      'Deep understanding of SSR, CSR, and optimization strategies',
-      'Proficient with Git and GitHub workflows',
-      'Solid experience with RESTful APIs',
-      'Ability to create scalable component libraries'
+      'Advanced proficiency in Next.js 13+ with App Router and React.js 18+',
+      'Expert-level Tailwind CSS implementation and ShadCn UI component library',
+      'Strong experience with React-Query (TanStack Query) for data fetching and caching',
+      'Deep understanding of Zustand for state management',
+      'Expertise in Server-Side Rendering (SSR), Client-Side Rendering (CSR), and performance optimization',
+      'Proficient with Git workflows, GitHub Actions, and collaborative development',
+      'Solid experience integrating with RESTful APIs and GraphQL',
+      'Ability to create scalable, reusable component libraries',
+      'Experience with testing frameworks (Jest, React Testing Library)',
+      'Knowledge of web accessibility standards (WCAG)',
+      'Understanding of SEO best practices for web applications',
+      '4+ years of frontend development experience'
     ],
-    benefits: ['Competitive compensation', 'ESOP options', 'Cutting-edge frontend projects'],
-    tags: ['Frontend', 'React', 'Next.js', 'Web Development'],
+    benefits: [
+      'Competitive compensation with annual increments',
+      'Employee Stock Ownership Plan (ESOP) options',
+      'Work on cutting-edge frontend technologies and frameworks',
+      'Flexible working hours and remote work options',
+      'Learning and development budget for skill enhancement',
+      'Modern development tools and equipment provided',
+      'Health insurance and medical benefits'
+    ],
+    tags: ['Frontend', 'React', 'Next.js', 'Web Development', 'TypeScript', 'Tailwind CSS'],
     remote: true,
     postedDate: '2024-01-15',
-    applicationUrl: 'https://cellstrat.com/careers/expert-frontend-developer'
+    applicationDeadline: '2024-03-15',
+    applicationUrl: 'https://cellstrat.com/careers/expert-frontend-developer',
+    isBookmarked: false
   },
   {
     id: '3',
@@ -74,22 +106,44 @@ export const mockJobs: Job[] = [
     type: 'Full-time',
     experienceLevel: 'Mid Level',
     salary: {
-      min: 100000,
+      min: 1000000,
       max: 4000000,
       currency: 'INR'
     },
-    description: 'We are seeking a talented AI Developer with expertise in foundation models for Image, Video, and VLLMs. Apply your skills in developing cutting-edge AI solutions.',
+    description: `TechInnovate is at the forefront of AI innovation, developing next-generation solutions using foundation models for Image, Video, and Vision-Language Models (VLLMs). We are seeking a talented AI Developer to join our research and development team.
+
+In this role, you will work on cutting-edge AI projects involving computer vision, video analysis, and multimodal AI systems. You'll collaborate with our research team to develop and deploy state-of-the-art AI models that push the boundaries of what's possible.
+
+The position offers exciting opportunities to work with the latest AI technologies and contribute to products that will shape the future of artificial intelligence.`,
     requirements: [
-      'Good understanding of foundation models in Image, Video, and VLLMs',
-      'Application experience with foundation model fine-tuning',
-      'Proficiency in Python, OpenCV, TensorFlow, PyTorch',
-      'Cloud platform experience (preferably Azure)'
+      'Strong understanding of foundation models in Computer Vision, Video Processing, and Vision-Language Models',
+      'Hands-on experience with foundation model fine-tuning and adaptation techniques',
+      'Proficiency in Python with strong programming fundamentals',
+      'Experience with OpenCV for computer vision tasks and image processing',
+      'Solid knowledge of TensorFlow and PyTorch deep learning frameworks',
+      'Understanding of transformer architectures and attention mechanisms',
+      'Experience with cloud platforms, preferably Microsoft Azure',
+      'Knowledge of MLOps practices and model deployment strategies',
+      'Familiarity with data preprocessing and augmentation techniques',
+      'Experience with version control systems (Git) and collaborative development',
+      '3+ years of experience in AI/ML development',
+      'Strong problem-solving and analytical thinking skills'
     ],
-    benefits: ['Competitive salary', 'Learning opportunities', 'Innovative projects'],
-    tags: ['AI', 'Machine Learning', 'Computer Vision', 'Deep Learning'],
+    benefits: [
+      'Competitive salary with performance-based bonuses',
+      'Comprehensive learning and development opportunities',
+      'Work on innovative AI projects with real-world impact',
+      'Access to latest AI research papers and resources',
+      'Collaborative work environment with leading AI researchers',
+      'Health insurance and medical coverage',
+      'Flexible work arrangements and modern office facilities'
+    ],
+    tags: ['AI', 'Machine Learning', 'Computer Vision', 'Deep Learning', 'Python', 'Azure'],
     remote: false,
     postedDate: '2024-01-15',
-    applicationUrl: 'https://techinnovate.com/careers/ai-developer'
+    applicationDeadline: '2024-02-28',
+    applicationUrl: 'https://techinnovate.com/careers/ai-developer',
+    isBookmarked: false
   },
   {
     id: '4',
@@ -100,26 +154,46 @@ export const mockJobs: Job[] = [
     type: 'Full-time',
     experienceLevel: 'Senior Level',
     salary: {
-      min: 150000,
+      min: 1500000,
       max: 8000000,
       currency: 'INR'
     },
-    description: 'Lead our AI team in developing comprehensive solutions with foundation models. Drive technological innovation, mentor the team, and focus on production efficiency.',
+    description: `TechInnovate is seeking an experienced AI Lead to spearhead our artificial intelligence initiatives and lead a team of talented AI engineers and researchers. This is a strategic leadership role that combines technical expertise with team management responsibilities.
+
+As AI Lead, you will be responsible for developing comprehensive AI solutions using foundation models, driving technological innovation, and establishing best practices for our AI development processes. You'll work closely with executive leadership to shape our AI strategy and roadmap.
+
+This role offers the opportunity to make a significant impact on our company's AI capabilities while building and mentoring a world-class AI team. You'll be at the forefront of AI innovation, working on projects that push the boundaries of what's possible with artificial intelligence.`,
     requirements: [
-      'Experience in developing complete solutions with foundation models',
-      'Expertise in continuous model improvement processes',
-      'Mentoring team on experiments, KPIs, and benchmarking',
-      'Focus on production cost optimization',
-      'Experience in deep learning-based CV algorithm development',
-      'Good understanding of foundation models in Image, Video, and VLLMs',
-      'Proficiency in Python, OpenCV, TensorFlow, PyTorch',
-      'Cloud platform experience (preferably Azure)'
+      'Extensive experience in developing end-to-end solutions with foundation models',
+      'Proven expertise in continuous model improvement processes and optimization',
+      'Strong leadership skills with experience mentoring teams on AI experiments, KPIs, and benchmarking',
+      'Focus on production cost optimization and efficient resource utilization',
+      'Deep experience in computer vision algorithm development using deep learning',
+      'Comprehensive understanding of foundation models in Image, Video, and Vision-Language Models',
+      'Expert-level proficiency in Python, OpenCV, TensorFlow, and PyTorch',
+      'Extensive experience with cloud platforms, preferably Microsoft Azure',
+      'Strong knowledge of MLOps, model deployment, and production systems',
+      'Experience with distributed computing and large-scale AI systems',
+      'Excellent communication and stakeholder management skills',
+      '7+ years of AI/ML experience with 3+ years in leadership roles',
+      'PhD or Master\'s degree in Computer Science, AI, or related field preferred'
     ],
-    benefits: ['Competitive salary', 'Leadership opportunities', 'Strategic role'],
-    tags: ['AI Leadership', 'Machine Learning', 'Computer Vision', 'Innovation'],
+    benefits: [
+      'Highly competitive salary with equity participation',
+      'Leadership development and executive coaching opportunities',
+      'Strategic role with direct impact on company direction',
+      'Budget for team building and professional development',
+      'Access to cutting-edge AI research and technology',
+      'Flexible work arrangements and executive benefits package',
+      'Opportunity to build and shape a world-class AI team',
+      'Conference speaking and thought leadership opportunities'
+    ],
+    tags: ['AI Leadership', 'Machine Learning', 'Computer Vision', 'Innovation', 'Team Management'],
     remote: false,
     postedDate: '2024-01-15',
-    applicationUrl: 'https://techinnovate.com/careers/ai-lead'
+    applicationDeadline: '2024-03-01',
+    applicationUrl: 'https://techinnovate.com/careers/ai-lead',
+    isBookmarked: false
   },
   {
     id: '5',
@@ -130,22 +204,47 @@ export const mockJobs: Job[] = [
     type: 'Full-time',
     experienceLevel: 'Senior Level',
     salary: {
-      min: 150000,
-      max: 250000,
+      min: 1500000,
+      max: 2500000,
       currency: 'INR'
     },
-    description: 'Exciting opportunity for a visionary AI Founding Engineer to shape the future of AI technology at Cenna. Be a key player in building groundbreaking AI solutions.',
+    description: `Cenna is an early-stage AI startup building revolutionary artificial intelligence solutions. We're looking for a visionary Founding Engineer to join our core team and shape the future of AI technology from the ground up.
+
+As a Founding Engineer, you'll have the unique opportunity to define our technical architecture, build our AI platform from scratch, and establish the engineering culture that will drive our company's success. You'll work directly with the founding team to bring cutting-edge AI research into production-ready products.
+
+This is a rare opportunity to be part of something transformational from day one. You'll have significant equity upside, direct input into product strategy, and the chance to build something truly groundbreaking in the AI space.`,
     requirements: [
-      'Extensive experience in AI and machine learning',
-      'Strong leadership and technical skills',
-      'Proven track record of AI product development',
-      'Ability to mentor and guide technical teams'
+      'Extensive experience in AI and machine learning with proven track record of building production systems',
+      'Strong technical leadership skills and ability to architect scalable AI solutions from scratch',
+      'Proven experience in AI product development from concept to market launch',
+      'Expertise in modern AI/ML frameworks (PyTorch, TensorFlow, Hugging Face)',
+      'Experience with cloud infrastructure and DevOps practices (AWS, Azure, GCP)',
+      'Strong software engineering fundamentals with ability to write production-quality code',
+      'Experience with LLMs, foundation models, and cutting-edge AI research',
+      'Ability to mentor and guide technical teams as the company scales',
+      'Entrepreneurial mindset with comfort in ambiguous, fast-paced startup environment',
+      'Strong communication skills and ability to work with non-technical stakeholders',
+      'Experience with fundraising and technical due diligence processes preferred',
+      '6+ years of AI/ML experience with at least 2 years in senior technical roles',
+      'Advanced degree in Computer Science, AI, or related field preferred'
     ],
-    benefits: ['Equity stake', 'Cutting-edge technology exposure', 'Competitive compensation'],
-    tags: ['AI', 'Founding Engineer', 'Leadership', 'Innovation'],
+    benefits: [
+      'Significant equity stake with high growth potential',
+      'Competitive base salary with performance bonuses',
+      'Direct exposure to cutting-edge AI technology and research',
+      'Opportunity to shape company culture and technical direction',
+      'Flexible work arrangements and unlimited PTO policy',
+      'Budget for professional development and conference attendance',
+      'Health insurance and comprehensive benefits package',
+      'Access to investor network and startup ecosystem',
+      'Opportunity to build and lead technical teams as company grows'
+    ],
+    tags: ['AI', 'Founding Engineer', 'Leadership', 'Innovation', 'Startup', 'Equity'],
     remote: false,
     postedDate: '2024-01-09',
-    applicationUrl: 'https://cenna.com/apply/founding-ai-engineer'
+    applicationDeadline: '2024-02-15',
+    applicationUrl: 'https://cenna.com/apply/founding-ai-engineer',
+    isBookmarked: false
   },
   {
     id: '6',
@@ -459,4 +558,4 @@ export const mockJobs: Job[] = [
     postedDate: '2023-12-26',
     applicationUrl: 'https://valuebound.com/apply/ai-engineer'
   }
-]; 
+];
