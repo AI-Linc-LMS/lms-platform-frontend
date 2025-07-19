@@ -7,7 +7,6 @@ interface UserState {
 
 export const useRole = () => {
   const user = useSelector((state: { user: UserState }) => state.user);
-  console.log(user);
   const isAdmin = user.role === 'admin';
   const isInstructor = user.role === 'instructor';
   const isStudent = user.role === 'student';
