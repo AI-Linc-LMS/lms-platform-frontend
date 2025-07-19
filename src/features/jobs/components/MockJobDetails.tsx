@@ -707,10 +707,10 @@ You'll have access to vast datasets, state-of-the-art computing resources, and t
     remote: false,
     postedDate: '2025-07-16',
     applicationDeadline: '2025-09-02',
-    applicationUrl: 'https://amazon.jobs/en/jobs/applied-scientist-ai',
+    applicationUrl: 'https://www.aboutamazon.com/',
     isBookmarked: false,
     about: "Amazon is Earth's Most Customer-Centric Company, leveraging cutting-edge AI and machine learning to enhance customer experiences across all our services. Our AI research spans Alexa, AWS, Prime Video, advertising, logistics, and more, making us one of the world's largest AI research organizations.",
-    website: "https://amazon.com"
+    website: "https://www.aboutamazon.com/"
   },
   {
     id: '20',
@@ -818,9 +818,9 @@ The Alexa AI team is pushing the boundaries of what's possible in voice technolo
     remote: false,
     postedDate: '2025-07-15',
     applicationDeadline: '2025-09-04',
-    applicationUrl: 'https://amazon.jobs/en/jobs/ml-engineer-alexa',
+    applicationUrl: 'https://www.aboutamazon.com/',
     isBookmarked: false,
     about: "Amazon's Alexa is the world's most popular voice assistant, powered by advanced AI and machine learning technologies. Our team is dedicated to making Alexa more intelligent, helpful, and accessible to customers worldwide, working on breakthrough innovations in voice technology and conversational AI.",
-    website: "https://amazon.com"
+    website: "https://www.aboutamazon.com/"
   }
 ];
