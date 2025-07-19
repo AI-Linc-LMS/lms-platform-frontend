@@ -1,112 +1,8 @@
 import { Job } from '../types/jobs.types';
 
 export const mockJobs: Job[] = [
-  // {
-  //   id: '1',
-  //   title: 'Senior Frontend Developer',
-  //   company: 'TechCorp Inc.',
-  //   companyLogo: 'https://via.placeholder.com/60x60/255C79/ffffff?text=TC',
-  //   location: 'San Francisco, CA',
-  //   type: 'Full-time',
-  //   experienceLevel: 'Senior Level',
-  //   salary: {
-  //     min: 120000,
-  //     max: 160000,
-  //     currency: 'USD'
-  //   },
-  //   description: 'We are looking for a Senior Frontend Developer to join our team and help build amazing user experiences. You will work with React, TypeScript, and modern frontend technologies.',
-  //   requirements: [
-  //     '5+ years of experience with React',
-  //     'Strong TypeScript knowledge',
-  //     'Experience with modern CSS frameworks',
-  //     'Knowledge of testing frameworks'
-  //   ],
-  //   benefits: ['Health insurance', 'Flexible hours', 'Remote work options'],
-  //   tags: ['React', 'TypeScript', 'CSS', 'JavaScript'],
-  //   remote: true,
-  //   postedDate: '2024-01-15',
-  //   applicationUrl: 'https://techcorp.com/apply/1'
-  // },
-  // {
-  //   id: '2',
-  //   title: 'Full Stack Developer',
-  //   company: 'StartupXYZ',
-  //   companyLogo: 'https://via.placeholder.com/60x60/17627A/ffffff?text=SX',
-  //   location: 'New York, NY',
-  //   type: 'Full-time',
-  //   experienceLevel: 'Mid Level',
-  //   salary: {
-  //     min: 90000,
-  //     max: 130000,
-  //     currency: 'USD'
-  //   },
-  //   description: 'Join our fast-growing fintech startup as a Full Stack Developer. Work with cutting-edge technologies and help shape the future of financial services.',
-  //   requirements: [
-  //     '3+ years of full-stack development',
-  //     'Experience with Node.js and React',
-  //     'Database design knowledge',
-  //     'API development experience'
-  //   ],
-  //   benefits: ['Equity package', 'Learning budget', 'Gym membership'],
-  //   tags: ['Node.js', 'React', 'MongoDB', 'API'],
-  //   remote: false,
-  //   postedDate: '2024-01-14',
-  //   applicationUrl: 'https://startupxyz.com/apply/2'
-  // },
-  // {
-  //   id: '3',
-  //   title: 'DevOps Engineer',
-  //   company: 'CloudTech Solutions',
-  //   companyLogo: 'https://via.placeholder.com/60x60/6C757D/ffffff?text=CT',
-  //   location: 'Remote',
-  //   type: 'Full-time',
-  //   experienceLevel: 'Senior Level',
-  //   salary: {
-  //     min: 110000,
-  //     max: 150000,
-  //     currency: 'USD'
-  //   },
-  //   description: 'We need a DevOps Engineer to manage our cloud infrastructure and CI/CD pipelines. Experience with AWS and Kubernetes is essential.',
-  //   requirements: [
-  //     'Strong AWS experience',
-  //     'Kubernetes and Docker knowledge',
-  //     'CI/CD pipeline setup',
-  //     'Infrastructure as Code'
-  //   ],
-  //   benefits: ['Remote work', 'Conference budget', 'Stock options'],
-  //   tags: ['AWS', 'Kubernetes', 'Docker', 'CI/CD'],
-  //   remote: true,
-  //   postedDate: '2024-01-13',
-  //   applicationUrl: 'https://cloudtech.com/apply/3'
-  // },
-  // {
-  //   id: '4',
-  //   title: 'Junior Software Developer',
-  //   company: 'EduTech Platform',
-  //   companyLogo: 'https://via.placeholder.com/60x60/28A745/ffffff?text=EP',
-  //   location: 'Austin, TX',
-  //   type: 'Full-time',
-  //   experienceLevel: 'Entry Level',
-  //   salary: {
-  //     min: 65000,
-  //     max: 85000,
-  //     currency: 'USD'
-  //   },
-  //   description: 'Perfect opportunity for a recent graduate or career changer. Join our education technology team and help build tools that make learning accessible.',
-  //   requirements: [
-  //     'Basic programming knowledge',
-  //     'Willingness to learn',
-  //     'Good communication skills',
-  //     'Problem-solving mindset'
-  //   ],
-  //   benefits: ['Mentorship program', 'Learning opportunities', 'Health insurance'],
-  //   tags: ['JavaScript', 'Python', 'Learning', 'Growth'],
-  //   remote: false,
-  //   postedDate: '2024-01-12',
-  //   applicationUrl: 'https://edutech.com/apply/4'
-  // },
   {
-    id: '5',
+    id: '1',
     title: 'AI Engineer',
     company: 'Talent Basket',
     companyLogo: 'https://via.placeholder.com/60x60/255C79/ffffff?text=TB',
@@ -132,7 +28,7 @@ export const mockJobs: Job[] = [
     applicationUrl: 'https://talentbasket.com/apply/ai-engineer'
   },
   {
-    id: '6',
+    id: '2',
     title: 'Founding Engineer, AI',
     company: 'Cenna',
     companyLogo: 'https://via.placeholder.com/60x60/17627A/ffffff?text=CN',
@@ -158,7 +54,7 @@ export const mockJobs: Job[] = [
     applicationUrl: 'https://cenna.com/apply/founding-ai-engineer'
   },
   {
-    id: '7',
+    id: '3',
     title: 'Artificial Intelligence Engineer',
     company: 'UltraSafe AI',
     companyLogo: 'https://via.placeholder.com/60x60/6C757D/ffffff?text=UA',
@@ -184,7 +80,7 @@ export const mockJobs: Job[] = [
     applicationUrl: 'https://ultrasafeai.com/apply/ai-engineer'
   },
   {
-    id: '8',
+    id: '4',
     title: 'Sr. AI Engineer',
     company: 'Genloop',
     companyLogo: 'https://via.placeholder.com/60x60/28A745/ffffff?text=GL',
@@ -210,7 +106,7 @@ export const mockJobs: Job[] = [
     applicationUrl: 'https://genloop.com/apply/senior-ai-engineer'
   },
   {
-    id: '9',
+    id: '5',
     title: 'Artificial Intelligence Engineer',
     company: 'Velodata Global Pvt Ltd',
     companyLogo: 'https://via.placeholder.com/60x60/255C79/ffffff?text=VG',
@@ -236,7 +132,7 @@ export const mockJobs: Job[] = [
     applicationUrl: 'https://velodata.com/apply/ai-engineer'
   },
   {
-    id: '10',
+    id: '6',
     title: 'Artificial Intelligence Engineer',
     company: 'AiSensy',
     companyLogo: 'https://via.placeholder.com/60x60/17627A/ffffff?text=AS',
@@ -260,5 +156,213 @@ export const mockJobs: Job[] = [
     remote: false,
     postedDate: '2024-01-05',
     applicationUrl: 'https://aisensy.com/apply/ai-engineer'
+  },
+  {
+    id: '7',
+    title: 'Artificial Intelligence Engineer',
+    company: 'KLA',
+    companyLogo: 'https://via.placeholder.com/60x60/255C79/ffffff?text=KL',
+    location: 'Chennai, Tamil Nadu, India',
+    type: 'Full-time',
+    experienceLevel: 'Mid Level',
+    salary: {
+      min: 120000,
+      max: 220000,
+      currency: 'INR'
+    },
+    description: 'KLA is seeking a talented Artificial Intelligence Engineer to join our innovative team. Help develop cutting-edge AI solutions and drive technological advancement.',
+    requirements: [
+      'Strong background in machine learning',
+      'Experience with AI verification techniques',
+      'Proficiency in Python and AI frameworks',
+      'Knowledge of advanced AI validation methods'
+    ],
+    benefits: ['Hybrid work model', 'Learning opportunities', 'Competitive compensation'],
+    tags: ['AI', 'Machine Learning', 'Verification', 'Innovation'],
+    remote: false,
+    postedDate: '2024-01-04',
+    applicationUrl: 'https://kla.com/apply/ai-engineer'
+  },
+  {
+    id: '8',
+    title: 'ML Engineer',
+    company: 'Hike',
+    companyLogo: 'https://via.placeholder.com/60x60/17627A/ffffff?text=HK',
+    location: 'India',
+    type: 'Full-time',
+    experienceLevel: 'Mid Level',
+    salary: {
+      min: 100000,
+      max: 200000,
+      currency: 'INR'
+    },
+    description: 'Hike is looking for a skilled ML Engineer to work on innovative remote projects. Help develop machine learning solutions that push the boundaries of technology.',
+    requirements: [
+      'Strong machine learning background',
+      'Experience with remote collaboration',
+      'Proficiency in Python and ML libraries',
+      'Understanding of distributed machine learning systems'
+    ],
+    benefits: ['Full remote work', 'Flexible hours', 'Continuous learning'],
+    tags: ['Machine Learning', 'Remote', 'Python', 'AI'],
+    remote: true,
+    postedDate: '2024-01-03',
+    applicationUrl: 'https://hike.com/apply/ml-engineer'
+  },
+  {
+    id: '9',
+    title: 'Artificial Intelligence Engineer',
+    company: 'Indsafri',
+    companyLogo: 'https://via.placeholder.com/60x60/6C757D/ffffff?text=IS',
+    location: 'Chennai, Tamil Nadu, India',
+    type: 'Full-time',
+    experienceLevel: 'Mid Level',
+    salary: {
+      min: 90000,
+      max: 180000,
+      currency: 'INR'
+    },
+    description: 'Indsafri is expanding its AI team and seeking a passionate Artificial Intelligence Engineer. Contribute to developing innovative AI solutions across various domains.',
+    requirements: [
+      'Strong foundation in artificial intelligence',
+      'Experience with machine learning projects',
+      'Proficiency in Python and AI frameworks',
+      'Creative problem-solving skills'
+    ],
+    benefits: ['Hybrid work model', 'Innovative projects', 'Professional growth'],
+    tags: ['AI', 'Machine Learning', 'Innovation', 'Technology'],
+    remote: false,
+    postedDate: '2024-01-02',
+    applicationUrl: 'https://indsafri.com/apply/ai-engineer'
+  },
+  {
+    id: '10',
+    title: 'AI Engineer',
+    company: 'Eudia',
+    companyLogo: 'https://via.placeholder.com/60x60/28A745/ffffff?text=EU',
+    location: 'Bengaluru, Karnataka, India',
+    type: 'Full-time',
+    experienceLevel: 'Mid Level',
+    salary: {
+      min: 100000,
+      max: 200000,
+      currency: 'INR'
+    },
+    description: 'Eudia is seeking an AI Engineer to join our on-site team in Bengaluru. Help develop cutting-edge AI solutions and drive technological innovation.',
+    requirements: [
+      'Strong background in artificial intelligence',
+      'Experience with AI development',
+      'Proficiency in programming and AI frameworks',
+      'Ability to work in a collaborative environment'
+    ],
+    benefits: ['On-site work', 'Learning opportunities', 'Competitive compensation'],
+    tags: ['AI', 'Engineering', 'Technology', 'Innovation'],
+    remote: false,
+    postedDate: '2024-01-01',
+    applicationUrl: 'https://eudia.com/apply/ai-engineer'
+  },
+  {
+    id: '11',
+    title: 'AI Engineer',
+    company: 'Predigle',
+    companyLogo: 'https://via.placeholder.com/60x60/255C79/ffffff?text=PG',
+    location: 'Chennai, Tamil Nadu, India',
+    type: 'Full-time',
+    experienceLevel: 'Mid Level',
+    salary: {
+      min: 110000,
+      max: 210000,
+      currency: 'INR'
+    },
+    description: 'Predigle is looking for a talented AI Engineer to join our innovative team. Contribute to developing advanced AI solutions and drive technological progress.',
+    requirements: [
+      'Strong foundation in artificial intelligence',
+      'Experience with machine learning projects',
+      'Proficiency in Python and AI frameworks',
+      'Analytical and creative problem-solving skills'
+    ],
+    benefits: ['Hybrid work model', 'Cutting-edge projects', 'Professional development'],
+    tags: ['AI', 'Machine Learning', 'Innovation', 'Technology'],
+    remote: false,
+    postedDate: '2023-12-29',
+    applicationUrl: 'https://predigle.com/apply/ai-engineer'
+  },
+  {
+    id: '12',
+    title: 'AI Fullstack Engineer',
+    company: 'Mundos',
+    companyLogo: 'https://via.placeholder.com/60x60/17627A/ffffff?text=MD',
+    location: 'India',
+    type: 'Full-time',
+    experienceLevel: 'Mid Level',
+    salary: {
+      min: 100000,
+      max: 200000,
+      currency: 'INR'
+    },
+    description: 'Mundos is seeking an AI Fullstack Engineer to work remotely. Develop comprehensive AI solutions that integrate frontend and backend technologies.',
+    requirements: [
+      'Strong background in full-stack development',
+      'Experience with AI and machine learning',
+      'Proficiency in multiple programming languages',
+      'Ability to work effectively in a remote environment'
+    ],
+    benefits: ['Full remote work', 'Flexible hours', 'Comprehensive AI projects'],
+    tags: ['AI', 'Fullstack', 'Remote', 'Web Development'],
+    remote: true,
+    postedDate: '2023-12-28',
+    applicationUrl: 'https://mundos.com/apply/ai-fullstack-engineer'
+  },
+  {
+    id: '13',
+    title: 'AI Research Engineer',
+    company: 'APPSeCONNECT',
+    companyLogo: 'https://via.placeholder.com/60x60/6C757D/ffffff?text=AC',
+    location: 'Greater Kolkata Area',
+    type: 'Full-time',
+    experienceLevel: 'Senior Level',
+    salary: {
+      min: 150000,
+      max: 300000,
+      currency: 'INR'
+    },
+    description: 'APPSeCONNECT is looking for an AI Research Engineer to lead innovative research projects. Drive technological advancements and develop cutting-edge AI solutions.',
+    requirements: [
+      'Advanced knowledge of AI and machine learning',
+      'Experience in AI research and development',
+      'Strong publication record in AI conferences/journals',
+      'Ability to translate research into practical applications'
+    ],
+    benefits: ['On-site work', 'Research opportunities', 'Competitive compensation'],
+    tags: ['AI Research', 'Machine Learning', 'Innovation', 'Academic'],
+    remote: false,
+    postedDate: '2023-12-27',
+    applicationUrl: 'https://appsconnect.com/apply/ai-research-engineer'
+  },
+  {
+    id: '14',
+    title: 'Artificial Intelligence Engineer',
+    company: 'Valuebound',
+    companyLogo: 'https://via.placeholder.com/60x60/28A745/ffffff?text=VB',
+    location: 'Chennai, Tamil Nadu, India',
+    type: 'Full-time',
+    experienceLevel: 'Mid Level',
+    salary: {
+      min: 100000,
+      max: 200000,
+      currency: 'INR'
+    },
+    description: 'Valuebound is expanding its AI team and seeking a skilled Artificial Intelligence Engineer. Contribute to developing innovative AI solutions and drive technological innovation.',
+    requirements: [
+      'Strong foundation in artificial intelligence',
+      'Experience with machine learning projects',
+      'Proficiency in Python and AI frameworks',
+      'Ability to work in a collaborative on-site environment'
+    ],
+    benefits: ['On-site work', 'Learning opportunities', 'Competitive compensation'],
+    tags: ['AI', 'Machine Learning', 'Technology', 'Innovation'],
+    remote: false,
+    postedDate: '2023-12-26',
+    applicationUrl: 'https://valuebound.com/apply/ai-engineer'
   }
 ]; 
