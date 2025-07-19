@@ -26,23 +26,28 @@ const JobFilters: React.FC<JobFiltersProps> = ({
   const jobTypes = ['Full-time', 'Part-time', 'Contract',  'Internship'];
   const experienceLevels = ['Entry Level', 'Mid Level', 'Senior Level'];
   const salaryRanges = [
-    { label: 'Any', min: 0, max: 200000 },
+    { label: 'Any', min: 0, max: 10000000 },
     { label: '₹30k - ₹50k', min: 30000, max: 50000 },
     { label: '₹50k - ₹80k', min: 50000, max: 80000 },
-    { label: '₹80k - ₹120k', min: 80000, max: 120000 },
-    { label: '₹120k+', min: 120000, max: 200000 }
+    { label: '₹80k - ₹1.2L', min: 80000, max: 120000 },
+    { label: '₹1.2L - ₹2L', min: 120000, max: 200000 },
+    { label: '₹2L - ₹5L', min: 200000, max: 500000 },
+    { label: '₹5L - ₹10L', min: 500000, max: 1000000 },
+    { label: '₹10L - ₹25L', min: 1000000, max: 2500000 },
+    { label: '₹25L - ₹50L', min: 2500000, max: 5000000 },
+    { label: '₹50L+', min: 5000000, max: 10000000 }
   ];
 
   const handleClearAllFilters = () => {
     // Reset all filters to their default state
     onJobTypeChange('');  // Reset to 'All Types'
     onExperienceChange('');  // Reset to 'All Levels'
-    onSalaryChange({ min: 0, max: 200000 });  // Reset to 'Any'
+    onSalaryChange({ min: 0, max: 10000000 });  // Reset to 'Any'
     onRemoteChange(false);  // Uncheck remote work
      // Close advanced filters
   };
 
-  const hasActiveFilters = jobType || experience || remote || salary.min > 0 || salary.max < 200000;
+  const hasActiveFilters = jobType || experience || remote || salary.min > 0 || salary.max < 10000000;
 
   return (
     <div className="bg-white rounded-2xl border border-[#DEE2E6] p-4 sm:p-6">
@@ -52,7 +57,7 @@ const JobFilters: React.FC<JobFiltersProps> = ({
           <h3 className="text-lg sm:text-xl font-bold text-[#343A40]">Filters</h3>
           {hasActiveFilters && (
             <span className="bg-[#255C79] text-white text-xs px-2 py-1 rounded-full">
-              {[jobType, experience, remote, salary.min > 0 || salary.max < 200000].filter(Boolean).length}
+              {[jobType, experience, remote, salary.min > 0 || salary.max < 10000000].filter(Boolean).length}
             </span>
           )}
         </div>
