@@ -48,7 +48,8 @@ As a key member of our engineering team, you'll collaborate with cross-functiona
     applicationDeadline: "2025-08-14",
     applicationUrl: "https://cellstrat.com/careers/senior-ai-engineer",
     isBookmarked: false,
-    about: "CellStrat is a dynamic AI startup specializing in comprehensive AI consulting for US-based clients. We are committed to driving technological innovation through cutting-edge AI solutions, leveraging our expertise in machine learning, data science, and advanced analytics to help businesses transform their operations."
+    about: "CellStrat is a dynamic AI startup specializing in comprehensive AI consulting for US-based clients. We are committed to driving technological innovation through cutting-edge AI solutions, leveraging our expertise in machine learning, data science, and advanced analytics to help businesses transform their operations.",
+    website: "https://cellstrat.com"
   },
   {
     id: '2',
@@ -96,7 +97,9 @@ As part of our dynamic team, you'll collaborate closely with backend engineers, 
     postedDate: '2025-07-15',
     applicationDeadline: '2025-08-15',
     applicationUrl: 'https://cellstrat.com/careers/expert-frontend-developer',
-    isBookmarked: false
+    isBookmarked: false,
+    about: "CellStrat Inc. is seeking an Expert Frontend Developer to lead frontend development for client projects and our flagship CellVerse product platform. You will architect and design frontend repositories with optimal performance and scalability in mind. The role involves building pixel-perfect, responsive web applications using our modern tech stack while ensuring excellent user experience across all devices. As part of our dynamic team, you'll collaborate closely with backend engineers, designers, and product managers to deliver high-quality solutions. You'll also be responsible for establishing best practices and mentoring junior developers.",
+    website: "https://cellstrat.com"
   },
   {
     id: '3',
@@ -145,7 +148,8 @@ The position offers exciting opportunities to work with the latest AI technologi
     applicationDeadline: '2025-08-16',
     applicationUrl: 'https://techinnovate.com/careers/ai-developer',
     isBookmarked: false,
-    about: "Meta is a global technology leader at the forefront of AI innovation, developing groundbreaking solutions that connect people and push the boundaries of artificial intelligence. We are dedicated to creating transformative technologies that have a positive impact on the world, with a focus on research, development, and ethical AI advancement."
+    about: "Meta is a global technology leader at the forefront of AI innovation, developing groundbreaking solutions that connect people and push the boundaries of artificial intelligence. We are dedicated to creating transformative technologies that have a positive impact on the world, with a focus on research, development, and ethical AI advancement.",
+    website: "https://meta.com"
   },
   {
     id: '4',
@@ -196,7 +200,8 @@ This role offers the opportunity to make a significant impact on our company's A
     applicationDeadline: '2025-08-17',
     applicationUrl: 'https://techinnovate.com/careers/ai-lead',
     isBookmarked: false,
-    about: "Google is a global technology leader at the forefront of AI innovation, developing groundbreaking solutions that connect people and push the boundaries of artificial intelligence. We are dedicated to creating transformative technologies that have a positive impact on the world, with a focus on research, development, and ethical AI advancement."
+    about: "Google is a global technology leader at the forefront of AI innovation, developing groundbreaking solutions that connect people and push the boundaries of artificial intelligence. We are dedicated to creating transformative technologies that have a positive impact on the world, with a focus on research, development, and ethical AI advancement.",
+    website: "https://google.com"
   },
   {
     id: '5',
@@ -248,7 +253,8 @@ This is a rare opportunity to be part of something transformational from day one
     applicationDeadline: '2025-08-18',
     applicationUrl: 'https://cenna.com/apply/founding-ai-engineer',
     isBookmarked: false,
-    about: "Cenna is an early-stage AI startup with a vision to revolutionize technology through cutting-edge artificial intelligence solutions. We are passionate about building transformative AI technologies that solve real-world problems, with a focus on innovation, research, and creating scalable, impactful solutions."
+    about: "Cenna is an early-stage AI startup with a vision to revolutionize technology through cutting-edge artificial intelligence solutions. We are passionate about building transformative AI technologies that solve real-world problems, with a focus on innovation, research, and creating scalable, impactful solutions.",
+    website: "cenna.io"
   },
   {
     id: '6',
@@ -276,7 +282,8 @@ This is a rare opportunity to be part of something transformational from day one
     postedDate: '2025-07-19',
     applicationDeadline: '2025-08-19',
     applicationUrl: 'https://ultrasafeai.com/apply/ai-engineer',
-    about: "UltraSafe AI is a pioneering company dedicated to developing AI solutions that prioritize security and safety. We are committed to creating intelligent systems that protect and empower, with a focus on ethical AI development and innovative approaches to technological challenges."
+    about: "UltraSafe AI is a pioneering company dedicated to developing AI solutions that prioritize security and safety. We are committed to creating intelligent systems that protect and empower, with a focus on ethical AI development and innovative approaches to technological challenges.",
+    website: "https://ultrasafeai.com"
   },
   {
     id: '7',
@@ -304,7 +311,8 @@ This is a rare opportunity to be part of something transformational from day one
     postedDate: '2025-07-20',
     applicationDeadline: '2025-08-20',
     applicationUrl: 'https://genloop.com/apply/senior-ai-engineer',
-    about: "Genloop is an innovative technology company specializing in advanced AI and machine learning solutions. We are dedicated to pushing the boundaries of technological innovation, with a focus on research, development, and creating transformative AI technologies that drive meaningful change."
+    about: "Genloop is an innovative technology company specializing in advanced AI and machine learning solutions. We are dedicated to pushing the boundaries of technological innovation, with a focus on research, development, and creating transformative AI technologies that drive meaningful change.",
+    website: "https://goo.gle/3DLEokh"
   },
   {
     id: '8',
@@ -332,7 +340,8 @@ This is a rare opportunity to be part of something transformational from day one
     postedDate: '2025-07-21',
     applicationDeadline: '2025-08-21',
     applicationUrl: 'https://velodata.com/apply/ai-engineer',
-    about: "Velodata Global is a data-driven technology company that transforms complex data into actionable insights. We specialize in AI and machine learning solutions that help businesses make informed decisions, with a commitment to innovation, technological excellence, and driving business growth."
+    about: "Velodata Global is a data-driven technology company that transforms complex data into actionable insights. We specialize in AI and machine learning solutions that help businesses make informed decisions, with a commitment to innovation, technological excellence, and driving business growth.",
+    website: "www.velodata.in"
   },
   {
     id: '9',
@@ -360,7 +369,8 @@ This is a rare opportunity to be part of something transformational from day one
     postedDate: '2025-07-22',
     applicationDeadline: '2025-08-22',
     applicationUrl: 'https://aisensy.com/apply/ai-engineer',
-    about: "AiSensy is a cutting-edge AI company focused on developing intelligent communication and automation solutions. We are dedicated to creating innovative technologies that enhance human-machine interaction, with a focus on natural language processing and conversational AI technologies."
+    about: "AiSensy is a cutting-edge AI company focused on developing intelligent communication and automation solutions. We are dedicated to creating innovative technologies that enhance human-machine interaction, with a focus on natural language processing and conversational AI technologies.",
+    website: "https://aisensy.com"
   },
   {
     id: '10',
@@ -388,7 +398,8 @@ This is a rare opportunity to be part of something transformational from day one
     postedDate: '2025-07-23',
     applicationDeadline: '2025-08-23',
     applicationUrl: 'https://kla.com/apply/ai-engineer',
-    about: "KLA is a leading technology company specializing in AI verification and validation techniques. We are committed to driving technological advancement through rigorous AI testing, quality assurance, and innovative approaches to ensuring the reliability and performance of AI systems."
+    about: "KLA is a leading technology company specializing in AI verification and validation techniques. We are committed to driving technological advancement through rigorous AI testing, quality assurance, and innovative approaches to ensuring the reliability and performance of AI systems.",
+    website: "https://kla.com"
   },
   {
     id: '11',
@@ -416,7 +427,8 @@ This is a rare opportunity to be part of something transformational from day one
     postedDate: '2025-07-24',
     applicationDeadline: '2025-08-24',
     applicationUrl: 'https://hike.com/apply/ml-engineer',
-    about: "Hike is an innovative technology company that develops advanced machine learning solutions. We are passionate about creating technologies that push the boundaries of what's possible, with a focus on remote collaboration, cutting-edge AI, and solving complex technological challenges."
+    about: "Hike is an innovative technology company that develops advanced machine learning solutions. We are passionate about creating technologies that push the boundaries of what's possible, with a focus on remote collaboration, cutting-edge AI, and solving complex technological challenges.",
+    website: "http://work.hike.in/"
   },
   {
     id: '12',
@@ -444,7 +456,8 @@ This is a rare opportunity to be part of something transformational from day one
     postedDate: '2025-07-25',
     applicationDeadline: '2025-08-25',
     applicationUrl: 'https://indsafri.com/apply/ai-engineer',
-    about: "Indsafri is a forward-thinking AI company dedicated to developing innovative solutions across various domains. We are committed to driving technological progress through creative problem-solving, advanced AI technologies, and a passion for pushing the boundaries of artificial intelligence."
+    about: "Indsafri is a forward-thinking AI company dedicated to developing innovative solutions across various domains. We are committed to driving technological progress through creative problem-solving, advanced AI technologies, and a passion for pushing the boundaries of artificial intelligence.",
+    website: "https://indsafri.com"
   },
   {
     id: '13',
@@ -472,7 +485,8 @@ This is a rare opportunity to be part of something transformational from day one
     postedDate: '2025-07-26',
     applicationDeadline: '2025-08-26',
     applicationUrl: 'https://eudia.com/apply/ai-engineer',
-    about: "Eudia is a technology company specializing in AI development and innovative solutions. We are dedicated to creating cutting-edge AI technologies that drive meaningful change, with a focus on collaboration, technological innovation, and solving complex business challenges."
+    about: "Eudia is a technology company specializing in AI development and innovative solutions. We are dedicated to creating cutting-edge AI technologies that drive meaningful change, with a focus on collaboration, technological innovation, and solving complex business challenges.",
+    website: "https://eudia.com"
   },
   {
     id: '14',
@@ -500,7 +514,8 @@ This is a rare opportunity to be part of something transformational from day one
     postedDate: '2025-07-27',
     applicationDeadline: '2025-08-27',
     applicationUrl: 'https://predigle.com/apply/ai-engineer',
-    about: "Predigle is an innovative AI company committed to developing advanced technological solutions. We focus on driving technological progress through analytical thinking, machine learning expertise, and a passion for creating transformative AI technologies."
+    about: "Predigle is an innovative AI company committed to developing advanced technological solutions. We focus on driving technological progress through analytical thinking, machine learning expertise, and a passion for creating transformative AI technologies.",
+    website: "https://predigle.com"
   },
   {
     id: '15',
@@ -528,7 +543,8 @@ This is a rare opportunity to be part of something transformational from day one
     postedDate: '2025-07-28',
     applicationDeadline: '2025-08-28',
     applicationUrl: 'https://mundos.com/apply/ai-fullstack-engineer',
-    about: "Mundos is a technology company specializing in comprehensive AI solutions that integrate frontend and backend technologies. We are dedicated to developing innovative, full-stack AI technologies that solve complex business challenges and drive digital transformation."
+    about: "Mundos is a technology company specializing in comprehensive AI solutions that integrate frontend and backend technologies. We are dedicated to developing innovative, full-stack AI technologies that solve complex business challenges and drive digital transformation.",
+    website: "https://www.mundosworlds.xyz/"
   },
   {
     id: '16',
@@ -556,7 +572,8 @@ This is a rare opportunity to be part of something transformational from day one
     postedDate: '2025-07-29',
     applicationDeadline: '2025-08-29',
     applicationUrl: 'https://appsconnect.com/apply/ai-research-engineer',
-    about: "APPSeCONNECT is a technology company focused on AI research and development. We are committed to driving technological advancements through innovative research, with a strong emphasis on translating cutting-edge AI research into practical, impactful solutions."
+    about: "APPSeCONNECT is a technology company focused on AI research and development. We are committed to driving technological advancements through innovative research, with a strong emphasis on translating cutting-edge AI research into practical, impactful solutions.",
+    website: "https://appseconnect.com"
   },
   {
     id: '17',
@@ -584,6 +601,7 @@ This is a rare opportunity to be part of something transformational from day one
     postedDate: '2025-07-30',
     applicationDeadline: '2025-08-30',
     applicationUrl: 'https://valuebound.com/apply/ai-engineer',
-    about: "Valuebound is a technology company dedicated to developing innovative AI solutions. We are committed to driving technological innovation through expert AI development, collaborative approaches, and a passion for creating transformative technologies that make a real-world impact."
+    about: "Valuebound is a technology company dedicated to developing innovative AI solutions. We are committed to driving technological innovation through expert AI development, collaborative approaches, and a passion for creating transformative technologies that make a real-world impact.",
+    website: "https://valuebound.com"
   }
 ];
