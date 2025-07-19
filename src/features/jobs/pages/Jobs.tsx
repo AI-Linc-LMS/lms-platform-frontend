@@ -4,10 +4,6 @@ import JobCard from "../components/JobCard";
 import JobFilters from "../components/JobFilters";
 import { Job } from "../types/jobs.types";
 import { mockJobs } from "../data/mockJobs";
-// import {
-//   bookmarkJob,
-//   getBookmarkedJobs,
-// } from "../../../api/jobsApiService";
 import JobApplicationModal from "../components/JobApplicationModal";
 
 const Jobs: React.FC = () => {
@@ -16,20 +12,18 @@ const Jobs: React.FC = () => {
   const [locationFilter, setLocationFilter] = useState("");
   const [jobTypeFilter, setJobTypeFilter] = useState("");
   const [experienceFilter, setExperienceFilter] = useState("");
-  const [salaryFilter, setSalaryFilter] = useState({ min: 0, max: 200000 });
+  // Fixed: Increased max salary to accommodate all jobs in mock data
+  const [salaryFilter, setSalaryFilter] = useState({ min: 0, max: 10000000 });
   const [remoteFilter, setRemoteFilter] = useState(false);
-  // const [bookmarkedJobs, setBookmarkedJobs] = useState<string[]>([]);
   const [jobs] = useState<Job[]>(mockJobs);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
-  const [visibleJobsCount, setVisibleJobsCount] = useState(9);
-
-  // Load bookmarked jobs on component mount
-  // useEffect(() => {
-  //   setBookmarkedJobs(getBookmarkedJobs());
-  // }, []);
+  // Fixed: Set initial visible jobs to show all available jobs
+  const [visibleJobsCount, setVisibleJobsCount] = useState(12);
 
   const handleSearch = () => {
+    // Optional: Add search analytics or validation here
+    console.log("Search triggered with:", { searchQuery, locationFilter });
   };
 
   const handleApplyToJob = (job: Job) => {
@@ -39,17 +33,14 @@ const Jobs: React.FC = () => {
 
   const handleApplicationSuccess = () => {
     // Placeholder for application success logic
+    console.log("Application submitted successfully");
   };
 
   const handleLoadMore = () => {
     const remainingJobs = filteredJobs.length - visibleJobsCount;
-    const jobsToLoad = Math.min(remainingJobs, Math.ceil(filteredJobs.length * 0.3)); // Load 30% of remaining jobs
+    const jobsToLoad = Math.min(remainingJobs, 6); // Load 6 more jobs at a time
     setVisibleJobsCount(prevCount => prevCount + jobsToLoad);
   };
-
-  // const isBookmarked = (jobId: string) => {
-  //   return bookmarkedJobs.includes(jobId);
-  // };
 
   const filteredJobs = useMemo(() => {
     const filtered = jobs.filter((job) => {
@@ -57,7 +48,8 @@ const Jobs: React.FC = () => {
       if (
         searchQuery &&
         !job.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !job.company.toLowerCase().includes(searchQuery.toLowerCase())
+        !job.company.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !job.description.toLowerCase().includes(searchQuery.toLowerCase())
       ) {
         return false;
       }
@@ -85,12 +77,19 @@ const Jobs: React.FC = () => {
         return false;
       }
 
-      // Salary filter
-      if (
-        job.salary &&
-        (job.salary.min < salaryFilter.min || job.salary.max > salaryFilter.max)
-      ) {
-        return false;
+      // Fixed: Better salary filter logic - check if job salary range overlaps with filter range
+      if (job.salary) {
+        const jobMinSalary = job.salary.min;
+        const jobMaxSalary = job.salary.max;
+        const filterMinSalary = salaryFilter.min;
+        const filterMaxSalary = salaryFilter.max;
+
+        // Check if there's any overlap between job salary range and filter range
+        const hasOverlap = jobMinSalary <= filterMaxSalary && jobMaxSalary >= filterMinSalary;
+        
+        if (!hasOverlap) {
+          return false;
+        }
       }
 
       return true;
@@ -111,6 +110,27 @@ const Jobs: React.FC = () => {
     remoteFilter,
     salaryFilter,
   ]);
+
+  // Debug: Log filtered jobs (remove this in production)
+  console.log("Total jobs:", jobs.length);
+  console.log("Filtered jobs:", filteredJobs.length);
+  console.log("Current filters:", {
+    searchQuery,
+    locationFilter,
+    jobTypeFilter,
+    experienceFilter,
+    remoteFilter,
+    salaryFilter
+  });
+
+  const resetAllFilters = () => {
+    setSearchQuery('');
+    setLocationFilter('');
+    setJobTypeFilter('');
+    setExperienceFilter('');
+    setRemoteFilter(false);
+    setSalaryFilter({ min: 0, max: 10000000 }); // Reset to accommodate all jobs
+  };
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
@@ -177,8 +197,13 @@ const Jobs: React.FC = () => {
                 Job Opportunities
               </h2>
               <p className="text-[#6C757D] text-sm sm:text-base">
-                {`${jobs.length} jobs found`} {searchQuery && `for "${searchQuery}"`}
+                {`${filteredJobs.length} jobs found`} {searchQuery && `for "${searchQuery}"`}
               </p>
+            </div>
+            
+            {/* Debug info - remove in production */}
+            <div className="text-xs text-[#6C757D] bg-yellow-100 px-2 py-1 rounded">
+              Debug: Total: {jobs.length}, Filtered: {filteredJobs.length}, Visible: {Math.min(visibleJobsCount, filteredJobs.length)}
             </div>
           </div>
 
@@ -195,6 +220,17 @@ const Jobs: React.FC = () => {
                   remote={remoteFilter}
                   onRemoteChange={setRemoteFilter}
                 />
+                
+                {/* Debug filter values - remove in production */}
+                <div className="mt-4 p-3 bg-gray-100 rounded-lg text-xs">
+                  <h4 className="font-bold mb-2">Current Filters:</h4>
+                  <div>Search: "{searchQuery}"</div>
+                  <div>Location: "{locationFilter}"</div>
+                  <div>Job Type: "{jobTypeFilter}"</div>
+                  <div>Experience: "{experienceFilter}"</div>
+                  <div>Remote: {remoteFilter ? "Yes" : "No"}</div>
+                  <div>Salary: {salaryFilter.min.toLocaleString()} - {salaryFilter.max.toLocaleString()}</div>
+                </div>
               </div>
             </div>
 
@@ -225,18 +261,10 @@ const Jobs: React.FC = () => {
                     Try adjusting your filters or search terms.
                   </p>
                   <button 
-                    onClick={() => {
-                      // Reset all filters
-                      setSearchQuery('');
-                      setLocationFilter('');
-                      setJobTypeFilter('');
-                      setExperienceFilter('');
-                      setRemoteFilter(false);
-                      setSalaryFilter({ min: 0, max: 200000 });
-                    }}
+                    onClick={resetAllFilters}
                     className="mt-4 px-6 py-2 bg-[#255C79] text-white rounded-lg hover:bg-[#1E4A63] transition-colors"
                   >
-                    Reset Filters
+                    Reset All Filters
                   </button>
                 </div>
               ) : (
@@ -269,7 +297,7 @@ const Jobs: React.FC = () => {
                             clipRule="evenodd" 
                           />
                         </svg>
-                        Load More Jobs
+                        Load More Jobs ({filteredJobs.length - visibleJobsCount} remaining)
                       </button>
                     </div>
                   )}
