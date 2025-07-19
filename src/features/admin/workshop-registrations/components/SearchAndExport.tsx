@@ -1,11 +1,17 @@
-import React, { useState } from "react";
-import { FiX, FiMail, FiCheckSquare, FiSquare } from "react-icons/fi";
+import React, { useState, useEffect, useRef } from "react";
+import { FiX, FiMail, FiCheckSquare, FiSquare, FiLock } from "react-icons/fi";
 import { CSVUploadButton } from "./CSVUploadButton";
 import {
   ColumnVisibilityDropdown,
   ColumnConfig,
 } from "./ColumnVisibilityDropdown";
 import { useRole } from "../../../../hooks/useRole";
+
+interface FreezeColumnOption {
+  key: string;
+  label: string;
+  required: boolean;
+}
 
 interface SearchAndExportProps {
   search: string;
@@ -21,6 +27,9 @@ interface SearchAndExportProps {
   showSelection?: boolean;
   onToggleSelection?: () => void;
   selectedCount?: number;
+  freezeColumns?: string[];
+  freezeColumnOptions?: FreezeColumnOption[];
+  onFreezeColumnChange?: (columnKey: string, selected: boolean) => void;
 }
 
 export const SearchAndExport: React.FC<SearchAndExportProps> = ({
@@ -37,12 +46,37 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
   showSelection = false,
   onToggleSelection,
   selectedCount = 0,
+  freezeColumns = [],
+  freezeColumnOptions = [],
+  onFreezeColumnChange,
 }) => {
   const { isSuperAdmin } = useRole();
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
+  const [showFreezeDropdown, setShowFreezeDropdown] = useState(false);
+  const freezeDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Click outside handler for freeze dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        freezeDropdownRef.current &&
+        !freezeDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowFreezeDropdown(false);
+      }
+    };
+
+    if (showFreezeDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showFreezeDropdown]);
 
   const handleSuccess = (message: string) => {
     setMessage({ type: "success", text: message });
@@ -54,8 +88,15 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
     setTimeout(() => setMessage(null), 5000);
   };
 
+  const handleFreezeColumnToggle = (columnKey: string) => {
+    if (onFreezeColumnChange) {
+      const isCurrentlyFrozen = freezeColumns.includes(columnKey);
+      onFreezeColumnChange(columnKey, !isCurrentlyFrozen);
+    }
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 flex-grow">
       {/* Message display */}
       {message && (
         <div
@@ -89,6 +130,68 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
           )}
         </div>
         <div className="flex gap-2">
+          {/* Freeze Columns Dropdown */}
+          {onFreezeColumnChange && (
+            <div className="relative">
+              <button
+                onClick={() => setShowFreezeDropdown(!showFreezeDropdown)}
+                className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded text-sm hover:bg-purple-700 transition-colors"
+                title="Freeze Columns"
+              >
+                <FiLock className="w-4 h-4" />
+                <span className="hidden sm:inline">Freeze Columns</span>
+                {freezeColumns.length > 0 && (
+                  <span className="bg-white text-purple-600 text-xs px-1.5 py-0.5 rounded-full">
+                    {freezeColumns.length}
+                  </span>
+                )}
+              </button>
+
+              {showFreezeDropdown && (
+                <div
+                  className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-48"
+                  ref={freezeDropdownRef}
+                >
+                  <div className="p-3 border-b border-gray-200">
+                    <h3 className="text-sm font-medium text-gray-700">
+                      Freeze Columns
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Select columns to freeze (sticky)
+                    </p>
+                  </div>
+                  <div className="p-2">
+                    {freezeColumnOptions.map((option) => (
+                      <label
+                        key={option.key}
+                        className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={freezeColumns.includes(option.key)}
+                          onChange={() => handleFreezeColumnToggle(option.key)}
+                          disabled={option.required}
+                          className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                        />
+                        <span className="text-sm text-gray-700 flex-1">
+                          {option.label}
+                          {option.required && (
+                            <span className="text-xs text-gray-500 ml-1">
+                              (Required)
+                            </span>
+                          )}
+                        </span>
+                        {freezeColumns.includes(option.key) && (
+                          <FiLock className="w-3 h-3 text-purple-600" />
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <ColumnVisibilityDropdown
             columns={columnConfigs}
             visibleColumns={visibleColumns}

@@ -44,6 +44,7 @@ interface WorkshopTableHeaderProps {
   showSelection?: boolean;
   isAllSelected?: boolean;
   onSelectAll?: (selected: boolean) => void;
+  freezeColumns?: string[];
 }
 
 // Reusable MultiSelectDropdown component
@@ -245,6 +246,7 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
   showSelection = false,
   isAllSelected = false,
   onSelectAll,
+  freezeColumns = [],
 }) => {
   const filterConfigs = [
     // Personal details
@@ -344,12 +346,49 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
     }
   }, [openFilter, onToggleFilter]);
 
+  // Calculate sticky positioning for frozen columns
+
+  const getStickyPosition = (columnKey: string) => {
+    if (!freezeColumns.includes(columnKey)) return {};
+
+    const frozenIndex = freezeColumns.indexOf(columnKey);
+    let leftPosition = 0;
+
+    // Add selection column width if present
+    if (showSelection) {
+      leftPosition += 40; // 12 * 4 = 48px for w-12
+    }
+
+    // Calculate left position based on frozen column order
+    for (let i = 0; i < frozenIndex; i++) {
+      const prevColumn = freezeColumns[i];
+      // Fixed column widths to eliminate gaps
+      if (prevColumn === "name") leftPosition += 118;
+      else if (prevColumn === "email") leftPosition += 225;
+    }
+    return {
+      position: "sticky" as const,
+      left: `${leftPosition}px`,
+      zIndex: 20,
+      backgroundColor: "rgb(243 244 246)", // bg-gray-100
+      borderRight: "1px solid rgb(229 231 235)", // Add border for visual separation
+    };
+  };
+
   return (
-    <thead className="bg-gray-100 sticky top-0 z-10">
+    <thead className="bg-gray-100 sticky top-0 z-20">
       <tr>
         {/* Selection header */}
         {showSelection && (
-          <th className="p-3 w-12 sticky top-0 z-10 bg-gray-100">
+          <th
+            className="p-3 w-12 bg-gray-100 border-r border-gray-300"
+            style={{
+              position: "sticky",
+              left: 0,
+              zIndex: 25,
+              backgroundColor: "rgb(243 244 246)",
+            }}
+          >
             <input
               type="checkbox"
               checked={isAllSelected}
@@ -364,126 +403,141 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
               permanentColumns.includes(config.column) ||
               visibleColumns.includes(config.column)
           )
-          .map((config) => (
-            <th
-              key={config.column}
-              className={[
-                "p-3 sticky top-0 z-10 bg-gray-100",
-                (config.column === "first_call_status" ||
-                  config.column === "second_call_status") &&
-                  "w-[150px] min-w-[150px]",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              <div className="flex items-center gap-1">
-                <span>{config.label}</span>
-                {!commentFields.includes(config.column) && (
-                  <button
-                    type="button"
-                    className={`p-1 rounded hover:bg-gray-400 ${
-                      openFilter === config.column
-                        ? "text-blue-600 bg-blue-200"
-                        : "text-black"
-                    }`}
-                    onClick={() =>
-                      onToggleFilter(
+          .map((config) => {
+            const stickyStyle = getStickyPosition(config.column);
+
+            return (
+              <th
+                key={config.column}
+                className={[
+                  "p-3 bg-gray-100 border-r border-gray-300",
+                  (config.column === "first_call_status" ||
+                    config.column === "second_call_status") &&
+                    "w-[150px] min-w-[150px]",
+                  // Fixed widths for frozen columns
+                  config.column === "name" && "w-[120px] min-w-[120px]",
+                  config.column === "email" && "w-[200px] min-w-[200px]",
+                  config.column === "phone_number" && "w-[130px] min-w-[130px]",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                style={stickyStyle}
+              >
+                <div className="flex items-center gap-1">
+                  <span>{config.label}</span>
+                  {!commentFields.includes(config.column) && (
+                    <button
+                      type="button"
+                      className={`p-1 rounded hover:bg-gray-400 ${
                         openFilter === config.column
-                          ? null
-                          : (config.column as keyof FilterState)
-                      )
-                    }
-                  >
-                    <FiFilter className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-              {/* Popover filter UI */}
-              {openFilter === config.column &&
-                !commentFields.includes(config.column) && (
-                  <div
-                    ref={(el) => {
-                      popoverRefs.current[config.column] = el;
-                    }}
-                    className="absolute left-0 top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
-                  >
-                    {config.isDate ? (
-                      config.column === "follow_up_date" ? (
-                        <FollowUpDateFilterDropdown
-                          column={config.column as keyof FilterState}
+                          ? "text-blue-600 bg-blue-200"
+                          : "text-black"
+                      }`}
+                      onClick={() =>
+                        onToggleFilter(
+                          openFilter === config.column
+                            ? null
+                            : (config.column as keyof FilterState)
+                        )
+                      }
+                    >
+                      <FiFilter className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                {/* Popover filter UI */}
+                {openFilter === config.column &&
+                  !commentFields.includes(config.column) && (
+                    <div
+                      ref={(el) => {
+                        popoverRefs.current[config.column] = el;
+                      }}
+                      className="absolute left-0 top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
+                    >
+                      {config.isDate ? (
+                        config.column === "follow_up_date" ? (
+                          <FollowUpDateFilterDropdown
+                            column={config.column as keyof FilterState}
+                            value={
+                              (filters[config.column as keyof FilterState] as {
+                                start: string;
+                                end: string;
+                              }) || { start: "", end: "" }
+                            }
+                            isOpen={true}
+                            onChange={(column, value) =>
+                              onUpdateFilter(column, value)
+                            }
+                            onClear={onClearFilter}
+                            filterRef={
+                              filterRefs[config.column as keyof FilterState]!
+                            }
+                          />
+                        ) : (
+                          <DateFilterDropdown
+                            column={config.column as keyof FilterState}
+                            value={
+                              (filters[config.column as keyof FilterState] as {
+                                start: string;
+                                end: string;
+                              }) || { start: "", end: "" }
+                            }
+                            isOpen={true}
+                            onChange={(column, value) =>
+                              onUpdateFilter(column, value)
+                            }
+                            onClear={onClearFilter}
+                            filterRef={
+                              filterRefs[config.column as keyof FilterState]!
+                            }
+                          />
+                        )
+                      ) : config.enum ? (
+                        <MultiSelectDropdown
                           value={
-                            (filters[config.column as keyof FilterState] as {
-                              start: string;
-                              end: string;
-                            }) || { start: "", end: "" }
+                            filters[
+                              config.column as keyof FilterState
+                            ] as string
                           }
-                          isOpen={true}
-                          onChange={(column, value) =>
-                            onUpdateFilter(column, value)
+                          onChange={(value) =>
+                            onUpdateFilter(
+                              config.column as keyof FilterState,
+                              value
+                            )
                           }
-                          onClear={onClearFilter}
-                          filterRef={
-                            filterRefs[config.column as keyof FilterState]!
-                          }
+                          data={config.enum.map((e) => e.value)}
+                          colorMap={Object.fromEntries(
+                            config.enum.map((e) => [e.value, e.color])
+                          )}
                         />
                       ) : (
-                        <DateFilterDropdown
-                          column={config.column as keyof FilterState}
+                        <MultiSelectDropdown
                           value={
-                            (filters[config.column as keyof FilterState] as {
-                              start: string;
-                              end: string;
-                            }) || { start: "", end: "" }
+                            filters[
+                              config.column as keyof FilterState
+                            ] as string
                           }
-                          isOpen={true}
-                          onChange={(column, value) =>
-                            onUpdateFilter(column, value)
+                          onChange={(value) =>
+                            onUpdateFilter(
+                              config.column as keyof FilterState,
+                              value
+                            )
                           }
-                          onClear={onClearFilter}
-                          filterRef={
-                            filterRefs[config.column as keyof FilterState]!
-                          }
+                          data={getUniqueFieldValues(
+                            config.column as keyof WorkshopRegistrationData,
+                            data
+                          )}
                         />
-                      )
-                    ) : config.enum ? (
-                      <MultiSelectDropdown
-                        value={
-                          filters[config.column as keyof FilterState] as string
-                        }
-                        onChange={(value) =>
-                          onUpdateFilter(
-                            config.column as keyof FilterState,
-                            value
-                          )
-                        }
-                        data={config.enum.map((e) => e.value)}
-                        colorMap={Object.fromEntries(
-                          config.enum.map((e) => [e.value, e.color])
-                        )}
-                      />
-                    ) : (
-                      <MultiSelectDropdown
-                        value={
-                          filters[config.column as keyof FilterState] as string
-                        }
-                        onChange={(value) =>
-                          onUpdateFilter(
-                            config.column as keyof FilterState,
-                            value
-                          )
-                        }
-                        data={getUniqueFieldValues(
-                          config.column as keyof WorkshopRegistrationData,
-                          data
-                        )}
-                      />
-                    )}
-                  </div>
-                )}
-            </th>
-          ))}
+                      )}
+                    </div>
+                  )}
+              </th>
+            );
+          })}
         {/* Action column header */}
-        <th className="p-3 text-center w-[80px] min-w-[80px]">Action</th>
+        <th className="p-3 text-center w-[80px] min-w-[80px] bg-gray-100">
+          Action
+        </th>
       </tr>
     </thead>
   );
