@@ -146,10 +146,12 @@ const AssessmentInvitationModal: React.FC<AssessmentInvitationModalProps> = ({
                 you need to complete our eligibility assessment.
               </p>
             )}
-            <p>
-              This assessment will help us understand your skills and match you 
-              with the right opportunities.
-            </p>
+            <div className="bg-gradient-to-r from-[#E8F4F8] to-[#F0F8FF] rounded-lg p-4 border-l-4 border-[#255C79]">
+              <p className="text-[#255C79] font-medium">
+                 Our hiring team will get in touch with you after reviewing your assessment results 
+                to discuss the next steps in your application process.
+              </p>
+            </div>
           </div>
 
           <div className="bg-[#F8F9FA] rounded-lg p-4 mb-6 border border-[#DEE2E6]">
