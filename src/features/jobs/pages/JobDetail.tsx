@@ -26,52 +26,38 @@ import JobApplication from "../components/JobApplication";
 // Mock job data - in real app, this would come from API
 const mockJobDetail: Job = {
   id: "1",
-  title: "Senior Frontend Developer",
-  company: "TechCorp Inc.",
-  companyLogo: "https://via.placeholder.com/120x120/255C79/ffffff?text=TC",
-  location: "San Francisco, CA",
+  title: "Senior AI Engineer / Data Scientist",
+  company: "CellStrat Inc.",
+  companyLogo: "https://via.placeholder.com/60x60/255C79/ffffff?text=CS",
+  location: "Bengaluru, Karnataka, India",
   type: "Full-time",
   experienceLevel: "Senior Level",
   salary: {
-    min: 120000,
-    max: 160000,
-    currency: "USD",
+    min: 600000,
+    max: 2400000,
+    currency: "INR"
   },
-  description: `We are looking for a Senior Frontend Developer to join our dynamic team and help build amazing user experiences. You will be responsible for developing user-facing applications using React, TypeScript, and modern web technologies.
-
-As a Senior Frontend Developer, you'll work closely with our design and backend teams to create responsive, accessible, and performant web applications. You'll also mentor junior developers and contribute to our technical architecture decisions.
-
-This is an excellent opportunity to work with cutting-edge technologies in a collaborative environment where your ideas and expertise will be valued and implemented.`,
+  description: "CellStrat is a dynamic AI startup specializing in comprehensive AI consulting for US-based clients. Lead AI/ML engineering for global client projects and CellVerse product development. Architect and design scalable AI systems from conception to deployment.",
   requirements: [
-    "5+ years of experience with React and modern JavaScript",
-    "Strong proficiency in TypeScript",
-    "Experience with modern CSS frameworks (Tailwind, Styled Components)",
-    "Knowledge of testing frameworks (Jest, React Testing Library)",
-    "Experience with state management (Redux, Zustand, Context API)",
-    "Familiarity with build tools (Webpack, Vite, Rollup)",
-    "Understanding of web performance optimization",
-    "Experience with version control (Git) and CI/CD pipelines",
-    "Strong problem-solving and debugging skills",
-    "Excellent communication and teamwork abilities",
+    "Deep understanding of Large Language Models (LLMs) internals",
+    "Advanced experience with LLM APIs (OpenAI GPT, Claude, Gemini)",
+    "Proven experience building RAG architectures",
+    "Hands-on with vector databases and similarity search",
+    "Expert-level PyTorch and Transformers",
+    "Advanced FastAPI development",
+    "Extensive AWS experience",
+    "Docker for development and deployment",
+    "Expert Python skills"
   ],
   benefits: [
-    "Competitive salary with equity package",
-    "Comprehensive health, dental, and vision insurance",
-    "Flexible working hours and remote work options",
-    "Professional development budget ($3,000/year)",
-    "Top-tier equipment and home office setup allowance",
-    "401(k) with company matching",
-    "Unlimited PTO policy",
-    "Catered meals and snacks",
-    "Gym membership reimbursement",
-    "Annual team retreats and company events",
+    "Competitive compensation",
+    "ESOP options", 
+    "Cutting-edge AI projects"
   ],
-  tags: ["React", "TypeScript", "CSS", "JavaScript", "Redux", "Testing"],
+  tags: ["AI", "Machine Learning", "LLM", "Data Science"],
   remote: true,
   postedDate: "2024-01-15",
-  applicationDeadline: "2024-02-15",
-  applicationUrl: "https://techcorp.com/apply/1",
-  isBookmarked: false,
+  applicationUrl: "https://cellstrat.com/careers/senior-ai-engineer"
 };
 
 const JobDetail: React.FC = () => {
