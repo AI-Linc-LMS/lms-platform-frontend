@@ -6,7 +6,7 @@ interface JobCardProps {
   job: Job;
   featured?: boolean;
   onClick?: () => void;
-  onBookmark?: () => void;
+  // onBookmark?: () => void;
   isBookmarked?: boolean;
   onApply?: (job: Job) => void;
   className?: string;
@@ -16,16 +16,16 @@ const JobCard: React.FC<JobCardProps> = ({
   job, 
   featured = false, 
   onClick,
-  onBookmark,
-  isBookmarked: externalBookmarked,
+  // onBookmark,
+
   onApply,
   className = ''
 }) => {
   const navigate = useNavigate();
-  const [internalBookmarked, setInternalBookmarked] = useState(false);
+  // const [internalBookmarked, setInternalBookmarked] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
 
-  const isBookmarked = externalBookmarked !== undefined ? externalBookmarked : internalBookmarked;
+  // const isBookmarked = externalBookmarked !== undefined ? externalBookmarked : internalBookmarked;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -78,13 +78,13 @@ const JobCard: React.FC<JobCardProps> = ({
     }
   };
 
-  const handleBookmarkClick = () => {
-    if (onBookmark) {
-      onBookmark();
-    } else {
-      setInternalBookmarked(!internalBookmarked);
-    }
-  };
+  // const handleBookmarkClick = () => {
+  //   if (onBookmark) {
+  //     onBookmark();
+  //   } else {
+  //     setInternalBookmarked(!internalBookmarked);
+  //   }
+  // };
 
   return (
     <div 
@@ -178,7 +178,7 @@ const JobCard: React.FC<JobCardProps> = ({
                 </div>
 
                 {/* Bookmark Button */}
-                <button
+                {/* <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleBookmarkClick();
@@ -192,7 +192,7 @@ const JobCard: React.FC<JobCardProps> = ({
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill={isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                   </svg>
-                </button>
+                </button> */}
               </div>
             </div>
           </div>
