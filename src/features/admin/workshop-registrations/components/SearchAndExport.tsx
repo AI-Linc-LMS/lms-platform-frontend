@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FiX } from "react-icons/fi";
+import { FiX, FiMail, FiCheckSquare, FiSquare } from "react-icons/fi";
 import { CSVUploadButton } from "./CSVUploadButton";
 import {
   ColumnVisibilityDropdown,
@@ -17,6 +17,10 @@ interface SearchAndExportProps {
   columnConfigs: ColumnConfig[];
   visibleColumns: string[];
   onColumnVisibilityChange: (visibleColumns: string[]) => void;
+  onSendEmail?: () => void;
+  showSelection?: boolean;
+  onToggleSelection?: () => void;
+  selectedCount?: number;
 }
 
 export const SearchAndExport: React.FC<SearchAndExportProps> = ({
@@ -29,6 +33,10 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
   columnConfigs,
   visibleColumns,
   onColumnVisibilityChange,
+  onSendEmail,
+  showSelection = false,
+  onToggleSelection,
+  selectedCount = 0,
 }) => {
   const { isSuperAdmin } = useRole();
   const [message, setMessage] = useState<{
@@ -91,27 +99,66 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
             onSuccess={handleSuccess}
             onError={handleError}
           />
-          {isSuperAdmin && <button
-            onClick={onExport}
-            className="flex items-center gap-2 bg-[#5FA564] text-white px-4 py-2 rounded text-sm max-w-[120px]"
-            title="Export to Excel"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-5 h-5 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          {isSuperAdmin && onToggleSelection && (
+            <button
+              onClick={onToggleSelection}
+              className={`flex items-center gap-2 px-4 py-2 rounded text-sm transition-colors ${
+                showSelection
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-gray-600 text-white hover:bg-gray-700"
+              }`}
+              title={
+                showSelection ? "Exit Selection Mode" : "Enter Selection Mode"
+              }
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
-              />
-            </svg>
-            <span className="inline text-white">Export</span>
-          </button>}
+              {showSelection ? (
+                <FiCheckSquare className="w-4 h-4" />
+              ) : (
+                <FiSquare className="w-4 h-4" />
+              )}
+              <span className="hidden sm:inline">
+                {showSelection ? "Selection Mode" : "Select"}
+              </span>
+            </button>
+          )}
+          {isSuperAdmin &&
+            onSendEmail &&
+            showSelection &&
+            selectedCount > 0 && (
+              <button
+                onClick={onSendEmail}
+                className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700 transition-colors"
+                title={`Send Email to ${selectedCount} selected recipients`}
+              >
+                <FiMail className="w-4 h-4" />
+                <span className="hidden sm:inline">
+                  Send Email ({selectedCount})
+                </span>
+              </button>
+            )}
+          {isSuperAdmin && (
+            <button
+              onClick={onExport}
+              className="flex items-center gap-2 bg-[#5FA564] text-white px-4 py-2 rounded text-sm max-w-[120px]"
+              title="Export to Excel"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
+                />
+              </svg>
+              <span className="inline text-white">Export</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
