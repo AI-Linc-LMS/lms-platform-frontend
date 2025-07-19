@@ -33,7 +33,7 @@ export const mockJobs: Job[] = [
     ],
     tags: ["AI", "Machine Learning", "LLM", "Data Science"],
     remote: true,
-    postedDate: "2024-01-15",
+    postedDate: "2025-07-14",
     applicationUrl: "https://cellstrat.com/careers/senior-ai-engineer"
   },
   {
@@ -62,7 +62,7 @@ export const mockJobs: Job[] = [
     benefits: ['Competitive compensation', 'ESOP options', 'Cutting-edge frontend projects'],
     tags: ['Frontend', 'React', 'Next.js', 'Web Development'],
     remote: true,
-    postedDate: '2024-01-15',
+    postedDate: "2025-07-15",
     applicationUrl: 'https://cellstrat.com/careers/expert-frontend-developer'
   },
   {
@@ -88,7 +88,7 @@ export const mockJobs: Job[] = [
     benefits: ['Competitive salary', 'Learning opportunities', 'Innovative projects'],
     tags: ['AI', 'Machine Learning', 'Computer Vision', 'Deep Learning'],
     remote: false,
-    postedDate: '2024-01-15',
+    postedDate: "2025-07-11",
     applicationUrl: 'https://techinnovate.com/careers/ai-developer'
   },
   {
@@ -118,7 +118,7 @@ export const mockJobs: Job[] = [
     benefits: ['Competitive salary', 'Leadership opportunities', 'Strategic role'],
     tags: ['AI Leadership', 'Machine Learning', 'Computer Vision', 'Innovation'],
     remote: false,
-    postedDate: '2024-01-15',
+    postedDate: "2025-07-17",
     applicationUrl: 'https://techinnovate.com/careers/ai-lead'
   },
   {
@@ -144,7 +144,7 @@ export const mockJobs: Job[] = [
     benefits: ['Equity stake', 'Cutting-edge technology exposure', 'Competitive compensation'],
     tags: ['AI', 'Founding Engineer', 'Leadership', 'Innovation'],
     remote: false,
-    postedDate: '2024-01-09',
+    postedDate: "2025-07-19",
     applicationUrl: 'https://cenna.com/apply/founding-ai-engineer'
   },
   {
@@ -170,7 +170,7 @@ export const mockJobs: Job[] = [
     benefits: ['Full remote work', 'Cutting-edge security projects', 'Continuous learning'],
     tags: ['AI', 'Security', 'Remote', 'Machine Learning'],
     remote: true,
-    postedDate: '2024-01-08',
+    postedDate: "2025-07-20",
     applicationUrl: 'https://ultrasafeai.com/apply/ai-engineer'
   },
   {
@@ -196,7 +196,7 @@ export const mockJobs: Job[] = [
     benefits: ['Competitive salary', 'Research opportunities', 'Career growth'],
     tags: ['Senior AI', 'Machine Learning', 'Deep Learning', 'Research'],
     remote: false,
-    postedDate: '2024-01-07',
+    postedDate: "2025-07-21",
     applicationUrl: 'https://genloop.com/apply/senior-ai-engineer'
   },
   {
@@ -222,7 +222,7 @@ export const mockJobs: Job[] = [
     benefits: ['Hybrid work model', 'Data-driven projects', 'Continuous learning'],
     tags: ['AI', 'Data Science', 'Python', 'Machine Learning'],
     remote: false,
-    postedDate: '2024-01-06',
+    postedDate: "2025-07-22",
     applicationUrl: 'https://velodata.com/apply/ai-engineer'
   },
   {
@@ -248,7 +248,7 @@ export const mockJobs: Job[] = [
     benefits: ['Innovative projects', 'Career growth', 'Competitive compensation'],
     tags: ['AI', 'NLP', 'Chatbots', 'Automation'],
     remote: false,
-    postedDate: '2024-01-05',
+    postedDate: "2025-07-23",
     applicationUrl: 'https://aisensy.com/apply/ai-engineer'
   },
   {
@@ -274,7 +274,7 @@ export const mockJobs: Job[] = [
     benefits: ['Hybrid work model', 'Learning opportunities', 'Competitive compensation'],
     tags: ['AI', 'Machine Learning', 'Verification', 'Innovation'],
     remote: false,
-    postedDate: '2024-01-04',
+    postedDate: "2025-07-24",
     applicationUrl: 'https://kla.com/apply/ai-engineer'
   },
   {
@@ -300,7 +300,7 @@ export const mockJobs: Job[] = [
     benefits: ['Full remote work', 'Flexible hours', 'Continuous learning'],
     tags: ['Machine Learning', 'Remote', 'Python', 'AI'],
     remote: true,
-    postedDate: '2024-01-03',
+    postedDate: "2025-07-25",
     applicationUrl: 'https://hike.com/apply/ml-engineer'
   },
   {
@@ -326,7 +326,7 @@ export const mockJobs: Job[] = [
     benefits: ['Hybrid work model', 'Innovative projects', 'Professional growth'],
     tags: ['AI', 'Machine Learning', 'Innovation', 'Technology'],
     remote: false,
-    postedDate: '2024-01-02',
+    postedDate: "2025-07-26",
     applicationUrl: 'https://indsafri.com/apply/ai-engineer'
   },
   {
@@ -352,7 +352,7 @@ export const mockJobs: Job[] = [
     benefits: ['On-site work', 'Learning opportunities', 'Competitive compensation'],
     tags: ['AI', 'Engineering', 'Technology', 'Innovation'],
     remote: false,
-    postedDate: '2024-01-01',
+    postedDate: "2025-07-27",
     applicationUrl: 'https://eudia.com/apply/ai-engineer'
   },
   {
@@ -378,7 +378,7 @@ export const mockJobs: Job[] = [
     benefits: ['Hybrid work model', 'Cutting-edge projects', 'Professional development'],
     tags: ['AI', 'Machine Learning', 'Innovation', 'Technology'],
     remote: false,
-    postedDate: '2023-12-29',
+    postedDate: "2025-07-28",
     applicationUrl: 'https://predigle.com/apply/ai-engineer'
   },
   {
@@ -404,7 +404,7 @@ export const mockJobs: Job[] = [
     benefits: ['Full remote work', 'Flexible hours', 'Comprehensive AI projects'],
     tags: ['AI', 'Fullstack', 'Remote', 'Web Development'],
     remote: true,
-    postedDate: '2023-12-28',
+    postedDate: "2025-07-29",
     applicationUrl: 'https://mundos.com/apply/ai-fullstack-engineer'
   },
   {
@@ -430,7 +430,7 @@ export const mockJobs: Job[] = [
     benefits: ['On-site work', 'Research opportunities', 'Competitive compensation'],
     tags: ['AI Research', 'Machine Learning', 'Innovation', 'Academic'],
     remote: false,
-    postedDate: '2023-12-27',
+    postedDate: "2025-07-30",
     applicationUrl: 'https://appsconnect.com/apply/ai-research-engineer'
   },
   {
@@ -456,7 +456,7 @@ export const mockJobs: Job[] = [
     benefits: ['On-site work', 'Learning opportunities', 'Competitive compensation'],
     tags: ['AI', 'Machine Learning', 'Technology', 'Innovation'],
     remote: false,
-    postedDate: '2023-12-26',
+    postedDate: "2025-07-26",
     applicationUrl: 'https://valuebound.com/apply/ai-engineer'
   }
 ]; 
