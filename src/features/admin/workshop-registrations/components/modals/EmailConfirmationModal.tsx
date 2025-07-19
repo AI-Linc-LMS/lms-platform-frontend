@@ -5,7 +5,7 @@ interface EmailConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  selectedEmails: string[];
+  selectedRecipients: Array<{ email: string; name: string }>;
   totalSelected: number;
   onRemoveEmail?: (email: string) => void;
 }
@@ -14,7 +14,7 @@ const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
   isOpen,
   onClose,
   onConfirm,
-  selectedEmails,
+  selectedRecipients,
   totalSelected,
   onRemoveEmail,
 }) => {
@@ -30,7 +30,6 @@ const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
       document.body.style.overflow = "unset";
     };
   }, [isOpen]);
-
   // Handle escape key press
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -108,7 +107,7 @@ const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
                 <button
                   onClick={() => {
                     // Remove all emails
-                    selectedEmails.forEach((email) => onRemoveEmail(email));
+                    selectedRecipients.forEach((email) => onRemoveEmail(email.email));
                   }}
                   className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
                 >
@@ -118,17 +117,51 @@ const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
               )}
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-4 max-h-86 overflow-y-auto">
-              {selectedEmails.length > 0 ? (
+            <div className="bg-gray-50 rounded-lg p-4 max-h-66 overflow-y-auto">
+              {selectedRecipients && selectedRecipients.length > 0 ? (
                 <div className="grid gap-2">
-                  {selectedEmails.map((email, index) => (
+                  {selectedRecipients.map((recipient, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-white rounded border hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500">
+                              {recipient.name}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                          #{index + 1}
+                        </span>
+                          </div>
+                          <span className="text-xs text-gray-500">
+                            {recipient.email}
+                          </span>
+                        </div>
+                      </div>
+                      {onRemoveEmail && (
+                        <button
+                          onClick={() => handleRemoveEmail(recipient.email)}
+                          className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors"
+                          title="Remove email"
+                        >
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : selectedRecipients.length > 0 ? (
+                <div className="grid gap-2">
+                  {selectedRecipients.map((email, index) => (
                     <div
                       key={index}
                       className="flex items-center justify-between p-3 bg-white rounded border hover:bg-gray-50 transition-colors"
                     >
                       <div className="flex items-center gap-3 flex-1">
                         <span className="text-sm text-gray-700 font-medium">
-                          {email}
+                          {email.name}
                         </span>
                         <span className="text-xs text-gray-500">
                           #{index + 1}
@@ -136,7 +169,7 @@ const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
                       </div>
                       {onRemoveEmail && (
                         <button
-                          onClick={() => handleRemoveEmail(email)}
+                          onClick={() => handleRemoveEmail(email.email)}
                           className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors"
                           title="Remove email"
                         >
@@ -195,9 +228,9 @@ const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
             </button>
             <button
               onClick={onConfirm}
-              disabled={selectedEmails.length === 0}
+              disabled={selectedRecipients.length === 0}
               className={`px-6 py-2 rounded-md font-medium transition-colors flex items-center gap-2 ${
-                selectedEmails.length === 0
+                selectedRecipients.length === 0
                   ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                   : "bg-green-600 hover:bg-green-700 text-white"
               }`}
