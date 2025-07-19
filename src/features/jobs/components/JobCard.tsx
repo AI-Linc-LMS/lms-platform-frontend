@@ -9,6 +9,7 @@ interface JobCardProps {
   onBookmark?: () => void;
   isBookmarked?: boolean;
   onApply?: (job: Job) => void;
+  className?: string;
 }
 
 const JobCard: React.FC<JobCardProps> = ({ 
@@ -17,7 +18,8 @@ const JobCard: React.FC<JobCardProps> = ({
   onClick,
   onBookmark,
   isBookmarked: externalBookmarked,
-  onApply
+  onApply,
+  className = ''
 }) => {
   const navigate = useNavigate();
   const [internalBookmarked, setInternalBookmarked] = useState(false);
@@ -90,7 +92,7 @@ const JobCard: React.FC<JobCardProps> = ({
         featured 
           ? 'border-[#255C79] shadow-md ring-2 ring-[#255C79] ring-opacity-10' 
           : 'border-[#DEE2E6] hover:border-[#255C79]'
-      }`}
+      } ${className}`}
       onClick={handleViewDetails}
     >
       <div className="p-4 sm:p-6">
