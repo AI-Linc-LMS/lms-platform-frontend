@@ -5,7 +5,7 @@ export const completeJobDetails: Job[] = [
     id: "1",
     title: "Senior AI Engineer / Data Scientist",
     company: "CellStrat Inc.",
-    companyLogo: "https://via.placeholder.com/60x60/255C79/ffffff?text=CS",
+    companyLogo: "https://media.licdn.com/dms/image/v2/C510BAQHV31l3RbGCQA/company-logo_200_200/company-logo_200_200/0/1630564230354/cellstrat_logo?e=1755734400&v=beta&t=df_Efc35D-Q3Zjel9JTmm7TPVwDnuJ3JgiqecVLOVqY",
     location: "Bengaluru, Karnataka, India",
     type: "Full-time",
     experienceLevel: "Senior Level",
