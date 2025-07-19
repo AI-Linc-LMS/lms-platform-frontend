@@ -199,7 +199,7 @@ const Jobs: React.FC = () => {
               </p>
 
               {/* Data Source Toggle */}
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center items-center mb-8">
+              {/* <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center items-center mb-8">
                 <span className="text-sm font-medium opacity-90">Data Source:</span>
                 <div className="flex flex-wrap gap-2 justify-center">
                   <button
@@ -248,7 +248,7 @@ const Jobs: React.FC = () => {
                     🔍 All Jobs
                   </button>
                 </div>
-              </div>
+              </div> */}
 
               {/* Search Bar */}
               <div className="max-w-4xl mx-auto">
