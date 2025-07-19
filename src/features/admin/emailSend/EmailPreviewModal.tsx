@@ -4,7 +4,7 @@ import { FiX, FiTrash2 } from "react-icons/fi";
 interface EmailPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  emails: { email: string }[];
+  emails: { email: string; name?: string }[];
   onRemoveEmail?: (email: string) => void;
 }
 
@@ -78,7 +78,7 @@ const EmailPreviewModal: React.FC<EmailPreviewModalProps> = ({
             </button>
           </div>
         </div>
-        <div className="p-6 max-h-[60vh] overflow-y-auto">
+        <div className="p-6 max-h-[55vh] overflow-y-auto">
           <div className="grid gap-2">
             {emails.map((emailData, index) => (
               <div
@@ -87,7 +87,9 @@ const EmailPreviewModal: React.FC<EmailPreviewModalProps> = ({
               >
                 <div className="flex items-center gap-3 flex-1">
                   <span className="text-sm text-gray-700 font-medium">
-                    {emailData.email}
+                    {emailData.name
+                      ? `${emailData.name} (${emailData.email})`
+                      : emailData.email}
                   </span>
                   <span className="text-xs text-gray-500">#{index + 1}</span>
                 </div>

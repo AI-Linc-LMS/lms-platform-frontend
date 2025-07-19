@@ -1,23 +1,21 @@
 import React, { useState, useRef } from "react";
 import { useToast } from "../../../contexts/ToastContext";
 import RichTextEditor from "../course-builder/components/RichTextEditor";
-import {
-  createEmailJob,
-  htmlEmail,
-} from "../../../services/admin/workshopRegistrationApis";
+import { createEmailJob } from "../../../services/admin/workshopRegistrationApis";
 import { useMutation } from "@tanstack/react-query";
 import { FiUpload, FiEye } from "react-icons/fi";
 import EmailPreviewModal from "./EmailPreviewModal";
 
 export interface JobData {
   task_name: string;
-  emails: string[];
+  emails: { email: string; name: string }[];
   subject: string;
   email_body: string;
 }
 
 interface EmailData {
   email: string;
+  name?: string;
 }
 
 interface EmailTemplate {
@@ -29,17 +27,22 @@ interface EmailFormProps {
   clientId: string;
   onJobCreated: (jobId: string) => void;
   onViewHistory: () => void;
-  preFilledEmails?: string[];
+  preFilledRecipients?: Array<{ email: string; name: string }>;
 }
 
 const EmailForm: React.FC<EmailFormProps> = ({
   clientId,
   onJobCreated,
   onViewHistory,
-  preFilledEmails = [],
+  preFilledRecipients = [],
 }) => {
   const [emailData, setEmailData] = useState<EmailData[]>(
-    preFilledEmails.map((email) => ({ email }))
+    preFilledRecipients.length > 0
+      ? preFilledRecipients.map((recipient) => ({
+          email: recipient.email,
+          name: recipient.name,
+        }))
+      : []
   );
   const [emailTemplate, setEmailTemplate] = useState<EmailTemplate>({
     subject: "",
@@ -47,14 +50,6 @@ const EmailForm: React.FC<EmailFormProps> = ({
   });
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
-  const [htmlPreview, setHtmlPreview] = useState<string>(
-    `<div style="font-family: Arial, sans-serif; padding: 24px; background: #f9f9f9;">
-      <h2 style="color: #2d3748;">Welcome to AI Linc!</h2>
-      <p style="color: #4a5568;">This is a <b>sample HTML email</b> preview. You can use <span style='color: #3182ce;'>bold</span>, <i>italic</i>, <u>underline</u>, and even <span style='color: #38a169;'>colored text</span>!</p>
-      <p style="margin-top: 24px;">Best regards,<br/>The AI Linc Team</p>
-    </div>`
-  );
-  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [taskName, setTaskName] = useState("");
   const [showEmailPreviewModal, setShowEmailPreviewModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -70,7 +65,6 @@ const EmailForm: React.FC<EmailFormProps> = ({
       setEmailData([]);
       setEmailTemplate({ subject: "", email_body: "" });
       setUploadedFileName("");
-      setHtmlPreview("");
       setTaskName("");
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -97,12 +91,31 @@ const EmailForm: React.FC<EmailFormProps> = ({
       const line = lines[i].trim();
       if (!line) continue;
 
-      // Handle both formats: single email per line or comma-separated
       const values = line.split(",").map((value) => value.trim());
 
-      for (const value of values) {
-        if (value && value.includes("@")) {
-          emails.push({ email: value });
+      // Check if this is a header row (contains "Name" and "Email")
+      if (i === 0 && values.length >= 2) {
+        const isHeader = values.some(
+          (val) =>
+            val.toLowerCase().includes("name") ||
+            val.toLowerCase().includes("email")
+        );
+        if (isHeader) continue; // Skip header row
+      }
+
+      // Handle different CSV formats
+      if (values.length >= 2) {
+        // Format: Name,Email
+        const name = values[0];
+        const email = values[1];
+        if (email && email.includes("@")) {
+          emails.push({ email, name });
+        }
+      } else if (values.length === 1) {
+        // Format: single email per line
+        const email = values[0];
+        if (email && email.includes("@")) {
+          emails.push({ email });
         }
       }
     }
@@ -125,26 +138,11 @@ const EmailForm: React.FC<EmailFormProps> = ({
       } catch (error) {
         console.error("Error parsing CSV:", error);
         alert(
-          'Error parsing CSV file. Please check the format. Make sure it has an "email" column.'
+          'Error parsing CSV file. Please check the format. The CSV should have "Name,Email" columns or just email addresses.'
         );
       }
     };
     reader.readAsText(file);
-  };
-
-  const handlePreviewHtml = async () => {
-    setIsPreviewLoading(true);
-    try {
-      // Replace line breaks with literal \n before sending to API
-      const processedBody = emailTemplate.email_body.replace(/\n/g, "\\n");
-      const response = await htmlEmail(clientId, processedBody);
-      setHtmlPreview(response.formatted_html || response || "");
-    } catch {
-      showErrorToast("Error", "Failed to format email body");
-      setHtmlPreview("");
-    } finally {
-      setIsPreviewLoading(false);
-    }
   };
 
   const handleSendEmails = async () => {
@@ -161,9 +159,12 @@ const EmailForm: React.FC<EmailFormProps> = ({
     setIsLoading(true);
     const createJobData: JobData = {
       task_name: taskName || "Welcome Email Campaign",
-      emails: emailData.map((email) => email.email),
+      emails: emailData.map((email) => ({
+        email: email.email,
+        name: email.name || email.email,
+      })),
       subject: emailTemplate.subject,
-      email_body: htmlPreview.length > 0 ? htmlPreview : emailTemplate.email_body,
+      email_body: emailTemplate.email_body,
     };
     createJobMutation.mutate(createJobData);
     setIsLoading(false);
@@ -176,8 +177,12 @@ const EmailForm: React.FC<EmailFormProps> = ({
   };
 
   const downloadSampleCSV = () => {
-    const csvContent =
-      "opbkfslm@example.com\nrjjccrxc@example.com\newqczvde@mail.net\nvjpxzwvx@testmail.com\necxchwcz@sample.org";
+    const csvContent = `Name,Email
+Alice Johnson,alice.johnson@example.com
+Ravi Kumar,ravi.kumar@example.com
+Sara Lee,sara.lee@example.com
+Mohit Verma,mohit.verma@example.com
+Priya Sharma,priya.sharma@example.com`;
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -295,7 +300,9 @@ const EmailForm: React.FC<EmailFormProps> = ({
                   className="flex items-center justify-between p-2 bg-white rounded border text-sm"
                 >
                   <span className="text-gray-700 truncate">
-                    {emailData.email}
+                    {emailData.name
+                      ? `${emailData.name} (${emailData.email})`
+                      : emailData.email}
                   </span>
                   <span className="text-xs text-gray-500 ml-2">
                     #{index + 1}
@@ -315,8 +322,8 @@ const EmailForm: React.FC<EmailFormProps> = ({
               No email recipients loaded yet.
             </p>
             <p className="text-sm text-gray-500">
-              Upload a CSV file or emails will be pre-filled from the sales
-              funnel.
+              Upload a CSV file with "Name,Email" format or emails will be
+              pre-filled from the sales funnel.
             </p>
           </div>
         )}
@@ -336,7 +343,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
       </div>
 
       {/* Email Composition Section */}
-      <div className="mb-8">
+      <div className="mb-2">
         <h2 className="text-lg font-semibold text-gray-700 mb-4">
           3. Compose Email
         </h2>
@@ -363,7 +370,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
               Body *
             </label>
             <div className="flex gap-4 w-full justify-between">
-              <div className="w-full h-[360px]">
+              <div className="w-full">
                 <RichTextEditor
                   value={emailTemplate.email_body}
                   onChange={(value: string) =>
@@ -372,43 +379,13 @@ const EmailForm: React.FC<EmailFormProps> = ({
                   placeholder="Enter email body content..."
                 />
               </div>
-              {/* HTML Preview */}
-              <div className="w-full">
-                {htmlPreview && (
-                  <div className="border border-gray-300 rounded p-4 bg-gray-50 h-[360px]">
-                    <div className="mb-2 text-xs text-gray-500 font-semibold">
-                      HTML Preview
-                    </div>
-                    <div
-                      dangerouslySetInnerHTML={{ __html: htmlPreview }}
-                      className="h-[310px] overflow-y-auto"
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="flex mt-4">
-              <button
-                type="button"
-                onClick={handlePreviewHtml}
-                disabled={
-                  isPreviewLoading || emailTemplate.email_body.length === 0
-                }
-                className={`px-4 py-2 rounded bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors ${
-                  isPreviewLoading || emailTemplate.email_body.length === 0
-                    ? "opacity-50 cursor-not-allowed"
-                    : ""
-                }`}
-              >
-                {isPreviewLoading ? "Generating Preview..." : "Preview as HTML"}
-              </button>
             </div>
           </div>
         </div>
       </div>
 
       {/* Send Section */}
-      <div className="pt-6">
+      <div className="pt-4">
         <div className="flex items-center justify-between">
           <div className="text-gray-600">
             {emailData.length > 0 && (
