@@ -6,24 +6,26 @@ interface JobCardProps {
   job: Job;
   featured?: boolean;
   onClick?: () => void;
-  onBookmark?: () => void;
+  // onBookmark?: () => void;
   isBookmarked?: boolean;
   onApply?: (job: Job) => void;
+  className?: string;
 }
 
 const JobCard: React.FC<JobCardProps> = ({ 
   job, 
   featured = false, 
   onClick,
-  onBookmark,
-  isBookmarked: externalBookmarked,
-  onApply
+  // onBookmark,
+
+  onApply,
+  className = ''
 }) => {
   const navigate = useNavigate();
-  const [internalBookmarked, setInternalBookmarked] = useState(false);
+  // const [internalBookmarked, setInternalBookmarked] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
 
-  const isBookmarked = externalBookmarked !== undefined ? externalBookmarked : internalBookmarked;
+  // const isBookmarked = externalBookmarked !== undefined ? externalBookmarked : internalBookmarked;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -37,26 +39,26 @@ const JobCard: React.FC<JobCardProps> = ({
     return `${Math.ceil(diffDays / 30)} months ago`;
   };
 
-  const getExperienceColor = (experience: string) => {
-    switch (experience) {
-      case 'Entry Level': return 'bg-[#28A745] text-white';
-      case 'Mid Level': return 'bg-[#FFC107] text-white';
-      case 'Senior Level': return 'bg-[#255C79] text-white';
-      case 'Executive': return 'bg-[#6F42C1] text-white';
-      default: return 'bg-[#6C757D] text-white';
-    }
-  };
+  // const getExperienceColor = (experience: string) => {
+  //   switch (experience) {
+  //     case 'Entry Level': return 'bg-[#28A745] text-white';
+  //     case 'Mid Level': return 'bg-[#FFC107] text-white';
+  //     case 'Senior Level': return 'bg-[#255C79] text-white';
+  //     case 'Executive': return 'bg-[#6F42C1] text-white';
+  //     default: return 'bg-[#6C757D] text-white';
+  //   }
+  // };
 
-  const getJobTypeColor = (type: string) => {
-    switch (type) {
-      case 'Full-time': return 'bg-[#17627A] text-white';
-      case 'Part-time': return 'bg-[#FD7E14] text-white';
-      case 'Contract': return 'bg-[#DC3545] text-white';
-      case 'Internship': return 'bg-[#20C997] text-white';
-      case 'Freelance': return 'bg-[#6F42C1] text-white';
-      default: return 'bg-[#6C757D] text-white';
-    }
-  };
+  // const getJobTypeColor = (type: string) => {
+  //   switch (type) {
+  //     case 'Full-time': return 'bg-[#17627A] text-white';
+  //     case 'Part-time': return 'bg-[#FD7E14] text-white';
+  //     case 'Contract': return 'bg-[#DC3545] text-white';
+  //     case 'Internship': return 'bg-[#20C997] text-white';
+  //     case 'Freelance': return 'bg-[#6F42C1] text-white';
+  //     default: return 'bg-[#6C757D] text-white';
+  //   }
+  // };
 
   const handleViewDetails = () => {
     if (onClick) {
@@ -76,13 +78,13 @@ const JobCard: React.FC<JobCardProps> = ({
     }
   };
 
-  const handleBookmarkClick = () => {
-    if (onBookmark) {
-      onBookmark();
-    } else {
-      setInternalBookmarked(!internalBookmarked);
-    }
-  };
+  // const handleBookmarkClick = () => {
+  //   if (onBookmark) {
+  //     onBookmark();
+  //   } else {
+  //     setInternalBookmarked(!internalBookmarked);
+  //   }
+  // };
 
   return (
     <div 
@@ -90,7 +92,7 @@ const JobCard: React.FC<JobCardProps> = ({
         featured 
           ? 'border-[#255C79] shadow-md ring-2 ring-[#255C79] ring-opacity-10' 
           : 'border-[#DEE2E6] hover:border-[#255C79]'
-      }`}
+      } ${className}`}
       onClick={handleViewDetails}
     >
       <div className="p-4 sm:p-6">
@@ -142,10 +144,10 @@ const JobCard: React.FC<JobCardProps> = ({
 
                   {/* Tags */}
                   <div className="flex flex-wrap gap-1 sm:gap-2 mb-3">
-                    <span className={`px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium ${getJobTypeColor(job.type)}`}>
+                    <span className={`px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium {getJobTypeColor(job.type)}`}>
                       {job.type}
                     </span>
-                    <span className={`px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium ${getExperienceColor(job.experienceLevel)}`}>
+                    <span className={`px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium {getExperienceColor(job.experienceLevel)}`}>
                       {job.experienceLevel}
                     </span>
                     {job.remote && (
@@ -176,7 +178,7 @@ const JobCard: React.FC<JobCardProps> = ({
                 </div>
 
                 {/* Bookmark Button */}
-                <button
+                {/* <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleBookmarkClick();
@@ -190,7 +192,7 @@ const JobCard: React.FC<JobCardProps> = ({
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill={isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                   </svg>
-                </button>
+                </button> */}
               </div>
             </div>
           </div>
@@ -199,11 +201,11 @@ const JobCard: React.FC<JobCardProps> = ({
         {/* Salary */}
         <div className="mb-4">
           <div className="flex items-center gap-2">
-            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#28A745]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {/* <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#28A745]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-            </svg>
+            </svg> */}
             <span className="text-[#28A745] font-bold text-base sm:text-lg">
-              {job.salary ? `$${job.salary.min.toLocaleString()} - $${job.salary.max.toLocaleString()}` : 'Salary not specified'}
+              {job.salary ? `₹${job.salary.min.toLocaleString()} - ₹${job.salary.max.toLocaleString()}` : 'Salary not specified'}
             </span>
           </div>
         </div>

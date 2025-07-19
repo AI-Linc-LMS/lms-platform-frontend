@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {  } from 'react';
 
 interface JobFiltersProps {
   jobType: string;
@@ -9,7 +9,6 @@ interface JobFiltersProps {
   onSalaryChange: (value: { min: number; max: number }) => void;
   remote: boolean;
   onRemoteChange: (value: boolean) => void;
-  onClearFilters: () => void;
 }
 
 const JobFilters: React.FC<JobFiltersProps> = ({
@@ -21,21 +20,34 @@ const JobFilters: React.FC<JobFiltersProps> = ({
   onSalaryChange,
   remote,
   onRemoteChange,
-  onClearFilters
 }) => {
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  // const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  const jobTypes = ['Full-time', 'Part-time', 'Contract', 'Freelance', 'Internship'];
-  const experienceLevels = ['Entry Level', 'Mid Level', 'Senior Level', 'Executive'];
+  const jobTypes = ['Full-time', 'Part-time', 'Contract',  'Internship'];
+  const experienceLevels = ['Entry Level', 'Mid Level', 'Senior Level'];
   const salaryRanges = [
-    { label: 'Any', min: 0, max: 200000 },
-    { label: '$30k - $50k', min: 30000, max: 50000 },
-    { label: '$50k - $80k', min: 50000, max: 80000 },
-    { label: '$80k - $120k', min: 80000, max: 120000 },
-    { label: '$120k+', min: 120000, max: 200000 }
+    { label: 'Any', min: 0, max: 10000000 },
+    { label: '₹30k - ₹50k', min: 30000, max: 50000 },
+    { label: '₹50k - ₹80k', min: 50000, max: 80000 },
+    { label: '₹80k - ₹1.2L', min: 80000, max: 120000 },
+    { label: '₹1.2L - ₹2L', min: 120000, max: 200000 },
+    { label: '₹2L - ₹5L', min: 200000, max: 500000 },
+    { label: '₹5L - ₹10L', min: 500000, max: 1000000 },
+    { label: '₹10L - ₹25L', min: 1000000, max: 2500000 },
+    { label: '₹25L - ₹50L', min: 2500000, max: 5000000 },
+    { label: '₹50L+', min: 5000000, max: 10000000 }
   ];
 
-  const hasActiveFilters = jobType || experience || remote || salary.min > 0 || salary.max < 200000;
+  const handleClearAllFilters = () => {
+    // Reset all filters to their default state
+    onJobTypeChange('');  // Reset to 'All Types'
+    onExperienceChange('');  // Reset to 'All Levels'
+    onSalaryChange({ min: 0, max: 10000000 });  // Reset to 'Any'
+    onRemoteChange(false);  // Uncheck remote work
+     // Close advanced filters
+  };
+
+  const hasActiveFilters = jobType || experience || remote || salary.min > 0 || salary.max < 10000000;
 
   return (
     <div className="bg-white rounded-2xl border border-[#DEE2E6] p-4 sm:p-6">
@@ -45,13 +57,13 @@ const JobFilters: React.FC<JobFiltersProps> = ({
           <h3 className="text-lg sm:text-xl font-bold text-[#343A40]">Filters</h3>
           {hasActiveFilters && (
             <span className="bg-[#255C79] text-white text-xs px-2 py-1 rounded-full">
-              {[jobType, experience, remote, salary.min > 0 || salary.max < 200000].filter(Boolean).length}
+              {[jobType, experience, remote, salary.min > 0 || salary.max < 10000000].filter(Boolean).length}
             </span>
           )}
         </div>
         {hasActiveFilters && (
           <button
-            onClick={onClearFilters}
+            onClick={handleClearAllFilters}
             className="text-[#6C757D] hover:text-[#255C79] text-sm font-medium"
           >
             Clear all
@@ -161,7 +173,7 @@ const JobFilters: React.FC<JobFiltersProps> = ({
       </div>
 
       {/* Advanced Filters Toggle */}
-      <button
+      {/* <button
         onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
         className="w-full flex items-center justify-between p-3 bg-[#F8F9FA] rounded-lg text-[#495057] hover:bg-[#E9ECEF] transition-colors"
       >
@@ -174,12 +186,11 @@ const JobFilters: React.FC<JobFiltersProps> = ({
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
-      </button>
+      </button> */}
 
       {/* Advanced Filters Content */}
-      {showAdvancedFilters && (
+      {/* {showAdvancedFilters && (
         <div className="mt-4 pt-4 border-t border-[#F8F9FA] space-y-4">
-          {/* Custom Salary Range */}
           <div>
             <label className="block text-sm font-medium text-[#343A40] mb-3">
               Custom Salary Range
@@ -208,7 +219,6 @@ const JobFilters: React.FC<JobFiltersProps> = ({
             </div>
           </div>
 
-          {/* Date Posted */}
           <div>
             <label className="block text-sm font-medium text-[#343A40] mb-3">
               Date Posted
@@ -234,12 +244,15 @@ const JobFilters: React.FC<JobFiltersProps> = ({
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Apply Filters Button (Mobile) */}
       <div className="mt-6 lg:hidden">
-        <button className="w-full px-4 py-3 bg-[#255C79] text-white rounded-lg hover:bg-[#1E4A63] transition-colors font-medium">
-          Apply Filters
+        <button 
+          onClick={handleClearAllFilters}
+          className="w-full px-4 py-3 bg-[#255C79] text-white rounded-lg hover:bg-[#1E4A63] transition-colors font-medium"
+        >
+          Clear All Filters
         </button>
       </div>
     </div>
