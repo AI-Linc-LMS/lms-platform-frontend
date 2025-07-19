@@ -64,7 +64,6 @@ export const CSVUploadButton: React.FC<CSVUploadButtonProps> = ({
         return;
       }
 
-      console.log("assement", text);
       // Parse CSV data
       const attendanceData = parseCSVAttendance(text);
 
@@ -73,8 +72,6 @@ export const CSVUploadButton: React.FC<CSVUploadButtonProps> = ({
         setIsUploading(false);
         return;
       }
-
-      console.log("Attendance Data", attendanceData);
       // Upload to API
       //uploadMutation.mutate(attendanceData);
     } catch {

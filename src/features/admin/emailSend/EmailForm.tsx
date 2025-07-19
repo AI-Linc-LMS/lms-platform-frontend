@@ -6,6 +6,8 @@ import {
   htmlEmail,
 } from "../../../services/admin/workshopRegistrationApis";
 import { useMutation } from "@tanstack/react-query";
+import { FiUpload, FiEye } from "react-icons/fi";
+import EmailPreviewModal from "./EmailPreviewModal";
 
 export interface JobData {
   task_name: string;
@@ -27,14 +29,18 @@ interface EmailFormProps {
   clientId: string;
   onJobCreated: (jobId: string) => void;
   onViewHistory: () => void;
+  preFilledEmails?: string[];
 }
 
 const EmailForm: React.FC<EmailFormProps> = ({
   clientId,
   onJobCreated,
   onViewHistory,
+  preFilledEmails = [],
 }) => {
-  const [emailData, setEmailData] = useState<EmailData[]>([]);
+  const [emailData, setEmailData] = useState<EmailData[]>(
+    preFilledEmails.map((email) => ({ email }))
+  );
   const [emailTemplate, setEmailTemplate] = useState<EmailTemplate>({
     subject: "",
     email_body: "",
@@ -50,6 +56,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
   );
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [taskName, setTaskName] = useState("");
+  const [showEmailPreviewModal, setShowEmailPreviewModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { success: showSuccessToast, error: showErrorToast } = useToast();
 
@@ -156,10 +163,16 @@ const EmailForm: React.FC<EmailFormProps> = ({
       task_name: taskName || "Welcome Email Campaign",
       emails: emailData.map((email) => email.email),
       subject: emailTemplate.subject,
-      email_body: htmlPreview,
+      email_body: htmlPreview.length > 0 ? htmlPreview : emailTemplate.email_body,
     };
     createJobMutation.mutate(createJobData);
     setIsLoading(false);
+  };
+
+  const handleRemoveEmail = (emailToRemove: string) => {
+    setEmailData((prev) =>
+      prev.filter((emailData) => emailData.email !== emailToRemove)
+    );
   };
 
   const downloadSampleCSV = () => {
@@ -177,8 +190,35 @@ const EmailForm: React.FC<EmailFormProps> = ({
   return (
     <div className="mx-auto p-6 bg-white rounded-lg shadow-lg">
       <div className="flex justify-between items-start mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">Bulk Email Sender</h1>
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold text-gray-800">
+            Bulk Email Sender
+          </h1>
+        </div>
         <div className="flex gap-2">
+          {/* CSV Upload Icon */}
+          <div className="relative">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleFileUpload}
+              className="hidden"
+              id="csv-upload"
+            />
+            <label
+              htmlFor="csv-upload"
+              className="flex items-center justify-center w-10 h-10 bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 rounded-lg cursor-pointer transition-colors"
+              title="Upload CSV file"
+            >
+              <FiUpload className="w-5 h-5" />
+            </label>
+            {uploadedFileName && (
+              <div className="absolute -bottom-8 right-0 text-xs text-green-600 whitespace-nowrap">
+                ✓ {uploadedFileName}
+              </div>
+            )}
+          </div>
           <button
             onClick={onViewHistory}
             className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
@@ -220,33 +260,66 @@ const EmailForm: React.FC<EmailFormProps> = ({
         </div>
       </div>
 
-      {/* Email Upload Section */}
+      {/* Email List Section */}
       <div className="mb-8">
         <h2 className="text-lg font-semibold text-gray-700 mb-4">
-          1. Upload Email List
+          1. Email Recipients
         </h2>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 pt-10 text-center">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv"
-            onChange={handleFileUpload}
-            className="hidden"
-            id="csv-upload"
-          />
-          <label
-            htmlFor="csv-upload"
-            className="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-          >
-            Choose CSV File
-          </label>
-          <p className="text-gray-600 mt-2">
-            Upload a CSV file with email addresses (one per line).
-          </p>
-          {uploadedFileName && (
-            <p className="text-green-600 mt-2">✓ {uploadedFileName} uploaded</p>
-          )}
-        </div>
+        {emailData.length > 0 ? (
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-gray-700">
+                  {emailData.length} recipient
+                  {emailData.length !== 1 ? "s" : ""} loaded
+                </span>
+                <button
+                  onClick={() => setShowEmailPreviewModal(true)}
+                  className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  <FiEye className="w-4 h-4" />
+                  View All
+                </button>
+              </div>
+              <button
+                onClick={() => setEmailData([])}
+                className="text-red-600 hover:text-red-800 text-sm font-medium"
+              >
+                Clear All
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-32 overflow-y-auto">
+              {emailData.slice(0, 5).map((emailData, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-2 bg-white rounded border text-sm"
+                >
+                  <span className="text-gray-700 truncate">
+                    {emailData.email}
+                  </span>
+                  <span className="text-xs text-gray-500 ml-2">
+                    #{index + 1}
+                  </span>
+                </div>
+              ))}
+              {emailData.length > 6 && (
+                <div className="flex items-center justify-center p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-600">
+                  +{emailData.length - 6} more
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <p className="text-gray-600 mb-2">
+              No email recipients loaded yet.
+            </p>
+            <p className="text-sm text-gray-500">
+              Upload a CSV file or emails will be pre-filled from the sales
+              funnel.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="mb-8">
@@ -363,6 +436,14 @@ const EmailForm: React.FC<EmailFormProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Email Preview Modal */}
+      <EmailPreviewModal
+        isOpen={showEmailPreviewModal}
+        onClose={() => setShowEmailPreviewModal(false)}
+        emails={emailData}
+        onRemoveEmail={handleRemoveEmail}
+      />
     </div>
   );
 };

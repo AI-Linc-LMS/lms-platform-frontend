@@ -17,6 +17,7 @@ interface PaymentConfirmationModalProps {
     percentage_scholarship: number;
     total_amount: number;
     payable_amount: number;
+    seat_booking_amount?: number; // Optional field for seat booking amount
   };
 }
 
@@ -145,13 +146,32 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
 
             {/* Pricing */}
             <div className="text-center mb-4">
-              <div className="text-4xl font-bold text-gray-900 mb-2">
-                {currency}
-                {purchasedData.payable_amount.toLocaleString()}
-                <span className="text-lg font-normal text-gray-500 ml-2">
-                  one-time
-                </span>
-              </div>
+              {purchasedData.seat_booking_amount ? (
+                <div>
+                  <div className="text-sm text-gray-600 mb-2">
+                    Seat Booking Amount: {currency}{purchasedData.seat_booking_amount}
+                  </div>
+                  <div className="text-4xl font-bold text-gray-900 mb-2">
+                    {currency}
+                    {purchasedData.payable_amount.toLocaleString()}
+                    <span className="text-lg font-normal text-gray-500 ml-2">
+                      remaining course fee
+                    </span>
+                  </div>
+                  <div className="text-sm text-green-600 font-semibold">
+                    Total Course Value: {currency}
+                    {(purchasedData.seat_booking_amount + purchasedData.payable_amount).toLocaleString()}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-4xl font-bold text-gray-900 mb-2">
+                  {currency}
+                  {purchasedData.payable_amount.toLocaleString()}
+                  <span className="text-lg font-normal text-gray-500 ml-2">
+                    one-time
+                  </span>
+                </div>
+              )}
               {hasScholarship && (
                 <>
                   <div className="text-sm text-gray-500 line-through mb-2">
