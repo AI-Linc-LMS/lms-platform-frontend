@@ -23,7 +23,7 @@ const JobFilters: React.FC<JobFiltersProps> = ({
 }) => {
   // const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  const jobTypes = ['Full-time', 'Part-time', 'Contract', 'Freelance', 'Internship'];
+  const jobTypes = ['Full-time', 'Part-time', 'Contract',  'Internship'];
   const experienceLevels = ['Entry Level', 'Mid Level', 'Senior Level'];
   const salaryRanges = [
     { label: 'Any', min: 0, max: 200000 },
