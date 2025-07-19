@@ -5,7 +5,7 @@ export const completeJobDetails: Job[] = [
     id: "1",
     title: "Senior AI Engineer / Data Scientist",
     company: "CellStrat Inc.",
-    companyLogo: "https://via.placeholder.com/60x60/255C79/ffffff?text=CS",
+    companyLogo: "https://media.licdn.com/dms/image/v2/C510BAQHV31l3RbGCQA/company-logo_200_200/company-logo_200_200/0/1630564230354/cellstrat_logo?e=1755734400&v=beta&t=df_Efc35D-Q3Zjel9JTmm7TPVwDnuJ3JgiqecVLOVqY",
     location: "Bengaluru, Karnataka, India",
     type: "Full-time",
     experienceLevel: "Senior Level",
@@ -44,16 +44,18 @@ As a key member of our engineering team, you'll collaborate with cross-functiona
     ],
     tags: ["AI", "Machine Learning", "LLM", "Data Science", "Python", "AWS", "Docker"],
     remote: true,
-    postedDate: "2024-01-15",
-    applicationDeadline: "2024-03-15",
+    postedDate: "2025-07-14",
+    applicationDeadline: "2025-08-14",
     applicationUrl: "https://cellstrat.com/careers/senior-ai-engineer",
-    isBookmarked: false
+    isBookmarked: false,
+    about: "CellStrat is a dynamic AI startup specializing in comprehensive AI consulting for US-based clients. We are committed to driving technological innovation through cutting-edge AI solutions, leveraging our expertise in machine learning, data science, and advanced analytics to help businesses transform their operations.",
+    website: "https://cellstrat.com"
   },
   {
     id: '2',
     title: 'Expert Frontend Developer',
     company: 'CellStrat Inc.',
-    companyLogo: 'https://via.placeholder.com/60x60/17627A/ffffff?text=CS',
+    companyLogo: "https://media.licdn.com/dms/image/v2/C510BAQHV31l3RbGCQA/company-logo_200_200/company-logo_200_200/0/1630564230354/cellstrat_logo?e=1755734400&v=beta&t=df_Efc35D-Q3Zjel9JTmm7TPVwDnuJ3JgiqecVLOVqY",
     location: 'Bengaluru, Karnataka, India',
     type: 'Full-time',
     experienceLevel: 'Mid Level',
@@ -92,16 +94,18 @@ As part of our dynamic team, you'll collaborate closely with backend engineers, 
     ],
     tags: ['Frontend', 'React', 'Next.js', 'Web Development', 'TypeScript', 'Tailwind CSS'],
     remote: true,
-    postedDate: '2024-01-15',
-    applicationDeadline: '2024-03-15',
+    postedDate: '2025-07-15',
+    applicationDeadline: '2025-08-15',
     applicationUrl: 'https://cellstrat.com/careers/expert-frontend-developer',
-    isBookmarked: false
+    isBookmarked: false,
+    about: "CellStrat Inc. is seeking an Expert Frontend Developer to lead frontend development for client projects and our flagship CellVerse product platform. You will architect and design frontend repositories with optimal performance and scalability in mind. The role involves building pixel-perfect, responsive web applications using our modern tech stack while ensuring excellent user experience across all devices. As part of our dynamic team, you'll collaborate closely with backend engineers, designers, and product managers to deliver high-quality solutions. You'll also be responsible for establishing best practices and mentoring junior developers.",
+    website: "https://cellstrat.com"
   },
   {
     id: '3',
-    title: 'AI Developer',
-    company: 'TechInnovate',
-    companyLogo: 'https://via.placeholder.com/60x60/28A745/ffffff?text=TI',
+    title: 'Software Engineering Manager, Machine Learning',
+    company: 'Meta',
+    companyLogo: "https://media.licdn.com/dms/image/v2/C4E0BAQFdNatYGiBelg/company-logo_200_200/company-logo_200_200/0/1636138754252/facebook_logo?e=1755734400&v=beta&t=NJXt8_fRpCeZu5CqhR2fvqz7r9_jEP_j3JtFfwpWqDU",
     location: 'Bengaluru, Karnataka, India',
     type: 'Full-time',
     experienceLevel: 'Mid Level',
@@ -110,7 +114,7 @@ As part of our dynamic team, you'll collaborate closely with backend engineers, 
       max: 4000000,
       currency: 'INR'
     },
-    description: `TechInnovate is at the forefront of AI innovation, developing next-generation solutions using foundation models for Image, Video, and Vision-Language Models (VLLMs). We are seeking a talented AI Developer to join our research and development team.
+    description: `Meta is at the forefront of AI innovation, developing next-generation solutions using foundation models for Image, Video, and Vision-Language Models (VLLMs). We are seeking a talented AI Developer to join our research and development team.
 
 In this role, you will work on cutting-edge AI projects involving computer vision, video analysis, and multimodal AI systems. You'll collaborate with our research team to develop and deploy state-of-the-art AI models that push the boundaries of what's possible.
 
@@ -140,16 +144,18 @@ The position offers exciting opportunities to work with the latest AI technologi
     ],
     tags: ['AI', 'Machine Learning', 'Computer Vision', 'Deep Learning', 'Python', 'Azure'],
     remote: false,
-    postedDate: '2024-01-15',
-    applicationDeadline: '2024-02-28',
+    postedDate: '2025-07-11',
+    applicationDeadline: '2025-08-16',
     applicationUrl: 'https://techinnovate.com/careers/ai-developer',
-    isBookmarked: false
+    isBookmarked: false,
+    about: "Meta is a global technology leader at the forefront of AI innovation, developing groundbreaking solutions that connect people and push the boundaries of artificial intelligence. We are dedicated to creating transformative technologies that have a positive impact on the world, with a focus on research, development, and ethical AI advancement.",
+    website: "https://meta.com"
   },
   {
     id: '4',
-    title: 'AI Lead',
-    company: 'TechInnovate',
-    companyLogo: 'https://via.placeholder.com/60x60/6C757D/ffffff?text=TI',
+    title: 'Software Engineer, AI Powered Data, Core',
+    company: 'Google',
+    companyLogo: "https://media.licdn.com/dms/image/v2/C4D0BAQHiNSL4Or29cg/company-logo_200_200/company-logo_200_200/0/1631311446380?e=1755734400&v=beta&t=XWd6n1HINc5gnyGh8Ero7dbvgw_ia1OgVYVeGGW-nqs",
     location: 'Bengaluru, Karnataka, India',
     type: 'Full-time',
     experienceLevel: 'Senior Level',
@@ -158,7 +164,7 @@ The position offers exciting opportunities to work with the latest AI technologi
       max: 8000000,
       currency: 'INR'
     },
-    description: `TechInnovate is seeking an experienced AI Lead to spearhead our artificial intelligence initiatives and lead a team of talented AI engineers and researchers. This is a strategic leadership role that combines technical expertise with team management responsibilities.
+    description: `Google is seeking an experienced AI Lead to spearhead our artificial intelligence initiatives and lead a team of talented AI engineers and researchers. This is a strategic leadership role that combines technical expertise with team management responsibilities.
 
 As AI Lead, you will be responsible for developing comprehensive AI solutions using foundation models, driving technological innovation, and establishing best practices for our AI development processes. You'll work closely with executive leadership to shape our AI strategy and roadmap.
 
@@ -190,16 +196,18 @@ This role offers the opportunity to make a significant impact on our company's A
     ],
     tags: ['AI Leadership', 'Machine Learning', 'Computer Vision', 'Innovation', 'Team Management'],
     remote: false,
-    postedDate: '2024-01-15',
-    applicationDeadline: '2024-03-01',
+    postedDate: '2025-07-17',
+    applicationDeadline: '2025-08-17',
     applicationUrl: 'https://techinnovate.com/careers/ai-lead',
-    isBookmarked: false
+    isBookmarked: false,
+    about: "Google is a global technology leader at the forefront of AI innovation, developing groundbreaking solutions that connect people and push the boundaries of artificial intelligence. We are dedicated to creating transformative technologies that have a positive impact on the world, with a focus on research, development, and ethical AI advancement.",
+    website: "https://google.com"
   },
   {
     id: '5',
     title: 'Founding Engineer, AI',
     company: 'Cenna',
-    companyLogo: 'https://via.placeholder.com/60x60/17627A/ffffff?text=CN',
+    companyLogo: "https://media.licdn.com/dms/image/v2/D560BAQFzztvGyf0RmQ/company-logo_200_200/B56ZcjKvhoGQAI-/0/1748641708444?e=1755734400&v=beta&t=FX4pfEG6ThRzQAj97Aa9sBlWYVh1MEdQOW6ZYfr0M5A",
     location: 'Hyderabad, Telangana, India',
     type: 'Full-time',
     experienceLevel: 'Senior Level',
@@ -241,16 +249,18 @@ This is a rare opportunity to be part of something transformational from day one
     ],
     tags: ['AI', 'Founding Engineer', 'Leadership', 'Innovation', 'Startup', 'Equity'],
     remote: false,
-    postedDate: '2024-01-09',
-    applicationDeadline: '2024-02-15',
+    postedDate: '2025-07-18',
+    applicationDeadline: '2025-08-18',
     applicationUrl: 'https://cenna.com/apply/founding-ai-engineer',
-    isBookmarked: false
+    isBookmarked: false,
+    about: "Cenna is an early-stage AI startup with a vision to revolutionize technology through cutting-edge artificial intelligence solutions. We are passionate about building transformative AI technologies that solve real-world problems, with a focus on innovation, research, and creating scalable, impactful solutions.",
+    website: "cenna.io"
   },
   {
     id: '6',
     title: 'Artificial Intelligence Engineer',
     company: 'UltraSafe AI',
-    companyLogo: 'https://via.placeholder.com/60x60/6C757D/ffffff?text=UA',
+    companyLogo: "https://media.licdn.com/dms/image/v2/D4D0BAQGkEqRb48qOTA/company-logo_200_200/B4DZboD.XSH8AM-/0/1747650078722/ultrasafe_ai_logo?e=1755734400&v=beta&t=rNyGEPxofjpnOI-wQUb7ATLJu-ho2jFMi6VY7gd3X8c",
     location: 'India',
     type: 'Contract',
     experienceLevel: 'Mid Level',
@@ -269,14 +279,17 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['Full remote work', 'Cutting-edge security projects', 'Continuous learning'],
     tags: ['AI', 'Security', 'Remote', 'Machine Learning'],
     remote: true,
-    postedDate: '2024-01-08',
-    applicationUrl: 'https://ultrasafeai.com/apply/ai-engineer'
+    postedDate: '2025-07-19',
+    applicationDeadline: '2025-08-19',
+    applicationUrl: 'https://ultrasafeai.com/apply/ai-engineer',
+    about: "UltraSafe AI is a pioneering company dedicated to developing AI solutions that prioritize security and safety. We are committed to creating intelligent systems that protect and empower, with a focus on ethical AI development and innovative approaches to technological challenges.",
+    website: "https://ultrasafeai.com"
   },
   {
     id: '7',
     title: 'Sr. AI Engineer',
     company: 'Genloop',
-    companyLogo: 'https://via.placeholder.com/60x60/28A745/ffffff?text=GL',
+    companyLogo: "https://media.licdn.com/dms/image/v2/D560BAQEBJvTXxi4LTg/company-logo_200_200/B56ZVmPuA8GoAI-/0/1741177152730/genloop_ai_logo?e=1755734400&v=beta&t=ZLGe07jk8WAkPtQqoeMSvHihvnVmnZ-TaXJPbVEg3Iw",
     location: 'Noida, Uttar Pradesh, India',
     type: 'Full-time',
     experienceLevel: 'Senior Level',
@@ -295,14 +308,17 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['Competitive salary', 'Research opportunities', 'Career growth'],
     tags: ['Senior AI', 'Machine Learning', 'Deep Learning', 'Research'],
     remote: false,
-    postedDate: '2024-01-07',
-    applicationUrl: 'https://genloop.com/apply/senior-ai-engineer'
+    postedDate: '2025-07-20',
+    applicationDeadline: '2025-08-20',
+    applicationUrl: 'https://genloop.com/apply/senior-ai-engineer',
+    about: "Genloop is an innovative technology company specializing in advanced AI and machine learning solutions. We are dedicated to pushing the boundaries of technological innovation, with a focus on research, development, and creating transformative AI technologies that drive meaningful change.",
+    website: "https://goo.gle/3DLEokh"
   },
   {
     id: '8',
     title: 'Artificial Intelligence Engineer',
     company: 'Velodata Global Pvt Ltd',
-    companyLogo: 'https://via.placeholder.com/60x60/255C79/ffffff?text=VG',
+    companyLogo: "https://media.licdn.com/dms/image/v2/D560BAQHqTRIbYZ0yHQ/company-logo_200_200/B56ZZ6ilJnGUAI-/0/1745812608917/velodataglobal_logo?e=1755734400&v=beta&t=J4qTZGXlOJYsLMIO6OUhyI_vHxZWT20V2AhSio0C6o8",
     location: 'Thiruvananthapuram Taluk, India',
     type: 'Full-time',
     experienceLevel: 'Mid Level',
@@ -321,14 +337,17 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['Hybrid work model', 'Data-driven projects', 'Continuous learning'],
     tags: ['AI', 'Data Science', 'Python', 'Machine Learning'],
     remote: false,
-    postedDate: '2024-01-06',
-    applicationUrl: 'https://velodata.com/apply/ai-engineer'
+    postedDate: '2025-07-21',
+    applicationDeadline: '2025-08-21',
+    applicationUrl: 'https://velodata.com/apply/ai-engineer',
+    about: "Velodata Global is a data-driven technology company that transforms complex data into actionable insights. We specialize in AI and machine learning solutions that help businesses make informed decisions, with a commitment to innovation, technological excellence, and driving business growth.",
+    website: "www.velodata.in"
   },
   {
     id: '9',
     title: 'Artificial Intelligence Engineer',
     company: 'AiSensy',
-    companyLogo: 'https://via.placeholder.com/60x60/17627A/ffffff?text=AS',
+    companyLogo: "https://media.licdn.com/dms/image/v2/C4E0BAQGXB4heHvSYsg/company-logo_200_200/company-logo_200_200/0/1630628525833/aisensyofficial_logo?e=1755734400&v=beta&t=Sx6MVPF1IFRm2eHiNnf1SsCt2-JDBynLeMOLZvvc4Zg",
     location: 'Gurugram, Haryana, India',
     type: 'Full-time',
     experienceLevel: 'Mid Level',
@@ -347,14 +366,17 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['Innovative projects', 'Career growth', 'Competitive compensation'],
     tags: ['AI', 'NLP', 'Chatbots', 'Automation'],
     remote: false,
-    postedDate: '2024-01-05',
-    applicationUrl: 'https://aisensy.com/apply/ai-engineer'
+    postedDate: '2025-07-22',
+    applicationDeadline: '2025-08-22',
+    applicationUrl: 'https://aisensy.com/apply/ai-engineer',
+    about: "AiSensy is a cutting-edge AI company focused on developing intelligent communication and automation solutions. We are dedicated to creating innovative technologies that enhance human-machine interaction, with a focus on natural language processing and conversational AI technologies.",
+    website: "https://aisensy.com"
   },
   {
     id: '10',
     title: 'Artificial Intelligence Engineer',
     company: 'KLA',
-    companyLogo: 'https://via.placeholder.com/60x60/255C79/ffffff?text=KL',
+    companyLogo: "https://media.licdn.com/dms/image/v2/D560BAQFLKqXhyQWBMg/company-logo_200_200/company-logo_200_200/0/1723042549252/klacorp_logo?e=1755734400&v=beta&t=OE3gtXqXIky9vKhhymhfCibQ049BZK3m2hCFeohamn0",
     location: 'Chennai, Tamil Nadu, India',
     type: 'Full-time',
     experienceLevel: 'Mid Level',
@@ -373,14 +395,17 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['Hybrid work model', 'Learning opportunities', 'Competitive compensation'],
     tags: ['AI', 'Machine Learning', 'Verification', 'Innovation'],
     remote: false,
-    postedDate: '2024-01-04',
-    applicationUrl: 'https://kla.com/apply/ai-engineer'
+    postedDate: '2025-07-23',
+    applicationDeadline: '2025-08-23',
+    applicationUrl: 'https://kla.com/apply/ai-engineer',
+    about: "KLA is a leading technology company specializing in AI verification and validation techniques. We are committed to driving technological advancement through rigorous AI testing, quality assurance, and innovative approaches to ensuring the reliability and performance of AI systems.",
+    website: "https://kla.com"
   },
   {
     id: '11',
     title: 'ML Engineer',
     company: 'Hike',
-    companyLogo: 'https://via.placeholder.com/60x60/17627A/ffffff?text=HK',
+    companyLogo: "https://media.licdn.com/dms/image/v2/C4D0BAQH5YYBBeeVOhQ/company-logo_200_200/company-logo_200_200/0/1631703928427/hike_logo?e=1755734400&v=beta&t=xainlwZNynW2_AT5ciMA9Q_N5HYJ5NpcnA0ljk5JH-c",
     location: 'India',
     type: 'Full-time',
     experienceLevel: 'Mid Level',
@@ -399,14 +424,17 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['Full remote work', 'Flexible hours', 'Continuous learning'],
     tags: ['Machine Learning', 'Remote', 'Python', 'AI'],
     remote: true,
-    postedDate: '2024-01-03',
-    applicationUrl: 'https://hike.com/apply/ml-engineer'
+    postedDate: '2025-07-24',
+    applicationDeadline: '2025-08-24',
+    applicationUrl: 'https://hike.com/apply/ml-engineer',
+    about: "Hike is an innovative technology company that develops advanced machine learning solutions. We are passionate about creating technologies that push the boundaries of what's possible, with a focus on remote collaboration, cutting-edge AI, and solving complex technological challenges.",
+    website: "http://work.hike.in/"
   },
   {
     id: '12',
     title: 'Artificial Intelligence Engineer',
     company: 'Indsafri',
-    companyLogo: 'https://via.placeholder.com/60x60/6C757D/ffffff?text=IS',
+    companyLogo: "https://media.licdn.com/dms/image/v2/D4D0BAQH0j7jT_gsh3A/company-logo_200_200/company-logo_200_200/0/1687866353277/indsafri_logo?e=1755734400&v=beta&t=efKp0RIYW2ZvvuqC58-ReALL341JRHk-xvjfpkVc-8c",
     location: 'Chennai, Tamil Nadu, India',
     type: 'Full-time',
     experienceLevel: 'Mid Level',
@@ -425,14 +453,17 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['Hybrid work model', 'Innovative projects', 'Professional growth'],
     tags: ['AI', 'Machine Learning', 'Innovation', 'Technology'],
     remote: false,
-    postedDate: '2024-01-02',
-    applicationUrl: 'https://indsafri.com/apply/ai-engineer'
+    postedDate: '2025-07-25',
+    applicationDeadline: '2025-08-25',
+    applicationUrl: 'https://indsafri.com/apply/ai-engineer',
+    about: "Indsafri is a forward-thinking AI company dedicated to developing innovative solutions across various domains. We are committed to driving technological progress through creative problem-solving, advanced AI technologies, and a passion for pushing the boundaries of artificial intelligence.",
+    website: "https://indsafri.com"
   },
   {
     id: '13',
     title: 'AI Engineer',
     company: 'Eudia',
-    companyLogo: 'https://via.placeholder.com/60x60/28A745/ffffff?text=EU',
+    companyLogo: "https://media.licdn.com/dms/image/v2/D560BAQEl3J0uDVWIfw/company-logo_200_200/company-logo_200_200/0/1735917620931/eudiahq_logo?e=1755734400&v=beta&t=Qtcjprk3fpFJBAbvQ9poC2snbs8r2sSso9B5LUnLa4M",
     location: 'Bengaluru, Karnataka, India',
     type: 'Full-time',
     experienceLevel: 'Mid Level',
@@ -451,14 +482,17 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['On-site work', 'Learning opportunities', 'Competitive compensation'],
     tags: ['AI', 'Engineering', 'Technology', 'Innovation'],
     remote: false,
-    postedDate: '2024-01-01',
-    applicationUrl: 'https://eudia.com/apply/ai-engineer'
+    postedDate: '2025-07-26',
+    applicationDeadline: '2025-08-26',
+    applicationUrl: 'https://eudia.com/apply/ai-engineer',
+    about: "Eudia is a technology company specializing in AI development and innovative solutions. We are dedicated to creating cutting-edge AI technologies that drive meaningful change, with a focus on collaboration, technological innovation, and solving complex business challenges.",
+    website: "https://eudia.com"
   },
   {
     id: '14',
     title: 'Artificial Intelligence Engineer',
     company: 'Predigle',
-    companyLogo: 'https://via.placeholder.com/60x60/255C79/ffffff?text=PG',
+    companyLogo: "https://media.licdn.com/dms/image/v2/D560BAQGdx0wI3YcPrQ/company-logo_200_200/company-logo_200_200/0/1667312326847/predigle_logo?e=1755734400&v=beta&t=VJIhWIgnZaDHU09Q7dNnEH2TaZ8ZD2XjLe2egatF_cY",
     location: 'Chennai, Tamil Nadu, India',
     type: 'Full-time',
     experienceLevel: 'Mid Level',
@@ -477,14 +511,17 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['Hybrid work model', 'Cutting-edge projects', 'Professional development'],
     tags: ['AI', 'Machine Learning', 'Innovation', 'Technology'],
     remote: false,
-    postedDate: '2023-12-29',
-    applicationUrl: 'https://predigle.com/apply/ai-engineer'
+    postedDate: '2025-07-27',
+    applicationDeadline: '2025-08-27',
+    applicationUrl: 'https://predigle.com/apply/ai-engineer',
+    about: "Predigle is an innovative AI company committed to developing advanced technological solutions. We focus on driving technological progress through analytical thinking, machine learning expertise, and a passion for creating transformative AI technologies.",
+    website: "https://predigle.com"
   },
   {
     id: '15',
     title: 'AI Fullstack Engineer',
     company: 'Mundos',
-    companyLogo: 'https://via.placeholder.com/60x60/17627A/ffffff?text=MD',
+    companyLogo: "https://media.licdn.com/dms/image/v2/D4D0BAQGUP_kkvXmhbQ/company-logo_200_200/company-logo_200_200/0/1695777496819/mundos_ai_logo?e=1755734400&v=beta&t=OzUcrTJgzv88emjhCY8W4z7sWgYdArDzEOxubXarZdk",
     location: 'India',
     type: 'Full-time',
     experienceLevel: 'Mid Level',
@@ -503,14 +540,17 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['Full remote work', 'Flexible hours', 'Comprehensive AI projects'],
     tags: ['AI', 'Fullstack', 'Remote', 'Web Development'],
     remote: true,
-    postedDate: '2023-12-28',
-    applicationUrl: 'https://mundos.com/apply/ai-fullstack-engineer'
+    postedDate: '2025-07-28',
+    applicationDeadline: '2025-08-28',
+    applicationUrl: 'https://mundos.com/apply/ai-fullstack-engineer',
+    about: "Mundos is a technology company specializing in comprehensive AI solutions that integrate frontend and backend technologies. We are dedicated to developing innovative, full-stack AI technologies that solve complex business challenges and drive digital transformation.",
+    website: "https://www.mundosworlds.xyz/"
   },
   {
     id: '16',
     title: 'AI Research Engineer',
     company: 'APPSeCONNECT',
-    companyLogo: 'https://via.placeholder.com/60x60/6C757D/ffffff?text=AC',
+    companyLogo: "https://media.licdn.com/dms/image/v2/C4D0BAQEA7Bh0tbAk2A/company-logo_200_200/company-logo_200_200/0/1654241878632/appseconnectcorp_logo?e=1755734400&v=beta&t=2RPJXyoFADkwE6FqdptcMrG45ItlW_pSO9m1M1xsX18",
     location: 'Greater Kolkata Area',
     type: 'Full-time',
     experienceLevel: 'Senior Level',
@@ -529,14 +569,17 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['On-site work', 'Research opportunities', 'Competitive compensation'],
     tags: ['AI Research', 'Machine Learning', 'Innovation', 'Academic'],
     remote: false,
-    postedDate: '2023-12-27',
-    applicationUrl: 'https://appsconnect.com/apply/ai-research-engineer'
+    postedDate: '2025-07-29',
+    applicationDeadline: '2025-08-29',
+    applicationUrl: 'https://appsconnect.com/apply/ai-research-engineer',
+    about: "APPSeCONNECT is a technology company focused on AI research and development. We are committed to driving technological advancements through innovative research, with a strong emphasis on translating cutting-edge AI research into practical, impactful solutions.",
+    website: "https://appseconnect.com"
   },
   {
     id: '17',
     title: 'Artificial Intelligence Engineer',
     company: 'Valuebound',
-    companyLogo: 'https://via.placeholder.com/60x60/28A745/ffffff?text=VB',
+    companyLogo: "https://media.licdn.com/dms/image/v2/D560BAQEDFa_-CuvoVA/company-logo_200_200/B56ZWvaNORGoAQ-/0/1742404638677/valuebound_logo?e=1755734400&v=beta&t=QEqEyY_IzkYXRAng-8Q3aeF0RtqFFiivYJf86jzLZyE",
     location: 'Chennai, Tamil Nadu, India',
     type: 'Full-time',
     experienceLevel: 'Mid Level',
@@ -555,7 +598,10 @@ This is a rare opportunity to be part of something transformational from day one
     benefits: ['On-site work', 'Learning opportunities', 'Competitive compensation'],
     tags: ['AI', 'Machine Learning', 'Technology', 'Innovation'],
     remote: false,
-    postedDate: '2023-12-26',
-    applicationUrl: 'https://valuebound.com/apply/ai-engineer'
+    postedDate: '2025-07-30',
+    applicationDeadline: '2025-08-30',
+    applicationUrl: 'https://valuebound.com/apply/ai-engineer',
+    about: "Valuebound is a technology company dedicated to developing innovative AI solutions. We are committed to driving technological innovation through expert AI development, collaborative approaches, and a passion for creating transformative technologies that make a real-world impact.",
+    website: "https://valuebound.com"
   }
 ];

@@ -19,7 +19,7 @@ const JobDetail: React.FC = () => {
     return job;
   }, [jobId, navigate]);
 
-  const [isBookmarked, setIsBookmarked] = useState(mockJobDetail.isBookmarked);
+  // const [isBookmarked, setIsBookmarked] = useState(mockJobDetail.isBookmarked);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
 
@@ -39,10 +39,10 @@ const JobDetail: React.FC = () => {
     alert("Application submitted successfully!");
   };
 
-  const handleBookmark = () => {
-    setIsBookmarked(!isBookmarked);
+  // const handleBookmark = () => {
+  //   setIsBookmarked(!isBookmarked);
     // Here you would typically make an API call to save bookmark status
-  };
+  // };
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
@@ -71,13 +71,13 @@ const JobDetail: React.FC = () => {
 
           <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
             {/* Company Logo */}
-            {/* <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden flex-shrink-0 bg-[#F8F9FA] flex items-center justify-center">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden flex-shrink-0 bg-[#F8F9FA] flex items-center justify-center">
               <img
                 src={mockJobDetail.companyLogo}
                 alt={`${mockJobDetail.company} logo`}
                 className="w-full h-full object-cover"
               />
-            </div> */}
+            </div>
 
             {/* Job Info */}
             <div className="flex-1 w-full">
@@ -208,13 +208,12 @@ const JobDetail: React.FC = () => {
                 >
                   Apply Now
                 </button>
-                <button
+                {/* <button
                   onClick={handleBookmark}
-                  className={`w-full sm:w-auto px-6 py-3 rounded-lg transition-colors font-medium ${
-                    isBookmarked
+                  className={`w-full sm:w-auto px-6 py-3 rounded-lg transition-colors font-medium ${isBookmarked
                       ? "bg-[#255C79] text-white"
                       : "border border-[#255C79] text-[#255C79] hover:bg-[#255C79] hover:text-white"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-center gap-2">
                     <svg
@@ -232,10 +231,11 @@ const JobDetail: React.FC = () => {
                     </svg>
                     {isBookmarked ? "Bookmarked" : "Bookmark"}
                   </div>
-                </button>
-                <button className="w-full sm:w-auto px-6 py-3 border border-[#6C757D] text-[#6C757D] rounded-lg hover:bg-[#6C757D] hover:text-white transition-colors font-medium">
+                </button> */}
+                {/* share job */}
+                {/* <button className="w-full sm:w-auto px-6 py-3 border border-[#6C757D] text-[#6C757D] rounded-lg hover:bg-[#6C757D] hover:text-white transition-colors font-medium">
                   Share Job
-                </button>
+                </button> */}
               </div>
             </div>
           </div>
@@ -265,6 +265,20 @@ const JobDetail: React.FC = () => {
                   ))}
               </div>
             </div>
+
+            {/* Add About Company section after Job Description section */}
+            {mockJobDetail.about && (
+              <div className="bg-white rounded-2xl border border-[#DEE2E6] p-4 sm:p-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-[#343A40] mb-4">
+                  About {mockJobDetail.company}
+                </h2>
+                <div className="prose prose-gray max-w-none">
+                  <p className="text-[#495057] leading-relaxed text-sm sm:text-base">
+                    {mockJobDetail.about}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Requirements */}
             <div className="bg-white rounded-2xl border border-[#DEE2E6] p-4 sm:p-6">
@@ -329,12 +343,12 @@ const JobDetail: React.FC = () => {
                 >
                   Apply Now
                 </button>
-                <button
+                {/* <button
                   onClick={handleBookmark}
                   className="w-full px-6 py-3 border border-[#255C79] text-[#255C79] rounded-lg hover:bg-[#255C79] hover:text-white transition-colors font-medium"
                 >
                   Save for Later
-                </button>
+                </button> */}
               </div>
 
               <div className="mt-6 pt-6 border-t border-[#F8F9FA]">
@@ -390,10 +404,7 @@ const JobDetail: React.FC = () => {
                 </div>
               </div>
               <p className="text-[#495057] text-sm leading-relaxed mb-4">
-                TechCorp Inc. is a leading technology company focused on
-                building innovative solutions that transform how businesses
-                operate. We're committed to creating a diverse and inclusive
-                workplace where everyone can thrive.
+                {mockJobDetail.about || 'Technology Company'}
               </p>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -411,7 +422,14 @@ const JobDetail: React.FC = () => {
                   <span className="font-medium text-[#343A40]">2010</span>
                 </div>
               </div>
-              <button className="w-full mt-4 px-4 py-2 border border-[#DEE2E6] text-[#495057] rounded-lg hover:bg-[#F8F9FA] transition-colors text-sm">
+              <button 
+                onClick={() => {
+                  if (mockJobDetail.website) {
+                    window.open(mockJobDetail.website, '_blank', 'noopener,noreferrer');
+                  }
+                }}
+                className="w-full mt-4 px-4 py-2 border border-[#DEE2E6] text-[#495057] rounded-lg hover:bg-[#F8F9FA] transition-colors text-sm"
+              >
                 View Company Profile
               </button>
             </div>

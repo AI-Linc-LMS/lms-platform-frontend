@@ -376,7 +376,7 @@ const InstructionPage: React.FC = () => {
 
               {assessmentData?.status === "submitted" ? (
                 <button
-                  onClick={handleStartAssessment}
+                  onClick={handleResumeAssessment}
                   className="px-8 py-4 bg-green-600 text-white rounded-xl font-semibold text-lg hover:bg-green-700 transition-colors"
                 >
                   View Results
