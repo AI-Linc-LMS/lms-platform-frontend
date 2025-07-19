@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import JobApplication from "../components/JobApplication";
+import AssessmentInvitationModal from "../components/AssessmentInvitationModal";
 import { completeJobDetails } from "../components/MockJobDetails";
 
 const JobDetail: React.FC = () => {
@@ -20,6 +21,7 @@ const JobDetail: React.FC = () => {
 
   const [isBookmarked, setIsBookmarked] = useState(mockJobDetail.isBookmarked);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [showAssessmentModal, setShowAssessmentModal] = useState(false);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -30,7 +32,7 @@ const JobDetail: React.FC = () => {
   };
 
   const handleApplyNow = () => {
-    setShowApplicationModal(true);
+    setShowAssessmentModal(true);
   };
 
   const handleApplicationSubmit = () => {
@@ -69,13 +71,13 @@ const JobDetail: React.FC = () => {
 
           <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
             {/* Company Logo */}
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden flex-shrink-0 bg-[#F8F9FA] flex items-center justify-center">
+            {/* <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden flex-shrink-0 bg-[#F8F9FA] flex items-center justify-center">
               <img
                 src={mockJobDetail.companyLogo}
                 alt={`${mockJobDetail.company} logo`}
                 className="w-full h-full object-cover"
               />
-            </div>
+            </div> */}
 
             {/* Job Info */}
             <div className="flex-1 w-full">
@@ -423,6 +425,15 @@ const JobDetail: React.FC = () => {
           job={mockJobDetail}
           onClose={() => setShowApplicationModal(false)}
           onSubmit={handleApplicationSubmit}
+        />
+      )}
+
+      {/* Assessment Invitation Modal */}
+      {showAssessmentModal && (
+        <AssessmentInvitationModal
+          job={mockJobDetail}
+          isOpen={true}
+          onClose={() => setShowAssessmentModal(false)}
         />
       )}
     </div>
