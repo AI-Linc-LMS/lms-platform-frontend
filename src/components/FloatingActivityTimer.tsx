@@ -10,8 +10,8 @@ import {
   clearActivityDebugEvents,
   simulateDailyReset,
 } from "../utils/activityDebugger";
-import { getSessionId, getDeviceInfo } from "../utils/deviceIdentifier";
-import { getCurrentUserId } from "../utils/userIdHelper";
+import { getSessionId, getDeviceInfo, getDeviceId } from "../utils/deviceIdentifier";
+import { getCurrentUserId, getAuthenticatedUserId } from "../utils/userIdHelper";
 import {
   getHistoricalActivity,
   getNextResetTime,
@@ -53,6 +53,8 @@ const FloatingActivityTimer: React.FC = () => {
     os: string;
     deviceType: string;
   } | null>(null);
+  const [accountId, setAccountId] = useState<string | null>(null);
+  const [deviceId, setDeviceId] = useState<string>("");
   const [historicalActivity, setHistoricalActivity] = useState<
     Record<string, number>
   >({});
@@ -69,6 +71,8 @@ const FloatingActivityTimer: React.FC = () => {
   useEffect(() => {
     setSessionId(getSessionId());
     setDeviceInfo(getDeviceInfo());
+    setAccountId(getAuthenticatedUserId());
+    setDeviceId(getDeviceId());
     setHistoricalActivity(getHistoricalActivity());
     setNextResetTime(getNextResetTime());
     setTimeUntilReset(getTimeUntilNextReset());
@@ -197,7 +201,9 @@ const FloatingActivityTimer: React.FC = () => {
     const activityData = {
       "total-time-seconds": totalTimeInSeconds, // This is Today's Total (11m 24s in your example)
       "session_id": sessionId,
-      "user_id": getCurrentUserId(),
+      "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
+      "user_id": getCurrentUserId(), // Keep for backward compatibility
+      "device_id": getDeviceId(), // Unique device/browser identifier
       "date": new Date().toISOString().split('T')[0], // YYYY-MM-DD format
       "device_type": deviceInfo?.deviceType || "unknown",
       "timestamp": Date.now()
@@ -339,6 +345,18 @@ const FloatingActivityTimer: React.FC = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-500">Device Type:</span>
                   <span className="text-gray-900">{deviceInfo.deviceType}</span>
+                </div>
+                <div className="flex justify-between mt-2 pt-2 border-t border-gray-200">
+                  <span className="text-gray-500">Account ID:</span>
+                  <span className="text-gray-900 font-mono text-xs">
+                    {accountId || "Anonymous"}
+                  </span>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <span className="text-gray-500">Device ID:</span>
+                  <span className="text-gray-900 font-mono text-xs">
+                    {deviceId.slice(0, 12)}...
+                  </span>
                 </div>
               </>
             )}
