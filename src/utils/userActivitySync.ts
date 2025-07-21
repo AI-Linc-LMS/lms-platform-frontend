@@ -335,11 +335,11 @@ export const createPreciseActivityPayload = (
 };
 
 /**
- * Immediately sends session-end data to the backend with only essential information
+ * Immediately sends session-end data to the backend with total accumulated time
  * @param sessionStartTime When the session started (timestamp)
  * @param sessionEndTime When the session ended (timestamp)
  * @param sessionDuration Duration of the session in seconds
- * @param totalTimeSpent Total time spent including this session (kept for logging only)
+ * @param totalTimeSpent Total time spent including this session (Today's Total)
  * @param sessionId Session identifier
  * @param deviceInfo Device information
  * @param userId User identifier
@@ -351,7 +351,7 @@ export const sendSessionEndData = async (
   sessionDuration: number,
   totalTimeSpent: number,
   sessionId: string,
-  _deviceInfo: { browser: string; os: string; deviceType: string },
+  deviceInfo: { browser: string; os: string; deviceType: string },
   userId?: string
 ): Promise<void> => {
   try {
@@ -365,6 +365,7 @@ export const sendSessionEndData = async (
 
     // Validate time values
     const validatedSessionDuration = validateTimeValue(sessionDuration);
+    const validatedTotalTime = validateTimeValue(totalTimeSpent);
 
     // Get user ID (use provided userId or get current user ID)
     const finalUserId = userId || getCurrentUserId();
@@ -378,16 +379,19 @@ export const sendSessionEndData = async (
       return;
     }
 
-    // Create simplified session-end payload with only essential data
+    // Create session-end payload with total accumulated time (Today's Total)
     const sessionEndPayload = {
-      "time-spend-seconds": validatedSessionDuration,
-      session_id: sessionId,
-      user_id: finalUserId,
-      session_only: true,
+      "total-time-seconds": validatedTotalTime, // Send Today's Total (accumulated time)
+      "session_id": sessionId,
+      "user_id": finalUserId,
+      "date": formatDateForApi(),
+      "device_type": deviceInfo.deviceType,
+      "timestamp": Date.now()
     };
 
-    logActivityEvent("Sending session-end data (simplified)", {
+    logActivityEvent("Sending session-end data with total accumulated time", {
       sessionDuration: validatedSessionDuration,
+      totalAccumulatedTime: validatedTotalTime,
       sessionId: sessionId,
       endpoint: `${apiUrl}/activity/clients/${clientId}/activity-log/`,
     });
@@ -417,8 +421,9 @@ export const sendSessionEndData = async (
 
     const responseData = await response.json();
 
-    logActivityEvent("Session-end data sent successfully (simplified)", {
+    logActivityEvent("Session-end data sent successfully", {
       sessionDuration: validatedSessionDuration,
+      totalAccumulatedTime: validatedTotalTime,
       response: responseData,
     });
 
@@ -435,9 +440,9 @@ export const sendSessionEndData = async (
     try {
       const pendingData = {
         sessionDuration,
-        sessionStartTime: _sessionStartTime, // Use original parameter name
-        sessionEndTime: _sessionEndTime, // Use original parameter name
-        timestamp: _sessionEndTime, // Use original parameter name
+        sessionStartTime: _sessionStartTime,
+        sessionEndTime: _sessionEndTime,
+        timestamp: _sessionEndTime,
         eventType: "session-end",
       };
 
@@ -457,11 +462,11 @@ export const sendSessionEndData = async (
 };
 
 /**
- * Sends session-end data using Beacon API for critical exit events with only essential data
+ * Sends session-end data using Beacon API for critical exit events with total accumulated time
  * @param sessionStartTime When the session started (timestamp)
  * @param sessionEndTime When the session ended (timestamp)
  * @param sessionDuration Duration of the session in seconds
- * @param totalTimeSpent Total time spent including this session
+ * @param totalTimeSpent Total time spent including this session (Today's Total)
  * @param sessionId Session identifier
  * @param deviceInfo Device information
  * @param userId User identifier
@@ -473,7 +478,7 @@ export const sendSessionEndDataViaBeacon = (
   sessionDuration: number,
   totalTimeSpent: number,
   sessionId: string,
-  _deviceInfo: { browser: string; os: string; deviceType: string },
+  deviceInfo: { browser: string; os: string; deviceType: string },
   userId?: string
 ): boolean => {
   try {
@@ -487,16 +492,19 @@ export const sendSessionEndDataViaBeacon = (
 
     // Validate time values
     const validatedSessionDuration = validateTimeValue(sessionDuration);
+    const validatedTotalTime = validateTimeValue(totalTimeSpent);
 
     // Get user ID (use provided userId or get current user ID)
     const finalUserId = userId || getCurrentUserId();
 
-    // Create simplified session-end payload with only essential data
+    // Create session-end payload with total accumulated time (Today's Total)
     const sessionEndPayload = {
-      "time-spend-seconds": validatedSessionDuration,
-      session_id: sessionId,
-      user_id: finalUserId,
-      session_only: true,
+      "total-time-seconds": validatedTotalTime, // Send Today's Total (accumulated time)
+      "session_id": sessionId,
+      "user_id": finalUserId,
+      "date": formatDateForApi(),
+      "device_type": deviceInfo.deviceType,
+      "timestamp": Date.now()
     };
 
     // Use Beacon API for guaranteed delivery during page unload
@@ -508,8 +516,9 @@ export const sendSessionEndDataViaBeacon = (
       blob
     );
 
-    logActivityEvent("Sent session-end data via beacon (simplified)", {
+    logActivityEvent("Sent session-end data via beacon with total accumulated time", {
       sessionDuration: validatedSessionDuration,
+      totalAccumulatedTime: validatedTotalTime,
       sessionId: sessionId,
       success,
     });
@@ -553,18 +562,20 @@ export const createSessionOnlyActivityPayload = (
 };
 
 /**
- * Sends periodic session update with only essential data
+ * Sends periodic session update with total accumulated time (Today's Total)
  * @param sessionId Session identifier
  * @param deviceInfo Device information
  * @param sessionStartTime When the current session started
  * @param userId User identifier
+ * @param totalTimeSpent Total time spent before current session
  * @returns Promise that resolves when data is sent
  */
 export const sendPeriodicSessionUpdate = async (
   sessionId: string,
-  _deviceInfo: { browser: string; os: string; deviceType: string },
+  deviceInfo: { browser: string; os: string; deviceType: string },
   sessionStartTime: number,
-  userId?: string
+  userId?: string,
+  totalTimeSpent: number = 0
 ): Promise<void> => {
   try {
     const apiUrl = import.meta.env.VITE_API_URL;
@@ -589,6 +600,9 @@ export const sendPeriodicSessionUpdate = async (
       return;
     }
 
+    // Calculate total accumulated time (Today's Total = previous total + current session)
+    const totalAccumulatedTime = validateTimeValue(totalTimeSpent) + validatedSessionDuration;
+
     // Check if we should skip this sync due to recent identical session sync
     if (shouldSkipDuplicateSessionSync(sessionId, validatedSessionDuration)) {
       logActivityEvent("Skipping duplicate periodic session update", {
@@ -601,16 +615,19 @@ export const sendPeriodicSessionUpdate = async (
     // Get user ID (use provided userId or get current user ID)
     const finalUserId = userId || getCurrentUserId();
 
-    // Create simplified session update payload with only essential data
+    // Create session update payload with total accumulated time (Today's Total)
     const sessionUpdatePayload = {
-      "time-spend-seconds": validatedSessionDuration,
-      session_id: sessionId,
-      user_id: finalUserId,
-      session_only: true,
+      "total-time-seconds": totalAccumulatedTime, // Send Today's Total (accumulated time)
+      "session_id": sessionId,
+      "user_id": finalUserId,
+      "date": formatDateForApi(),
+      "device_type": deviceInfo.deviceType,
+      "timestamp": Date.now()
     };
 
-    logActivityEvent("Sending periodic session update (simplified)", {
+    logActivityEvent("Sending periodic session update with total accumulated time", {
       sessionDuration: validatedSessionDuration,
+      totalAccumulatedTime: totalAccumulatedTime,
       sessionId: sessionId,
       endpoint: `${apiUrl}/activity/clients/${clientId}/activity-log/`,
     });
@@ -640,8 +657,9 @@ export const sendPeriodicSessionUpdate = async (
 
     const responseData = await response.json();
 
-    logActivityEvent("Periodic session update sent successfully (simplified)", {
+    logActivityEvent("Periodic session update sent successfully", {
       sessionDuration: validatedSessionDuration,
+      totalAccumulatedTime: totalAccumulatedTime,
       response: responseData,
     });
 
