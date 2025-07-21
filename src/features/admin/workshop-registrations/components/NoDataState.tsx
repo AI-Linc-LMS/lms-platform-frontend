@@ -9,8 +9,8 @@ export const NoDataState: React.FC<NoDataStateProps> = ({
 }) => {
   return (
     <tr>
-      <td colSpan={17} className="p-8 text-center">
-        <div className="flex flex-col items-center justify-center space-y-3">
+      <td colSpan={17} className="p-8 text-center justify-center items-center align-middle">
+        <div className="flex flex-col items-center justify-center text-center space-y-3">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
             <svg
               className="w-8 h-8 text-gray-400"

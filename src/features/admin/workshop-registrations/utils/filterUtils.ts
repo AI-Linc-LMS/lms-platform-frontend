@@ -219,9 +219,17 @@ export const filterWorkshopData = (
       }
     })();
 
-    const firstCallCommentMatch =
-      !filters.first_call_comment ||
-      (entry.first_call_comment && entry.first_call_comment.toLowerCase().includes(filters.first_call_comment.toLowerCase()));
+    const firstCallCommentMatch = (() => {
+      const filterVal = filters.first_call_comment;
+      if (!filterVal) return true;
+      if (filterVal === "filled") {
+        return !!(entry.first_call_comment && entry.first_call_comment.trim() !== "");
+      }
+      if (filterVal === "not_filled") {
+        return !entry.first_call_comment || entry.first_call_comment.trim() === "";
+      }
+      return entry.first_call_comment && entry.first_call_comment.toLowerCase().includes(filterVal.toLowerCase());
+    })();
 
     const secondCallStatusMatch = (() => {
       if (!filters.second_call_status) return true;
@@ -237,13 +245,29 @@ export const filterWorkshopData = (
       }
     })();
 
-    const secondCallCommentMatch =
-      !filters.second_call_comment ||
-      (entry.second_call_comment && entry.second_call_comment.toLowerCase().includes(filters.second_call_comment.toLowerCase()));
+    const secondCallCommentMatch = (() => {
+      const filterVal = filters.second_call_comment;
+      if (!filterVal) return true;
+      if (filterVal === "filled") {
+        return !!(entry.second_call_comment && entry.second_call_comment.trim() !== "");
+      }
+      if (filterVal === "not_filled") {
+        return !entry.second_call_comment || entry.second_call_comment.trim() === "";
+      }
+      return entry.second_call_comment && entry.second_call_comment.toLowerCase().includes(filterVal.toLowerCase());
+    })();
 
-    const followUpCommentMatch =
-      !filters.follow_up_comment ||
-      (entry.follow_up_comment && entry.follow_up_comment.toLowerCase().includes(filters.follow_up_comment.toLowerCase()));
+    const followUpCommentMatch = (() => {
+      const filterVal = filters.follow_up_comment;
+      if (!filterVal) return true;
+      if (filterVal === "filled") {
+        return !!(entry.follow_up_comment && entry.follow_up_comment.trim() !== "");
+      }
+      if (filterVal === "not_filled") {
+        return !entry.follow_up_comment || entry.follow_up_comment.trim() === "";
+      }
+      return entry.follow_up_comment && entry.follow_up_comment.toLowerCase().includes(filterVal.toLowerCase());
+    })();
 
     const amountPaidMatch = (() => {
       if (!filters.amount_paid) return true;
@@ -394,6 +418,18 @@ export const filterWorkshopData = (
       (!followUpStartDate || (followUpDate && followUpDate >= followUpStartDate)) &&
       (!followUpEndDate || (followUpDate && followUpDate <= followUpEndDate));
 
+    // Course name/program filter
+    const courseNameMatch = (() => {
+      if (!filters.course_name) return true;
+      const filterVal = filters.course_name.trim().toLowerCase();
+      // Support multi-select
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions((entry.program || '').toLowerCase(), filterVal);
+      } else {
+        return (entry.program || 'flagship').toLowerCase() === filterVal;
+      }
+    })();
+
     const finalResult = (
       nameMatch &&
       emailMatch &&
@@ -424,7 +460,8 @@ export const filterWorkshopData = (
       dateMatch &&
       updatedDateMatch &&
       submittedDateMatch &&
-      followUpDateMatch
+      followUpDateMatch &&
+      courseNameMatch
     );
 
     return finalResult;
@@ -534,6 +571,7 @@ export const getInitialFilterState = (): FilterState => ({
   session_number: "",
   session_date: "",
   referal_code: "",
+  course_name: "",
   attended_webinars: "",
   is_assessment_attempted: "",
   is_certificate_amount_paid: "",
