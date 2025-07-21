@@ -128,7 +128,21 @@ const WorkshopRegistration = () => {
       defaultVisible: true,
     },
     { key: "follow_up_date", label: "Follow Up Date", defaultVisible: true },
-    { key: "session_number", label: "Session", defaultVisible: true },
+    {
+      key: "session_number",
+      label: "Registered Session",
+      defaultVisible: true,
+    },
+    {
+      key: "session_date",
+      label: "Session Date",
+      defaultVisible: true,
+    },
+    {
+      key: "course_name",
+      label: "Course Name",
+      defaultVisible: true,
+    },
     { key: "attended_webinars", label: "Attendee", defaultVisible: true },
     {
       key: "is_assessment_attempted",
@@ -207,6 +221,65 @@ const WorkshopRegistration = () => {
     follow_up_comment: useRef<HTMLDivElement>(null),
     follow_up_date: useRef<HTMLDivElement>(null),
   };
+
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleScroll = (event: Event) => {
+      console.log(
+        "scrolling - event type:",
+        event.type,
+        "target:",
+        event.target
+      );
+      setOpenFilter(null);
+    };
+
+    const handleWheel = () => {
+      console.log("wheel event detected - closing filters");
+      setOpenFilter(null);
+    };
+
+    // Get the scrollable container
+    const container = tableScrollRef.current;
+
+    // Add multiple scroll event listeners for comprehensive coverage
+    if (container) {
+      // Table container scroll (horizontal and vertical)
+      container.addEventListener("scroll", handleScroll, { passive: true });
+      // Also listen for wheel events on the container
+      container.addEventListener("wheel", handleWheel, { passive: true });
+    }
+
+    // Window scroll (page level)
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("wheel", handleWheel, { passive: true });
+
+    // Document scroll (fallback)
+    document.addEventListener("scroll", handleScroll, {
+      passive: true,
+      capture: true,
+    });
+    document.addEventListener("wheel", handleWheel, {
+      passive: true,
+      capture: true,
+    });
+
+    // Body scroll (another fallback)
+    document.body.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      if (container) {
+        container.removeEventListener("scroll", handleScroll);
+        container.removeEventListener("wheel", handleWheel);
+      }
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("wheel", handleWheel);
+      document.removeEventListener("scroll", handleScroll, true);
+      document.removeEventListener("wheel", handleWheel, true);
+      document.body.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -390,7 +463,11 @@ const WorkshopRegistration = () => {
       </div>
       <div className="flex flex-col bg-white shadow rounded flex-1 min-h-0">
         {/* Scrollable table container */}
-        <div className="flex-1 max-h-[100vh] overflow-auto min-h-0">
+        <div
+          ref={tableScrollRef}
+          data-table-container
+          className="flex-1 max-h-[100vh] overflow-auto min-h-[500px]"
+        >
           <table className="w-full text-sm text-left border-collapse">
             <WorkshopTableHeader
               filters={filters}
@@ -428,7 +505,21 @@ const WorkshopRegistration = () => {
                   />
                 ))
               ) : (
-                <NoDataState hasActiveFilters={hasActiveFilters(filters)} />
+                <tr>
+                  <td
+                    colSpan={
+                      permanentColumns.length +
+                        visibleColumns.length +
+                        (showSelection ? 1 : 0) || 1
+                    }
+                  >
+                    <div className="flex justify-center items-center min-h-[200px] w-full">
+                      <NoDataState
+                        hasActiveFilters={hasActiveFilters(filters)}
+                      />
+                    </div>
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
