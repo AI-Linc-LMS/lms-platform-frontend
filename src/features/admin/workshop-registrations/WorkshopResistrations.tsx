@@ -32,7 +32,7 @@ const WorkshopRegistration = () => {
   const [showSelection, setShowSelection] = useState(false);
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [selectedEmailsForConfirmation, setSelectedEmailsForConfirmation] =
-    useState<string[]>([]);
+    useState<Array<{ email: string; name: string }>>([]);
   const [freezeColumns, setFreezeColumns] = useState<string[]>([
     "name",
     "email",
@@ -250,7 +250,7 @@ const WorkshopRegistration = () => {
 
   const handleRemoveEmailFromConfirmation = (emailToRemove: string) => {
     setSelectedEmailsForConfirmation((prev) =>
-      prev.filter((email) => email !== emailToRemove)
+      prev.filter((item) => item.email !== emailToRemove)
     );
     // Also remove from the main selectedRows state
     const entryToRemove = filteredData.find(
@@ -268,14 +268,14 @@ const WorkshopRegistration = () => {
   const handleSendEmail = () => {
     if (selectedRows.size === 0) return;
 
-    const selectedEmails = filteredData
+    const selectedRecipients = workshopData
       .filter((entry) => selectedRows.has(entry.id))
-      .map((entry) => entry.email)
-      .filter((email) => email && email.includes("@"));
+      .map((entry) => ({ email: entry.email, name: entry.name }))
+      .filter((recipient) => recipient.email && recipient.email.includes("@"));
 
-    if (selectedEmails.length === 0) return;
+    if (selectedRecipients.length === 0) return;
 
-    setSelectedEmailsForConfirmation(selectedEmails);
+    setSelectedEmailsForConfirmation(selectedRecipients);
     setShowEmailConfirmation(true);
   };
 
@@ -341,7 +341,7 @@ const WorkshopRegistration = () => {
     return <div className="p-6">Error loading workshop registrations</div>;
 
   return (
-    <div className="p-4 md:p-6 bg-gray-50 min-h-screen flex flex-col">
+    <div className="p-4 md:p-6 bg-gray-50 flex flex-col">
       <h1 className="text-xl md:text-2xl font-bold mb-6">
         Workshop Registrations
       </h1>
@@ -453,10 +453,10 @@ const WorkshopRegistration = () => {
           setShowEmailConfirmation(false);
           // Navigate to email self-serve with pre-filled emails
           navigate("/admin/email-send", {
-            state: { preFilledEmails: selectedEmailsForConfirmation },
+            state: { preFilledRecipients: selectedEmailsForConfirmation },
           });
         }}
-        selectedEmails={selectedEmailsForConfirmation}
+        selectedRecipients={selectedEmailsForConfirmation}
         totalSelected={selectedEmailsForConfirmation.length}
         onRemoveEmail={handleRemoveEmailFromConfirmation}
       />

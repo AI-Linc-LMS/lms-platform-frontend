@@ -14,10 +14,12 @@ import { useRole } from "../../../hooks/useRole";
 
 interface EmailSelfServeProps {
   preFilledEmails?: string[];
+  preFilledRecipients?: Array<{ email: string; name: string }>;
 }
 
 const EmailSelfServe: React.FC<EmailSelfServeProps> = ({
   preFilledEmails = [],
+  preFilledRecipients = [],
 }) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const location = useLocation();
@@ -32,15 +34,27 @@ const EmailSelfServe: React.FC<EmailSelfServeProps> = ({
   // Get pre-filled emails from location state or props
   const emailsFromState =
     (location.state as { preFilledEmails?: string[] })?.preFilledEmails || [];
+  const recipientsFromState =
+    (
+      location.state as {
+        preFilledRecipients?: Array<{ email: string; name: string }>;
+      }
+    )?.preFilledRecipients || [];
+
   const finalPreFilledEmails =
     preFilledEmails.length > 0 ? preFilledEmails : emailsFromState;
+  const finalPreFilledRecipients =
+    preFilledRecipients.length > 0 ? preFilledRecipients : recipientsFromState;
 
-  // Update showHistoryModal based on whether we have pre-filled emails
+  // Update showHistoryModal based on whether we have pre-filled emails or recipients
   useEffect(() => {
-    if (finalPreFilledEmails.length > 0) {
+    if (
+      finalPreFilledEmails.length > 0 ||
+      finalPreFilledRecipients.length > 0
+    ) {
       setShowHistoryModal(false);
     }
-  }, [finalPreFilledEmails.length]);
+  }, [finalPreFilledEmails.length, finalPreFilledRecipients.length]);
 
   const {
     data: emailJobs,
@@ -179,7 +193,7 @@ const EmailSelfServe: React.FC<EmailSelfServeProps> = ({
         clientId={clientId}
         onJobCreated={handleJobCreated}
         onViewHistory={handleViewHistory}
-        preFilledEmails={finalPreFilledEmails}
+        preFilledRecipients={finalPreFilledRecipients}
       />
 
       {/* Email Jobs History Modal */}

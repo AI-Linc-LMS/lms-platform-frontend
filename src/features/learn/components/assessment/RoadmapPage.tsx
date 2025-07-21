@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 // import ailincimg from "../../../../assets/dashboard_assets/toplogoimg.png";
 import popper from "../../../../assets/dashboard_assets/poppers.png";
 import roadmap from "../../../../assets/roadmap/roadmap.png";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import CertificateTemplates from "../../../../components/certificate/CertificateTemplates";
 import ProgramCard from "./roadmap/ProgramCard";
@@ -51,6 +51,7 @@ const RoadmapPage = () => {
   const navigate = useNavigate();
   const { assessmentId } = useParams<{ assessmentId: string }>();
   const location = useLocation();
+  const queryClient = useQueryClient();
 
   const currentAssessmentId = assessmentId || location.state?.assessmentId;
   const clientId = parseInt(import.meta.env.VITE_CLIENT_ID) || 1;
@@ -106,9 +107,9 @@ const RoadmapPage = () => {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["assessment-results", clientId, assessmentId],
+    queryKey: ["assessment-results", clientId, currentAssessmentId],
     queryFn: () =>
-      assessmentId
+      currentAssessmentId
         ? redeemScholarship(clientId, currentAssessmentId)
         : Promise.reject(new Error("No assessment ID")),
     refetchOnWindowFocus: true,
@@ -291,8 +292,20 @@ const RoadmapPage = () => {
         showToast(
           "success",
           "Payment Successful!",
-          "Your certificate is now ready for download."
+          "Your certificate payment is complete. You can now download your certificate."
         );
+
+        // Invalidate and refetch the assessment results query to get updated payment status
+        queryClient.invalidateQueries({
+          queryKey: ["assessment-results", clientId, currentAssessmentId],
+        });
+
+        // Also refetch after a short delay to ensure backend processing is complete
+        setTimeout(() => {
+          queryClient.invalidateQueries({
+            queryKey: ["assessment-results", clientId, currentAssessmentId],
+          });
+        }, 2000);
       },
       onError: (error: string) => {
         //console.error("Certificate payment failed:", error);
@@ -419,12 +432,17 @@ const RoadmapPage = () => {
               <div className="flex flex-col items-center justify-center">
                 <button
                   onClick={handleCertificatePayment}
-                  className="flex items-center gap-2 bg-[#14212B] text-white font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-lg shadow hover:bg-[#223344] transition-colors duration-200 focus:outline-none text-sm sm:text-base"
+                  disabled={assessmentPaymentState.isProcessing}
+                  className={`flex items-center gap-2 font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-lg shadow transition-colors duration-200 focus:outline-none text-sm sm:text-base ${
+                    assessmentPaymentState.isProcessing
+                      ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                      : "bg-[#14212B] text-white hover:bg-[#223344]"
+                  }`}
                 >
-                  Download Certificate
+                  {assessmentPaymentState.isProcessing ? "Processing Payment..." : " Download Certificate"}
                 </button>
                 <span className="text-sm text-gray-500 italic text-center max-w-md font-sans px-2 mt-2">
-                  (You'll be required to pay Rs 49/- for the certificate)
+                  (You'll be required to pay Rs {redeemData?.assessment_price || 49}/- for the certificate)
                 </span>
                 {/* Scholarship Countdown Section */}
 
@@ -432,7 +450,7 @@ const RoadmapPage = () => {
             ) : (
               <button
                 onClick={handleDownloadCertificate}
-                className="flex items-center gap-2 bg-[#14212B] text-white font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-lg shadow hover:bg-[#223344] transition-colors duration-200 focus:outline-none text-sm sm:text-base"
+                className="flex items-center gap-2 bg-green-600 text-white font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-lg shadow hover:bg-green-700 transition-colors duration-200 focus:outline-none text-sm sm:text-base"
               >
                 {isDownloading ? "Downloading..." : "Download Certificate"}
                 <svg
