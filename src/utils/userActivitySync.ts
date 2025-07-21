@@ -5,9 +5,9 @@ import {
   syncOfflineActivityData,
   ActivityData,
 } from "../services/activityTrackingApi";
-import { getDeviceFingerprint } from "./deviceIdentifier";
+import { getDeviceFingerprint, getDeviceId } from "./deviceIdentifier";
 import { logActivityEvent } from "./activityDebugger";
-import { getCurrentUserId } from "./userIdHelper";
+import { getCurrentUserId, getAuthenticatedUserId } from "./userIdHelper";
 
 // Storage keys for deduplication (must match UserActivityContext)
 const STORAGE_KEYS = {
@@ -383,7 +383,9 @@ export const sendSessionEndData = async (
     const sessionEndPayload = {
       "total-time-seconds": validatedTotalTime, // Send Today's Total (accumulated time)
       "session_id": sessionId,
-      "user_id": finalUserId,
+      "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
+      "user_id": finalUserId, // Keep for backward compatibility
+      "device_id": getDeviceId(), // Unique device/browser identifier
       "date": formatDateForApi(),
       "device_type": deviceInfo.deviceType,
       "timestamp": Date.now()
@@ -501,7 +503,9 @@ export const sendSessionEndDataViaBeacon = (
     const sessionEndPayload = {
       "total-time-seconds": validatedTotalTime, // Send Today's Total (accumulated time)
       "session_id": sessionId,
-      "user_id": finalUserId,
+      "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
+      "user_id": finalUserId, // Keep for backward compatibility
+      "device_id": getDeviceId(), // Unique device/browser identifier
       "date": formatDateForApi(),
       "device_type": deviceInfo.deviceType,
       "timestamp": Date.now()
@@ -619,7 +623,9 @@ export const sendPeriodicSessionUpdate = async (
     const sessionUpdatePayload = {
       "total-time-seconds": totalAccumulatedTime, // Send Today's Total (accumulated time)
       "session_id": sessionId,
-      "user_id": finalUserId,
+      "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
+      "user_id": finalUserId, // Keep for backward compatibility
+      "device_id": getDeviceId(), // Unique device/browser identifier
       "date": formatDateForApi(),
       "device_type": deviceInfo.deviceType,
       "timestamp": Date.now()
