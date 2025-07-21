@@ -439,7 +439,7 @@ const RoadmapPage = () => {
                       : "bg-[#14212B] text-white hover:bg-[#223344]"
                   }`}
                 >
-                  {assessmentPaymentState.isProcessing ? "Processing Payment..." : "Pay Now to Download Certificate"}
+                  {assessmentPaymentState.isProcessing ? "Processing Payment..." : " Download Certificate"}
                 </button>
                 <span className="text-sm text-gray-500 italic text-center max-w-md font-sans px-2 mt-2">
                   (You'll be required to pay Rs {redeemData?.assessment_price || 49}/- for the certificate)
