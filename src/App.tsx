@@ -273,35 +273,24 @@ function AppContent() {
     if (!isAuthenticated) return;
 
     const logInterval = setInterval(() => {
-      //console.log("Current session stats:");
-      //console.log("Total time spent:", totalTimeSpent, "seconds");
-      //console.log("Session history:", activityHistory);
-
-      // In the future, this is where you would sync with backend
-      // syncUserActivity(userId, totalTimeSpent, activityHistory);
-    }, 60000); // Log every minute
+    }, 60000);
 
     return () => clearInterval(logInterval);
   }, [isAuthenticated, totalTimeSpent, activityHistory]);
 
   useEffect(() => {
-    //console.log("[App] Authentication check useEffect triggered");
-    //console.log("[App] isAuthenticated:", isAuthenticated);
-    //console.log("[App] Current path:", location.pathname);
 
     if (!isAuthenticated) {
-      // Don't redirect if user is already on login or auth-related pages
+     
       const currentPath = location.pathname;
       const authPages = ["/login", "/signup", "/forgot-password", "/otp"];
 
-      //console.log("[App] User not authenticated, current path:", currentPath);
 
       if (authPages.includes(currentPath)) {
-        //console.log("[App] Already on auth page, not redirecting");
+       
         return; // Don't redirect if already on an auth page
       }
 
-      //console.log("[App] Not on auth page, redirecting to login");
 
       // Store the current path as intended destination before redirecting to login
       const fullPath = getFullPath(location.pathname, location.search);

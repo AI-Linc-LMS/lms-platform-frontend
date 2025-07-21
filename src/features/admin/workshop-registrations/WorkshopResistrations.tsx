@@ -128,7 +128,21 @@ const WorkshopRegistration = () => {
       defaultVisible: true,
     },
     { key: "follow_up_date", label: "Follow Up Date", defaultVisible: true },
-    { key: "session_number", label: "Session", defaultVisible: true },
+    {
+      key: "session_number",
+      label: "Registered Session",
+      defaultVisible: true,
+    },
+    {
+      key: "session_date",
+      label: "Session Date",
+      defaultVisible: true,
+    },
+    {
+      key: "course_name",
+      label: "Course Name",
+      defaultVisible: true,
+    },
     { key: "attended_webinars", label: "Attendee", defaultVisible: true },
     {
       key: "is_assessment_attempted",
@@ -207,6 +221,23 @@ const WorkshopRegistration = () => {
     follow_up_comment: useRef<HTMLDivElement>(null),
     follow_up_date: useRef<HTMLDivElement>(null),
   };
+
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setOpenFilter(null);
+    };
+    const container = tableScrollRef.current;
+    if (container) {
+      container.addEventListener("scroll", handleScroll);
+    }
+    return () => {
+      if (container) {
+        container.removeEventListener("scroll", handleScroll);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -390,7 +421,10 @@ const WorkshopRegistration = () => {
       </div>
       <div className="flex flex-col bg-white shadow rounded flex-1 min-h-0">
         {/* Scrollable table container */}
-        <div className="flex-1 max-h-[100vh] overflow-auto min-h-0">
+        <div
+          ref={tableScrollRef}
+          className="flex-1 max-h-[100vh] overflow-auto min-h-[500px]"
+        >
           <table className="w-full text-sm text-left border-collapse">
             <WorkshopTableHeader
               filters={filters}

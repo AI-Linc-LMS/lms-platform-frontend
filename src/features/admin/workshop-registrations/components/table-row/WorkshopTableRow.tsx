@@ -269,6 +269,8 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     "phone_number",
     "workshop_name",
     "session_number",
+    "session_date",
+    "course_name",
     "referal_code",
     // Call details
     "first_call_status",
@@ -398,6 +400,10 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
             visibleColumns={visibleColumns}
             permanentColumns={permanentColumns}
             stickyStyle={getStickyPosition(columnKey)}
+            updateCourseName={(newValue: string) =>
+              updateMutation.mutate({ course_name: newValue })
+            }
+            courseNameValue={entry.course_name || "flagship"}
           />
         ))}
         <TableRowActions

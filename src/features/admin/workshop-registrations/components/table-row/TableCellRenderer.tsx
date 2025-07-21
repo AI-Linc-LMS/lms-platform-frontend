@@ -3,9 +3,13 @@ import { WorkshopRegistrationData } from "../../types";
 import { FiCopy, FiCheck, FiEdit2 } from "react-icons/fi";
 import { isValidReferralCode } from "../../../../../utils/referralUtils";
 
+interface WorkshopRegistrationDataWithProgram extends WorkshopRegistrationData {
+  program?: string;
+}
+
 interface TableCellRendererProps {
   columnKey: string;
-  entry: WorkshopRegistrationData;
+  entry: WorkshopRegistrationDataWithProgram;
   firstCallStatus: string;
   firstCallComment: string;
   secondCallStatus: string;
@@ -22,7 +26,7 @@ interface TableCellRendererProps {
   renderStatusDropdown: (
     value: string,
     options: { value: string; color: string }[],
-    field: "first_call_status" | "second_call_status"
+    field: "first_call_status" | "second_call_status" | "course_name"
   ) => React.ReactNode;
   getStatusBadgeClass: (
     status: string,
@@ -129,45 +133,83 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
   switch (columnKey) {
     case "name":
       return (
-        <td key={columnKey} className="p-3 border-r border-b border-t border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-b border-t border-gray-300"
+          style={stickyStyle}
+        >
           {entry.name}
         </td>
       );
     case "email":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300 min-w-[200px]" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300 min-w-[200px]"
+          style={stickyStyle}
+        >
           {entry.email}
         </td>
       );
     case "phone_number":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300 w-[140px]" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300 w-[140px]"
+          style={stickyStyle}
+        >
           {entry.phone_number}
         </td>
       );
     case "workshop_name":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span className="text-xs text-[10px]">{entry.workshop_name}</span>
         </td>
       );
     case "session_number":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span className="bg-green-100 items-center justify-center text-center text-green-800 px-2 py-1 rounded-full text-xs font-medium">
             {entry.session_number || 1}
           </span>
         </td>
       );
+    case "session_date":
+      return (
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
+          {entry.session_date ? formatDate(entry.session_date) : "N/A"}
+        </td>
+      );
     case "referal_code":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           {renderReferralCode()}
         </td>
       );
     case "attended_webinars":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
               typeof entry.attended_webinars === "boolean"
@@ -184,7 +226,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "is_assessment_attempted":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
               entry.is_assessment_attempted || "not_attempted",
@@ -197,7 +243,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "is_certificate_amount_paid":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
               entry.is_certificate_amount_paid,
@@ -210,7 +260,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "is_prebooking_amount_paid":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
               entry.is_prebooking_amount_paid,
@@ -223,7 +277,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "is_course_amount_paid":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
               entry.is_course_amount_paid,
@@ -236,19 +294,31 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "amount_paid":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getAmountColor(
               entry.amount_paid
             )}`}
           >
-            {formatNumber(entry.amount_paid)}
+            {entry.amount_paid !== undefined &&
+            entry.amount_paid !== null &&
+            !isNaN(parseFloat(String(entry.amount_paid)))
+              ? parseFloat(String(entry.amount_paid)).toFixed(2)
+              : "N/A"}
           </span>
         </td>
       );
     case "amount_pending":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium text-amber-800 bg-amber-100`}
           >
@@ -258,7 +328,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "score":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span className="text-xs text-yellow-900 p-2 rounded-full bg-yellow-300 font-medium">
             {entry.score || "N/A"}
           </span>
@@ -266,7 +340,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "offered_scholarship_percentage":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span className="text-xs text-green-800 p-2 rounded-full bg-green-100 font-medium">
             {entry.offered_scholarship_percentage || "N/A"}
           </span>
@@ -274,7 +352,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "offered_amount":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <div className="flex items-center gap-2">
             <span
               className={`px-2 py-1 rounded-full text-xs font-medium ${getAmountColor(
@@ -308,7 +390,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "platform_amount":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getAmountColor(
               entry.platform_amount
@@ -320,7 +406,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "assignment_submitted_at":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           {entry.assignment_submitted_at && entry.assignment_submitted_at !== ""
             ? formatDate(entry.assignment_submitted_at)
             : "N/A"}
@@ -328,7 +418,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "referral_code_assessment":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span className="text-xs font-medium">
             {entry.referral_code_assessment || "N/A"}
           </span>
@@ -336,7 +430,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "assessment_status":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
               entry.assessment_status || "N/A",
@@ -349,7 +447,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "first_call_status":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           {renderStatusDropdown(
             firstCallStatus || "N/A",
             FIRST_CALL_STATUS_OPTIONS,
@@ -359,7 +461,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "first_call_comment":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <div
             className="text-sm text-gray-700 cursor-pointer hover:text-blue-600 transition-colors"
             onClick={() =>
@@ -375,7 +481,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "second_call_status":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           {renderStatusDropdown(
             secondCallStatus || "N/A",
             SECOND_CALL_STATUS_OPTIONS,
@@ -385,7 +495,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "second_call_comment":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <div
             className="text-sm text-gray-700 cursor-pointer hover:text-blue-600 transition-colors"
             onClick={() =>
@@ -401,7 +515,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "follow_up_comment":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <div
             className="text-sm text-gray-700 cursor-pointer hover:text-blue-600 transition-colors"
             onClick={() =>
@@ -417,7 +535,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "follow_up_date":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <div className="flex items-center justify-center gap-2">
             <div className="flex items-center justify-center gap-2">
               {entry.follow_up_date && entry.follow_up_date !== ""
@@ -437,24 +559,54 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
 
     case "registered_at":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           {formatDate(entry.registered_at)}
         </td>
       );
     case "updated_at":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           {formatDate(entry.updated_at || "N/A")}
         </td>
       );
     case "submitted_at":
       return (
-        <td key={columnKey} className="p-3 border-r border-gray-300" style={stickyStyle}>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           {entry.submitted_at && entry.submitted_at !== ""
             ? formatDate(entry.submitted_at)
             : "N/A"}
         </td>
       );
+    case "course_name": {
+      // Use 'program' field for value and updates
+      const courseOptions = [
+        { value: "flagship", label: "Flagship", color: "bg-blue-500" },
+        { value: "nanodegree", label: "Nanodegree", color: "bg-green-500" },
+      ];
+      const currentValue =
+        (entry as WorkshopRegistrationDataWithProgram).program || "flagship";
+      return (
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
+          {renderStatusDropdown(currentValue, courseOptions, "course_name")}
+        </td>
+      );
+    }
     default:
       return null;
   }

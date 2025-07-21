@@ -248,13 +248,24 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
   onSelectAll,
   freezeColumns = [],
 }) => {
+  const COURSE_NAME_OPTIONS = [
+    { value: "flagship", label: "Flagship" },
+    { value: "nanodegree", label: "Nanodegree" },
+  ];
   const filterConfigs = [
     // Personal details
     { column: "name", label: "Name" },
     { column: "email", label: "Email" },
     { column: "phone_number", label: "Mobile Number" },
     { column: "workshop_name", label: "Workshop Name" },
-    { column: "session_number", label: "Session" },
+    { column: "session_number", label: "Registered Session" },
+    { column: "session_date", label: "Session Date", isDate: true },
+    {
+      column: "course_name",
+      label: "Course Name",
+      enum: COURSE_NAME_OPTIONS,
+      default: "flagship",
+    },
     { column: "referal_code", label: "Referral Code" },
     // Call details
     {
@@ -306,6 +317,11 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
     "first_call_comment",
     "second_call_comment",
     "follow_up_comment",
+  ];
+
+  const COMMENT_FILLED_OPTIONS = [
+    { value: "filled", label: "Filled" },
+    { value: "not_filled", label: "Not Filled" },
   ];
 
   // Helper to get all unique values for a field from a filtered dataset
@@ -375,6 +391,25 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
     };
   };
 
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (tableScrollRef.current && tableScrollRef.current.scrollLeft > 0) {
+        onToggleFilter(null);
+      }
+    };
+    const container = tableScrollRef.current;
+    if (container) {
+      container.addEventListener("scroll", handleScroll);
+    }
+    return () => {
+      if (container) {
+        container.removeEventListener("scroll", handleScroll);
+      }
+    };
+  }, [onToggleFilter]);
+
   return (
     <thead className="bg-gray-100 sticky top-0 z-20">
       <tr>
@@ -405,16 +440,14 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
           )
           .map((config) => {
             const stickyStyle = getStickyPosition(config.column);
-
             return (
               <th
                 key={config.column}
                 className={[
-                  "p-3 bg-gray-100 border-r border-gray-300",
+                  "p-3 bg-gray-100 border-r border-gray-300 w-[200px] min-w-[200px] text-left",
                   (config.column === "first_call_status" ||
                     config.column === "second_call_status") &&
                     "w-[150px] min-w-[150px]",
-                  // Fixed widths for frozen columns
                   config.column === "name" && "w-[120px] min-w-[120px]",
                   config.column === "email" && "w-[200px] min-w-[200px]",
                   config.column === "phone_number" && "w-[130px] min-w-[130px]",
@@ -425,112 +458,158 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
               >
                 <div className="flex items-center gap-1">
                   <span>{config.label}</span>
-                  {!commentFields.includes(config.column) && (
-                    <button
-                      type="button"
-                      className={`p-1 rounded hover:bg-gray-400 ${
+                  <button
+                    type="button"
+                    className={`p-1 rounded hover:bg-gray-400 ${
+                      openFilter === config.column
+                        ? "text-blue-600 bg-blue-200"
+                        : "text-black"
+                    }`}
+                    onClick={() =>
+                      onToggleFilter(
                         openFilter === config.column
-                          ? "text-blue-600 bg-blue-200"
-                          : "text-black"
-                      }`}
-                      onClick={() =>
-                        onToggleFilter(
-                          openFilter === config.column
-                            ? null
-                            : (config.column as keyof FilterState)
-                        )
-                      }
-                    >
-                      <FiFilter className="w-4 h-4" />
-                    </button>
-                  )}
+                          ? null
+                          : (config.column as keyof FilterState)
+                      )
+                    }
+                  >
+                    <FiFilter className="w-4 h-4" />
+                  </button>
                 </div>
                 {/* Popover filter UI */}
-                {openFilter === config.column &&
-                  !commentFields.includes(config.column) && (
-                    <div
-                      ref={(el) => {
-                        popoverRefs.current[config.column] = el;
-                      }}
-                      className="absolute top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
-                    >
-                      {config.isDate ? (
-                        config.column === "follow_up_date" ? (
-                          <FollowUpDateFilterDropdown
-                            column={config.column as keyof FilterState}
-                            value={
-                              (filters[config.column as keyof FilterState] as {
-                                start: string;
-                                end: string;
-                              }) || { start: "", end: "" }
-                            }
-                            isOpen={true}
-                            onChange={(column, value) =>
-                              onUpdateFilter(column, value)
-                            }
-                            onClear={onClearFilter}
-                            filterRef={
-                              filterRefs[config.column as keyof FilterState]!
-                            }
-                          />
-                        ) : (
-                          <DateFilterDropdown
-                            column={config.column as keyof FilterState}
-                            value={
-                              (filters[config.column as keyof FilterState] as {
-                                start: string;
-                                end: string;
-                              }) || { start: "", end: "" }
-                            }
-                            isOpen={true}
-                            onChange={(column, value) =>
-                              onUpdateFilter(column, value)
-                            }
-                            onClear={onClearFilter}
-                            filterRef={
-                              filterRefs[config.column as keyof FilterState]!
-                            }
-                          />
-                        )
-                      ) : config.enum ? (
-                        <MultiSelectDropdown
+                {openFilter === config.column && (
+                  <div
+                    ref={(el) => {
+                      popoverRefs.current[config.column] = el;
+                    }}
+                    className="absolute top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
+                  >
+                    {(config.column as string) === "course_name" ? (
+                      <MultiSelectDropdown
+                        value={
+                          filters[config.column as keyof FilterState] as string
+                        }
+                        onChange={(value) =>
+                          onUpdateFilter(
+                            config.column as keyof FilterState,
+                            value
+                          )
+                        }
+                        data={COURSE_NAME_OPTIONS.map((e) => e.value)}
+                        colorMap={Object.fromEntries(
+                          COURSE_NAME_OPTIONS.map((e) => [e.value, ""])
+                        )}
+                      />
+                    ) : commentFields.includes(config.column) ? (
+                      <div className="flex flex-col gap-2">
+                        {COMMENT_FILLED_OPTIONS.map((opt) => (
+                          <label
+                            key={opt.value}
+                            className="flex items-center gap-2 cursor-pointer"
+                          >
+                            <input
+                              type="radio"
+                              name={`comment-filter-${config.column}`}
+                              value={opt.value}
+                              checked={
+                                filters[config.column as keyof FilterState] ===
+                                opt.value
+                              }
+                              onChange={() =>
+                                onUpdateFilter(
+                                  config.column as keyof FilterState,
+                                  opt.value
+                                )
+                              }
+                            />
+                            <span className="text-sm">{opt.label}</span>
+                          </label>
+                        ))}
+                        <button
+                          className="absolute right-4 bottom-2 mt-2 text-xs text-red-600 hover:text-red-800"
+                          onClick={() =>
+                            onClearFilter(config.column as keyof FilterState)
+                          }
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    ) : config.isDate ? (
+                      config.column === "follow_up_date" ? (
+                        <FollowUpDateFilterDropdown
+                          column={config.column as keyof FilterState}
                           value={
-                            filters[
-                              config.column as keyof FilterState
-                            ] as string
+                            (filters[config.column as keyof FilterState] as {
+                              start: string;
+                              end: string;
+                            }) || { start: "", end: "" }
                           }
-                          onChange={(value) =>
-                            onUpdateFilter(
-                              config.column as keyof FilterState,
-                              value
-                            )
+                          isOpen={true}
+                          onChange={(column, value) =>
+                            onUpdateFilter(column, value)
                           }
-                          data={config.enum.map((e) => e.value)}
-                          colorMap={Object.fromEntries(
-                            config.enum.map((e) => [e.value, e.color])
-                          )}
+                          onClear={onClearFilter}
+                          filterRef={
+                            filterRefs[config.column as keyof FilterState]!
+                          }
                         />
                       ) : (
-                        <MultiSelectDropdown
+                        <DateFilterDropdown
+                          column={config.column as keyof FilterState}
                           value={
-                            filters[
-                              config.column as keyof FilterState
-                            ] as string
+                            (filters[config.column as keyof FilterState] as {
+                              start: string;
+                              end: string;
+                            }) || { start: "", end: "" }
                           }
-                          onChange={(value) =>
-                            onUpdateFilter(
-                              config.column as keyof FilterState,
-                              value
-                            )
+                          isOpen={true}
+                          onChange={(column, value) =>
+                            onUpdateFilter(column, value)
                           }
-                          data={getUniqueFieldValues(
-                            config.column as keyof WorkshopRegistrationData,
-                            data
-                          )}
+                          onClear={onClearFilter}
+                          filterRef={
+                            filterRefs[config.column as keyof FilterState]!
+                          }
                         />
-                      )}
-                    </div>
-                  )}
+                      )
+                    ) : config.enum ? (
+                      <MultiSelectDropdown
+                        value={
+                          filters[config.column as keyof FilterState] as string
+                        }
+                        onChange={(value) =>
+                          onUpdateFilter(
+                            config.column as keyof FilterState,
+                            value
+                          )
+                        }
+                        data={config.enum.map((e) => e.value)}
+                        colorMap={Object.fromEntries(
+                          config.enum.map((e) => [
+                            e.value,
+                            "color" in e ? e.color : "",
+                          ])
+                        )}
+                      />
+                    ) : (
+                      <MultiSelectDropdown
+                        value={
+                          filters[config.column as keyof FilterState] as string
+                        }
+                        onChange={(value) =>
+                          onUpdateFilter(
+                            config.column as keyof FilterState,
+                            value
+                          )
+                        }
+                        data={getUniqueFieldValues(
+                          config.column as keyof WorkshopRegistrationData,
+                          data
+                        )}
+                      />
+                    )}
+                  </div>
+                )}
               </th>
             );
           })}
