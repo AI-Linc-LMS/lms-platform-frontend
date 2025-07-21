@@ -571,6 +571,7 @@ export const getInitialFilterState = (): FilterState => ({
   session_number: "",
   session_date: "",
   referal_code: "",
+  course_name: "",
   attended_webinars: "",
   is_assessment_attempted: "",
   is_certificate_amount_paid: "",

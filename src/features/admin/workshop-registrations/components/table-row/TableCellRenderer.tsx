@@ -3,13 +3,9 @@ import { WorkshopRegistrationData } from "../../types";
 import { FiCopy, FiCheck, FiEdit2 } from "react-icons/fi";
 import { isValidReferralCode } from "../../../../../utils/referralUtils";
 
-interface WorkshopRegistrationDataWithProgram extends WorkshopRegistrationData {
-  program?: string;
-}
-
 interface TableCellRendererProps {
   columnKey: string;
-  entry: WorkshopRegistrationDataWithProgram;
+  entry: WorkshopRegistrationData;
   firstCallStatus: string;
   firstCallComment: string;
   secondCallStatus: string;
@@ -596,7 +592,7 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
         { value: "nanodegree", label: "Nanodegree", color: "bg-green-500" },
       ];
       const currentValue =
-        (entry as WorkshopRegistrationDataWithProgram).program || "flagship";
+        (entry as WorkshopRegistrationData).program || "flagship";
       return (
         <td
           key={columnKey}

@@ -86,7 +86,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   // Cooldown state for each status field
   const [cooldown, setCooldown] = useState<{ [key: string]: boolean }>({});
   const [quickStatusDropdown, setQuickStatusDropdown] = useState<
-    null | "first_call_status" | "second_call_status"
+    null | "first_call_status" | "second_call_status" | "course_name"
   >(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -135,7 +135,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   };
 
   const handleStatusChange = (
-    field: "first_call_status" | "second_call_status",
+    field: "first_call_status" | "second_call_status" | "course_name",
     value: string
   ) => {
     if (field === "first_call_status") {
@@ -144,26 +144,28 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     if (field === "second_call_status") {
       setSecondCallStatus(value);
     }
-
-    // Call API to update the status
-    updateMutation.mutate(
-      {
-        first_call_status:
-          field === "first_call_status" ? value : firstCallStatus,
-        first_call_comment: firstCallComment,
-        second_call_status:
-          field === "second_call_status" ? value : secondCallStatus,
-        second_call_comment: secondCallComment,
-      },
-      {
-        onSuccess: (_data, variables) => {
-          setFirstCallStatus(variables.first_call_status || "");
-          setFirstCallComment(variables.first_call_comment || "");
-          setSecondCallStatus(variables.second_call_status || "");
-          setSecondCallComment(variables.second_call_comment || "");
+    if (field === "course_name") {
+      updateMutation.mutate({ program: value });
+    } else {
+      updateMutation.mutate(
+        {
+          first_call_status:
+            field === "first_call_status" ? value : firstCallStatus,
+          first_call_comment: firstCallComment,
+          second_call_status:
+            field === "second_call_status" ? value : secondCallStatus,
+          second_call_comment: secondCallComment,
         },
-      }
-    );
+        {
+          onSuccess: (_data, variables) => {
+            setFirstCallStatus(variables.first_call_status || "");
+            setFirstCallComment(variables.first_call_comment || "");
+            setSecondCallStatus(variables.second_call_status || "");
+            setSecondCallComment(variables.second_call_comment || "");
+          },
+        }
+      );
+    }
   };
 
   const openEditModal = () => {
@@ -336,7 +338,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   const renderStatusDropdown = (
     value: string,
     options: { value: string; color: string }[],
-    field: "first_call_status" | "second_call_status"
+    field: "first_call_status" | "second_call_status" | "course_name"
   ) => (
     <StatusDropdown
       value={value}
@@ -400,10 +402,6 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
             visibleColumns={visibleColumns}
             permanentColumns={permanentColumns}
             stickyStyle={getStickyPosition(columnKey)}
-            updateCourseName={(newValue: string) =>
-              updateMutation.mutate({ course_name: newValue })
-            }
-            courseNameValue={entry.course_name || "flagship"}
           />
         ))}
         <TableRowActions

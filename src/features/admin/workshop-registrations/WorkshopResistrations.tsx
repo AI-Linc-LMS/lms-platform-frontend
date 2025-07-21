@@ -225,17 +225,59 @@ const WorkshopRegistration = () => {
   const tableScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleScroll = () => {
+    const handleScroll = (event: Event) => {
+      console.log(
+        "scrolling - event type:",
+        event.type,
+        "target:",
+        event.target
+      );
       setOpenFilter(null);
     };
+
+    const handleWheel = () => {
+      console.log("wheel event detected - closing filters");
+      setOpenFilter(null);
+    };
+
+    // Get the scrollable container
     const container = tableScrollRef.current;
+
+    // Add multiple scroll event listeners for comprehensive coverage
     if (container) {
-      container.addEventListener("scroll", handleScroll);
+      // Table container scroll (horizontal and vertical)
+      container.addEventListener("scroll", handleScroll, { passive: true });
+      // Also listen for wheel events on the container
+      container.addEventListener("wheel", handleWheel, { passive: true });
     }
+
+    // Window scroll (page level)
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("wheel", handleWheel, { passive: true });
+
+    // Document scroll (fallback)
+    document.addEventListener("scroll", handleScroll, {
+      passive: true,
+      capture: true,
+    });
+    document.addEventListener("wheel", handleWheel, {
+      passive: true,
+      capture: true,
+    });
+
+    // Body scroll (another fallback)
+    document.body.addEventListener("scroll", handleScroll, { passive: true });
+
     return () => {
       if (container) {
         container.removeEventListener("scroll", handleScroll);
+        container.removeEventListener("wheel", handleWheel);
       }
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("wheel", handleWheel);
+      document.removeEventListener("scroll", handleScroll, true);
+      document.removeEventListener("wheel", handleWheel, true);
+      document.body.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
@@ -423,6 +465,7 @@ const WorkshopRegistration = () => {
         {/* Scrollable table container */}
         <div
           ref={tableScrollRef}
+          data-table-container
           className="flex-1 max-h-[100vh] overflow-auto min-h-[500px]"
         >
           <table className="w-full text-sm text-left border-collapse">
@@ -462,7 +505,21 @@ const WorkshopRegistration = () => {
                   />
                 ))
               ) : (
-                <NoDataState hasActiveFilters={hasActiveFilters(filters)} />
+                <tr>
+                  <td
+                    colSpan={
+                      permanentColumns.length +
+                        visibleColumns.length +
+                        (showSelection ? 1 : 0) || 1
+                    }
+                  >
+                    <div className="flex justify-center items-center min-h-[200px] w-full">
+                      <NoDataState
+                        hasActiveFilters={hasActiveFilters(filters)}
+                      />
+                    </div>
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>

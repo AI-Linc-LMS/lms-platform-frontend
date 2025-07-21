@@ -391,22 +391,43 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
     };
   };
 
-  const tableScrollRef = useRef<HTMLDivElement>(null);
-
+  // Add scroll event listener to close filters on any scroll
   useEffect(() => {
     const handleScroll = () => {
-      if (tableScrollRef.current && tableScrollRef.current.scrollLeft > 0) {
-        onToggleFilter(null);
-      }
+      console.log("Table header - scroll detected, closing filters");
+      onToggleFilter(null);
     };
-    const container = tableScrollRef.current;
-    if (container) {
-      container.addEventListener("scroll", handleScroll);
+
+    // Listen to scroll events on multiple targets
+    const scrollTargets: (Window | Document | HTMLElement)[] = [
+      window,
+      document,
+      document.body,
+      document.documentElement,
+    ];
+
+    // Also try to find the table container
+    const tableContainer =
+      document.querySelector("[data-table-container]") ||
+      document.querySelector(".overflow-auto") ||
+      document.querySelector("table")?.closest(".overflow-auto");
+
+    if (tableContainer && tableContainer instanceof HTMLElement) {
+      scrollTargets.push(tableContainer);
     }
+
+    // Add event listeners to all targets
+    scrollTargets.forEach((target) => {
+      target.addEventListener("scroll", handleScroll, {
+        passive: true,
+        capture: true,
+      });
+    });
+
     return () => {
-      if (container) {
-        container.removeEventListener("scroll", handleScroll);
-      }
+      scrollTargets.forEach((target) => {
+        target.removeEventListener("scroll", handleScroll, true);
+      });
     };
   }, [onToggleFilter]);
 

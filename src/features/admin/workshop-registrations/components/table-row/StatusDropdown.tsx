@@ -5,17 +5,21 @@ import { getStatusColor } from "./TableRowUtils";
 interface StatusDropdownProps {
   value: string;
   options: { value: string; color: string }[];
-  field: "first_call_status" | "second_call_status";
+  field: "first_call_status" | "second_call_status" | "course_name";
   cooldown: { [key: string]: boolean };
-  quickStatusDropdown: null | "first_call_status" | "second_call_status";
+  quickStatusDropdown:
+    | null
+    | "first_call_status"
+    | "second_call_status"
+    | "course_name";
   setQuickStatusDropdown: (
-    value: null | "first_call_status" | "second_call_status"
+    value: "first_call_status" | "second_call_status" | "course_name" | null
   ) => void;
   setCooldown: (
     value: React.SetStateAction<{ [key: string]: boolean }>
   ) => void;
   onStatusChange: (
-    field: "first_call_status" | "second_call_status",
+    field: "first_call_status" | "second_call_status" | "course_name",
     value: string
   ) => void;
 }
