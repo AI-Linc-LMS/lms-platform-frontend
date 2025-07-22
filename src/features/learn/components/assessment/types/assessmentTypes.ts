@@ -61,6 +61,8 @@ export interface ScholarshipRedemptionData {
   payable_amount: number;
   total_amount: number;
   txn_status?: string;
+  is_paid?: boolean;
+  assessment_price?: number;
   stats?: AssessmentStats;
 }
 
