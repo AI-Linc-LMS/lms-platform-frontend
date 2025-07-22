@@ -9,6 +9,7 @@ interface TableCellRendererProps {
   firstCallStatus: string;
   firstCallComment: string;
   secondCallStatus: string;
+  program: string;
   secondCallComment: string;
   followUpComment: string;
   offeredAmount: string;
@@ -34,6 +35,7 @@ interface TableCellRendererProps {
   handleEditFollowUpDate: (entry: WorkshopRegistrationData) => void;
   FIRST_CALL_STATUS_OPTIONS: { value: string; color: string }[];
   SECOND_CALL_STATUS_OPTIONS: { value: string; color: string }[];
+  COURSE_NAME_OPTIONS: { value: string; color: string }[];
   visibleColumns?: string[];
   permanentColumns?: string[];
   stickyStyle?: React.CSSProperties;
@@ -60,6 +62,7 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
   handleEditFollowUpDate,
   FIRST_CALL_STATUS_OPTIONS,
   SECOND_CALL_STATUS_OPTIONS,
+  COURSE_NAME_OPTIONS,
   visibleColumns = [],
   permanentColumns = [],
   stickyStyle,
@@ -586,20 +589,17 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
         </td>
       );
     case "course_name": {
-      // Use 'program' field for value and updates
-      const courseOptions = [
-        { value: "flagship", label: "Flagship", color: "bg-blue-500" },
-        { value: "nanodegree", label: "Nanodegree", color: "bg-green-500" },
-      ];
-      const currentValue =
-        (entry as WorkshopRegistrationData).program || "flagship";
       return (
         <td
           key={columnKey}
           className="p-3 border-r border-gray-300"
           style={stickyStyle}
         >
-          {renderStatusDropdown(currentValue, courseOptions, "course_name")}
+          {renderStatusDropdown(
+            entry.program ?? "N/A",
+            COURSE_NAME_OPTIONS,
+            "course_name"
+          )}
         </td>
       );
     }
