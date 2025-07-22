@@ -9,7 +9,6 @@ interface TableCellRendererProps {
   firstCallStatus: string;
   firstCallComment: string;
   secondCallStatus: string;
-  program: string;
   secondCallComment: string;
   followUpComment: string;
   offeredAmount: string;
