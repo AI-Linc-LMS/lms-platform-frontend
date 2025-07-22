@@ -58,7 +58,7 @@ export const StatusDropdown: React.FC<StatusDropdownProps> = ({
         <span
           className={`inline-block w-3 h-3 rounded-full mt-1 flex-shrink-0 ${getStatusColor(
             value,
-            field === "first_call_status" ? "first" : "second"
+            field === "first_call_status" ? "first" : field === "second_call_status" ? "second" : "course"
           )}`}
         ></span>
         <span
