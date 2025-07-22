@@ -52,8 +52,8 @@ const AssessmentInvitationModal: React.FC<AssessmentInvitationModalProps> = ({
         } 
       });
     } else {
-      // Start a new assessment
-      navigate(`/assessment/ai-linc-scholarship-test-2`, { 
+      // Start a new assessment with jobPortal referral code
+      navigate(`/assessment/${assessmentId}?ref=jobPortal`, { 
         state: { 
           job,
           fromJobApplication: true 
