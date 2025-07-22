@@ -3,13 +3,12 @@ import html2pdf from "html2pdf.js";
 import { useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
 import { Certificate } from "../../services/certificateApis";
-import certificateBg from "./certificate-bg/certifiacte bg.png";
+import microsoftStartupBg from "./certificate-bg/microsoft-startup-bg.png";
 
 export interface CertificateTemplatesRef {
   downloadPDF: () => Promise<void>;
   isDownloading: boolean;
 }
-
 interface CertificateTemplatesProps {
   certificate?: Certificate | null;
 }
@@ -68,7 +67,7 @@ const CertificateTemplates = forwardRef<
 
       // Restore original border radius
       element.style.borderRadius = originalBorderRadius;
-    } catch (error) {
+    } catch {
       //console.error("Error generating PDF:", error);
     } finally {
       setIsDownloading(false);
@@ -97,7 +96,7 @@ const CertificateTemplates = forwardRef<
         data-certificate-ref="true"
         className="w-full max-w-[800px] h-[500px] text-white p-4 sm:p-6 md:p-8 lg:p-12 box-border relative rounded-lg shadow-lg bg-cover bg-center"
         style={{
-          backgroundImage: `url(${certificateBg})`,
+          backgroundImage: `url(${microsoftStartupBg})`,
           aspectRatio: "8/5",
           minHeight: "400px",
           maxHeight: "500px",
@@ -137,10 +136,6 @@ const CertificateTemplates = forwardRef<
           <div className="font-lato text-lg text-center">
             Issued on {issuedDate}
           </div>
-        </div>
-
-        <div className="font-oswald text-lg text-center tracking-wider absolute bottom-14 left-0 right-0">
-          Session taken by the experts from
         </div>
       </div>
     </div>
