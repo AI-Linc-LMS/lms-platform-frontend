@@ -5,6 +5,7 @@ import {
   FollowUpDateFilterDropdown,
 } from "./FilterDropdown";
 import { FiCheck, FiFilter } from "react-icons/fi";
+import { COURSE_NAME_OPTIONS } from "./table-row/TableRowUtils";
 
 const FIRST_CALL_STATUS_OPTIONS = [
   { value: "Connected scheduled interview", color: "bg-green-500" },
@@ -248,10 +249,6 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
   onSelectAll,
   freezeColumns = [],
 }) => {
-  const COURSE_NAME_OPTIONS = [
-    { value: "flagship", label: "Flagship" },
-    { value: "nanodegree", label: "Nanodegree" },
-  ];
   const filterConfigs = [
     // Personal details
     { column: "name", label: "Name" },

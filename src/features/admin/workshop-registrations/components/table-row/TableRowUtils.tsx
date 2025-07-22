@@ -15,6 +15,11 @@ export const SECOND_CALL_STATUS_OPTIONS = [
   { value: "N/A", color: "bg-gray-400" },
 ];
 
+export const COURSE_NAME_OPTIONS = [
+  { value: "flagship", color: "bg-blue-500" },
+  { value: "nanodegree", color: "bg-green-500" },
+];
+
 export const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleString(undefined, {
     year: "numeric",
@@ -93,9 +98,9 @@ export const getAmountColor = (amount: string | number | null | undefined) => {
   return "bg-gray-100 text-gray-600";
 };
 
-export const getStatusColor = (value: string, type: "first" | "second") => {
+export const getStatusColor = (value: string, type: "first" | "second" | "course") => {
   const options =
-    type === "first" ? FIRST_CALL_STATUS_OPTIONS : SECOND_CALL_STATUS_OPTIONS;
+    type === "first" ? FIRST_CALL_STATUS_OPTIONS : type === "second" ? SECOND_CALL_STATUS_OPTIONS : COURSE_NAME_OPTIONS;
   const found = options.find((opt) => opt.value === value);
   return found ? found.color : "bg-gray-300";
 };
