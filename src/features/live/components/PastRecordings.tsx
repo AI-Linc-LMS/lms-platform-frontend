@@ -139,24 +139,6 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({ recordings }) => {
               key={recording.id}
               className="bg-white rounded-2xl shadow-lg overflow-hidden border border-[#80C9E0] hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
             >
-              <div className="relative">
-                <img
-                  src={recording.banner}
-                  alt={recording.title}
-                  className="w-full h-40 object-cover"
-                />
-                <div className="absolute top-4 right-4">
-                  <span className="bg-white/90 text-[#343A40] px-2 py-1 rounded-full text-xs font-medium">
-                    {recording.category}
-                  </span>
-                </div>
-                <div className="absolute bottom-4 left-4">
-                  <span className="bg-black/70 text-white px-2 py-1 rounded text-xs">
-                    {formatDuration(recording.duration)}
-                  </span>
-                </div>
-              </div>
-
               <div className="p-6">
                 <h3 className="font-bold text-[#343A40] text-lg mb-2 line-clamp-2">
                   {recording.title}
@@ -166,11 +148,6 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({ recordings }) => {
                 </p>
 
                 <div className="flex items-center space-x-3 mb-4">
-                  <img
-                    src={recording.trainer.avatar}
-                    alt={recording.trainer.name}
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
                   <div className="text-sm">
                     <p className="font-medium text-[#343A40]">
                       {recording.trainer.name}
