@@ -388,46 +388,6 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
     };
   };
 
-  // Add scroll event listener to close filters on any scroll
-  useEffect(() => {
-    const handleScroll = () => {
-      console.log("Table header - scroll detected, closing filters");
-      onToggleFilter(null);
-    };
-
-    // Listen to scroll events on multiple targets
-    const scrollTargets: (Window | Document | HTMLElement)[] = [
-      window,
-      document,
-      document.body,
-      document.documentElement,
-    ];
-
-    // Also try to find the table container
-    const tableContainer =
-      document.querySelector("[data-table-container]") ||
-      document.querySelector(".overflow-auto") ||
-      document.querySelector("table")?.closest(".overflow-auto");
-
-    if (tableContainer && tableContainer instanceof HTMLElement) {
-      scrollTargets.push(tableContainer);
-    }
-
-    // Add event listeners to all targets
-    scrollTargets.forEach((target) => {
-      target.addEventListener("scroll", handleScroll, {
-        passive: true,
-        capture: true,
-      });
-    });
-
-    return () => {
-      scrollTargets.forEach((target) => {
-        target.removeEventListener("scroll", handleScroll, true);
-      });
-    };
-  }, [onToggleFilter]);
-
   return (
     <thead className="bg-gray-100 sticky top-0 z-20">
       <tr>
