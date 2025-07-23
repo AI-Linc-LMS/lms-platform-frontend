@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getWorkshopRegistrations } from "../../../services/admin/workshopRegistrationApis";
 import { WorkshopRegistrationData, FilterState } from "./types";
@@ -223,79 +223,25 @@ const WorkshopRegistration = () => {
   };
 
   const tableScrollRef = useRef<HTMLDivElement>(null);
-
+  const lastScrollLeftRef = useRef(0);
+  
+  // Detect horizontal scroll
   useEffect(() => {
-    const handleScroll = (event: Event) => {
-      console.log(
-        "scrolling - event type:",
-        event.type,
-        "target:",
-        event.target
-      );
-      setOpenFilter(null);
-    };
-
-    const handleWheel = () => {
-      console.log("wheel event detected - closing filters");
-      setOpenFilter(null);
-    };
-
-    // Get the scrollable container
     const container = tableScrollRef.current;
-
-    // Add multiple scroll event listeners for comprehensive coverage
-    if (container) {
-      // Table container scroll (horizontal and vertical)
-      container.addEventListener("scroll", handleScroll, { passive: true });
-      // Also listen for wheel events on the container
-      container.addEventListener("wheel", handleWheel, { passive: true });
-    }
-
-    // Window scroll (page level)
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("wheel", handleWheel, { passive: true });
-
-    // Document scroll (fallback)
-    document.addEventListener("scroll", handleScroll, {
-      passive: true,
-      capture: true,
-    });
-    document.addEventListener("wheel", handleWheel, {
-      passive: true,
-      capture: true,
-    });
-
-    // Body scroll (another fallback)
-    document.body.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      if (container) {
-        container.removeEventListener("scroll", handleScroll);
-        container.removeEventListener("wheel", handleWheel);
+    if (!container) return;
+    lastScrollLeftRef.current = container.scrollLeft;
+    const handleHorizontalScroll = () => {
+      if (container.scrollLeft !== lastScrollLeftRef.current) {
+        // Horizontal scroll detected
+        setOpenFilter(null);
+        lastScrollLeftRef.current = container.scrollLeft;
       }
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("wheel", handleWheel);
-      document.removeEventListener("scroll", handleScroll, true);
-      document.removeEventListener("wheel", handleWheel, true);
-      document.body.removeEventListener("scroll", handleScroll);
+    };
+    container.addEventListener("scroll", handleHorizontalScroll);
+    return () => {
+      container.removeEventListener("scroll", handleHorizontalScroll);
     };
   }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        openFilter &&
-        filterRefs[openFilter as keyof typeof filterRefs]?.current &&
-        !filterRefs[openFilter as keyof typeof filterRefs]?.current?.contains(
-          event.target as Node
-        )
-      ) {
-        setOpenFilter(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [openFilter]);
 
   const {
     data: workshopData = [],
