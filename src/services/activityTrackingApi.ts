@@ -1,5 +1,7 @@
 import axios from 'axios';
 import { ActivitySession } from '../contexts/UserActivityContext';
+import { getAuthenticatedUserId } from '../utils/userIdHelper';
+import { getDeviceId } from '../utils/deviceIdentifier';
 
 // Base axios instance with common configurations
 const activityTrackingInstance = axios.create({
@@ -42,66 +44,51 @@ export interface ActivityData {
 
 /**
  * Sends user activity data to the backend
- * Note: This is a placeholder for future implementation
  */
 export const sendActivityData = async (data: ActivityData): Promise<void> => {
-  try {
-    // This is commented out for now since the backend endpoint is not ready
-    // When ready, uncomment this code and replace with the actual endpoint
-    /*
-    await activityTrackingInstance.post('/user-activity', data);
-    //console.log('Activity data sent successfully');
-    */
-    
-    // For now, just log the data that would be sent
-    //console.log('Activity data ready to send:', data);
-    
-    // Format API data for the current backend endpoint
-    const apiData = {
-      date: new Date(data.timestamp).toISOString().split('T')[0], // Format as YYYY-MM-DD
-      "time-spend-seconds": data.totalTimeSpent, // Send exact seconds for precision
-      "time-spend": Math.floor(data.totalTimeSpent / 60), // Use floor instead of round to avoid inflating time
-      session_id: data.session_id,
-      device_info: data.device_info,
-      user_id: data.userId, // Include user ID for server-side aggregation
-      timestamp: data.timestamp // Include client timestamp for verification
-    };
-    
-    const clientId = import.meta.env.VITE_CLIENT_ID;
-    const endpoint = `/activity/clients/${clientId}/activity-log/`;
-    
-    //console.log('Sending to endpoint:', endpoint);
-    //console.log('Formatted data:', apiData);
-    
-    // Send the actual API call
-    await activityTrackingInstance.post(endpoint, apiData);
-    //console.log('Activity data sent successfully');
-  } catch (error) {
-    //console.error('Failed to send activity data:', error);
-    throw error;
-  }
+  // Calculate total time including current active session
+  const currentSessionDuration = data.activitySessions.length > 0 
+    ? Math.floor((Date.now() - data.activitySessions[data.activitySessions.length - 1].startTime) / 1000)
+    : 0;
+  
+  // Total accumulated time = stored total + current session duration
+  const totalAccumulatedTime = data.totalTimeSpent + currentSessionDuration;
+  
+  // Get authenticated user ID (account ID) and device ID for cross-device tracking
+  const accountId = getAuthenticatedUserId(); // This is the user's account ID (same across devices)
+  const deviceId = getDeviceId(); // This identifies the specific device/browser
+  
+  // Clean API payload with account and device tracking
+  const apiData = {
+    "total-time-seconds": totalAccumulatedTime, // Send total accumulated time (Today's Total)
+    "session_id": data.session_id,
+    "account_id": accountId, // User's account ID (same across all devices)
+    "user_id": data.userId, // Keep for backward compatibility
+    "device_id": deviceId, // Unique device/browser identifier
+    "date": new Date(data.timestamp).toISOString().split('T')[0], // YYYY-MM-DD format
+    "device_type": data.device_info.deviceType, // Just device type, not full device info
+    "timestamp": data.timestamp
+  };
+  
+  const clientId = import.meta.env.VITE_CLIENT_ID;
+  const endpoint = `/activity/clients/${clientId}/activity-log/`;
+  
+  // Send the actual API call
+  await activityTrackingInstance.post(endpoint, apiData);
 };
 
 /**
- * Store activity data locally when offline
+ * Store activity data locally for offline usage
  */
 export const storeActivityDataLocally = (data: ActivityData): void => {
   try {
-    // Get any existing offline data
-    const storedData = localStorage.getItem('offlineActivityData');
-    let offlineData: ActivityData[] = storedData ? JSON.parse(storedData) : [];
+    const existingDataStr = localStorage.getItem('offlineActivityData');
+    const existingData = existingDataStr ? JSON.parse(existingDataStr) : [];
     
-    // Add new data
-    offlineData.push(data);
-    
-    // Store back in localStorage (limited to most recent 50 sessions to prevent storage issues)
-    if (offlineData.length > 50) {
-      offlineData = offlineData.slice(-50);
-    }
-    
-    localStorage.setItem('offlineActivityData', JSON.stringify(offlineData));
-  } catch (error) {
-    //console.error('Failed to store activity data locally:', error);
+    existingData.push(data);
+    localStorage.setItem('offlineActivityData', JSON.stringify(existingData));
+  } catch {
+    // Silently fail if localStorage is not available
   }
 };
 
@@ -120,15 +107,28 @@ export const syncOfflineActivityData = async (): Promise<void> => {
     
     // Process each offline activity record
     const promises = offlineData.map(data => {
-      // Format API data for the current backend endpoint
+      // Calculate total time including current active session for each record
+      const currentSessionDuration = data.activitySessions.length > 0 
+        ? Math.floor((data.timestamp - data.activitySessions[data.activitySessions.length - 1].startTime) / 1000)
+        : 0;
+      
+      // Total accumulated time = stored total + current session duration
+      const totalAccumulatedTime = data.totalTimeSpent + currentSessionDuration;
+      
+      // Get authenticated user ID (account ID) and device ID for cross-device tracking
+      const accountId = getAuthenticatedUserId(); // This is the user's account ID (same across devices)
+      const deviceId = getDeviceId(); // This identifies the specific device/browser
+      
+      // Clean API payload with account and device tracking
       const apiData = {
-        date: new Date(data.timestamp).toISOString().split('T')[0], // Format as YYYY-MM-DD
-        "time-spend-seconds": data.totalTimeSpent, // Send exact seconds for precision
-        "time-spend": Math.floor(data.totalTimeSpent / 60), // Use floor instead of round to avoid inflating time
-        session_id: data.session_id,
-        device_info: data.device_info,
-        user_id: data.userId, // Include user ID for server-side aggregation
-        timestamp: data.timestamp // Include client timestamp for verification
+        "total-time-seconds": totalAccumulatedTime, // Send total accumulated time (Today's Total)
+        "session_id": data.session_id,
+        "account_id": accountId, // User's account ID (same across all devices)
+        "user_id": data.userId, // Keep for backward compatibility
+        "device_id": deviceId, // Unique device/browser identifier
+        "date": new Date(data.timestamp).toISOString().split('T')[0], // YYYY-MM-DD format
+        "device_type": data.device_info.deviceType, // Just device type, not full device info
+        "timestamp": data.timestamp
       };
       
       // Send API call for each offline record
@@ -136,11 +136,10 @@ export const syncOfflineActivityData = async (): Promise<void> => {
     });
     
     await Promise.all(promises);
-    //console.log('Offline activity data synced successfully');
     
     // Clear synced data
     localStorage.removeItem('offlineActivityData');
-  } catch (error) {
-    //console.error('Failed to sync offline activity data:', error);
+  } catch {
+    // Silently fail - offline sync will be retried later
   }
 }; 
