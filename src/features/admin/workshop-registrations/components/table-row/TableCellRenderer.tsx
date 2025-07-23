@@ -30,6 +30,7 @@ interface TableCellRendererProps {
   ) => string;
   getAmountColor: (amount: string | number | null | undefined) => string;
   formatDate: (dateString: string) => string;
+  openEditModal: () => void;
   openOfferedAmountModal: () => void;
   handleEditFollowUpDate: (entry: WorkshopRegistrationData) => void;
   FIRST_CALL_STATUS_OPTIONS: { value: string; color: string }[];
@@ -58,6 +59,7 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
   getAmountColor,
   formatDate,
   openOfferedAmountModal,
+  openEditModal,
   handleEditFollowUpDate,
   FIRST_CALL_STATUS_OPTIONS,
   SECOND_CALL_STATUS_OPTIONS,
@@ -166,7 +168,7 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
           className="p-3 border-r border-gray-300"
           style={stickyStyle}
         >
-          <span className="text-xs text-[10px]">{entry.workshop_name}</span>
+          <span className="text-sm">{entry.workshop_name}</span>
         </td>
       );
     case "session_number":
@@ -461,7 +463,7 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       return (
         <td
           key={columnKey}
-          className="p-3 border-r border-gray-300"
+          className="flex justify-between p-3 border-r border-gray-300"
           style={stickyStyle}
         >
           <div
@@ -475,6 +477,26 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
               <span className="text-blue-600 text-xs ml-1">See more</span>
             )}
           </div>
+          <button
+            className="p-1 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 transition-colors duration-200 flex items-center justify-center"
+            onClick={openEditModal}
+            type="button"
+            title="Edit call comment"
+          >
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+              />
+            </svg>
+          </button>
         </td>
       );
     case "second_call_status":
@@ -498,16 +520,38 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
           className="p-3 border-r border-gray-300"
           style={stickyStyle}
         >
-          <div
-            className="text-sm text-gray-700 cursor-pointer hover:text-blue-600 transition-colors"
-            onClick={() =>
-              handleCommentClick(secondCallComment || "", "second_call")
-            }
-          >
-            {truncateComment(secondCallComment || "")}
-            {secondCallComment && secondCallComment.length > 25 && (
-              <span className="text-blue-600 text-xs ml-1">See more</span>
-            )}
+          <div className="flex flex-row items-center justify-between gap-2">
+            <div
+              className="text-sm text-gray-700 cursor-pointer hover:text-blue-600 transition-colors"
+              onClick={() =>
+                handleCommentClick(secondCallComment || "", "second_call")
+              }
+            >
+              {truncateComment(secondCallComment || "")}
+              {secondCallComment && secondCallComment.length > 25 && (
+                <span className="text-blue-600 text-xs ml-1">See more</span>
+              )}
+            </div>
+            <button
+              className="p-1 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 transition-colors duration-200 flex items-center justify-center"
+              onClick={openEditModal}
+              type="button"
+              title="Edit call comment"
+            >
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
+              </svg>
+            </button>
           </div>
         </td>
       );
@@ -518,16 +562,38 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
           className="p-3 border-r border-gray-300"
           style={stickyStyle}
         >
-          <div
-            className="text-sm text-gray-700 cursor-pointer hover:text-blue-600 transition-colors"
-            onClick={() =>
-              handleCommentClick(followUpComment || "", "follow_up")
-            }
-          >
-            {truncateComment(followUpComment || "")}
-            {followUpComment && followUpComment.length > 25 && (
-              <span className="text-blue-600 text-xs ml-1">See more</span>
-            )}
+          <div className="flex flex-row items-center justify-between gap-2">
+            <div
+              className="text-sm text-gray-700 cursor-pointer hover:text-blue-600 transition-colors"
+              onClick={() =>
+                handleCommentClick(followUpComment || "", "follow_up")
+              }
+            >
+              {truncateComment(followUpComment || "")}
+              {followUpComment && followUpComment.length > 25 && (
+                <span className="text-blue-600 text-xs ml-1">See more</span>
+              )}
+            </div>
+            <button
+              className="p-1 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 transition-colors duration-200 flex items-center justify-center"
+              onClick={openEditModal}
+              type="button"
+              title="Edit follow up comment"
+            >
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
+              </svg>
+            </button>
           </div>
         </td>
       );
