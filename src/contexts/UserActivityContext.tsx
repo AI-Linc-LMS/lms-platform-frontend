@@ -291,90 +291,8 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
     return () => clearInterval(backupInterval);
   }, [activityState.totalTimeSpent, activityState.activityHistory, activityState.isActive, activityState.currentSessionStart]);
 
-  // Start session when component mounts
-  useEffect(() => {
-    logActivityEvent('UserActivityProvider mounted');
-
-    // Check for pending activity data that may not have been sent
-    try {
-      const pendingDataStr = localStorage.getItem(STORAGE_KEYS.PENDING_ACTIVITY_DATA);
-      if (pendingDataStr) {
-        logActivityEvent('Found pending activity data');
-        // We'll try to send this in the network status handler
-      }
-    } catch (error) {
-      logActivityEvent('Error checking for pending data', { error: (error as Error).message });
-    }
-
-    // Ensure we have a reset date set (for initial app usage)
-    if (!localStorage.getItem(STORAGE_KEYS.LAST_RESET_DATE)) {
-      markDailyReset();
-      setActivityState(prev => ({
-        ...prev,
-        lastResetDate: new Date().toISOString()
-      }));
-    }
-
-    startSession();
-
-    // Add event listeners for browser visibility and focus
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('blur', handleBlur);
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    // Add additional events for power-related events (works in some browsers)
-    const navigatorWithBattery = navigator as NavigatorWithBattery;
-    if (navigatorWithBattery.getBattery) {
-      navigatorWithBattery.getBattery().then((battery: BatteryManager) => {
-        battery.addEventListener('chargingchange', handlePowerChange);
-      }).catch((err: Error) => {
-        logActivityEvent('Battery API not available', { error: err.message });
-      });
-    }
-
-    // Network status change
-    window.addEventListener('online', handleNetworkChange);
-    window.addEventListener('offline', handleNetworkChange);
-
-    // Additional browser-specific events that might indicate the user is leaving
-    window.addEventListener('pagehide', handlePageHide);
-    document.addEventListener('freeze', handlePageFreeze);
-
-    // Check network status immediately
-    if (navigator.onLine) {
-      // Try to send any pending data
-      syncPendingData();
-    }
-
-    logActivityEvent('Event listeners added');
-
-    // Cleanup event listeners when component unmounts
-    return () => {
-      logActivityEvent('UserActivityProvider unmounting');
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('blur', handleBlur);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('online', handleNetworkChange);
-      window.removeEventListener('offline', handleNetworkChange);
-      window.removeEventListener('pagehide', handlePageHide);
-      document.removeEventListener('freeze', handlePageFreeze);
-
-      const navigatorWithBattery = navigator as NavigatorWithBattery;
-      if (navigatorWithBattery.getBattery) {
-        navigatorWithBattery.getBattery().then((battery: BatteryManager) => {
-          battery.removeEventListener('chargingchange', handlePowerChange);
-        }).catch(() => {
-          // Silently fail if not available
-        });
-      }
-
-      // End the session when component unmounts
-      endSession();
-    };
-  }, []);
-
+  // Simplified approach: Only track actual tab switching and page leaving, not internal focus changes
+  
   // Function to start a new session
   const startSession = () => {
     const now = Date.now();
@@ -481,31 +399,54 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       return newState;
     });
   };
-
+  
   // Handle document visibility change (user switches tabs or minimizes window)
   const handleVisibilityChange = () => {
     logActivityEvent('Visibility changed', { visibilityState: document.visibilityState });
 
     if (document.visibilityState === 'visible') {
+      // User returned to the tab
       startSession();
     } else {
+      // User actually left the tab (switched to another tab or minimized)
       endSession();
-      // Also backup when page becomes hidden
       backupCurrentState();
     }
   };
 
-  // Handle window focus (user returns to the tab)
+  // Handle window focus (user returns to the tab) - but be more selective
   const handleFocus = () => {
-    logActivityEvent('Window focus gained');
-    startSession();
+    // Only start session if we don't already have one
+    if (!activityState.isActive) {
+      logActivityEvent('Window focus gained - starting session');
+      startSession();
+    }
   };
 
-  // Handle window blur (user leaves the tab)
-  const handleBlur = () => {
-    logActivityEvent('Window focus lost');
+  // Handle window blur - but ignore internal page interactions
+  const handleBlur = (event: FocusEvent) => {
+    // Check if the blur is happening because user clicked on another element within the same page
+    const relatedTarget = event.relatedTarget as Element;
+    
+    // If the focus is moving to another element within the same document, ignore it
+    if (relatedTarget && document.contains(relatedTarget)) {
+      logActivityEvent('Focus moved within page - ignoring blur event');
+      return;
+    }
+    
+    // If there's no related target, it might be a click on an iframe (like Vimeo player)
+    if (!relatedTarget) {
+      // Check if user clicked on an iframe or video element
+      const activeElement = document.activeElement;
+      if (activeElement && (activeElement.tagName === 'IFRAME' || activeElement.tagName === 'VIDEO')) {
+        logActivityEvent('Focus moved to video/iframe - ignoring blur event');
+        return;
+      }
+    }
+    
+    // Only end session if we're really sure the user left the platform
+    logActivityEvent('Window focus lost - user likely left platform');
     endSession();
-    // Also backup when window loses focus
     backupCurrentState();
   };
 
@@ -984,6 +925,90 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
     activityState.currentSessionStart,
     activityState.activityHistory.length
   ]);
+
+  // Start session when component mounts
+  useEffect(() => {
+    logActivityEvent('UserActivityProvider mounted');
+
+    // Check for pending activity data that may not have been sent
+    try {
+      const pendingDataStr = localStorage.getItem(STORAGE_KEYS.PENDING_ACTIVITY_DATA);
+      if (pendingDataStr) {
+        logActivityEvent('Found pending activity data');
+        // We'll try to send this in the network status handler
+      }
+    } catch (error) {
+      logActivityEvent('Error checking for pending data', { error: (error as Error).message });
+    }
+
+    // Ensure we have a reset date set (for initial app usage)
+    if (!localStorage.getItem(STORAGE_KEYS.LAST_RESET_DATE)) {
+      markDailyReset();
+      setActivityState(prev => ({
+        ...prev,
+        lastResetDate: new Date().toISOString()
+      }));
+    }
+
+    startSession();
+
+    // Add event listeners for browser visibility and focus
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Add additional events for power-related events (works in some browsers)
+    const navigatorWithBattery = navigator as NavigatorWithBattery;
+    if (navigatorWithBattery.getBattery) {
+      navigatorWithBattery.getBattery().then((battery: BatteryManager) => {
+        battery.addEventListener('chargingchange', handlePowerChange);
+      }).catch((err: Error) => {
+        logActivityEvent('Battery API not available', { error: err.message });
+      });
+    }
+
+    // Network status change
+    window.addEventListener('online', handleNetworkChange);
+    window.addEventListener('offline', handleNetworkChange);
+
+    // Additional browser-specific events that might indicate the user is leaving
+    window.addEventListener('pagehide', handlePageHide);
+    document.addEventListener('freeze', handlePageFreeze);
+
+    // Check network status immediately
+    if (navigator.onLine) {
+      // Try to send any pending data
+      syncPendingData();
+    }
+
+    logActivityEvent('Event listeners added');
+
+    // Cleanup event listeners when component unmounts
+    return () => {
+      logActivityEvent('UserActivityProvider unmounting');
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('online', handleNetworkChange);
+      window.removeEventListener('offline', handleNetworkChange);
+      window.removeEventListener('pagehide', handlePageHide);
+      document.removeEventListener('freeze', handlePageFreeze);
+
+      const navigatorWithBattery = navigator as NavigatorWithBattery;
+      if (navigatorWithBattery.getBattery) {
+        navigatorWithBattery.getBattery().then((battery: BatteryManager) => {
+          battery.removeEventListener('chargingchange', handlePowerChange);
+        }).catch(() => {
+          // Silently fail if not available
+        });
+      }
+
+      // End the session when component unmounts
+      endSession();
+    };
+  }, []);
 
   return (
     <UserActivityContext.Provider value={activityState}>
