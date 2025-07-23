@@ -397,6 +397,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
             getAmountColor={getAmountColor}
             formatDate={formatDate}
             openOfferedAmountModal={openOfferedAmountModal}
+            openEditModal={openEditModal}
             handleEditFollowUpDate={handleEditFollowUpDate}
             FIRST_CALL_STATUS_OPTIONS={FIRST_CALL_STATUS_OPTIONS}
             SECOND_CALL_STATUS_OPTIONS={SECOND_CALL_STATUS_OPTIONS}
