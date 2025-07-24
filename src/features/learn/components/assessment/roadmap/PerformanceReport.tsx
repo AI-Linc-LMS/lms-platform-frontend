@@ -49,9 +49,11 @@ const PerformanceReport = ({
           AILINC Student Performance Report
         </h2>
         
-        {/* Only show ScholarshipCountdown if not already purchased */}
-        {!isFlagshipCoursePaid && (
-          <div className="w-full max-w-4xl mb-6">
+       
+      </div>
+       {/* Only show ScholarshipCountdown if not already purchased */}
+       {!isFlagshipCoursePaid && (
+          <div className="w-full  mb-6">
             <ScholarshipCountdown
               assessmentDate={assessmentDate}
               expiryDays={7}
@@ -67,7 +69,6 @@ const PerformanceReport = ({
             />
           </div>
         )}
-      </div>
       
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8 justify-between items-center">
         {data.map((metric: Metric, idx: number) => {
