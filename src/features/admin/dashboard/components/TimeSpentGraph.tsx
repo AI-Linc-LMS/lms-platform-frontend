@@ -9,6 +9,7 @@ import {
   Customized,
 } from "recharts";
 import { DailyTimeSpentAdmin } from "../pages/Dashboard";
+import React from "react";
 
 // Error dashboard component
 const ErrorDashboard = ({ error }: { error: Error | null }) => (
@@ -53,12 +54,11 @@ const TimeSpentGraph = ({
     setStartIndex((prev) => Math.max(prev - 1, 0));
   };
 
-  const minTimeSpent = Math.min(...visibleData.map((d) => d.time_spent ?? 0));
   const maxTimeSpent = Math.max(...visibleData.map((d) => d.time_spent ?? 0));
   const step = maxTimeSpent / 4;
 
   // Generate ticks based on min and max
-  function generateTicks(min: number, max: number, step = 3) {
+  function generateTicks(max: number, step = 3) {
     const ticks = [];
     for (let t = 0; t <= max; t += step) {
       ticks.push(Number(t.toFixed(1)));
@@ -72,7 +72,7 @@ const TimeSpentGraph = ({
 
   // Avoid NaN step
   const safeStep = isFinite(step) && step > 0 ? step : 1;
-  const ticks = generateTicks(minTimeSpent, maxTimeSpent, safeStep);
+  const ticks = generateTicks(maxTimeSpent, safeStep);
   console.log(ticks);
 
   if (isLoading) {
@@ -195,37 +195,9 @@ const TimeSpentGraph = ({
             />
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             <Customized
-              component={(props: {
-                xAxisMap: Record<string, any>;
-                yAxisMap: Record<string, any>;
-              }) => {
-                const { xAxisMap, yAxisMap } = props;
-                const x0 = xAxisMap[Object.keys(xAxisMap)[0]]?.x ?? 0;
-                const width = xAxisMap[Object.keys(xAxisMap)[0]]?.width ?? 0;
-                const yAxis = yAxisMap[Object.keys(yAxisMap)[0]];
-                const yScale = yAxis?.scale;
-                const ticks = yAxis?.ticks ?? [];
-                return (
-                  <>
-                    {ticks.map((tickValue: number, index: number) => {
-                      const y = yScale?.(tickValue);
-                      if (typeof y !== "number" || isNaN(y)) return null;
-                      return (
-                        <line
-                          key={`hline-${index}`}
-                          x1={x0}
-                          x2={x0 + width}
-                          y1={y}
-                          y2={y}
-                          stroke="#E6F0FF"
-                          strokeWidth={1}
-                        />
-                      );
-                    })}
-                  </>
-                );
-              }}
+              component={React.memo(CustomHorizontalGrid) as React.FC<any>}
             />
+
             <Line
               type="linear"
               dataKey="time_spent"
@@ -255,3 +227,38 @@ const TimeSpentGraph = ({
 };
 
 export default TimeSpentGraph;
+
+// Custom grid lines component
+const CustomHorizontalGrid = ({
+  xAxisMap,
+  yAxisMap,
+}: {
+  xAxisMap: Record<string, any>;
+  yAxisMap: Record<string, any>;
+}) => {
+  const x0 = xAxisMap[Object.keys(xAxisMap)[0]]?.x ?? 0;
+  const width = xAxisMap[Object.keys(xAxisMap)[0]]?.width ?? 0;
+  const yAxis = yAxisMap[Object.keys(yAxisMap)[0]];
+  const yScale = yAxis?.scale;
+  const ticks = yAxis?.ticks ?? [];
+
+  return (
+    <>
+      {ticks.map((tickValue: number, index: number) => {
+        const y = yScale?.(tickValue);
+        if (typeof y !== "number" || isNaN(y)) return null;
+        return (
+          <line
+            key={`hline-${index}`}
+            x1={x0}
+            x2={x0 + width}
+            y1={y}
+            y2={y}
+            stroke="#E6F0FF"
+            strokeWidth={1}
+          />
+        );
+      })}
+    </>
+  );
+};

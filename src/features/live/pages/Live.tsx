@@ -53,8 +53,6 @@ const mockPastRecordings: Recording[] = [
     duration: 135,
     views: 892,
     zoomRecordingLink: "https://zoom.us/rec/play/recording2",
-    banner:
-      "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&h=400&fit=crop",
     category: "Backend Development",
   },
   {
@@ -71,8 +69,6 @@ const mockPastRecordings: Recording[] = [
     duration: 105,
     views: 1100,
     zoomRecordingLink: "https://zoom.us/rec/play/recording3",
-    banner:
-      "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=400&fit=crop",
     category: "DevOps",
   },
   {
@@ -89,8 +85,6 @@ const mockPastRecordings: Recording[] = [
     duration: 150,
     views: 750,
     zoomRecordingLink: "https://zoom.us/rec/play/recording4",
-    banner:
-      "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&h=400&fit=crop",
     category: "Mobile Development",
   },
 ];
