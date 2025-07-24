@@ -370,7 +370,7 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
                             <button
                                 onClick={isFlagshipSeatBooked ? handleCoursePayment : handleSeatBookingPayment}
                                 disabled={isAnyPaymentProcessing}
-                                className="w-full bg-white text-blue-600 font-bold py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full bg-white cursor-pointer text-blue-600 font-bold py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {/* Show specific processing state for this button */}
                                 {(isFlagshipSeatBooked ? isCoursePaymentProcessing : isSeatBookingProcessing) ? (
@@ -412,7 +412,7 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
                                 <button
                                     onClick={handleCoursePayment}
                                     disabled={isAnyPaymentProcessing}
-                                    className="w-full bg-white text-green-600 font-bold py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full bg-white cursor-pointer text-green-600 font-bold py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {/* Show specific processing state for this button */}
                                     {isCoursePaymentProcessing ? (
