@@ -161,22 +161,27 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
 
     const isExpired = timeRemaining === 'Scholarship Expired';
 
-    // Calculate values same as PaymentCardSection
+    // Calculate values same as PaymentCardSection - FIXED EDGE CASES
     const seatBookingPrice = 999;
     const originalPrice = redeemData?.total_amount || 120000;
     const scholarshipPrice = redeemData?.payable_amount || 10000;
     const scholarshipPercentage = redeemData?.percentage_scholarship || 90;
     const savingsAmount = originalPrice - scholarshipPrice;
 
-    // Calculate remaining amount after seat booking (same logic as PaymentCardSection)
+    // FIXED: Calculate remaining amount after seat booking properly
     const remainingAmountAfterSeatBooking = isFlagshipSeatBooked
-        ? (scholarshipPrice - seatBookingPrice)
+        ? Math.max(0, scholarshipPrice - seatBookingPrice) // Ensure never negative
         : scholarshipPrice;
 
     // Payment handlers
     const handleSeatBookingPayment = () => {
         if (isFlagshipCoursePaid) {
             showToast?.("success", "Already Purchased", "You have already purchased the complete Flagship Career Launchpad program.");
+            return;
+        }
+
+        if (isFlagshipSeatBooked) {
+            showToast?.("success", "Seat Already Booked", "Your seat is already reserved. Complete your enrollment by paying the remaining course fee.");
             return;
         }
 
@@ -201,6 +206,7 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
             return;
         }
 
+        // FIXED: Proper course amount calculation
         const courseAmount = isFlagshipSeatBooked
             ? remainingAmountAfterSeatBooking
             : scholarshipPrice;
@@ -225,6 +231,58 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
     const isCoursePaymentProcessing = flagshipCoursePaymentState.isProcessing;
     const isAnyPaymentProcessing = isSeatBookingProcessing || isCoursePaymentProcessing;
 
+    // FIXED: Helper functions for button states
+    const getPrimaryButtonConfig = () => {
+        if (isFlagshipCoursePaid) {
+            return {
+                text: "✅ Course Purchased",
+                disabled: true,
+                className: "w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg cursor-not-allowed shadow-md",
+                showProcessing: false
+            };
+        }
+
+        if (isFlagshipSeatBooked) {
+            return {
+                text: `💳 Pay Remaining ₹${remainingAmountAfterSeatBooking.toLocaleString()}`,
+                disabled: isAnyPaymentProcessing,
+                className: "w-full bg-white text-blue-600 font-bold py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed",
+                showProcessing: isCoursePaymentProcessing,
+                onClick: handleCoursePayment
+            };
+        }
+
+        return {
+            text: `🎯 Book My Seat for ₹${seatBookingPrice}`,
+            disabled: isAnyPaymentProcessing,
+            className: "w-full bg-white text-blue-600 font-bold py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed",
+            showProcessing: isSeatBookingProcessing,
+            onClick: handleSeatBookingPayment
+        };
+    };
+
+    const getSecondaryButtonConfig = () => {
+        if (isFlagshipCoursePaid) {
+            return {
+                text: "✅ Course Purchased",
+                disabled: true,
+                className: "w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg cursor-not-allowed shadow-md",
+                showProcessing: false
+            };
+        }
+
+        return {
+            text: `🚀 Pay Full Amount ₹${scholarshipPrice.toLocaleString()}`,
+            disabled: isAnyPaymentProcessing,
+            className: "w-full bg-white text-green-600 font-bold py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed",
+            showProcessing: isCoursePaymentProcessing,
+            onClick: handleCoursePayment
+        };
+    };
+
+    const primaryButtonConfig = getPrimaryButtonConfig();
+    const secondaryButtonConfig = getSecondaryButtonConfig();
+
     return (
         <div className={`w-full bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-400 p-4 rounded-r-lg shadow-md ${className}`}>
             <div className="flex flex-col space-y-3">
@@ -247,24 +305,31 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
                     </h3>
                 </div>
 
-                {/* Show status if already purchased or seat booked */}
+                {/* FIXED: Enhanced status display */}
                 {isFlagshipCoursePaid ? (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-                        <div className="text-green-600 font-bold text-lg">
-                            ✅ Course Already Purchased!
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                        <div className="text-green-600 font-bold text-xl mb-2">
+                            🎉 Course Successfully Purchased!
                         </div>
-                        <p className="text-green-600 text-sm mt-1">
+                        <p className="text-green-600 text-sm mb-2">
                             You have full access to the Flagship Career Launchpad
                         </p>
+                        <div className="bg-green-100 rounded-lg p-2 text-xs text-green-700">
+                            💚 Total Paid: ₹{scholarshipPrice.toLocaleString()} |
+                            Savings: ₹{savingsAmount.toLocaleString()} ({scholarshipPercentage}% OFF)
+                        </div>
                     </div>
                 ) : isFlagshipSeatBooked ? (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                        <div className="text-blue-600 font-bold text-lg">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                        <div className="text-blue-600 font-bold text-lg mb-2">
                             🎯 Seat Successfully Booked!
                         </div>
-                        <p className="text-blue-600 text-sm mt-1">
+                        <p className="text-blue-600 text-sm mb-2">
                             Complete your enrollment by paying the remaining course fee
                         </p>
+                        <div className="bg-blue-100 rounded-lg p-2 text-xs text-blue-700">
+                            💰 Paid: ₹{seatBookingPrice} | Remaining: ₹{remainingAmountAfterSeatBooking.toLocaleString()}
+                        </div>
                     </div>
                 ) : null}
 
@@ -291,7 +356,7 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
                     </div>
                 </div>
 
-                {/* Countdown Timer */}
+                {/* Countdown Timer - Hide if course is purchased */}
                 {!isExpired && !isFlagshipCoursePaid ? (
                     <div className="text-center">
                         <p className="text-sm font-semibold text-red-600 mb-2">
@@ -338,7 +403,7 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
                     </div>
                 ) : null}
 
-                {/* Payment Options */}
+                {/* FIXED: Payment Options with proper edge case handling */}
                 {!isExpired && !isFlagshipCoursePaid && (
                     <div className="space-y-3">
                         {/* Primary Payment Option */}
@@ -368,12 +433,11 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
                             </div>
 
                             <button
-                                onClick={isFlagshipSeatBooked ? handleCoursePayment : handleSeatBookingPayment}
-                                disabled={isAnyPaymentProcessing}
-                                className="w-full bg-white cursor-pointer text-blue-600 font-bold py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={primaryButtonConfig.onClick}
+                                disabled={primaryButtonConfig.disabled}
+                                className={primaryButtonConfig.className}
                             >
-                                {/* Show specific processing state for this button */}
-                                {(isFlagshipSeatBooked ? isCoursePaymentProcessing : isSeatBookingProcessing) ? (
+                                {primaryButtonConfig.showProcessing ? (
                                     <>
                                         <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -381,19 +445,19 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
                                         </svg>
                                         Processing...
                                     </>
-                                ) : isFlagshipSeatBooked ? (
-                                    `💳 Pay Remaining ₹${remainingAmountAfterSeatBooking.toLocaleString()}`
                                 ) : (
-                                    `🎯 Book My Seat for ₹${seatBookingPrice}`
+                                    primaryButtonConfig.text
                                 )}
                             </button>
 
-                            <div className="flex items-center justify-center mt-2 text-xs opacity-75">
-                                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                                </svg>
-                                100% Secure Payment | 7-day Money Back Guarantee
-                            </div>
+                            {!isFlagshipCoursePaid && (
+                                <div className="flex items-center justify-center mt-2 text-xs opacity-75">
+                                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 616 0z" clipRule="evenodd" />
+                                    </svg>
+                                    100% Secure Payment | 7-day Money Back Guarantee
+                                </div>
+                            )}
                         </div>
 
                         {/* Alternative Payment Option - Full Course Payment */}
@@ -410,12 +474,11 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
                                 </div>
 
                                 <button
-                                    onClick={handleCoursePayment}
-                                    disabled={isAnyPaymentProcessing}
-                                    className="w-full bg-white cursor-pointer text-green-600 font-bold py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                    onClick={secondaryButtonConfig.onClick}
+                                    disabled={secondaryButtonConfig.disabled}
+                                    className={secondaryButtonConfig.className}
                                 >
-                                    {/* Show specific processing state for this button */}
-                                    {isCoursePaymentProcessing ? (
+                                    {secondaryButtonConfig.showProcessing ? (
                                         <>
                                             <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-green-600 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -424,7 +487,7 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
                                             Processing...
                                         </>
                                     ) : (
-                                        `🚀 Pay Full Amount ₹${scholarshipPrice.toLocaleString()}`
+                                        secondaryButtonConfig.text
                                     )}
                                 </button>
 
@@ -436,7 +499,7 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
                     </div>
                 )}
 
-                {/* Additional Info */}
+                {/* Additional Info - Hide if course is purchased */}
                 {!isFlagshipCoursePaid && (
                     <div className="text-center">
                         <p className="text-xs text-gray-500">
