@@ -433,11 +433,10 @@ const RoadmapPage = () => {
                 <button
                   onClick={handleCertificatePayment}
                   disabled={assessmentPaymentState.isProcessing}
-                  className={`flex items-center gap-2 font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-lg shadow transition-colors duration-200 focus:outline-none text-sm sm:text-base ${
-                    assessmentPaymentState.isProcessing
+                  className={`flex items-center gap-2 font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-lg shadow transition-colors duration-200 focus:outline-none text-sm sm:text-base ${assessmentPaymentState.isProcessing
                       ? "bg-gray-400 text-gray-600 cursor-not-allowed"
                       : "bg-[#14212B] text-white hover:bg-[#223344]"
-                  }`}
+                    }`}
                 >
                   {assessmentPaymentState.isProcessing ? "Processing Payment..." : " Download Certificate"}
                 </button>
@@ -475,8 +474,8 @@ const RoadmapPage = () => {
         {/* Main Content */}
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-[inset_0_4px_8px_rgba(0,0,0,0.1)] shadow-gray-300 border border-gray-300 ring-1 ring-white/40 py-4 sm:py-5 w-full mx-auto">
           {/* Performance Report Section */}
-          <PerformanceReport 
-            data={perfReportData} 
+          <PerformanceReport
+            data={perfReportData}
             redeemData={redeemData as ScholarshipRedemptionData}
             clientId={clientId}
             assessmentId={currentAssessmentId || ''}
