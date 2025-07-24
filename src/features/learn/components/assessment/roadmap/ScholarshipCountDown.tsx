@@ -220,8 +220,10 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
         });
     };
 
-    // Check if payment is in progress
-    const isPaymentProcessing = flagshipPaymentState.isProcessing || flagshipCoursePaymentState.isProcessing;
+    // Separate processing states for different buttons
+    const isSeatBookingProcessing = flagshipPaymentState.isProcessing;
+    const isCoursePaymentProcessing = flagshipCoursePaymentState.isProcessing;
+    const isAnyPaymentProcessing = isSeatBookingProcessing || isCoursePaymentProcessing;
 
     return (
         <div className={`w-full bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-400 p-4 rounded-r-lg shadow-md ${className}`}>
@@ -367,10 +369,11 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
 
                             <button
                                 onClick={isFlagshipSeatBooked ? handleCoursePayment : handleSeatBookingPayment}
-                                disabled={isPaymentProcessing}
+                                disabled={isAnyPaymentProcessing}
                                 className="w-full bg-white text-blue-600 font-bold py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {isPaymentProcessing ? (
+                                {/* Show specific processing state for this button */}
+                                {(isFlagshipSeatBooked ? isCoursePaymentProcessing : isSeatBookingProcessing) ? (
                                     <>
                                         <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -408,10 +411,11 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
 
                                 <button
                                     onClick={handleCoursePayment}
-                                    disabled={isPaymentProcessing}
+                                    disabled={isAnyPaymentProcessing}
                                     className="w-full bg-white text-green-600 font-bold py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {isPaymentProcessing ? (
+                                    {/* Show specific processing state for this button */}
+                                    {isCoursePaymentProcessing ? (
                                         <>
                                             <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-green-600 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
