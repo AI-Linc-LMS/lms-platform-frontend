@@ -13,7 +13,6 @@ export interface UpcomingSession {
   scheduledTime: string;
   duration: number;
   zoomLink: string;
-  banner: string;
   isLive?: boolean;
 }
 
@@ -26,6 +25,5 @@ export interface Recording {
   duration: number;
   views: number;
   zoomRecordingLink: string;
-  banner: string;
   category: string;
 } 

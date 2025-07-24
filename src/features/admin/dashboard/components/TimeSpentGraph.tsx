@@ -8,65 +8,40 @@ import {
   Tooltip,
   Customized,
 } from "recharts";
+import { DailyTimeSpentAdmin } from "../pages/Dashboard";
 
-const dummyData = [
-  { day: "1 Jan", hours: 4 },
-  { day: "2 Jan", hours: 9 },
-  { day: "3 Jan", hours: 7 },
-  { day: "4 Jan", hours: 6 },
-  { day: "5 Jan", hours: 8 },
-  { day: "6 Jan", hours: 2 },
-  { day: "7 Jan", hours: 11 },
-  { day: "8 Jan", hours: 4 },
-  { day: "9 Jan", hours: 9 },
-  { day: "10 Jan", hours: 7 },
-  { day: "11 Jan", hours: 10 },
-  { day: "12 Jan", hours: 12 },
-  { day: "13 Jan", hours: 11 },
-  { day: "14 Jan", hours: 9 },
-  { day: "15 Jan", hours: 8 },
-];
+// Error dashboard component
+const ErrorDashboard = ({ error }: { error: Error | null }) => (
+  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative w-full max-w-[600px]">
+    <strong className="font-bold">Error:</strong>
+    <span className="block sm:inline ml-2">
+      {error?.message || "An error occurred while loading the dashboard."}
+    </span>
+  </div>
+);
 
-const HorizontalLines = ({ xAxisMap, yAxisMap }: any) => {
-  const x0 = xAxisMap[Object.keys(xAxisMap)[0]]?.x ?? 0;
-  const width = xAxisMap[Object.keys(xAxisMap)[0]]?.width ?? 0;
-  const yAxis = yAxisMap[Object.keys(yAxisMap)[0]];
-  const yScale = yAxis?.scale;
-  const ticks = yAxis?.ticks ?? [];
+interface TimeSpentProps {
+  daily_time_spend: DailyTimeSpentAdmin[];
+  isLoading: boolean;
+  error: Error | null;
+}
 
-  return (
-    <>
-      {ticks.map((tickValue: number, index: number) => {
-        const y = yScale?.(tickValue);
-        if (y === undefined) return null;
-        return (
-          <line
-            key={`hline-${index}`}
-            x1={x0}
-            x2={x0 + width}
-            y1={y}
-            y2={y}
-            stroke="#E6F0FF"
-            strokeWidth={1}
-          />
-        );
-      })}
-    </>
-  );
-};
-
-const TimeSpentGraph = () => {
+const TimeSpentGraph = ({
+  daily_time_spend,
+  isLoading,
+  error,
+}: TimeSpentProps) => {
   // State to track the start index of visible data window
   const [startIndex, setStartIndex] = useState(0);
-  const windowSize = 8;
+  const windowSize = 6;
 
   // Clamp startIndex so that window stays within data range
-  const maxStartIndex = Math.max(0, dummyData.length - windowSize);
+  const maxStartIndex = Math.max(0, daily_time_spend.length - windowSize);
 
   // Get the visible slice of data for current window
   const visibleData = useMemo(() => {
-    return dummyData.slice(startIndex, startIndex + windowSize);
-  }, [startIndex]);
+    return daily_time_spend.slice(startIndex, startIndex + windowSize);
+  }, [startIndex, daily_time_spend]);
 
   // Handle arrow click to scroll right (forward)
   const handleNext = () => {
@@ -77,6 +52,36 @@ const TimeSpentGraph = () => {
   const handlePrev = () => {
     setStartIndex((prev) => Math.max(prev - 1, 0));
   };
+
+  const minTimeSpent = Math.min(...visibleData.map((d) => d.time_spent ?? 0));
+  const maxTimeSpent = Math.max(...visibleData.map((d) => d.time_spent ?? 0));
+  const step = maxTimeSpent / 4;
+
+  // Generate ticks based on min and max
+  function generateTicks(min: number, max: number, step = 3) {
+    const ticks = [];
+    for (let t = 0; t <= max; t += step) {
+      ticks.push(Number(t.toFixed(1)));
+    }
+    // Always include 0 and max
+    if (!ticks.includes(0)) ticks.unshift(0);
+    if (!ticks.includes(max)) ticks.push(Number(max.toFixed(1)));
+    // Remove duplicates and sort numerically
+    return Array.from(new Set(ticks)).sort((a, b) => a - b);
+  }
+
+  // Avoid NaN step
+  const safeStep = isFinite(step) && step > 0 ? step : 1;
+  const ticks = generateTicks(minTimeSpent, maxTimeSpent, safeStep);
+  console.log(ticks);
+
+  if (isLoading) {
+    return <div> Loading... </div>;
+  }
+
+  if (error) {
+    return <ErrorDashboard error={error} />;
+  }
 
   return (
     <div className="rounded-2xl bg-white p-4 md:p-6 w-full max-w-[600px] max-h-[370px] ring-1 ring-[#B9E4F2] ring-offset-1">
@@ -133,16 +138,47 @@ const TimeSpentGraph = () => {
             margin={{ top: 0, right: 20, bottom: 10, left: 0 }}
           >
             <XAxis
-              dataKey="day"
-              tick={{ fontSize: 12, fill: "#5D77A6" }}
+              dataKey="date"
               tickLine={false}
               axisLine={false}
               interval={0}
               padding={{ left: 10, right: 10 }}
+              tick={({ x, y, payload }) => {
+                // Expecting payload.value to be a date string (e.g., '2023-10-03')
+                const dateObj = new Date(payload.value);
+                const day = dateObj.getDate();
+                const month = dateObj.getMonth() + 1;
+                const year = dateObj.getFullYear();
+                return (
+                  <g transform={`translate(${x},${y})`}>
+                    <text
+                      x={0}
+                      y={0}
+                      dy={8}
+                      textAnchor="middle"
+                      fill="#5D77A6"
+                      fontSize={12}
+                    >
+                      {`${day}/${month}`}
+                    </text>
+                    <text
+                      x={0}
+                      y={0}
+                      dy={22}
+                      textAnchor="middle"
+                      fill="#B0B8C1"
+                      fontSize={13}
+                    >
+                      {year}
+                    </text>
+                  </g>
+                );
+              }}
             />
+
             <YAxis
-              domain={[0, 12]}
-              ticks={[0, 3, 6, 9, 12]}
+              domain={[0, maxTimeSpent]}
+              ticks={ticks}
               tickFormatter={(tick) => `${tick} hr`}
               tick={{ fontSize: 12, fill: "#5D77A6" }}
               tickLine={false}
@@ -157,12 +193,42 @@ const TimeSpentGraph = () => {
               }}
               formatter={(value) => [`${value} hr`, "Time Spent"]}
             />
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             <Customized
-              component={(props: any) => <HorizontalLines {...props} />}
+              component={(props: {
+                xAxisMap: Record<string, any>;
+                yAxisMap: Record<string, any>;
+              }) => {
+                const { xAxisMap, yAxisMap } = props;
+                const x0 = xAxisMap[Object.keys(xAxisMap)[0]]?.x ?? 0;
+                const width = xAxisMap[Object.keys(xAxisMap)[0]]?.width ?? 0;
+                const yAxis = yAxisMap[Object.keys(yAxisMap)[0]];
+                const yScale = yAxis?.scale;
+                const ticks = yAxis?.ticks ?? [];
+                return (
+                  <>
+                    {ticks.map((tickValue: number, index: number) => {
+                      const y = yScale?.(tickValue);
+                      if (typeof y !== "number" || isNaN(y)) return null;
+                      return (
+                        <line
+                          key={`hline-${index}`}
+                          x1={x0}
+                          x2={x0 + width}
+                          y1={y}
+                          y2={y}
+                          stroke="#E6F0FF"
+                          strokeWidth={1}
+                        />
+                      );
+                    })}
+                  </>
+                );
+              }}
             />
             <Line
               type="linear"
-              dataKey="hours"
+              dataKey="time_spent"
               stroke="#8CD3E8"
               strokeWidth={3}
               dot={{

@@ -19,8 +19,6 @@ const mockUpcomingSession: UpcomingSession = {
   scheduledTime: "2024-01-15T10:00:00Z",
   duration: 120,
   zoomLink: "https://zoom.us/j/123456789",
-  banner:
-    "https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=800&h=400&fit=crop",
   isLive: false,
 };
 
@@ -39,8 +37,6 @@ const mockPastRecordings: Recording[] = [
     duration: 90,
     views: 1250,
     zoomRecordingLink: "https://zoom.us/rec/play/recording1",
-    banner:
-      "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&h=400&fit=crop",
     category: "Frontend Development",
   },
   {
