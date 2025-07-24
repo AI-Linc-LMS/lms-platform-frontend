@@ -475,7 +475,12 @@ const RoadmapPage = () => {
         {/* Main Content */}
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-[inset_0_4px_8px_rgba(0,0,0,0.1)] shadow-gray-300 border border-gray-300 ring-1 ring-white/40 py-4 sm:py-5 w-full mx-auto">
           {/* Performance Report Section */}
-          <PerformanceReport data={perfReportData} />
+          <PerformanceReport 
+            data={perfReportData} 
+            redeemData={redeemData as ScholarshipRedemptionData}
+            clientId={clientId}
+            assessmentId={currentAssessmentId || ''}
+          />
           {/* <div className="w-full bg-yellow-50 border-r-4 border-yellow-500 p-4 mt-4 rounded-r-lg shadow-md">
             <div className="flex items-center justify-end">
               <div className="flex items-center space-x-4">
