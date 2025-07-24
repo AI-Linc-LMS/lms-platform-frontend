@@ -5,6 +5,7 @@ import {
   FollowUpDateFilterDropdown,
 } from "./FilterDropdown";
 import { FiCheck, FiFilter } from "react-icons/fi";
+import { COURSE_NAME_OPTIONS } from "./table-row/TableRowUtils";
 
 const FIRST_CALL_STATUS_OPTIONS = [
   { value: "Connected scheduled interview", color: "bg-green-500" },
@@ -248,10 +249,6 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
   onSelectAll,
   freezeColumns = [],
 }) => {
-  const COURSE_NAME_OPTIONS = [
-    { value: "flagship", label: "Flagship" },
-    { value: "nanodegree", label: "Nanodegree" },
-  ];
   const filterConfigs = [
     // Personal details
     { column: "name", label: "Name" },
@@ -390,46 +387,6 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
       borderRight: "1px solid rgb(229 231 235)", // Add border for visual separation
     };
   };
-
-  // Add scroll event listener to close filters on any scroll
-  useEffect(() => {
-    const handleScroll = () => {
-      console.log("Table header - scroll detected, closing filters");
-      onToggleFilter(null);
-    };
-
-    // Listen to scroll events on multiple targets
-    const scrollTargets: (Window | Document | HTMLElement)[] = [
-      window,
-      document,
-      document.body,
-      document.documentElement,
-    ];
-
-    // Also try to find the table container
-    const tableContainer =
-      document.querySelector("[data-table-container]") ||
-      document.querySelector(".overflow-auto") ||
-      document.querySelector("table")?.closest(".overflow-auto");
-
-    if (tableContainer && tableContainer instanceof HTMLElement) {
-      scrollTargets.push(tableContainer);
-    }
-
-    // Add event listeners to all targets
-    scrollTargets.forEach((target) => {
-      target.addEventListener("scroll", handleScroll, {
-        passive: true,
-        capture: true,
-      });
-    });
-
-    return () => {
-      scrollTargets.forEach((target) => {
-        target.removeEventListener("scroll", handleScroll, true);
-      });
-    };
-  }, [onToggleFilter]);
 
   return (
     <thead className="bg-gray-100 sticky top-0 z-20">

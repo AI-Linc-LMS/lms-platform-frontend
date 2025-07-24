@@ -3,7 +3,6 @@ import useUserActivityTracking from "../hooks/useUserActivityTracking";
 import {
   calculateCurrentSessionDuration,
   calculateTotalTimeWithSession,
-  createActivityPayload,
 } from "../utils/userActivitySync";
 import {
   simulateActivityEvent,
@@ -11,7 +10,8 @@ import {
   clearActivityDebugEvents,
   simulateDailyReset,
 } from "../utils/activityDebugger";
-import { getSessionId, getDeviceInfo } from "../utils/deviceIdentifier";
+import { getSessionId, getDeviceInfo, getDeviceId } from "../utils/deviceIdentifier";
+import { getCurrentUserId, getAuthenticatedUserId } from "../utils/userIdHelper";
 import {
   getHistoricalActivity,
   getNextResetTime,
@@ -53,6 +53,8 @@ const FloatingActivityTimer: React.FC = () => {
     os: string;
     deviceType: string;
   } | null>(null);
+  const [accountId, setAccountId] = useState<string | null>(null);
+  const [deviceId, setDeviceId] = useState<string>("");
   const [historicalActivity, setHistoricalActivity] = useState<
     Record<string, number>
   >({});
@@ -69,6 +71,8 @@ const FloatingActivityTimer: React.FC = () => {
   useEffect(() => {
     setSessionId(getSessionId());
     setDeviceInfo(getDeviceInfo());
+    setAccountId(getAuthenticatedUserId());
+    setDeviceId(getDeviceId());
     setHistoricalActivity(getHistoricalActivity());
     setNextResetTime(getNextResetTime());
     setTimeUntilReset(getTimeUntilNextReset());
@@ -178,7 +182,6 @@ const FloatingActivityTimer: React.FC = () => {
     const clientId = import.meta.env.VITE_CLIENT_ID;
 
     if (!apiUrl || !clientId) {
-      //console.error('Missing API URL or Client ID!');
       setSyncStatus({
         lastSync: Date.now(),
         status: "failed",
@@ -194,19 +197,17 @@ const FloatingActivityTimer: React.FC = () => {
       currentSessionStart
     );
 
-    // Calculate current session duration if active
-    const currentSessionDuration = calculateCurrentSessionDuration(
-      isActive,
-      currentSessionStart
-    );
-
-    // Create standardized API payload
-    const activityData = createActivityPayload(
-      totalTimeInSeconds,
-      currentSessionDuration,
-      sessionId,
-      deviceInfo || { browser: "unknown", os: "unknown", deviceType: "unknown" }
-    );
+    // Create clean API payload with total accumulated time (Today's Total)
+    const activityData = {
+      "total-time-seconds": totalTimeInSeconds, // This is Today's Total (11m 24s in your example)
+      "session_id": sessionId,
+      "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
+      "user_id": getCurrentUserId(), // Keep for backward compatibility
+      "device_id": getDeviceId(), // Unique device/browser identifier
+      "date": new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+      "device_type": deviceInfo?.deviceType || "unknown",
+      "timestamp": Date.now()
+    };
 
     // Setup fetch options
     const fetchOptions = {
@@ -232,8 +233,6 @@ const FloatingActivityTimer: React.FC = () => {
         return response.json();
       })
       .then(() => {
-        //console.log('API Response:', data);
-
         // Record this sync to prevent duplicates in automatic syncs
         try {
           localStorage.setItem(
@@ -245,7 +244,7 @@ const FloatingActivityTimer: React.FC = () => {
             totalTimeInSeconds.toString()
           );
         } catch {
-          //console.log('Failed to record sync data');
+          // Ignore storage errors
         }
 
         setSyncStatus({
@@ -260,7 +259,6 @@ const FloatingActivityTimer: React.FC = () => {
         }, 3000);
       })
       .catch((e) => {
-        //console.error('API call failed:', e);
         setSyncStatus({
           lastSync: Date.now(),
           status: "failed",
@@ -289,38 +287,6 @@ const FloatingActivityTimer: React.FC = () => {
         message: "Manual sync completed",
       });
     }, 1000);
-  };
-
-  // Handle recovery from localStorage
-  const handleRecoverFromLocalStorage = () => {
-    setSyncStatus({
-      lastSync: Date.now(),
-      status: "syncing",
-      message: "Recovering data...",
-    });
-
-    setTimeout(() => {
-      try {
-        const recoveredTotalTime = recoverFromLocalStorage();
-        setRecoveredTime(recoveredTotalTime);
-
-        setSyncStatus({
-          lastSync: Date.now(),
-          status: "success",
-          message:
-            recoveredTotalTime > 0
-              ? `Recovered ${formatTime(recoveredTotalTime)}`
-              : "No data to recover",
-        });
-      } catch {
-        //console.error('Failed to recover data:', error);
-        setSyncStatus({
-          lastSync: Date.now(),
-          status: "failed",
-          message: "Recovery failed",
-        });
-      }
-    }, 500);
   };
 
   // Last reset info
@@ -379,6 +345,18 @@ const FloatingActivityTimer: React.FC = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-500">Device Type:</span>
                   <span className="text-gray-900">{deviceInfo.deviceType}</span>
+                </div>
+                <div className="flex justify-between mt-2 pt-2 border-t border-gray-200">
+                  <span className="text-gray-500">Account ID:</span>
+                  <span className="text-gray-900 font-mono text-xs">
+                    {accountId || "Anonymous"}
+                  </span>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <span className="text-gray-500">Device ID:</span>
+                  <span className="text-gray-900 font-mono text-xs">
+                    {deviceId.slice(0, 12)}...
+                  </span>
                 </div>
               </>
             )}
@@ -454,46 +432,78 @@ const FloatingActivityTimer: React.FC = () => {
         </div>
 
         <h4 className="font-semibold text-gray-700 mb-2">Test Controls</h4>
-        <div className="flex flex-wrap gap-1 mb-3">
+        <div className="flex flex-wrap gap-2 mb-3">
           <button
             onClick={() => handleSimulateEvent("focus")}
             className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded text-xs"
           >
-            Focus
+            Focus/Blur
           </button>
           <button
-            onClick={() => handleSimulateEvent("blur")}
-            className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded text-xs"
+            onClick={() => {
+              // Test the actual visibility API
+              console.log('🔍 Testing visibility change...');
+              console.log('Current visibility state:', document.visibilityState);
+              console.log('Current active status:', isActive);
+              
+              // Simulate visibility change by dispatching the actual event
+              const currentState = document.visibilityState;
+              const newState = currentState === 'visible' ? 'hidden' : 'visible';
+              
+              // Temporarily override the visibilityState property
+              Object.defineProperty(document, 'visibilityState', {
+                writable: true,
+                configurable: true,
+                value: newState
+              });
+              
+              // Dispatch the real visibility change event
+              const event = new Event('visibilitychange');
+              document.dispatchEvent(event);
+              
+              console.log('✅ Dispatched visibilitychange event');
+              console.log('New visibility state:', document.visibilityState);
+              
+              // Restore the original state after 3 seconds for testing
+              setTimeout(() => {
+                Object.defineProperty(document, 'visibilityState', {
+                  writable: true,
+                  configurable: true,
+                  value: currentState
+                });
+                document.dispatchEvent(new Event('visibilitychange'));
+                console.log('🔄 Restored original visibility state:', document.visibilityState);
+              }, 3000);
+            }}
+            className="bg-green-100 hover:bg-green-200 text-green-800 px-2 py-1 rounded text-xs"
           >
-            Blur
-          </button>
-          <button
-            onClick={() => handleSimulateEvent("visibility")}
-            className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded text-xs"
-          >
-            Visibility
+            Test Tab Switch
           </button>
           <button
             onClick={() => handleSimulateEvent("unload")}
-            className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded text-xs"
+            className="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 px-2 py-1 rounded text-xs"
           >
             Unload
           </button>
           <button
-            onClick={handleForceSync}
-            className="bg-green-100 hover:bg-green-200 text-green-800 px-2 py-1 rounded text-xs"
-          >
-            Force Sync
-          </button>
-          <button
             onClick={handleDirectApiCall}
-            className="bg-green-100 hover:bg-green-200 text-green-800 px-2 py-1 rounded text-xs"
+            className="bg-orange-100 hover:bg-orange-200 text-orange-800 px-2 py-1 rounded text-xs"
           >
             Direct API Call
           </button>
           <button
-            onClick={handleRecoverFromLocalStorage}
-            className="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 px-2 py-1 rounded text-xs"
+            onClick={handleForceSync}
+            className="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 px-2 py-1 rounded text-xs"
+          >
+            Force Sync
+          </button>
+          <button
+            onClick={() => {
+              const recovered = recoverFromLocalStorage();
+              setRecoveredTime(recovered);
+              setTimeout(() => setRecoveredTime(null), 3000);
+            }}
+            className="bg-teal-100 hover:bg-teal-200 text-teal-800 px-2 py-1 rounded text-xs"
           >
             Recover Data
           </button>
@@ -691,63 +701,71 @@ const FloatingActivityTimer: React.FC = () => {
 
       {/* Status info */}
       {isExpanded && (
-        <>
-          <div className="px-3 py-2 border-t border-gray-200 bg-gray-50">
-            <div className="flex flex-col space-y-2 text-xs">
+        <div className="p-3">
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Status:</span>
+              <span
+                className={`text-sm font-medium ${
+                  isActive ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {isActive ? "Active" : "Inactive"}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Current Session:</span>
+              <span className="text-sm font-medium text-blue-600">
+                {formatTime(currentDuration)}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Today's Total:</span>
+              <span className="text-sm font-medium text-gray-900">
+                {formatTime(totalTimeSpent)}
+              </span>
+            </div>
+
+            <div className="text-xs text-gray-500 space-y-1">
               <div className="flex justify-between">
-                <span className="text-gray-500">Status:</span>
-                <span className={isActive ? "text-green-600" : "text-red-600"}>
-                  {isActive ? "Active" : "Inactive"}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Session started:</span>
-                <span className="text-gray-800">
-                  {currentSessionStart
-                    ? new Date(currentSessionStart).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : "Not started"}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Sessions:</span>
-                <span className="text-gray-800">{activityHistory.length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Last sync:</span>
-                <span className="text-gray-800">
-                  {syncStatus.lastSync
-                    ? new Date(syncStatus.lastSync).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
+                <span>Last reset:</span>
+                <span>
+                  {lastResetDate
+                    ? new Date(lastResetDate).toLocaleDateString()
                     : "Never"}
                 </span>
               </div>
-              {sessionId && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Device ID:</span>
-                  <span
-                    className="text-gray-800 font-mono text-xs"
-                    title={sessionId}
-                  >
-                    {sessionId.substring(0, 8)}...
-                  </span>
-                </div>
-              )}
-              <div className="flex justify-between text-blue-600 border-t border-gray-200 pt-1 mt-1">
+              <div className="flex justify-between">
                 <span>Next reset:</span>
-                <span>{timeUntilReset} remaining</span>
+                <span>{timeUntilReset}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Sessions:</span>
+                <span>{activityHistory.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Last sync:</span>
+                <span>
+                  {syncStatus.lastSync
+                    ? new Date(syncStatus.lastSync).toLocaleTimeString()
+                    : "Never"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Device ID:</span>
+                <span className="font-mono text-xs">
+                  {sessionId.slice(0, 8)}...
+                </span>
               </div>
             </div>
           </div>
-
-          {/* Debug Panel */}
-          {renderDebugPanel()}
-        </>
+        </div>
       )}
+
+      {/* Debug Panel */}
+      {renderDebugPanel()}
     </div>
   );
 };

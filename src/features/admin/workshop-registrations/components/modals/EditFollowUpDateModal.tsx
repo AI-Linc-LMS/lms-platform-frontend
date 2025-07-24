@@ -18,15 +18,62 @@ export const EditFollowUpDateModal: React.FC<EditFollowUpDateModalProps> = ({
   const [newFollowUpDate, setNewFollowUpDate] = useState(
     entry.follow_up_date || ""
   );
+  const [selectedTime, setSelectedTime] = useState("12:00");
+  const [selectedPeriod, setSelectedPeriod] = useState("AM");
 
   useEffect(() => {
     if (isOpen) {
-      setNewFollowUpDate(entry.follow_up_date || "");
+      if (entry.follow_up_date) {
+        const date = new Date(entry.follow_up_date);
+        // Format date as YYYY-MM-DD for date input
+        const formattedDate = date.toISOString().split("T")[0];
+        setNewFollowUpDate(formattedDate);
+
+        // Convert to 12-hour format
+        let hours = date.getHours();
+        const minutes = date.getMinutes();
+        const period = hours >= 12 ? "PM" : "AM";
+
+        // Convert to 12-hour format
+        if (hours === 0) hours = 12;
+        else if (hours > 12) hours -= 12;
+
+        const timeString = `${hours}:${minutes.toString().padStart(2, "0")}`;
+        setSelectedTime(timeString);
+        setSelectedPeriod(period);
+      } else {
+        setNewFollowUpDate("");
+        setSelectedTime("12:00");
+        setSelectedPeriod("AM");
+      }
     }
   }, [isOpen, entry.follow_up_date]);
 
   const handleSave = () => {
-    onSave(newFollowUpDate);
+    if (newFollowUpDate && selectedTime) {
+      // Parse the time input
+      const [hourStr, minuteStr] = selectedTime.split(":");
+      let hour24 = parseInt(hourStr);
+      const minute = parseInt(minuteStr) || 0;
+
+      // Convert 12-hour format to 24-hour format
+      if (selectedPeriod === "AM" && hour24 === 12) {
+        hour24 = 0;
+      } else if (selectedPeriod === "PM" && hour24 !== 12) {
+        hour24 += 12;
+      }
+
+      // Create the time string in 24-hour format
+      const timeString = `${hour24.toString().padStart(2, "0")}:${minute
+        .toString()
+        .padStart(2, "0")}`;
+      const combinedDateTime = new Date(
+        `${newFollowUpDate}T${timeString}`
+      ).toISOString();
+      onSave(combinedDateTime);
+    } else {
+      onSave(newFollowUpDate);
+    }
     onClose();
   };
 
@@ -87,6 +134,29 @@ export const EditFollowUpDateModal: React.FC<EditFollowUpDateModalProps> = ({
             onChange={(e) => setNewFollowUpDate(e.target.value)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+        </div>
+
+        <div className="flex flex-col gap-2 mt-4">
+          <label className="text-sm font-medium text-gray-700">
+            Select Follow-up Time
+          </label>
+          <div className="flex gap-2 items-center">
+            <input
+              type="text"
+              value={selectedTime}
+              onChange={(e) => setSelectedTime(e.target.value)}
+              placeholder="12:00"
+              className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <select
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              className="border border-gray-300 rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="AM">AM</option>
+              <option value="PM">PM</option>
+            </select>
+          </div>
         </div>
 
         <div className="flex justify-end gap-3 mt-6">

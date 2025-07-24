@@ -16,8 +16,8 @@ export const getAuthenticatedUserId = (): string | null => {
       return user.id || null;
     }
     return null;
-  } catch (error) {
-    //console.error('Error parsing user data from localStorage:', error);
+  } catch {
+    // Silently handle parsing errors
     return null;
   }
 };
@@ -55,17 +55,16 @@ export const getAnonymousUserId = (): string => {
     }
     
     return anonymousId;
-  } catch (error) {
-    //console.error('Error handling anonymous user ID:', error);
+  } catch {
     // Fallback to a session-based clean ID if localStorage fails
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 };
 
 /**
- * Gets the current user ID - either authenticated user ID or unique anonymous ID
- * This ensures every user (authenticated or not) has a unique identifier
- * @returns A unique user identifier
+ * Gets the current user ID (authenticated user ID or anonymous user ID)
+ * This is the main function to use for user identification in activity tracking
+ * @returns User ID string
  */
 export const getCurrentUserId = (): string => {
   const authenticatedUserId = getAuthenticatedUserId();
@@ -84,8 +83,8 @@ export const getCurrentUserId = (): string => {
 export const clearAnonymousUserId = (): void => {
   try {
     localStorage.removeItem('anonymous_user_id');
-  } catch (error) {
-    //console.error('Error clearing anonymous user ID:', error);
+  } catch {
+    // Silently handle storage errors
   }
 };
 
@@ -97,8 +96,60 @@ export const regenerateAnonymousUserId = (): string => {
   try {
     localStorage.removeItem('anonymous_user_id');
     return getAnonymousUserId(); // This will generate a new clean ID
-  } catch (error) {
-    //console.error('Error regenerating anonymous user ID:', error);
-    return uuidv4(); // Fallback to direct UUID generation
+  } catch {
+    // Fallback to direct UUID generation
+    return uuidv4();
   }
+};
+
+/**
+ * Handles user login by clearing anonymous data and ensuring proper account identification
+ * This should be called when a user successfully logs in
+ */
+export const handleUserLogin = (): void => {
+  try {
+    // Clear anonymous user ID since we now have an authenticated user
+    clearAnonymousUserId();
+    
+    // Log the account switch for debugging
+    const authenticatedUserId = getAuthenticatedUserId();
+    if (authenticatedUserId) {
+      console.log(`User logged in with account ID: ${authenticatedUserId}`);
+    }
+  } catch {
+    console.error('Error handling user login');
+  }
+};
+
+/**
+ * Handles user logout by clearing user data
+ * This should be called when a user logs out
+ */
+export const handleUserLogout = (): void => {
+  try {
+    // User data will be cleared by the auth system
+    // We'll generate a new anonymous ID for the next session
+    regenerateAnonymousUserId();
+    
+    console.log('User logged out, generated new anonymous ID');
+  } catch {
+    console.error('Error handling user logout');
+  }
+};
+
+/**
+ * Gets user identification info for debugging/display purposes
+ */
+export const getUserIdentificationInfo = () => {
+  const authenticatedUserId = getAuthenticatedUserId();
+  const anonymousUserId = getAnonymousUserId();
+  const currentUserId = getCurrentUserId();
+  
+  return {
+    authenticatedUserId,
+    anonymousUserId,
+    currentUserId,
+    isAuthenticated: !!authenticatedUserId,
+    userType: authenticatedUserId ? 'authenticated' : 'anonymous'
+  };
 }; 
