@@ -49,131 +49,131 @@ const ProgramCard: React.FC<{
   <div className="w-full flex flex-col gap-6 sm:gap-8 my-6 sm:my-8 lg:my-10 px-2 sm:px-4 lg:px-0">
     {/* Nanodegree Card */}
     <div className="cursor-pointer" onClick={() => window.open("https://ailinc.com/nanodegree")}>
-    <div className="flex flex-col lg:flex-row items-center bg-gradient-to-br from-[#f8fcfc] to-[#eafff6] rounded-2xl sm:rounded-3xl px-4 sm:px-6 lg:px-8 shadow-sm border border-gray-200">
-      <div className="flex-1 min-w-[280px] sm:min-w-[300px]">
-        <div className="">
-          <span className="inline-block px-2 sm:px-3 py-1 mt-2 bg-green-100 text-green-700 rounded-lg text-xs sm:text-sm font-semibold mb-2">
-            Your Learning Hub
-          </span>
+      <div className="flex flex-col lg:flex-row items-center bg-gradient-to-br from-[#f8fcfc] to-[#eafff6] rounded-2xl sm:rounded-3xl px-4 sm:px-6 lg:px-8 shadow-sm border border-gray-200">
+        <div className="flex-1 min-w-[280px] sm:min-w-[300px]">
+          <div className="">
+            <span className="inline-block px-2 sm:px-3 py-1 mt-2 bg-green-100 text-green-700 rounded-lg text-xs sm:text-sm font-semibold mb-2">
+              Your Learning Hub
+            </span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#264D64] mb-3 sm:mb-4">
+            AI Linc Nanodegree Program
+          </h2>
+          <ul className="space-y-1 sm:space-y-2 mb-4 sm:mb-6">
+            <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
+              <span role="img" aria-label="video">
+                🎥
+              </span>{" "}
+              Video Lectures on AI, MERN & More
+            </li>
+            <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
+              <span role="img" aria-label="quiz">
+                ❓
+              </span>{" "}
+              Auto-evaluated Quizzes & Coding Tests
+            </li>
+            <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
+              <span role="img" aria-label="articles">
+                📄
+              </span>{" "}
+              Curated Articles & Case Studies
+            </li>
+            <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
+              <span role="img" aria-label="progress">
+                📈
+              </span>{" "}
+              Track Your Progress in Real-Time
+            </li>
+            <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
+              <span role="img" aria-label="career">
+                💼
+              </span>{" "}
+              Career Support + Weekly Live Mentorship
+            </li>
+          </ul>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-3 sm:mt-4 text-xs sm:text-sm">
+            <button className="bg-[#255C79] text-white px-3 sm:px-4 py-2 rounded-full font-semibold flex items-center gap-2 shadow hover:bg-[#1a4a5f] transition-colors">
+              🚀 21-Day No-Code Product Builder
+            </button>
+            <button className="bg-[#0e7490] text-white px-3 sm:px-4 py-2 rounded-full font-semibold flex items-center gap-2 shadow hover:bg-[#155e75] transition-colors">
+              🟢 Eligible for the interviews
+            </button>
+          </div>
         </div>
-        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#264D64] mb-3 sm:mb-4">
-          AI Linc Nanodegree Program
-        </h2>
-        <ul className="space-y-1 sm:space-y-2 mb-4 sm:mb-6">
-          <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
-            <span role="img" aria-label="video">
-              🎥
-            </span>{" "}
-            Video Lectures on AI, MERN & More
-          </li>
-          <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
-            <span role="img" aria-label="quiz">
-              ❓
-            </span>{" "}
-            Auto-evaluated Quizzes & Coding Tests
-          </li>
-          <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
-            <span role="img" aria-label="articles">
-              📄
-            </span>{" "}
-            Curated Articles & Case Studies
-          </li>
-          <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
-            <span role="img" aria-label="progress">
-              📈
-            </span>{" "}
-            Track Your Progress in Real-Time
-          </li>
-          <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
-            <span role="img" aria-label="career">
-              💼
-            </span>{" "}
-            Career Support + Weekly Live Mentorship
-          </li>
-        </ul>
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-3 sm:mt-4 text-xs sm:text-sm">
-          <button className="bg-[#255C79] text-white px-3 sm:px-4 py-2 rounded-full font-semibold flex items-center gap-2 shadow hover:bg-[#1a4a5f] transition-colors">
-            🚀 21-Day No-Code Product Builder
-          </button>
-          <button className="bg-[#0e7490] text-white px-3 sm:px-4 py-2 rounded-full font-semibold flex items-center gap-2 shadow hover:bg-[#155e75] transition-colors">
-            🟢 Eligible for the interviews
-          </button>
+        <div className="flex-1 flex items-center justify-center mt-6 sm:mt-8 lg:mt-0">
+          <div className="relative lg:left-20 lg:top-4 hidden sm:block">
+            <img
+              src={cube}
+              alt="Cube"
+              className="w-64 h-64 sm:w-80 sm:h-80 lg:w-104 lg:h-104 object-contain rounded-xl sm:rounded-2xl"
+            />
+          </div>
         </div>
       </div>
-      <div className="flex-1 flex items-center justify-center mt-6 sm:mt-8 lg:mt-0">
-        <div className="relative lg:left-20 lg:top-4 hidden sm:block">
-          <img
-            src={cube}
-            alt="Cube"
-            className="w-64 h-64 sm:w-80 sm:h-80 lg:w-104 lg:h-104 object-contain rounded-xl sm:rounded-2xl"
-          />
-        </div>
-      </div>
-    </div>
     </div>
 
     {/* Career Launchpad Card */}
     <div className="cursor-pointer" onClick={() => window.open("https://ailinc.com/flagship-course")}>
-    <div className="flex flex-col lg:flex-row items-center bg-gradient-to-br from-[#fffbe6] to-[#fffde6] rounded-2xl sm:rounded-3xl px-4 sm:px-6 lg:px-8 shadow-sm border border-gray-200">
-      <div className="flex-1 min-w-[280px] sm:min-w-[300px]">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="inline-block px-2 sm:px-3 py-1 mt-2 bg-yellow-100 text-yellow-700 rounded-lg text-xs sm:text-sm font-semibold">
-            Mentorship · Referrals · Career-Ready
-          </span>
+      <div className="flex flex-col lg:flex-row items-center bg-gradient-to-br from-[#fffbe6] to-[#fffde6] rounded-2xl sm:rounded-3xl px-4 sm:px-6 lg:px-8 shadow-sm border border-gray-200">
+        <div className="flex-1 min-w-[280px] sm:min-w-[300px]">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-block px-2 sm:px-3 py-1 mt-2 bg-yellow-100 text-yellow-700 rounded-lg text-xs sm:text-sm font-semibold">
+              Mentorship · Referrals · Career-Ready
+            </span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#264D64] mb-3 sm:mb-4">
+            AI Linc Flagship Career Launchpad
+          </h2>
+          <div className="mb-2">
+            <span className="inline-block px-2 sm:px-3 py-1 mt-1 bg-green-600 text-white rounded-full text-xs font-semibold mb-2">
+              Everything in Nanodegree
+            </span>
+          </div>
+          <ul className="space-y-1 sm:space-y-2 mb-4 sm:mb-6 mt-2">
+            <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
+              <span role="img" aria-label="referrals">
+                🌐
+              </span>{" "}
+              Get 3 year referral programs to Top Companies (Google, Amazon, etc.)
+            </li>
+            <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
+              <span role="img" aria-label="resume">
+                🧑‍💼
+              </span>{" "}
+              AI + Mentor-Led Resume Reviews
+            </li>
+            <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
+              <span role="img" aria-label="portfolio">
+                💼
+              </span>{" "}
+              Build a Winning Tech Portfolio
+            </li>
+            <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
+              <span role="img" aria-label="interviews">
+                📝
+              </span>{" "}
+              Behavioral & Technical Mock Interviews
+            </li>
+          </ul>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-3 sm:mt-4 text-xs sm:text-sm">
+            <button className="bg-yellow-700 text-white px-3 sm:px-4 py-2 rounded-full font-semibold flex items-center gap-2 shadow hover:bg-yellow-600 transition-colors">
+              🧑‍💻 21-Day No-Code Product Builder
+            </button>
+            <button className="bg-yellow-700 text-white px-3 sm:px-4 py-2 rounded-full font-semibold flex items-center gap-2 shadow hover:bg-yellow-800 transition-colors">
+              ✅ 90-Day MAANG PM Work Experience
+            </button>
+          </div>
         </div>
-        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#264D64] mb-3 sm:mb-4">
-          AI Linc Flagship Career Launchpad
-        </h2>
-        <div className="mb-2">
-          <span className="inline-block px-2 sm:px-3 py-1 mt-1 bg-green-600 text-white rounded-full text-xs font-semibold mb-2">
-            Everything in Nanodegree
-          </span>
-        </div>
-        <ul className="space-y-1 sm:space-y-2 mb-4 sm:mb-6 mt-2">
-          <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
-            <span role="img" aria-label="referrals">
-              🌐
-            </span>{" "}
-            Get 3 year referral programs to Top Companies (Google, Amazon, etc.)
-          </li>
-          <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
-            <span role="img" aria-label="resume">
-              🧑‍💼
-            </span>{" "}
-            AI + Mentor-Led Resume Reviews
-          </li>
-          <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
-            <span role="img" aria-label="portfolio">
-              💼
-            </span>{" "}
-            Build a Winning Tech Portfolio
-          </li>
-          <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
-            <span role="img" aria-label="interviews">
-              📝
-            </span>{" "}
-            Behavioral & Technical Mock Interviews
-          </li>
-        </ul>
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-3 sm:mt-4 text-xs sm:text-sm">
-          <button className="bg-yellow-700 text-white px-3 sm:px-4 py-2 rounded-full font-semibold flex items-center gap-2 shadow hover:bg-yellow-600 transition-colors">
-            🧑‍💻 21-Day No-Code Product Builder
-          </button>
-          <button className="bg-yellow-700 text-white px-3 sm:px-4 py-2 rounded-full font-semibold flex items-center gap-2 shadow hover:bg-yellow-800 transition-colors">
-            ✅ 90-Day MAANG PM Work Experience
-          </button>
+        <div className="flex-1 flex items-center justify-center mt-6 sm:mt-8 lg:mt-0">
+          <div className="relative lg:left-10 lg:top-5 hidden sm:block">
+            <img
+              src={triangle}
+              alt="Yellow Shape"
+              className="w-64 h-64 sm:w-80 sm:h-80 lg:w-94 lg:h-94 object-contain"
+            />
+          </div>
         </div>
       </div>
-      <div className="flex-1 flex items-center justify-center mt-6 sm:mt-8 lg:mt-0">
-        <div className="relative lg:left-10 lg:top-5 hidden sm:block">
-          <img
-            src={triangle}
-            alt="Yellow Shape"
-            className="w-64 h-64 sm:w-80 sm:h-80 lg:w-94 lg:h-94 object-contain"
-          />
-        </div>
-      </div>
-    </div>
     </div>
 
     {/* Comparison Table */}
