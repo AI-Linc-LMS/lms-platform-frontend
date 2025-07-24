@@ -96,7 +96,7 @@ const ProgramCard: React.FC<{
             🚀 21-Day No-Code Product Builder
           </button>
           <button className="bg-[#0e7490] text-white px-3 sm:px-4 py-2 rounded-full font-semibold flex items-center gap-2 shadow hover:bg-[#155e75] transition-colors">
-            🟢 90-Day Work Experience
+            🟢 Eligible for the interviews
           </button>
         </div>
       </div>
@@ -134,7 +134,7 @@ const ProgramCard: React.FC<{
             <span role="img" aria-label="referrals">
               🌐
             </span>{" "}
-            Get Referrals to Top Companies (Google, Amazon, etc.)
+            Get 3 year referral programs to Top Companies (Google, Amazon, etc.)
           </li>
           <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
             <span role="img" aria-label="resume">
