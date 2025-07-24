@@ -5,7 +5,7 @@ import TimeTrackingDashboard from "../components/graphs-components/TimeTrackingD
 import BasedLearningCourses from "../components/based-learning/BasedLearningCourses";
 import ContinueCourses from "../components/continue-learning/ContinueCourses";
 import ContinueCoursesDetails from "../components/continue-learning/ContinueCoursesDetails";
-import Referrals from "../components/referrals/Referrals";
+// import Referrals from "../components/referrals/Referrals";
 import WelcomeSection from "../components/WelcomeSection";
 import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
@@ -150,7 +150,7 @@ const Learn = () => {
             <StreakTable clientId={clientId} />
           </>
         )}
-        <Referrals />
+        {/* <Referrals /> */}
       </div>
     </div>
   );

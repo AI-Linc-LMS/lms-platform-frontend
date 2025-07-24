@@ -11,7 +11,7 @@ interface AssessmentBannerProps {
 }
 
 const AssessmentBanner: React.FC<AssessmentBannerProps> = ({
-  assessmentId = "ai-linc-scholarship-test",
+  assessmentId = "ai-linc-scholarship-test-2",
   title = "Take the Free Placement Assessment",
   description = "Get added to the placement pool or get a scholarship to become eligible"
 }) => {
@@ -31,21 +31,30 @@ const AssessmentBanner: React.FC<AssessmentBannerProps> = ({
     gcTime: 0, // Don't cache the data
   });
 
-  const handleTakeAssessment = () => {
-    if (data?.status === "submitted") {
-      const baseUrl = "/assessment/quiz";
-      const urlWithReferral = addReferralCodeToUrl(baseUrl, referralCode);
-      navigate(urlWithReferral, { state: { assessmentId } });
-    } else {
-      // Navigate to the specific assessment instruction page
-      let baseUrl: string;
-      if (assessmentId === "ai-linc-scholarship-test") {
-        baseUrl = "/ai-linc-scholarship-test";
+  const handleTakeAssessment = async () => {
+    try {
+      const response = await fetch(
+        `https://be-app.ailinc.com/assessment/api/client/${clientId}/assessment-details/${assessmentId}/`
+      );
+      const result = await response.json();
+
+      if (result.status === "submitted") {
+        const baseUrl = "/assessment/quiz";
+        const urlWithReferral = addReferralCodeToUrl(baseUrl, referralCode);
+        navigate(urlWithReferral, { state: { assessmentId } });
       } else {
-        baseUrl = `/assessment/${assessmentId}`;
+        // Navigate to the specific assessment instruction page
+        let baseUrl: string;
+        if (assessmentId === "ai-linc-scholarship-test") {
+          baseUrl = "/ai-linc-scholarship-test";
+        } else {
+          baseUrl = `/assessment/${assessmentId}`;
+        }
+        const urlWithReferral = addReferralCodeToUrl(baseUrl, referralCode);
+        navigate(urlWithReferral);
       }
-      const urlWithReferral = addReferralCodeToUrl(baseUrl, referralCode);
-      navigate(urlWithReferral);
+    } catch (error) {
+      console.error("Error fetching assessment status:", error);
     }
   };
 
