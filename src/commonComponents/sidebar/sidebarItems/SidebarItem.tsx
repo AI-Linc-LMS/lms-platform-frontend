@@ -15,12 +15,12 @@ const SidebarItem = ({
       <Link to={linkInfo.href}>
         {isExpanded ? (
           <div
-            className={`flex relative font-medium w-full h-[66px] transition-all duration-300 ease-in-out items-center justify-start hover-element rounded-2xl ${
+            className={`flex relative font-medium w-[50px] h-[56px] transition-all duration-300 ease-in-out items-center justify-start hover-element rounded-2xl ${
               isActive ? "bg-[#12293A]" : ""
             }`}
           >
-            <div className="flex flex-row items-center px-4 gap-4">
-              <div className={`w-[26px] h-[20px] flex items-center justify-center ${
+            <div className="flex flex-row items-center px-2 gap-4">
+              <div className={`w-[20px] h-[20px] flex items-center justify-center ${
                 isActive ? "text-white" : "text-black"
               }`}>
                 {linkInfo.icon}
@@ -36,7 +36,7 @@ const SidebarItem = ({
           </div>
         ) : (
           <div
-            className={`flex items-center justify-center w-full h-[66px] transition-all duration-300 ease-in-out hover-element rounded-2xl ${
+            className={`flex items-center justify-center w-full h-[56px] transition-all duration-300 ease-in-out hover-element rounded-2xl ${
               isActive ? "bg-[#12293A]" : ""
             }`}
           >
