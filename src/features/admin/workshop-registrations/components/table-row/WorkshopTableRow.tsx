@@ -22,6 +22,7 @@ import {
   getStatusBadgeClass,
   getAmountColor,
 } from "./index";
+import { COURSE_NAME_OPTIONS } from "./TableRowUtils";
 
 interface WorkshopTableRowProps {
   entry: WorkshopRegistrationData;
@@ -396,9 +397,11 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
             getAmountColor={getAmountColor}
             formatDate={formatDate}
             openOfferedAmountModal={openOfferedAmountModal}
+            openEditModal={openEditModal}
             handleEditFollowUpDate={handleEditFollowUpDate}
             FIRST_CALL_STATUS_OPTIONS={FIRST_CALL_STATUS_OPTIONS}
             SECOND_CALL_STATUS_OPTIONS={SECOND_CALL_STATUS_OPTIONS}
+            COURSE_NAME_OPTIONS={COURSE_NAME_OPTIONS}
             visibleColumns={visibleColumns}
             permanentColumns={permanentColumns}
             stickyStyle={getStickyPosition(columnKey)}
