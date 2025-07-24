@@ -237,7 +237,7 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
             return {
                 text: "✅ Course Purchased",
                 disabled: true,
-                className: "w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg cursor-not-allowed shadow-md",
+                className: "w-full cursor-pointer bg-green-600 text-white font-bold py-3 px-4 rounded-lg cursor-not-allowed shadow-md",
                 showProcessing: false
             };
         }
@@ -246,16 +246,16 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
             return {
                 text: `💳 Pay Remaining ₹${remainingAmountAfterSeatBooking.toLocaleString()}`,
                 disabled: isAnyPaymentProcessing,
-                className: "w-full bg-white text-blue-600 font-bold py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed",
+                className: "w-full cursor-pointer bg-white text-blue-600 font-bold py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed",
                 showProcessing: isCoursePaymentProcessing,
                 onClick: handleCoursePayment
             };
         }
 
         return {
-            text: `🎯 Book My Seat for ₹${seatBookingPrice}`,
+            text: ` Book My Seat for ₹${seatBookingPrice}`,
             disabled: isAnyPaymentProcessing,
-            className: "w-full bg-white text-blue-600 font-bold py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed",
+            className: "w-full cursor-pointer bg-white text-blue-600 font-bold py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed",
             showProcessing: isSeatBookingProcessing,
             onClick: handleSeatBookingPayment
         };
@@ -266,15 +266,15 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
             return {
                 text: "✅ Course Purchased",
                 disabled: true,
-                className: "w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg cursor-not-allowed shadow-md",
+                className: "w-full cursor-pointer bg-green-600 text-white font-bold py-3 px-4 rounded-lg cursor-not-allowed shadow-md",
                 showProcessing: false
             };
         }
 
         return {
-            text: `🚀 Pay Full Amount ₹${scholarshipPrice.toLocaleString()}`,
+            text: ` Pay Full Amount ₹${scholarshipPrice.toLocaleString()}`,
             disabled: isAnyPaymentProcessing,
-            className: "w-full bg-white text-green-600 font-bold py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed",
+            className: "w-full cursor-pointer bg-white text-green-600 font-bold py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed",
             showProcessing: isCoursePaymentProcessing,
             onClick: handleCoursePayment
         };
@@ -421,7 +421,7 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
                                     </>
                                 ) : (
                                     <>
-                                        <p className="text-sm opacity-90">🚀 Secure your spot now!</p>
+                                        <p className="text-sm opacity-90"> Secure your spot now!</p>
                                         <p className="text-xl font-bold">
                                             Book Now with Just ₹{seatBookingPrice}
                                         </p>
@@ -464,7 +464,7 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
                         {!isFlagshipSeatBooked && (
                             <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white text-center">
                                 <div className="mb-3">
-                                    <p className="text-sm opacity-90">💎 Skip seat booking and get full access!</p>
+                                    <p className="text-sm opacity-90"> Skip seat booking and get full access!</p>
                                     <p className="text-lg font-bold">
                                         Pay Full Course Fee ₹{scholarshipPrice.toLocaleString()}
                                     </p>
