@@ -121,7 +121,7 @@ const RoadmapPage = () => {
 
   // Add countdown timer state
   const [scholarshipExpiryDate, setScholarshipExpiryDate] = useState<Date | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState<string>('');
+  const [, setTimeRemaining] = useState<string>('');
 
   // Add useEffect to set scholarship expiry date
   useEffect(() => {
@@ -160,11 +160,11 @@ const RoadmapPage = () => {
 
           setTimeRemaining(timeRemainingStr.trim());
         } else {
-          setTimeRemaining('Scholarship Expired');
+          // setTimeRemaining('Scholarship Expired');
         }
       } else {
         // If no expiry date is set, set a default 7-day period from now
-        setTimeRemaining('7 days');
+        // setTimeRemaining('7 days');
       }
     };
 
@@ -179,7 +179,7 @@ const RoadmapPage = () => {
   }, [scholarshipExpiryDate]);
 
   // State for countdown
-  const [countdown, setCountdown] = useState({
+  const [, setCountdown] = useState({
     days: 7,
     hours: 0,
     minutes: 0,
@@ -476,7 +476,7 @@ const RoadmapPage = () => {
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-[inset_0_4px_8px_rgba(0,0,0,0.1)] shadow-gray-300 border border-gray-300 ring-1 ring-white/40 py-4 sm:py-5 w-full mx-auto">
           {/* Performance Report Section */}
           <PerformanceReport data={perfReportData} />
-          <div className="w-full bg-yellow-50 border-r-4 border-yellow-500 p-4 mt-4 rounded-r-lg shadow-md">
+          {/* <div className="w-full bg-yellow-50 border-r-4 border-yellow-500 p-4 mt-4 rounded-r-lg shadow-md">
             <div className="flex items-center justify-end">
               <div className="flex items-center space-x-4">
                 <svg
@@ -496,7 +496,7 @@ const RoadmapPage = () => {
                     Scholarship Offer
                   </h3>
                   <div className="flex items-center space-x-1 mt-1">
-                    {/* Compact Countdown Boxes */}
+                 
                     <div className="flex flex-col items-center">
                       <span className="text-sm font-bold text-yellow-700 bg-white rounded-lg px-2 py-0.5 shadow-md">
                         {countdown.days}
@@ -536,7 +536,7 @@ const RoadmapPage = () => {
                 Scholarship offer has expired
               </div>
             )}
-          </div>
+          </div> */}
 
           <div className="flex flex-col lg:flex-row mt-6 sm:mt-8 lg:mt-10 w-full min-h-[200px] sm:min-h-[222px] justify-evenly items-center gap-4 sm:gap-6 lg:gap-2 px-3">
             <AccuracyBarChart data={accuracyBarData} />
