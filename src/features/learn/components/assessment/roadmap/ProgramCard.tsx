@@ -48,6 +48,7 @@ const ProgramCard: React.FC<{
 }> = ({ redeemData, clientId, assessmentId }) => (
   <div className="w-full flex flex-col gap-6 sm:gap-8 my-6 sm:my-8 lg:my-10 px-2 sm:px-4 lg:px-0">
     {/* Nanodegree Card */}
+    <div className="cursor-pointer" onClick={() => window.open("https://ailinc.com/nanodegree")}>
     <div className="flex flex-col lg:flex-row items-center bg-gradient-to-br from-[#f8fcfc] to-[#eafff6] rounded-2xl sm:rounded-3xl px-4 sm:px-6 lg:px-8 shadow-sm border border-gray-200">
       <div className="flex-1 min-w-[280px] sm:min-w-[300px]">
         <div className="">
@@ -109,8 +110,10 @@ const ProgramCard: React.FC<{
         </div>
       </div>
     </div>
+    </div>
 
     {/* Career Launchpad Card */}
+    <div className="cursor-pointer" onClick={() => window.open("https://ailinc.com/flagship-course")}>
     <div className="flex flex-col lg:flex-row items-center bg-gradient-to-br from-[#fffbe6] to-[#fffde6] rounded-2xl sm:rounded-3xl px-4 sm:px-6 lg:px-8 shadow-sm border border-gray-200">
       <div className="flex-1 min-w-[280px] sm:min-w-[300px]">
         <div className="flex items-center gap-2 mb-2">
@@ -170,6 +173,7 @@ const ProgramCard: React.FC<{
           />
         </div>
       </div>
+    </div>
     </div>
 
     {/* Comparison Table */}
