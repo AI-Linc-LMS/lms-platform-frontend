@@ -244,7 +244,7 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
                             <button
                                 onClick={handleSeatBookingPayment}
                                 disabled={isSeatBookingProcessing}
-                                className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                                className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center"
                             >
                                 {isSeatBookingProcessing ? (
                                     <>
@@ -255,7 +255,12 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
                                         Processing...
                                     </>
                                 ) : (
-                                    `Book Seat for ₹${seatBookingPrice}`
+                                    <>
+                                        <span className="text-lg">Book Seat for ₹{seatBookingPrice}</span>
+                                        <span className="text-xs font-normal mt-1">
+                                            Reserve Now, Pay ₹{scholarshipPrice - seatBookingPrice} Later | 100% Secure Payment
+                                        </span>
+                                    </>
                                 )}
                             </button>
                         )}
