@@ -430,6 +430,47 @@ export const filterWorkshopData = (
       }
     })();
 
+    const nextPaymentDate = entry.next_payment_date && entry.next_payment_date !== "" ? new Date(entry.next_payment_date) : null;
+    const nextPaymentStartDate = filters.next_payment_date && filters.next_payment_date.start
+      ? new Date(filters.next_payment_date.start + "T00:00:00")
+      : null;
+    const nextPaymentEndDate = filters.next_payment_date && filters.next_payment_date.end
+      ? new Date(filters.next_payment_date.end + "T23:59:59")
+      : null;
+
+    const nextPaymentDateMatch =
+      (!nextPaymentStartDate || (nextPaymentDate && nextPaymentDate >= nextPaymentStartDate)) &&
+      (!nextPaymentEndDate || (nextPaymentDate && nextPaymentDate <= nextPaymentEndDate));
+
+      const salesDoneByMatch = (() => {
+        if (!filters.sales_done_by) return true;
+        const filterVal = filters.sales_done_by.trim();
+        if (filterVal.includes(',')) {
+          // Multi-select: match any selected value exactly (OR query)
+          const result = matchesSelectedOptions(entry.sales_done_by, filterVal);
+          
+          return result;
+        } else {
+          // Single search string: substring match
+          return matchesSearchString(entry.sales_done_by, filterVal);
+        }
+      })();
+      
+
+
+    // Meeting Scheduled filter
+    const meetingScheduledDate = entry.meeting_scheduled_at && entry.meeting_scheduled_at !== "" ? new Date(entry.meeting_scheduled_at) : null;
+    const meetingScheduledStartDate = filters.meeting_scheduled_at && filters.meeting_scheduled_at.start
+      ? new Date(filters.meeting_scheduled_at.start + "T00:00:00")
+      : null;
+    const meetingScheduledEndDate = filters.meeting_scheduled_at && filters.meeting_scheduled_at.end
+      ? new Date(filters.meeting_scheduled_at.end + "T23:59:59")
+      : null;
+
+    const meetingScheduledDateMatch =
+      (!meetingScheduledStartDate || (meetingScheduledDate && meetingScheduledDate >= meetingScheduledStartDate)) &&
+      (!meetingScheduledEndDate || (meetingScheduledDate && meetingScheduledDate <= meetingScheduledEndDate));
+
     const finalResult = (
       nameMatch &&
       emailMatch &&
@@ -461,7 +502,10 @@ export const filterWorkshopData = (
       updatedDateMatch &&
       submittedDateMatch &&
       followUpDateMatch &&
-      courseNameMatch
+      courseNameMatch &&
+      nextPaymentDateMatch &&
+      meetingScheduledDateMatch &&
+      salesDoneByMatch
     );
 
     return finalResult;
@@ -595,6 +639,9 @@ export const getInitialFilterState = (): FilterState => ({
   assessment_status: "",
   registered_at: { start: "", end: "" },
   updated_at: { start: "", end: "" },
+  next_payment_date: { start: "", end: "" },
+  sales_done_by: "",
+  meeting_scheduled_at: { start: "", end: "" },
 });
 
 export const hasActiveFilters = (filters: FilterState): boolean => {

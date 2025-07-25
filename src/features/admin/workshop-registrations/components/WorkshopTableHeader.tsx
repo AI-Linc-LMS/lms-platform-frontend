@@ -279,6 +279,9 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
     { column: "second_call_comment", label: "2nd Call Comment" },
     { column: "follow_up_comment", label: "Follow Up Comment" },
     { column: "follow_up_date", label: "Follow Up Date", isDate: true },
+    { column: "meeting_scheduled_at", label: "Meeting Scheduled", isDate: true },
+    { column: "next_payment_date", label: "Next Payment Date", isDate: true },
+    { column: "sales_done_by", label: "Sales Done By" },
     // Assessment details
     { column: "attended_webinars", label: "Attendee" },
     {

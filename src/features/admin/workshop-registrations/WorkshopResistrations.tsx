@@ -37,6 +37,11 @@ const WorkshopRegistration = () => {
     "name",
     "email",
   ]);
+  const [sort, setSort] = useState(false);
+
+  const handleSort = () => {
+    setSort(!sort);
+  };
 
   // Column visibility state
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
@@ -129,6 +134,17 @@ const WorkshopRegistration = () => {
     },
     { key: "follow_up_date", label: "Follow Up Date", defaultVisible: true },
     {
+      key: "next_payment_date",
+      label: "Next Payment Date",
+      defaultVisible: true,
+    },
+    {
+      key: "meeting_scheduled_at",
+      label: "Meeting Scheduled (Date & Time)",
+      defaultVisible: true,
+    },
+    { key: "sales_done_by", label: "Sales Done By", defaultVisible: true },
+    {
       key: "session_number",
       label: "Registered Session",
       defaultVisible: true,
@@ -220,11 +236,16 @@ const WorkshopRegistration = () => {
     updated_at: useRef<HTMLDivElement>(null),
     follow_up_comment: useRef<HTMLDivElement>(null),
     follow_up_date: useRef<HTMLDivElement>(null),
+    session_date: useRef<HTMLDivElement>(null),
+    course_name: useRef<HTMLDivElement>(null),
+    meeting_scheduled_at: useRef<HTMLDivElement>(null),
+    sales_done_by: useRef<HTMLDivElement>(null),
+    next_payment_date: useRef<HTMLDivElement>(null),
   };
 
   const tableScrollRef = useRef<HTMLDivElement>(null);
   const lastScrollLeftRef = useRef(0);
-  
+
   // Detect horizontal scroll
   useEffect(() => {
     const container = tableScrollRef.current;
@@ -256,10 +277,19 @@ const WorkshopRegistration = () => {
     refetchOnReconnect: false,
   });
 
-  const filteredData = useMemo(
-    () => filterWorkshopData(workshopData, search, filters),
-    [search, workshopData, filters]
-  );
+  const filteredData = useMemo(() => {
+    let data = filterWorkshopData(workshopData, search, filters);
+    if (sort) {
+      data = [...data].sort((a, b) => {
+        const aDate = a.updated_at || "";
+        const bDate = b.updated_at || "";
+        if (aDate > bDate) return 1; // ASCENDING
+        if (aDate < bDate) return -1;
+        return 0;
+      });
+    }
+    return data;
+  }, [search, workshopData, filters, sort]);
 
   const handleExport = () => {
     // Combine permanent columns with visible columns for export
@@ -382,6 +412,8 @@ const WorkshopRegistration = () => {
         freezeColumns={freezeColumns}
         freezeColumnOptions={freezeColumnOptions}
         onFreezeColumnChange={handleFreezeColumnChange}
+        handleSort={handleSort}
+        sort={sort}
       />
 
       <ActiveFiltersDisplay
