@@ -558,6 +558,7 @@ const RoadmapPage = () => {
         orderId={paymentResult?.orderId}
         amount={paymentResult?.amount || 0}
         paymentType="assessment"
+        onDownloadCertificate={handleDownloadCertificate} // Add this line
       />
 
       {/* Payment Toast */}
