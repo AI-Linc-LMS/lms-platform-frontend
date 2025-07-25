@@ -25,7 +25,7 @@ import {
   getFullPath,
   handleMobileNavigation,
 } from "./utils/authRedirectUtils";
-import FloatingActivityTimer from "./components/FloatingActivityTimer";
+// import FloatingActivityTimer from "./components/FloatingActivityTimer";
 
 function App() {
   return (
@@ -359,14 +359,15 @@ function AppContent() {
       </Routes>
       
       {/* Only show FloatingActivityTimer when authenticated and not on login/register pages */}
-      {isAuthenticated && 
+      {/* Commented out per instructions */}
+      {/* {isAuthenticated && 
        location.pathname !== '/login' && 
        location.pathname !== '/register' && 
        location.pathname !== '/signup' && 
        location.pathname !== '/forgot-password' && 
        location.pathname !== '/otp' && (
         <FloatingActivityTimer />
-      )}
+      )} */}
     </>
   );
 }
