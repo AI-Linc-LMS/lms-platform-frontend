@@ -434,8 +434,8 @@ const RoadmapPage = () => {
                   onClick={handleCertificatePayment}
                   disabled={assessmentPaymentState.isProcessing}
                   className={`flex items-center gap-2 font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-lg shadow transition-colors duration-200 focus:outline-none text-sm sm:text-base ${assessmentPaymentState.isProcessing
-                      ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                      : "bg-[#14212B] text-white hover:bg-[#223344]"
+                    ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                    : "bg-[#14212B] text-white hover:bg-[#223344]"
                     }`}
                 >
                   {assessmentPaymentState.isProcessing ? "Processing Payment..." : " Download Certificate"}
