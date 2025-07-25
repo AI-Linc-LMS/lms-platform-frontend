@@ -30,7 +30,7 @@ type PerformanceReportProps = {
 const PerformanceReport = ({ 
   data, 
   redeemData,
-  isFlagshipSeatBooked = false,
+  // isFlagshipSeatBooked = false,
   isFlagshipCoursePaid = false,
   assessmentDate,
   clientId,
@@ -58,8 +58,8 @@ const PerformanceReport = ({
               assessmentDate={assessmentDate}
               expiryDays={7}
               redeemData={redeemData}
-              isFlagshipSeatBooked={isFlagshipSeatBooked}
-              isFlagshipCoursePaid={isFlagshipCoursePaid}
+              // isFlagshipSeatBooked is not a valid prop for ScholarshipCountdown, so it is removed
+              // isFlagshipCoursePaid={isFlagshipCoursePaid}
               clientId={clientId}
               assessmentId={assessmentId}
               onPaymentSuccess={onPaymentSuccess}
