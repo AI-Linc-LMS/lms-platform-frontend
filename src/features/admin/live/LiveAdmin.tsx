@@ -1,6 +1,9 @@
 // LiveAdmin.tsx
 import { useQuery } from "@tanstack/react-query";
-import { liveServicesApis } from "../../../services/live/liveServicesApis";
+import {
+  liveServicesApis,
+  LiveSession,
+} from "../../../services/live/liveServicesApis";
 import CreateLiveAdmin from "./CreateLiveAdmin";
 import { useState } from "react";
 import PastRecordings from "../../live/components/PastRecordings";
@@ -8,7 +11,7 @@ import Modal from "../../../commonComponents/modals/GenricModal";
 
 const LiveAdmin = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["liveSessions"],
     queryFn: () => liveServicesApis(clientId),
     refetchOnWindowFocus: false,
@@ -32,7 +35,10 @@ const LiveAdmin = () => {
       </button>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <CreateLiveAdmin onClose={() => setIsModalOpen(false)} />
+        <CreateLiveAdmin
+          onClose={() => setIsModalOpen(false)}
+          refetch={refetch}
+        />
       </Modal>
 
       {isLoading ? (
@@ -40,7 +46,14 @@ const LiveAdmin = () => {
       ) : error ? (
         <p>Error loading sessions</p>
       ) : (
-        <PastRecordings pastLiveSessions={data || []} />
+        <PastRecordings
+          pastLiveSessions={(data || []).sort(
+            (a: LiveSession, b: LiveSession) =>
+              new Date(b.class_datetime).getTime() -
+              new Date(a.class_datetime).getTime()
+          )}
+          refetch={refetch}
+        />
       )}
     </div>
   );
