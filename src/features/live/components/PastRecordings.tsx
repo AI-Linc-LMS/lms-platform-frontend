@@ -1,40 +1,45 @@
 import React, { useState } from "react";
-import { Recording } from "../types/live.types";
+import {
+  LiveSession,
+  updateLiveSession,
+} from "../../../services/live/liveServicesApis";
+import { UserState } from "../../learn/components/assessment/types/assessmentTypes";
+import { useSelector } from "react-redux";
+import { useMutation } from "@tanstack/react-query";
+import AddRecordingLinkModal from "./AddRecordingModal";
 
 interface PastRecordingsProps {
-  recordings: Recording[];
+  pastLiveSessions: LiveSession[];
 }
 
-const PastRecordings: React.FC<PastRecordingsProps> = ({ recordings }) => {
-  const [filterCategory, setFilterCategory] = useState<string>("all");
+const PastRecordings: React.FC<PastRecordingsProps> = ({
+  pastLiveSessions,
+}) => {
+  const user = useSelector((state: { user: UserState }) => state.user);
+  const isAdmin = user.role === "admin" || user.role === "superadmin";
+
   const [filterDate, setFilterDate] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
 
-  // Filter past recordings based on category, date, and search term
-  const filteredRecordings = recordings.filter((recording) => {
-    const matchesCategory =
-      filterCategory === "all" ||
-      recording.category.toLowerCase().includes(filterCategory.toLowerCase());
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRecording, setSelectedRecording] =
+    useState<LiveSession | null>(null);
 
+  const filteredRecordings = (pastLiveSessions || []).filter((recording) => {
     const matchesDate =
       !filterDate ||
-      new Date(recording.recordedDate).toISOString().split("T")[0] ===
+      new Date(recording.class_datetime).toISOString().split("T")[0] ===
         filterDate;
 
     const matchesSearch =
       !searchTerm ||
-      recording.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      recording.topic_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       recording.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      recording.trainer.name.toLowerCase().includes(searchTerm.toLowerCase());
+      recording.instructor.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return matchesCategory && matchesDate && matchesSearch;
+    return matchesDate && matchesSearch;
   });
 
-  // Get unique categories for filter dropdown
-  const categories = [
-    "all",
-    ...Array.from(new Set(recordings.map((r) => r.category))),
-  ];
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -44,10 +49,34 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({ recordings }) => {
     });
   };
 
+  const updateMutation = useMutation({
+    mutationFn: async (sessionData: LiveSession) => {
+      const clientId = import.meta.env.VITE_CLIENT_ID;
+      const sessionId = sessionData.id || "";
+      return await updateLiveSession(clientId, sessionId, sessionData);
+    },
+  });
+
   const handleWatchRecording = (zoomRecordingLink: string) => {
     if (zoomRecordingLink) {
       window.open(zoomRecordingLink, "_blank");
     }
+  };
+  console.log(selectedRecording?.recording_link);
+  const handleAddRecordingLink = (recording: LiveSession) => {
+    setSelectedRecording(recording);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveRecordingLink = (link: string) => {
+    if (selectedRecording) {
+      const updatedRecording: LiveSession = {
+        ...selectedRecording,
+        recording_link: link,
+      };
+      updateMutation.mutate(updatedRecording);
+    }
+    setIsModalOpen(false);
   };
 
   return (
@@ -57,7 +86,6 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({ recordings }) => {
           Past Sessions
         </h2>
 
-        {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative">
             <input
@@ -82,18 +110,6 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({ recordings }) => {
             </svg>
           </div>
 
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79]"
-          >
-            {categories.map((category) => (
-              <option key={category} value={category}>
-                {category === "all" ? "All Categories" : category}
-              </option>
-            ))}
-          </select>
-
           <input
             type="date"
             value={filterDate}
@@ -103,7 +119,6 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({ recordings }) => {
         </div>
       </div>
 
-      {/* Recordings Grid */}
       {filteredRecordings.length === 0 ? (
         <div className="text-center py-12">
           <svg
@@ -135,7 +150,7 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({ recordings }) => {
             >
               <div className="p-6">
                 <h3 className="font-bold text-[#343A40] text-lg mb-2 line-clamp-2">
-                  {recording.title}
+                  {recording.topic_name}
                 </h3>
                 <p className="text-[#6C757D] text-sm mb-4 line-clamp-2">
                   {recording.description}
@@ -144,52 +159,49 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({ recordings }) => {
                 <div className="flex items-center space-x-3 mb-4">
                   <div className="text-sm">
                     <p className="font-medium text-[#343A40]">
-                      {recording.trainer.name}
+                      {recording.instructor}
                     </p>
                     <p className="text-[#6C757D]">
-                      {formatDate(recording.recordedDate)}
+                      {formatDate(recording.class_datetime)}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-1 text-sm text-[#6C757D]">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                <div className="flex flex-row justify-between">
+                  {isAdmin && (
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => handleAddRecordingLink(recording)}
+                        className="bg-[#255C79] hover:bg-[#1E4A63] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-95"
+                      >
+                        {!recording?.recording_link ? "Add Link" : "Edit Link"}
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() =>
+                        handleWatchRecording(recording?.recording_link || "")
+                      }
+                      className="bg-[#255C79] hover:bg-[#1E4A63] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-95"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                      />
-                    </svg>
-                    <span>{recording.views.toLocaleString()} views</span>
+                      Watch Recording
+                    </button>
                   </div>
-
-                  <button
-                    onClick={() =>
-                      handleWatchRecording(recording.zoomRecordingLink)
-                    }
-                    className="bg-[#255C79] hover:bg-[#1E4A63] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-95"
-                  >
-                    Watch Recording
-                  </button>
                 </div>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* Modal */}
+      <AddRecordingLinkModal
+        isOpen={isModalOpen}
+        recordingLink={selectedRecording?.recording_link || null}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveRecordingLink}
+      />
     </div>
   );
 };
