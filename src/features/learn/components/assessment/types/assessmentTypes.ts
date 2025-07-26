@@ -11,6 +11,7 @@ export interface UserState {
   email: string | null;
   full_name: string | null;
   isAuthenticated: boolean;
+  role: string | null;
 }
 
 // Topic Stats interface

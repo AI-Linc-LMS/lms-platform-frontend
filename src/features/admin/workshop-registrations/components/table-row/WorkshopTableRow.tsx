@@ -83,6 +83,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   const [offeredAmount, setOfferedAmount] = useState(
     entry.offered_amount || ""
   );
+  const [salesDoneBy, setSalesDoneBy] = useState(entry.sales_done_by || "");
 
   // Cooldown state for each status field
   const [cooldown, setCooldown] = useState<{ [key: string]: boolean }>({});
@@ -102,7 +103,6 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     useState(secondCallComment);
   const [modalFollowUpComment, setModalFollowUpComment] =
     useState(followUpComment);
-  const [modalOfferedAmount, setModalOfferedAmount] = useState(offeredAmount);
 
   // Tooltip state
   const [tooltipData, setTooltipData] = useState<{
@@ -122,8 +122,14 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   const [offeredAmountModalOpen, setOfferedAmountModalOpen] = useState(false);
   const [paymentHistoryOpen, setPaymentHistoryOpen] = useState(false);
   const [followUpDateModalOpen, setFollowUpDateModalOpen] = useState(false);
+  const [fieldForDateEdit, setFieldForDateEdit] = useState<
+    "follow_up_date" | "meeting_scheduled_at" | "next_payment_date"
+  >("follow_up_date");
   const [selectedEntryForDateEdit, setSelectedEntryForDateEdit] =
     useState<WorkshopRegistrationData | null>(null);
+  const [editSalesAndOfferedAmount, setEditSalesAndOfferedAmount] = useState<
+    "offered_amount" | "sales_done_by"
+  >("offered_amount");
 
   const handleCommentClick = (
     comment: string,
@@ -178,26 +184,35 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     setModalOpen(true);
   };
 
-  const openOfferedAmountModal = () => {
-    setModalOfferedAmount(offeredAmount);
+  const openOfferedAmountModal = (
+    field: "offered_amount" | "sales_done_by"
+  ) => {
+    setEditSalesAndOfferedAmount(field);
     setOfferedAmountModalOpen(true);
   };
 
-  const handleEditFollowUpDate = (entry: WorkshopRegistrationData) => {
+  const handleEditFollowUpDate = (
+    entry: WorkshopRegistrationData,
+    field: "follow_up_date" | "meeting_scheduled_at" | "next_payment_date"
+  ) => {
+    setFieldForDateEdit(field);
     setSelectedEntryForDateEdit(entry);
     setFollowUpDateModalOpen(true);
   };
 
-  const handleSaveFollowUpDate = (date: string) => {
+  const handleSaveFollowUpDate = (
+    date: string,
+    field: "follow_up_date" | "meeting_scheduled_at" | "next_payment_date"
+  ) => {
     if (selectedEntryForDateEdit) {
       updateMutation.mutate(
-        { follow_up_date: date },
+        { [field]: date },
         {
           onSuccess: () => {
             // Update the entry's follow_up_date in the local state
             if (selectedEntryForDateEdit.id === entry.id) {
               // Update the entry object directly
-              entry.follow_up_date = date;
+              entry[field] = date;
             }
           },
         }
@@ -282,6 +297,9 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     "second_call_comment",
     "follow_up_comment",
     "follow_up_date",
+    "meeting_scheduled_at",
+    "next_payment_date",
+    "sales_done_by",
     // Assessment details
     "attended_webinars",
     "is_assessment_attempted",
@@ -387,6 +405,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
             secondCallStatus={secondCallStatus}
             secondCallComment={secondCallComment}
             followUpComment={followUpComment}
+            fieldForDateEdit={fieldForDateEdit}
             offeredAmount={offeredAmount}
             copiedCode={copiedCode}
             setCopiedCode={setCopiedCode}
@@ -474,15 +493,41 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
       <EditOfferedAmountModal
         isOpen={offeredAmountModalOpen}
         onClose={() => setOfferedAmountModalOpen(false)}
-        offeredAmount={modalOfferedAmount}
-        onOfferedAmountChange={setModalOfferedAmount}
-        onSave={(offeredAmount) => {
+        field={editSalesAndOfferedAmount} // "offered_amount" or "sales_done_by"
+        offeredAmount={
+          editSalesAndOfferedAmount === "offered_amount"
+            ? offeredAmount
+            : salesDoneBy
+        }
+        onOfferedAmountChange={(value) => {
+          if (editSalesAndOfferedAmount === "offered_amount") {
+            setOfferedAmount(value);
+          } else {
+            setSalesDoneBy(value);
+          }
+        }}
+        onSave={(value, field) => {
+          if (field === "offered_amount") {
+            setOfferedAmount(value);
+          } else {
+            setSalesDoneBy(value);
+          }
+
           setOfferedAmountModalOpen(false);
+
+          // ✅ Send only the updated field as payload
           updateMutation.mutate(
-            { offered_amount: offeredAmount },
+            {
+              [field]: value,
+            },
             {
               onSuccess: () => {
-                setOfferedAmount(offeredAmount);
+                // Optional re-sync if needed
+                if (field === "offered_amount") {
+                  setOfferedAmount(value);
+                } else {
+                  setSalesDoneBy(value);
+                }
               },
             }
           );
@@ -499,6 +544,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
 
       <EditFollowUpDateModal
         isOpen={followUpDateModalOpen}
+        field={fieldForDateEdit}
         onClose={() => setFollowUpDateModalOpen(false)}
         entry={selectedEntryForDateEdit || entry}
         onSave={handleSaveFollowUpDate}

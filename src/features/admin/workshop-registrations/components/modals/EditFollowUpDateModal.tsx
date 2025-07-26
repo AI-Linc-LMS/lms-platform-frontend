@@ -6,25 +6,34 @@ interface EditFollowUpDateModalProps {
   isOpen: boolean;
   onClose: () => void;
   entry: WorkshopRegistrationData;
-  onSave: (date: string) => void;
+  field: "follow_up_date" | "meeting_scheduled_at" | "next_payment_date";
+  onSave: (date: string, field: "follow_up_date" | "meeting_scheduled_at" | "next_payment_date") => void;
 }
 
 export const EditFollowUpDateModal: React.FC<EditFollowUpDateModalProps> = ({
   isOpen,
   onClose,
   entry,
+  field,
   onSave,
 }) => {
-  const [newFollowUpDate, setNewFollowUpDate] = useState(
-    entry.follow_up_date || ""
-  );
+  const [newFollowUpDate, setNewFollowUpDate] = useState(() => {
+    switch (field) {
+      case "follow_up_date":
+        return entry.follow_up_date || "";
+      case "meeting_scheduled_at":
+        return entry.meeting_scheduled_at || "";
+      case "next_payment_date":
+        return entry.next_payment_date || "";
+    }
+  });
   const [selectedTime, setSelectedTime] = useState("12:00");
   const [selectedPeriod, setSelectedPeriod] = useState("AM");
 
   useEffect(() => {
     if (isOpen) {
-      if (entry.follow_up_date) {
-        const date = new Date(entry.follow_up_date);
+      if (entry[field]) {
+        const date = new Date(entry[field]);
         // Format date as YYYY-MM-DD for date input
         const formattedDate = date.toISOString().split("T")[0];
         setNewFollowUpDate(formattedDate);
@@ -47,7 +56,7 @@ export const EditFollowUpDateModal: React.FC<EditFollowUpDateModalProps> = ({
         setSelectedPeriod("AM");
       }
     }
-  }, [isOpen, entry.follow_up_date]);
+  }, [isOpen, entry[field]]);
 
   const handleSave = () => {
     if (newFollowUpDate && selectedTime) {
@@ -70,9 +79,9 @@ export const EditFollowUpDateModal: React.FC<EditFollowUpDateModalProps> = ({
       const combinedDateTime = new Date(
         `${newFollowUpDate}T${timeString}`
       ).toISOString();
-      onSave(combinedDateTime);
+      onSave(combinedDateTime, field);
     } else {
-      onSave(newFollowUpDate);
+      onSave(newFollowUpDate ?? "", field);
     }
     onClose();
   };
@@ -107,7 +116,7 @@ export const EditFollowUpDateModal: React.FC<EditFollowUpDateModalProps> = ({
           id="edit-follow-up-date-modal-title"
           className="text-xl font-bold mb-4 text-gray-800"
         >
-          Edit Follow-up Date
+          Edit {field === "follow_up_date" ? "Follow-up Date" : field === "meeting_scheduled_at" ? "Meeting Scheduled Date" : "Next Payment Date"}
         </h2>
 
         <div className="mb-4">
@@ -126,7 +135,7 @@ export const EditFollowUpDateModal: React.FC<EditFollowUpDateModalProps> = ({
 
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium text-gray-700">
-            Select Follow-up Date
+            Select {field === "follow_up_date" ? "Follow-up Date" : field === "meeting_scheduled_at" ? "Meeting Scheduled Date" : "Next Payment Date"}
           </label>
           <input
             type="date"
@@ -138,7 +147,7 @@ export const EditFollowUpDateModal: React.FC<EditFollowUpDateModalProps> = ({
 
         <div className="flex flex-col gap-2 mt-4">
           <label className="text-sm font-medium text-gray-700">
-            Select Follow-up Time
+            Select {field === "follow_up_date" ? "Follow-up Time" : field === "meeting_scheduled_at" ? "Meeting Scheduled Time" : "Next Payment Time"}
           </label>
           <div className="flex gap-2 items-center">
             <input
