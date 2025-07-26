@@ -9,7 +9,7 @@ import Calendar from "../components/Calender";
 const Live: React.FC = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
 
-  const { data, error, isLoading } = useQuery<LiveSession[]>({
+  const { data, error, isLoading, refetch } = useQuery<LiveSession[]>({
     queryKey: ["liveSessions"],
     queryFn: () => liveServicesApis(clientId),
   });
@@ -65,12 +65,11 @@ const Live: React.FC = () => {
         );
 
       // Calendar events (excluding live/upcoming session)
-      const calendarEvents = data
-        .map((session) => ({
-          date: session.class_datetime.split("T")[0],
-          name: session.topic_name,
-          link: session.join_link,
-        }));
+      const calendarEvents = data.map((session) => ({
+        date: session.class_datetime.split("T")[0],
+        name: session.topic_name,
+        link: session.join_link,
+      }));
 
       // Prefer live session if present, else use next closest
       setUpcomingSession(live || upcoming[0] || null);
@@ -133,7 +132,7 @@ const Live: React.FC = () => {
         </div>
 
         {/* Past Recordings Section */}
-        <PastRecordings pastLiveSessions={pastRecordings} />
+        <PastRecordings pastLiveSessions={pastRecordings} refetch={refetch} />
       </div>
     </div>
   );

@@ -7,9 +7,20 @@ import {
 
 interface CreateLiveAdminProps {
   onClose: () => void;
+  refetch: () => void;
 }
 
-const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({ onClose }) => {
+
+enum Trainers {
+  Shubham_lal = "Shubham lal",
+  Balbir_Yadav = "Balbir Yadav",
+  Soumic_Sarkar = "Soumic Sarkar",
+}
+
+const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
+  onClose,
+  refetch,
+}) => {
   const initialForm: Omit<LiveSession, "id"> = {
     topic_name: "",
     description: "",
@@ -29,7 +40,7 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({ onClose }) => {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setForm((prev) => ({
@@ -43,10 +54,11 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({ onClose }) => {
     try {
       await createMutation(form);
       setForm(initialForm);
-      onClose(); // Close the modal
-    } catch (error) {
       onClose();
+      refetch();
+    } catch (error) {
       console.error("Error creating live session:", error);
+      onClose();
     }
   };
 
@@ -56,7 +68,7 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({ onClose }) => {
         Create Upcoming Session
       </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Form Fields */}
+        {/* Topic Name */}
         <div>
           <label className="block text-sm font-medium text-[#255C79] mb-1">
             Title
@@ -70,6 +82,8 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({ onClose }) => {
             className="w-full border border-[#B9E4F2] rounded-lg px-4 py-2"
           />
         </div>
+
+        {/* Description */}
         <div>
           <label className="block text-sm font-medium text-[#255C79] mb-1">
             Description
@@ -83,19 +97,27 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({ onClose }) => {
             className="w-full border border-[#B9E4F2] rounded-lg px-4 py-2"
           />
         </div>
+
+        {/* Trainer & DateTime */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-[#255C79] mb-1">
-              Trainer Name
+              Trainer
             </label>
-            <input
-              type="text"
+            <select
               name="instructor"
               value={form.instructor}
               onChange={handleChange}
               required
               className="w-full border border-[#B9E4F2] rounded-lg px-4 py-2"
-            />
+            >
+              <option value="">Select a Trainer</option>
+              {Object.values(Trainers).map((trainer) => (
+                <option key={trainer} value={trainer}>
+                  {trainer}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-[#255C79] mb-1">
@@ -111,6 +133,8 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({ onClose }) => {
             />
           </div>
         </div>
+
+        {/* Duration & Join Link */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-[#255C79] mb-1">
@@ -140,6 +164,8 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({ onClose }) => {
             />
           </div>
         </div>
+
+        {/* Recording Link */}
         <div>
           <label className="block text-sm font-medium text-[#255C79] mb-1">
             Recording Link (optional)
@@ -152,6 +178,8 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({ onClose }) => {
             className="w-full border border-[#B9E4F2] rounded-lg px-4 py-2"
           />
         </div>
+
+        {/* Buttons */}
         <div className="flex justify-end mt-4 space-x-4">
           <button
             type="button"

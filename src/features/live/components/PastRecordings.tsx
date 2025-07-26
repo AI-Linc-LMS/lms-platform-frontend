@@ -10,10 +10,12 @@ import AddRecordingLinkModal from "./AddRecordingModal";
 
 interface PastRecordingsProps {
   pastLiveSessions: LiveSession[];
+  refetch: () => void; // Optional refetch function to refresh data after updates
 }
 
 const PastRecordings: React.FC<PastRecordingsProps> = ({
   pastLiveSessions,
+  refetch,
 }) => {
   const user = useSelector((state: { user: UserState }) => state.user);
   const isAdmin = user.role === "admin" || user.role === "superadmin";
@@ -39,7 +41,6 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({
 
     return matchesDate && matchesSearch;
   });
-
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -75,6 +76,7 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({
         recording_link: link,
       };
       updateMutation.mutate(updatedRecording);
+      refetch();
     }
     setIsModalOpen(false);
   };
@@ -178,7 +180,7 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({
                       </button>
                     </div>
                   )}
-                  <div className="flex justify-end">
+                  {recording?.recording_link && <div className="flex justify-end">
                     <button
                       onClick={() =>
                         handleWatchRecording(recording?.recording_link || "")
@@ -187,7 +189,19 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({
                     >
                       Watch Recording
                     </button>
-                  </div>
+                  </div>}
+                  {!recording?.recording_link && (
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() =>
+                          handleWatchRecording(recording?.recording_link || "")
+                        }
+                        className="bg-[#255C79] hover:bg-[#1E4A63] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-95"
+                      >
+                        Recording Coming Soon
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
