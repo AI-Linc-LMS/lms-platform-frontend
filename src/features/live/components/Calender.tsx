@@ -10,8 +10,6 @@ import {
   isSameMonth,
   isSameDay,
   parseISO,
-  isBefore,
-  endOfDay,
 } from "date-fns";
 
 type Event = {
@@ -48,9 +46,10 @@ const Calendar: React.FC<CalendarProps> = ({ events }) => {
   const handleDayClick = (day: Date) => {
     const event = getEventForDay(day);
     if (!event) return;
+    const isToday = isSameDay(day, new Date());
 
     // If the event is in the past → open recording link
-    if (isBefore(day, endOfDay(new Date()))) {
+    if (isToday) {
       window.open(event.link, "_blank");
     }
   };
@@ -92,7 +91,10 @@ const Calendar: React.FC<CalendarProps> = ({ events }) => {
       for (let i = 0; i < 7; i++) {
         const isCurrentMonth = isSameMonth(day, currentMonth);
         const isToday = isSameDay(day, new Date());
+        const isBeforeToday = day < new Date();
+        const isAfterToday = day > new Date();
         const event = getEventForDay(day);
+        console.log("Event for day:", day, event);
 
         days.push(
           <div
@@ -100,10 +102,15 @@ const Calendar: React.FC<CalendarProps> = ({ events }) => {
             onClick={() => handleDayClick(day)}
             title={event?.name || ""}
             className={`lg:h-14 h-10 flex items-center justify-center rounded-lg transition-all cursor-pointer relative group
-              ${!isCurrentMonth ? "text-gray-400" : ""}
-              ${isToday ? "border border-blue-400" : ""}
-              ${event ? "bg-green-500 text-white font-semibold" : ""}
-              hover:bg-blue-100`}
+            ${!isCurrentMonth ? "text-gray-400" : ""}
+            ${isToday ? "border-2 border-blue-500 font-semibold" : ""}
+            ${isToday && event ? "border-2 border-green-800 bg-green-500 text-white font-semibold" : ""}
+            ${isBeforeToday && event ? "border-2 border-black bg-gray-200 text-black" : ""}
+            ${
+              isAfterToday && event
+                ? "bg-blue-500 text-white font-medium"
+                : ""
+            }`}
           >
             {format(day, "d")}
 
@@ -132,7 +139,7 @@ const Calendar: React.FC<CalendarProps> = ({ events }) => {
   };
 
   return (
-    <div className="w-full max-w-md p-6 bg-white rounded-2xl shadow-xl border border-gray-200">
+    <div className="w-full max-w-md lg:min-w-xl p-6 bg-white rounded-2xl shadow-xl border border-gray-200">
       {renderHeader()}
       {renderDays()}
       {renderCells()}

@@ -5,18 +5,6 @@ export interface Trainer {
   linkedIn?: string;
 }
 
-export interface UpcomingSession {
-  id: number;
-  title: string;
-  description: string;
-  trainer: Trainer;
-  scheduledTime: string;
-  duration: number;
-  zoomLink: string;
-  banner: string;
-  isLive?: boolean;
-}
-
 export interface Recording {
   id: number;
   title: string;
@@ -26,6 +14,5 @@ export interface Recording {
   duration: number;
   views: number;
   zoomRecordingLink: string;
-  banner: string;
   category: string;
 } 

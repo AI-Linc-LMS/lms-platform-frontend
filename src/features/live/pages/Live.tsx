@@ -1,108 +1,29 @@
 import React, { useState, useEffect } from "react";
-import UpcomingSessionBanner from "../components/UpcomingSessionBanner";
 import PastRecordings from "../components/PastRecordings";
-import { UpcomingSession, Recording } from "../types/live.types";
-
-// Mock data - In real app, this would come from API
-const mockUpcomingSession: UpcomingSession = {
-  id: 1,
-  title: "Advanced React Patterns & State Management",
-  description:
-    "Deep dive into advanced React patterns, hooks, and state management with Redux Toolkit",
-  trainer: {
-    name: "Sarah Johnson",
-    avatar:
-      "https://images.unsplash.com/photo-1494790108755-2616b612c3e3?w=150&h=150&fit=crop&crop=face",
-    bio: "Senior Frontend Engineer at Google, 8+ years experience",
-    linkedIn: "https://linkedin.com/in/sarahjohnson",
-  },
-  scheduledTime: "2024-01-15T10:00:00Z",
-  duration: 120,
-  zoomLink: "https://zoom.us/j/123456789",
-  banner:
-    "https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=800&h=400&fit=crop",
-  isLive: false,
-};
-
-const mockPastRecordings: Recording[] = [
-  {
-    id: 1,
-    title: "JavaScript Fundamentals & ES6 Features",
-    description: "Complete guide to modern JavaScript and ES6+ features",
-    trainer: {
-      name: "Alex Chen",
-      avatar:
-        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-      bio: "JavaScript Expert at Meta",
-    },
-    recordedDate: "2024-01-10T14:00:00Z",
-    duration: 90,
-    views: 1250,
-    zoomRecordingLink: "https://zoom.us/rec/play/recording1",
-    banner:
-      "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&h=400&fit=crop",
-    category: "Frontend Development",
-  },
-  {
-    id: 2,
-    title: "Backend Architecture & Database Design",
-    description: "Building scalable backend systems and database optimization",
-    trainer: {
-      name: "Michael Rodriguez",
-      avatar:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-      bio: "Senior Backend Engineer at Netflix",
-    },
-    recordedDate: "2024-01-08T16:30:00Z",
-    duration: 135,
-    views: 892,
-    zoomRecordingLink: "https://zoom.us/rec/play/recording2",
-    banner:
-      "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&h=400&fit=crop",
-    category: "Backend Development",
-  },
-  {
-    id: 3,
-    title: "DevOps & Cloud Deployment Strategies",
-    description: "Modern DevOps practices and cloud deployment with AWS/Azure",
-    trainer: {
-      name: "Emily Wang",
-      avatar:
-        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-      bio: "DevOps Lead at Amazon",
-    },
-    recordedDate: "2024-01-05T11:15:00Z",
-    duration: 105,
-    views: 1100,
-    zoomRecordingLink: "https://zoom.us/rec/play/recording3",
-    banner:
-      "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=400&fit=crop",
-    category: "DevOps",
-  },
-  {
-    id: 4,
-    title: "Mobile App Development with React Native",
-    description: "Cross-platform mobile development using React Native",
-    trainer: {
-      name: "David Kim",
-      avatar:
-        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
-      bio: "Mobile Tech Lead at Uber",
-    },
-    recordedDate: "2024-01-03T13:45:00Z",
-    duration: 150,
-    views: 750,
-    zoomRecordingLink: "https://zoom.us/rec/play/recording4",
-    banner:
-      "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&h=400&fit=crop",
-    category: "Mobile Development",
-  },
-];
+import { liveServicesApis } from "../../../services/live/liveServicesApis";
+import { useQuery } from "@tanstack/react-query";
+import UpcomingSessionBanner from "../components/UpcomingSessionBanner";
+import { LiveSession } from "../../../services/live/liveServicesApis";
+import Calendar from "../components/Calender";
 
 const Live: React.FC = () => {
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const clientId = import.meta.env.VITE_CLIENT_ID;
 
-  // Update current time every minute to check if session is live
+  const { data, error, isLoading } = useQuery<LiveSession[]>({
+    queryKey: ["liveSessions"],
+    queryFn: () => liveServicesApis(clientId),
+  });
+
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [pastRecordings, setPastRecordings] = useState<LiveSession[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<
+    { date: string; name: string; link: string }[]
+  >([]);
+  const [upcomingSession, setUpcomingSession] = useState<LiveSession | null>(
+    null
+  );
+
+  // Update current time every minute
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -110,6 +31,75 @@ const Live: React.FC = () => {
 
     return () => clearInterval(timer);
   }, []);
+
+  // Split sessions into past and upcoming based on current time
+  useEffect(() => {
+    if (data && Array.isArray(data)) {
+      const now = currentTime;
+
+      // Live session (currently happening)
+      const live = data.find((session) => {
+        const start = new Date(session.class_datetime);
+        const end = new Date(
+          start.getTime() + session.duration_minutes * 60000
+        );
+        return now >= start && now <= end;
+      });
+
+      // Closest upcoming session
+      const upcoming = data
+        .filter((session) => new Date(session.class_datetime) > now)
+        .sort(
+          (a, b) =>
+            new Date(a.class_datetime).getTime() -
+            new Date(b.class_datetime).getTime()
+        );
+
+      // Past sessions
+      const past = data
+        .filter((session) => new Date(session.class_datetime) <= now)
+        .sort(
+          (a, b) =>
+            new Date(b.class_datetime).getTime() -
+            new Date(a.class_datetime).getTime()
+        );
+
+      // Calendar events (excluding live/upcoming session)
+      const calendarEvents = data
+        .map((session) => ({
+          date: session.class_datetime.split("T")[0],
+          name: session.topic_name,
+          link: session.join_link,
+        }));
+
+      // Prefer live session if present, else use next closest
+      setUpcomingSession(live || upcoming[0] || null);
+      setPastRecordings(past);
+      setCalendarEvents(calendarEvents);
+    }
+  }, [data, currentTime]);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+  if (error) {
+    return (
+      <div className="w-full bg-white rounded-2xl shadow-lg p-6 border border-[#f87171] text-center">
+        <p className="text-red-600 font-semibold mb-2 text-lg">
+          ⚠️ Failed to load live sessions
+        </p>
+        <p className="text-gray-500 mb-4">
+          Please check your internet connection or try refreshing the page.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition"
+        >
+          🔄 Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] py-6 px-4 sm:px-6 lg:px-8">
@@ -125,14 +115,25 @@ const Live: React.FC = () => {
           </p>
         </div>
 
-        {/* Upcoming Session Banner */}
-        <UpcomingSessionBanner
-          session={mockUpcomingSession}
-          currentTime={currentTime}
-        />
+        <h2 className="text-2xl font-bold text-[#343A40] mb-6 flex items-center gap-2">
+          📅 Upcoming Session
+        </h2>
+
+        {/* Optional: Upcoming Session Component */}
+        <div className="flex flex-col lg:flex-row justify-between mb-12 gap-12">
+          <div className="flex-1">
+            <UpcomingSessionBanner
+              session={upcomingSession}
+              currentTime={currentTime}
+            />
+          </div>
+          <div className="flex-1">
+            <Calendar events={calendarEvents} />
+          </div>
+        </div>
 
         {/* Past Recordings Section */}
-        <PastRecordings recordings={mockPastRecordings} />
+        <PastRecordings pastLiveSessions={pastRecordings} />
       </div>
     </div>
   );
