@@ -33,6 +33,7 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
 }) => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [animationStep, setAnimationStep] = useState(0);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -152,11 +153,16 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
 
   const content = getContentByType();
 
-  const handleDownloadCertificate = () => {
-    if (onDownloadCertificate) {
-      onDownloadCertificate();
-    } else {
-      alert("Certificate download not available.");
+  const handleDownloadCertificate = async () => {
+    if (onDownloadCertificate && !isDownloading) {
+      setIsDownloading(true);
+      try {
+        await onDownloadCertificate();
+      } catch (error) {
+        console.error("Error downloading certificate:", error);
+      } finally {
+        setIsDownloading(false);
+      }
     }
   };
 
@@ -234,12 +240,21 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
 
             {/* Important Timeline Notice */}
             {paymentType === "assessment" && onDownloadCertificate && (
-              <button onClick={handleDownloadCertificate}>
-            <p className="text-orange-600 font-semibold text-base mb-4 cursor-pointer hover:underline">
-              {content.timelineNotice}
-            </p>
-            </button>
-             )}
+              <button
+                onClick={handleDownloadCertificate}
+                disabled={isDownloading}
+                className={`${
+                  isDownloading
+                    ? "cursor-not-allowed opacity-70"
+                    : "cursor-pointer hover:underline"
+                }`}
+              >
+                <p className="text-orange-600 font-semibold text-base mb-4">
+                  {isDownloading ? "⏳ Downloading..." : content.timelineNotice}
+                </p>
+              </button>
+            )}
+            <p className="font-normal text-gray-400 text-[12px]">Once download please close this modal </p>
 
             {/* Achievement Badge */}
             <div className="inline-flex items-center bg-emerald-50 text-emerald-800 px-6 py-3 rounded-lg font-medium shadow-md border-l-4 border-emerald-500">
