@@ -1,16 +1,16 @@
 import { AdminNavigationLinks } from '../../../constants/AdminNavigationLinks';
 import SidebarList from '../sidebarItems/SidebarList';
 import { SidebarLinkInfo } from '../../../constants/typings';
-import { FiLink } from 'react-icons/fi';
-import { Link, useLocation } from 'react-router-dom';
+// import { FiLink } from 'react-icons/fi';
+// import { Link, useLocation } from 'react-router-dom';
 
 interface AdminSidebarMenuProps {
   isExpanded: boolean;
 }
 
 const AdminSidebarMenu = ({ isExpanded }: AdminSidebarMenuProps) => {
-  const location = useLocation();
-  const isActive = location.pathname === '/admin/payment-links';
+  // const location = useLocation();
+  // const isActive = location.pathname === '/admin/payment-links';
 
   return (
     <div
@@ -25,7 +25,7 @@ const AdminSidebarMenu = ({ isExpanded }: AdminSidebarMenuProps) => {
         />
       ))}
 
-      <div className="w-full">
+      {/* <div className="w-full">
         <Link
           to="/admin/payment-links"
           className={`flex items-center w-full px-4 text-base transition-colors ${
@@ -47,7 +47,7 @@ const AdminSidebarMenu = ({ isExpanded }: AdminSidebarMenuProps) => {
             )}
           </div>
         </Link>
-      </div>
+      </div> */}
     </div>
   );
 };
