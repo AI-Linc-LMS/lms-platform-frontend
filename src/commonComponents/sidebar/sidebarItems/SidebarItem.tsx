@@ -15,7 +15,7 @@ const SidebarItem = ({
       <Link to={linkInfo.href}>
         {isExpanded ? (
           <div
-            className={`flex relative font-medium w-[50px] h-[56px] transition-all duration-300 ease-in-out items-center justify-start hover-element rounded-2xl ${
+            className={`flex relative font-medium w-full h-[56px] transition-all duration-300 ease-in-out items-center justify-start hover-element rounded-2xl ${
               isActive ? "bg-[#12293A]" : ""
             }`}
           >
