@@ -235,7 +235,7 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
             {/* Important Timeline Notice */}
             {paymentType === "assessment" && onDownloadCertificate && (
               <button onClick={handleDownloadCertificate}>
-            <p className="text-orange-600 font-semibold text-base mb-4">
+            <p className="text-orange-600 font-semibold text-base mb-4 cursor-pointer hover:underline">
               {content.timelineNotice}
             </p>
             </button>
