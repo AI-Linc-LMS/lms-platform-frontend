@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import UserGroupIcon from "../../../../commonComponents/icons/admin/dashboard/UserRounded.png";
 import activeStudents from "../../../../commonComponents/icons/admin/dashboard/activestudents.png";
@@ -10,31 +9,70 @@ import TimeSpentGraph from "../components/TimeSpentGraph";
 import StudentDailyActivityChart from "../components/StudentActivityChart";
 import { useRole } from "../../../../hooks/useRole";
 import AccessDenied from "../../../../components/AccessDenied";
+import { useQuery } from "@tanstack/react-query";
+import { coreAdminDashboard } from "../../../../services/admin/dashboardApis";
+
+export interface Dashboard {
+  number_of_students: number;
+  active_students: number;
+  time_spent_by_students: {
+    value: number;
+    unit: string;
+  };
+  daily_login_count: number;
+  leaderboard: LeaderboardEntry[];
+  daily_time_spend: DailyTimeSpentAdmin[];
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  name: string;
+  course: string;
+  marks: number;
+}
+
+export interface DailyTimeSpentAdmin {
+  date: Date;
+  time_spent: number;
+}
 
 const Dashboard = () => {
+  const clientId = import.meta.env.VITE_CLIENT_ID;
+  const {
+    data: dashboardData,
+    isLoading,
+    error,
+  } = useQuery<Dashboard>({
+    queryKey: ["coreAdminDashboard", clientId],
+    queryFn: () => coreAdminDashboard(clientId),
+    retry: false,
+  });
+
   const navigate = useNavigate();
-  const [metrics] = useState([
-    {
-      label: "Number of students",
-      value: 465,
-      Icon: UserGroupIcon,
-    },
-    {
-      label: "Active Students",
-      value: 321,
-      Icon: activeStudents,
-    },
-    {
-      label: "Time Spent by Student",
-      value: "4.5 hrs",
-      Icon: timeSpent,
-    },
-    {
-      label: "Student Daily Logins",
-      value: 124,
-      Icon: dailylogins,
-    },
-  ]);
+  const metrics = dashboardData
+    ? [
+        {
+          label: "Number of students",
+          value: dashboardData.number_of_students,
+          Icon: UserGroupIcon,
+        },
+        {
+          label: "Active Students",
+          value: dashboardData.active_students,
+          Icon: activeStudents,
+        },
+        {
+          label: "Time Spent by Student",
+          value: `${dashboardData.time_spent_by_students.value} ${dashboardData.time_spent_by_students.unit}`,
+          Icon: timeSpent,
+        },
+        {
+          label: "Student Daily Logins",
+          value: dashboardData.daily_login_count,
+          Icon: dailylogins,
+        },
+      ]
+    : [];
 
   const handleBackToMain = () => {
     navigate("/");
@@ -45,7 +83,23 @@ const Dashboard = () => {
   if (!isSuperAdmin) {
     return <AccessDenied />;
   }
-  
+
+  if (isLoading || !dashboardData) {
+    return (
+      <div className="p-8 text-center text-lg text-gray-500">
+        Loading dashboard data...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center text-lg text-red-600">
+        Error loading dashboard data.
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
@@ -54,18 +108,18 @@ const Dashboard = () => {
             onClick={handleBackToMain}
             className="w-fit flex items-center gap-2 px-4 py-2 bg-[#255C79] text-white rounded-lg hover:bg-[#1E4A63] transition-colors duration-200 shadow-md hover:shadow-lg"
           >
-            <svg 
-              width="20" 
-              height="20" 
-              viewBox="0 0 24 24" 
-              fill="none" 
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <path 
-                d="M19 12H5M12 19l-7-7 7-7" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
+              <path
+                d="M19 12H5M12 19l-7-7 7-7"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
                 strokeLinejoin="round"
               />
             </svg>
@@ -81,13 +135,11 @@ const Dashboard = () => {
       </div>
       <div className="flex items-center justify-between mb-4">
         <select className=" rounded-lg p-2 border border-[#B9E4F2] text-xs text-gray-700 w-1/10">
-            <option value="1">Select Courses</option>
+          <option value="1">Select Courses</option>
         </select>
 
         <div className="flex items-center text-[#255C79] text-sm gap-2">
-            <p>Weekly</p>|
-            <p>Monthly</p>|
-            <p>Yearly</p>
+          <p>Weekly</p>|<p>Monthly</p>|<p>Yearly</p>
         </div>
       </div>
       <div className="flex gap-4">
@@ -95,7 +147,6 @@ const Dashboard = () => {
           <div
             key={idx}
             className="flex-1 bg-white rounded-lg shadow p-4 flex items-center justify-between ring-1 ring-[#B9E4F2] ring-offset-1"
-
           >
             <div>
               <div className="text-xs text-[#255C79] flex items-center gap-1 mb-2">
@@ -104,7 +155,9 @@ const Dashboard = () => {
                   <img src={i} alt="i" className="w-4 h-4" />
                 </span>
               </div>
-              <div className="text-3xl font-bold text-[#255C79]">{metric.value}</div>
+              <div className="text-3xl font-bold text-[#255C79]">
+                {metric.value}
+              </div>
             </div>
             <div className="bg-[#D7EFF6] rounded-full p-4 flex items-center justify-center border border-[#255C79]">
               <img src={metric.Icon} alt={metric.label} />
@@ -114,9 +167,17 @@ const Dashboard = () => {
       </div>
       <div className="h-1 border-t border-[#D9E8FF] my-5"></div>
       <div className="flex gap-4 my-4">
-        <TimeSpentGraph/>
-        <StudentDailyActivityChart/>
-        <StudentRanking clientId={1} />
+        <TimeSpentGraph
+          daily_time_spend={dashboardData?.daily_time_spend ?? []}
+          isLoading={isLoading}
+          error={error}
+        />
+        <StudentDailyActivityChart />
+        <StudentRanking
+          leaderboard={dashboardData?.leaderboard ?? []}
+          isLoading={isLoading}
+          error={error}
+        />
       </div>
     </div>
   );

@@ -37,7 +37,7 @@ export const NavigationLinks: SidebarLinkInfo[] = [
       {
         id: 1,
         title: "Assessments",
-        href: "/assessments",
+        href: "/assessment/ai-linc-scholarship-test-2",
         icon: <AssessmentsIconController />,
       },
     ],

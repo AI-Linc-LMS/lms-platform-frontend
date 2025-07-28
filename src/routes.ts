@@ -29,6 +29,7 @@ import Referals from "./features/admin/referals/Referals";
 import PartialPaymentPage from "./features/learn/pages/PartialPaymentPage";
 import PaymentLinkGeneratorPage from "./features/admin/pages/PaymentLinkGeneratorPage";
 import EmailSelfServe from "./features/admin/emailSend/EmailSelfServe";
+import LiveAdmin from "./features/admin/live/LiveAdmin";
 
 export interface RouteConfig {
   path: string;
@@ -138,6 +139,12 @@ const routes: RouteConfig[] = [
   {
     path: "/admin/email-send",
     component: EmailSelfServe,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/live",
+    component: LiveAdmin,
     isPrivate: true,
     requiredRole: "admin_or_instructor",
   },

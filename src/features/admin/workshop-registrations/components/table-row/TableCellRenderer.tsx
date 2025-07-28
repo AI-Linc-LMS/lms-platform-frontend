@@ -30,10 +30,19 @@ interface TableCellRendererProps {
   ) => string;
   getAmountColor: (amount: string | number | null | undefined) => string;
   formatDate: (dateString: string) => string;
-  openOfferedAmountModal: () => void;
-  handleEditFollowUpDate: (entry: WorkshopRegistrationData) => void;
+  openEditModal: () => void;
+  openOfferedAmountModal: (field: "offered_amount" | "sales_done_by") => void;
+  fieldForDateEdit:
+    | "follow_up_date"
+    | "meeting_scheduled_at"
+    | "next_payment_date";
+  handleEditFollowUpDate: (
+    entry: WorkshopRegistrationData,
+    field: "follow_up_date" | "meeting_scheduled_at" | "next_payment_date"
+  ) => void;
   FIRST_CALL_STATUS_OPTIONS: { value: string; color: string }[];
   SECOND_CALL_STATUS_OPTIONS: { value: string; color: string }[];
+  COURSE_NAME_OPTIONS: { value: string; color: string }[];
   visibleColumns?: string[];
   permanentColumns?: string[];
   stickyStyle?: React.CSSProperties;
@@ -57,9 +66,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
   getAmountColor,
   formatDate,
   openOfferedAmountModal,
+  openEditModal,
   handleEditFollowUpDate,
   FIRST_CALL_STATUS_OPTIONS,
   SECOND_CALL_STATUS_OPTIONS,
+  COURSE_NAME_OPTIONS,
   visibleColumns = [],
   permanentColumns = [],
   stickyStyle,
@@ -164,7 +175,7 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
           className="p-3 border-r border-gray-300"
           style={stickyStyle}
         >
-          <span className="text-xs text-[10px]">{entry.workshop_name}</span>
+          <span className="text-sm">{entry.workshop_name}</span>
         </td>
       );
     case "session_number":
@@ -363,7 +374,7 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
             </span>
             <button
               className="p-1 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 transition-colors duration-200 flex items-center justify-center"
-              onClick={openOfferedAmountModal}
+              onClick={() => openOfferedAmountModal("offered_amount")}
               type="button"
               title="Edit offered amount"
             >
@@ -459,7 +470,7 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       return (
         <td
           key={columnKey}
-          className="p-3 border-r border-gray-300"
+          className="flex justify-between p-3 border-r border-gray-300"
           style={stickyStyle}
         >
           <div
@@ -473,6 +484,26 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
               <span className="text-blue-600 text-xs ml-1">See more</span>
             )}
           </div>
+          <button
+            className="p-1 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 transition-colors duration-200 flex items-center justify-center"
+            onClick={openEditModal}
+            type="button"
+            title="Edit call comment"
+          >
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+              />
+            </svg>
+          </button>
         </td>
       );
     case "second_call_status":
@@ -496,16 +527,38 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
           className="p-3 border-r border-gray-300"
           style={stickyStyle}
         >
-          <div
-            className="text-sm text-gray-700 cursor-pointer hover:text-blue-600 transition-colors"
-            onClick={() =>
-              handleCommentClick(secondCallComment || "", "second_call")
-            }
-          >
-            {truncateComment(secondCallComment || "")}
-            {secondCallComment && secondCallComment.length > 25 && (
-              <span className="text-blue-600 text-xs ml-1">See more</span>
-            )}
+          <div className="flex flex-row items-center justify-between gap-2">
+            <div
+              className="text-sm text-gray-700 cursor-pointer hover:text-blue-600 transition-colors"
+              onClick={() =>
+                handleCommentClick(secondCallComment || "", "second_call")
+              }
+            >
+              {truncateComment(secondCallComment || "")}
+              {secondCallComment && secondCallComment.length > 25 && (
+                <span className="text-blue-600 text-xs ml-1">See more</span>
+              )}
+            </div>
+            <button
+              className="p-1 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 transition-colors duration-200 flex items-center justify-center"
+              onClick={openEditModal}
+              type="button"
+              title="Edit call comment"
+            >
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
+              </svg>
+            </button>
           </div>
         </td>
       );
@@ -516,16 +569,38 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
           className="p-3 border-r border-gray-300"
           style={stickyStyle}
         >
-          <div
-            className="text-sm text-gray-700 cursor-pointer hover:text-blue-600 transition-colors"
-            onClick={() =>
-              handleCommentClick(followUpComment || "", "follow_up")
-            }
-          >
-            {truncateComment(followUpComment || "")}
-            {followUpComment && followUpComment.length > 25 && (
-              <span className="text-blue-600 text-xs ml-1">See more</span>
-            )}
+          <div className="flex flex-row items-center justify-between gap-2">
+            <div
+              className="text-sm text-gray-700 cursor-pointer hover:text-blue-600 transition-colors"
+              onClick={() =>
+                handleCommentClick(followUpComment || "", "follow_up")
+              }
+            >
+              {truncateComment(followUpComment || "")}
+              {followUpComment && followUpComment.length > 25 && (
+                <span className="text-blue-600 text-xs ml-1">See more</span>
+              )}
+            </div>
+            <button
+              className="p-1 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 transition-colors duration-200 flex items-center justify-center"
+              onClick={openEditModal}
+              type="button"
+              title="Edit follow up comment"
+            >
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
+              </svg>
+            </button>
           </div>
         </td>
       );
@@ -536,16 +611,99 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
           className="p-3 border-r border-gray-300"
           style={stickyStyle}
         >
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center justify-between gap-2">
             <div className="flex items-center justify-center gap-2">
               {entry.follow_up_date && entry.follow_up_date !== ""
                 ? formatDate(entry.follow_up_date)
                 : "N/A"}
             </div>
+            <div>
+              <button
+                onClick={() => handleEditFollowUpDate(entry, "follow_up_date")}
+                className="text-blue-500 hover:text-blue-700 bg-blue-100 rounded-full p-1"
+                title="Edit follow-up date"
+              >
+                <FiEdit2 className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        </td>
+      );
+    case "sales_done_by":
+      return (
+        <td
+          key={columnKey}
+          className="flex justify-between p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
+          {entry.sales_done_by || "N/A"}
+          <button
+            className="p-1 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 transition-colors duration-200 flex items-center justify-center"
+            onClick={() => openOfferedAmountModal("sales_done_by")}
+            type="button"
+            title="Edit offered amount"
+          >
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+              />
+            </svg>
+          </button>
+        </td>
+      );
+    case "meeting_scheduled_at":
+      return (
+        <td
+          key={columnKey}
+          className="p-3 items-center border-r border-gray-300"
+          style={stickyStyle}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-center gap-2">
+              {entry.meeting_scheduled_at && entry.meeting_scheduled_at !== ""
+                ? formatDate(entry.meeting_scheduled_at)
+                : "N/A"}
+            </div>
+            <div>
+              <button
+                onClick={() =>
+                  handleEditFollowUpDate(entry, "meeting_scheduled_at")
+                }
+                className="text-blue-500 hover:text-blue-700 bg-blue-100 rounded-full p-1"
+                title="Edit meeting scheduled date"
+              >
+                <FiEdit2 className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        </td>
+      );
+
+    case "next_payment_date":
+      return (
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-2">
+              {entry.next_payment_date && entry.next_payment_date !== ""
+                ? formatDate(entry.next_payment_date)
+                : "N/A"}
+            </div>
             <button
-              onClick={() => handleEditFollowUpDate(entry)}
+              onClick={() => handleEditFollowUpDate(entry, "next_payment_date")}
               className="text-blue-500 hover:text-blue-700 bg-blue-100 rounded-full p-1"
-              title="Edit follow-up date"
+              title="Edit next payment date"
             >
               <FiEdit2 className="w-3 h-3" />
             </button>
@@ -586,20 +744,17 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
         </td>
       );
     case "course_name": {
-      // Use 'program' field for value and updates
-      const courseOptions = [
-        { value: "flagship", label: "Flagship", color: "bg-blue-500" },
-        { value: "nanodegree", label: "Nanodegree", color: "bg-green-500" },
-      ];
-      const currentValue =
-        (entry as WorkshopRegistrationData).program || "flagship";
       return (
         <td
           key={columnKey}
           className="p-3 border-r border-gray-300"
           style={stickyStyle}
         >
-          {renderStatusDropdown(currentValue, courseOptions, "course_name")}
+          {renderStatusDropdown(
+            entry.program ?? "N/A",
+            COURSE_NAME_OPTIONS,
+            "course_name"
+          )}
         </td>
       );
     }

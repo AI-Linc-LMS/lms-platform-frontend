@@ -1,24 +1,24 @@
 import  { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation} from 'react-router-dom';
 import { getAllCourse } from '../../../services/enrolled-courses-content/courseContentApis';
 import CourseCard from '../components/courses/CourseCard';
 import EmptyCoursesState from '../components/courses/EmptyCoursesState';
 import MobileFilters from '../components/courses/MobileFilters';
 import DesktopFilters from '../components/courses/DesktopFilters';
 import DesktopSearch from '../components/courses/DesktopSearch';
-import AssessmentBanner from '../components/assessment/AssessmentBanner';
+// import AssessmentBanner from '../components/assessment/AssessmentBanner';
 import AssessmentSuccessNotification from '../components/assessment/AssessmentSuccessNotification';
 import { useCourseFilters } from '../hooks/useCourseFilters';
 import { categoryOptions, levelOptions, priceOptions, ratingOptions } from '../components/courses/FilterOptions';
 import { adaptCourses } from '../utils/courseAdapter';
-import { FiPlayCircle, FiArrowRight, FiClock, FiCheckCircle } from 'react-icons/fi';
+// import { FiPlayCircle, FiArrowRight, FiClock, FiCheckCircle } from 'react-icons/fi';
 
 // Main component
 const Courses = () => {
   const clientId = Number(import.meta.env.VITE_CLIENT_ID) || 1;
   const location = useLocation();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [showAssessmentNotification, setShowAssessmentNotification] = useState(false);
   const [assessmentResults, setAssessmentResults] = useState<{
     score: number;
@@ -111,22 +111,22 @@ const Courses = () => {
       </div>
 
       {/* Assessments Section */}
-      <div className="mb-8">
+      {/* <div className="mb-8">
         <div className="bg-gradient-to-r from-[#EFF9FC] to-[#E0F4F8] rounded-2xl p-6 border border-[#80C9E0]">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
+            <div className="flex-1"> */}
+              {/* <div className="flex items-center gap-2 mb-2">
                 <FiPlayCircle className="h-6 w-6 text-[#2C5F7F]" />
                 <h2 className="text-xl font-bold text-[#2C5F7F]">
                   Available Assessments
                 </h2>
-              </div>
-              <p className="text-[#2C5F7F] mb-4">
+              </div> */}
+              {/* <p className="text-[#2C5F7F] mb-4">
                 Test your skills with our comprehensive assessments. Choose from free and paid options to evaluate your knowledge and get personalized feedback.
-              </p>
+              </p> */}
               
               {/* Quick Assessment Info */}
-              <div className="flex flex-wrap gap-4 text-sm">
+              {/* <div className="flex flex-wrap gap-4 text-sm">
                 <div className="flex items-center gap-1">
                   <FiCheckCircle className="h-4 w-4 text-green-600" />
                   <span className="text-gray-700">Free Assessments Available</span>
@@ -139,10 +139,10 @@ const Courses = () => {
                   <span className="text-[#2C5F7F]">🏆</span>
                   <span className="text-gray-700">Certificates available</span>
                 </div>
-              </div>
-            </div>
+              </div> */}
+            {/* </div> */}
             
-            <div className="flex flex-col sm:flex-row gap-3">
+            {/* <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => navigate('/assessments')}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-[#2C5F7F] text-white rounded-xl font-medium hover:bg-[#1a4a5f] transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
@@ -151,13 +151,13 @@ const Courses = () => {
                 View All Assessments
                 <FiArrowRight className="h-4 w-4" />
               </button>
-            </div>
-          </div>
-        </div>
-      </div>
+            </div> */}
+          {/* </div>
+        </div> */}
+      {/* </div> */}
 
       {/* Assessment Banner */}
-      <AssessmentBanner />
+      {/* <AssessmentBanner /> */}
 
       {/* Mobile Filters */}
       <MobileFilters
