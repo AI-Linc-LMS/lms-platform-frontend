@@ -36,7 +36,7 @@ const AdminSidebarMenu = ({ isExpanded }: AdminSidebarMenuProps) => {
         >
           <div className="flex items-center">
             <FiLink 
-              className={`w-[22px] h-[22px] min-w-[22px] ${
+              className={`w-[18px] h-[18px] min-w-[16px] ${
                 isActive 
                   ? 'stroke-[#255C79] stroke-[1.5]' 
                   : 'stroke-[#536066] stroke-1'

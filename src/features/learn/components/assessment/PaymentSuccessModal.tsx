@@ -19,6 +19,7 @@ interface PaymentSuccessModalProps {
   orderId?: string;
   amount: number;
   paymentType?: "assessment" | "course"; // New prop to determine content type
+  onDownloadCertificate?: () => void; // New optional prop for certificate download
 }
 
 const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
@@ -28,9 +29,11 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
   orderId,
   amount,
   paymentType = "course", // Default to course for backward compatibility
+  onDownloadCertificate, // New prop
 }) => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [animationStep, setAnimationStep] = useState(0);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -150,6 +153,19 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
 
   const content = getContentByType();
 
+  const handleDownloadCertificate = async () => {
+    if (onDownloadCertificate && !isDownloading) {
+      setIsDownloading(true);
+      try {
+        await onDownloadCertificate();
+      } catch (error) {
+        console.error("Error downloading certificate:", error);
+      } finally {
+        setIsDownloading(false);
+      }
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       {/* Confetti Effect */}
@@ -223,9 +239,22 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
             <p className="text-lg text-gray-600 mb-2">{content.subtitle}</p>
 
             {/* Important Timeline Notice */}
-            <p className="text-orange-600 font-semibold text-base mb-4">
-              {content.timelineNotice}
-            </p>
+            {paymentType === "assessment" && onDownloadCertificate && (
+              <button
+                onClick={handleDownloadCertificate}
+                disabled={isDownloading}
+                className={`${
+                  isDownloading
+                    ? "cursor-not-allowed opacity-70"
+                    : "cursor-pointer hover:underline"
+                }`}
+              >
+                <p className="text-orange-600 font-semibold text-base mb-4">
+                  {isDownloading ? "⏳ Downloading..." : content.timelineNotice}
+                </p>
+              </button>
+            )}
+            <p className="font-normal text-gray-400 text-[12px]">Once download please close this modal </p>
 
             {/* Achievement Badge */}
             <div className="inline-flex items-center bg-emerald-50 text-emerald-800 px-6 py-3 rounded-lg font-medium shadow-md border-l-4 border-emerald-500">
@@ -233,6 +262,14 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
               <span className="text-sm leading-relaxed">
                 {content.achievementText}
               </span>
+              {/* {paymentType === "assessment" && onDownloadCertificate && (
+                <button 
+                  onClick={handleDownloadCertificate}
+                  className="ml-4 bg-red-500 text-white px-3 py-1 rounded text-xs hover:bg-red-600 transition-colors"
+                >
+                  Download
+                </button>
+              )} */}
             </div>
           </div>
         </div>

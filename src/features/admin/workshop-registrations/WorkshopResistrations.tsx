@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getWorkshopRegistrations } from "../../../services/admin/workshopRegistrationApis";
 import { WorkshopRegistrationData, FilterState } from "./types";
@@ -37,6 +37,11 @@ const WorkshopRegistration = () => {
     "name",
     "email",
   ]);
+  const [sort, setSort] = useState(false);
+
+  const handleSort = () => {
+    setSort(!sort);
+  };
 
   // Column visibility state
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
@@ -129,6 +134,17 @@ const WorkshopRegistration = () => {
     },
     { key: "follow_up_date", label: "Follow Up Date", defaultVisible: true },
     {
+      key: "next_payment_date",
+      label: "Next Payment Date",
+      defaultVisible: true,
+    },
+    {
+      key: "meeting_scheduled_at",
+      label: "Meeting Scheduled (Date & Time)",
+      defaultVisible: true,
+    },
+    { key: "sales_done_by", label: "Sales Done By", defaultVisible: true },
+    {
       key: "session_number",
       label: "Registered Session",
       defaultVisible: true,
@@ -220,82 +236,33 @@ const WorkshopRegistration = () => {
     updated_at: useRef<HTMLDivElement>(null),
     follow_up_comment: useRef<HTMLDivElement>(null),
     follow_up_date: useRef<HTMLDivElement>(null),
+    session_date: useRef<HTMLDivElement>(null),
+    course_name: useRef<HTMLDivElement>(null),
+    meeting_scheduled_at: useRef<HTMLDivElement>(null),
+    sales_done_by: useRef<HTMLDivElement>(null),
+    next_payment_date: useRef<HTMLDivElement>(null),
   };
 
   const tableScrollRef = useRef<HTMLDivElement>(null);
+  const lastScrollLeftRef = useRef(0);
 
+  // Detect horizontal scroll
   useEffect(() => {
-    const handleScroll = (event: Event) => {
-      console.log(
-        "scrolling - event type:",
-        event.type,
-        "target:",
-        event.target
-      );
-      setOpenFilter(null);
-    };
-
-    const handleWheel = () => {
-      console.log("wheel event detected - closing filters");
-      setOpenFilter(null);
-    };
-
-    // Get the scrollable container
     const container = tableScrollRef.current;
-
-    // Add multiple scroll event listeners for comprehensive coverage
-    if (container) {
-      // Table container scroll (horizontal and vertical)
-      container.addEventListener("scroll", handleScroll, { passive: true });
-      // Also listen for wheel events on the container
-      container.addEventListener("wheel", handleWheel, { passive: true });
-    }
-
-    // Window scroll (page level)
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("wheel", handleWheel, { passive: true });
-
-    // Document scroll (fallback)
-    document.addEventListener("scroll", handleScroll, {
-      passive: true,
-      capture: true,
-    });
-    document.addEventListener("wheel", handleWheel, {
-      passive: true,
-      capture: true,
-    });
-
-    // Body scroll (another fallback)
-    document.body.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      if (container) {
-        container.removeEventListener("scroll", handleScroll);
-        container.removeEventListener("wheel", handleWheel);
+    if (!container) return;
+    lastScrollLeftRef.current = container.scrollLeft;
+    const handleHorizontalScroll = () => {
+      if (container.scrollLeft !== lastScrollLeftRef.current) {
+        // Horizontal scroll detected
+        setOpenFilter(null);
+        lastScrollLeftRef.current = container.scrollLeft;
       }
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("wheel", handleWheel);
-      document.removeEventListener("scroll", handleScroll, true);
-      document.removeEventListener("wheel", handleWheel, true);
-      document.body.removeEventListener("scroll", handleScroll);
+    };
+    container.addEventListener("scroll", handleHorizontalScroll);
+    return () => {
+      container.removeEventListener("scroll", handleHorizontalScroll);
     };
   }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        openFilter &&
-        filterRefs[openFilter as keyof typeof filterRefs]?.current &&
-        !filterRefs[openFilter as keyof typeof filterRefs]?.current?.contains(
-          event.target as Node
-        )
-      ) {
-        setOpenFilter(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [openFilter]);
 
   const {
     data: workshopData = [],
@@ -310,10 +277,19 @@ const WorkshopRegistration = () => {
     refetchOnReconnect: false,
   });
 
-  const filteredData = useMemo(
-    () => filterWorkshopData(workshopData, search, filters),
-    [search, workshopData, filters]
-  );
+  const filteredData = useMemo(() => {
+    let data = filterWorkshopData(workshopData, search, filters);
+    if (sort) {
+      data = [...data].sort((a, b) => {
+        const aDate = a.updated_at || "";
+        const bDate = b.updated_at || "";
+        if (aDate > bDate) return 1; // ASCENDING
+        if (aDate < bDate) return -1;
+        return 0;
+      });
+    }
+    return data;
+  }, [search, workshopData, filters, sort]);
 
   const handleExport = () => {
     // Combine permanent columns with visible columns for export
@@ -436,6 +412,8 @@ const WorkshopRegistration = () => {
         freezeColumns={freezeColumns}
         freezeColumnOptions={freezeColumnOptions}
         onFreezeColumnChange={handleFreezeColumnChange}
+        handleSort={handleSort}
+        sort={sort}
       />
 
       <ActiveFiltersDisplay
