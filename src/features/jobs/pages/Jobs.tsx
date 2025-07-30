@@ -137,7 +137,7 @@ const Jobs: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
       <div>
-        <div className="bg-gradient-to-br from-[#255C79] to-[#17627A] text-white">
+        <div className="bg-gradient-to-br from-[#255C79] to-[#17627A] text-white rounded-2xl">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
             <div className="text-center">
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">
