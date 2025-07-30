@@ -30,7 +30,7 @@ const EmailSelfServe: React.FC<EmailSelfServeProps> = ({
   const [jobStatus, setJobStatus] = useState<Record<string, unknown> | null>(
     null
   );
-
+  
   // Get pre-filled emails from location state or props
   const emailsFromState =
     (location.state as { preFilledEmails?: string[] })?.preFilledEmails || [];
