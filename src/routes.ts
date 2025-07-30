@@ -30,6 +30,7 @@ import PartialPaymentPage from "./features/learn/pages/PartialPaymentPage";
 import PaymentLinkGeneratorPage from "./features/admin/pages/PaymentLinkGeneratorPage";
 import EmailSelfServe from "./features/admin/emailSend/EmailSelfServe";
 import LiveAdmin from "./features/admin/live/LiveAdmin";
+import CommunityPage from "./features/community/pages/CommunityPage";
 
 export interface RouteConfig {
   path: string;
@@ -230,6 +231,11 @@ const routes: RouteConfig[] = [
     component: PartialPaymentPage,
     isPrivate: true,
   },
+  {
+    path:"/community",
+    component: CommunityPage,
+    isPrivate: true,
+  }
 ];
 
 export default routes;
