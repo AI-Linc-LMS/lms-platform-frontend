@@ -7,6 +7,7 @@ import AssesmentStudentResultsController from "../commonComponents/icons/sidebar
 import ReferalsController from "../commonComponents/icons/sidebarIcons/ReferalsController";
 import EmailIconController from "../commonComponents/icons/sidebarIcons/EmailIconController";
 import LiveAdminIconController from "../commonComponents/icons/sidebarIcons/LiveAdminIconController";
+import PaymentIconsController from "../commonComponents/icons/sidebarIcons/PaymentIconsController";
 export const AdminNavigationLinks: SidebarLinkInfo[] = [
   {
     id: 1,
@@ -101,6 +102,19 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
         title: "Live",
         href: "/admin/live",
         icon: <LiveAdminIconController />,
+      },
+    ],
+  },
+  {
+    id: 7,
+    title: "Payment Links",
+    links: [
+      {
+        id: 1,
+        title: "Payment Links",
+        href: "/admin/payment-links",
+       
+        icon: <PaymentIconsController />,
       },
     ],
   },
