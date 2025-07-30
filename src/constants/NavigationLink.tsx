@@ -4,7 +4,9 @@ import JobsIconController from "../commonComponents/icons/sidebarIcons/JobsIconC
 import DashboardController from "../commonComponents/icons/sidebarIcons/DashboardController";
 import CoursesIconController from "../commonComponents/icons/sidebarIcons/CoursesIconController";
 import AssessmentsIconController from "../commonComponents/icons/sidebarIcons/AssessmentsIconController";
-import ManagestudentsController from "../commonComponents/icons/sidebarIcons/ManagestudentsController";
+import CommunityIconController from "../commonComponents/icons/sidebarIcons/CommunityIconController";
+
+
 
 export const NavigationLinks: SidebarLinkInfo[] = [
   {
@@ -75,7 +77,7 @@ export const NavigationLinks: SidebarLinkInfo[] = [
         id: 1,
         title: "Community",
         href: "/community",
-        icon: <ManagestudentsController />,
+        icon: <CommunityIconController />,
       },
     ],
   },
