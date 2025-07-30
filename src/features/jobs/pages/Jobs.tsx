@@ -88,7 +88,7 @@ const Jobs: React.FC = () => {
 
         // Check if there's any overlap between job salary range and filter range
         const hasOverlap = jobMinSalary <= filterMaxSalary && jobMaxSalary >= filterMinSalary;
-        
+
         if (!hasOverlap) {
           return false;
         }
@@ -202,7 +202,7 @@ const Jobs: React.FC = () => {
                 {`${filteredJobs.length} jobs found`} {searchQuery && `for "${searchQuery}"`}
               </p>
             </div>
-            
+
             {/* Debug info - remove in production */}
             {/* <div className="text-xs text-[#6C757D] bg-yellow-100 px-2 py-1 rounded">
               Debug: Total: {jobs.length}, Filtered: {filteredJobs.length}, Visible: {Math.min(visibleJobsCount, filteredJobs.length)}
@@ -222,7 +222,7 @@ const Jobs: React.FC = () => {
                   remote={remoteFilter}
                   onRemoteChange={setRemoteFilter}
                 />
-                
+
                 {/* Debug filter values - remove in production */}
                 {/* <div className="mt-4 p-3 bg-gray-100 rounded-lg text-xs">
                   <h4 className="font-bold mb-2">Current Filters:</h4>
@@ -240,18 +240,18 @@ const Jobs: React.FC = () => {
               {filteredJobs.length === 0 ? (
                 <div className="text-center py-12 sm:py-16 bg-white rounded-lg shadow-md">
                   <div className="mb-6">
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      className="h-16 w-16 mx-auto text-[#6C757D] opacity-50" 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-16 w-16 mx-auto text-[#6C757D] opacity-50"
+                      fill="none"
+                      viewBox="0 0 24 24"
                       stroke="currentColor"
                     >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={2} 
-                        d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" 
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                       />
                     </svg>
                   </div>
@@ -259,10 +259,10 @@ const Jobs: React.FC = () => {
                     No Jobs Found
                   </h3>
                   <p className="text-[#6C757D] mb-4 text-sm sm:text-base max-w-md mx-auto px-4">
-                    We couldn't find any jobs matching your current search criteria. 
+                    We couldn't find any jobs matching your current search criteria.
                     Try adjusting your filters or search terms.
                   </p>
-                  <button 
+                  <button
                     onClick={resetAllFilters}
                     className="mt-4 px-6 py-2 bg-[#255C79] text-white rounded-lg hover:bg-[#1E4A63] transition-colors"
                   >
@@ -283,20 +283,20 @@ const Jobs: React.FC = () => {
 
                   {visibleJobsCount < filteredJobs.length && (
                     <div className="text-center mt-8 sm:mt-12">
-                      <button 
+                      <button
                         onClick={handleLoadMore}
                         className="px-6 sm:px-8 py-3 sm:py-4 border-2 border-[#255C79] text-[#255C79] rounded-lg hover:bg-[#255C79] hover:text-white transition-colors font-medium flex items-center justify-center mx-auto"
                       >
-                        <svg 
-                          xmlns="http://www.w3.org/2000/svg" 
-                          className="h-5 w-5 mr-2" 
-                          viewBox="0 0 20 20" 
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5 mr-2"
+                          viewBox="0 0 20 20"
                           fill="currentColor"
                         >
-                          <path 
-                            fillRule="evenodd" 
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" 
-                            clipRule="evenodd" 
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"
+                            clipRule="evenodd"
                           />
                         </svg>
                         Load More Jobs ({filteredJobs.length - visibleJobsCount} remaining)
