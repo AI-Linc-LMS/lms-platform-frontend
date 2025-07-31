@@ -7,16 +7,21 @@ import {
   MessageCircle,
   User,
   Calendar,
-  Tag,
+  // Tag,
   Filter,
-  Send,
+  // Send,
   Heart,
   Reply,
   MoreHorizontal,
   Edit3,
   Trash2,
   Save,
-  X
+  X,
+  List,
+  GitBranch,
+  Menu,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 interface ThreadComment {
@@ -109,6 +114,9 @@ const CommunityPage: React.FC = () => {
   const [editedThreadData, setEditedThreadData] = useState({ title: '', content: '', tags: '' });
   const [editedAnswerContent, setEditedAnswerContent] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ type: 'thread' | 'answer', id: string } | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'thread'>('list');
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const allTags = Array.from(new Set(threads.flatMap(thread => thread.tags)));
 
@@ -317,21 +325,20 @@ const CommunityPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gray-50">
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full mx-4 shadow-2xl animate-in zoom-in duration-300">
+          <div className="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full shadow-xl mx-4">
             <div className="text-center">
-              <div className="w-12 h-12 md:w-16 md:h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Trash2 size={24} className="md:hidden text-red-600" />
-                <Trash2 size={32} className="hidden md:block text-red-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <Trash2 size={20} className="text-red-600 sm:w-6 sm:h-6" />
               </div>
-              <h3 className="text-xl md:text-2xl font-bold text-gray-800 mb-2">Delete {showDeleteConfirm.type}</h3>
-              <p className="text-gray-600 mb-6 md:mb-8 text-sm md:text-base">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">Delete {showDeleteConfirm.type}</h3>
+              <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
                 Are you sure you want to delete this {showDeleteConfirm.type}? This action cannot be undone.
               </p>
-              <div className="flex gap-3 md:gap-4">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   onClick={() => {
                     if (showDeleteConfirm.type === 'thread') {
@@ -340,13 +347,13 @@ const CommunityPage: React.FC = () => {
                       handleDeleteAnswer(showDeleteConfirm.id);
                     }
                   }}
-                  className="flex-1 bg-gradient-to-r from-red-500 to-rose-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-xl hover:from-red-600 hover:to-rose-700 transition-all duration-300 font-semibold text-sm md:text-base"
+                  className="w-full sm:flex-1 bg-red-600 text-white px-4 py-2.5 sm:py-2 rounded-lg hover:bg-red-700 transition-colors font-medium text-sm sm:text-base"
                 >
                   Delete
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirm(null)}
-                  className="flex-1 bg-gray-200 text-gray-700 px-4 md:px-6 py-2 md:py-3 rounded-xl hover:bg-gray-300 transition-all duration-300 font-semibold text-sm md:text-base"
+                  className="w-full sm:flex-1 bg-gray-200 text-gray-700 px-4 py-2.5 sm:py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm sm:text-base"
                 >
                   Cancel
                 </button>
@@ -357,43 +364,127 @@ const CommunityPage: React.FC = () => {
       )}
 
       {/* Header Section */}
-      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-lg border-b border-gray-200 shadow-xl rounded-2xl">
-        <div className="max-w-6xl mx-auto p-4 md:p-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-6 gap-4 md:gap-0">
-            <div>
-              <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                Community Forum
-              </h1>
-              <p className="text-gray-600 mt-1 md:mt-2 text-base md:text-lg">Ask questions, share knowledge, and connect with peers</p>
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3">
+          {/* Mobile Header */}
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">Community Forum</h1>
+              <p className="text-gray-600 text-xs sm:text-sm hidden sm:block">Ask questions, share knowledge, and connect</p>
             </div>
-            <button
-              onClick={() => setShowNewThreadForm(true)}
-              className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 md:px-8 py-3 md:py-4 rounded-2xl flex items-center justify-center gap-2 md:gap-3 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl font-semibold text-base md:text-lg"
-            >
-              <Plus size={20} className="md:hidden" />
-              <Plus size={24} className="hidden md:block" />
-              <span>New Thread</span>
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="sm:hidden p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <Menu size={20} />
+              </button>
+              
+              {/* Desktop View Mode Toggle */}
+              <div className="hidden sm:flex bg-gray-100 rounded-lg p-0.5">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all text-sm font-medium ${
+                    viewMode === 'list' 
+                      ? 'bg-white text-blue-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  <List size={16} />
+                  List
+                </button>
+                <button
+                  onClick={() => setViewMode('thread')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all text-sm font-medium ${
+                    viewMode === 'thread' 
+                      ? 'bg-white text-blue-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  <GitBranch size={16} />
+                  Thread
+                </button>
+              </div>
+              
+              <button
+                onClick={() => setShowNewThreadForm(true)}
+                className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg flex items-center gap-1 sm:gap-2 hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base"
+              >
+                <Plus size={16} />
+                <span className="hidden xs:inline">New Post</span>
+              </button>
+            </div>
           </div>
 
-          {/* Search and Filter */}
-          <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-4 md:mb-6">
+          {/* Mobile Menu Dropdown */}
+          {showMobileMenu && (
+            <div className="sm:hidden mb-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
+              <div className="space-y-2">
+                <div className="flex bg-gray-100 rounded-lg p-0.5">
+                  <button
+                    onClick={() => {
+                      setViewMode('list');
+                      setShowMobileMenu(false);
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md transition-all text-sm font-medium ${
+                      viewMode === 'list' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-gray-600'
+                    }`}
+                  >
+                    <List size={16} />
+                    List View
+                  </button>
+                  <button
+                    onClick={() => {
+                      setViewMode('thread');
+                      setShowMobileMenu(false);
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md transition-all text-sm font-medium ${
+                      viewMode === 'thread' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-gray-600'
+                    }`}
+                  >
+                    <GitBranch size={16} />
+                    Thread View
+                  </button>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowMobileFilters(!showMobileFilters);
+                  }}
+                  className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200"
+                >
+                  <span className="flex items-center gap-2">
+                    <Filter size={16} />
+                    Filters & Search
+                  </span>
+                  {showMobileFilters ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Search and Filter - Desktop */}
+          <div className="hidden sm:flex gap-3 mb-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 md:left-4 top-3 md:top-4 text-gray-400" size={18} />
+              <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
               <input
                 type="text"
-                placeholder="Search threads, topics..."
+                placeholder="Search posts..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 md:pl-12 pr-3 md:pr-4 py-2.5 md:py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-white/70 backdrop-blur-sm text-sm md:text-base"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white text-sm"
               />
             </div>
             <div className="relative">
-              <Filter className="absolute left-3 md:left-4 top-3 md:top-4 text-gray-400" size={18} />
+              <Filter className="absolute left-3 top-2.5 text-gray-400" size={16} />
               <select
                 value={selectedTag}
                 onChange={(e) => setSelectedTag(e.target.value)}
-                className="w-full md:w-auto pl-10 md:pl-12 pr-8 md:pr-10 py-2.5 md:py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-white/70 backdrop-blur-sm min-w-[140px] md:min-w-[160px] text-sm md:text-base"
+                className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white min-w-[140px] text-sm"
               >
                 <option value="">All Tags</option>
                 {allTags.map(tag => (
@@ -403,47 +494,73 @@ const CommunityPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Mobile Search and Filter */}
+          {(showMobileFilters || showMobileMenu) && (
+            <div className="sm:hidden space-y-3 mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
+                <input
+                  type="text"
+                  placeholder="Search posts..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white text-sm"
+                />
+              </div>
+              <div className="relative">
+                <Filter className="absolute left-3 top-2.5 text-gray-400" size={16} />
+                <select
+                  value={selectedTag}
+                  onChange={(e) => setSelectedTag(e.target.value)}
+                  className="w-full pl-10 pr-8 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white text-sm"
+                >
+                  <option value="">All Tags</option>
+                  {allTags.map(tag => (
+                    <option key={tag} value={tag}>{tag}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
           {/* New Thread Form */}
           {showNewThreadForm && (
-            <div className="bg-white/95 backdrop-blur-lg p-4 md:p-8 rounded-2xl md:rounded-3xl mb-4 md:mb-6 border border-gray-200 shadow-2xl animate-in slide-in-from-top duration-500">
-              <h3 className="text-xl md:text-3xl font-bold text-gray-800 mb-4 md:mb-8 flex items-center gap-2 md:gap-3">
-                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg md:rounded-xl flex items-center justify-center">
-                  <Plus size={16} className="md:hidden text-white" />
-                  <Plus size={20} className="hidden md:block text-white" />
-                </div>
-                What's on your mind?
+            <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 mb-4 shadow-sm">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <Plus size={18} className="text-blue-600" />
+                Create a new post
               </h3>
-              <div className="space-y-4 md:space-y-6">
+              <div className="space-y-3">
                 <input
                   type="text"
-                  placeholder="What's your question or topic?"
+                  placeholder="Title"
                   value={newThread.title}
                   onChange={(e) => setNewThread({ ...newThread, title: e.target.value })}
-                  className="w-full p-3 md:p-5 border-2 border-gray-200 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 text-base md:text-xl font-medium bg-gray-50/50"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-sm sm:text-base"
                 />
                 <textarea
-                  placeholder="Share more details, context, or what you've tried so far..."
+                  placeholder="What's on your mind?"
                   value={newThread.content}
                   onChange={(e) => setNewThread({ ...newThread, content: e.target.value })}
-                  className="w-full p-3 md:p-5 border-2 border-gray-200 rounded-xl md:rounded-2xl h-32 md:h-40 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 resize-none text-sm md:text-lg bg-gray-50/50"
+                  className="w-full p-3 border border-gray-300 rounded-lg h-20 sm:h-24 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none text-sm sm:text-base"
                 />
                 <input
                   type="text"
-                  placeholder="Add relevant tags (e.g., JavaScript, React, CSS)..."
+                  placeholder="Tags (separated by commas)"
                   value={newThread.tags}
                   onChange={(e) => setNewThread({ ...newThread, tags: e.target.value })}
-                  className="w-full p-3 md:p-5 border-2 border-gray-200 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 text-sm md:text-lg bg-gray-50/50"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm sm:text-base"
                 />
-                <div className="flex flex-col md:flex-row gap-3 md:gap-4 pt-2 md:pt-4">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <button
                     onClick={handleCreateThread}
-                    className="w-full md:w-auto bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 md:px-10 py-3 md:py-4 rounded-xl md:rounded-2xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-xl font-bold text-sm md:text-lg"
+                    className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2.5 sm:py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base"
                   >
-                    Post Thread
+                    Post
                   </button>
                   <button
                     onClick={() => setShowNewThreadForm(false)}
-                    className="w-full md:w-auto bg-gray-200 text-gray-700 px-6 md:px-10 py-3 md:py-4 rounded-xl md:rounded-2xl hover:bg-gray-300 transition-all duration-300 font-bold text-sm md:text-lg"
+                    className="w-full sm:w-auto bg-gray-200 text-gray-700 px-4 py-2.5 sm:py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm sm:text-base"
                   >
                     Cancel
                   </button>
@@ -455,252 +572,246 @@ const CommunityPage: React.FC = () => {
       </div>
 
       {/* Threads List */}
-      <div className="max-w-6xl mx-auto p-4 md:p-6">
-        <div className="space-y-6 md:space-y-8">
-          {filteredThreads.map(thread => (
-            <div key={thread.id} className="bg-white/95 backdrop-blur-lg rounded-2xl md:rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 border border-gray-100 overflow-hidden group hover:border-blue-200">
-              <div className="p-4 md:p-10">
-                <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+      <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+        <div className={viewMode === 'thread' ? 'space-y-1' : 'space-y-3 sm:space-y-4'}>
+          {filteredThreads.map((thread) => (
+            <div key={thread.id} className={`bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all ${
+              viewMode === 'thread' ? 'relative' : ''
+            }`}>
+              {/* Thread Hierarchy Lines - Hidden on mobile */}
+              {viewMode === 'thread' && (
+                <div className="hidden sm:block absolute left-4 top-0 bottom-0 w-px bg-gray-200"></div>
+              )}
+              
+              <div className="p-3 sm:p-4">
+                <div className="flex gap-2 sm:gap-3">
                   {/* Vote Section */}
-                  <div className="flex md:flex-col items-center justify-center md:justify-start gap-2 md:gap-3 bg-gradient-to-r md:bg-gradient-to-b from-gray-50 to-gray-100 p-3 md:p-6 rounded-2xl md:rounded-3xl border border-gray-200 shadow-inner order-2 md:order-1">
+                  <div className="flex flex-col items-center gap-0.5 sm:gap-1 min-w-[40px] sm:min-w-[48px]">
                     <button
                       onClick={() => handleVote(thread.id, null, 'up')}
-                      className={`p-2 md:p-4 rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-110 ${thread.isUpvoted
-                          ? 'text-white bg-gradient-to-r from-green-500 to-emerald-600 shadow-xl'
-                          : 'text-gray-400 hover:text-green-500 hover:bg-green-50 hover:shadow-lg'
-                        }`}
+                      className={`p-1.5 sm:p-1 rounded hover:bg-gray-100 transition-colors touch-manipulation ${
+                        thread.isUpvoted ? 'text-orange-500' : 'text-gray-400 hover:text-orange-500'
+                      }`}
                     >
-                      <ArrowUp size={20} className="md:hidden" />
-                      <ArrowUp size={28} className="hidden md:block" />
+                      <ArrowUp size={16} className="sm:w-[18px] sm:h-[18px]" />
                     </button>
-                    <span className="font-bold text-lg md:text-2xl text-gray-700 bg-white px-2 md:px-4 py-1 md:py-2 rounded-lg md:rounded-xl shadow-md">
+                    <span className={`text-xs sm:text-sm font-bold ${
+                      thread.upvotes - thread.downvotes > 0 ? 'text-orange-500' : 
+                      thread.upvotes - thread.downvotes < 0 ? 'text-blue-500' : 'text-gray-500'
+                    }`}>
                       {thread.upvotes - thread.downvotes}
                     </span>
                     <button
                       onClick={() => handleVote(thread.id, null, 'down')}
-                      className={`p-2 md:p-4 rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-110 ${thread.isDownvoted
-                          ? 'text-white bg-gradient-to-r from-red-500 to-rose-600 shadow-xl'
-                          : 'text-gray-400 hover:text-red-500 hover:bg-red-50 hover:shadow-lg'
-                        }`}
+                      className={`p-1.5 sm:p-1 rounded hover:bg-gray-100 transition-colors touch-manipulation ${
+                        thread.isDownvoted ? 'text-blue-500' : 'text-gray-400 hover:text-blue-500'
+                      }`}
                     >
-                      <ArrowDown size={20} className="md:hidden" />
-                      <ArrowDown size={28} className="hidden md:block" />
+                      <ArrowDown size={16} className="sm:w-[18px] sm:h-[18px]" />
                     </button>
                   </div>
 
-                  {/* Thread Content */}
-                  <div className="flex-1 order-1 md:order-2">
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
                     {editingThread === thread.id ? (
-                      <div className="space-y-3 md:space-y-4 mb-4 md:mb-6">
+                      <div className="space-y-3">
                         <input
                           type="text"
                           value={editedThreadData.title}
                           onChange={(e) => setEditedThreadData({ ...editedThreadData, title: e.target.value })}
-                          className="w-full p-3 md:p-4 border-2 border-blue-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 text-lg md:text-xl font-medium"
+                          className="w-full p-2 sm:p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium text-sm sm:text-base"
                         />
                         <textarea
                           value={editedThreadData.content}
                           onChange={(e) => setEditedThreadData({ ...editedThreadData, content: e.target.value })}
-                          className="w-full p-3 md:p-4 border-2 border-blue-300 rounded-xl h-24 md:h-32 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 resize-none text-sm md:text-lg"
+                          className="w-full p-2 sm:p-2 border border-gray-300 rounded h-16 sm:h-20 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none text-sm sm:text-base"
                         />
                         <input
                           type="text"
                           value={editedThreadData.tags}
                           onChange={(e) => setEditedThreadData({ ...editedThreadData, tags: e.target.value })}
-                          className="w-full p-3 md:p-4 border-2 border-blue-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 text-sm md:text-base"
+                          className="w-full p-2 sm:p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm sm:text-base"
                         />
-                        <div className="flex flex-col md:flex-row gap-2 md:gap-3">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <button
                             onClick={handleSaveThreadEdit}
-                            className="w-full md:w-auto bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 md:px-6 py-2 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 font-semibold flex items-center justify-center gap-2 text-sm md:text-base"
+                            className="w-full sm:w-auto bg-green-600 text-white px-3 py-2 sm:py-1 rounded text-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-1 touch-manipulation"
                           >
-                            <Save size={14} className="md:hidden" />
-                            <Save size={16} className="hidden md:block" />
+                            <Save size={14} />
                             Save
                           </button>
                           <button
                             onClick={() => setEditingThread(null)}
-                            className="w-full md:w-auto bg-gray-200 text-gray-700 px-4 md:px-6 py-2 rounded-xl hover:bg-gray-300 transition-all duration-300 font-semibold flex items-center justify-center gap-2 text-sm md:text-base"
+                            className="w-full sm:w-auto bg-gray-200 text-gray-700 px-3 py-2 sm:py-1 rounded text-sm hover:bg-gray-300 transition-colors flex items-center justify-center gap-1 touch-manipulation"
                           >
-                            <X size={14} className="md:hidden" />
-                            <X size={16} className="hidden md:block" />
+                            <X size={14} />
                             Cancel
                           </button>
                         </div>
                       </div>
                     ) : (
                       <>
-                        <div className="flex items-start justify-between mb-3 md:mb-4">
-                          <h3 className="text-lg md:text-2xl font-bold text-gray-800 hover:text-blue-600 transition-colors duration-300 cursor-pointer flex-1 pr-2">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="font-semibold text-gray-900 text-base sm:text-lg hover:text-blue-600 cursor-pointer leading-tight pr-2">
                             {thread.title}
                           </h3>
                           {canEdit(thread.author) && (
-                            <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+                            <div className="flex items-center gap-1 flex-shrink-0">
                               <button
                                 onClick={() => handleEditThread(thread)}
-                                className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-1.5 md:p-2 rounded-lg transition-all duration-300"
-                                title="Edit thread"
+                                className="text-gray-400 hover:text-blue-600 p-1.5 sm:p-1 rounded touch-manipulation"
                               >
-                                <Edit3 size={14} className="md:hidden" />
-                                <Edit3 size={16} className="hidden md:block" />
+                                <Edit3 size={14} />
                               </button>
                               <button
                                 onClick={() => setShowDeleteConfirm({ type: 'thread', id: thread.id })}
-                                className="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 p-1.5 md:p-2 rounded-lg transition-all duration-300"
-                                title="Delete thread"
+                                className="text-gray-400 hover:text-red-600 p-1.5 sm:p-1 rounded touch-manipulation"
                               >
-                                <Trash2 size={14} className="md:hidden" />
-                                <Trash2 size={16} className="hidden md:block" />
+                                <Trash2 size={14} />
                               </button>
                             </div>
                           )}
                         </div>
-                        <p className="text-gray-600 mb-4 md:mb-6 text-sm md:text-lg leading-relaxed">{thread.content}</p>
+                        
+                        <p className="text-gray-700 mb-3 text-sm leading-relaxed">{thread.content}</p>
                       </>
                     )}
 
                     {/* Tags */}
-                    <div className="flex flex-wrap gap-2 md:gap-3 mb-4 md:mb-6">
+                    <div className="flex flex-wrap gap-1 mb-3">
                       {thread.tags.map(tag => (
-                        <span key={tag} className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 px-2 md:px-4 py-1 md:py-2 rounded-full text-xs md:text-sm font-semibold flex items-center gap-1 md:gap-2 border border-blue-200 hover:from-blue-200 hover:to-purple-200 transition-all duration-300 cursor-pointer">
-                          <Tag size={12} className="md:hidden" />
-                          <Tag size={14} className="hidden md:block" />
+                        <span key={tag} className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs font-medium hover:bg-gray-200 cursor-pointer touch-manipulation">
                           {tag}
                         </span>
                       ))}
                     </div>
 
-                    {/* Thread Meta */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-0">
-                      <div className="flex items-center gap-3 md:gap-6 text-xs md:text-sm text-gray-500">
-                        <div className="flex items-center gap-2 bg-gray-50 px-2 md:px-3 py-1.5 md:py-2 rounded-lg">
-                          <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                            <User size={12} className="md:hidden text-white" />
-                            <User size={14} className="hidden md:block text-white" />
-                          </div>
-                          <span className="font-medium text-xs md:text-sm">{thread.author}</span>
+                    {/* Meta and Actions */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-gray-500">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1">
+                          <User size={12} />
+                          <span className="font-medium truncate">{thread.author}</span>
                         </div>
-                        <div className="flex items-center gap-1 md:gap-2">
-                          <Calendar size={14} className="md:hidden" />
-                          <Calendar size={16} className="hidden md:block" />
-                          <span className="text-xs md:text-sm">{thread.createdAt}</span>
+                        <div className="flex items-center gap-1">
+                          <Calendar size={12} />
+                          <span>{thread.createdAt}</span>
                         </div>
                       </div>
                       <button
                         onClick={() => toggleThreadExpansion(thread.id)}
-                        className="flex items-center gap-2 text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 md:px-4 py-2 rounded-lg transition-all duration-300 font-semibold text-sm md:text-base self-start md:self-auto"
+                        className="flex items-center gap-1 text-gray-500 hover:text-blue-600 font-medium self-start sm:self-auto touch-manipulation p-1 -m-1 rounded"
                       >
-                        <MessageCircle size={16} className="md:hidden" />
-                        <MessageCircle size={18} className="hidden md:block" />
-                        <span>{thread.answers.length} answers</span>
+                        <MessageCircle size={14} />
+                        {thread.answers.length} replies
                       </button>
                     </div>
 
                     {/* Answers Section */}
                     {expandedThreads.has(thread.id) && (
-                      <div className="border-t border-gray-200 pt-6 md:pt-10 mt-6 md:mt-10 animate-in slide-in-from-top duration-500">
+                      <div className="mt-4 border-t border-gray-100 pt-4">
                         {/* Add Answer Form */}
-                        <div className="mb-6 md:mb-10 bg-gradient-to-r from-green-50 to-emerald-50 p-4 md:p-8 rounded-2xl md:rounded-3xl border-2 border-green-200 shadow-lg">
-                          <h4 className="font-bold text-gray-800 mb-4 md:mb-6 text-lg md:text-2xl flex items-center gap-2 md:gap-3">
-                            <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                              <Send size={12} className="md:hidden text-white" />
-                              <Send size={16} className="hidden md:block text-white" />
-                            </div>
-                            Share your knowledge
-                          </h4>
+                        <div className="mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
                           <textarea
-                            placeholder="Write a detailed answer that helps others..."
+                            placeholder="Add a reply..."
                             value={newAnswers[thread.id] || ''}
                             onChange={(e) => setNewAnswers({ ...newAnswers, [thread.id]: e.target.value })}
-                            className="w-full p-3 md:p-6 border-2 border-gray-200 rounded-xl md:rounded-2xl h-24 md:h-32 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 transition-all duration-300 resize-none text-sm md:text-lg bg-white/80"
+                            className="w-full p-2 sm:p-2 border border-gray-300 rounded h-16 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none bg-white text-sm"
                           />
                           <button
                             onClick={() => handleAddAnswer(thread.id)}
-                            className="mt-4 md:mt-6 w-full md:w-auto bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 md:px-8 py-3 md:py-4 rounded-xl md:rounded-2xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-xl font-bold text-sm md:text-lg"
+                            className="mt-2 bg-blue-600 text-white px-3 py-2 sm:py-1 rounded text-sm hover:bg-blue-700 transition-colors touch-manipulation"
                           >
-                            Post Answer
+                            Reply
                           </button>
                         </div>
 
                         {/* Answers List */}
-                        <div className="space-y-6 md:space-y-8">
-                          {thread.answers.map(answer => (
-                            <div key={answer.id} className="bg-gradient-to-r from-gray-50 to-slate-50 p-4 md:p-8 rounded-2xl md:rounded-3xl border-2 border-gray-200 hover:shadow-xl transition-all duration-300">
-                              <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-                                <div className="flex md:flex-col items-center justify-center md:justify-start gap-2 md:gap-3 bg-white p-2 md:p-4 rounded-xl md:rounded-2xl border border-gray-200 shadow-md order-2 md:order-1">
+                        <div className="space-y-3">
+                          {thread.answers.map((answer, answerIndex) => (
+                            <div key={answer.id} className={`bg-gray-50 rounded-lg p-3 border-l-2 border-blue-200 ${
+                              viewMode === 'thread' ? 'relative sm:ml-6' : ''
+                            }`}>
+                              {/* Answer Thread Lines - Hidden on mobile */}
+                              {viewMode === 'thread' && (
+                                <>
+                                  <div className="hidden sm:block absolute -left-9 top-4 w-6 h-px bg-gray-300"></div>
+                                  {answerIndex < thread.answers.length - 1 && (
+                                    <div className="hidden sm:block absolute -left-9 top-4 bottom-0 w-px bg-gray-300"></div>
+                                  )}
+                                </>
+                              )}
+
+                              <div className="flex gap-2 sm:gap-3">
+                                {/* Answer Votes */}
+                                <div className="flex flex-col items-center gap-0.5 sm:gap-1 min-w-[28px] sm:min-w-[32px]">
                                   <button
                                     onClick={() => handleVote(thread.id, answer.id, 'up')}
-                                    className={`p-2 md:p-3 rounded-lg md:rounded-xl transition-all duration-300 transform hover:scale-110 ${answer.isUpvoted
-                                        ? 'text-white bg-gradient-to-r from-green-500 to-emerald-600 shadow-lg'
-                                        : 'text-gray-400 hover:text-green-500 hover:bg-green-50'
-                                      }`}
+                                    className={`p-1 sm:p-0.5 rounded hover:bg-gray-200 transition-colors touch-manipulation ${
+                                      answer.isUpvoted ? 'text-orange-500' : 'text-gray-400 hover:text-orange-500'
+                                    }`}
                                   >
-                                    <ArrowUp size={16} className="md:hidden" />
-                                    <ArrowUp size={20} className="hidden md:block" />
+                                    <ArrowUp size={14} />
                                   </button>
-                                  <span className="text-base md:text-lg font-bold text-gray-700 bg-gray-100 px-2 md:px-3 py-0.5 md:py-1 rounded-lg">
+                                  <span className={`text-xs font-bold ${
+                                    answer.upvotes - answer.downvotes > 0 ? 'text-orange-500' : 
+                                    answer.upvotes - answer.downvotes < 0 ? 'text-blue-500' : 'text-gray-500'
+                                  }`}>
                                     {answer.upvotes - answer.downvotes}
                                   </span>
                                   <button
                                     onClick={() => handleVote(thread.id, answer.id, 'down')}
-                                    className={`p-2 md:p-3 rounded-lg md:rounded-xl transition-all duration-300 transform hover:scale-110 ${answer.isDownvoted
-                                        ? 'text-white bg-gradient-to-r from-red-500 to-rose-600 shadow-lg'
-                                        : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
-                                      }`}
+                                    className={`p-1 sm:p-0.5 rounded hover:bg-gray-200 transition-colors touch-manipulation ${
+                                      answer.isDownvoted ? 'text-blue-500' : 'text-gray-400 hover:text-blue-500'
+                                    }`}
                                   >
-                                    <ArrowDown size={16} className="md:hidden" />
-                                    <ArrowDown size={20} className="hidden md:block" />
+                                    <ArrowDown size={14} />
                                   </button>
                                 </div>
 
-                                <div className="flex-1 order-1 md:order-2">
+                                {/* Answer Content */}
+                                <div className="flex-1 min-w-0">
                                   {editingAnswer === answer.id ? (
-                                    <div className="space-y-3 md:space-y-4 mb-4 md:mb-6">
+                                    <div className="space-y-2">
                                       <textarea
                                         value={editedAnswerContent}
                                         onChange={(e) => setEditedAnswerContent(e.target.value)}
-                                        className="w-full p-3 md:p-4 border-2 border-blue-300 rounded-xl h-24 md:h-32 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 resize-none text-sm md:text-lg"
+                                        className="w-full p-2 border border-gray-300 rounded h-16 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none bg-white text-sm"
                                       />
-                                      <div className="flex flex-col md:flex-row gap-2 md:gap-3">
+                                      <div className="flex flex-col sm:flex-row gap-2">
                                         <button
                                           onClick={handleSaveAnswerEdit}
-                                          className="w-full md:w-auto bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 md:px-6 py-2 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 font-semibold flex items-center justify-center gap-2 text-sm md:text-base"
+                                          className="w-full sm:w-auto bg-green-600 text-white px-2 py-2 sm:py-1 rounded text-xs hover:bg-green-700 transition-colors flex items-center justify-center gap-1 touch-manipulation"
                                         >
-                                          <Save size={14} className="md:hidden" />
-                                          <Save size={16} className="hidden md:block" />
+                                          <Save size={12} />
                                           Save
                                         </button>
                                         <button
                                           onClick={() => setEditingAnswer(null)}
-                                          className="w-full md:w-auto bg-gray-200 text-gray-700 px-4 md:px-6 py-2 rounded-xl hover:bg-gray-300 transition-all duration-300 font-semibold flex items-center justify-center gap-2 text-sm md:text-base"
+                                          className="w-full sm:w-auto bg-gray-200 text-gray-700 px-2 py-2 sm:py-1 rounded text-xs hover:bg-gray-300 transition-colors flex items-center justify-center gap-1 touch-manipulation"
                                         >
-                                          <X size={14} className="md:hidden" />
-                                          <X size={16} className="hidden md:block" />
+                                          <X size={12} />
                                           Cancel
                                         </button>
                                       </div>
                                     </div>
                                   ) : (
                                     <>
-                                      <div className="flex items-start justify-between mb-4 md:mb-6">
-                                        <p className="text-gray-700 text-sm md:text-xl leading-relaxed flex-1 pr-2">{answer.content}</p>
+                                      <div className="flex items-start justify-between mb-2">
+                                        <p className="text-gray-700 text-sm leading-relaxed pr-2">{answer.content}</p>
                                         {canEdit(answer.author) && (
-                                          <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+                                          <div className="flex items-center gap-1 ml-2 flex-shrink-0">
                                             <button
                                               onClick={() => handleEditAnswer(answer)}
-                                              className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-1.5 md:p-2 rounded-lg transition-all duration-300"
-                                              title="Edit answer"
+                                              className="text-gray-400 hover:text-blue-600 p-1 sm:p-0.5 rounded touch-manipulation"
                                             >
-                                              <Edit3 size={12} className="md:hidden" />
-                                              <Edit3 size={14} className="hidden md:block" />
+                                              <Edit3 size={12} />
                                             </button>
                                             <button
                                               onClick={() => setShowDeleteConfirm({ type: 'answer', id: answer.id })}
-                                              className="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 p-1.5 md:p-2 rounded-lg transition-all duration-300"
-                                              title="Delete answer"
+                                              className="text-gray-400 hover:text-red-600 p-1 sm:p-0.5 rounded touch-manipulation"
                                             >
-                                              <Trash2 size={12} className="md:hidden" />
-                                              <Trash2 size={14} className="hidden md:block" />
+                                              <Trash2 size={12} />
                                             </button>
                                           </div>
                                         )}
@@ -708,113 +819,88 @@ const CommunityPage: React.FC = () => {
                                     </>
                                   )}
 
-                                  <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6 gap-3 md:gap-0">
-                                    <div className="flex items-center gap-3 md:gap-4 text-xs md:text-sm text-gray-500">
-                                      <div className="flex items-center gap-2 md:gap-3 bg-white px-2 md:px-4 py-1.5 md:py-2 rounded-xl shadow-sm">
-                                        <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                                          <User size={12} className="md:hidden text-white" />
-                                          <User size={14} className="hidden md:block text-white" />
-                                        </div>
-                                        <span className="font-semibold text-gray-700 text-xs md:text-sm">{answer.author}</span>
-                                      </div>
-                                      <span className="hidden md:inline">•</span>
-                                      <span className="text-gray-500 text-xs md:text-sm">{answer.createdAt}</span>
+                                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-gray-500 mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium truncate">{answer.author}</span>
+                                      <span className="hidden sm:inline">•</span>
+                                      <span>{answer.createdAt}</span>
                                     </div>
-
-                                    <div className="flex items-center gap-2 md:gap-3">
+                                    <div className="flex items-center gap-3 self-start sm:self-auto">
                                       <button
                                         onClick={() => toggleCommentsExpansion(answer.id)}
-                                        className="flex items-center gap-1 md:gap-2 text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl transition-all duration-300 font-semibold text-xs md:text-sm"
+                                        className="hover:text-blue-600 font-medium touch-manipulation p-1 -m-1 rounded"
                                       >
-                                        <MessageCircle size={14} className="md:hidden" />
-                                        <MessageCircle size={16} className="hidden md:block" />
-                                        <span>{answer.comments.length} comments</span>
+                                        {answer.comments.length} comments
                                       </button>
                                       <button
                                         onClick={() => toggleCommentForm(answer.id)}
-                                        className="flex items-center gap-1 md:gap-2 text-green-600 hover:text-green-800 bg-green-50 hover:bg-green-100 px-2 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl transition-all duration-300 font-semibold text-xs md:text-sm"
+                                        className="hover:text-blue-600 font-medium touch-manipulation p-1 -m-1 rounded"
                                       >
-                                        <Reply size={14} className="md:hidden" />
-                                        <Reply size={16} className="hidden md:block" />
-                                        <span>Reply</span>
+                                        reply
                                       </button>
                                     </div>
                                   </div>
 
                                   {/* Comment Form */}
                                   {showCommentForm[answer.id] && (
-                                    <div className="mb-4 md:mb-6 bg-white p-3 md:p-6 rounded-xl md:rounded-2xl border-2 border-blue-200 shadow-lg animate-in slide-in-from-top duration-300">
-                                      <div className="flex gap-2 md:gap-4">
-                                        <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
-                                          <User size={12} className="md:hidden text-white" />
-                                          <User size={16} className="hidden md:block text-white" />
-                                        </div>
-                                        <div className="flex-1">
-                                          <textarea
-                                            placeholder="Write a comment..."
-                                            value={newComments[answer.id] || ''}
-                                            onChange={(e) => setNewComments({ ...newComments, [answer.id]: e.target.value })}
-                                            className="w-full p-3 md:p-4 border-2 border-gray-200 rounded-xl h-16 md:h-20 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 resize-none bg-gray-50 text-sm md:text-base"
-                                          />
-                                          <div className="flex flex-col md:flex-row gap-2 md:gap-3 mt-3 md:mt-4">
-                                            <button
-                                              onClick={() => handleAddComment(answer.id)}
-                                              className="w-full md:w-auto bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 md:px-6 py-2 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg font-semibold flex items-center justify-center gap-2 text-sm md:text-base"
-                                            >
-                                              <Send size={14} className="md:hidden" />
-                                              <Send size={16} className="hidden md:block" />
-                                              Comment
-                                            </button>
-                                            <button
-                                              onClick={() => toggleCommentForm(answer.id)}
-                                              className="w-full md:w-auto bg-gray-200 text-gray-700 px-4 md:px-6 py-2 rounded-xl hover:bg-gray-300 transition-all duration-300 font-semibold text-sm md:text-base"
-                                            >
-                                              Cancel
-                                            </button>
-                                          </div>
-                                        </div>
+                                    <div className="mb-3 bg-white p-2 rounded border border-gray-200">
+                                      <textarea
+                                        placeholder="Write a comment..."
+                                        value={newComments[answer.id] || ''}
+                                        onChange={(e) => setNewComments({ ...newComments, [answer.id]: e.target.value })}
+                                        className="w-full p-2 border border-gray-300 rounded h-12 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none text-sm"
+                                      />
+                                      <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                                        <button
+                                          onClick={() => handleAddComment(answer.id)}
+                                          className="w-full sm:w-auto bg-blue-600 text-white px-2 py-2 sm:py-1 rounded text-xs hover:bg-blue-700 transition-colors touch-manipulation"
+                                        >
+                                          Comment
+                                        </button>
+                                        <button
+                                          onClick={() => toggleCommentForm(answer.id)}
+                                          className="w-full sm:w-auto bg-gray-200 text-gray-700 px-2 py-2 sm:py-1 rounded text-xs hover:bg-gray-300 transition-colors touch-manipulation"
+                                        >
+                                          Cancel
+                                        </button>
                                       </div>
                                     </div>
                                   )}
 
                                   {/* Comments Section */}
                                   {expandedComments.has(answer.id) && answer.comments.length > 0 && (
-                                    <div className="mt-6 md:mt-8 space-y-3 md:space-y-4 pl-3 md:pl-6 border-l-4 border-gradient-to-b from-blue-300 to-purple-300 bg-white/60 p-3 md:p-6 rounded-r-xl md:rounded-r-2xl animate-in slide-in-from-left duration-500">
-                                      <h5 className="font-bold text-gray-700 mb-4 md:mb-6 text-sm md:text-lg uppercase tracking-wide flex items-center gap-2">
-                                        <MessageCircle size={16} className="md:hidden" />
-                                        <MessageCircle size={18} className="hidden md:block" />
-                                        Comments ({answer.comments.length})
-                                      </h5>
-                                      {answer.comments.map((comment: ThreadComment) => (
-                                        <div key={comment.id} className="bg-white p-3 md:p-6 rounded-xl md:rounded-2xl shadow-md border border-gray-100 hover:shadow-lg transition-all duration-300">
-                                          <div className="flex gap-2 md:gap-4">
-                                            <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-r from-gray-400 to-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
-                                              <User size={12} className="md:hidden text-white" />
-                                              <User size={16} className="hidden md:block text-white" />
+                                    <div className="mt-3 space-y-2 pl-2 sm:pl-4 border-l border-gray-300">
+                                      {answer.comments.map((comment: ThreadComment, commentIndex) => (
+                                        <div key={comment.id} className={`bg-white p-2 rounded border border-gray-200 ${
+                                          viewMode === 'thread' ? 'relative sm:ml-2' : ''
+                                        }`}>
+                                          {/* Comment Thread Lines - Hidden on mobile */}
+                                          {viewMode === 'thread' && (
+                                            <>
+                                              <div className="hidden sm:block absolute -left-6 top-3 w-4 h-px bg-gray-300"></div>
+                                              {commentIndex < answer.comments.length - 1 && (
+                                                <div className="hidden sm:block absolute -left-6 top-3 bottom-0 w-px bg-gray-300"></div>
+                                              )}
+                                            </>
+                                          )}
+                                          
+                                          <p className="text-gray-700 text-sm mb-1 leading-relaxed">{comment.content}</p>
+                                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-gray-500">
+                                            <div className="flex items-center gap-2">
+                                              <span className="font-medium truncate">{comment.author}</span>
+                                              <span className="hidden sm:inline">•</span>
+                                              <span>{comment.createdAt}</span>
                                             </div>
-                                            <div className="flex-1">
-                                              <p className="text-gray-700 mb-2 md:mb-3 text-sm md:text-lg leading-relaxed">{comment.content}</p>
-                                              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0">
-                                                <div className="flex items-center gap-2 md:gap-3 text-xs md:text-sm text-gray-500">
-                                                  <span className="font-semibold text-gray-700">{comment.author}</span>
-                                                  <span className="hidden md:inline">•</span>
-                                                  <span>{comment.createdAt}</span>
-                                                </div>
-                                                <div className="flex items-center gap-1 md:gap-2">
-                                                  <button className="text-gray-400 hover:text-red-500 transition-colors duration-300 p-1.5 md:p-2 rounded-lg hover:bg-red-50">
-                                                    <Heart size={14} className="md:hidden" />
-                                                    <Heart size={16} className="hidden md:block" />
-                                                  </button>
-                                                  <button className="text-gray-400 hover:text-blue-500 transition-colors duration-300 p-1.5 md:p-2 rounded-lg hover:bg-blue-50">
-                                                    <Reply size={14} className="md:hidden" />
-                                                    <Reply size={16} className="hidden md:block" />
-                                                  </button>
-                                                  <button className="text-gray-400 hover:text-gray-600 transition-colors duration-300 p-1.5 md:p-2 rounded-lg hover:bg-gray-50">
-                                                    <MoreHorizontal size={14} className="md:hidden" />
-                                                    <MoreHorizontal size={16} className="hidden md:block" />
-                                                  </button>
-                                                </div>
-                                              </div>
+                                            <div className="flex items-center gap-2 self-start sm:self-auto">
+                                              <button className="hover:text-red-500 p-1 -m-1 rounded touch-manipulation">
+                                                <Heart size={12} />
+                                              </button>
+                                              <button className="hover:text-blue-600 p-1 -m-1 rounded touch-manipulation">
+                                                <Reply size={12} />
+                                              </button>
+                                              <button className="hover:text-gray-700 p-1 -m-1 rounded touch-manipulation">
+                                                <MoreHorizontal size={12} />
+                                              </button>
                                             </div>
                                           </div>
                                         </div>
