@@ -10,7 +10,6 @@ interface CreateLiveAdminProps {
   refetch: () => void;
 }
 
-
 enum Trainers {
   Shubham_lal = "Shubham lal",
   Balbir_Yadav = "Balbir Yadav",
@@ -40,7 +39,9 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setForm((prev) => ({
@@ -104,20 +105,39 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
             <label className="block text-sm font-medium text-[#255C79] mb-1">
               Trainer
             </label>
-            <select
-              name="instructor"
-              value={form.instructor}
-              onChange={handleChange}
-              required
-              className="w-full border border-[#B9E4F2] rounded-lg px-4 py-2"
-            >
-              <option value="">Select a Trainer</option>
-              {Object.values(Trainers).map((trainer) => (
-                <option key={trainer} value={trainer}>
-                  {trainer}
-                </option>
-              ))}
-            </select>
+            <div className="space-y-2">
+              {/* Dropdown */}
+              <select
+                name="instructor"
+                value={form.instructor}
+                onChange={handleChange}
+                className="w-full border border-[#B9E4F2] rounded-lg px-4 py-2"
+              >
+                <option value="">Select a Trainer</option>
+                {Object.values(Trainers).map((trainer) => (
+                  <option key={trainer} value={trainer}>
+                    {trainer}
+                  </option>
+                ))}
+              </select>
+
+              {/* OR divider */}
+              <div className="flex items-center">
+                <div className="flex-1 border-t border-gray-300"></div>
+                <span className="px-2 text-xs text-gray-500">OR</span>
+                <div className="flex-1 border-t border-gray-300"></div>
+              </div>
+
+              {/* Input box */}
+              <input
+                type="text"
+                name="instructor"
+                value={form.instructor}
+                onChange={handleChange}
+                placeholder="Enter trainer name manually"
+                className="w-full border border-[#B9E4F2] rounded-lg px-4 py-2"
+              />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-[#255C79] mb-1">
