@@ -201,12 +201,12 @@ const FloatingActivityTimer: React.FC = () => {
     const activityData = {
       "time_spent_seconds": totalTimeInSeconds, // This is Today's Total (11m 24s in your example)
       // "session_id": sessionId,
-      "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
+      // "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
       "session_id": getCurrentUserId(), // Keep for backward compatibility
-      "device_id": getDeviceId(), // Unique device/browser identifier
+      // "device_id": getDeviceId(), // Unique device/browser identifier
       "date": new Date().toISOString().split('T')[0], // YYYY-MM-DD format
       "device_type": deviceInfo?.deviceType || "unknown",
-      "timestamp": Date.now()
+      // "timestamp": Date.now()
     };
 
     // Setup fetch options

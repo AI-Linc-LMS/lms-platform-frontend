@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { ActivitySession } from '../contexts/UserActivityContext';
-import { getAuthenticatedUserId } from '../utils/userIdHelper';
-import { getDeviceId } from '../utils/deviceIdentifier';
+// import { getAuthenticatedUserId } from '../utils/userIdHelper';
+// import { getDeviceId } from '../utils/deviceIdentifier';
 
 // Base axios instance with common configurations
 const activityTrackingInstance = axios.create({
@@ -55,19 +55,19 @@ export const sendActivityData = async (data: ActivityData): Promise<void> => {
   const totalAccumulatedTime = data.totalTimeSpent + currentSessionDuration;
   
   // Get authenticated user ID (account ID) and device ID for cross-device tracking
-  const accountId = getAuthenticatedUserId(); // This is the user's account ID (same across devices)
-  const deviceId = getDeviceId(); // This identifies the specific device/browser
+  // const accountId = getAuthenticatedUserId(); // This is the user's account ID (same across devices)
+  // const deviceId = getDeviceId(); // This identifies the specific device/browser
   
   // Clean API payload with account and device tracking
   const apiData = {
     "time_spent_seconds": totalAccumulatedTime, // Send total accumulated time (Today's Total)
     // "session_id": data.session_id,
-    "account_id": accountId, // User's account ID (same across all devices)
+    // "account_id": accountId, // User's account ID (same across all devices)
     "session_id": data.userId, // Keep for backward compatibility
-    "device_id": deviceId, // Unique device/browser identifier
+    // "device_id": deviceId, // Unique device/browser identifier
     "date": new Date(data.timestamp).toISOString().split('T')[0], // YYYY-MM-DD format
     "device_type": data.device_info.deviceType, // Just device type, not full device info
-    "timestamp": data.timestamp
+    // "timestamp": data.timestamp
   };
   
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -116,19 +116,19 @@ export const syncOfflineActivityData = async (): Promise<void> => {
       const totalAccumulatedTime = data.totalTimeSpent + currentSessionDuration;
       
       // Get authenticated user ID (account ID) and device ID for cross-device tracking
-      const accountId = getAuthenticatedUserId(); // This is the user's account ID (same across devices)
-      const deviceId = getDeviceId(); // This identifies the specific device/browser
+      // const accountId = getAuthenticatedUserId(); // This is the user's account ID (same across devices)
+      // const deviceId = getDeviceId(); // This identifies the specific device/browser
       
       // Clean API payload with account and device tracking
       const apiData = {
         "time_spent_seconds": totalAccumulatedTime, // Send total accumulated time (Today's Total)
         // "session_id": data.session_id,
-        "account_id": accountId, // User's account ID (same across all devices)
+        // "account_id": accountId, // User's account ID (same across all devices)
         "session_id": data.userId, // Keep for backward compatibility
-        "device_id": deviceId, // Unique device/browser identifier
+        // "device_id": deviceId, // Unique device/browser identifier
         "date": new Date(data.timestamp).toISOString().split('T')[0], // YYYY-MM-DD format
         "device_type": data.device_info.deviceType, // Just device type, not full device info
-        "timestamp": data.timestamp
+        // "timestamp": data.timestamp
       };
       
       // Send API call for each offline record
@@ -142,4 +142,4 @@ export const syncOfflineActivityData = async (): Promise<void> => {
   } catch {
     // Silently fail - offline sync will be retried later
   }
-}; 
+};
