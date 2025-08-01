@@ -163,7 +163,7 @@ const ThreadDetailPage: React.FC = () => {
       setShowDeleteConfirm(null);
       setIsBookmarked(false);
     };
-  }, [threadId]);
+  }, [thread, threadId]);
 
   // Helper functions from CommunityPage
   const getUserAvatar = (name: string, avatar?: string) => {
