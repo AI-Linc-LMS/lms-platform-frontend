@@ -199,14 +199,14 @@ const FloatingActivityTimer: React.FC = () => {
 
     // Create clean API payload with total accumulated time (Today's Total)
     const activityData = {
-      "total-time-seconds": totalTimeInSeconds, // This is Today's Total (11m 24s in your example)
-      "session_id": sessionId,
-      "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
-      "user_id": getCurrentUserId(), // Keep for backward compatibility
-      "device_id": getDeviceId(), // Unique device/browser identifier
+      "time_spent_seconds": totalTimeInSeconds, // This is Today's Total (11m 24s in your example)
+      // "session_id": sessionId,
+      // "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
+      "session_id": getCurrentUserId(), // Keep for backward compatibility
+      // "device_id": getDeviceId(), // Unique device/browser identifier
       "date": new Date().toISOString().split('T')[0], // YYYY-MM-DD format
       "device_type": deviceInfo?.deviceType || "unknown",
-      "timestamp": Date.now()
+      // "timestamp": Date.now()
     };
 
     // Setup fetch options
@@ -225,7 +225,7 @@ const FloatingActivityTimer: React.FC = () => {
     };
 
     // Make the API call directly using Fetch API for better visibility in Network tab
-    fetch(`${apiUrl}/activity/clients/${clientId}/activity-log/`, fetchOptions)
+    fetch(`${apiUrl}/activity/clients/${clientId}/track-time/`, fetchOptions)
       .then((response) => {
         if (!response.ok) {
           throw new Error(`API responded with status ${response.status}`);
