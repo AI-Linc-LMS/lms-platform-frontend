@@ -30,7 +30,10 @@ import {
   Link,
   X,
   Copy,
-  Check
+  Check,
+  MessageCircle,
+  Info,
+  Send
 } from 'lucide-react';
 import Prism from 'prismjs';
 import 'prismjs/themes/prism-tomorrow.css';
@@ -109,7 +112,7 @@ const copyToClipboard = async (text: string): Promise<boolean> => {
 // Helper component for code blocks with syntax highlighting
 const CodeBlock: React.FC<{ code: string; language: string }> = ({ code, language }) => {
   const [copied, setCopied] = useState(false);
-  
+
   useEffect(() => {
     Prism.highlightAll();
   }, [code]);
@@ -204,7 +207,7 @@ const RichContentDisplay: React.FC<{
 
   return (
     <>
-      <div 
+      <div
         ref={containerRef}
         className={`prose prose-sm max-w-none ${className}`}
         dangerouslySetInnerHTML={{ __html: content }}
@@ -225,12 +228,14 @@ const RichTextEditor: React.FC<{
 }> = ({ value, onChange, placeholder = "Start typing...", height = "h-32" }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [showToolbar, setShowToolbar] = useState(false);
+  const [showToolbar, setShowToolbar] = useState(true);
+  const [isComposing, setIsComposing] = useState(false);
 
   const handleCommand = (command: string, value?: string) => {
     document.execCommand(command, false, value);
     if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
+      const content = editorRef.current.innerHTML;
+      onChange(content === '<br>' ? '' : content);
     }
   };
 
@@ -271,92 +276,234 @@ const RichTextEditor: React.FC<{
   };
 
   const handleInput = () => {
-    if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
+    if (editorRef.current && !isComposing) {
+      const content = editorRef.current.innerHTML;
+      onChange(content === '<br>' ? '' : content);
+    }
+  };
+
+  const handleCompositionStart = () => {
+    setIsComposing(true);
+  };
+
+  const handleCompositionEnd = () => {
+    setIsComposing(false);
+    handleInput();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      document.execCommand('insertParagraph', false);
+      e.preventDefault();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/html') || e.clipboardData.getData('text/plain');
+    
+    if (text) {
+      const content = e.clipboardData.types.includes('text/html') 
+        ? text 
+        : text.split('\n').map(line => `<p>${line}</p>`).join('');
+        
+      document.execCommand('insertHTML', false, content);
+      handleInput();
     }
   };
 
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value || '';
+    if (editorRef.current) {
+      // Only update the innerHTML if the value has actually changed
+      // and the editor doesn't have focus to prevent cursor jumping
+      if (!editorRef.current.contains(document.activeElement)) {
+        editorRef.current.innerHTML = value || '';
+      }
     }
   }, [value]);
 
   return (
-    <div className="border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-      {/* Toolbar - same as CommunityPage */}
+    <div className="border border-gray-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+      {/* Toolbar */}
       <div className={`border-b border-gray-200 p-2 ${showToolbar ? 'block' : 'hidden sm:block'}`}>
         <div className="flex flex-wrap gap-1">
-          <button type="button" onClick={() => handleCommand('bold')} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Bold">
+          <button
+            type="button"
+            onClick={() => handleCommand('bold')}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Bold"
+          >
             <Bold size={16} />
           </button>
-          <button type="button" onClick={() => handleCommand('italic')} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Italic">
+          <button
+            type="button"
+            onClick={() => handleCommand('italic')}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Italic"
+          >
             <Italic size={16} />
           </button>
-          <button type="button" onClick={insertCodeBlock} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Code Block">
+          <button
+            type="button"
+            onClick={insertCodeBlock}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Code Block"
+          >
             <Code size={16} />
           </button>
           <div className="w-px bg-gray-300 mx-1"></div>
-          <button type="button" onClick={() => handleCommand('insertUnorderedList')} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Bullet List">
+          <button
+            type="button"
+            onClick={() => handleCommand('insertUnorderedList')}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Bullet List"
+          >
             <List size={16} />
           </button>
-          <button type="button" onClick={() => handleCommand('insertOrderedList')} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Numbered List">
+          <button
+            type="button"
+            onClick={() => handleCommand('insertOrderedList')}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Numbered List"
+          >
             <ListOrdered size={16} />
           </button>
-          <button type="button" onClick={() => handleCommand('formatBlock', 'blockquote')} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Quote">
+          <button
+            type="button"
+            onClick={() => handleCommand('formatBlock', '<blockquote>')}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Quote"
+          >
             <Quote size={16} />
           </button>
           <div className="w-px bg-gray-300 mx-1"></div>
-          <button type="button" onClick={insertLink} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Insert Link">
+          <button
+            type="button"
+            onClick={insertLink}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Insert Link"
+          >
             <Link size={16} />
-          <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Upload Image">
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Upload Image"
+          >
             <ImageIcon size={16} />
           </button>
-          </button>
           <div className="w-px bg-gray-300 mx-1"></div>
-          <button type="button" onClick={() => handleCommand('undo')} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Undo">
+          <button
+            type="button"
+            onClick={() => handleCommand('undo')}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Undo"
+          >
             <Undo size={16} />
           </button>
-          <button type="button" onClick={() => handleCommand('redo')} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Redo">
+          <button
+            type="button"
+            onClick={() => handleCommand('redo')}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Redo"
+          >
             <Redo size={16} />
           </button>
         </div>
       </div>
 
+      {/* Mobile toolbar toggle */}
       <div className="sm:hidden p-2 border-b border-gray-200">
-        <button type="button" onClick={() => setShowToolbar(!showToolbar)} className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800">
+        <button
+          type="button"
+          onClick={() => setShowToolbar(!showToolbar)}
+          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800"
+        >
           <Edit3 size={14} />
           {showToolbar ? 'Hide' : 'Show'} formatting tools
           {showToolbar ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
       </div>
 
+      {/* Editor */}
       <div
         ref={editorRef}
         contentEditable
         className={`w-full px-3 py-2 ${height} focus:outline-none overflow-y-auto text-sm sm:text-base`}
-        style={{ minHeight: '80px', direction: 'ltr', textAlign: 'left' }}
+        style={{ minHeight: '80px' }}
         onInput={handleInput}
-        onPaste={() => setTimeout(handleInput, 0)}
-        suppressContentEditableWarning={true}
+        onCompositionStart={handleCompositionStart}
+        onCompositionEnd={handleCompositionEnd}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
         data-placeholder={!value ? placeholder : ''}
-        dangerouslySetInnerHTML={{ __html: value || '' }}
       />
 
-      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageUpload}
+        className="hidden"
+      />
 
       <style dangerouslySetInnerHTML={{
         __html: `
-        [contenteditable]:empty:before { content: attr(data-placeholder); color: #9ca3af; pointer-events: none; }
-        [contenteditable] { direction: ltr !important; text-align: left !important; }
-        [contenteditable] blockquote { border-left: 4px solid #d1d5db; padding-left: 16px; margin: 16px 0; font-style: italic; color: #6b7280; }
-        [contenteditable] ul, [contenteditable] ol { padding-left: 20px; margin: 10px 0; }
-        [contenteditable] li { margin: 4px 0; }
-        [contenteditable] a { color: #2563eb; text-decoration: underline; }
-        [contenteditable] strong { font-weight: bold; }
-        [contenteditable] em { font-style: italic; }
-        [contenteditable] img { max-width: 100%; height: auto; border-radius: 4px; }
-        [contenteditable] pre { white-space: pre-wrap; word-wrap: break-word; }
+        [contenteditable]:empty:before {
+          content: attr(data-placeholder);
+          color: #9ca3af;
+          pointer-events: none;
+          position: absolute;
+        }
+        [contenteditable] {
+          position: relative;
+        }
+        [contenteditable] blockquote {
+          border-left: 4px solid #d1d5db;
+          padding-left: 16px;
+          margin: 16px 0;
+          font-style: italic;
+          color: #6b7280;
+        }
+        [contenteditable] ul, [contenteditable] ol {
+          padding-left: 20px;
+          margin: 10px 0;
+        }
+        [contenteditable] li {
+          margin: 4px 0;
+        }
+        [contenteditable] a {
+          color: #2563eb;
+          text-decoration: underline;
+        }
+        [contenteditable] strong {
+          font-weight: bold;
+        }
+        [contenteditable] em {
+          font-style: italic;
+        }
+        [contenteditable] img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 4px;
+          margin: 10px 0;
+        }
+        [contenteditable] pre {
+          white-space: pre-wrap;
+          word-wrap: break-word;
+          margin: 10px 0;
+        }
+        [contenteditable] p {
+          margin: 0;
+          min-height: 1.5em;
+        }
+        [contenteditable] p:empty:before {
+          content: '';
+          display: inline-block;
+          min-width: 1px;
+        }
         `
       }} />
     </div>
@@ -558,13 +705,14 @@ const useApi = <T>(endpoint: string, options = {}) => {
   const [editedContent, setEditedContent] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ type: 'answer' | 'comment', id: string } | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [showAnswerForm, setShowAnswerForm] = useState(false);
 
   useEffect(() => {
     // Increment view count when component mounts
     if (thread) {
       setThread(prev => ({ ...prev, views: (prev.views || 0) + 1 }));
     }
-    
+
     // Cleanup function to reset state when navigating away
     return () => {
       setNewAnswer('');
@@ -638,6 +786,7 @@ const useApi = <T>(endpoint: string, options = {}) => {
         answers: [...prev.answers, answer]
       }));
       setNewAnswer('');
+      setShowAnswerForm(false);
     }
   };
 
@@ -819,7 +968,7 @@ const useApi = <T>(endpoint: string, options = {}) => {
               </div>
 
               {/* Content */}
-              <RichContentDisplay 
+              <RichContentDisplay
                 content={thread.content}
                 className="mb-4 sm:mb-6 text-sm sm:text-base leading-relaxed text-gray-700"
               />
@@ -908,26 +1057,72 @@ const useApi = <T>(endpoint: string, options = {}) => {
           </div>
 
           {/* Add Answer Form */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Your Answer</h3>
-            <RichTextEditor
-              value={newAnswer}
-              onChange={setNewAnswer}
-              placeholder="Share your knowledge and help the community with code examples and images..."
-              height="h-32 sm:h-40"
-            />
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-3 sm:mt-4 gap-3 sm:gap-0">
-              <div className="text-xs sm:text-sm text-gray-500">
-                Be helpful and respectful
-              </div>
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            {/* Header */}
+            <div className="p-4 sm:p-6 border-b border-gray-200">
               <button
-                onClick={handleAddAnswer}
-                disabled={!newAnswer.trim()}
-                className="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium text-sm sm:text-base"
+                onClick={() => setShowAnswerForm(!showAnswerForm)}
+                className="w-full flex items-center justify-between text-left"
               >
-                Post Answer
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-600 rounded-md flex items-center justify-center">
+                    <MessageCircle className="text-white" size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">Your Answer</h3>
+                    <p className="text-sm text-gray-500">Share your knowledge with the community</p>
+                  </div>
+                </div>
+                {showAnswerForm ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
               </button>
             </div>
+
+            {/* Editor */}
+            {showAnswerForm && (
+              <div className="p-4 sm:p-6">
+                <div className="prose prose-sm max-w-none mb-4">
+                  <p className="text-gray-600 text-sm">
+                    Format your answer using the toolbar below. You can:
+                  </p>
+                  <ul className="text-gray-600 text-sm list-disc pl-5">
+                    <li>Add code snippets with syntax highlighting</li>
+                    <li>Upload and embed images</li>
+                    <li>Format text with bold, italic, and lists</li>
+                    <li>Add links and quotes</li>
+                  </ul>
+                </div>
+
+                <RichTextEditor
+                  value={newAnswer}
+                  onChange={setNewAnswer}
+                  placeholder="Share your knowledge with code examples and images..."
+                  height="h-64 sm:h-96"
+                />
+
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-4 gap-3 sm:gap-4">
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Info size={16} />
+                    <span>Your answer will be visible to the community</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <button
+                      onClick={() => setShowAnswerForm(false)}
+                      className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors font-medium text-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleAddAnswer}
+                      disabled={!newAnswer.trim()}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium text-sm flex items-center justify-center gap-2"
+                    >
+                      <Send size={16} />
+                      Post Answer
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Answers List */}
@@ -997,7 +1192,7 @@ const useApi = <T>(endpoint: string, options = {}) => {
                         </div>
                       ) : (
                         <>
-                          <RichContentDisplay 
+                          <RichContentDisplay
                             content={answer.content}
                             className="mb-3 sm:mb-4 text-sm sm:text-base leading-relaxed text-gray-700"
                           />
@@ -1057,27 +1252,44 @@ const useApi = <T>(endpoint: string, options = {}) => {
 
                           {/* Comment Form */}
                           {showCommentForm[answer.id] && (
-                            <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
-                              <RichTextEditor
-                                value={newComment[answer.id] || ''}
-                                onChange={(content) => setNewComment({ ...newComment, [answer.id]: content })}
-                                placeholder="Add a comment with code examples..."
-                                height="h-20 sm:h-24"
-                              />
-                              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-2">
-                                <button
-                                  onClick={() => setShowCommentForm({ ...showCommentForm, [answer.id]: false })}
-                                  className="px-3 py-1.5 text-gray-600 hover:text-gray-800 font-medium text-xs sm:text-sm rounded hover:bg-gray-100 transition-colors"
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  onClick={() => handleAddComment(answer.id)}
-                                  disabled={!newComment[answer.id]?.trim()}
-                                  className="bg-blue-600 text-white px-3 sm:px-4 py-1.5 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium text-xs sm:text-sm"
-                                >
-                                  Comment
-                                </button>
+                            <div className="mt-3 sm:mt-4">
+                              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                                <div className="p-3 sm:p-4">
+                                  <div className="prose prose-sm max-w-none mb-3">
+                                    <p className="text-gray-600 text-sm">
+                                      Add a comment to this answer. You can use formatting tools to include:
+                                    </p>
+                                    <ul className="text-gray-600 text-sm list-disc pl-5">
+                                      <li>Code snippets</li>
+                                      <li>Links and references</li>
+                                      <li>Basic formatting</li>
+                                    </ul>
+                                  </div>
+
+                                  <RichTextEditor
+                                    value={newComment[answer.id] || ''}
+                                    onChange={(content) => setNewComment({ ...newComment, [answer.id]: content })}
+                                    placeholder="Add your comment..."
+                                    height="h-32 sm:h-40"
+                                  />
+
+                                  <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-3">
+                                    <button
+                                      onClick={() => setShowCommentForm({ ...showCommentForm, [answer.id]: false })}
+                                      className="px-3 py-1.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors font-medium text-sm"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      onClick={() => handleAddComment(answer.id)}
+                                      disabled={!newComment[answer.id]?.trim()}
+                                      className="bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium text-sm flex items-center justify-center gap-1.5"
+                                    >
+                                      <MessageCircle size={14} />
+                                      Add Comment
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           )}
@@ -1088,22 +1300,42 @@ const useApi = <T>(endpoint: string, options = {}) => {
                               {answer.comments.map((comment) => {
                                 const commentAuthorAvatar = getUserAvatar(comment.author, comment.avatar);
                                 return (
-                                  <div key={comment.id} className="p-3 bg-gray-50 rounded-lg">
-                                    <p className="text-gray-700 mb-2 text-xs sm:text-sm leading-relaxed">{comment.content}</p>
+                                  <div key={comment.id} className="bg-white border border-gray-200 rounded-lg p-3">
+                                    <RichContentDisplay 
+                                      content={comment.content}
+                                      className="text-gray-700 mb-2 text-sm leading-relaxed"
+                                    />
                                     <div className="flex items-center gap-2">
                                       {commentAuthorAvatar.avatar ? (
                                         <img
                                           src={commentAuthorAvatar.avatar}
                                           alt={comment.author}
-                                          className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover"
+                                          className="w-6 h-6 rounded-full object-cover"
                                         />
                                       ) : (
-                                        <div className={`w-5 h-5 sm:w-6 sm:h-6 ${commentAuthorAvatar.color} rounded-full flex items-center justify-center text-white text-xs font-medium`}>
+                                        <div className={`w-6 h-6 ${commentAuthorAvatar.color} rounded-full flex items-center justify-center text-white text-xs font-medium`}>
                                           {commentAuthorAvatar.initials}
                                         </div>
                                       )}
-                                      <span className="font-medium text-gray-900 text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{comment.author}</span>
+                                      <span className="font-medium text-gray-900 text-sm">{comment.author}</span>
                                       <span className="text-xs text-gray-500">{comment.createdAt}</span>
+                                      
+                                      {/* Vote buttons for comments */}
+                                      <div className="flex items-center gap-1 ml-auto">
+                                        <button
+                                          onClick={() => handleVote('comment', comment.id, 'up')}
+                                          className={`p-1 rounded transition-colors ${comment.isUpvoted ? 'text-orange-600 bg-orange-50' : 'text-gray-400 hover:text-orange-600 hover:bg-orange-50'}`}
+                                        >
+                                          <ArrowUp size={14} />
+                                        </button>
+                                        <span className="text-xs font-medium text-gray-600">{comment.upvotes - comment.downvotes}</span>
+                                        <button
+                                          onClick={() => handleVote('comment', comment.id, 'down')}
+                                          className={`p-1 rounded transition-colors ${comment.isDownvoted ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                                        >
+                                          <ArrowDown size={14} />
+                                        </button>
+                                      </div>
                                     </div>
                                   </div>
                                 );

@@ -967,6 +967,44 @@ const CommunityPage: React.FC = () => {
                         </div>
 
                         <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
+                          {/* Participants */}
+                          <div className="flex items-center gap-2">
+                            <div className="flex -space-x-2">
+                              {thread.answers.slice(0, 3).map((answer) => {
+                                const participantAvatar = getUserAvatar(answer.author, answer.avatar);
+                                return (
+                                  <div key={answer.id} className="relative" title={answer.author}>
+                                    {answer.avatar ? (
+                                      <img
+                                        src={answer.avatar}
+                                        alt={answer.author}
+                                        className="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-white object-cover"
+                                      />
+                                    ) : (
+                                      <div
+                                        className={`w-6 h-6 sm:w-7 sm:h-7 ${participantAvatar.color} rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-medium`}
+                                      >
+                                        {participantAvatar.initials}
+                                      </div>
+                                    )}
+                                    {answer.badge && (
+                                      <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 border-2 border-white rounded-full" />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              {thread.answers.length > 3 && (
+                                <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gray-100 rounded-full border-2 border-white flex items-center justify-center text-gray-600 text-xs font-medium">
+                                  +{thread.answers.length - 3}
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-xs sm:text-sm text-gray-500">
+                              <span className="sm:hidden">{thread.answers.length}</span>
+                              <span className="hidden sm:inline">{thread.answers.length} replies</span>
+                            </span>
+                          </div>
+
                           {/* Action Buttons */}
                           <div className="flex items-center gap-2">
                             <button
