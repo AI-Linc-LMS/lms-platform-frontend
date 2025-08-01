@@ -244,8 +244,20 @@ const ThreadDetailPage: React.FC = () => {
     }
   };
   const handleBackToCommunity = () => {
-    // Use navigate with replace: false to maintain proper browser history
-    navigate('/community', { replace: false });
+    // Clear any local state that might interfere with navigation
+    setNewAnswer('');
+    setNewComment({});
+    setShowCommentForm({});
+    setEditingAnswer(null);
+    setEditedContent('');
+    setShowDeleteConfirm(null);
+    setIsBookmarked(false);
+    
+    // Navigate back to community with proper history management
+    navigate('/community', { 
+      replace: false,
+      state: { fromThread: threadId }
+    });
   };
   const canEdit = (author: string) => author === 'Current User';
 
@@ -273,16 +285,16 @@ const ThreadDetailPage: React.FC = () => {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-lg">
+          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full shadow-lg mx-4">
             <div className="text-center">
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Trash2 size={20} className="text-red-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete {showDeleteConfirm.type}</h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 mb-6 text-sm sm:text-base">
                 Are you sure you want to delete this {showDeleteConfirm.type}? This action cannot be undone.
               </p>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={() => setShowDeleteConfirm(null)}
                   className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors font-medium"
@@ -303,137 +315,142 @@ const ThreadDetailPage: React.FC = () => {
 
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-14 sm:h-16">
             <button
               onClick={handleBackToCommunity}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 font-medium"
+              className="flex items-center gap-1 sm:gap-2 text-gray-600 hover:text-gray-800 font-medium text-sm sm:text-base"
             >
-              <ArrowLeft size={20} />
-              <span>Back to Community</span>
+              <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
+              <span className="hidden xs:inline">Back to</span>
+              <span>Community</span>
             </button>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <button
                 onClick={() => setIsBookmarked(!isBookmarked)}
-                className={`p-2 rounded-md transition-colors ${isBookmarked
+                className={`p-1.5 sm:p-2 rounded-md transition-colors ${isBookmarked
                     ? 'bg-yellow-100 text-yellow-700'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
               >
-                <Bookmark size={18} className={isBookmarked ? 'fill-current' : ''} />
+                <Bookmark size={16} className={`sm:w-4 sm:h-4 ${isBookmarked ? 'fill-current' : ''}`} />
               </button>
 
-              <button className="p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-md transition-colors">
-                <Share2 size={18} />
+              <button className="p-1.5 sm:p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-md transition-colors">
+                <Share2 size={16} className="sm:w-4 sm:h-4" />
               </button>
 
-              <button className="p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-md transition-colors">
-                <Flag size={18} />
+              <button className="p-1.5 sm:p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-md transition-colors">
+                <Flag size={16} className="sm:w-4 sm:h-4" />
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Thread Header */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
           {/* Status Indicators */}
           {(thread.isPinned || thread.isSolved) && (
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 mb-3 sm:mb-4">
               {thread.isPinned && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
-                  <Pin size={12} />
-                  Pinned
+                  <Pin size={10} />
+                  <span className="hidden xs:inline">Pinned</span>
                 </span>
               )}
               {thread.isSolved && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                  <Award size={12} />
-                  Solved
+                  <Award size={10} />
+                  <span className="hidden xs:inline">Solved</span>
                 </span>
               )}
             </div>
           )}
 
-          <div className="flex gap-6">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
             {/* Vote Section */}
-            <div className="flex flex-col items-center gap-2 min-w-[80px]">
+            <div className="flex sm:flex-col items-center sm:items-center gap-3 sm:gap-2 min-w-[80px] order-2 sm:order-1">
               <button
                 onClick={() => handleVote('thread', thread.id, 'up')}
-                className={`p-3 rounded-md transition-colors ${thread.isUpvoted ? 'text-orange-600 bg-orange-50' : 'text-gray-400 hover:text-orange-600 hover:bg-orange-50'
+                className={`p-2 sm:p-3 rounded-md transition-colors ${thread.isUpvoted ? 'text-orange-600 bg-orange-50' : 'text-gray-400 hover:text-orange-600 hover:bg-orange-50'
                   }`}
               >
-                <ArrowUp size={24} />
+                <ArrowUp size={20} className="sm:w-6 sm:h-6" />
               </button>
-              <span className={`text-xl font-bold px-3 py-2 rounded ${thread.upvotes - thread.downvotes > 0 ? 'text-orange-600' :
+              <span className={`text-lg sm:text-xl font-bold px-2 sm:px-3 py-1 sm:py-2 rounded ${thread.upvotes - thread.downvotes > 0 ? 'text-orange-600' :
                   thread.upvotes - thread.downvotes < 0 ? 'text-blue-600' : 'text-gray-500'
                 }`}>
                 {thread.upvotes - thread.downvotes}
               </span>
               <button
                 onClick={() => handleVote('thread', thread.id, 'down')}
-                className={`p-3 rounded-md transition-colors ${thread.isDownvoted ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                className={`p-2 sm:p-3 rounded-md transition-colors ${thread.isDownvoted ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
                   }`}
               >
-                <ArrowDown size={24} />
+                <ArrowDown size={20} className="sm:w-6 sm:h-6" />
               </button>
             </div>
 
             {/* Content */}
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold text-gray-900 mb-4">{thread.title}</h1>
+            <div className="flex-1 order-1 sm:order-2">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4 leading-tight">{thread.title}</h1>
 
               {/* Tags */}
-              <div className="flex flex-wrap gap-2 mb-6">
+              <div className="flex flex-wrap gap-1 sm:gap-2 mb-4 sm:mb-6">
                 {thread.tags.map(tag => (
-                  <span key={tag} className="inline-flex items-center px-2 py-1 text-sm font-medium bg-blue-100 text-blue-800 rounded-full">
+                  <span key={tag} className="inline-flex items-center px-2 py-1 text-xs sm:text-sm font-medium bg-blue-100 text-blue-800 rounded-full">
                     {tag}
                   </span>
                 ))}
               </div>
 
               {/* Content */}
-              <div className="prose max-w-none mb-6">
-                <div className="text-gray-700 whitespace-pre-wrap">{thread.content}</div>
+              <div className="prose prose-sm sm:prose max-w-none mb-4 sm:mb-6">
+                <div className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base leading-relaxed">{thread.content}</div>
               </div>
 
               {/* Author Info */}
-              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-3 sm:pt-4 border-t border-gray-200 gap-3 sm:gap-0">
+                <div className="flex items-center gap-2 sm:gap-3">
                   {authorAvatar.avatar ? (
                     <img
                       src={authorAvatar.avatar}
                       alt={thread.author}
-                      className="w-12 h-12 rounded-full object-cover"
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover"
                     />
                   ) : (
-                    <div className={`w-12 h-12 ${authorAvatar.color} rounded-full flex items-center justify-center text-white font-bold`}>
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 ${authorAvatar.color} rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base`}>
                       {authorAvatar.initials}
                     </div>
                   )}
 
                   <div>
-                    <div className="font-semibold text-gray-900">{thread.author}</div>
-                    <div className="text-sm text-gray-500 flex items-center gap-3">
+                    <div className="font-semibold text-gray-900 text-sm sm:text-base">{thread.author}</div>
+                    <div className="text-xs sm:text-sm text-gray-500 flex items-center gap-2 sm:gap-3">
                       <span className="flex items-center gap-1">
-                        <Calendar size={14} />
-                        {thread.createdAt}
+                        <Calendar size={12} className="sm:w-3.5 sm:h-3.5" />
+                        <span className="truncate">{thread.createdAt}</span>
                       </span>
                       <span className="flex items-center gap-1">
-                        <Eye size={14} />
-                        {thread.views} views
+                        <Eye size={12} className="sm:w-3.5 sm:h-3.5" />
+                        <span>{thread.views}</span>
+                        <span className="hidden xs:inline">views</span>
                       </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Participants */}
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-600">{participants.length} participants</span>
+                <div className="flex items-center justify-between sm:justify-end gap-3">
+                  <span className="text-xs sm:text-sm text-gray-600">
+                    <span className="sm:hidden">{participants.length} people</span>
+                    <span className="hidden sm:inline">{participants.length} participants</span>
+                  </span>
                   <div className="flex -space-x-1">
-                    {participants.slice(0, 5).map((participant) => {
+                    {participants.slice(0, 4).map((participant) => {
                       const participantName = participant as string;
                       const participantData = getUserAvatar(participantName);
                       const participantAnswer = thread.answers.find(a => a.author === participantName);
@@ -443,12 +460,12 @@ const ThreadDetailPage: React.FC = () => {
                             <img
                               src={participantAnswer.avatar}
                               alt={participantName}
-                              className="w-8 h-8 rounded-full border-2 border-white object-cover"
+                              className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 border-white object-cover"
                               title={participantName}
                             />
                           ) : (
                             <div
-                              className={`w-8 h-8 ${participantData.color} rounded-full border-2 border-white flex items-center justify-center text-white text-sm font-medium`}
+                              className={`w-6 h-6 sm:w-8 sm:h-8 ${participantData.color} rounded-full border-2 border-white flex items-center justify-center text-white text-xs sm:text-sm font-medium`}
                               title={participantName}
                             >
                               {participantData.initials}
@@ -457,9 +474,9 @@ const ThreadDetailPage: React.FC = () => {
                         </div>
                       );
                     })}
-                    {participants.length > 5 && (
-                      <div className="w-8 h-8 bg-gray-100 rounded-full border-2 border-white flex items-center justify-center text-gray-600 text-sm font-medium">
-                        +{participants.length - 5}
+                    {participants.length > 4 && (
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-100 rounded-full border-2 border-white flex items-center justify-center text-gray-600 text-xs sm:text-sm font-medium">
+                        +{participants.length - 4}
                       </div>
                     )}
                   </div>
@@ -470,30 +487,31 @@ const ThreadDetailPage: React.FC = () => {
         </div>
 
         {/* Answers Section */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">
-              {thread.answers.length} Answers
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+              <span className="sm:hidden">{thread.answers.length} Replies</span>
+              <span className="hidden sm:inline">{thread.answers.length} Answers</span>
             </h2>
           </div>
 
           {/* Add Answer Form */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Answer</h3>
+          <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Your Answer</h3>
             <textarea
               placeholder="Share your knowledge and help the community..."
               value={newAnswer}
               onChange={(e) => setNewAnswer(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md h-32 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md h-24 sm:h-32 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm sm:text-base"
             />
-            <div className="flex justify-between items-center mt-4">
-              <div className="text-sm text-gray-500">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-3 sm:mt-4 gap-3 sm:gap-0">
+              <div className="text-xs sm:text-sm text-gray-500">
                 Be helpful and respectful
               </div>
               <button
                 onClick={handleAddAnswer}
                 disabled={!newAnswer.trim()}
-                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
+                className="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium text-sm sm:text-base"
               >
                 Post Answer
               </button>
@@ -508,58 +526,58 @@ const ThreadDetailPage: React.FC = () => {
                 }`}>
                 {/* Accepted Answer Banner */}
                 {answer.isAccepted && (
-                  <div className="bg-green-50 px-6 py-3 border-b border-green-200">
-                    <div className="flex items-center gap-2 text-green-700 font-medium">
-                      <CheckCircle size={18} />
+                  <div className="bg-green-50 px-4 sm:px-6 py-2 sm:py-3 border-b border-green-200">
+                    <div className="flex items-center gap-2 text-green-700 font-medium text-sm sm:text-base">
+                      <CheckCircle size={16} className="sm:w-4 sm:h-4" />
                       <span>Accepted Answer</span>
                     </div>
                   </div>
                 )}
 
-                <div className="p-6">
-                  <div className="flex gap-6">
+                <div className="p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
                     {/* Vote Section */}
-                    <div className="flex flex-col items-center gap-2 min-w-[60px]">
+                    <div className="flex sm:flex-col items-center sm:items-center gap-3 sm:gap-2 min-w-[60px] order-2 sm:order-1">
                       <button
                         onClick={() => handleVote('answer', answer.id, 'up')}
-                        className={`p-2 rounded-md transition-colors ${answer.isUpvoted ? 'text-orange-600 bg-orange-50' : 'text-gray-400 hover:text-orange-600 hover:bg-orange-50'
+                        className={`p-1.5 sm:p-2 rounded-md transition-colors ${answer.isUpvoted ? 'text-orange-600 bg-orange-50' : 'text-gray-400 hover:text-orange-600 hover:bg-orange-50'
                           }`}
                       >
-                        <ArrowUp size={18} />
+                        <ArrowUp size={16} className="sm:w-4 sm:h-4" />
                       </button>
-                      <span className={`text-lg font-bold px-2 py-1 rounded ${answer.upvotes - answer.downvotes > 0 ? 'text-orange-600' :
+                      <span className={`text-base sm:text-lg font-bold px-1.5 sm:px-2 py-1 rounded ${answer.upvotes - answer.downvotes > 0 ? 'text-orange-600' :
                           answer.upvotes - answer.downvotes < 0 ? 'text-blue-600' : 'text-gray-500'
                         }`}>
                         {answer.upvotes - answer.downvotes}
                       </span>
                       <button
                         onClick={() => handleVote('answer', answer.id, 'down')}
-                        className={`p-2 rounded-md transition-colors ${answer.isDownvoted ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                        className={`p-1.5 sm:p-2 rounded-md transition-colors ${answer.isDownvoted ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
                           }`}
                       >
-                        <ArrowDown size={18} />
+                        <ArrowDown size={16} className="sm:w-4 sm:h-4" />
                       </button>
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1">
+                    <div className="flex-1 order-1 sm:order-2">
                       {editingAnswer === answer.id ? (
-                        <div className="space-y-4">
+                        <div className="space-y-3 sm:space-y-4">
                           <textarea
                             value={editedContent}
                             onChange={(e) => setEditedContent(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md h-32 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md h-24 sm:h-32 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm sm:text-base"
                           />
-                          <div className="flex gap-2">
+                          <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
                             <button
                               onClick={() => setEditingAnswer(null)}
-                              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors font-medium"
+                              className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-green-700 transition-colors font-medium text-sm sm:text-base"
                             >
                               Save
                             </button>
                             <button
                               onClick={() => setEditingAnswer(null)}
-                              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors font-medium"
+                              className="bg-gray-100 text-gray-700 px-3 sm:px-4 py-2 rounded-md hover:bg-gray-200 transition-colors font-medium text-sm sm:text-base"
                             >
                               Cancel
                             </button>
@@ -567,43 +585,43 @@ const ThreadDetailPage: React.FC = () => {
                         </div>
                       ) : (
                         <>
-                          <div className="prose max-w-none mb-4">
-                            <div className="text-gray-700 whitespace-pre-wrap">{answer.content}</div>
+                          <div className="prose prose-sm sm:prose max-w-none mb-3 sm:mb-4">
+                            <div className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base leading-relaxed">{answer.content}</div>
                           </div>
 
                           {/* Author Info and Actions */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                            <div className="flex items-center gap-2 sm:gap-3">
                               {answerAuthorAvatar.avatar ? (
                                 <img
                                   src={answerAuthorAvatar.avatar}
                                   alt={answer.author}
-                                  className="w-10 h-10 rounded-full object-cover"
+                                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
                                 />
                               ) : (
-                                <div className={`w-10 h-10 ${answerAuthorAvatar.color} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
+                                <div className={`w-8 h-8 sm:w-10 sm:h-10 ${answerAuthorAvatar.color} rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm`}>
                                   {answerAuthorAvatar.initials}
                                 </div>
                               )}
 
                               <div>
-                                <div className="font-semibold text-gray-900">{answer.author}</div>
-                                <div className="text-sm text-gray-500">
+                                <div className="font-semibold text-gray-900 text-sm sm:text-base">{answer.author}</div>
+                                <div className="text-xs sm:text-sm text-gray-500">
                                   {answer.createdAt}
                                 </div>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-between sm:justify-end gap-2">
                               <button
                                 onClick={() => setShowCommentForm({ ...showCommentForm, [answer.id]: !showCommentForm[answer.id] })}
-                                className="text-gray-600 hover:text-blue-600 font-medium text-sm"
+                                className="text-gray-600 hover:text-blue-600 font-medium text-xs sm:text-sm px-2 py-1 rounded hover:bg-blue-50 transition-colors"
                               >
                                 Reply
                               </button>
 
                               {canEdit(answer.author) && (
-                                <>
+                                <div className="flex items-center gap-1">
                                   <button
                                     onClick={() => {
                                       setEditingAnswer(answer.id);
@@ -611,39 +629,39 @@ const ThreadDetailPage: React.FC = () => {
                                     }}
                                     className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                                   >
-                                    <Edit3 size={14} />
+                                    <Edit3 size={12} className="sm:w-3.5 sm:h-3.5" />
                                   </button>
                                   <button
                                     onClick={() => setShowDeleteConfirm({ type: 'answer', id: answer.id })}
                                     className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                                   >
-                                    <Trash2 size={14} />
+                                    <Trash2 size={12} className="sm:w-3.5 sm:h-3.5" />
                                   </button>
-                                </>
+                                </div>
                               )}
                             </div>
                           </div>
 
                           {/* Comment Form */}
                           {showCommentForm[answer.id] && (
-                            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                            <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
                               <textarea
                                 placeholder="Add a comment..."
                                 value={newComment[answer.id] || ''}
                                 onChange={(e) => setNewComment({ ...newComment, [answer.id]: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md h-16 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-white"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md h-12 sm:h-16 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-white text-sm sm:text-base"
                               />
-                              <div className="flex justify-end gap-2 mt-2">
+                              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-2">
                                 <button
                                   onClick={() => setShowCommentForm({ ...showCommentForm, [answer.id]: false })}
-                                  className="px-3 py-1.5 text-gray-600 hover:text-gray-800 font-medium text-sm"
+                                  className="px-3 py-1.5 text-gray-600 hover:text-gray-800 font-medium text-xs sm:text-sm rounded hover:bg-gray-100 transition-colors"
                                 >
                                   Cancel
                                 </button>
                                 <button
                                   onClick={() => handleAddComment(answer.id)}
                                   disabled={!newComment[answer.id]?.trim()}
-                                  className="bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium text-sm"
+                                  className="bg-blue-600 text-white px-3 sm:px-4 py-1.5 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium text-xs sm:text-sm"
                                 >
                                   Comment
                                 </button>
@@ -653,25 +671,25 @@ const ThreadDetailPage: React.FC = () => {
 
                           {/* Comments */}
                           {answer.comments.length > 0 && (
-                            <div className="mt-4 space-y-3">
+                            <div className="mt-3 sm:mt-4 space-y-2 sm:space-y-3">
                               {answer.comments.map((comment) => {
                                 const commentAuthorAvatar = getUserAvatar(comment.author, comment.avatar);
                                 return (
                                   <div key={comment.id} className="p-3 bg-gray-50 rounded-lg">
-                                    <p className="text-gray-700 mb-2 text-sm">{comment.content}</p>
+                                    <p className="text-gray-700 mb-2 text-xs sm:text-sm leading-relaxed">{comment.content}</p>
                                     <div className="flex items-center gap-2">
                                       {commentAuthorAvatar.avatar ? (
                                         <img
                                           src={commentAuthorAvatar.avatar}
                                           alt={comment.author}
-                                          className="w-6 h-6 rounded-full object-cover"
+                                          className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover"
                                         />
                                       ) : (
-                                        <div className={`w-6 h-6 ${commentAuthorAvatar.color} rounded-full flex items-center justify-center text-white text-xs font-medium`}>
+                                        <div className={`w-5 h-5 sm:w-6 sm:h-6 ${commentAuthorAvatar.color} rounded-full flex items-center justify-center text-white text-xs font-medium`}>
                                           {commentAuthorAvatar.initials}
                                         </div>
                                       )}
-                                      <span className="font-medium text-gray-900 text-sm">{comment.author}</span>
+                                      <span className="font-medium text-gray-900 text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{comment.author}</span>
                                       <span className="text-xs text-gray-500">{comment.createdAt}</span>
                                     </div>
                                   </div>
