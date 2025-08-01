@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import EmailJobBodyModal from "./EmailJobBodyModal";
 
 export interface EmailJob {
   id: number;
@@ -32,6 +33,8 @@ const EmailJobsHistoryModal: React.FC<EmailJobsHistoryModalProps> = ({
   onViewStatus,
   onCreateNewJob,
 }) => {
+  const [showEmailBodyModal, setShowEmailBodyModal] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<EmailJob | null>(null);
   if (!open) return null;
 
   if (error) {
@@ -148,12 +151,23 @@ const EmailJobsHistoryModal: React.FC<EmailJobsHistoryModalProps> = ({
                         </span>
                       )}
                     </div>
-                    <button
-                      onClick={() => onViewStatus(job.task_id)}
-                      className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
-                    >
-                      View Details
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setSelectedJob(job);
+                          setShowEmailBodyModal(true);
+                        }}
+                        className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+                      >
+                        View email
+                      </button>
+                      <button
+                        onClick={() => onViewStatus(job.task_id)}
+                        className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+                      >
+                        View Details
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -184,6 +198,11 @@ const EmailJobsHistoryModal: React.FC<EmailJobsHistoryModalProps> = ({
           </button>
         </div>
       </div>
+      <EmailJobBodyModal
+        open={showEmailBodyModal}
+        onClose={() => setShowEmailBodyModal(false)}
+        job={selectedJob}
+      />
     </div>
   );
 };
