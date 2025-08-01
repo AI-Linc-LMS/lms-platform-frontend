@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Search,
   Plus,
@@ -70,6 +70,7 @@ interface Thread {
 
 const CommunityPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [threads, setThreads] = useState<Thread[]>([
     {
       id: '1',
@@ -341,8 +342,20 @@ const CommunityPage: React.FC = () => {
   };
 
   const handleThreadClick = (threadId: string) => {
-    navigate(`/community/thread/${threadId}`);
+    // Use replace: false to ensure proper history management
+    navigate(`/community/thread/${threadId}`, { replace: false });
   };
+
+  // Add a method to handle back navigation if needed
+
+  useEffect(() => {
+    // Reset any expanded states when returning to community page
+    setExpandedThreads(new Set());
+    setShowMobileMenu(false);
+    setShowMobileFilters(false);
+    setEditingThread(null);
+    setShowNewThreadForm(false);
+  }, [location.pathname]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -586,7 +599,7 @@ const CommunityPage: React.FC = () => {
                         <ArrowUp size={18} />
                       </button>
                       <span className={`text-sm font-semibold px-2 py-1 rounded ${thread.upvotes - thread.downvotes > 0 ? 'text-orange-600' :
-                          thread.upvotes - thread.downvotes < 0 ? 'text-blue-600' : 'text-gray-500'
+                        thread.upvotes - thread.downvotes < 0 ? 'text-blue-600' : 'text-gray-500'
                         }`}>
                         {thread.upvotes - thread.downvotes}
                       </span>
@@ -751,8 +764,8 @@ const CommunityPage: React.FC = () => {
                               toggleThreadExpansion(thread.id);
                             }}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${expandedThreads.has(thread.id)
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                               }`}
                           >
                             <MessageCircle size={14} />
