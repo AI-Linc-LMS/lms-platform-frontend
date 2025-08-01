@@ -152,7 +152,18 @@ const ThreadDetailPage: React.FC = () => {
     if (thread) {
       setThread(prev => ({ ...prev, views: (prev.views || 0) + 1 }));
     }
-  }, [thread, threadId]);
+    
+    // Cleanup function to reset state when navigating away
+    return () => {
+      setNewAnswer('');
+      setNewComment({});
+      setShowCommentForm({});
+      setEditingAnswer(null);
+      setEditedContent('');
+      setShowDeleteConfirm(null);
+      setIsBookmarked(false);
+    };
+  }, [threadId]);
 
   // Helper functions from CommunityPage
   const getUserAvatar = (name: string, avatar?: string) => {
@@ -244,20 +255,8 @@ const ThreadDetailPage: React.FC = () => {
     }
   };
   const handleBackToCommunity = () => {
-    // Clear any local state that might interfere with navigation
-    setNewAnswer('');
-    setNewComment({});
-    setShowCommentForm({});
-    setEditingAnswer(null);
-    setEditedContent('');
-    setShowDeleteConfirm(null);
-    setIsBookmarked(false);
-
-    // Navigate back to community with proper history management
-    navigate('/community', {
-      replace: false,
-      state: { fromThread: threadId }
-    });
+    // Navigate back to community immediately without state clearing
+    navigate('/community');
   };
   const canEdit = (author: string) => author === 'Current User';
 
