@@ -283,12 +283,12 @@ export const createActivityPayload = (
 
   return {
     date: formatDateForApi(),
-    "time-spend-seconds": validatedTotalTime,
+    "time_spent_seconds": validatedTotalTime,
     "time-spend": Math.floor(validatedTotalTime / 60),
     current_session_duration: validatedSessionDuration,
-    session_id: sessionId,
+    // session_id: sessionId,
     device_info: deviceInfo,
-    user_id: userId,
+    session_id: userId,
     timestamp: Date.now(),
   };
 };
@@ -324,12 +324,12 @@ export const createPreciseActivityPayload = (
 
   return {
     date: formatDateForApi(new Date(timestamp)),
-    "time-spend-seconds": validatedTotalTime, // Exact seconds for precision
+    "time_spent_seconds": validatedTotalTime, // Exact seconds for precision
     "time-spend": Math.floor(validatedTotalTime / 60), // Use floor to avoid inflating time
     current_session_duration: validatedSessionDuration, // Current session data for diagnostics
-    session_id: sessionId,
+    // session_id: sessionId,
     device_info: deviceInfo,
-    user_id: finalUserId,
+    session_id: finalUserId,
     timestamp: timestamp, // Client timestamp for verification
   };
 };
@@ -381,10 +381,10 @@ export const sendSessionEndData = async (
 
     // Create session-end payload with total accumulated time (Today's Total)
     const sessionEndPayload = {
-      "total-time-seconds": validatedTotalTime, // Send Today's Total (accumulated time)
-      "session_id": sessionId,
+      "time_spent_seconds": validatedTotalTime, // Send Today's Total (accumulated time)
+      // "session_id": sessionId,
       "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
-      "user_id": finalUserId, // Keep for backward compatibility
+      "session_id": finalUserId, // Keep for backward compatibility
       "device_id": getDeviceId(), // Unique device/browser identifier
       "date": formatDateForApi(),
       "device_type": deviceInfo.deviceType,
@@ -395,12 +395,12 @@ export const sendSessionEndData = async (
       sessionDuration: validatedSessionDuration,
       totalAccumulatedTime: validatedTotalTime,
       sessionId: sessionId,
-      endpoint: `${apiUrl}/activity/clients/${clientId}/activity-log/`,
+      endpoint: `${apiUrl}/activity/clients/${clientId}/track-time/`,
     });
 
     // Use fetch for immediate sending
     const response = await fetch(
-      `${apiUrl}/activity/clients/${clientId}/activity-log/`,
+      `${apiUrl}/activity/clients/${clientId}/track-time/`,
       {
         method: "POST",
         headers: {
@@ -501,10 +501,10 @@ export const sendSessionEndDataViaBeacon = (
 
     // Create session-end payload with total accumulated time (Today's Total)
     const sessionEndPayload = {
-      "total-time-seconds": validatedTotalTime, // Send Today's Total (accumulated time)
-      "session_id": sessionId,
+      "time_spent_seconds": validatedTotalTime, // Send Today's Total (accumulated time)
+      // "session_id": sessionId,
       "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
-      "user_id": finalUserId, // Keep for backward compatibility
+      "session_id": finalUserId, // Keep for backward compatibility
       "device_id": getDeviceId(), // Unique device/browser identifier
       "date": formatDateForApi(),
       "device_type": deviceInfo.deviceType,
@@ -516,7 +516,7 @@ export const sendSessionEndDataViaBeacon = (
       type: "application/json",
     });
     const success = navigator.sendBeacon(
-      `${apiUrl}/activity/clients/${clientId}/activity-log/`,
+      `${apiUrl}/activity/clients/${clientId}/track-time/`,
       blob
     );
 
@@ -558,9 +558,9 @@ export const createSessionOnlyActivityPayload = (
   const finalUserId = userId || getCurrentUserId();
 
   return {
-    "time-spend-seconds": validatedSessionDuration,
-    session_id: sessionId,
-    user_id: finalUserId,
+    "time_spent_seconds": validatedSessionDuration,
+    // session_id: sessionId,
+    session_id: finalUserId,
     session_only: true,
   };
 };
@@ -621,10 +621,10 @@ export const sendPeriodicSessionUpdate = async (
 
     // Create session update payload with total accumulated time (Today's Total)
     const sessionUpdatePayload = {
-      "total-time-seconds": totalAccumulatedTime, // Send Today's Total (accumulated time)
-      "session_id": sessionId,
+      "time_spent_seconds": totalAccumulatedTime, // Send Today's Total (accumulated time)
+      // "session_id": sessionId,
       "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
-      "user_id": finalUserId, // Keep for backward compatibility
+      "session_id": finalUserId, // Keep for backward compatibility
       "device_id": getDeviceId(), // Unique device/browser identifier
       "date": formatDateForApi(),
       "device_type": deviceInfo.deviceType,
@@ -635,12 +635,12 @@ export const sendPeriodicSessionUpdate = async (
       sessionDuration: validatedSessionDuration,
       totalAccumulatedTime: totalAccumulatedTime,
       sessionId: sessionId,
-      endpoint: `${apiUrl}/activity/clients/${clientId}/activity-log/`,
+      endpoint: `${apiUrl}/activity/clients/${clientId}/track-time/`,
     });
 
     // Send the session update
     const response = await fetch(
-      `${apiUrl}/activity/clients/${clientId}/activity-log/`,
+      `${apiUrl}/activity/clients/${clientId}/track-time/`,
       {
         method: "POST",
         headers: {

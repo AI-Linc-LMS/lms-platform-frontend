@@ -611,7 +611,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       const userId = getCurrentUserId();
 
       // Get device fingerprint for session ID
-      const { session_id } = getDeviceFingerprint();
+      // const { session_id } = getDeviceFingerprint();
 
       // Use the Fetch API rather than Beacon for better network tab visibility
       const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -644,15 +644,15 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         }
 
         syncData = {
-          "time-spend-seconds": pendingData.totalTimeSpent,
-          "session_id": session_id,
-          "user_id": userId,
+          "time_spent_seconds": pendingData.totalTimeSpent,
+          // "session_id": session_id,
+          "session_id": userId,
           "session_only": false // Legacy data
         };
 
         logActivityEvent('Syncing pending legacy data (simplified)', {
           totalSeconds: pendingData.totalTimeSpent,
-          apiUrl: `${apiUrl}/activity/clients/${clientId}/activity-log/`
+          apiUrl: `${apiUrl}/activity/clients/${clientId}/track-time/`
         });
       } else {
         // Invalid or unrecognized pending data
@@ -662,7 +662,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       }
 
       // Prepare the fetch request
-      fetch(`${apiUrl}/activity/clients/${clientId}/activity-log/`, {
+      fetch(`${apiUrl}/activity/clients/${clientId}/track-time/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -756,22 +756,22 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
       // Get device fingerprint for multi-device tracking
-      const { session_id, device_info } = getDeviceFingerprint();
+      const { /* session_id, */ device_info } = getDeviceFingerprint();
 
       const beaconData = {
         date: formattedDate,
-        "time-spend-seconds": totalTimeToSend, // Send exact seconds for precision
+        "time_spent_seconds": totalTimeToSend, // Send exact seconds for precision
         "time-spend": Math.floor(totalTimeToSend / 60), // Use floor to avoid inflating time
-        session_id: session_id,
+        // session_id: session_id,
         device_info: device_info,
         current_session_duration: currentSessionDuration, // Send current session separately for diagnostics
-        user_id: getCurrentUserId(),
+        session_id: getCurrentUserId(),
         timestamp: Date.now()
       };
 
       // Use the Beacon API which is designed for exit events
       const blob = new Blob([JSON.stringify(beaconData)], { type: 'application/json' });
-      const success = navigator.sendBeacon(`${apiUrl}/activity/clients/${clientId}/activity-log/`, blob);
+      const success = navigator.sendBeacon(`${apiUrl}/activity/clients/${clientId}/track-time/`, blob);
 
       if (success) {
         // Record this sync to prevent duplicates
