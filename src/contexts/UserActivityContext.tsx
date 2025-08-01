@@ -766,7 +766,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         device_info: device_info,
         current_session_duration: currentSessionDuration, // Send current session separately for diagnostics
         session_id: getCurrentUserId(),
-        timestamp: Date.now()
+        // timestamp: Date.now()
       };
 
       // Use the Beacon API which is designed for exit events

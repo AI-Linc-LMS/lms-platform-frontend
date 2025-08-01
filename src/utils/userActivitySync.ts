@@ -5,9 +5,9 @@ import {
   syncOfflineActivityData,
   ActivityData,
 } from "../services/activityTrackingApi";
-import { getDeviceFingerprint, getDeviceId } from "./deviceIdentifier";
+import { getDeviceFingerprint /*, getDeviceId*/ } from "./deviceIdentifier";
 import { logActivityEvent } from "./activityDebugger";
-import { getCurrentUserId, getAuthenticatedUserId } from "./userIdHelper";
+import { getCurrentUserId /*, getAuthenticatedUserId*/ } from "./userIdHelper";
 
 // Storage keys for deduplication (must match UserActivityContext)
 const STORAGE_KEYS = {
@@ -289,7 +289,7 @@ export const createActivityPayload = (
     // session_id: sessionId,
     device_info: deviceInfo,
     session_id: userId,
-    timestamp: Date.now(),
+    // timestamp: Date.now(),
   };
 };
 
@@ -330,7 +330,7 @@ export const createPreciseActivityPayload = (
     // session_id: sessionId,
     device_info: deviceInfo,
     session_id: finalUserId,
-    timestamp: timestamp, // Client timestamp for verification
+    // timestamp: timestamp, // Client timestamp for verification
   };
 };
 
@@ -383,12 +383,12 @@ export const sendSessionEndData = async (
     const sessionEndPayload = {
       "time_spent_seconds": validatedTotalTime, // Send Today's Total (accumulated time)
       // "session_id": sessionId,
-      "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
+      // "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
       "session_id": finalUserId, // Keep for backward compatibility
-      "device_id": getDeviceId(), // Unique device/browser identifier
+      // "device_id": getDeviceId(), // Unique device/browser identifier
       "date": formatDateForApi(),
       "device_type": deviceInfo.deviceType,
-      "timestamp": Date.now()
+      // "timestamp": Date.now()
     };
 
     logActivityEvent("Sending session-end data with total accumulated time", {
@@ -503,12 +503,12 @@ export const sendSessionEndDataViaBeacon = (
     const sessionEndPayload = {
       "time_spent_seconds": validatedTotalTime, // Send Today's Total (accumulated time)
       // "session_id": sessionId,
-      "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
+      // "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
       "session_id": finalUserId, // Keep for backward compatibility
-      "device_id": getDeviceId(), // Unique device/browser identifier
+      // "device_id": getDeviceId(), // Unique device/browser identifier
       "date": formatDateForApi(),
       "device_type": deviceInfo.deviceType,
-      "timestamp": Date.now()
+      // "timestamp": Date.now()
     };
 
     // Use Beacon API for guaranteed delivery during page unload
@@ -623,12 +623,12 @@ export const sendPeriodicSessionUpdate = async (
     const sessionUpdatePayload = {
       "time_spent_seconds": totalAccumulatedTime, // Send Today's Total (accumulated time)
       // "session_id": sessionId,
-      "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
+      // "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
       "session_id": finalUserId, // Keep for backward compatibility
-      "device_id": getDeviceId(), // Unique device/browser identifier
+      // "device_id": getDeviceId(), // Unique device/browser identifier
       "date": formatDateForApi(),
       "device_type": deviceInfo.deviceType,
-      "timestamp": Date.now()
+      // "timestamp": Date.now()
     };
 
     logActivityEvent("Sending periodic session update with total accumulated time", {
