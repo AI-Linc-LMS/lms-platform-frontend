@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Search,
@@ -25,6 +25,16 @@ import {
   Eye,
   // BookOpen,
   // Zap
+  Bold,
+  Italic,
+  Code,
+  Image,
+  Link,
+  List,
+  ListOrdered,
+  Quote,
+  Undo,
+  Redo
 } from 'lucide-react';
 
 interface ThreadComment {
@@ -67,6 +77,270 @@ interface Thread {
   views?: number;
   badge?: string;
 }
+
+// Rich Text Editor Component
+const RichTextEditor: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  height?: string;
+}> = ({ value, onChange, placeholder = "Start typing...", height = "h-32" }) => {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showToolbar, setShowToolbar] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleCommand = (command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = `<img src="${e.target?.result}" alt="Uploaded image" style="max-width: 100%; height: auto; margin: 10px 0;" />`;
+        if (editorRef.current) {
+          editorRef.current.focus();
+          document.execCommand('insertHTML', false, img);
+          onChange(editorRef.current.innerHTML);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const insertCodeBlock = () => {
+    const code = prompt('Enter your code:');
+    if (code) {
+      const codeBlock = `<pre style="background: #f4f4f4; padding: 12px; border-radius: 6px; border-left: 4px solid #007acc; overflow-x: auto; margin: 10px 0;"><code style="font-family: 'Consolas', 'Monaco', monospace; font-size: 14px; color: #333;">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`;
+      if (editorRef.current) {
+        editorRef.current.focus();
+        document.execCommand('insertHTML', false, codeBlock);
+        onChange(editorRef.current.innerHTML);
+      }
+    }
+  };
+
+  const insertLink = () => {
+    const url = prompt('Enter URL:');
+    if (url) {
+      handleCommand('createLink', url);
+    }
+  };
+
+  const handleInput = () => {
+    if (editorRef.current && !isUpdating) {
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  // Update editor content when value changes from outside
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== value) {
+      setIsUpdating(true);
+      const selection = window.getSelection();
+      const range = selection?.getRangeAt(0);
+      const cursorPosition = range?.startOffset;
+      
+      editorRef.current.innerHTML = value || '';
+      
+      // Restore cursor position if possible
+      if (selection && range && cursorPosition !== undefined) {
+        try {
+          const textNode = editorRef.current.firstChild;
+          if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+            const newRange = document.createRange();
+            newRange.setStart(textNode, Math.min(cursorPosition, textNode.textContent?.length || 0));
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+          }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (e) {
+          // Ignore cursor positioning errors
+        }
+      }
+      
+      setTimeout(() => setIsUpdating(false), 0);
+    }
+  }, [value]);
+
+  return (
+    <div className="border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+      {/* Toolbar */}
+      <div className={`border-b border-gray-200 p-2 ${showToolbar ? 'block' : 'hidden sm:block'}`}>
+        <div className="flex flex-wrap gap-1">
+          <button
+            type="button"
+            onClick={() => handleCommand('bold')}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Bold"
+          >
+            <Bold size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleCommand('italic')}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Italic"
+          >
+            <Italic size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={insertCodeBlock}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Code Block"
+          >
+            <Code size={16} />
+          </button>
+          <div className="w-px bg-gray-300 mx-1"></div>
+          <button
+            type="button"
+            onClick={() => handleCommand('insertUnorderedList')}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Bullet List"
+          >
+            <List size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleCommand('insertOrderedList')}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Numbered List"
+          >
+            <ListOrdered size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleCommand('formatBlock', 'blockquote')}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Quote"
+          >
+            <Quote size={16} />
+          </button>
+          <div className="w-px bg-gray-300 mx-1"></div>
+          <button
+            type="button"
+            onClick={insertLink}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Insert Link"
+          >
+            <Link size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Upload Image"
+          >
+            <Image size={16} />
+          </button>
+          <div className="w-px bg-gray-300 mx-1"></div>
+          <button
+            type="button"
+            onClick={() => handleCommand('undo')}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Undo"
+          >
+            <Undo size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleCommand('redo')}
+            className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
+            title="Redo"
+          >
+            <Redo size={16} />
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile toolbar toggle */}
+      <div className="sm:hidden p-2 border-b border-gray-200">
+        <button
+          type="button"
+          onClick={() => setShowToolbar(!showToolbar)}
+          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800"
+        >
+          <Edit3 size={14} />
+          {showToolbar ? 'Hide' : 'Show'} formatting tools
+          {showToolbar ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+      </div>
+
+      {/* Editor */}
+      <div
+        ref={editorRef}
+        contentEditable
+        className={`w-full px-3 py-2 ${height} focus:outline-none overflow-y-auto text-sm sm:text-base`}
+        style={{ 
+          minHeight: '80px',
+          direction: 'ltr',
+          textAlign: 'left'
+        }}
+        onInput={handleInput}
+        onPaste={() => {
+          // Allow default paste behavior and then update
+          setTimeout(handleInput, 0);
+        }}
+        suppressContentEditableWarning={true}
+        data-placeholder={placeholder}
+      />
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageUpload}
+        className="hidden"
+      />
+
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        [contenteditable]:empty:before {
+          content: attr(data-placeholder);
+          color: #9ca3af;
+          pointer-events: none;
+        }
+        [contenteditable] {
+          direction: ltr !important;
+          text-align: left !important;
+        }
+        [contenteditable] blockquote {
+          border-left: 4px solid #d1d5db;
+          padding-left: 16px;
+          margin: 16px 0;
+          font-style: italic;
+          color: #6b7280;
+        }
+        [contenteditable] ul, [contenteditable] ol {
+          padding-left: 20px;
+          margin: 10px 0;
+        }
+        [contenteditable] li {
+          margin: 4px 0;
+        }
+        [contenteditable] a {
+          color: #2563eb;
+          text-decoration: underline;
+        }
+        [contenteditable] strong {
+          font-weight: bold;
+        }
+        [contenteditable] em {
+          font-style: italic;
+        }
+        `
+      }} />
+    </div>
+  );
+};
 
 const CommunityPage: React.FC = () => {
   const navigate = useNavigate();
@@ -507,12 +781,15 @@ const CommunityPage: React.FC = () => {
                   onChange={(e) => setNewThread({ ...newThread, title: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                 />
-                <textarea
-                  placeholder="What would you like to discuss?"
-                  value={newThread.content}
-                  onChange={(e) => setNewThread({ ...newThread, content: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md h-20 sm:h-24 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm sm:text-base"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
+                  <RichTextEditor
+                    value={newThread.content}
+                    onChange={(content) => setNewThread({ ...newThread, content })}
+                    placeholder="What would you like to discuss? You can format text, add code snippets, and upload images..."
+                    height="h-40 sm:h-48"
+                  />
+                </div>
                 <input
                   type="text"
                   placeholder="Tags (comma separated)"
@@ -682,7 +959,10 @@ const CommunityPage: React.FC = () => {
                           </div>
 
                           <p className="text-gray-600 mb-3 sm:mb-4 line-clamp-2 text-sm sm:text-base">
-                            {thread.content.length > 150 ? `${thread.content.substring(0, 150)}...` : thread.content}
+                            {thread.content.replace(/<[^>]*>/g, '').length > 150 
+                              ? `${thread.content.replace(/<[^>]*>/g, '').substring(0, 150)}...` 
+                              : thread.content.replace(/<[^>]*>/g, '')
+                            }
                           </p>
                         </>
                       )}
@@ -806,12 +1086,15 @@ const CommunityPage: React.FC = () => {
 
                           {/* Add Answer */}
                           <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-lg">
-                            <textarea
-                              placeholder="Add your reply..."
-                              value={newAnswers[thread.id] || ''}
-                              onChange={(e) => setNewAnswers({ ...newAnswers, [thread.id]: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md h-16 sm:h-20 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-white text-sm sm:text-base"
-                            />
+                            <div className="mb-2">
+                              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Your reply</label>
+                              <RichTextEditor
+                                value={newAnswers[thread.id] || ''}
+                                onChange={(content) => setNewAnswers({ ...newAnswers, [thread.id]: content })}
+                                placeholder="Share your knowledge with code examples and images..."
+                                height="h-24 sm:h-28"
+                              />
+                            </div>
                             <div className="flex justify-end mt-2">
                               <button
                                 onClick={() => handleAddAnswer(thread.id)}
@@ -849,9 +1132,14 @@ const CommunityPage: React.FC = () => {
                                     </div>
 
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-gray-700 mb-2 sm:mb-3 text-xs sm:text-sm line-clamp-3">
-                                        {answer.content.length > 120 ? `${answer.content.substring(0, 120)}...` : answer.content}
-                                      </p>
+                                      <div 
+                                        className="text-gray-700 mb-2 sm:mb-3 text-xs sm:text-sm prose prose-sm max-w-none"
+                                        dangerouslySetInnerHTML={{ 
+                                          __html: answer.content.length > 120 
+                                            ? `${answer.content.substring(0, 120)}...` 
+                                            : answer.content 
+                                        }}
+                                      />
 
                                       <div className="flex items-center gap-2 flex-wrap">
                                         {answerAuthorAvatar.avatar ? (
