@@ -28,7 +28,7 @@ import {
   Bold,
   Italic,
   Code,
-  Image,
+  ImageIcon,
   Link,
   List,
   ListOrdered,
@@ -36,6 +36,9 @@ import {
   Undo,
   Redo
 } from 'lucide-react';
+
+// Add sanitize-html for security
+import sanitizeHtml from 'sanitize-html';
 
 interface ThreadComment {
   id: string;
@@ -78,6 +81,36 @@ interface Thread {
   badge?: string;
 }
 
+// Add sanitize options
+const SANITIZE_OPTIONS = {
+  allowedTags: [
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'p', 'a', 'ul', 'ol',
+    'li', 'b', 'i', 'strong', 'em', 'strike', 'code', 'hr', 'br', 'div',
+    'table', 'thead', 'caption', 'tbody', 'tr', 'th', 'td', 'pre', 'img'
+  ],
+  allowedAttributes: {
+    a: ['href', 'target', 'rel'],
+    img: ['src', 'alt', 'style', 'class'],
+    pre: ['class', 'style'],
+    code: ['class', 'style'],
+    div: ['class', 'style'],
+    '*': ['class', 'style']
+  },
+  allowedStyles: {
+    '*': {
+      'color': [/^#(0x)?[0-9a-f]+$/i, /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/],
+      'background-color': [/^#(0x)?[0-9a-f]+$/i, /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/],
+      'text-align': [/^left$/, /^right$/, /^center$/],
+      'font-size': [/^\d+(?:px|em|%)$/],
+      'margin': [/^\d+(?:px|em|%)$/],
+      'padding': [/^\d+(?:px|em|%)$/],
+      'max-width': [/^\d+(?:px|em|%)$/],
+      'height': [/^auto$/, /^\d+(?:px|em|%)$/],
+      'border-radius': [/^\d+(?:px|em|%)$/]
+    }
+  }
+};
+
 // Rich Text Editor Component
 const RichTextEditor: React.FC<{
   value: string;
@@ -88,7 +121,7 @@ const RichTextEditor: React.FC<{
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showToolbar, setShowToolbar] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [isComposing, setIsComposing] = useState(false);
 
   const handleCommand = (command: string, value?: string) => {
     document.execCommand(command, false, value);
@@ -102,7 +135,7 @@ const RichTextEditor: React.FC<{
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        const img = `<img src="${e.target?.result}" alt="Uploaded image" style="max-width: 100%; height: auto; margin: 10px 0;" />`;
+        const img = `<img src="${e.target?.result}" alt="Uploaded image" style="max-width: 100%; height: auto; margin: 10px 0; border-radius: 4px;" />`;
         if (editorRef.current) {
           editorRef.current.focus();
           document.execCommand('insertHTML', false, img);
@@ -114,9 +147,10 @@ const RichTextEditor: React.FC<{
   };
 
   const insertCodeBlock = () => {
+    const language = prompt('Enter programming language (optional):') || '';
     const code = prompt('Enter your code:');
     if (code) {
-      const codeBlock = `<pre style="background: #f4f4f4; padding: 12px; border-radius: 6px; border-left: 4px solid #007acc; overflow-x: auto; margin: 10px 0;"><code style="font-family: 'Consolas', 'Monaco', monospace; font-size: 14px; color: #333;">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`;
+      const codeBlock = `<div style="margin: 10px 0;"><div style="background: #f8f9fa; padding: 8px 12px; border-radius: 4px 4px 0 0; border-bottom: 1px solid #e9ecef; font-size: 12px; color: #6c757d; font-weight: 500;">${language || 'Code'}</div><pre style="background: #f8f9fa; padding: 12px; margin: 0; border-radius: 0 0 4px 4px; overflow-x: auto; border: 1px solid #e9ecef; border-top: none;"><code style="font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-size: 14px; color: #212529; line-height: 1.4;">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre></div>`;
       if (editorRef.current) {
         editorRef.current.focus();
         document.execCommand('insertHTML', false, codeBlock);
@@ -133,39 +167,54 @@ const RichTextEditor: React.FC<{
   };
 
   const handleInput = () => {
-    if (editorRef.current && !isUpdating) {
-      onChange(editorRef.current.innerHTML);
+    if (editorRef.current && !isComposing) {
+      const content = editorRef.current.innerHTML;
+      onChange(content === '<br>' ? '' : content);
     }
   };
 
-  // Update editor content when value changes from outside
+  // Handle IME composition (for languages like Chinese, Japanese, Korean)
+  const handleCompositionStart = () => {
+    setIsComposing(true);
+  };
+
+  const handleCompositionEnd = () => {
+    setIsComposing(false);
+    handleInput();
+  };
+
+  // Handle keyboard shortcuts
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      document.execCommand('insertParagraph', false);
+      e.preventDefault();
+    }
+  };
+
+  // Handle paste to preserve formatting
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/html') || e.clipboardData.getData('text/plain');
+    
+    if (text) {
+      // For plain text, wrap in paragraph tags if needed
+      const content = e.clipboardData.types.includes('text/html') 
+        ? text 
+        : `<p>${text.replace(/\n/g, '</p><p>')}</p>`;
+        
+      document.execCommand('insertHTML', false, content);
+      handleInput();
+    }
+  };
+
+  // Initialize and cleanup
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== value) {
-      setIsUpdating(true);
-      const selection = window.getSelection();
-      const range = selection?.getRangeAt(0);
-      const cursorPosition = range?.startOffset;
-      
-      editorRef.current.innerHTML = value || '';
-      
-      // Restore cursor position if possible
-      if (selection && range && cursorPosition !== undefined) {
-        try {
-          const textNode = editorRef.current.firstChild;
-          if (textNode && textNode.nodeType === Node.TEXT_NODE) {
-            const newRange = document.createRange();
-            newRange.setStart(textNode, Math.min(cursorPosition, textNode.textContent?.length || 0));
-            newRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-          }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (e) {
-          // Ignore cursor positioning errors
-        }
+    if (editorRef.current) {
+      // Only update the innerHTML if the value has actually changed
+      // and the editor doesn't have focus to prevent cursor jumping
+      if (!editorRef.current.contains(document.activeElement)) {
+        editorRef.current.innerHTML = value || '';
       }
-      
-      setTimeout(() => setIsUpdating(false), 0);
     }
   }, [value]);
 
@@ -238,7 +287,7 @@ const RichTextEditor: React.FC<{
             className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
             title="Upload Image"
           >
-            <Image size={16} />
+            <ImageIcon size={16} />
           </button>
           <div className="w-px bg-gray-300 mx-1"></div>
           <button
@@ -278,18 +327,14 @@ const RichTextEditor: React.FC<{
         ref={editorRef}
         contentEditable
         className={`w-full px-3 py-2 ${height} focus:outline-none overflow-y-auto text-sm sm:text-base`}
-        style={{ 
-          minHeight: '80px',
-          direction: 'ltr',
-          textAlign: 'left'
-        }}
+        style={{ minHeight: '80px' }}
         onInput={handleInput}
-        onPaste={() => {
-          // Allow default paste behavior and then update
-          setTimeout(handleInput, 0);
-        }}
+        onCompositionStart={handleCompositionStart}
+        onCompositionEnd={handleCompositionEnd}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
+        data-placeholder={!value ? placeholder : ''}
         suppressContentEditableWarning={true}
-        data-placeholder={placeholder}
       />
 
       {/* Hidden file input */}
@@ -336,9 +381,40 @@ const RichTextEditor: React.FC<{
         [contenteditable] em {
           font-style: italic;
         }
+        [contenteditable] img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 4px;
+        }
+        [contenteditable] pre {
+          white-space: pre-wrap;
+          word-wrap: break-word;
+        }
+        [contenteditable] p {
+          margin: 0;
+          min-height: 1.2em;
+        }
+        [contenteditable] p:empty::before {
+          content: '';
+          display: inline-block;
+          min-width: 1px;
+        }
         `
       }} />
     </div>
+  );
+};
+
+// Helper component to display rich content
+const RichContentDisplay: React.FC<{ content: string; className?: string }> = ({ content, className = '' }) => {
+  return (
+    <div 
+      className={`prose prose-sm max-w-none ${className}`}
+      dangerouslySetInnerHTML={{ __html: content }}
+      style={{
+        wordBreak: 'break-word',
+      }}
+    />
   );
 };
 
@@ -474,16 +550,21 @@ const CommunityPage: React.FC = () => {
 
   const handleCreateThread = (): void => {
     if (newThread.title && newThread.content) {
+      // Sanitize the HTML content
+      const sanitizedContent = sanitizeHtml(newThread.content, SANITIZE_OPTIONS);
+      
       const thread: Thread = {
         id: Date.now().toString(),
         title: newThread.title,
-        content: newThread.content,
+        content: sanitizedContent,
         author: 'Current User',
         createdAt: new Date().toISOString().split('T')[0],
         upvotes: 0,
         downvotes: 0,
         answers: [],
-        tags: newThread.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+        tags: newThread.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face', // Default avatar
+        views: 0
       };
       setThreads([thread, ...threads]);
       setNewThread({ title: '', content: '', tags: '' });
@@ -774,37 +855,80 @@ const CommunityPage: React.FC = () => {
             <div className="mb-4 sm:mb-6 p-4 sm:p-6 bg-white border border-gray-200 rounded-lg mx-1 sm:mx-0">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Start a new discussion</h3>
               <div className="space-y-3 sm:space-y-4">
-                <input
-                  type="text"
-                  placeholder="Thread title"
-                  value={newThread.title}
-                  onChange={(e) => setNewThread({ ...newThread, title: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
-                />
+                <div>
+                  <label htmlFor="thread-title" className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                  <input
+                    id="thread-title"
+                    type="text"
+                    placeholder="Thread title"
+                    value={newThread.title}
+                    onChange={(e) => setNewThread({ ...newThread, title: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
+                  />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
+                  <div className="prose prose-sm max-w-none mb-2">
+                    <p className="text-gray-600 text-sm">
+                      Format your content using the toolbar below. You can:
+                    </p>
+                    <ul className="text-gray-600 text-sm list-disc pl-5">
+                      <li>Add code snippets with syntax highlighting</li>
+                      <li>Upload and embed images</li>
+                      <li>Format text with bold, italic, and lists</li>
+                      <li>Add links and quotes</li>
+                    </ul>
+                  </div>
                   <RichTextEditor
                     value={newThread.content}
                     onChange={(content) => setNewThread({ ...newThread, content })}
                     placeholder="What would you like to discuss? You can format text, add code snippets, and upload images..."
-                    height="h-40 sm:h-48"
+                    height="h-64 sm:h-96"
                   />
                 </div>
-                <input
-                  type="text"
-                  placeholder="Tags (comma separated)"
-                  value={newThread.tags}
-                  onChange={(e) => setNewThread({ ...newThread, tags: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
-                />
+                <div>
+                  <label htmlFor="thread-tags" className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
+                  <input
+                    id="thread-tags"
+                    type="text"
+                    placeholder="Add tags separated by commas (e.g. React, TypeScript, API)"
+                    value={newThread.tags}
+                    onChange={(e) => setNewThread({ ...newThread, tags: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
+                  />
+                  {allTags.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-600 mb-1">Popular tags:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {allTags.map(tag => (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => {
+                              const currentTags = new Set(newThread.tags.split(',').map(t => t.trim()).filter(t => t));
+                              currentTags.add(tag);
+                              setNewThread({ ...newThread, tags: Array.from(currentTags).join(', ') });
+                            }}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 cursor-pointer transition-colors"
+                          >
+                            {tag}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button
+                    type="button"
                     onClick={handleCreateThread}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base"
+                    disabled={!newThread.title.trim() || !newThread.content.trim()}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
                     Create Thread
                   </button>
                   <button
+                    type="button"
                     onClick={() => setShowNewThreadForm(false)}
                     className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors font-medium text-sm sm:text-base"
                   >
@@ -958,12 +1082,14 @@ const CommunityPage: React.FC = () => {
                             )}
                           </div>
 
-                          <p className="text-gray-600 mb-3 sm:mb-4 line-clamp-2 text-sm sm:text-base">
-                            {thread.content.replace(/<[^>]*>/g, '').length > 150 
-                              ? `${thread.content.replace(/<[^>]*>/g, '').substring(0, 150)}...` 
-                              : thread.content.replace(/<[^>]*>/g, '')
+                          <RichContentDisplay 
+                            content={thread.content.length > 150 
+                              ? `${thread.content.substring(0, 150)}...` 
+                              : thread.content
                             }
-                          </p>
+                            className="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base"
+                          />
+
                         </>
                       )}
 

@@ -1,32 +1,48 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { createRoot } from 'react-dom/client';
 import {
   ArrowLeft,
   ArrowUp,
   ArrowDown,
-  //   MessageCircle,
   Calendar,
-  //   Heart,
   Edit3,
   Trash2,
-  //   Save,
-  //   X,
-  //   Reply,
-  //   MoreHorizontal,
   Pin,
   Award,
-  //   Star,
   Eye,
   Share2,
   Bookmark,
   Flag,
-  //   Users,
-  //   Clock,
-  //   Zap,
   CheckCircle,
   AlertCircle,
-  //   Send
+  Bold,
+  Italic,
+  ChevronDown,
+  ChevronUp,
+  Code,
+  List,
+  ListOrdered,
+  Quote,
+  Redo,
+  Undo,
+  ImageIcon,
+  Link,
+  X,
+  Copy,
+  Check
 } from 'lucide-react';
+import Prism from 'prismjs';
+import 'prismjs/themes/prism-tomorrow.css';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-jsx';
+import 'prismjs/components/prism-tsx';
+import 'prismjs/components/prism-css';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-java';
+import 'prismjs/components/prism-c';
+import 'prismjs/components/prism-cpp';
 
 interface ThreadComment {
   id: string;
@@ -74,6 +90,279 @@ interface Thread {
   badge?: string;
 }
 
+interface ImagePreview {
+  src: string;
+  alt: string;
+}
+
+// Helper function to copy text to clipboard
+const copyToClipboard = async (text: string): Promise<boolean> => {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (err) {
+    console.error('Failed to copy text: ', err);
+    return false;
+  }
+};
+
+// Helper component for code blocks with syntax highlighting
+const CodeBlock: React.FC<{ code: string; language: string }> = ({ code, language }) => {
+  const [copied, setCopied] = useState(false);
+  
+  useEffect(() => {
+    Prism.highlightAll();
+  }, [code]);
+
+  const handleCopy = async () => {
+    const success = await copyToClipboard(code);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div className="relative group">
+      <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={handleCopy}
+          className="p-1.5 bg-gray-800/50 hover:bg-gray-800/70 text-white rounded-md transition-colors"
+          title={copied ? 'Copied!' : 'Copy code'}
+        >
+          {copied ? <Check size={14} /> : <Copy size={14} />}
+        </button>
+      </div>
+      <pre className="!bg-gray-900 !p-4 !rounded-lg !mt-0">
+        <code className={`language-${language}`}>{code}</code>
+      </pre>
+    </div>
+  );
+};
+
+// Helper component for image preview
+const ImagePreviewModal: React.FC<{
+  image: ImagePreview | null;
+  onClose: () => void;
+}> = ({ image, onClose }) => {
+  if (!image) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="relative max-w-4xl w-full">
+        <button
+          onClick={onClose}
+          className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors"
+        >
+          <X size={24} />
+        </button>
+        <img
+          src={image.src}
+          alt={image.alt}
+          className="w-full h-auto rounded-lg"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+    </div>
+  );
+};
+
+// Enhanced RichContentDisplay component
+const RichContentDisplay: React.FC<{
+  content: string;
+  className?: string;
+}> = ({ content, className = '' }) => {
+  const [imagePreview, setImagePreview] = useState<ImagePreview | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      // Add click handlers for images
+      const images = containerRef.current.getElementsByTagName('img');
+      Array.from(images).forEach(img => {
+        img.classList.add('cursor-zoom-in', 'hover:opacity-90', 'transition-opacity');
+        img.addEventListener('click', () => {
+          setImagePreview({ src: img.src, alt: img.alt });
+        });
+      });
+
+      // Process code blocks
+      const preElements = containerRef.current.getElementsByTagName('pre');
+      Array.from(preElements).forEach(pre => {
+        const code = pre.querySelector('code');
+        if (code) {
+          const language = code.className.replace('language-', '') || 'plaintext';
+          const codeContent = code.textContent || '';
+          const codeBlock = document.createElement('div');
+          const root = createRoot(codeBlock);
+          root.render(<CodeBlock code={codeContent} language={language} />);
+          pre.parentNode?.replaceChild(codeBlock, pre);
+        }
+      });
+    }
+  }, [content]);
+
+  return (
+    <>
+      <div 
+        ref={containerRef}
+        className={`prose prose-sm max-w-none ${className}`}
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
+      <ImagePreviewModal
+        image={imagePreview}
+        onClose={() => setImagePreview(null)}
+      />
+    </>
+  );
+};
+
+const RichTextEditor: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  height?: string;
+}> = ({ value, onChange, placeholder = "Start typing...", height = "h-32" }) => {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showToolbar, setShowToolbar] = useState(false);
+
+  const handleCommand = (command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = `<img src="${e.target?.result}" alt="Uploaded image" style="max-width: 100%; height: auto; margin: 10px 0; border-radius: 4px;" />`;
+        if (editorRef.current) {
+          editorRef.current.focus();
+          document.execCommand('insertHTML', false, img);
+          onChange(editorRef.current.innerHTML);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const insertCodeBlock = () => {
+    const language = prompt('Enter programming language (optional):') || '';
+    const code = prompt('Enter your code:');
+    if (code) {
+      const codeBlock = `<div style="margin: 10px 0;"><div style="background: #f8f9fa; padding: 8px 12px; border-radius: 4px 4px 0 0; border-bottom: 1px solid #e9ecef; font-size: 12px; color: #6c757d; font-weight: 500;">${language || 'Code'}</div><pre style="background: #f8f9fa; padding: 12px; margin: 0; border-radius: 0 0 4px 4px; overflow-x: auto; border: 1px solid #e9ecef; border-top: none;"><code style="font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-size: 14px; color: #212529; line-height: 1.4;">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre></div>`;
+      if (editorRef.current) {
+        editorRef.current.focus();
+        document.execCommand('insertHTML', false, codeBlock);
+        onChange(editorRef.current.innerHTML);
+      }
+    }
+  };
+
+  const insertLink = () => {
+    const url = prompt('Enter URL:');
+    if (url) {
+      handleCommand('createLink', url);
+    }
+  };
+
+  const handleInput = () => {
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== value) {
+      editorRef.current.innerHTML = value || '';
+    }
+  }, [value]);
+
+  return (
+    <div className="border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+      {/* Toolbar - same as CommunityPage */}
+      <div className={`border-b border-gray-200 p-2 ${showToolbar ? 'block' : 'hidden sm:block'}`}>
+        <div className="flex flex-wrap gap-1">
+          <button type="button" onClick={() => handleCommand('bold')} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Bold">
+            <Bold size={16} />
+          </button>
+          <button type="button" onClick={() => handleCommand('italic')} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Italic">
+            <Italic size={16} />
+          </button>
+          <button type="button" onClick={insertCodeBlock} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Code Block">
+            <Code size={16} />
+          </button>
+          <div className="w-px bg-gray-300 mx-1"></div>
+          <button type="button" onClick={() => handleCommand('insertUnorderedList')} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Bullet List">
+            <List size={16} />
+          </button>
+          <button type="button" onClick={() => handleCommand('insertOrderedList')} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Numbered List">
+            <ListOrdered size={16} />
+          </button>
+          <button type="button" onClick={() => handleCommand('formatBlock', 'blockquote')} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Quote">
+            <Quote size={16} />
+          </button>
+          <div className="w-px bg-gray-300 mx-1"></div>
+          <button type="button" onClick={insertLink} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Insert Link">
+            <Link size={16} />
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Upload Image">
+            <ImageIcon size={16} />
+          </button>
+          </button>
+          <div className="w-px bg-gray-300 mx-1"></div>
+          <button type="button" onClick={() => handleCommand('undo')} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Undo">
+            <Undo size={16} />
+          </button>
+          <button type="button" onClick={() => handleCommand('redo')} className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800" title="Redo">
+            <Redo size={16} />
+          </button>
+        </div>
+      </div>
+
+      <div className="sm:hidden p-2 border-b border-gray-200">
+        <button type="button" onClick={() => setShowToolbar(!showToolbar)} className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800">
+          <Edit3 size={14} />
+          {showToolbar ? 'Hide' : 'Show'} formatting tools
+          {showToolbar ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+      </div>
+
+      <div
+        ref={editorRef}
+        contentEditable
+        className={`w-full px-3 py-2 ${height} focus:outline-none overflow-y-auto text-sm sm:text-base`}
+        style={{ minHeight: '80px', direction: 'ltr', textAlign: 'left' }}
+        onInput={handleInput}
+        onPaste={() => setTimeout(handleInput, 0)}
+        suppressContentEditableWarning={true}
+        data-placeholder={!value ? placeholder : ''}
+        dangerouslySetInnerHTML={{ __html: value || '' }}
+      />
+
+      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        [contenteditable]:empty:before { content: attr(data-placeholder); color: #9ca3af; pointer-events: none; }
+        [contenteditable] { direction: ltr !important; text-align: left !important; }
+        [contenteditable] blockquote { border-left: 4px solid #d1d5db; padding-left: 16px; margin: 16px 0; font-style: italic; color: #6b7280; }
+        [contenteditable] ul, [contenteditable] ol { padding-left: 20px; margin: 10px 0; }
+        [contenteditable] li { margin: 4px 0; }
+        [contenteditable] a { color: #2563eb; text-decoration: underline; }
+        [contenteditable] strong { font-weight: bold; }
+        [contenteditable] em { font-style: italic; }
+        [contenteditable] img { max-width: 100%; height: auto; border-radius: 4px; }
+        [contenteditable] pre { white-space: pre-wrap; word-wrap: break-word; }
+        `
+      }} />
+    </div>
+  );
+};
+
 const ThreadDetailPage: React.FC = () => {
   const { threadId } = useParams<{ threadId: string }>();
   const navigate = useNavigate();
@@ -81,59 +370,182 @@ const ThreadDetailPage: React.FC = () => {
   // Mock thread data - in real app, fetch from API
   const [thread, setThread] = useState<Thread>({
     id: '1',
-    title: 'How to implement async/await in JavaScript?',
-    content: 'I\'m struggling with understanding async/await syntax. Can someone explain with examples? I\'ve been trying to understand how to properly handle asynchronous operations in JavaScript, but I keep running into issues with callback hell and promise chains. I\'ve heard that async/await is supposed to make this easier, but I\'m not sure how to implement it correctly.\n\nHere\'s what I\'ve tried so far:\n\n```javascript\nfunction fetchData() {\n  fetch(\'https://api.example.com/data\')\n    .then(response => response.json())\n    .then(data => console.log(data))\n    .catch(error => console.error(error));\n}\n```\n\nBut I want to convert this to use async/await. Any help would be appreciated!',
-    author: 'John Doe',
+    title: 'Building a Modern Web Application: Best Practices and Architecture',
+    content: `
+      <p>I'm working on a new web application and want to ensure I'm following the best practices for modern web development. Here are some specific areas I'd like to discuss:</p>
+      
+      <h3>1. Project Structure</h3>
+      <p>Currently, I'm considering this structure:</p>
+      
+      <pre><code class="language-plaintext">
+src/
+  ├── components/
+  │   ├── common/
+  │   └── features/
+  ├── hooks/
+  ├── services/
+  ├── utils/
+  └── pages/
+      </code></pre>
+      
+      <h3>2. State Management</h3>
+      <p>I'm trying to decide between different state management approaches. Here's my current implementation:</p>
+      
+      <pre><code class="language-typescript">
+// Global store setup
+interface AppState {
+  user: User | null;
+  theme: 'light' | 'dark';
+  notifications: Notification[];
+}
+
+const initialState: AppState = {
+  user: null,
+  theme: 'light',
+  notifications: []
+};
+      </code></pre>
+      
+      <h3>3. API Integration</h3>
+      <p>For API calls, I've set up a custom hook:</p>
+      
+      <pre><code class="language-typescript">
+const useApi = <T>(endpoint: string) => {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    fetchData();
+  }, [endpoint]);
+
+  // ... rest of the implementation
+};
+      </code></pre>
+      
+      <h3>4. UI Components</h3>
+      <p>Here's a screenshot of my current component library:</p>
+      <img src="https://images.unsplash.com/photo-1618788372246-79faff0c3742?w=800&auto=format&fit=crop" alt="UI Component Library Screenshot" />
+      
+      <p>What are your thoughts on these approaches? Are there any modern best practices I'm missing?</p>
+    `,
+    author: 'Sarah Chen',
     createdAt: '2024-01-15',
-    upvotes: 15,
+    upvotes: 45,
     downvotes: 2,
-    tags: ['JavaScript', 'Async', 'Programming'],
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+    tags: ['React', 'TypeScript', 'Architecture', 'Best Practices'],
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
     isPinned: true,
-    views: 234,
-    badge: 'Expert',
+    views: 1234,
+    badge: 'Senior Developer',
     answers: [
       {
         id: 'a1',
-        content: 'Async/await is syntactic sugar over Promises that makes asynchronous code look and behave more like synchronous code. Here\'s how you can convert your example:\n\n```javascript\nasync function fetchData() {\n  try {\n    const response = await fetch(\'https://api.example.com/data\');\n    const data = await response.json();\n    console.log(data);\n  } catch (error) {\n    console.error(error);\n  }\n}\n```\n\nKey points:\n1. The function must be declared with `async`\n2. Use `await` before promise-returning expressions\n3. Wrap in try-catch for error handling\n4. Much cleaner than promise chains!',
-        author: 'Jane Smith',
+        content: `
+          <p>Great question! I'll address each point with some modern best practices:</p>
+
+          <h4>1. Project Structure</h4>
+          <p>Your structure is good, but I'd suggest a few additions:</p>
+
+          <pre><code class="language-plaintext">
+src/
+  ├── components/
+  │   ├── common/
+  │   └── features/
+  ├── hooks/
+  ├── services/
+  ├── utils/
+  ├── pages/
+  ├── types/        # TypeScript definitions
+  ├── constants/    # App constants
+  └── contexts/     # React contexts
+          </code></pre>
+
+          <h4>2. State Management</h4>
+          <p>For modern React applications, consider using a combination of:</p>
+
+          <pre><code class="language-typescript">
+// Local state: useState for component-level state
+const [isOpen, setIsOpen] = useState(false);
+
+// Complex state: useReducer for feature-level state
+const [state, dispatch] = useReducer(reducer, initialState);
+
+// Global state: React Context for app-level state
+export const AppContext = createContext<AppState>(initialState);
+          </code></pre>
+
+          <h4>3. API Integration</h4>
+          <p>Here's an enhanced version of your API hook with better error handling and caching:</p>
+
+          <pre><code class="language-typescript">
+const useApi = <T>(endpoint: string, options = {}) => {
+  const cache = useRef<Record<string, T>>({});
+  const [state, setState] = useState({
+    data: null as T | null,
+    loading: true,
+    error: null as Error | null
+  });
+
+  useEffect(() => {
+    if (cache.current[endpoint]) {
+      setState({
+        data: cache.current[endpoint],
+        loading: false,
+        error: null
+      });
+      return;
+    }
+
+    const fetchData = async () => {
+      try {
+        const response = await fetch(endpoint);
+        if (!response.ok) throw new Error(response.statusText);
+        const data = await response.json();
+        cache.current[endpoint] = data;
+        setState({ data, loading: false, error: null });
+      } catch (error) {
+        setState({ data: null, loading: false, error });
+      }
+    };
+
+    fetchData();
+  }, [endpoint]);
+
+  return state;
+};
+          </code></pre>
+
+          <h4>4. Component Architecture</h4>
+          <p>Here's a diagram showing a recommended component architecture:</p>
+          <img src="https://images.unsplash.com/photo-1618788372246-79faff0c3742?w=800&auto=format&fit=crop" alt="Component Architecture Diagram" />
+
+          <p>Additional recommendations:</p>
+          <ul>
+            <li>Use TypeScript for better type safety and developer experience</li>
+            <li>Implement proper error boundaries</li>
+            <li>Set up comprehensive testing with React Testing Library</li>
+            <li>Use CSS-in-JS or Tailwind CSS for styling</li>
+          </ul>
+        `,
+        author: 'David Kim',
         createdAt: '2024-01-15',
-        upvotes: 12,
-        downvotes: 0,
-        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-        badge: 'Mentor',
+        upvotes: 78,
+        downvotes: 1,
+        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
+        badge: 'Lead Developer',
         isAccepted: true,
         comments: [
           {
             id: 'c1',
-            content: 'Great explanation! This really helped me understand the syntax.',
-            author: 'Mike Wilson',
+            content: 'This is incredibly helpful! Could you elaborate more on error boundaries?',
+            author: 'Emily Johnson',
             createdAt: '2024-01-15',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-            upvotes: 5,
-            downvotes: 0
-          },
-          {
-            id: 'c2',
-            content: 'One thing to note is that you can only use await inside async functions.',
-            author: 'Sarah Chen',
-            createdAt: '2024-01-15',
-            avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-            upvotes: 3,
+            avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+            upvotes: 12,
             downvotes: 0
           }
         ]
-      },
-      {
-        id: 'a2',
-        content: 'To add to Jane\'s excellent answer, here are some additional patterns you might find useful:\n\n**Parallel execution with Promise.all():**\n```javascript\nasync function fetchMultipleData() {\n  try {\n    const [users, posts, comments] = await Promise.all([\n      fetch(\'/api/users\').then(r => r.json()),\n      fetch(\'/api/posts\').then(r => r.json()),\n      fetch(\'/api/comments\').then(r => r.json())\n    ]);\n    return { users, posts, comments };\n  } catch (error) {\n    console.error(\'Failed to fetch data:\', error);\n  }\n}\n```\n\n**Sequential vs Parallel:**\n```javascript\n// Sequential (slower)\nconst user = await fetchUser();\nconst posts = await fetchPosts();\n\n// Parallel (faster when operations are independent)\nconst [user, posts] = await Promise.all([\n  fetchUser(),\n  fetchPosts()\n]);\n```',
-        author: 'David Chen',
-        createdAt: '2024-01-15',
-        upvotes: 8,
-        downvotes: 1,
-        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
-        badge: 'Senior',
-        comments: []
       }
     ]
   });
@@ -407,9 +819,10 @@ const ThreadDetailPage: React.FC = () => {
               </div>
 
               {/* Content */}
-              <div className="prose prose-sm sm:prose max-w-none mb-4 sm:mb-6">
-                <div className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base leading-relaxed">{thread.content}</div>
-              </div>
+              <RichContentDisplay 
+                content={thread.content}
+                className="mb-4 sm:mb-6 text-sm sm:text-base leading-relaxed text-gray-700"
+              />
 
               {/* Author Info */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-3 sm:pt-4 border-t border-gray-200 gap-3 sm:gap-0">
@@ -497,11 +910,11 @@ const ThreadDetailPage: React.FC = () => {
           {/* Add Answer Form */}
           <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Your Answer</h3>
-            <textarea
-              placeholder="Share your knowledge and help the community..."
+            <RichTextEditor
               value={newAnswer}
-              onChange={(e) => setNewAnswer(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md h-24 sm:h-32 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm sm:text-base"
+              onChange={setNewAnswer}
+              placeholder="Share your knowledge and help the community with code examples and images..."
+              height="h-32 sm:h-40"
             />
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-3 sm:mt-4 gap-3 sm:gap-0">
               <div className="text-xs sm:text-sm text-gray-500">
@@ -584,9 +997,10 @@ const ThreadDetailPage: React.FC = () => {
                         </div>
                       ) : (
                         <>
-                          <div className="prose prose-sm sm:prose max-w-none mb-3 sm:mb-4">
-                            <div className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base leading-relaxed">{answer.content}</div>
-                          </div>
+                          <RichContentDisplay 
+                            content={answer.content}
+                            className="mb-3 sm:mb-4 text-sm sm:text-base leading-relaxed text-gray-700"
+                          />
 
                           {/* Author Info and Actions */}
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
@@ -644,11 +1058,11 @@ const ThreadDetailPage: React.FC = () => {
                           {/* Comment Form */}
                           {showCommentForm[answer.id] && (
                             <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
-                              <textarea
-                                placeholder="Add a comment..."
+                              <RichTextEditor
                                 value={newComment[answer.id] || ''}
-                                onChange={(e) => setNewComment({ ...newComment, [answer.id]: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md h-12 sm:h-16 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-white text-sm sm:text-base"
+                                onChange={(content) => setNewComment({ ...newComment, [answer.id]: content })}
+                                placeholder="Add a comment with code examples..."
+                                height="h-20 sm:h-24"
                               />
                               <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-2">
                                 <button
