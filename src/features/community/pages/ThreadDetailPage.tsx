@@ -4,28 +4,28 @@ import {
   ArrowLeft,
   ArrowUp,
   ArrowDown,
-//   MessageCircle,
+  //   MessageCircle,
   Calendar,
-//   Heart,
+  //   Heart,
   Edit3,
   Trash2,
-//   Save,
-//   X,
-//   Reply,
-//   MoreHorizontal,
+  //   Save,
+  //   X,
+  //   Reply,
+  //   MoreHorizontal,
   Pin,
   Award,
-//   Star,
+  //   Star,
   Eye,
   Share2,
   Bookmark,
   Flag,
   //   Users,
   //   Clock,
-//   Zap,
+  //   Zap,
   CheckCircle,
   AlertCircle,
-//   Send
+  //   Send
 } from 'lucide-react';
 
 interface ThreadComment {
@@ -77,7 +77,7 @@ interface Thread {
 const ThreadDetailPage: React.FC = () => {
   const { threadId } = useParams<{ threadId: string }>();
   const navigate = useNavigate();
-  
+
   // Mock thread data - in real app, fetch from API
   const [thread, setThread] = useState<Thread>({
     id: '1',
@@ -158,18 +158,18 @@ const ThreadDetailPage: React.FC = () => {
   const getUserAvatar = (name: string, avatar?: string) => {
     const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
     const colors = [
-      'bg-gradient-to-br from-blue-500 to-blue-600', 
-      'bg-gradient-to-br from-green-500 to-green-600', 
-      'bg-gradient-to-br from-purple-500 to-purple-600', 
-      'bg-gradient-to-br from-pink-500 to-pink-600', 
-      'bg-gradient-to-br from-yellow-500 to-yellow-600', 
-      'bg-gradient-to-br from-indigo-500 to-indigo-600', 
-      'bg-gradient-to-br from-red-500 to-red-600', 
+      'bg-gradient-to-br from-blue-500 to-blue-600',
+      'bg-gradient-to-br from-green-500 to-green-600',
+      'bg-gradient-to-br from-purple-500 to-purple-600',
+      'bg-gradient-to-br from-pink-500 to-pink-600',
+      'bg-gradient-to-br from-yellow-500 to-yellow-600',
+      'bg-gradient-to-br from-indigo-500 to-indigo-600',
+      'bg-gradient-to-br from-red-500 to-red-600',
       'bg-gradient-to-br from-teal-500 to-teal-600'
     ];
     const colorIndex = name.length % colors.length;
-    return { 
-      initials, 
+    return {
+      initials,
       color: colors[colorIndex],
       avatar: avatar || null
     };
@@ -229,7 +229,7 @@ const ThreadDetailPage: React.FC = () => {
         upvotes: 0,
         downvotes: 0
       };
-      
+
       setThread(prev => ({
         ...prev,
         answers: prev.answers.map(answer =>
@@ -238,12 +238,15 @@ const ThreadDetailPage: React.FC = () => {
             : answer
         )
       }));
-      
+
       setNewComment({ ...newComment, [answerId]: '' });
       setShowCommentForm({ ...showCommentForm, [answerId]: false });
     }
   };
-
+  const handleBackToCommunity = () => {
+    // Use navigate with replace: false to maintain proper browser history
+    navigate('/community', { replace: false });
+  };
   const canEdit = (author: string) => author === 'Current User';
 
   if (!thread) {
@@ -253,7 +256,7 @@ const ThreadDetailPage: React.FC = () => {
         <h2 className="text-2xl font-bold text-gray-700">Thread not found</h2>
         <p className="text-gray-500 mb-6">The thread you're looking for doesn't exist or has been removed.</p>
         <button
-          onClick={() => navigate('/community')}
+          onClick={handleBackToCommunity}
           className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all font-semibold"
         >
           Back to Community
@@ -303,29 +306,28 @@ const ThreadDetailPage: React.FC = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <button
-              onClick={() => navigate('/community')}
+              onClick={handleBackToCommunity}
               className="flex items-center gap-2 text-gray-600 hover:text-gray-800 font-medium"
             >
               <ArrowLeft size={20} />
               <span>Back to Community</span>
             </button>
-            
+
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsBookmarked(!isBookmarked)}
-                className={`p-2 rounded-md transition-colors ${
-                  isBookmarked 
-                    ? 'bg-yellow-100 text-yellow-700' 
+                className={`p-2 rounded-md transition-colors ${isBookmarked
+                    ? 'bg-yellow-100 text-yellow-700'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 <Bookmark size={18} className={isBookmarked ? 'fill-current' : ''} />
               </button>
-              
+
               <button className="p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-md transition-colors">
                 <Share2 size={18} />
               </button>
-              
+
               <button className="p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-md transition-colors">
                 <Flag size={18} />
               </button>
@@ -360,23 +362,20 @@ const ThreadDetailPage: React.FC = () => {
             <div className="flex flex-col items-center gap-2 min-w-[80px]">
               <button
                 onClick={() => handleVote('thread', thread.id, 'up')}
-                className={`p-3 rounded-md transition-colors ${
-                  thread.isUpvoted ? 'text-orange-600 bg-orange-50' : 'text-gray-400 hover:text-orange-600 hover:bg-orange-50'
-                }`}
+                className={`p-3 rounded-md transition-colors ${thread.isUpvoted ? 'text-orange-600 bg-orange-50' : 'text-gray-400 hover:text-orange-600 hover:bg-orange-50'
+                  }`}
               >
                 <ArrowUp size={24} />
               </button>
-              <span className={`text-xl font-bold px-3 py-2 rounded ${
-                thread.upvotes - thread.downvotes > 0 ? 'text-orange-600' : 
-                thread.upvotes - thread.downvotes < 0 ? 'text-blue-600' : 'text-gray-500'
-              }`}>
+              <span className={`text-xl font-bold px-3 py-2 rounded ${thread.upvotes - thread.downvotes > 0 ? 'text-orange-600' :
+                  thread.upvotes - thread.downvotes < 0 ? 'text-blue-600' : 'text-gray-500'
+                }`}>
                 {thread.upvotes - thread.downvotes}
               </span>
               <button
                 onClick={() => handleVote('thread', thread.id, 'down')}
-                className={`p-3 rounded-md transition-colors ${
-                  thread.isDownvoted ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
-                }`}
+                className={`p-3 rounded-md transition-colors ${thread.isDownvoted ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                  }`}
               >
                 <ArrowDown size={24} />
               </button>
@@ -385,7 +384,7 @@ const ThreadDetailPage: React.FC = () => {
             {/* Content */}
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-900 mb-4">{thread.title}</h1>
-              
+
               {/* Tags */}
               <div className="flex flex-wrap gap-2 mb-6">
                 {thread.tags.map(tag => (
@@ -404,8 +403,8 @@ const ThreadDetailPage: React.FC = () => {
               <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                 <div className="flex items-center gap-3">
                   {authorAvatar.avatar ? (
-                    <img 
-                      src={authorAvatar.avatar} 
+                    <img
+                      src={authorAvatar.avatar}
                       alt={thread.author}
                       className="w-12 h-12 rounded-full object-cover"
                     />
@@ -414,7 +413,7 @@ const ThreadDetailPage: React.FC = () => {
                       {authorAvatar.initials}
                     </div>
                   )}
-                  
+
                   <div>
                     <div className="font-semibold text-gray-900">{thread.author}</div>
                     <div className="text-sm text-gray-500 flex items-center gap-3">
@@ -441,14 +440,14 @@ const ThreadDetailPage: React.FC = () => {
                       return (
                         <div key={participantName}>
                           {participantAnswer?.avatar ? (
-                            <img 
-                              src={participantAnswer.avatar} 
+                            <img
+                              src={participantAnswer.avatar}
                               alt={participantName}
                               className="w-8 h-8 rounded-full border-2 border-white object-cover"
                               title={participantName}
                             />
                           ) : (
-                            <div 
+                            <div
                               className={`w-8 h-8 ${participantData.color} rounded-full border-2 border-white flex items-center justify-center text-white text-sm font-medium`}
                               title={participantName}
                             >
@@ -505,9 +504,8 @@ const ThreadDetailPage: React.FC = () => {
           {thread.answers.map((answer) => {
             const answerAuthorAvatar = getUserAvatar(answer.author, answer.avatar);
             return (
-              <div key={answer.id} className={`bg-white border border-gray-200 rounded-lg overflow-hidden ${
-                answer.isAccepted ? 'ring-2 ring-green-200' : ''
-              }`}>
+              <div key={answer.id} className={`bg-white border border-gray-200 rounded-lg overflow-hidden ${answer.isAccepted ? 'ring-2 ring-green-200' : ''
+                }`}>
                 {/* Accepted Answer Banner */}
                 {answer.isAccepted && (
                   <div className="bg-green-50 px-6 py-3 border-b border-green-200">
@@ -524,23 +522,20 @@ const ThreadDetailPage: React.FC = () => {
                     <div className="flex flex-col items-center gap-2 min-w-[60px]">
                       <button
                         onClick={() => handleVote('answer', answer.id, 'up')}
-                        className={`p-2 rounded-md transition-colors ${
-                          answer.isUpvoted ? 'text-orange-600 bg-orange-50' : 'text-gray-400 hover:text-orange-600 hover:bg-orange-50'
-                        }`}
+                        className={`p-2 rounded-md transition-colors ${answer.isUpvoted ? 'text-orange-600 bg-orange-50' : 'text-gray-400 hover:text-orange-600 hover:bg-orange-50'
+                          }`}
                       >
                         <ArrowUp size={18} />
                       </button>
-                      <span className={`text-lg font-bold px-2 py-1 rounded ${
-                        answer.upvotes - answer.downvotes > 0 ? 'text-orange-600' : 
-                        answer.upvotes - answer.downvotes < 0 ? 'text-blue-600' : 'text-gray-500'
-                      }`}>
+                      <span className={`text-lg font-bold px-2 py-1 rounded ${answer.upvotes - answer.downvotes > 0 ? 'text-orange-600' :
+                          answer.upvotes - answer.downvotes < 0 ? 'text-blue-600' : 'text-gray-500'
+                        }`}>
                         {answer.upvotes - answer.downvotes}
                       </span>
                       <button
                         onClick={() => handleVote('answer', answer.id, 'down')}
-                        className={`p-2 rounded-md transition-colors ${
-                          answer.isDownvoted ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
-                        }`}
+                        className={`p-2 rounded-md transition-colors ${answer.isDownvoted ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                          }`}
                       >
                         <ArrowDown size={18} />
                       </button>
@@ -580,8 +575,8 @@ const ThreadDetailPage: React.FC = () => {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               {answerAuthorAvatar.avatar ? (
-                                <img 
-                                  src={answerAuthorAvatar.avatar} 
+                                <img
+                                  src={answerAuthorAvatar.avatar}
                                   alt={answer.author}
                                   className="w-10 h-10 rounded-full object-cover"
                                 />
@@ -590,7 +585,7 @@ const ThreadDetailPage: React.FC = () => {
                                   {answerAuthorAvatar.initials}
                                 </div>
                               )}
-                              
+
                               <div>
                                 <div className="font-semibold text-gray-900">{answer.author}</div>
                                 <div className="text-sm text-gray-500">
@@ -606,7 +601,7 @@ const ThreadDetailPage: React.FC = () => {
                               >
                                 Reply
                               </button>
-                              
+
                               {canEdit(answer.author) && (
                                 <>
                                   <button
@@ -666,8 +661,8 @@ const ThreadDetailPage: React.FC = () => {
                                     <p className="text-gray-700 mb-2 text-sm">{comment.content}</p>
                                     <div className="flex items-center gap-2">
                                       {commentAuthorAvatar.avatar ? (
-                                        <img 
-                                          src={commentAuthorAvatar.avatar} 
+                                        <img
+                                          src={commentAuthorAvatar.avatar}
                                           alt={comment.author}
                                           className="w-6 h-6 rounded-full object-cover"
                                         />
