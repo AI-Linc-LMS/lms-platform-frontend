@@ -60,10 +60,10 @@ export const sendActivityData = async (data: ActivityData): Promise<void> => {
   
   // Clean API payload with account and device tracking
   const apiData = {
-    "total-time-seconds": totalAccumulatedTime, // Send total accumulated time (Today's Total)
-    "session_id": data.session_id,
+    "time_spent_seconds": totalAccumulatedTime, // Send total accumulated time (Today's Total)
+    // "session_id": data.session_id,
     "account_id": accountId, // User's account ID (same across all devices)
-    "user_id": data.userId, // Keep for backward compatibility
+    "session_id": data.userId, // Keep for backward compatibility
     "device_id": deviceId, // Unique device/browser identifier
     "date": new Date(data.timestamp).toISOString().split('T')[0], // YYYY-MM-DD format
     "device_type": data.device_info.deviceType, // Just device type, not full device info
@@ -71,7 +71,7 @@ export const sendActivityData = async (data: ActivityData): Promise<void> => {
   };
   
   const clientId = import.meta.env.VITE_CLIENT_ID;
-  const endpoint = `/activity/clients/${clientId}/activity-log/`;
+  const endpoint = `/activity/clients/${clientId}/track-time/`;
   
   // Send the actual API call
   await activityTrackingInstance.post(endpoint, apiData);
@@ -121,10 +121,10 @@ export const syncOfflineActivityData = async (): Promise<void> => {
       
       // Clean API payload with account and device tracking
       const apiData = {
-        "total-time-seconds": totalAccumulatedTime, // Send total accumulated time (Today's Total)
-        "session_id": data.session_id,
+        "time_spent_seconds": totalAccumulatedTime, // Send total accumulated time (Today's Total)
+        // "session_id": data.session_id,
         "account_id": accountId, // User's account ID (same across all devices)
-        "user_id": data.userId, // Keep for backward compatibility
+        "session_id": data.userId, // Keep for backward compatibility
         "device_id": deviceId, // Unique device/browser identifier
         "date": new Date(data.timestamp).toISOString().split('T')[0], // YYYY-MM-DD format
         "device_type": data.device_info.deviceType, // Just device type, not full device info
@@ -132,7 +132,7 @@ export const syncOfflineActivityData = async (): Promise<void> => {
       };
       
       // Send API call for each offline record
-      return activityTrackingInstance.post(`/activity/clients/${clientId}/activity-log/`, apiData);
+      return activityTrackingInstance.post(`/activity/clients/${clientId}/track-time/`, apiData);
     });
     
     await Promise.all(promises);
