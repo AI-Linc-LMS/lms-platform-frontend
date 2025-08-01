@@ -271,7 +271,7 @@ export const formatDateForApi = (date: Date = new Date()): string => {
 export const createActivityPayload = (
   totalTimeSpent: number,
   currentSessionDuration: number,
-  sessionId: string,
+  // sessionId: string,
   deviceInfo: { browser: string; os: string; deviceType: string }
 ) => {
   // Validate time values
@@ -307,7 +307,7 @@ export const createActivityPayload = (
 export const createPreciseActivityPayload = (
   totalTimeSpent: number,
   currentSessionDuration: number,
-  sessionId: string,
+  // sessionId: string,
   deviceInfo: { browser: string; os: string; deviceType: string },
   userId?: string,
   customTimestamp?: number
@@ -548,7 +548,7 @@ export const sendSessionEndDataViaBeacon = (
  */
 export const createSessionOnlyActivityPayload = (
   sessionDuration: number,
-  sessionId: string,
+  // sessionId: string,
   userId?: string
 ) => {
   // Validate time values
