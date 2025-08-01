@@ -252,9 +252,9 @@ const ThreadDetailPage: React.FC = () => {
     setEditedContent('');
     setShowDeleteConfirm(null);
     setIsBookmarked(false);
-    
+
     // Navigate back to community with proper history management
-    navigate('/community', { 
+    navigate('/community', {
       replace: false,
       state: { fromThread: threadId }
     });
@@ -330,8 +330,8 @@ const ThreadDetailPage: React.FC = () => {
               <button
                 onClick={() => setIsBookmarked(!isBookmarked)}
                 className={`p-1.5 sm:p-2 rounded-md transition-colors ${isBookmarked
-                    ? 'bg-yellow-100 text-yellow-700'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-yellow-100 text-yellow-700'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
               >
                 <Bookmark size={16} className={`sm:w-4 sm:h-4 ${isBookmarked ? 'fill-current' : ''}`} />
@@ -381,7 +381,7 @@ const ThreadDetailPage: React.FC = () => {
                 <ArrowUp size={20} className="sm:w-6 sm:h-6" />
               </button>
               <span className={`text-lg sm:text-xl font-bold px-2 sm:px-3 py-1 sm:py-2 rounded ${thread.upvotes - thread.downvotes > 0 ? 'text-orange-600' :
-                  thread.upvotes - thread.downvotes < 0 ? 'text-blue-600' : 'text-gray-500'
+                thread.upvotes - thread.downvotes < 0 ? 'text-blue-600' : 'text-gray-500'
                 }`}>
                 {thread.upvotes - thread.downvotes}
               </span>
@@ -546,7 +546,7 @@ const ThreadDetailPage: React.FC = () => {
                         <ArrowUp size={16} className="sm:w-4 sm:h-4" />
                       </button>
                       <span className={`text-base sm:text-lg font-bold px-1.5 sm:px-2 py-1 rounded ${answer.upvotes - answer.downvotes > 0 ? 'text-orange-600' :
-                          answer.upvotes - answer.downvotes < 0 ? 'text-blue-600' : 'text-gray-500'
+                        answer.upvotes - answer.downvotes < 0 ? 'text-blue-600' : 'text-gray-500'
                         }`}>
                         {answer.upvotes - answer.downvotes}
                       </span>
