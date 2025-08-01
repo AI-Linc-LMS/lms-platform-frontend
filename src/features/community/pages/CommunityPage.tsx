@@ -1,27 +1,30 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Search,
   Plus,
   ArrowUp,
   ArrowDown,
   MessageCircle,
-  User,
   Calendar,
-  // Tag,
   Filter,
-  // Send,
-  Heart,
-  Reply,
-  MoreHorizontal,
+  // Heart,
   Edit3,
   Trash2,
   Save,
   X,
-  List,
-  GitBranch,
   Menu,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Clock,
+  Users,
+  TrendingUp,
+  Pin,
+  Award,
+  // Star,
+  Eye,
+  // BookOpen,
+  // Zap
 } from 'lucide-react';
 
 interface ThreadComment {
@@ -29,6 +32,7 @@ interface ThreadComment {
   content: string;
   author: string;
   createdAt: string;
+  avatar?: string;
 }
 
 interface Answer {
@@ -41,6 +45,8 @@ interface Answer {
   isUpvoted?: boolean;
   isDownvoted?: boolean;
   comments: ThreadComment[];
+  avatar?: string;
+  badge?: string;
 }
 
 interface Thread {
@@ -55,9 +61,15 @@ interface Thread {
   tags: string[];
   isUpvoted?: boolean;
   isDownvoted?: boolean;
+  avatar?: string;
+  isPinned?: boolean;
+  isSolved?: boolean;
+  views?: number;
+  badge?: string;
 }
 
 const CommunityPage: React.FC = () => {
+  const navigate = useNavigate();
   const [threads, setThreads] = useState<Thread[]>([
     {
       id: '1',
@@ -68,6 +80,10 @@ const CommunityPage: React.FC = () => {
       upvotes: 15,
       downvotes: 2,
       tags: ['JavaScript', 'Async'],
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+      isPinned: true,
+      views: 234,
+      badge: 'Expert',
       answers: [
         {
           id: 'a1',
@@ -76,12 +92,15 @@ const CommunityPage: React.FC = () => {
           createdAt: '2024-01-15',
           upvotes: 8,
           downvotes: 0,
+          avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+          badge: 'Mentor',
           comments: [
             {
               id: 'c1',
               content: 'Great explanation! This really helped me understand.',
               author: 'Mike Wilson',
-              createdAt: '2024-01-15'
+              createdAt: '2024-01-15',
+              avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
             }
           ]
         }
@@ -96,7 +115,33 @@ const CommunityPage: React.FC = () => {
       upvotes: 23,
       downvotes: 1,
       tags: ['React', 'Best Practices'],
-      answers: []
+      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+      isSolved: true,
+      views: 567,
+      badge: 'Pro',
+      answers: [
+        {
+          id: 'a2',
+          content: 'I recommend following the atomic design pattern with clear separation of concerns.',
+          author: 'David Chen',
+          createdAt: '2024-01-14',
+          upvotes: 12,
+          downvotes: 0,
+          avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
+          badge: 'Senior',
+          comments: []
+        },
+        {
+          id: 'a3',
+          content: 'Also consider using feature-based folder structure instead of type-based.',
+          author: 'Emma Wilson',
+          createdAt: '2024-01-14',
+          upvotes: 8,
+          downvotes: 1,
+          avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
+          comments: []
+        }
+      ]
     }
   ]);
 
@@ -106,15 +151,9 @@ const CommunityPage: React.FC = () => {
   const [newThread, setNewThread] = useState({ title: '', content: '', tags: '' });
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
   const [newAnswers, setNewAnswers] = useState<{ [key: string]: string }>({});
-  const [newComments, setNewComments] = useState<{ [key: string]: string }>({});
-  const [showCommentForm, setShowCommentForm] = useState<{ [key: string]: boolean }>({});
-  const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
   const [editingThread, setEditingThread] = useState<string | null>(null);
-  const [editingAnswer, setEditingAnswer] = useState<string | null>(null);
   const [editedThreadData, setEditedThreadData] = useState({ title: '', content: '', tags: '' });
-  const [editedAnswerContent, setEditedAnswerContent] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ type: 'thread' | 'answer', id: string } | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'thread'>('list');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
@@ -202,49 +241,6 @@ const CommunityPage: React.FC = () => {
     }
   };
 
-  const handleAddComment = (answerId: string): void => {
-    const commentContent = newComments[answerId];
-    if (commentContent.trim()) {
-      const newComment: ThreadComment = {
-        id: Date.now().toString(),
-        content: commentContent,
-        author: 'Current User',
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-
-      setThreads(prevThreads =>
-        prevThreads.map(thread => ({
-          ...thread,
-          answers: thread.answers.map(answer =>
-            answer.id === answerId
-              ? { ...answer, comments: [...answer.comments, newComment] }
-              : answer
-          )
-        }))
-      );
-
-      setNewComments({ ...newComments, [answerId]: '' });
-      setShowCommentForm({ ...showCommentForm, [answerId]: false });
-    }
-  };
-
-  const toggleCommentForm = (answerId: string): void => {
-    setShowCommentForm(prev => ({
-      ...prev,
-      [answerId]: !prev[answerId]
-    }));
-  };
-
-  const toggleCommentsExpansion = (answerId: string): void => {
-    const newExpanded = new Set(expandedComments);
-    if (newExpanded.has(answerId)) {
-      newExpanded.delete(answerId);
-    } else {
-      newExpanded.add(answerId);
-    }
-    setExpandedComments(newExpanded);
-  };
-
   const toggleThreadExpansion = (threadId: string): void => {
     const newExpanded = new Set(expandedThreads);
     if (newExpanded.has(threadId)) {
@@ -288,27 +284,7 @@ const CommunityPage: React.FC = () => {
     setShowDeleteConfirm(null);
   };
 
-  const handleEditAnswer = (answer: Answer): void => {
-    setEditingAnswer(answer.id);
-    setEditedAnswerContent(answer.content);
-  };
 
-  const handleSaveAnswerEdit = (): void => {
-    if (editingAnswer && editedAnswerContent) {
-      setThreads(prevThreads =>
-        prevThreads.map(thread => ({
-          ...thread,
-          answers: thread.answers.map(answer =>
-            answer.id === editingAnswer
-              ? { ...answer, content: editedAnswerContent }
-              : answer
-          )
-        }))
-      );
-      setEditingAnswer(null);
-      setEditedAnswerContent('');
-    }
-  };
 
   const handleDeleteAnswer = (answerId: string): void => {
     setThreads(prevThreads =>
@@ -324,21 +300,65 @@ const CommunityPage: React.FC = () => {
     return author === 'Current User'; // In real app, compare with actual current user
   };
 
+  // Helper function to generate user avatar with fallback
+  const getUserAvatar = (name: string, avatar?: string) => {
+    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
+    const colors = [
+      'bg-gradient-to-br from-blue-500 to-blue-600',
+      'bg-gradient-to-br from-green-500 to-green-600',
+      'bg-gradient-to-br from-purple-500 to-purple-600',
+      'bg-gradient-to-br from-pink-500 to-pink-600',
+      'bg-gradient-to-br from-yellow-500 to-yellow-600',
+      'bg-gradient-to-br from-indigo-500 to-indigo-600',
+      'bg-gradient-to-br from-red-500 to-red-600',
+      'bg-gradient-to-br from-teal-500 to-teal-600'
+    ];
+    const colorIndex = name.length % colors.length;
+    return {
+      initials,
+      color: colors[colorIndex],
+      avatar: avatar || null
+    };
+  };
+
+  // Helper function to get thread participants (unique answerers)
+  const getThreadParticipants = (thread: Thread) => {
+    const participants = new Set();
+    participants.add(thread.author);
+    thread.answers.forEach(answer => participants.add(answer.author));
+    return Array.from(participants).slice(0, 4);
+  };
+
+  // Helper function to get user badge color
+  const getBadgeColor = (badge?: string) => {
+    switch (badge) {
+      case 'Expert': return 'bg-gradient-to-r from-purple-500 to-purple-600 text-white';
+      case 'Mentor': return 'bg-gradient-to-r from-blue-500 to-blue-600 text-white';
+      case 'Pro': return 'bg-gradient-to-r from-green-500 to-green-600 text-white';
+      case 'Senior': return 'bg-gradient-to-r from-orange-500 to-orange-600 text-white';
+      default: return 'bg-gray-100 text-gray-600';
+    }
+  };
+
+  const handleThreadClick = (threadId: string) => {
+    navigate(`/community/thread/${threadId}`);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full shadow-xl mx-4">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-lg">
             <div className="text-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                <Trash2 size={20} className="text-red-600 sm:w-6 sm:h-6" />
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 size={20} className="text-red-600" />
               </div>
-              <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">Delete {showDeleteConfirm.type}</h3>
-              <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete {showDeleteConfirm.type}</h3>
+              <p className="text-gray-600 mb-6">
                 Are you sure you want to delete this {showDeleteConfirm.type}? This action cannot be undone.
               </p>
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <div className="flex gap-3">
                 <button
                   onClick={() => {
                     if (showDeleteConfirm.type === 'thread') {
@@ -347,13 +367,13 @@ const CommunityPage: React.FC = () => {
                       handleDeleteAnswer(showDeleteConfirm.id);
                     }
                   }}
-                  className="w-full sm:flex-1 bg-red-600 text-white px-4 py-2.5 sm:py-2 rounded-lg hover:bg-red-700 transition-colors font-medium text-sm sm:text-base"
+                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors font-medium"
                 >
                   Delete
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirm(null)}
-                  className="w-full sm:flex-1 bg-gray-200 text-gray-700 px-4 py-2.5 sm:py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm sm:text-base"
+                  className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors font-medium"
                 >
                   Cancel
                 </button>
@@ -363,99 +383,42 @@ const CommunityPage: React.FC = () => {
         </div>
       )}
 
-      {/* Header Section */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3">
-          {/* Mobile Header */}
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">Community Forum</h1>
-              <p className="text-gray-600 text-xs sm:text-sm hidden sm:block">Ask questions, share knowledge, and connect</p>
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-md flex items-center justify-center">
+                <Users className="text-white" size={18} />
+              </div>
+              <h1 className="text-xl font-semibold text-gray-900">Community</h1>
             </div>
-            <div className="flex items-center gap-2">
-              {/* Mobile Menu Button */}
+
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="sm:hidden p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                className="sm:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md"
               >
                 <Menu size={20} />
               </button>
-              
-              {/* Desktop View Mode Toggle */}
-              <div className="hidden sm:flex bg-gray-100 rounded-lg p-0.5">
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all text-sm font-medium ${
-                    viewMode === 'list' 
-                      ? 'bg-white text-blue-600 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-800'
-                  }`}
-                >
-                  <List size={16} />
-                  List
-                </button>
-                <button
-                  onClick={() => setViewMode('thread')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all text-sm font-medium ${
-                    viewMode === 'thread' 
-                      ? 'bg-white text-blue-600 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-800'
-                  }`}
-                >
-                  <GitBranch size={16} />
-                  Thread
-                </button>
-              </div>
-              
+
               <button
                 onClick={() => setShowNewThreadForm(true)}
-                className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg flex items-center gap-1 sm:gap-2 hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base"
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
               >
-                <Plus size={16} />
-                <span className="hidden sm:inline">New Post</span>
+                <Plus size={18} />
+                <span className="hidden sm:inline">New Thread</span>
               </button>
             </div>
           </div>
 
-          {/* Mobile Menu Dropdown */}
-          {showMobileMenu && (
-            <div className="sm:hidden mb-3 bg-gray-50 rounded-lg p-3 border border-gray-200 animate-in slide-in-from-top-2 duration-200">
-              <div className="space-y-2">
-                <div className="flex bg-gray-100 rounded-lg p-0.5">
-                  <button
-                    onClick={() => {
-                      setViewMode('list');
-                      setShowMobileMenu(false);
-                    }}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md transition-all text-sm font-medium ${
-                      viewMode === 'list' 
-                        ? 'bg-white text-blue-600 shadow-sm' 
-                        : 'text-gray-600'
-                    }`}
-                  >
-                    <List size={16} />
-                    List View
-                  </button>
-                  <button
-                    onClick={() => {
-                      setViewMode('thread');
-                      setShowMobileMenu(false);
-                    }}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md transition-all text-sm font-medium ${
-                      viewMode === 'thread' 
-                        ? 'bg-white text-blue-600 shadow-sm' 
-                        : 'text-gray-600'
-                    }`}
-                  >
-                    <GitBranch size={16} />
-                    Thread View
-                  </button>
-                </div>
+          {/* Search and Filters */}
+          <div className="pb-4">
+            {showMobileMenu && (
+              <div className="sm:hidden mb-4 p-4 bg-gray-50 rounded-lg">
                 <button
-                  onClick={() => {
-                    setShowMobileFilters(!showMobileFilters);
-                  }}
-                  className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                  onClick={() => setShowMobileFilters(!showMobileFilters)}
+                  className="w-full flex items-center justify-between px-3 py-2 text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50"
                 >
                   <span className="flex items-center gap-2">
                     <Filter size={16} />
@@ -464,27 +427,23 @@ const CommunityPage: React.FC = () => {
                   {showMobileFilters ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                 </button>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Search and Filter - Desktop */}
-          <div className="hidden sm:flex gap-3 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
-              <input
-                type="text"
-                placeholder="Search posts..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white text-sm"
-              />
-            </div>
-            <div className="relative">
-              <Filter className="absolute left-3 top-2.5 text-gray-400" size={16} />
+            <div className="hidden sm:flex gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search discussions..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
               <select
                 value={selectedTag}
                 onChange={(e) => setSelectedTag(e.target.value)}
-                className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white min-w-[140px] text-sm"
+                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[140px]"
               >
                 <option value="">All Tags</option>
                 {allTags.map(tag => (
@@ -492,27 +451,23 @@ const CommunityPage: React.FC = () => {
                 ))}
               </select>
             </div>
-          </div>
 
-          {/* Mobile Search and Filter */}
-          {(showMobileFilters || showMobileMenu) && (
-            <div className="sm:hidden space-y-3 mb-4 animate-in slide-in-from-top-2 duration-200">
-              <div className="relative">
-                <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
-                <input
-                  type="text"
-                  placeholder="Search posts..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white text-sm"
-                />
-              </div>
-              <div className="relative">
-                <Filter className="absolute left-3 top-2.5 text-gray-400" size={16} />
+            {(showMobileFilters && showMobileMenu) && (
+              <div className="sm:hidden space-y-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md"
+                  />
+                </div>
                 <select
                   value={selectedTag}
                   onChange={(e) => setSelectedTag(e.target.value)}
-                  className="w-full pl-10 pr-8 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 >
                   <option value="">All Tags</option>
                   {allTags.map(tag => (
@@ -520,47 +475,44 @@ const CommunityPage: React.FC = () => {
                   ))}
                 </select>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* New Thread Form */}
           {showNewThreadForm && (
-            <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 mb-4 shadow-sm animate-in slide-in-from-top-4 duration-300">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <Plus size={18} className="text-blue-600" />
-                Create a new post
-              </h3>
-              <div className="space-y-3">
+            <div className="mb-6 p-6 bg-white border border-gray-200 rounded-lg">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Start a new discussion</h3>
+              <div className="space-y-4">
                 <input
                   type="text"
-                  placeholder="Title"
+                  placeholder="Thread title"
                   value={newThread.title}
                   onChange={(e) => setNewThread({ ...newThread, title: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-sm sm:text-base"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <textarea
-                  placeholder="What's on your mind?"
+                  placeholder="What would you like to discuss?"
                   value={newThread.content}
                   onChange={(e) => setNewThread({ ...newThread, content: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg h-20 sm:h-24 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none text-sm sm:text-base"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md h-24 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                 />
                 <input
                   type="text"
-                  placeholder="Tags (separated by commas)"
+                  placeholder="Tags (comma separated)"
                   value={newThread.tags}
                   onChange={(e) => setNewThread({ ...newThread, tags: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm sm:text-base"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <div className="flex gap-3">
                   <button
                     onClick={handleCreateThread}
-                    className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2.5 sm:py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium"
                   >
-                    Post
+                    Create Thread
                   </button>
                   <button
                     onClick={() => setShowNewThreadForm(false)}
-                    className="w-full sm:w-auto bg-gray-200 text-gray-700 px-4 py-2.5 sm:py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm sm:text-base"
+                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors font-medium"
                   >
                     Cancel
                   </button>
@@ -571,384 +523,355 @@ const CommunityPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Threads List */}
-      <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
-        <div className={viewMode === 'thread' ? 'space-y-2' : 'space-y-3 sm:space-y-4'}>
-          {filteredThreads.map((thread) => (
-            <div key={thread.id} className={`bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 ${
-              viewMode === 'thread' ? 'relative overflow-hidden' : ''
-            }`}>
-              {/* Thread Hierarchy Lines */}
-              {viewMode === 'thread' && (
-                <div className="hidden sm:block">
-                  {/* Main thread line */}
-                  <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-300 to-blue-100"></div>
-                  {/* Thread indicator dot */}
-                  <div className="absolute left-3 top-6 w-2 h-2 bg-blue-500 rounded-full shadow-sm"></div>
-                </div>
-              )}
-              
-              <div className="p-3 sm:p-4">
-                <div className="flex gap-2 sm:gap-3">
-                  {/* Vote Section */}
-                  <div className="flex flex-col items-center gap-0.5 sm:gap-1 min-w-[40px] sm:min-w-[48px]">
-                    <button
-                      onClick={() => handleVote(thread.id, null, 'up')}
-                      className={`p-1.5 sm:p-1 rounded-lg hover:bg-gray-100 transition-all duration-200 touch-manipulation ${
-                        thread.isUpvoted ? 'text-orange-500 bg-orange-50' : 'text-gray-400 hover:text-orange-500'
-                      }`}
-                    >
-                      <ArrowUp size={16} className="sm:w-[18px] sm:h-[18px]" />
-                    </button>
-                    <span className={`text-xs sm:text-sm font-bold px-1 py-0.5 rounded ${
-                      thread.upvotes - thread.downvotes > 0 ? 'text-orange-600 bg-orange-50' : 
-                      thread.upvotes - thread.downvotes < 0 ? 'text-blue-600 bg-blue-50' : 'text-gray-500'
-                    }`}>
-                      {thread.upvotes - thread.downvotes}
-                    </span>
-                    <button
-                      onClick={() => handleVote(thread.id, null, 'down')}
-                      className={`p-1.5 sm:p-1 rounded-lg hover:bg-gray-100 transition-all duration-200 touch-manipulation ${
-                        thread.isDownvoted ? 'text-blue-500 bg-blue-50' : 'text-gray-400 hover:text-blue-500'
-                      }`}
-                    >
-                      <ArrowDown size={16} className="sm:w-[18px] sm:h-[18px]" />
-                    </button>
-                  </div>
+      {/* Stats */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="bg-white p-4 rounded-lg border border-gray-200 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2 text-gray-600">
+                <MessageCircle size={18} />
+                <span className="font-medium">{filteredThreads.length} discussions</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-600">
+                <TrendingUp size={18} />
+                <span className="font-medium">24 active today</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-600">
+                <Users size={18} />
+                <span className="font-medium">156 members</span>
+              </div>
+            </div>
+            <div className="hidden sm:flex items-center gap-2 text-sm text-gray-500">
+              <Clock size={16} />
+              <span>Updated just now</span>
+            </div>
+          </div>
+        </div>
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    {editingThread === thread.id ? (
-                      <div className="space-y-3 animate-in fade-in duration-300">
-                        <input
-                          type="text"
-                          value={editedThreadData.title}
-                          onChange={(e) => setEditedThreadData({ ...editedThreadData, title: e.target.value })}
-                          className="w-full p-2 sm:p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium text-sm sm:text-base"
-                        />
-                        <textarea
-                          value={editedThreadData.content}
-                          onChange={(e) => setEditedThreadData({ ...editedThreadData, content: e.target.value })}
-                          className="w-full p-2 sm:p-2 border border-gray-300 rounded h-16 sm:h-20 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none text-sm sm:text-base"
-                        />
-                        <input
-                          type="text"
-                          value={editedThreadData.tags}
-                          onChange={(e) => setEditedThreadData({ ...editedThreadData, tags: e.target.value })}
-                          className="w-full p-2 sm:p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm sm:text-base"
-                        />
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <button
-                            onClick={handleSaveThreadEdit}
-                            className="w-full sm:w-auto bg-green-600 text-white px-3 py-2 sm:py-1 rounded text-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-1 touch-manipulation"
-                          >
-                            <Save size={14} />
-                            Save
-                          </button>
-                          <button
-                            onClick={() => setEditingThread(null)}
-                            className="w-full sm:w-auto bg-gray-200 text-gray-700 px-3 py-2 sm:py-1 rounded text-sm hover:bg-gray-300 transition-colors flex items-center justify-center gap-1 touch-manipulation"
-                          >
-                            <X size={14} />
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-semibold text-gray-900 text-base sm:text-lg hover:text-blue-600 cursor-pointer leading-tight pr-2 transition-colors duration-200">
-                            {thread.title}
-                          </h3>
-                          {canEdit(thread.author) && (
-                            <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                              <button
-                                onClick={() => handleEditThread(thread)}
-                                className="text-gray-400 hover:text-blue-600 p-1.5 sm:p-1 rounded-lg hover:bg-gray-100 touch-manipulation transition-all duration-200"
-                              >
-                                <Edit3 size={14} />
-                              </button>
-                              <button
-                                onClick={() => setShowDeleteConfirm({ type: 'thread', id: thread.id })}
-                                className="text-gray-400 hover:text-red-600 p-1.5 sm:p-1 rounded-lg hover:bg-red-50 touch-manipulation transition-all duration-200"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                        
-                        <p className="text-gray-700 mb-3 text-sm leading-relaxed">{thread.content}</p>
-                      </>
+        {/* Threads List */}
+        <div className="space-y-4">
+          {filteredThreads.map((thread) => {
+            const authorAvatar = getUserAvatar(thread.author, thread.avatar);
+            const participants = getThreadParticipants(thread);
+
+            return (
+              <div key={thread.id} className="bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+                {/* Thread Status */}
+                {(thread.isPinned || thread.isSolved) && (
+                  <div className="px-6 py-2 border-b border-gray-100 flex items-center gap-2">
+                    {thread.isPinned && (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                        <Pin size={12} />
+                        Pinned
+                      </span>
                     )}
+                    {thread.isSolved && (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                        <Award size={12} />
+                        Solved
+                      </span>
+                    )}
+                  </div>
+                )}
 
-                    {/* Tags */}
-                    <div className="flex flex-wrap gap-1.5 mb-3">
-                      {thread.tags.map(tag => (
-                        <span key={tag} className="bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 px-2.5 py-1 rounded-full text-xs font-medium hover:from-blue-100 hover:to-indigo-100 cursor-pointer touch-manipulation transition-all duration-200 border border-blue-200">
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Meta and Actions */}
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-gray-500 group">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1">
-                          <User size={12} />
-                          <span className="font-medium truncate">{thread.author}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar size={12} />
-                          <span>{thread.createdAt}</span>
-                        </div>
-                      </div>
+                <div className="p-6">
+                  <div className="flex gap-4">
+                    {/* Vote Section */}
+                    <div className="flex flex-col items-center gap-1 min-w-[60px]" onClick={(e) => e.stopPropagation()}>
                       <button
-                        onClick={() => toggleThreadExpansion(thread.id)}
-                        className={`flex items-center gap-1.5 text-gray-500 hover:text-blue-600 font-medium self-start sm:self-auto touch-manipulation p-1.5 -m-1 rounded-lg transition-all duration-200 ${
-                          expandedThreads.has(thread.id) ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-100'
-                        }`}
+                        onClick={() => handleVote(thread.id, null, 'up')}
+                        className={`p-2 rounded-md transition-colors ${thread.isUpvoted ? 'text-orange-600 bg-orange-50' : 'text-gray-400 hover:text-orange-600 hover:bg-orange-50'
+                          }`}
                       >
-                        <MessageCircle size={14} />
-                        <span>{thread.answers.length} replies</span>
-                        {expandedThreads.has(thread.id) ? 
-                          <ChevronUp size={12} className="transition-transform duration-200" /> : 
-                          <ChevronDown size={12} className="transition-transform duration-200" />
-                        }
+                        <ArrowUp size={18} />
+                      </button>
+                      <span className={`text-sm font-semibold px-2 py-1 rounded ${thread.upvotes - thread.downvotes > 0 ? 'text-orange-600' :
+                          thread.upvotes - thread.downvotes < 0 ? 'text-blue-600' : 'text-gray-500'
+                        }`}>
+                        {thread.upvotes - thread.downvotes}
+                      </span>
+                      <button
+                        onClick={() => handleVote(thread.id, null, 'down')}
+                        className={`p-2 rounded-md transition-colors ${thread.isDownvoted ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                          }`}
+                      >
+                        <ArrowDown size={18} />
                       </button>
                     </div>
 
-                    {/* Answers Section */}
-                    {expandedThreads.has(thread.id) && (
-                      <div className="mt-4 border-t border-gray-100 pt-4 animate-in slide-in-from-top-4 duration-300">
-                        {/* Add Answer Form */}
-                        <div className="mb-4 bg-gradient-to-r from-gray-50 to-blue-50 p-3 rounded-lg border border-gray-200">
-                          <textarea
-                            placeholder="Add a reply..."
-                            value={newAnswers[thread.id] || ''}
-                            onChange={(e) => setNewAnswers({ ...newAnswers, [thread.id]: e.target.value })}
-                            className="w-full p-3 border border-gray-300 rounded-lg h-16 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none bg-white text-sm transition-all duration-200"
+                    {/* Content */}
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleThreadClick(thread.id)}>
+                      {editingThread === thread.id ? (
+                        <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="text"
+                            value={editedThreadData.title}
+                            onChange={(e) => setEditedThreadData({ ...editedThreadData, title: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           />
-                          <button
-                            onClick={() => handleAddAnswer(thread.id)}
-                            disabled={!newAnswers[thread.id]?.trim()}
-                            className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 touch-manipulation"
-                          >
-                            Reply
-                          </button>
+                          <textarea
+                            value={editedThreadData.content}
+                            onChange={(e) => setEditedThreadData({ ...editedThreadData, content: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md h-24 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                          />
+                          <input
+                            type="text"
+                            value={editedThreadData.tags}
+                            onChange={(e) => setEditedThreadData({ ...editedThreadData, tags: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleSaveThreadEdit}
+                              className="bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-1"
+                            >
+                              <Save size={14} />
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingThread(null)}
+                              className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-md hover:bg-gray-200 transition-colors text-sm font-medium flex items-center gap-1"
+                            >
+                              <X size={14} />
+                              Cancel
+                            </button>
+                          </div>
                         </div>
+                      ) : (
+                        <>
+                          <div className="flex items-start justify-between mb-3">
+                            <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors line-clamp-2">
+                              {thread.title}
+                            </h3>
+                            {canEdit(thread.author) && (
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  onClick={() => handleEditThread(thread)}
+                                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                                >
+                                  <Edit3 size={14} />
+                                </button>
+                                <button
+                                  onClick={() => setShowDeleteConfirm({ type: 'thread', id: thread.id })}
+                                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
 
-                        {/* Answers List */}
-                        <div className="space-y-3">
-                          {thread.answers.map((answer, answerIndex) => (
-                            <div key={answer.id} className={`bg-gradient-to-r from-gray-50 to-blue-50/30 rounded-lg p-3 border-l-3 border-blue-300 hover:border-blue-400 transition-all duration-200 ${
-                              viewMode === 'thread' ? 'relative sm:ml-8' : ''
-                            }`}>
-                              {/* Answer Thread Lines */}
-                              {viewMode === 'thread' && (
-                                <>
-                                  {/* Horizontal connector */}
-                                  <div className="hidden sm:block absolute -left-11 top-6 w-8 h-0.5 bg-gradient-to-r from-blue-300 to-blue-400"></div>
-                                  {/* Vertical continuation line */}
-                                  {answerIndex < thread.answers.length - 1 && (
-                                    <div className="hidden sm:block absolute -left-11 top-6 bottom-0 w-0.5 bg-gradient-to-b from-blue-300 to-blue-100"></div>
-                                  )}
-                                  {/* Answer indicator dot */}
-                                  <div className="hidden sm:block absolute -left-12 top-5 w-2 h-2 bg-blue-400 rounded-full shadow-sm"></div>
-                                </>
-                              )}
+                          <p className="text-gray-600 mb-4 line-clamp-2">
+                            {thread.content.length > 200 ? `${thread.content.substring(0, 200)}...` : thread.content}
+                          </p>
+                        </>
+                      )}
 
-                              <div className="flex gap-2 sm:gap-3">
-                                {/* Answer Votes */}
-                                <div className="flex flex-col items-center gap-0.5 sm:gap-1 min-w-[28px] sm:min-w-[32px]">
-                                  <button
-                                    onClick={() => handleVote(thread.id, answer.id, 'up')}
-                                    className={`p-1 sm:p-0.5 rounded-lg hover:bg-white/70 transition-all duration-200 touch-manipulation ${
-                                      answer.isUpvoted ? 'text-orange-500 bg-orange-50' : 'text-gray-400 hover:text-orange-500'
-                                    }`}
-                                  >
-                                    <ArrowUp size={14} />
-                                  </button>
-                                  <span className={`text-xs font-bold px-1 py-0.5 rounded ${
-                                    answer.upvotes - answer.downvotes > 0 ? 'text-orange-600 bg-orange-50' : 
-                                    answer.upvotes - answer.downvotes < 0 ? 'text-blue-600 bg-blue-50' : 'text-gray-500'
-                                  }`}>
-                                    {answer.upvotes - answer.downvotes}
-                                  </span>
-                                  <button
-                                    onClick={() => handleVote(thread.id, answer.id, 'down')}
-                                    className={`p-1 sm:p-0.5 rounded-lg hover:bg-white/70 transition-all duration-200 touch-manipulation ${
-                                      answer.isDownvoted ? 'text-blue-500 bg-blue-50' : 'text-gray-400 hover:text-blue-500'
-                                    }`}
-                                  >
-                                    <ArrowDown size={14} />
-                                  </button>
-                                </div>
+                      {/* Tags */}
+                      <div className="flex flex-wrap gap-2 mb-4" onClick={(e) => e.stopPropagation()}>
+                        {thread.tags.map(tag => (
+                          <span key={tag} className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 cursor-pointer transition-colors">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
 
-                                {/* Answer Content */}
-                                <div className="flex-1 min-w-0">
-                                  {editingAnswer === answer.id ? (
-                                    <div className="space-y-2 animate-in fade-in duration-300">
-                                      <textarea
-                                        value={editedAnswerContent}
-                                        onChange={(e) => setEditedAnswerContent(e.target.value)}
-                                        className="w-full p-2 border border-gray-300 rounded h-16 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none bg-white text-sm"
-                                      />
-                                      <div className="flex flex-col sm:flex-row gap-2">
-                                        <button
-                                          onClick={handleSaveAnswerEdit}
-                                          className="w-full sm:w-auto bg-green-600 text-white px-2 py-2 sm:py-1 rounded text-xs hover:bg-green-700 transition-colors flex items-center justify-center gap-1 touch-manipulation"
-                                        >
-                                          <Save size={12} />
-                                          Save
-                                        </button>
-                                        <button
-                                          onClick={() => setEditingAnswer(null)}
-                                          className="w-full sm:w-auto bg-gray-200 text-gray-700 px-2 py-2 sm:py-1 rounded text-xs hover:bg-gray-300 transition-colors flex items-center justify-center gap-1 touch-manipulation"
-                                        >
-                                          <X size={12} />
-                                          Cancel
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <>
-                                      <div className="flex items-start justify-between mb-2 group">
-                                        <p className="text-gray-700 text-sm leading-relaxed pr-2">{answer.content}</p>
-                                        {canEdit(answer.author) && (
-                                          <div className="flex items-center gap-1 ml-2 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                            <button
-                                              onClick={() => handleEditAnswer(answer)}
-                                              className="text-gray-400 hover:text-blue-600 p-1 sm:p-0.5 rounded-lg hover:bg-white/70 touch-manipulation transition-all duration-200"
-                                            >
-                                              <Edit3 size={12} />
-                                            </button>
-                                            <button
-                                              onClick={() => setShowDeleteConfirm({ type: 'answer', id: answer.id })}
-                                              className="text-gray-400 hover:text-red-600 p-1 sm:p-0.5 rounded-lg hover:bg-red-50 touch-manipulation transition-all duration-200"
-                                            >
-                                              <Trash2 size={12} />
-                                            </button>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </>
-                                  )}
-
-                                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-gray-500 mb-2">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium truncate bg-white/60 px-2 py-0.5 rounded-full">{answer.author}</span>
-                                      <span className="hidden sm:inline">•</span>
-                                      <span>{answer.createdAt}</span>
-                                    </div>
-                                    <div className="flex items-center gap-3 self-start sm:self-auto">
-                                      <button
-                                        onClick={() => toggleCommentsExpansion(answer.id)}
-                                        className={`hover:text-blue-600 font-medium touch-manipulation p-1 -m-1 rounded-lg transition-all duration-200 flex items-center gap-1 ${
-                                          expandedComments.has(answer.id) ? 'bg-blue-50 text-blue-600' : 'hover:bg-white/70'
-                                        }`}
-                                      >
-                                        <MessageCircle size={12} />
-                                        <span>{answer.comments.length} comments</span>
-                                        {expandedComments.has(answer.id) ? 
-                                          <ChevronUp size={10} /> : 
-                                          <ChevronDown size={10} />
-                                        }
-                                      </button>
-                                      <button
-                                        onClick={() => toggleCommentForm(answer.id)}
-                                        className={`hover:text-blue-600 font-medium touch-manipulation p-1 -m-1 rounded-lg transition-all duration-200 ${
-                                          showCommentForm[answer.id] ? 'bg-blue-50 text-blue-600' : 'hover:bg-white/70'
-                                        }`}
-                                      >
-                                        reply
-                                      </button>
-                                    </div>
-                                  </div>
-
-                                  {/* Comment Form */}
-                                  {showCommentForm[answer.id] && (
-                                    <div className="mb-3 bg-white p-3 rounded-lg border border-gray-200 shadow-sm animate-in slide-in-from-top-2 duration-200">
-                                      <textarea
-                                        placeholder="Write a comment..."
-                                        value={newComments[answer.id] || ''}
-                                        onChange={(e) => setNewComments({ ...newComments, [answer.id]: e.target.value })}
-                                        className="w-full p-2 border border-gray-300 rounded-lg h-12 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none text-sm transition-all duration-200"
-                                      />
-                                      <div className="flex flex-col sm:flex-row gap-2 mt-2">
-                                        <button
-                                          onClick={() => handleAddComment(answer.id)}
-                                          disabled={!newComments[answer.id]?.trim()}
-                                          className="w-full sm:w-auto bg-blue-600 text-white px-3 py-2 rounded-lg text-xs hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 touch-manipulation"
-                                        >
-                                          Comment
-                                        </button>
-                                        <button
-                                          onClick={() => toggleCommentForm(answer.id)}
-                                          className="w-full sm:w-auto bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs hover:bg-gray-300 transition-all duration-200 touch-manipulation"
-                                        >
-                                          Cancel
-                                        </button>
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Comments Section */}
-                                  {expandedComments.has(answer.id) && answer.comments.length > 0 && (
-                                    <div className="mt-3 space-y-2 pl-3 sm:pl-4 border-l-2 border-gray-200 animate-in slide-in-from-top-2 duration-300">
-                                      {answer.comments.map((comment: ThreadComment, commentIndex) => (
-                                        <div key={comment.id} className={`bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 ${
-                                          viewMode === 'thread' ? 'relative sm:ml-3' : ''
-                                        }`}>
-                                          {/* Comment Thread Lines */}
-                                          {viewMode === 'thread' && (
-                                            <>
-                                              {/* Horizontal connector */}
-                                              <div className="hidden sm:block absolute -left-6 top-4 w-3 h-0.5 bg-gray-300"></div>
-                                              {/* Vertical continuation line */}
-                                              {commentIndex < answer.comments.length - 1 && (
-                                                <div className="hidden sm:block absolute -left-6 top-4 bottom-0 w-0.5 bg-gray-200"></div>
-                                              )}
-                                              {/* Comment indicator dot */}
-                                              <div className="hidden sm:block absolute -left-7 top-3.5 w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-                                            </>
-                                          )}
-                                          
-                                          <p className="text-gray-700 text-sm mb-2 leading-relaxed">{comment.content}</p>
-                                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-gray-500">
-                                            <div className="flex items-center gap-2">
-                                              <span className="font-medium truncate bg-gray-50 px-2 py-0.5 rounded-full">{comment.author}</span>
-                                              <span className="hidden sm:inline">•</span>
-                                              <span>{comment.createdAt}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 self-start sm:self-auto">
-                                              <button className="hover:text-red-500 p-1 -m-1 rounded-lg hover:bg-red-50 touch-manipulation transition-all duration-200">
-                                                <Heart size={12} />
-                                              </button>
-                                              <button className="hover:text-blue-600 p-1 -m-1 rounded-lg hover:bg-blue-50 touch-manipulation transition-all duration-200">
-                                                <Reply size={12} />
-                                              </button>
-                                              <button className="hover:text-gray-700 p-1 -m-1 rounded-lg hover:bg-gray-100 touch-manipulation transition-all duration-200">
-                                                <MoreHorizontal size={12} />
-                                              </button>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
+                      {/* Meta Info */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            {authorAvatar.avatar ? (
+                              <img
+                                src={authorAvatar.avatar}
+                                alt={thread.author}
+                                className="w-8 h-8 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className={`w-8 h-8 ${authorAvatar.color} rounded-full flex items-center justify-center text-white text-sm font-medium`}>
+                                {authorAvatar.initials}
+                              </div>
+                            )}
+                            <div>
+                              <div className="font-medium text-gray-900 text-sm">{thread.author}</div>
+                              <div className="text-xs text-gray-500 flex items-center gap-2">
+                                <Calendar size={10} />
+                                {thread.createdAt}
+                                {thread.views && (
+                                  <>
+                                    <span>•</span>
+                                    <Eye size={10} />
+                                    {thread.views} views
+                                  </>
+                                )}
                               </div>
                             </div>
-                          ))}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          {/* Participants */}
+                          <div className="flex items-center gap-2">
+                            <div className="flex -space-x-1">
+                              {participants.slice(0, 3).map((participant) => {
+                                const participantName = participant as string;
+                                const participantData = getUserAvatar(participantName);
+                                const participantAnswer = thread.answers.find(a => a.author === participantName);
+                                return (
+                                  <div key={participantName} className="relative">
+                                    {participantAnswer?.avatar ? (
+                                      <img
+                                        src={participantAnswer.avatar}
+                                        alt={participantName}
+                                        className="w-6 h-6 rounded-full border-2 border-white object-cover"
+                                        title={participantName}
+                                      />
+                                    ) : (
+                                      <div
+                                        className={`w-6 h-6 ${participantData.color} rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-medium`}
+                                        title={participantName}
+                                      >
+                                        {participantData.initials}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              {participants.length > 3 && (
+                                <div className="w-6 h-6 bg-gray-100 rounded-full border-2 border-white flex items-center justify-center text-gray-600 text-xs font-medium">
+                                  +{participants.length - 3}
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-sm text-gray-500">{thread.answers.length} replies</span>
+                          </div>
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleThreadExpansion(thread.id);
+                            }}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${expandedThreads.has(thread.id)
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                          >
+                            <MessageCircle size={14} />
+                            Quick View
+                            {expandedThreads.has(thread.id) ?
+                              <ChevronUp size={14} /> :
+                              <ChevronDown size={14} />
+                            }
+                          </button>
                         </div>
                       </div>
-                    )}
+
+                      {/* Quick Preview */}
+                      {expandedThreads.has(thread.id) && (
+                        <div className="mt-6 pt-6 border-t border-gray-200" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-between mb-4">
+                            <span className="text-sm text-gray-600">Quick preview</span>
+                            <button
+                              onClick={() => handleThreadClick(thread.id)}
+                              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                              View full discussion →
+                            </button>
+                          </div>
+
+                          {/* Add Answer */}
+                          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                            <textarea
+                              placeholder="Add your reply..."
+                              value={newAnswers[thread.id] || ''}
+                              onChange={(e) => setNewAnswers({ ...newAnswers, [thread.id]: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md h-20 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-white"
+                            />
+                            <div className="flex justify-end mt-2">
+                              <button
+                                onClick={() => handleAddAnswer(thread.id)}
+                                disabled={!newAnswers[thread.id]?.trim()}
+                                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium text-sm"
+                              >
+                                Reply
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Preview Answers */}
+                          <div className="space-y-4">
+                            {thread.answers.slice(0, 2).map((answer) => {
+                              const answerAuthorAvatar = getUserAvatar(answer.author, answer.avatar);
+                              return (
+                                <div key={answer.id} className="p-4 bg-gray-50 rounded-lg">
+                                  <div className="flex gap-3">
+                                    <div className="flex flex-col items-center gap-1">
+                                      <button
+                                        onClick={() => handleVote(thread.id, answer.id, 'up')}
+                                        className={`p-1 rounded transition-colors ${answer.isUpvoted ? 'text-orange-600' : 'text-gray-400 hover:text-orange-600'
+                                          }`}
+                                      >
+                                        <ArrowUp size={14} />
+                                      </button>
+                                      <span className="text-xs font-medium text-gray-600">{answer.upvotes - answer.downvotes}</span>
+                                      <button
+                                        onClick={() => handleVote(thread.id, answer.id, 'down')}
+                                        className={`p-1 rounded transition-colors ${answer.isDownvoted ? 'text-blue-600' : 'text-gray-400 hover:text-blue-600'
+                                          }`}
+                                      >
+                                        <ArrowDown size={14} />
+                                      </button>
+                                    </div>
+
+                                    <div className="flex-1">
+                                      <p className="text-gray-700 mb-3 text-sm line-clamp-3">
+                                        {answer.content.length > 150 ? `${answer.content.substring(0, 150)}...` : answer.content}
+                                      </p>
+
+                                      <div className="flex items-center gap-2">
+                                        {answerAuthorAvatar.avatar ? (
+                                          <img
+                                            src={answerAuthorAvatar.avatar}
+                                            alt={answer.author}
+                                            className="w-6 h-6 rounded-full object-cover"
+                                          />
+                                        ) : (
+                                          <div className={`w-6 h-6 ${answerAuthorAvatar.color} rounded-full flex items-center justify-center text-white text-xs font-medium`}>
+                                            {answerAuthorAvatar.initials}
+                                          </div>
+                                        )}
+                                        <span className="font-medium text-gray-900 text-sm">{answer.author}</span>
+                                        <span className="text-xs text-gray-500">{answer.createdAt}</span>
+                                        {answer.badge && (
+                                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getBadgeColor(answer.badge)}`}>
+                                            {answer.badge}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            {thread.answers.length > 2 && (
+                              <div className="text-center">
+                                <button
+                                  onClick={() => handleThreadClick(thread.id)}
+                                  className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                                >
+                                  View {thread.answers.length - 2} more replies →
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
