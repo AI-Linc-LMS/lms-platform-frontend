@@ -987,9 +987,9 @@ const CommunityPage: React.FC = () => {
                                         {participantAvatar.initials}
                                       </div>
                                     )}
-                                    {answer.badge && (
+                                    {/* {answer.badge && (
                                       <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 border-2 border-white rounded-full" />
-                                    )}
+                                    )} */}
                                   </div>
                                 );
                               })}

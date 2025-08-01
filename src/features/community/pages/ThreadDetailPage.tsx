@@ -698,6 +698,8 @@ const useApi = <T>(endpoint: string, options = {}) => {
   });
 
   const [newAnswer, setNewAnswer] = useState('');
+  const [showAnswerForm, setShowAnswerForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [newComment, setNewComment] = useState<{ [key: string]: string }>({});
   const [showCommentForm, setShowCommentForm] = useState<{ [key: string]: boolean }>({});
   const [editingAnswer, setEditingAnswer] = useState<string | null>(null);
@@ -705,7 +707,6 @@ const useApi = <T>(endpoint: string, options = {}) => {
   const [editedContent, setEditedContent] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ type: 'answer' | 'comment', id: string } | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [showAnswerForm, setShowAnswerForm] = useState(false);
 
   useEffect(() => {
     // Increment view count when component mounts
@@ -770,8 +771,13 @@ const useApi = <T>(endpoint: string, options = {}) => {
     // Add similar logic for answers and comments
   };
 
-  const handleAddAnswer = () => {
-    if (newAnswer.trim()) {
+  const handleAddAnswer = async () => {
+    if (!newAnswer.trim()) return;
+
+    try {
+      setIsSubmitting(true);
+
+      // In a real app, this would be an API call
       const answer: Answer = {
         id: Date.now().toString(),
         content: newAnswer,
@@ -779,14 +785,26 @@ const useApi = <T>(endpoint: string, options = {}) => {
         createdAt: new Date().toISOString().split('T')[0],
         upvotes: 0,
         downvotes: 0,
-        comments: []
+        comments: [],
+        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
       };
+
       setThread(prev => ({
         ...prev,
         answers: [...prev.answers, answer]
       }));
+
       setNewAnswer('');
       setShowAnswerForm(false);
+      setIsSubmitting(false);
+
+      // Scroll to the new answer
+      setTimeout(() => {
+        document.getElementById(answer.id)?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } catch (error) {
+      console.error('Failed to post answer:', error);
+      setIsSubmitting(false);
     }
   };
 
@@ -1113,11 +1131,20 @@ const useApi = <T>(endpoint: string, options = {}) => {
                     </button>
                     <button
                       onClick={handleAddAnswer}
-                      disabled={!newAnswer.trim()}
+                      disabled={!newAnswer.trim() || isSubmitting}
                       className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium text-sm flex items-center justify-center gap-2"
                     >
-                      <Send size={16} />
-                      Post Answer
+                      {isSubmitting ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Posting...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send size={16} />
+                          <span>Post Answer</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
