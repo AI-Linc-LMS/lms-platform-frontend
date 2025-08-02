@@ -73,6 +73,23 @@ const recordSuccessfulSessionSync = (
   }
 };
 
+// Add a helper function to check processed sessions
+const isSessionProcessed = (sessionStart: number, sessionDuration: number): boolean => {
+  try {
+    const processedSessionsStr = localStorage.getItem('processedSessions');
+    if (!processedSessionsStr) {
+      return false;
+    }
+
+    const processedSessions = JSON.parse(processedSessionsStr);
+    const sessionKey = `${sessionStart}-${sessionDuration}`;
+    
+    return processedSessions.includes(sessionKey);
+  } catch {
+    return false;
+  }
+};
+
 /**
  * Attempts to send activity data to the backend
  * Falls back to local storage if offline
@@ -261,6 +278,93 @@ export const formatDateForApi = (date: Date = new Date()): string => {
 };
 
 /**
+ * Sends session data immediately on page refresh using fetch with keepalive
+ * @param sessionDuration Duration of the current session in seconds
+ * @param deviceInfo Device information
+ * @param userId User identifier
+ * @returns Promise that resolves when data is sent
+ */
+export const sendRefreshSessionData = async (
+  sessionDuration: number,
+  deviceInfo: { browser: string; os: string; deviceType: string },
+  userId?: string
+): Promise<void> => {
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL;
+    const clientId = import.meta.env.VITE_CLIENT_ID;
+
+    if (!apiUrl || !clientId) {
+      logActivityEvent("Missing API URL or Client ID for refresh session sync");
+      return;
+    }
+
+    // Validate session duration
+    const validatedSessionDuration = validateTimeValue(sessionDuration);
+
+    if (validatedSessionDuration === 0) {
+      logActivityEvent("No session time to send on refresh");
+      return;
+    }
+
+    // Get user ID (use provided userId or get current user ID)
+    const finalUserId = userId || getCurrentUserId();
+
+    // Create refresh-specific payload
+    const refreshPayload = {
+      "time_spent_seconds": validatedSessionDuration,
+      "session_id": finalUserId,
+      "date": formatDateForApi(),
+      "device_type": deviceInfo.deviceType,
+      "session_only": true,
+      "event_type": "page_refresh", // Special flag for refresh events
+    };
+
+    logActivityEvent("Sending refresh session data", {
+      sessionDuration: validatedSessionDuration,
+      endpoint: `${apiUrl}/activity/clients/${clientId}/track-time/`,
+    });
+
+    // Use fetch with keepalive to ensure the request completes even during page unload
+    const response = await fetch(
+      `${apiUrl}/activity/clients/${clientId}/track-time/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(localStorage.getItem("token")
+            ? {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              }
+            : {}),
+        },
+        body: JSON.stringify(refreshPayload),
+        keepalive: true, // Critical for page refresh scenarios
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Refresh session API call failed with status ${response.status}`
+      );
+    }
+
+    const responseData = await response.json();
+
+    logActivityEvent("Refresh session data sent successfully", {
+      sessionDuration: validatedSessionDuration,
+      response: responseData,
+    });
+  } catch (error) {
+    logActivityEvent("Failed to send refresh session data", {
+      error: (error as Error).message,
+      sessionDuration,
+    });
+
+    throw error;
+  }
+};
+
+/**
  * Creates a standardized activity payload for API
  * @param totalTimeSpent Total time spent in seconds
  * @param currentSessionDuration Current session duration in seconds
@@ -335,26 +439,28 @@ export const createPreciseActivityPayload = (
 };
 
 /**
- * Immediately sends session-end data to the backend with total accumulated time
- * @param sessionStartTime When the session started (timestamp)
- * @param sessionEndTime When the session ended (timestamp)
- * @param sessionDuration Duration of the session in seconds
- * @param totalTimeSpent Total time spent including this session (Today's Total)
- * @param sessionId Session identifier
- * @param deviceInfo Device information
- * @param userId User identifier
- * @returns Promise that resolves when data is sent
+ * Immediately sends session-end data to the backend with only current session time
+ * Now includes processed session tracking to prevent duplicates
  */
 export const sendSessionEndData = async (
-  _sessionStartTime: number,
+  sessionStartTime: number,
   _sessionEndTime: number,
   sessionDuration: number,
-  totalTimeSpent: number,
+  _totalTimeSpent: number, // Ignored parameter for backward compatibility
   sessionId: string,
   deviceInfo: { browser: string; os: string; deviceType: string },
   userId?: string
 ): Promise<void> => {
   try {
+    // Check if this session has already been processed
+    if (isSessionProcessed(sessionStartTime, sessionDuration)) {
+      logActivityEvent("Session already processed, skipping API call", {
+        sessionStart: sessionStartTime,
+        sessionDuration
+      });
+      return;
+    }
+
     const apiUrl = import.meta.env.VITE_API_URL;
     const clientId = import.meta.env.VITE_CLIENT_ID;
 
@@ -365,7 +471,6 @@ export const sendSessionEndData = async (
 
     // Validate time values
     const validatedSessionDuration = validateTimeValue(sessionDuration);
-    const validatedTotalTime = validateTimeValue(totalTimeSpent);
 
     // Get user ID (use provided userId or get current user ID)
     const finalUserId = userId || getCurrentUserId();
@@ -379,21 +484,17 @@ export const sendSessionEndData = async (
       return;
     }
 
-    // Create session-end payload with total accumulated time (Today's Total)
+    // Create session-end payload with only session duration
     const sessionEndPayload = {
-      "time_spent_seconds": validatedTotalTime, // Send Today's Total (accumulated time)
-      // "session_id": sessionId,
-      // "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
-      "session_id": finalUserId, // Keep for backward compatibility
-      // "device_id": getDeviceId(), // Unique device/browser identifier
+      "time_spent_seconds": validatedSessionDuration, // Send only current session time
+      "session_id": finalUserId,
       "date": formatDateForApi(),
       "device_type": deviceInfo.deviceType,
-      // "timestamp": Date.now()
+      "session_only": true, // Indicate this is session-only data
     };
 
-    logActivityEvent("Sending session-end data with total accumulated time", {
+    logActivityEvent("Sending session-end data with session time only", {
       sessionDuration: validatedSessionDuration,
-      totalAccumulatedTime: validatedTotalTime,
       sessionId: sessionId,
       endpoint: `${apiUrl}/activity/clients/${clientId}/track-time/`,
     });
@@ -425,7 +526,6 @@ export const sendSessionEndData = async (
 
     logActivityEvent("Session-end data sent successfully", {
       sessionDuration: validatedSessionDuration,
-      totalAccumulatedTime: validatedTotalTime,
       response: responseData,
     });
 
@@ -435,14 +535,13 @@ export const sendSessionEndData = async (
     logActivityEvent("Failed to send session-end data", {
       error: (error as Error).message,
       sessionDuration,
-      totalTimeForLogging: totalTimeSpent,
     });
 
     // Store as pending data if immediate send fails
     try {
       const pendingData = {
         sessionDuration,
-        sessionStartTime: _sessionStartTime,
+        sessionStartTime,
         sessionEndTime: _sessionEndTime,
         timestamp: _sessionEndTime,
         eventType: "session-end",
@@ -464,11 +563,11 @@ export const sendSessionEndData = async (
 };
 
 /**
- * Sends session-end data using Beacon API for critical exit events with total accumulated time
+ * Sends session-end data using Beacon API for critical exit events with only session time
  * @param sessionStartTime When the session started (timestamp)
  * @param sessionEndTime When the session ended (timestamp)
  * @param sessionDuration Duration of the session in seconds
- * @param totalTimeSpent Total time spent including this session (Today's Total)
+ * @param _totalTimeSpent Total time spent (ignored, only session duration is sent)
  * @param sessionId Session identifier
  * @param deviceInfo Device information
  * @param userId User identifier
@@ -478,7 +577,7 @@ export const sendSessionEndDataViaBeacon = (
   _sessionStartTime: number,
   _sessionEndTime: number,
   sessionDuration: number,
-  totalTimeSpent: number,
+  _totalTimeSpent: number, // Ignored parameter for backward compatibility
   sessionId: string,
   deviceInfo: { browser: string; os: string; deviceType: string },
   userId?: string
@@ -494,21 +593,17 @@ export const sendSessionEndDataViaBeacon = (
 
     // Validate time values
     const validatedSessionDuration = validateTimeValue(sessionDuration);
-    const validatedTotalTime = validateTimeValue(totalTimeSpent);
 
     // Get user ID (use provided userId or get current user ID)
     const finalUserId = userId || getCurrentUserId();
 
-    // Create session-end payload with total accumulated time (Today's Total)
+    // Create session-end payload with only session duration
     const sessionEndPayload = {
-      "time_spent_seconds": validatedTotalTime, // Send Today's Total (accumulated time)
-      // "session_id": sessionId,
-      // "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
-      "session_id": finalUserId, // Keep for backward compatibility
-      // "device_id": getDeviceId(), // Unique device/browser identifier
+      "time_spent_seconds": validatedSessionDuration, // Send only current session time
+      "session_id": finalUserId,
       "date": formatDateForApi(),
       "device_type": deviceInfo.deviceType,
-      // "timestamp": Date.now()
+      "session_only": true, // Indicate this is session-only data
     };
 
     // Use Beacon API for guaranteed delivery during page unload
@@ -520,9 +615,8 @@ export const sendSessionEndDataViaBeacon = (
       blob
     );
 
-    logActivityEvent("Sent session-end data via beacon with total accumulated time", {
+    logActivityEvent("Sent session-end data via beacon with session time only", {
       sessionDuration: validatedSessionDuration,
-      totalAccumulatedTime: validatedTotalTime,
       sessionId: sessionId,
       success,
     });
@@ -532,46 +626,18 @@ export const sendSessionEndDataViaBeacon = (
     logActivityEvent("Failed to send session-end data via beacon", {
       error: (error as Error).message,
       sessionDuration,
-      totalTimeForLogging: totalTimeSpent,
     });
     return false;
   }
 };
 
 /**
- * Creates a simplified activity payload that only sends session-specific time
- * This allows the backend to handle cumulative time tracking across multiple devices/sessions
- * @param sessionDuration Duration of the current session in seconds
- * @param sessionId Session identifier
- * @param userId User identifier
- * @returns Formatted payload object with session-specific time only
- */
-export const createSessionOnlyActivityPayload = (
-  sessionDuration: number,
-  // sessionId: string,
-  userId?: string
-) => {
-  // Validate time values
-  const validatedSessionDuration = validateTimeValue(sessionDuration);
-
-  // Get user ID (use provided userId or get current user ID)
-  const finalUserId = userId || getCurrentUserId();
-
-  return {
-    "time_spent_seconds": validatedSessionDuration,
-    // session_id: sessionId,
-    session_id: finalUserId,
-    session_only: true,
-  };
-};
-
-/**
- * Sends periodic session update with total accumulated time (Today's Total)
+ * Sends periodic session update with only current session time
  * @param sessionId Session identifier
  * @param deviceInfo Device information
  * @param sessionStartTime When the current session started
  * @param userId User identifier
- * @param totalTimeSpent Total time spent before current session
+ * @param _totalTimeSpent Total time spent (ignored parameter for backward compatibility)
  * @returns Promise that resolves when data is sent
  */
 export const sendPeriodicSessionUpdate = async (
@@ -579,7 +645,8 @@ export const sendPeriodicSessionUpdate = async (
   deviceInfo: { browser: string; os: string; deviceType: string },
   sessionStartTime: number,
   userId?: string,
-  totalTimeSpent: number = 0
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _totalTimeSpent: number = 0 // Ignored parameter for backward compatibility
 ): Promise<void> => {
   try {
     const apiUrl = import.meta.env.VITE_API_URL;
@@ -604,9 +671,6 @@ export const sendPeriodicSessionUpdate = async (
       return;
     }
 
-    // Calculate total accumulated time (Today's Total = previous total + current session)
-    const totalAccumulatedTime = validateTimeValue(totalTimeSpent) + validatedSessionDuration;
-
     // Check if we should skip this sync due to recent identical session sync
     if (shouldSkipDuplicateSessionSync(sessionId, validatedSessionDuration)) {
       logActivityEvent("Skipping duplicate periodic session update", {
@@ -619,21 +683,17 @@ export const sendPeriodicSessionUpdate = async (
     // Get user ID (use provided userId or get current user ID)
     const finalUserId = userId || getCurrentUserId();
 
-    // Create session update payload with total accumulated time (Today's Total)
+    // Create session update payload with only session duration
     const sessionUpdatePayload = {
-      "time_spent_seconds": totalAccumulatedTime, // Send Today's Total (accumulated time)
-      // "session_id": sessionId,
-      // "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
-      "session_id": finalUserId, // Keep for backward compatibility
-      // "device_id": getDeviceId(), // Unique device/browser identifier
+      "time_spent_seconds": validatedSessionDuration, // Send only current session time
+      "session_id": finalUserId,
       "date": formatDateForApi(),
       "device_type": deviceInfo.deviceType,
-      // "timestamp": Date.now()
+      "session_only": true, // Indicate this is session-only data
     };
 
-    logActivityEvent("Sending periodic session update with total accumulated time", {
+    logActivityEvent("Sending periodic session update with session time only", {
       sessionDuration: validatedSessionDuration,
-      totalAccumulatedTime: totalAccumulatedTime,
       sessionId: sessionId,
       endpoint: `${apiUrl}/activity/clients/${clientId}/track-time/`,
     });
@@ -665,7 +725,6 @@ export const sendPeriodicSessionUpdate = async (
 
     logActivityEvent("Periodic session update sent successfully", {
       sessionDuration: validatedSessionDuration,
-      totalAccumulatedTime: totalAccumulatedTime,
       response: responseData,
     });
 
@@ -679,4 +738,157 @@ export const sendPeriodicSessionUpdate = async (
 
     throw error;
   }
+};
+
+/**
+ * Emergency function to capture session data during page refresh/unload
+ * Uses multiple methods to ensure data is not lost
+ * @param sessionDuration Duration of the current session in seconds
+ * @param sessionStart When the session started (timestamp)
+ * @param deviceInfo Device information
+ * @param userId User identifier
+ * @param isRefresh Whether this is a page refresh vs navigation
+ * @returns Boolean indicating if any method succeeded
+ */
+export const emergencySessionCapture = (
+  sessionDuration: number,
+  sessionStart: number,
+  deviceInfo: { browser: string; os: string; deviceType: string },
+  userId?: string,
+  isRefresh: boolean = false
+): boolean => {
+  const validatedSessionDuration = validateTimeValue(sessionDuration);
+
+  if (validatedSessionDuration === 0) {
+    logActivityEvent("No session time to capture in emergency");
+    return false;
+  }
+
+  const finalUserId = userId || getCurrentUserId();
+  const now = Date.now();
+  let anySucceeded = false;
+
+  // Method 1: localStorage backup (always succeeds unless storage is full)
+  try {
+    const emergencyData = {
+      sessionDuration: validatedSessionDuration,
+      sessionStart,
+      sessionEnd: now,
+      timestamp: now,
+      isRefresh,
+      userId: finalUserId,
+      deviceType: deviceInfo.deviceType,
+    };
+    localStorage.setItem("emergencySessionData", JSON.stringify(emergencyData));
+    anySucceeded = true;
+    logActivityEvent("Emergency session saved to localStorage", {
+      sessionDuration: validatedSessionDuration,
+    });
+  } catch (error) {
+    logActivityEvent("Failed to save emergency session to localStorage", {
+      error: (error as Error).message,
+    });
+  }
+
+  // Method 2: Multiple beacon attempts
+  const apiUrl = import.meta.env.VITE_API_URL;
+  const clientId = import.meta.env.VITE_CLIENT_ID;
+
+  if (apiUrl && clientId) {
+    const payloads = [
+      // Primary payload
+      {
+        "time_spent_seconds": validatedSessionDuration,
+        "session_id": finalUserId,
+        "date": formatDateForApi(),
+        "device_type": deviceInfo.deviceType,
+        "session_only": true,
+        "event_type": isRefresh ? "page_refresh" : "page_unload",
+      },
+      // Backup payload with minimal data
+      {
+        "time_spent_seconds": validatedSessionDuration,
+        "session_id": finalUserId,
+        emergency: true,
+      },
+    ];
+
+    // Try multiple beacon sends for redundancy
+    payloads.forEach((payload, index) => {
+      try {
+        const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+        const success = navigator.sendBeacon(
+          `${apiUrl}/activity/clients/${clientId}/track-time/`,
+          blob
+        );
+
+        if (success) {
+          anySucceeded = true;
+          logActivityEvent(`Emergency beacon ${index + 1} sent successfully`, {
+            sessionDuration: validatedSessionDuration,
+            isRefresh,
+          });
+        }
+      } catch (error) {
+        logActivityEvent(`Emergency beacon ${index + 1} failed`, {
+          error: (error as Error).message,
+        });
+      }
+    });
+  }
+
+  return anySucceeded;
+};
+
+/**
+ * Recovers emergency session data after page reload
+ * @returns Recovered session data or null
+ */
+export const recoverEmergencySession = (): {
+  sessionDuration: number;
+  sessionStart: number;
+  sessionEnd: number;
+  userId: string;
+  deviceType: string;
+} | null => {
+  try {
+    const emergencyDataStr = localStorage.getItem("emergencySessionData");
+    if (!emergencyDataStr) {
+      return null;
+    }
+
+    const emergencyData = JSON.parse(emergencyDataStr);
+
+    // Validate the recovered data
+    if (
+      typeof emergencyData.sessionDuration === "number" &&
+      emergencyData.sessionDuration > 0 &&
+      typeof emergencyData.sessionStart === "number" &&
+      typeof emergencyData.sessionEnd === "number"
+    ) {
+      logActivityEvent("Emergency session data recovered", {
+        sessionDuration: emergencyData.sessionDuration,
+        timeSinceCapture: Date.now() - emergencyData.timestamp,
+      });
+
+      // Clear the emergency data after successful recovery
+      localStorage.removeItem("emergencySessionData");
+
+      return {
+        sessionDuration: emergencyData.sessionDuration,
+        sessionStart: emergencyData.sessionStart,
+        sessionEnd: emergencyData.sessionEnd,
+        userId: emergencyData.userId || getCurrentUserId(),
+        deviceType: emergencyData.deviceType || "unknown",
+      };
+    }
+  } catch (error) {
+    logActivityEvent("Error recovering emergency session data", {
+      error: (error as Error).message,
+    });
+    // Clear potentially corrupted data
+    localStorage.removeItem("emergencySessionData");
+  }
+
+  return null;
 };

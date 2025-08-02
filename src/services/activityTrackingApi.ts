@@ -46,28 +46,21 @@ export interface ActivityData {
  * Sends user activity data to the backend
  */
 export const sendActivityData = async (data: ActivityData): Promise<void> => {
-  // Calculate total time including current active session
+  // Calculate only current session duration (not cumulative)
   const currentSessionDuration = data.activitySessions.length > 0 
     ? Math.floor((Date.now() - data.activitySessions[data.activitySessions.length - 1].startTime) / 1000)
     : 0;
   
-  // Total accumulated time = stored total + current session duration
-  const totalAccumulatedTime = data.totalTimeSpent + currentSessionDuration;
+  // Send only the current session time, not total accumulated time
+  const sessionTimeToSend = currentSessionDuration;
   
-  // Get authenticated user ID (account ID) and device ID for cross-device tracking
-  // const accountId = getAuthenticatedUserId(); // This is the user's account ID (same across devices)
-  // const deviceId = getDeviceId(); // This identifies the specific device/browser
-  
-  // Clean API payload with account and device tracking
+  // Clean API payload with only session time
   const apiData = {
-    "time_spent_seconds": totalAccumulatedTime, // Send total accumulated time (Today's Total)
-    // "session_id": data.session_id,
-    // "account_id": accountId, // User's account ID (same across all devices)
-    "session_id": data.userId, // Keep for backward compatibility
-    // "device_id": deviceId, // Unique device/browser identifier
+    "time_spent_seconds": sessionTimeToSend, // Send only current session time
+    "session_id": data.userId,
     "date": new Date(data.timestamp).toISOString().split('T')[0], // YYYY-MM-DD format
-    "device_type": data.device_info.deviceType, // Just device type, not full device info
-    // "timestamp": data.timestamp
+    "device_type": data.device_info.deviceType,
+    "session_only": true // Indicate this is session-only data
   };
   
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -107,28 +100,18 @@ export const syncOfflineActivityData = async (): Promise<void> => {
     
     // Process each offline activity record
     const promises = offlineData.map(data => {
-      // Calculate total time including current active session for each record
-      const currentSessionDuration = data.activitySessions.length > 0 
+      // Calculate only the session duration for each record (not cumulative)
+      const sessionDuration = data.activitySessions.length > 0 
         ? Math.floor((data.timestamp - data.activitySessions[data.activitySessions.length - 1].startTime) / 1000)
         : 0;
       
-      // Total accumulated time = stored total + current session duration
-      const totalAccumulatedTime = data.totalTimeSpent + currentSessionDuration;
-      
-      // Get authenticated user ID (account ID) and device ID for cross-device tracking
-      // const accountId = getAuthenticatedUserId(); // This is the user's account ID (same across devices)
-      // const deviceId = getDeviceId(); // This identifies the specific device/browser
-      
-      // Clean API payload with account and device tracking
+      // Send only the session time for this record
       const apiData = {
-        "time_spent_seconds": totalAccumulatedTime, // Send total accumulated time (Today's Total)
-        // "session_id": data.session_id,
-        // "account_id": accountId, // User's account ID (same across all devices)
-        "session_id": data.userId, // Keep for backward compatibility
-        // "device_id": deviceId, // Unique device/browser identifier
+        "time_spent_seconds": sessionDuration, // Send only session time
+        "session_id": data.userId,
         "date": new Date(data.timestamp).toISOString().split('T')[0], // YYYY-MM-DD format
-        "device_type": data.device_info.deviceType, // Just device type, not full device info
-        // "timestamp": data.timestamp
+        "device_type": data.device_info.deviceType,
+        "session_only": true // Indicate this is session-only data
       };
       
       // Send API call for each offline record
