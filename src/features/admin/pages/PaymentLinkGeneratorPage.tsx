@@ -4,9 +4,9 @@ import { useRole } from '../../../hooks/useRole';
 import AccessDenied from '../../../components/AccessDenied';
 
 const PaymentLinkGeneratorPage: React.FC = () => {
-  const { isSuperAdmin } = useRole();
+  const { isSuperAdmin, isAdminOrInstructor } = useRole();
 
-  if (!isSuperAdmin) {
+  if (!isSuperAdmin && !isAdminOrInstructor) {
     return <AccessDenied />;
   }
 
