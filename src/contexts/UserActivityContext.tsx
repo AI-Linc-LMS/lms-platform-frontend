@@ -48,7 +48,72 @@ const STORAGE_KEYS = {
   LAST_SYNC_DATA: 'lastSyncData',
   LAST_SYNC_TIME: 'lastSyncTime',
   LAST_SESSION_SENT: 'lastSessionSent', // New key for session deduplication
-  PROCESSED_SESSIONS: 'processedSessions' // New key to track processed sessions
+  PROCESSED_SESSIONS: 'processedSessions', // New key to track processed sessions
+  ACTIVE_API_CALLS: 'activeApiCalls' // New key to track active API calls
+};
+
+// Simple session lock to prevent duplicate API calls
+let currentSessionLock: { sessionStart: number; inProgress: boolean } | null = null;
+
+// Function to check if this session is already being processed
+const isSessionBeingProcessed = (sessionStart: number): boolean => {
+  if (!currentSessionLock) return false;
+  return currentSessionLock.sessionStart === sessionStart && currentSessionLock.inProgress;
+};
+
+// Function to lock a session while processing
+const lockSession = (sessionStart: number): boolean => {
+  if (isSessionBeingProcessed(sessionStart)) {
+    logActivityEvent('Session already being processed, skipping duplicate call', { sessionStart });
+    return false;
+  }
+  
+  currentSessionLock = { sessionStart, inProgress: true };
+  logActivityEvent('Session locked for processing', { sessionStart });
+  return true;
+};
+
+// Function to unlock a session after processing
+const unlockSession = (sessionStart: number): void => {
+  if (currentSessionLock && currentSessionLock.sessionStart === sessionStart) {
+    currentSessionLock = null;
+    logActivityEvent('Session unlocked after processing', { sessionStart });
+  }
+};
+
+// Global state to prevent overlapping API calls
+let isApiCallInProgress = false;
+let pendingApiCall: Promise<void> | null = null;
+
+// Function to ensure only one API call happens at a time
+const executeApiCallSafely = async (apiCallFunction: () => Promise<void>, callSource: string): Promise<void> => {
+  // If an API call is already in progress, wait for it to complete
+  if (isApiCallInProgress && pendingApiCall) {
+    logActivityEvent(`API call from ${callSource} waiting for previous call to complete`);
+    await pendingApiCall;
+    return;
+  }
+
+  // If another call started while we were waiting, skip this one
+  if (isApiCallInProgress) {
+    logActivityEvent(`API call from ${callSource} skipped - another call in progress`);
+    return;
+  }
+
+  isApiCallInProgress = true;
+  logActivityEvent(`Starting API call from ${callSource}`);
+
+  try {
+    pendingApiCall = apiCallFunction();
+    await pendingApiCall;
+    logActivityEvent(`API call from ${callSource} completed successfully`);
+  } catch (error) {
+    logActivityEvent(`API call from ${callSource} failed`, { error: (error as Error).message });
+    throw error;
+  } finally {
+    isApiCallInProgress = false;
+    pendingApiCall = null;
+  }
 };
 
 // Minimum time between syncs to prevent duplicates (in milliseconds)
@@ -229,6 +294,72 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
 
   const [activityState, setActivityState] = useState<UserActivityContextType>(initializeFromStorage);
 
+  // Debug utility function for monitoring the timer system
+  const getTimerStatus = () => {
+    if (!activityState.isActive || !activityState.currentSessionStart) {
+      return {
+        isActive: false,
+        message: 'No active session',
+        nextSyncIn: null,
+        currentSessionDuration: 0
+      };
+    }
+
+    const now = Date.now();
+    const currentSessionDuration = Math.floor((now - activityState.currentSessionStart) / 1000);
+    const twoMinutesInSeconds = 2 * 60;
+    const timeUntilNextSync = twoMinutesInSeconds - (currentSessionDuration % twoMinutesInSeconds);
+    
+    return {
+      isActive: true,
+      currentSessionDuration,
+      timeUntilNextSync,
+      nextSyncAt: new Date(now + (timeUntilNextSync * 1000)).toISOString(),
+      message: `Next sync in ${timeUntilNextSync} seconds`
+    };
+  };
+
+  // Expose timer status for debugging (you can call this from browser console)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as unknown as { getActivityTimerStatus: () => ReturnType<typeof getTimerStatus> }).getActivityTimerStatus = getTimerStatus;
+      
+      // Simple duplicate call monitor
+      (window as unknown as { 
+        getActivityTimerStatus: () => ReturnType<typeof getTimerStatus>;
+        checkDuplicateCalls: () => void;
+      }).checkDuplicateCalls = () => {
+        console.group('🔍 Duplicate Call Check');
+        console.log('Current session lock:', currentSessionLock);
+        console.log('Activity state:', {
+          isActive: activityState.isActive,
+          currentSessionStart: activityState.currentSessionStart,
+          totalTimeSpent: activityState.totalTimeSpent
+        });
+        
+        // Check recent processed sessions
+        try {
+          const processedSessionsStr = localStorage.getItem(STORAGE_KEYS.PROCESSED_SESSIONS);
+          const lastSessionSentStr = localStorage.getItem(STORAGE_KEYS.LAST_SESSION_SENT);
+          
+          if (processedSessionsStr) {
+            const processedSessions = JSON.parse(processedSessionsStr);
+            console.log('Recently processed sessions:', processedSessions.slice(-5));
+          }
+          
+          if (lastSessionSentStr) {
+            const lastSessionSent = JSON.parse(lastSessionSentStr);
+            console.log('Last session sent:', lastSessionSent);
+          }
+        } catch (error) {
+          console.log('Error reading session data:', error);
+        }
+        
+        console.groupEnd();
+      };
+    }
+  }, [activityState]);
+
   // Check for daily reset at periodic intervals
   useEffect(() => {
     const checkDailyResetInterval = setInterval(() => {
@@ -297,7 +428,10 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
   // Function to start a new session
   const startSession = () => {
     const now = Date.now();
-    logActivityEvent('Starting new session', { timestamp: now });
+    logActivityEvent('Starting new session', { 
+      timestamp: now,
+      previousSessionActive: activityState.isActive
+    });
 
     setActivityState(prev => ({
       ...prev,
@@ -306,11 +440,20 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
     }));
   };
 
-  // Function to end current session
-  const endSession = async () => {
+  // Enhanced function to end current session
+  const endSession = async (reason: string = 'general') => {
     setActivityState(prev => {
       if (!prev.currentSessionStart) {
-        logActivityEvent('End session called but no active session found');
+        logActivityEvent('End session called but no active session found', { reason });
+        return prev;
+      }
+
+      // Check if this session is already being processed
+      if (isSessionBeingProcessed(prev.currentSessionStart)) {
+        logActivityEvent('Session already being processed, skipping duplicate endSession', { 
+          sessionStart: prev.currentSessionStart,
+          reason 
+        });
         return prev;
       }
 
@@ -322,14 +465,16 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         logActivityEvent('Negative session duration detected, using 0', {
           startTime: prev.currentSessionStart,
           endTime: now,
-          calculatedDuration: sessionDuration
+          calculatedDuration: sessionDuration,
+          reason
         });
         sessionDuration = 0;
       } else if (sessionDuration > 86400) { // More than 24 hours
         logActivityEvent('Unreasonably long session detected, capping at 24 hours', {
           startTime: prev.currentSessionStart,
           endTime: now,
-          calculatedDuration: sessionDuration
+          calculatedDuration: sessionDuration,
+          reason
         });
         sessionDuration = 86400;
       }
@@ -343,7 +488,8 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       logActivityEvent('Ending session', {
         startTime: new Date(prev.currentSessionStart).toISOString(),
         endTime: new Date(now).toISOString(),
-        duration: sessionDuration
+        duration: sessionDuration,
+        reason
       });
 
       const newState = {
@@ -368,43 +514,59 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
 
       // Send session-end data ONLY if not already processed and has actual duration
       if (sessionDuration > 0 && !isSessionAlreadyProcessed(prev.currentSessionStart, sessionDuration)) {
-        const { session_id, device_info } = getDeviceFingerprint();
-        const userId = getCurrentUserId();
+        // Lock this session to prevent duplicate processing
+        if (lockSession(prev.currentSessionStart)) {
+          const { session_id, device_info } = getDeviceFingerprint();
+          const userId = getCurrentUserId();
 
-        // Check for duplicate session sync before sending
-        if (!shouldSkipDuplicateSessionSync(session_id, sessionDuration)) {
-          // Send session-end data immediately (async, don't block state update)
-          sendSessionEndData(
-            prev.currentSessionStart,
-            now,
-            sessionDuration,
-            newState.totalTimeSpent,
-            session_id,
-            device_info,
-            userId
-          ).then(() => {
-            // Mark session as processed and record successful sync
-            if (prev.currentSessionStart !== null) {
-              markSessionAsProcessed(prev.currentSessionStart, sessionDuration);
-            }
-            recordSuccessfulSessionSync(session_id, sessionDuration);
-            logActivityEvent('Session-end data sent and marked as processed', {
-              sessionDuration
-            });
-          }).catch(error => {
-            logActivityEvent('Failed to send immediate session-end data', {
-              error: error.message,
+          // Check for duplicate session sync before sending
+          if (!shouldSkipDuplicateSessionSync(session_id, sessionDuration)) {
+            // Send session-end data immediately (async, don't block state update)
+            sendSessionEndData(
+              prev.currentSessionStart,
+              now,
               sessionDuration,
-              totalTime: newState.totalTimeSpent
+              newState.totalTimeSpent,
+              session_id,
+              device_info,
+              userId
+            ).then(() => {
+              // Mark session as processed and record successful sync
+              if (prev.currentSessionStart !== null) {
+                markSessionAsProcessed(prev.currentSessionStart, sessionDuration);
+              }
+              recordSuccessfulSessionSync(session_id, sessionDuration);
+              // Unlock the session after successful processing
+              if (prev.currentSessionStart !== null) {
+                unlockSession(prev.currentSessionStart);
+              }
+              logActivityEvent('Session-end data sent and marked as processed', {
+                sessionDuration,
+                reason
+              });
+            }).catch(error => {
+              // Unlock the session even if API call fails
+              if (prev.currentSessionStart !== null) {
+                unlockSession(prev.currentSessionStart);
+              }
+              logActivityEvent('Failed to send immediate session-end data', {
+                error: error.message,
+                sessionDuration,
+                totalTime: newState.totalTimeSpent,
+                reason
+              });
             });
-          });
-        } else {
-          logActivityEvent('Skipped duplicate session-end data send');
+          } else {
+            // Unlock session if skipping due to duplicate
+            unlockSession(prev.currentSessionStart);
+            logActivityEvent('Skipped duplicate session-end data send', { reason });
+          }
         }
       } else if (sessionDuration > 0) {
         logActivityEvent('Session already processed, skipping endSession API call', {
           sessionStart: prev.currentSessionStart,
-          sessionDuration
+          sessionDuration,
+          reason
         });
       }
 
@@ -413,15 +575,23 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
   };
   
   // Handle document visibility change (user switches tabs or minimizes window)
-  const handleVisibilityChange = () => {
+  const handleVisibilityChange = async () => {
     logActivityEvent('Visibility changed', { visibilityState: document.visibilityState });
 
     if (document.visibilityState === 'visible') {
-      // User returned to the tab
+      // User returned to the tab - start a fresh session
+      logActivityEvent('User returned to tab - starting fresh session');
       startSession();
     } else {
       // User actually left the tab (switched to another tab or minimized)
-      endSession();
+      logActivityEvent('User left tab - ending session with immediate data send');
+      
+      // Use ONLY endSession, which already handles the API call
+      // DO NOT use sendCurrentSessionImmediately AND endSession together
+      await executeApiCallSafely(async () => {
+        await endSession('visibility_change');
+      }, 'handleVisibilityChange');
+      
       backupCurrentState();
     }
   };
@@ -430,13 +600,15 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
   const handleFocus = () => {
     // Only start session if we don't already have one
     if (!activityState.isActive) {
-      logActivityEvent('Window focus gained - starting session');
+      logActivityEvent('Window focus gained - starting fresh session');
       startSession();
+    } else {
+      logActivityEvent('Window focus gained but session already active');
     }
   };
 
   // Handle window blur - but ignore internal page interactions
-  const handleBlur = (event: FocusEvent) => {
+  const handleBlur = async (event: FocusEvent) => {
     // Check if the blur is happening because user clicked on another element within the same page
     const relatedTarget = event.relatedTarget as Element;
     
@@ -457,8 +629,14 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
     }
     
     // Only end session if we're really sure the user left the platform
-    logActivityEvent('Window focus lost - user likely left platform');
-    endSession();
+    logActivityEvent('Window focus lost - user likely left platform, ending session with data send');
+    
+    // Use ONLY endSession, which already handles the API call
+    // DO NOT use sendCurrentSessionImmediately AND endSession together
+    await executeApiCallSafely(async () => {
+      await endSession('window_blur');
+    }, 'handleBlur');
+    
     backupCurrentState();
   };
 
@@ -776,13 +954,14 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
   // Handle page unload (user closes the tab or navigates away)
   const handleBeforeUnload = (event: BeforeUnloadEvent) => {
     // Detect if this is a page refresh vs navigation/close
-    const isPageRefresh = ('persisted' in event && (event as any).persisted) || 
+    const extendedEvent = event as ExtendedBeforeUnloadEvent;
+    const isPageRefresh = ('persisted' in event && extendedEvent.persisted) || 
       (window.performance && performance.navigation.type === performance.navigation.TYPE_RELOAD);
     
     logActivityEvent('Before unload event - page reload or navigation detected', {
       isPageRefresh,
       navigationType: window.performance ? performance.navigation.type : 'unknown',
-      persisted: 'persisted' in event ? (event as any).persisted : undefined
+      persisted: 'persisted' in event ? extendedEvent.persisted : undefined
     });
 
     // CRITICAL: Immediately capture and send session data before page unloads
@@ -909,65 +1088,158 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
     logActivityEvent('Page unload handling completed', { isPageRefresh });
   };
 
-  // Periodic sync every 3 minutes to reduce data loss in case of crashes
+  // Periodic sync every 2 minutes - send data and reset counter
   useEffect(() => {
-    const syncInterval = setInterval(async () => {
-      logActivityEvent('Performing periodic session update sync');
+    let retryCount = 0;
+    const maxRetries = 3;
+    const baseRetryDelay = 10000; // 10 seconds base delay
+
+    const performPeriodicSync = async () => {
+      logActivityEvent('Starting 2-minute periodic sync attempt', {
+        retryCount,
+        maxRetries
+      });
 
       // Only sync if we have an active session
       if (!activityState.isActive || !activityState.currentSessionStart) {
-        logActivityEvent('No active session to sync in periodic update');
+        logActivityEvent('No active session to sync in 2-minute update');
+        retryCount = 0; // Reset retry count if no active session
         return;
       }
 
       try {
-        // Calculate current session duration
+        // Calculate current session duration (should be close to 2 minutes)
         const currentSessionDuration = Math.floor((Date.now() - activityState.currentSessionStart) / 1000);
 
         // Safety check for negative duration (clock skew)
         if (currentSessionDuration < 0) {
-          logActivityEvent('Negative session duration detected in periodic sync, skipping');
+          logActivityEvent('Negative session duration detected in 2-minute sync, skipping');
+          retryCount = 0; // Reset retry count for invalid data
           return;
         }
 
-        // Skip if session is too short (less than 10 seconds)
-        if (currentSessionDuration < 10) {
-          logActivityEvent('Session too short for periodic sync, skipping');
+        // Skip if session is too short (less than 5 seconds)
+        if (currentSessionDuration < 5) {
+          logActivityEvent('Session too short for 2-minute sync, skipping');
+          retryCount = 0; // Reset retry count for short sessions
           return;
         }
 
         // Get device fingerprint for session tracking
         const { session_id, device_info } = getDeviceFingerprint();
+        const userId = getCurrentUserId();
 
-        // Check for duplicate session sync before sending periodic update
+        // Check for duplicate session sync before sending
         if (!shouldSkipDuplicateSessionSync(session_id, currentSessionDuration)) {
-          // Use the dedicated function for session-only periodic updates
-          await sendPeriodicSessionUpdate(
-            session_id,
-            device_info,
-            activityState.currentSessionStart,
-            getCurrentUserId()
-          );
+          // Lock this session to prevent duplicate processing
+          if (lockSession(activityState.currentSessionStart!)) {
+            // Send the current session data using safe API call mechanism
+            await executeApiCallSafely(async () => {
+              await sendPeriodicSessionUpdate(
+                session_id,
+                device_info,
+                activityState.currentSessionStart!,  // We already checked it's not null above
+                userId
+              );
+            }, 'periodicSync');
 
-          // Record successful session sync
-          recordSuccessfulSessionSync(session_id, currentSessionDuration);
+            // Record successful session sync
+            recordSuccessfulSessionSync(session_id, currentSessionDuration);
+
+            logActivityEvent('2-minute sync completed successfully - resetting timer', {
+              sessionDuration: currentSessionDuration,
+              retryCount
+            });
+
+            // CRITICAL: Reset the session timer immediately after successful send
+            setActivityState(prev => {
+              const now = Date.now();
+              const newSession: ActivitySession = {
+                startTime: prev.currentSessionStart!,
+                endTime: now,
+                duration: currentSessionDuration,
+              };
+
+              const newState = {
+                ...prev,
+                totalTimeSpent: prev.totalTimeSpent + currentSessionDuration,
+                activityHistory: [...prev.activityHistory, newSession],
+                currentSessionStart: now, // RESET: Start new 2-minute timer from now
+              };
+
+              logActivityEvent('Session timer reset after successful 2-minute sync', {
+                sentDuration: currentSessionDuration,
+                newSessionStart: new Date(now).toISOString(),
+                newTotalTime: newState.totalTimeSpent,
+                nextSyncIn: '2 minutes'
+              });
+
+              return newState;
+            });
+
+            // Unlock the session after successful processing
+            unlockSession(activityState.currentSessionStart!);
+
+            // Reset retry count after successful sync
+            retryCount = 0;
+          } else {
+            logActivityEvent('2-minute sync skipped - session already being processed');
+            retryCount = 0; // Reset retry count for skipped sessions
+          }
+
         } else {
-          logActivityEvent('Skipped duplicate periodic session update');
+          logActivityEvent('Skipped duplicate 2-minute session update');
+          retryCount = 0; // Reset retry count for skipped duplicates
         }
 
-        // Also backup the state
+        // Backup the state after successful or skipped sync
         backupCurrentState();
 
       } catch (error) {
-        logActivityEvent('Error in periodic session update', { error: (error as Error).message });
+        retryCount++;
+        logActivityEvent('Error in 2-minute session sync', { 
+          error: (error as Error).message,
+          retryCount,
+          maxRetries
+        });
 
-        // Note: Removed the legacy pending data storage that was causing mixed session_only true/false
-        // The new session-only approach handles failures through the existing backup mechanisms
+        // If we haven't exceeded max retries, schedule a retry
+        if (retryCount < maxRetries) {
+          const retryDelay = baseRetryDelay * Math.pow(2, retryCount - 1); // Exponential backoff
+          logActivityEvent('Scheduling retry for 2-minute sync', {
+            retryCount,
+            retryDelay: `${retryDelay}ms`,
+            nextRetryAt: new Date(Date.now() + retryDelay).toISOString()
+          });
+
+          setTimeout(() => {
+            performPeriodicSync();
+          }, retryDelay);
+        } else {
+          logActivityEvent('Max retries exceeded for 2-minute sync, waiting for next interval', {
+            retryCount,
+            maxRetries
+          });
+          retryCount = 0; // Reset for next interval
+        }
       }
-    }, 3 * 60 * 1000); // 3 minutes
+    };
 
-    return () => clearInterval(syncInterval);
-  }, [activityState]);
+    // Set up the interval
+    const syncIntervalId = setInterval(performPeriodicSync, 2 * 60 * 1000); // 2 minutes
+
+    // Log when the interval is set up
+    logActivityEvent('2-minute periodic sync interval established', {
+      intervalMs: 2 * 60 * 1000,
+      nextSyncAt: new Date(Date.now() + 2 * 60 * 1000).toISOString()
+    });
+
+    // Cleanup function
+    return () => {
+      clearInterval(syncIntervalId);
+      logActivityEvent('2-minute periodic sync interval cleared');
+    };
+  }, [activityState.isActive, activityState.currentSessionStart]); // Re-run if session state changes
 
   // Additional sync at shorter interval just for localStorage backup
   useEffect(() => {
@@ -1178,3 +1450,8 @@ const markSessionAsProcessed = (sessionStart: number, sessionDuration: number): 
     logActivityEvent('Failed to mark session as processed', { error: (error as Error).message });
   }
 };
+
+// Add proper interface for BeforeUnloadEvent with persisted property
+interface ExtendedBeforeUnloadEvent extends BeforeUnloadEvent {
+  persisted?: boolean;
+}
