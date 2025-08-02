@@ -180,9 +180,9 @@ const EmailSelfServe: React.FC<EmailSelfServeProps> = ({
     );
   };
 
-  const { isSuperAdmin } = useRole();
+  const { isSuperAdmin, isAdminOrInstructor } = useRole();
 
-  if (!isSuperAdmin) {
+  if (!isSuperAdmin && !isAdminOrInstructor) {
     return <AccessDenied />;
   }
 

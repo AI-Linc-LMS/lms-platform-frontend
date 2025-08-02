@@ -11,7 +11,7 @@ const PaymentLinkGenerator: React.FC = () => {
   const [programType, setProgramType] = useState<'flagship-program' | 'nanodegree-program'>('flagship-program');
   const [copied, setCopied] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string>('');
-  const { isSuperAdmin } = useRole();
+  const { isSuperAdmin, isAdminOrInstructor } = useRole();
   const user = useSelector((state: { user: UserState }) => state.user);
 
 
@@ -42,7 +42,7 @@ const PaymentLinkGenerator: React.FC = () => {
     }
   };
 
-  if (!isSuperAdmin) {
+  if (!isSuperAdmin && !isAdminOrInstructor) {
     return <AccessDenied />;
   }
 
