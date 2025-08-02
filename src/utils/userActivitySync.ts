@@ -90,6 +90,29 @@ const isSessionProcessed = (sessionStart: number, sessionDuration: number): bool
   }
 };
 
+// Add function to mark processed sessions
+const markSessionAsProcessed = (sessionStart: number, sessionDuration: number): void => {
+  try {
+    const processedSessionsStr = localStorage.getItem('processedSessions');
+    const processedSessions = processedSessionsStr ? JSON.parse(processedSessionsStr) : [];
+    
+    const sessionKey = `${sessionStart}-${sessionDuration}`;
+    
+    if (!processedSessions.includes(sessionKey)) {
+      processedSessions.push(sessionKey);
+      
+      // Keep only the last 50 processed sessions to avoid storage bloat
+      if (processedSessions.length > 50) {
+        processedSessions.splice(0, processedSessions.length - 50);
+      }
+      
+      localStorage.setItem('processedSessions', JSON.stringify(processedSessions));
+    }
+  } catch {
+    // Silently fail if localStorage is not available
+  }
+};
+
 /**
  * Attempts to send activity data to the backend
  * Falls back to local storage if offline
@@ -140,22 +163,138 @@ export const syncUserActivity = async (
 };
 
 /**
- * Set up listeners to sync data when coming back online
+ * Set up listeners to sync data when coming back online and handle page unload
  */
 export const setupActivitySyncListeners = (): void => {
   // Try to sync when coming back online
   window.addEventListener("online", async () => {
-    //console.log('Device back online, attempting to sync activity data');
     try {
       await syncOfflineActivityData();
     } catch {
-      //console.error('Failed to sync offline data when coming back online:', error);
+      // Handle error silently
     }
   });
 
   // Store current data when going offline
   window.addEventListener("offline", () => {
-    //console.log('Device offline, activity data will be stored locally');
+    // Handle offline state
+  });
+
+  // Enhanced page unload handler with better context integration
+  window.addEventListener("beforeunload", () => {
+    try {
+      // Try multiple sources for current session data
+      let sessionData = null;
+      
+      // Method 1: Check localStorage for current session
+      const currentSessionStr = localStorage.getItem('currentActiveSession');
+      if (currentSessionStr) {
+        sessionData = JSON.parse(currentSessionStr);
+      }
+      
+      // Method 2: Check for any activity context data
+      if (!sessionData) {
+        const activityContextStr = localStorage.getItem('userActivityContext');
+        if (activityContextStr) {
+          const contextData = JSON.parse(activityContextStr);
+          if (contextData.isActive && contextData.currentSessionStart) {
+            sessionData = {
+              isActive: contextData.isActive,
+              startTime: contextData.currentSessionStart
+            };
+          }
+        }
+      }
+      
+      console.log('Beforeunload - Session data found:', sessionData);
+      
+      if (sessionData && sessionData.isActive && sessionData.startTime) {
+        const now = Date.now();
+        const sessionDuration = Math.floor((now - sessionData.startTime) / 1000);
+        
+        console.log('Beforeunload - Session duration:', sessionDuration);
+        
+        if (sessionDuration > 0) {
+          const { device_info } = getDeviceFingerprint();
+          const userId = getCurrentUserId();
+          
+          // Create emergency data
+          const emergencyData = {
+            sessionDuration,
+            sessionStart: sessionData.startTime,
+            sessionEnd: now,
+            timestamp: now,
+            userId,
+            deviceType: device_info.deviceType,
+            isRefresh: true,
+            source: 'beforeunload'
+          };
+          
+          console.log('Saving emergency data:', emergencyData);
+          
+          // Save to localStorage
+          localStorage.setItem('emergencySessionData', JSON.stringify(emergencyData));
+          
+          // Try immediate API call with beacon
+          const apiUrl = import.meta.env.VITE_API_URL;
+          const clientId = import.meta.env.VITE_CLIENT_ID;
+          
+          if (apiUrl && clientId) {
+            const payload = {
+              "time_spent_seconds": sessionDuration,
+              "session_id": userId,
+              "date": formatDateForApi(),
+              "device_type": device_info.deviceType,
+              "session_only": true,
+              "event_type": "page_unload"
+            };
+            
+            // Use beacon for immediate send
+            const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+            const success = navigator.sendBeacon(
+              `${apiUrl}/activity/clients/${clientId}/track-time/`,
+              blob
+            );
+            
+            console.log('Beacon send result:', success);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error in beforeunload handler:", error);
+    }
+  });
+
+  // Handle page hide for mobile browsers
+  window.addEventListener("pagehide", (event) => {
+    if (event.persisted) return;
+    
+    try {
+      const currentSessionStr = localStorage.getItem('currentActiveSession');
+      if (currentSessionStr) {
+        const sessionData = JSON.parse(currentSessionStr);
+        const now = Date.now();
+        
+        if (sessionData.startTime && sessionData.isActive) {
+          const sessionDuration = Math.floor((now - sessionData.startTime) / 1000);
+          
+          if (sessionDuration > 0) {
+            const { device_info } = getDeviceFingerprint();
+            const userId = getCurrentUserId();
+            
+            emergencySessionCapture(
+              sessionDuration,
+              sessionData.startTime,
+              device_info,
+              userId,
+              false
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error in pagehide handler:", error);
+    }
   });
 };
 
@@ -446,7 +585,7 @@ export const sendSessionEndData = async (
   sessionStartTime: number,
   _sessionEndTime: number,
   sessionDuration: number,
-  _totalTimeSpent: number, // Ignored parameter for backward compatibility
+  _totalTimeSpent: number,
   sessionId: string,
   deviceInfo: { browser: string; os: string; deviceType: string },
   userId?: string
@@ -531,6 +670,9 @@ export const sendSessionEndData = async (
 
     // Record this sync to prevent duplicates
     recordSuccessfulSessionSync(sessionId, validatedSessionDuration);
+    
+    // Mark session as processed
+    markSessionAsProcessed(sessionStartTime, validatedSessionDuration);
   } catch (error) {
     logActivityEvent("Failed to send session-end data", {
       error: (error as Error).message,
@@ -891,4 +1033,94 @@ export const recoverEmergencySession = (): {
   }
 
   return null;
+};
+
+/**
+ * Initializes activity tracking and recovers any emergency session data
+ * Call this when your app starts up
+ */
+export const initializeActivityTracking = async (): Promise<void> => {
+  console.log('Initializing activity tracking...');
+  
+  try {
+    // Set up event listeners first
+    setupActivitySyncListeners();
+    
+    // Check for emergency data immediately
+    const emergencyDataStr = localStorage.getItem('emergencySessionData');
+    console.log('Emergency data found:', emergencyDataStr);
+    
+    if (emergencyDataStr) {
+      try {
+        const emergencyData = JSON.parse(emergencyDataStr);
+        console.log('Parsed emergency data:', emergencyData);
+        
+        if (
+          typeof emergencyData.sessionDuration === 'number' &&
+          emergencyData.sessionDuration > 0
+        ) {
+          const apiUrl = import.meta.env.VITE_API_URL;
+          const clientId = import.meta.env.VITE_CLIENT_ID;
+          
+          console.log('API URL:', apiUrl, 'Client ID:', clientId);
+          
+          if (apiUrl && clientId) {
+            const payload = {
+              "time_spent_seconds": emergencyData.sessionDuration,
+              "session_id": emergencyData.userId || getCurrentUserId(),
+              "date": formatDateForApi(),
+              "device_type": emergencyData.deviceType || "unknown",
+              "session_only": true,
+              "event_type": "recovered_session"
+            };
+            
+            console.log('Sending recovery payload:', payload);
+            
+            const response = await fetch(
+              `${apiUrl}/activity/clients/${clientId}/track-time/`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  ...(localStorage.getItem("token")
+                    ? {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                      }
+                    : {}),
+                },
+                body: JSON.stringify(payload),
+              }
+            );
+            
+            console.log('Recovery response status:', response.status);
+            
+            if (response.ok) {
+              const responseData = await response.json();
+              console.log('Emergency session recovered successfully:', responseData);
+              logActivityEvent("Emergency session data recovered and sent successfully", {
+                sessionDuration: emergencyData.sessionDuration,
+                response: responseData
+              });
+            } else {
+              console.error('Failed to send recovery data, response not ok');
+            }
+          }
+        }
+      } catch (parseError) {
+        console.error('Error parsing emergency data:', parseError);
+      }
+      
+      // Always clear emergency data after processing attempt
+      localStorage.removeItem('emergencySessionData');
+      console.log('Emergency data cleared');
+    }
+    
+    console.log('Activity tracking initialized successfully');
+    logActivityEvent("Activity tracking initialized successfully");
+  } catch (error) {
+    console.error('Error initializing activity tracking:', error);
+    logActivityEvent("Error initializing activity tracking", {
+      error: (error as Error).message,
+    });
+  }
 };
