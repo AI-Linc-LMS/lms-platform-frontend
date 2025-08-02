@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { logActivityEvent } from '../utils/activityDebugger';
 import { getDeviceFingerprint, clearCurrentSessionId, generateNewSessionId } from '../utils/deviceIdentifier';
 import { shouldResetDailyActivity, performDailyReset, markDailyReset } from '../utils/dailyReset';
-import { sendSessionEndData, sendSessionEndDataViaBeacon, sendPeriodicSessionUpdate } from '../utils/userActivitySync';
+import { sendSessionEndData, sendSessionEndDataViaBeacon, sendPeriodicSessionUpdate, formatDateForApi } from '../utils/userActivitySync';
 import { getCurrentUserId } from '../utils/userIdHelper';
 
 interface UserActivityContextType {
@@ -47,7 +47,8 @@ const STORAGE_KEYS = {
   ACTIVITY_HISTORY: 'activityHistory',
   LAST_SYNC_DATA: 'lastSyncData',
   LAST_SYNC_TIME: 'lastSyncTime',
-  LAST_SESSION_SENT: 'lastSessionSent' // New key for session deduplication
+  LAST_SESSION_SENT: 'lastSessionSent', // New key for session deduplication
+  PROCESSED_SESSIONS: 'processedSessions' // New key to track processed sessions
 };
 
 // Minimum time between syncs to prevent duplicates (in milliseconds)
@@ -365,8 +366,8 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         logActivityEvent('Failed to backup state after session end', { error: (error as Error).message });
       }
 
-      // Immediately send session-end data to backend with exact timing
-      if (sessionDuration > 0) { // Only send if there was actual activity
+      // Send session-end data ONLY if not already processed and has actual duration
+      if (sessionDuration > 0 && !isSessionAlreadyProcessed(prev.currentSessionStart, sessionDuration)) {
         const { session_id, device_info } = getDeviceFingerprint();
         const userId = getCurrentUserId();
 
@@ -382,8 +383,14 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
             device_info,
             userId
           ).then(() => {
-            // Record successful session sync
+            // Mark session as processed and record successful sync
+            if (prev.currentSessionStart !== null) {
+              markSessionAsProcessed(prev.currentSessionStart, sessionDuration);
+            }
             recordSuccessfulSessionSync(session_id, sessionDuration);
+            logActivityEvent('Session-end data sent and marked as processed', {
+              sessionDuration
+            });
           }).catch(error => {
             logActivityEvent('Failed to send immediate session-end data', {
               error: error.message,
@@ -394,6 +401,11 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         } else {
           logActivityEvent('Skipped duplicate session-end data send');
         }
+      } else if (sessionDuration > 0) {
+        logActivityEvent('Session already processed, skipping endSession API call', {
+          sessionStart: prev.currentSessionStart,
+          sessionDuration
+        });
       }
 
       return newState;
@@ -708,65 +720,39 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
         return;
       }
 
-      // Calculate current total including active session if exists
-      let totalTimeToSend = 0;
+      // Calculate current session duration only (not cumulative)
       let currentSessionDuration = 0;
 
-      // First try to get the current state directly from React state
-      if (activityState.totalTimeSpent !== undefined) {
-        totalTimeToSend = activityState.totalTimeSpent;
-
-        // Add current session if active
-        if (activityState.isActive && activityState.currentSessionStart) {
-          currentSessionDuration = Math.floor((Date.now() - activityState.currentSessionStart) / 1000);
-          totalTimeToSend += currentSessionDuration;
-        }
-      } else {
-        // Fallback to localStorage if we can't access React state
-        try {
-          const stateStr = localStorage.getItem(STORAGE_KEYS.LAST_ACTIVITY_STATE);
-          if (stateStr) {
-            const state = JSON.parse(stateStr);
-            totalTimeToSend = state.totalTimeSpent || 0;
-          } else {
-            // Try backup
-            const backupStr = localStorage.getItem(STORAGE_KEYS.TOTAL_TIME_BACKUP);
-            if (backupStr) {
-              totalTimeToSend = parseInt(backupStr, 10) || 0;
-            }
-          }
-        } catch (err) {
-          logActivityEvent('Failed to parse state for beacon', { error: (err as Error).message });
-        }
+      if (activityState.isActive && activityState.currentSessionStart) {
+        currentSessionDuration = Math.floor((Date.now() - activityState.currentSessionStart) / 1000);
       }
 
-      if (totalTimeToSend === 0) {
-        logActivityEvent('No time data to send via beacon');
+      // If no active session or very short session, don't send
+      if (currentSessionDuration === 0) {
+        logActivityEvent('No active session time to send via beacon');
         return;
       }
 
-      // Check for duplicate sync
-      if (shouldSkipDuplicateSync(totalTimeToSend)) {
+      // Check for duplicate sync using session duration only
+      if (shouldSkipDuplicateSync(currentSessionDuration)) {
         logActivityEvent('Skipped duplicate beacon sync');
         return;
       }
 
-      // Format data for API
+      // Format data for API - send only current session time
       const today = new Date();
       const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-      // Get device fingerprint for multi-device tracking
-      const { /* session_id, */ device_info } = getDeviceFingerprint();
+      // Get device fingerprint for session tracking
+      const { device_info } = getDeviceFingerprint();
 
       const beaconData = {
         date: formattedDate,
-        "time_spent_seconds": totalTimeToSend, // Send exact seconds for precision
-        "time-spend": Math.floor(totalTimeToSend / 60), // Use floor to avoid inflating time
-        // session_id: session_id,
+        "time_spent_seconds": currentSessionDuration, // Send only current session time
+        "time-spend": Math.floor(currentSessionDuration / 60), // Current session in minutes
         device_info: device_info,
-        current_session_duration: currentSessionDuration, // Send current session separately for diagnostics
         session_id: getCurrentUserId(),
-        // timestamp: Date.now()
+        session_only: true // Indicate this is session-only data
       };
 
       // Use the Beacon API which is designed for exit events
@@ -774,13 +760,12 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       const success = navigator.sendBeacon(`${apiUrl}/activity/clients/${clientId}/track-time/`, blob);
 
       if (success) {
-        // Record this sync to prevent duplicates
-        recordSuccessfulSync(totalTimeToSend);
+        // Record this sync to prevent duplicates using session duration
+        recordSuccessfulSync(currentSessionDuration);
       }
 
-      logActivityEvent('Sent activity data via beacon', {
-        totalSeconds: totalTimeToSend,
-        currentSessionSeconds: currentSessionDuration,
+      logActivityEvent('Sent session-only activity data via beacon', {
+        sessionSeconds: currentSessionDuration,
         success
       });
     } catch (error) {
@@ -789,56 +774,139 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
   };
 
   // Handle page unload (user closes the tab or navigates away)
-  const handleBeforeUnload = () => {
-    logActivityEvent('Before unload event');
+  const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+    // Detect if this is a page refresh vs navigation/close
+    const isPageRefresh = ('persisted' in event && (event as any).persisted) || 
+      (window.performance && performance.navigation.type === performance.navigation.TYPE_RELOAD);
+    
+    logActivityEvent('Before unload event - page reload or navigation detected', {
+      isPageRefresh,
+      navigationType: window.performance ? performance.navigation.type : 'unknown',
+      persisted: 'persisted' in event ? (event as any).persisted : undefined
+    });
 
-    // Calculate session data before ending for beacon
+    // CRITICAL: Immediately capture and send session data before page unloads
     if (activityState.isActive && activityState.currentSessionStart) {
       const now = Date.now();
       const sessionDuration = Math.floor((now - activityState.currentSessionStart) / 1000);
-      const totalTimeWithSession = activityState.totalTimeSpent + sessionDuration;
+
+      logActivityEvent('Page unload - capturing active session to prevent data loss', {
+        sessionDuration,
+        sessionStart: new Date(activityState.currentSessionStart).toISOString(),
+        totalTimeBeforeSession: activityState.totalTimeSpent,
+        isPageReload: isPageRefresh
+      });
 
       if (sessionDuration > 0) {
-        const { session_id, device_info } = getDeviceFingerprint();
-        const userId = getCurrentUserId();
-
-        // Check for duplicate session sync before sending via beacon
-        if (!shouldSkipDuplicateSessionSync(session_id, sessionDuration)) {
-          // Use beacon for guaranteed delivery during unload
-          const success = sendSessionEndDataViaBeacon(
-            activityState.currentSessionStart,
-            now,
-            sessionDuration,
-            totalTimeWithSession,
-            session_id,
-            device_info,
-            userId
-          );
-
-          if (success) {
-            // Record successful session sync
-            recordSuccessfulSessionSync(session_id, sessionDuration);
-          }
+        // Check if this exact session has already been processed
+        if (isSessionAlreadyProcessed(activityState.currentSessionStart, sessionDuration)) {
+          logActivityEvent('Session already processed, skipping duplicate send', {
+            sessionStart: activityState.currentSessionStart,
+            sessionDuration
+          });
         } else {
-          logActivityEvent('Skipped duplicate beacon send in before unload');
+          const { session_id, device_info } = getDeviceFingerprint();
+          const userId = getCurrentUserId();
+
+          // PRIORITY 1: Always save to localStorage first (immediate, synchronous)
+          try {
+            const emergencyBackup = {
+              sessionDuration,
+              sessionStart: activityState.currentSessionStart,
+              sessionEnd: now,
+              totalTimeBeforeSession: activityState.totalTimeSpent,
+              timestamp: now,
+              isPageRefresh,
+              emergencyBackup: true
+            };
+            localStorage.setItem('emergencySessionBackup', JSON.stringify(emergencyBackup));
+            logActivityEvent('Emergency session backup saved to localStorage', { sessionDuration });
+          } catch (error) {
+            logActivityEvent('Failed to save emergency backup', { error: (error as Error).message });
+          }
+
+          // PRIORITY 2: Send ONLY via beacon (single method to prevent duplicates)
+          // Do NOT use both beacon and fetch to avoid double API calls
+          if (!shouldSkipDuplicateSessionSync(session_id, sessionDuration)) {
+            const refreshPayload = {
+              "time_spent_seconds": sessionDuration,
+              "session_id": userId,
+              "date": formatDateForApi(),
+              "device_type": device_info.deviceType,
+              "session_only": true,
+              "event_type": isPageRefresh ? "page_refresh" : "page_unload"
+            };
+
+            const apiUrl = import.meta.env.VITE_API_URL;
+            const clientId = import.meta.env.VITE_CLIENT_ID;
+
+            if (apiUrl && clientId) {
+              // Use ONLY beacon API - single method to prevent duplicates
+              const beaconBlob = new Blob([JSON.stringify(refreshPayload)], { 
+                type: 'application/json' 
+              });
+              const beaconSuccess = navigator.sendBeacon(
+                `${apiUrl}/activity/clients/${clientId}/track-time/`, 
+                beaconBlob
+              );
+
+              if (beaconSuccess) {
+                // Mark this session as processed to prevent future duplicates
+                markSessionAsProcessed(activityState.currentSessionStart, sessionDuration);
+                recordSuccessfulSessionSync(session_id, sessionDuration);
+                logActivityEvent('Single beacon sent successfully - no duplicates', {
+                  sessionDuration,
+                  isPageRefresh,
+                  method: 'beacon_only'
+                });
+              } else {
+                logActivityEvent('Beacon failed - session will be recovered on reload', {
+                  sessionDuration,
+                  isPageRefresh
+                });
+              }
+            }
+          } else {
+            logActivityEvent('Skipped duplicate session send based on deduplication rules');
+          }
+
+          // PRIORITY 3: Update the activity state to include this session
+          try {
+            const updatedTotalTime = activityState.totalTimeSpent + sessionDuration;
+            const newSession: ActivitySession = {
+              startTime: activityState.currentSessionStart,
+              endTime: now,
+              duration: sessionDuration,
+            };
+            
+            const updatedState = {
+              totalTimeSpent: updatedTotalTime,
+              activityHistory: [...activityState.activityHistory, newSession],
+              lastBackup: now
+            };
+
+            localStorage.setItem(STORAGE_KEYS.SESSION_BACKUP, JSON.stringify(updatedState));
+            localStorage.setItem(STORAGE_KEYS.TOTAL_TIME_BACKUP, updatedTotalTime.toString());
+            
+            logActivityEvent('Updated local state with session before unload', {
+              sessionDuration,
+              newTotalTime: updatedTotalTime
+            });
+          } catch (error) {
+            logActivityEvent('Failed to update local state before unload', { 
+              error: (error as Error).message 
+            });
+          }
         }
       }
+    } else {
+      logActivityEvent('No active session to capture on page unload', { isPageRefresh });
     }
 
-    // Only end session if it hasn't been ended recently
-    if (activityState.isActive) {
-      endSession();
-    }
-
-    // Also backup current state
+    // Standard cleanup
     backupCurrentState();
-
-    // Clear the session ID since the user is actually leaving
     clearCurrentSessionId();
-    logActivityEvent('Cleared session ID on page unload');
-
-    // Note: Removed the legacy pending data storage that was causing mixed session_only true/false
-    // The new session-only approach doesn't need to store pending cumulative data
+    logActivityEvent('Page unload handling completed', { isPageRefresh });
   };
 
   // Periodic sync every 3 minutes to reduce data loss in case of crashes
@@ -930,6 +998,56 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
   useEffect(() => {
     logActivityEvent('UserActivityProvider mounted');
 
+    // Check if this is a page reload and recover any emergency backup
+    if (window.performance && performance.navigation.type === performance.navigation.TYPE_RELOAD) {
+      logActivityEvent('Page reload detected on mount - checking for emergency backup');
+      
+      try {
+        const emergencyBackupStr = localStorage.getItem('emergencySessionBackup');
+        if (emergencyBackupStr) {
+          const emergencyBackup = JSON.parse(emergencyBackupStr);
+          logActivityEvent('Found emergency session backup from previous page', {
+            sessionDuration: emergencyBackup.sessionDuration,
+            timestamp: new Date(emergencyBackup.timestamp).toISOString()
+          });
+
+          // Update the activity state to include the recovered session
+          setActivityState(prev => {
+            const newSession: ActivitySession = {
+              startTime: emergencyBackup.sessionStart,
+              endTime: emergencyBackup.sessionEnd,
+              duration: emergencyBackup.sessionDuration,
+            };
+
+            const newTotalTime = emergencyBackup.totalTimeBeforeSession + emergencyBackup.sessionDuration;
+
+            return {
+              ...prev,
+              totalTimeSpent: newTotalTime,
+              activityHistory: [...prev.activityHistory, newSession],
+            };
+          });
+
+          // Clear the emergency backup after recovery
+          localStorage.removeItem('emergencySessionBackup');
+          logActivityEvent('Emergency backup recovered and cleared', {
+            recoveredSessionDuration: emergencyBackup.sessionDuration
+          });
+        }
+      } catch (error) {
+        logActivityEvent('Error recovering emergency backup', { 
+          error: (error as Error).message 
+        });
+        // Clear potentially corrupted backup
+        localStorage.removeItem('emergencySessionBackup');
+      }
+    }
+
+    // Check if this is a page reload by examining navigation timing
+    if (window.performance && performance.navigation.type === performance.navigation.TYPE_RELOAD) {
+      logActivityEvent('Page reload detected on mount - starting new session after refresh');
+    }
+
     // Check for pending activity data that may not have been sent
     try {
       const pendingDataStr = localStorage.getItem(STORAGE_KEYS.PENDING_ACTIVITY_DATA);
@@ -957,6 +1075,7 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
     window.addEventListener('focus', handleFocus);
     window.addEventListener('blur', handleBlur);
     window.addEventListener('beforeunload', handleBeforeUnload);
+    
 
     // Add additional events for power-related events (works in some browsers)
     const navigatorWithBattery = navigator as NavigatorWithBattery;
@@ -1015,4 +1134,47 @@ export const UserActivityProvider = ({ children }: UserActivityProviderProps) =>
       {children}
     </UserActivityContext.Provider>
   );
-}; 
+};
+
+// Function to check if a session has already been processed to prevent duplicates
+const isSessionAlreadyProcessed = (sessionStart: number, sessionDuration: number): boolean => {
+  try {
+    const processedSessionsStr = localStorage.getItem(STORAGE_KEYS.PROCESSED_SESSIONS);
+    if (!processedSessionsStr) {
+      return false;
+    }
+
+    const processedSessions = JSON.parse(processedSessionsStr);
+    const sessionKey = `${sessionStart}-${sessionDuration}`;
+    
+    return processedSessions.includes(sessionKey);
+  } catch {
+    return false;
+  }
+};
+
+// Function to mark a session as processed
+const markSessionAsProcessed = (sessionStart: number, sessionDuration: number): void => {
+  try {
+    const processedSessionsStr = localStorage.getItem(STORAGE_KEYS.PROCESSED_SESSIONS);
+    let processedSessions: string[] = [];
+    
+    if (processedSessionsStr) {
+      processedSessions = JSON.parse(processedSessionsStr);
+    }
+    
+    const sessionKey = `${sessionStart}-${sessionDuration}`;
+    if (!processedSessions.includes(sessionKey)) {
+      processedSessions.push(sessionKey);
+      
+      // Keep only the last 100 processed sessions to prevent localStorage bloat
+      if (processedSessions.length > 100) {
+        processedSessions = processedSessions.slice(-100);
+      }
+      
+      localStorage.setItem(STORAGE_KEYS.PROCESSED_SESSIONS, JSON.stringify(processedSessions));
+    }
+  } catch (error) {
+    logActivityEvent('Failed to mark session as processed', { error: (error as Error).message });
+  }
+};
