@@ -341,8 +341,8 @@ const PartialPaymentPage: React.FC = () => {
                     <span className="font-medium">{programConfigs[decodedData.programType as ProgramType]?.title}</span>
                   </div>
                   <div className="flex justify-between text-sm sm:text-base">
-                    <span className="text-gray-600">Payment Type:</span>
-                    <span className="font-medium">Partial Payment</span>
+                    <span className="text-gray-600"></span>
+                    <span className="font-medium"></span>
                   </div>
                   <div className="flex justify-between text-base sm:text-lg font-semibold">
                     <span className="text-gray-900">Amount:</span>
