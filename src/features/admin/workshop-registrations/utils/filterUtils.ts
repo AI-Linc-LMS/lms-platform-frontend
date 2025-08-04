@@ -17,7 +17,7 @@ export const filterWorkshopData = (
     //console.log('Active Filters:', activeFilters);
   }
   
-  return workshopData.filter((entry) => {
+  const filteredData = workshopData.filter((entry) => {
     // Global search
     const globalSearch = `${entry.name || ''} ${entry.email || ''}`
       .toLowerCase()
@@ -115,7 +115,7 @@ export const filterWorkshopData = (
     const sessionMatch = (() => {
       if (!filters.session_number) return true;
       const filterVal = filters.session_number.trim();
-      const sessionValue = entry.session_number?.toString() || '';
+      const sessionValue = entry.session_number?.toString() || 'N/a';
       if (filterVal.includes(',')) {
         return matchesSelectedOptions(sessionValue, filterVal);
       } else {
@@ -149,9 +149,15 @@ export const filterWorkshopData = (
     const attendedWebinarsMatch = (() => {
       if (!filters.attended_webinars) return true;
       const filterVal = filters.attended_webinars.trim();
-      const attendedValue = typeof entry.attended_webinars === 'boolean' 
-        ? entry.attended_webinars.toString() 
-        : (entry.attended_webinars || '');
+      let attendedValue;
+      
+      if (entry.attended_webinars === null || entry.attended_webinars === undefined || entry.attended_webinars === '') {
+        attendedValue = 'N/A';
+      } else if (typeof entry.attended_webinars === 'boolean') {
+        attendedValue = entry.attended_webinars.toString();
+      } else {
+        attendedValue = entry.attended_webinars.toString();
+      }
       
       if (filterVal.includes(',')) {
         return matchesSelectedOptions(attendedValue, filterVal);
@@ -510,6 +516,17 @@ export const filterWorkshopData = (
 
     return finalResult;
   });
+
+  // Sort the filtered data by updated_at (date and time) in descending order (newest first)
+  const sortedData = filteredData.sort((a, b) => {
+    const dateA = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+    const dateB = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+    
+    // Sort in descending order (newest first)
+    return dateB - dateA;
+  });
+
+  return sortedData;
 };
 
 export const exportToExcel = (
