@@ -99,9 +99,8 @@ const CourseActions: React.FC<CourseActionsProps> = ({
           <button
             onClick={handleLikeToggle}
             disabled={likeMutation.isPending}
-            className={`w-[100px] h-[45px] rounded-full bg-[#E9ECEF] flex flex-row items-center justify-center gap-2 p-3 cursor-pointer transition-colors ${
-              likeMutation.isPending ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            className={`w-[100px] h-[45px] rounded-full bg-[#E9ECEF] flex flex-row items-center justify-center gap-2 p-3 cursor-pointer transition-colors ${likeMutation.isPending ? "opacity-50 cursor-not-allowed" : ""
+              }`}
           >
             <img
               src={currentIsLiked ? likeIcon : unlikeIcon}

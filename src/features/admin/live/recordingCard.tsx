@@ -1,18 +1,31 @@
 import React, { useState } from "react";
 import {
-  LiveSession
+  LiveSession,
+  updateLiveSession,
 } from "../../../services/live/liveServicesApis";
+import { UserState } from "../../learn/components/assessment/types/assessmentTypes";
+import { useSelector } from "react-redux";
+import { useMutation } from "@tanstack/react-query";
+import AddRecordingLinkModal from "./AddRecordingModal";
 
-interface PastRecordingsProps {
+interface RecordingCardProps {
   pastLiveSessions: LiveSession[];
   refetch: () => void; // Optional refetch function to refresh data after updates
 }
 
-const PastRecordings: React.FC<PastRecordingsProps> = ({
-  pastLiveSessions
+const RecordingCard: React.FC<RecordingCardProps> = ({
+  pastLiveSessions,
+  refetch,
 }) => {
+  const user = useSelector((state: { user: UserState }) => state.user);
+  const isAdmin = user.role === "admin" || user.role === "superadmin";
+
   const [filterDate, setFilterDate] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRecording, setSelectedRecording] =
+    useState<LiveSession | null>(null);
 
   const filteredRecordings = (pastLiveSessions || []).filter((recording) => {
     const matchesDate =
@@ -37,10 +50,35 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({
     });
   };
 
+  const updateMutation = useMutation({
+    mutationFn: async (sessionData: LiveSession) => {
+      const clientId = import.meta.env.VITE_CLIENT_ID;
+      const sessionId = sessionData.id || "";
+      return await updateLiveSession(clientId, sessionId, sessionData);
+    },
+  });
+
   const handleWatchRecording = (zoomRecordingLink: string) => {
     if (zoomRecordingLink) {
       window.open(zoomRecordingLink, "_blank");
     }
+  };
+  console.log(selectedRecording?.recording_link);
+  const handleAddRecordingLink = (recording: LiveSession) => {
+    setSelectedRecording(recording);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveRecordingLink = (link: string) => {
+    if (selectedRecording) {
+      const updatedRecording: LiveSession = {
+        ...selectedRecording,
+        recording_link: link,
+      };
+      updateMutation.mutate(updatedRecording);
+      refetch();
+    }
+    setIsModalOpen(false);
   };
 
   return (
@@ -132,6 +170,16 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({
                 </div>
 
                 <div className="flex flex-row justify-between">
+                  {isAdmin && (
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => handleAddRecordingLink(recording)}
+                        className="bg-[#255C79] hover:bg-[#1E4A63] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-95"
+                      >
+                        {!recording?.recording_link ? "Add Link" : "Edit Link"}
+                      </button>
+                    </div>
+                  )}
                   {recording?.recording_link && <div className="flex justify-end">
                     <button
                       onClick={() =>
@@ -160,8 +208,16 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({
           ))}
         </div>
       )}
+
+      {/* Modal */}
+      <AddRecordingLinkModal
+        isOpen={isModalOpen}
+        recordingLink={selectedRecording?.recording_link || null}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveRecordingLink}
+      />
     </div>
   );
 };
 
-export default PastRecordings;
+export default RecordingCard;

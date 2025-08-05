@@ -279,7 +279,11 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
     { column: "second_call_comment", label: "2nd Call Comment" },
     { column: "follow_up_comment", label: "Follow Up Comment" },
     { column: "follow_up_date", label: "Follow Up Date", isDate: true },
-    { column: "meeting_scheduled_at", label: "Meeting Scheduled", isDate: true },
+    {
+      column: "meeting_scheduled_at",
+      label: "Meeting Scheduled",
+      isDate: true,
+    },
     { column: "next_payment_date", label: "Next Payment Date", isDate: true },
     { column: "sales_done_by", label: "Sales Done By" },
     // Assessment details
@@ -332,8 +336,21 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
     const values = new Set<string>();
     filtered.forEach((item) => {
       const val = item[field];
-      if (val && typeof val === "string") values.add(val);
-      if (val && typeof val === "number") values.add(val.toString());
+
+      // Special handling for attended_webinars
+      if (field === "attended_webinars") {
+        if (val === null || val === undefined || val === "") {
+          values.add("N/A");
+        } else if (typeof val === "boolean") {
+          values.add(val.toString());
+        } else {
+          values.add(val.toString());
+        }
+      } else {
+        // For other fields, only add non-empty values
+        if (val && typeof val === "string") values.add(val);
+        if (val && typeof val === "number") values.add(val.toString());
+      }
     });
 
     // Special handling for assessment field to include default values
@@ -342,7 +359,12 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
       values.add("attempted");
     }
 
-    return Array.from(values);
+    // For attended_webinars, ensure N/A is always available
+    if (field === "attended_webinars") {
+      values.add("N/A");
+    }
+
+    return Array.from(values).sort((a, b) => a.localeCompare(b));
   };
 
   // Click outside handler
