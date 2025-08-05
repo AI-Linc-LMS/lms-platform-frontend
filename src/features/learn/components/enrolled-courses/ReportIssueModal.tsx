@@ -18,21 +18,20 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(3); // Changed from 5 to 3
 
   const reportMutation = useMutation({
     mutationFn: () => reportIssue(clientId, subject, description),
     onSuccess: () => {
-      setSubject("");
-      setDescription("");
-      onClose();
+      setIsSuccess(true); // Show success modal
+      setCountdown(3); // Reset countdown to 3
     }
   });
 
   // Handle countdown and auto-close
   useEffect(() => {
     let timer: number;
-    
+
     if (isSuccess && countdown > 0) {
       timer = setTimeout(() => {
         setCountdown(countdown - 1);
@@ -59,7 +58,7 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
       setSubject("");
       setDescription("");
       setIsSuccess(false);
-      setCountdown(5);
+      setCountdown(3); // Changed from 5 to 3
       onClose();
     }
   };
@@ -68,7 +67,7 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setIsSuccess(false);
-      setCountdown(5);
+      setCountdown(3); // Changed from 5 to 3
     }
   }, [isOpen]);
 
@@ -96,10 +95,10 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
               </svg>
             </div>
             <h2 className="text-xl font-semibold text-gray-800 mb-2">
-              Report Submitted Successfully!
+              Issue Reported Successfully!
             </h2>
             <p className="text-gray-600 mb-4">
-              Thank you for reporting this issue. Our support team has received your message and will reach out to you shortly to resolve the matter.
+              Your issue has been reported and our team will get back to you soon.
             </p>
             <div className="text-sm text-gray-500">
               This window will close automatically in {countdown} seconds...
