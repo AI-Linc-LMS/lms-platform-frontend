@@ -11,7 +11,7 @@ const PaymentLinkGenerator: React.FC = () => {
   const [programType, setProgramType] = useState<'flagship-program' | 'nanodegree-program'>('flagship-program');
   const [copied, setCopied] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string>('');
-  const { isSuperAdmin } = useRole();
+  const { isSuperAdmin, isAdminOrInstructor } = useRole();
   const user = useSelector((state: { user: UserState }) => state.user);
 
 
@@ -42,14 +42,14 @@ const PaymentLinkGenerator: React.FC = () => {
     }
   };
 
-  if (!isSuperAdmin) {
+  if (!isSuperAdmin && !isAdminOrInstructor) {
     return <AccessDenied />;
   }
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-xl font-semibold mb-4">Generate Payment Link</h2>
-      
+
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -97,11 +97,10 @@ const PaymentLinkGenerator: React.FC = () => {
               </div>
               <button
                 onClick={handleCopy}
-                className={`flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  copied
+                className={`flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${copied
                     ? 'bg-green-100 text-green-700'
                     : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                }`}
+                  }`}
                 title={copied ? 'Copied!' : 'Copy URL'}
               >
                 {copied ? (
