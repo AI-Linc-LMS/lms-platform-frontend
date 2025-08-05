@@ -17,8 +17,10 @@ import {
   NoDataState,
   Pagination,
   ActiveFiltersDisplay,
+  MeetingReminderStatus,
 } from "./components";
 import EmailConfirmationModal from "./components/modals/EmailConfirmationModal";
+import { useMeetingReminder } from "./hooks/useMeetingReminder";
 
 const WorkshopRegistration = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -34,6 +36,7 @@ const WorkshopRegistration = () => {
   const [selectedEmailsForConfirmation, setSelectedEmailsForConfirmation] =
     useState<Array<{ email: string; name: string }>>([]);
   const [freezeColumns, setFreezeColumns] = useState<string[]>([
+    "id",
     "name",
     "email",
   ]);
@@ -48,6 +51,7 @@ const WorkshopRegistration = () => {
 
   // Permanent columns that are always visible
   const permanentColumns = [
+    "id",
     "name",
     "email",
     "phone_number",
@@ -58,6 +62,7 @@ const WorkshopRegistration = () => {
 
   // Freeze columns configuration
   const freezeColumnOptions = [
+    { key: "id", label: "ID", required: true },
     { key: "name", label: "Name", required: true },
     { key: "email", label: "Email", required: true },
     { key: "phone_number", label: "Phone", required: false },
@@ -74,8 +79,11 @@ const WorkshopRegistration = () => {
           newFreezeColumns.push(columnKey);
         }
 
-        // If phone is selected, ensure name and email are also selected
+        // If phone is selected, ensure id, name and email are also selected
         if (columnKey === "phone_number") {
+          if (!newFreezeColumns.includes("id")) {
+            newFreezeColumns.push("id");
+          }
           if (!newFreezeColumns.includes("name")) {
             newFreezeColumns.push("name");
           }
@@ -84,15 +92,29 @@ const WorkshopRegistration = () => {
           }
         }
         if (columnKey === "email") {
+          if (!newFreezeColumns.includes("id")) {
+            newFreezeColumns.push("id");
+          }
           if (!newFreezeColumns.includes("name")) {
             newFreezeColumns.push("name");
+          }
+        }
+        if (columnKey === "name") {
+          if (!newFreezeColumns.includes("id")) {
+            newFreezeColumns.push("id");
           }
         }
       } else {
         // Remove the column
         newFreezeColumns = newFreezeColumns.filter((col) => col !== columnKey);
 
-        // If removing name or email, also remove phone (since phone requires both)
+        // If removing id, name or email, also remove dependent columns
+        if (columnKey === "id") {
+          // If removing id, remove all other columns since id is required for all
+          newFreezeColumns = newFreezeColumns.filter(
+            (col) => col !== "name" && col !== "email" && col !== "phone_number"
+          );
+        }
         if (columnKey === "name" || columnKey === "email") {
           newFreezeColumns = newFreezeColumns.filter(
             (col) => col !== "phone_number"
@@ -277,6 +299,12 @@ const WorkshopRegistration = () => {
     refetchOnReconnect: false,
   });
 
+  // Meeting reminder hook - monitors for upcoming meetings and follow-ups
+  useMeetingReminder({
+    data: workshopData,
+    isEnabled: !isLoading && !error && workshopData.length > 0,
+  });
+
   const filteredData = useMemo(() => {
     let data = filterWorkshopData(workshopData, search, filters);
     if (sort) {
@@ -439,6 +467,13 @@ const WorkshopRegistration = () => {
           </span>
         )}
       </div>
+
+      {/* Meeting Reminder Status Indicator */}
+      <MeetingReminderStatus
+        isActive={!isLoading && !error && workshopData.length > 0}
+        dataCount={workshopData.length}
+        className="mb-4"
+      />
       <div className="flex flex-col bg-white shadow rounded flex-1 min-h-0">
         {/* Scrollable table container */}
         <div
