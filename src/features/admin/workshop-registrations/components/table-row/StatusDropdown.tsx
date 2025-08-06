@@ -58,7 +58,11 @@ export const StatusDropdown: React.FC<StatusDropdownProps> = ({
         <span
           className={`inline-block w-3 h-3 rounded-full mt-1 flex-shrink-0 ${getStatusColor(
             value,
-            field === "first_call_status" ? "first" : field === "second_call_status" ? "second" : "course"
+            field === "first_call_status"
+              ? "first"
+              : field === "second_call_status"
+              ? "second"
+              : "course"
           )}`}
         ></span>
         <span
@@ -70,7 +74,7 @@ export const StatusDropdown: React.FC<StatusDropdownProps> = ({
         <FiChevronDown className="w-3 h-3 ml-auto mt-1 text-gray-500" />
       </button>
       {quickStatusDropdown === field && !cooldown[field] && (
-        <div className="absolute left-0 top-full z-50 mt-1 bg-white border border-gray-200 rounded shadow-lg w-56">
+        <div className="absolute left-0 top-full z-50 mt-1 bg-white border border-gray-200 rounded shadow-lg w-56 max-h-40 overflow-y-auto">
           {options.map((opt) => (
             <button
               key={opt.value}

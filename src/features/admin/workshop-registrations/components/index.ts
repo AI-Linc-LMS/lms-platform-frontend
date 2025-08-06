@@ -7,3 +7,4 @@ export { ActiveFiltersDisplay } from "./ActiveFiltersDisplay";
 export { ColumnVisibilityDropdown } from "./ColumnVisibilityDropdown";
 export { Pagination } from "./Pagination";
 export { NoDataState } from "./NoDataState"; 
+export { MeetingReminderStatus } from "./MeetingReminderStatus"; 

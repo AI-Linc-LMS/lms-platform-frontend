@@ -4,6 +4,10 @@ export const FIRST_CALL_STATUS_OPTIONS = [
   { value: "Couldn't Connect", color: "bg-yellow-400" },
   { value: "Call back requested", color: "bg-green-500" },
   { value: "Career Counselling", color: "bg-blue-500" },
+  { value: "Connected", color: "bg-green-200" },
+  { value: "Duplicate", color: "bg-purple-400" },
+  { value: "Converted", color: "bg-green-500" },
+  { value: "Rescheduled", color: "bg-yellow-400" },
   { value: "N/A", color: "bg-gray-400" },
 ];
 
@@ -98,9 +102,16 @@ export const getAmountColor = (amount: string | number | null | undefined) => {
   return "bg-gray-100 text-gray-600";
 };
 
-export const getStatusColor = (value: string, type: "first" | "second" | "course") => {
+export const getStatusColor = (
+  value: string,
+  type: "first" | "second" | "course"
+) => {
   const options =
-    type === "first" ? FIRST_CALL_STATUS_OPTIONS : type === "second" ? SECOND_CALL_STATUS_OPTIONS : COURSE_NAME_OPTIONS;
+    type === "first"
+      ? FIRST_CALL_STATUS_OPTIONS
+      : type === "second"
+      ? SECOND_CALL_STATUS_OPTIONS
+      : COURSE_NAME_OPTIONS;
   const found = options.find((opt) => opt.value === value);
   return found ? found.color : "bg-gray-300";
 };
