@@ -301,12 +301,12 @@ const RichTextEditor: React.FC<{
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
     const text = e.clipboardData.getData('text/html') || e.clipboardData.getData('text/plain');
-    
+
     if (text) {
-      const content = e.clipboardData.types.includes('text/html') 
-        ? text 
+      const content = e.clipboardData.types.includes('text/html')
+        ? text
         : text.split('\n').map(line => `<p>${line}</p>`).join('');
-        
+
       document.execCommand('insertHTML', false, content);
       handleInput();
     }
@@ -1328,7 +1328,7 @@ const useApi = <T>(endpoint: string, options = {}) => {
                                 const commentAuthorAvatar = getUserAvatar(comment.author, comment.avatar);
                                 return (
                                   <div key={comment.id} className="bg-white border border-gray-200 rounded-lg p-3">
-                                    <RichContentDisplay 
+                                    <RichContentDisplay
                                       content={comment.content}
                                       className="text-gray-700 mb-2 text-sm leading-relaxed"
                                     />
@@ -1346,7 +1346,7 @@ const useApi = <T>(endpoint: string, options = {}) => {
                                       )}
                                       <span className="font-medium text-gray-900 text-sm">{comment.author}</span>
                                       <span className="text-xs text-gray-500">{comment.createdAt}</span>
-                                      
+
                                       {/* Vote buttons for comments */}
                                       <div className="flex items-center gap-1 ml-auto">
                                         <button
