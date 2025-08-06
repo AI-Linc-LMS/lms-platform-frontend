@@ -40,10 +40,28 @@ const WorkshopRegistration = () => {
     "name",
     "email",
   ]);
-  const [sortAscending, setSortAscending] = useState(false); // Default to descending
 
-  const handleSort = () => {
-    setSortAscending(!sortAscending);
+  // Sort state - tracks which field is being sorted and direction
+  const [sortConfig, setSortConfig] = useState<{
+    field: string;
+    direction: "asc" | "desc";
+  }>({
+    field: "id",
+    direction: "desc", // Default to descending ID
+  });
+
+  const handleSort = (field: string, direction?: "asc" | "desc") => {
+    if (direction) {
+      // Direct direction specified
+      setSortConfig({ field, direction });
+    } else {
+      // Toggle logic for backward compatibility
+      setSortConfig((prev) => ({
+        field,
+        direction:
+          prev.field === field && prev.direction === "asc" ? "desc" : "asc",
+      }));
+    }
   };
 
   // Column visibility state
@@ -307,12 +325,66 @@ const WorkshopRegistration = () => {
 
   const filteredData = useMemo(() => {
     let data = filterWorkshopData(workshopData, search, filters);
-    // Sort by ID - descending by default (newest first), ascending when toggled
-    data = [...data].sort((a, b) =>
-      sortAscending ? a.id - b.id : b.id - a.id
-    );
+
+    // Sort data based on sortConfig
+    data = [...data].sort((a, b) => {
+      const { field, direction } = sortConfig;
+      const aValue = a[field as keyof WorkshopRegistrationData];
+      const bValue = b[field as keyof WorkshopRegistrationData];
+
+      // Handle different data types
+      if (field === "id") {
+        // Numeric sorting for ID
+        const diff = (aValue as number) - (bValue as number);
+        return direction === "asc" ? diff : -diff;
+      }
+
+      // Date field sorting
+      const dateFields = [
+        "registered_at",
+        "updated_at",
+        "submitted_at",
+        "follow_up_date",
+        "meeting_scheduled_at",
+        "next_payment_date",
+        "assignment_submitted_at",
+        "session_date",
+      ];
+
+      if (dateFields.includes(field)) {
+        const aDate = aValue ? new Date(aValue as string).getTime() : 0;
+        const bDate = bValue ? new Date(bValue as string).getTime() : 0;
+        const diff = aDate - bDate;
+        return direction === "asc" ? diff : -diff;
+      }
+
+      // Numeric field sorting
+      const numericFields = [
+        "session_number",
+        "amount_paid",
+        "amount_pending",
+        "score",
+        "offered_scholarship_percentage",
+        "offered_amount",
+        "platform_amount",
+      ];
+
+      if (numericFields.includes(field)) {
+        const aNum = parseFloat(aValue as string) || 0;
+        const bNum = parseFloat(bValue as string) || 0;
+        const diff = aNum - bNum;
+        return direction === "asc" ? diff : -diff;
+      }
+
+      // String field sorting (alphabetical)
+      const aStr = (aValue as string)?.toLowerCase() || "";
+      const bStr = (bValue as string)?.toLowerCase() || "";
+      const diff = aStr.localeCompare(bStr);
+      return direction === "asc" ? diff : -diff;
+    });
+
     return data;
-  }, [search, workshopData, filters, sortAscending]);
+  }, [search, workshopData, filters, sortConfig]);
 
   const handleExport = () => {
     // Combine permanent columns with visible columns for export
@@ -435,8 +507,8 @@ const WorkshopRegistration = () => {
         freezeColumns={freezeColumns}
         freezeColumnOptions={freezeColumnOptions}
         onFreezeColumnChange={handleFreezeColumnChange}
-        handleSort={handleSort}
-        sortAscending={sortAscending}
+        sortConfig={sortConfig}
+        onSortChange={handleSort}
       />
 
       <ActiveFiltersDisplay

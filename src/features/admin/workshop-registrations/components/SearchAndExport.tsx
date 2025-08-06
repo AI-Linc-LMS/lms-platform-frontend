@@ -37,8 +37,11 @@ interface SearchAndExportProps {
   freezeColumns?: string[];
   freezeColumnOptions?: FreezeColumnOption[];
   onFreezeColumnChange?: (columnKey: string, selected: boolean) => void;
-  handleSort: () => void;
-  sortAscending: boolean;
+  sortConfig: {
+    field: string;
+    direction: "asc" | "desc";
+  };
+  onSortChange: (field: string, direction?: "asc" | "desc") => void;
 }
 
 export const SearchAndExport: React.FC<SearchAndExportProps> = ({
@@ -58,8 +61,8 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
   freezeColumns = [],
   freezeColumnOptions = [],
   onFreezeColumnChange,
-  handleSort,
-  sortAscending,
+  sortConfig,
+  onSortChange,
 }) => {
   const { isSuperAdmin } = useRole();
   const [message, setMessage] = useState<{
@@ -67,9 +70,11 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
     text: string;
   } | null>(null);
   const [showFreezeDropdown, setShowFreezeDropdown] = useState(false);
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const freezeDropdownRef = useRef<HTMLDivElement>(null);
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Click outside handler for freeze dropdown
+  // Click outside handler for dropdowns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -78,16 +83,22 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
       ) {
         setShowFreezeDropdown(false);
       }
+      if (
+        sortDropdownRef.current &&
+        !sortDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowSortDropdown(false);
+      }
     };
 
-    if (showFreezeDropdown) {
+    if (showFreezeDropdown || showSortDropdown) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showFreezeDropdown]);
+  }, [showFreezeDropdown, showSortDropdown]);
 
   const handleSuccess = (message: string) => {
     setMessage({ type: "success", text: message });
@@ -104,6 +115,37 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
       const isCurrentlyFrozen = freezeColumns.includes(columnKey);
       onFreezeColumnChange(columnKey, !isCurrentlyFrozen);
     }
+  };
+
+  // Define sortable fields
+  const sortableFields = [
+    { key: "id", label: "ID" },
+    { key: "name", label: "Name" },
+    { key: "email", label: "Email" },
+    { key: "phone_number", label: "Phone Number" },
+    { key: "session_number", label: "Session Number" },
+    { key: "session_date", label: "Session Date" },
+    { key: "registered_at", label: "Registered Date" },
+    { key: "updated_at", label: "Updated Date" },
+    { key: "submitted_at", label: "Submitted Date" },
+    { key: "follow_up_date", label: "Follow Up Date" },
+    { key: "meeting_scheduled_at", label: "Meeting Scheduled Date" },
+    { key: "next_payment_date", label: "Next Payment Date" },
+    { key: "assignment_submitted_at", label: "Assignment Submitted Date" },
+    { key: "amount_paid", label: "Amount Paid" },
+    { key: "amount_pending", label: "Amount Pending" },
+    { key: "score", label: "Score" },
+    { key: "offered_scholarship_percentage", label: "Scholarship %" },
+    { key: "offered_amount", label: "Offered Amount" },
+    { key: "platform_amount", label: "Platform Amount" },
+  ];
+
+  const handleSortAsc = (field: string) => {
+    onSortChange(field, "asc");
+  };
+
+  const handleSortDesc = (field: string) => {
+    onSortChange(field, "desc");
   };
 
   return (
@@ -279,26 +321,86 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
           </div>
         </div>
         <div className="flex flex-row gap-4 justify-end">
-          <button
-            onClick={handleSort}
-            className={`flex items-center gap-2 
-          ${
-            sortAscending
-              ? "bg-blue-600 text-white hover:bg-blue-700"
-              : "bg-gray-600 text-white hover:bg-gray-700"
-          }
-          px-4 py-2 rounded text-sm transition-colors`}
-            title={
-              sortAscending
-                ? "Sort by ID (Ascending)"
-                : "Sort by ID (Descending)"
+          {/* Sort Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowSortDropdown(!showSortDropdown)}
+              className={`flex items-center gap-2 
+            ${
+              sortConfig.field !== "id" || sortConfig.direction === "asc"
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "bg-gray-600 text-white hover:bg-gray-700"
             }
-          >
-            <FiFilter className="w-4 h-4" />
-            <span className="hidden sm:inline">
-              {sortAscending ? "ID ↑" : "ID ↓"}
-            </span>
-          </button>
+            px-4 py-2 rounded text-sm transition-colors`}
+              title={`Sort by ${
+                sortableFields.find((f) => f.key === sortConfig.field)?.label
+              } (${sortConfig.direction.toUpperCase()})`}
+            >
+              <FiFilter className="w-4 h-4" />
+              <span className="hidden sm:inline">
+                Sort:{" "}
+                {sortableFields.find((f) => f.key === sortConfig.field)?.label}{" "}
+                {sortConfig.direction === "asc" ? "↑" : "↓"}
+              </span>
+              <span className="sm:hidden">
+                {sortConfig.direction === "asc" ? "↑" : "↓"}
+              </span>
+            </button>
+
+            {showSortDropdown && (
+              <div
+                className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-64 max-h-80 overflow-y-auto"
+                ref={sortDropdownRef}
+              >
+                <div className="p-3 border-b border-gray-200">
+                  <h3 className="text-sm font-medium text-gray-700">
+                    Sort Options
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select field and direction
+                  </p>
+                </div>
+                <div className="p-2">
+                  {sortableFields.map((field) => (
+                    <div
+                      key={field.key}
+                      className="flex items-center gap-2 p-2"
+                    >
+                      <span className="text-sm text-gray-700 flex-1 min-w-0">
+                        {field.label}
+                      </span>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => handleSortAsc(field.key)}
+                          className={`px-2 py-1 text-xs rounded ${
+                            sortConfig.field === field.key &&
+                            sortConfig.direction === "asc"
+                              ? "bg-blue-600 text-white"
+                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          }`}
+                          title={`Sort ${field.label} Ascending`}
+                        >
+                          ↑
+                        </button>
+                        <button
+                          onClick={() => handleSortDesc(field.key)}
+                          className={`px-2 py-1 text-xs rounded ${
+                            sortConfig.field === field.key &&
+                            sortConfig.direction === "desc"
+                              ? "bg-blue-600 text-white"
+                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          }`}
+                          title={`Sort ${field.label} Descending`}
+                        >
+                          ↓
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
