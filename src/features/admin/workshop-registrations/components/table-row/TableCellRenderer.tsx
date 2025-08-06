@@ -138,6 +138,16 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
     typeof value === "number" && !isNaN(value) ? value.toFixed(digits) : "N/A";
 
   switch (columnKey) {
+    case "id":
+      return (
+        <td
+          key={columnKey}
+          className="p-3 border-r w-[60px] min-w-[60px] max-w-[60px] border-b border-t border-gray-300 text-start font-medium"
+          style={stickyStyle}
+        >
+          {entry.id}
+        </td>
+      );
     case "name":
       return (
         <td
