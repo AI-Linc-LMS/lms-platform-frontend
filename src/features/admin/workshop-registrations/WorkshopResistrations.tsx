@@ -40,10 +40,10 @@ const WorkshopRegistration = () => {
     "name",
     "email",
   ]);
-  const [sort, setSort] = useState(false);
+  const [sortAscending, setSortAscending] = useState(false); // Default to descending
 
   const handleSort = () => {
-    setSort(!sort);
+    setSortAscending(!sortAscending);
   };
 
   // Column visibility state
@@ -307,17 +307,12 @@ const WorkshopRegistration = () => {
 
   const filteredData = useMemo(() => {
     let data = filterWorkshopData(workshopData, search, filters);
-    if (sort) {
-      data = [...data].sort((a, b) => {
-        const aDate = a.updated_at || "";
-        const bDate = b.updated_at || "";
-        if (aDate > bDate) return 1; // ASCENDING
-        if (aDate < bDate) return -1;
-        return 0;
-      });
-    }
+    // Sort by ID - descending by default (newest first), ascending when toggled
+    data = [...data].sort((a, b) =>
+      sortAscending ? a.id - b.id : b.id - a.id
+    );
     return data;
-  }, [search, workshopData, filters, sort]);
+  }, [search, workshopData, filters, sortAscending]);
 
   const handleExport = () => {
     // Combine permanent columns with visible columns for export
@@ -441,7 +436,7 @@ const WorkshopRegistration = () => {
         freezeColumnOptions={freezeColumnOptions}
         onFreezeColumnChange={handleFreezeColumnChange}
         handleSort={handleSort}
-        sort={sort}
+        sortAscending={sortAscending}
       />
 
       <ActiveFiltersDisplay
