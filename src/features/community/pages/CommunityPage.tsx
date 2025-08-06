@@ -463,7 +463,7 @@ const CommunityPage: React.FC = () => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState<{ [key: string]: boolean }>({});
-  const [showComingSoonModal, setShowComingSoonModal] = useState(true);
+  const [showComingSoonModal, setShowComingSoonModal] = useState(false);
 
   const allTags = Array.from(new Set(threads.flatMap(thread => thread.tags)));
 
