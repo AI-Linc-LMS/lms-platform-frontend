@@ -38,7 +38,7 @@ interface SearchAndExportProps {
   freezeColumnOptions?: FreezeColumnOption[];
   onFreezeColumnChange?: (columnKey: string, selected: boolean) => void;
   handleSort: () => void;
-  sort: boolean;
+  sortAscending: boolean;
 }
 
 export const SearchAndExport: React.FC<SearchAndExportProps> = ({
@@ -59,7 +59,7 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
   freezeColumnOptions = [],
   onFreezeColumnChange,
   handleSort,
-  sort,
+  sortAscending,
 }) => {
   const { isSuperAdmin } = useRole();
   const [message, setMessage] = useState<{
@@ -283,13 +283,21 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
             onClick={handleSort}
             className={`flex items-center gap-2 
           ${
-            sort
-              ? "bg-purple-600 text-white hover:bg-purple-700"
+            sortAscending
+              ? "bg-blue-600 text-white hover:bg-blue-700"
               : "bg-gray-600 text-white hover:bg-gray-700"
           }
-          px-4 py-2 rounded text-sm  transition-colors`}
+          px-4 py-2 rounded text-sm transition-colors`}
+            title={
+              sortAscending
+                ? "Sort by ID (Ascending)"
+                : "Sort by ID (Descending)"
+            }
           >
-            <FiFilter className="w-4 h-4" /> Sort
+            <FiFilter className="w-4 h-4" />
+            <span className="hidden sm:inline">
+              {sortAscending ? "ID ↑" : "ID ↓"}
+            </span>
           </button>
         </div>
       </div>

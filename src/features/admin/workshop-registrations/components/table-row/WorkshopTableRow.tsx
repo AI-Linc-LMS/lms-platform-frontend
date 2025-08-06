@@ -281,6 +281,8 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
 
   // Define column order
   const columnOrder = [
+    // ID column (fixed)
+    "id",
     // Personal details
     "name",
     "email",
@@ -338,7 +340,8 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     for (let i = 0; i < frozenIndex; i++) {
       const prevColumn = freezeColumns[i];
       // Fixed column widths to match header and eliminate gaps
-      if (prevColumn === "name") leftPosition += 118;
+      if (prevColumn === "id") leftPosition += 60;
+      else if (prevColumn === "name") leftPosition += 118;
       else if (prevColumn === "email") leftPosition += 225;
       else if (prevColumn === "phone_number") leftPosition += 140;
     }

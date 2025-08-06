@@ -11,8 +11,12 @@ const FIRST_CALL_STATUS_OPTIONS = [
   { value: "Connected scheduled interview", color: "bg-green-500" },
   { value: "Connected denied interview", color: "bg-red-500" },
   { value: "Couldn't Connect", color: "bg-yellow-400" },
-  { value: "Call back requested", color: "bg-green-500" },
-  { value: "Career Counselling", color: "bg-blue-500" },
+  { value: "Call back requested", color: "bg-green-200" },
+  { value: "Career Counselling", color: "bg-blue-200" },
+  { value: "Connected", color: "bg-green-200" },
+  { value: "Duplicate", color: "bg-purple-400" },
+  { value: "Converted", color: "bg-green-500" },
+  { value: "Rescheduled", color: "bg-yellow-400" },
   { value: "N/A", color: "bg-gray-400" },
 ];
 const SECOND_CALL_STATUS_OPTIONS = [
@@ -250,6 +254,8 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
   freezeColumns = [],
 }) => {
   const filterConfigs = [
+    // ID column
+    { column: "id", label: "ID" },
     // Personal details
     { column: "name", label: "Name" },
     { column: "email", label: "Email" },
@@ -401,7 +407,8 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
     for (let i = 0; i < frozenIndex; i++) {
       const prevColumn = freezeColumns[i];
       // Fixed column widths to eliminate gaps
-      if (prevColumn === "name") leftPosition += 118;
+      if (prevColumn === "id") leftPosition += 60;
+      else if (prevColumn === "name") leftPosition += 118;
       else if (prevColumn === "email") leftPosition += 225;
     }
     return {
@@ -451,6 +458,8 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
                   (config.column === "first_call_status" ||
                     config.column === "second_call_status") &&
                     "w-[150px] min-w-[150px]",
+                  config.column === "id" &&
+                    "w-[60px] min-w-[60px] max-w-[60px]",
                   config.column === "name" && "w-[120px] min-w-[120px]",
                   config.column === "email" && "w-[200px] min-w-[200px]",
                   config.column === "phone_number" && "w-[130px] min-w-[130px]",
