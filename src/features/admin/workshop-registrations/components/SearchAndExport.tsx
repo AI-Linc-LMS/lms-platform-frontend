@@ -37,11 +37,13 @@ interface SearchAndExportProps {
   freezeColumns?: string[];
   freezeColumnOptions?: FreezeColumnOption[];
   onFreezeColumnChange?: (columnKey: string, selected: boolean) => void;
-  sortConfig: {
+  sortConfigs: Array<{
     field: string;
     direction: "asc" | "desc";
-  };
+  }>;
   onSortChange: (field: string, direction?: "asc" | "desc") => void;
+  onClearSort: (field: string) => void;
+  onClearAllSorts: () => void;
 }
 
 export const SearchAndExport: React.FC<SearchAndExportProps> = ({
@@ -61,8 +63,10 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
   freezeColumns = [],
   freezeColumnOptions = [],
   onFreezeColumnChange,
-  sortConfig,
+  sortConfigs,
   onSortChange,
+  onClearSort,
+  onClearAllSorts,
 }) => {
   const { isSuperAdmin } = useRole();
   const [message, setMessage] = useState<{
@@ -117,7 +121,7 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
     }
   };
 
-  // Define sortable fields
+  // Define sortable fields - PRIORITY ORDER (same as in WorkshopRegistrations)
   const sortableFields = [
     { key: "id", label: "ID" },
     { key: "name", label: "Name" },
@@ -147,6 +151,22 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
   const handleSortDesc = (field: string) => {
     onSortChange(field, "desc");
   };
+
+  // Helper function to get sort state for a field
+  const getSortState = (field: string) => {
+    return sortConfigs.find((config) => config.field === field);
+  };
+
+  // Helper function to check if any sorts are active (excluding ID default)
+  const hasActiveSorts = () => {
+    return (
+      sortConfigs.length > 1 ||
+      (sortConfigs.length === 1 && sortConfigs[0].field !== "id")
+    );
+  };
+
+  // Get primary sort (first in array) for button display
+  const primarySort = sortConfigs[0] || { field: "id", direction: "desc" };
 
   return (
     <div className="space-y-4 flex-grow">
@@ -327,23 +347,25 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
               onClick={() => setShowSortDropdown(!showSortDropdown)}
               className={`flex items-center gap-2 
             ${
-              sortConfig.field !== "id" || sortConfig.direction === "asc"
+              hasActiveSorts()
                 ? "bg-blue-600 text-white hover:bg-blue-700"
                 : "bg-gray-600 text-white hover:bg-gray-700"
             }
             px-4 py-2 rounded text-sm transition-colors`}
-              title={`Sort by ${
-                sortableFields.find((f) => f.key === sortConfig.field)?.label
-              } (${sortConfig.direction.toUpperCase()})`}
+              title={`Multi-Sort Active: ${sortConfigs.length} field${
+                sortConfigs.length === 1 ? "" : "s"
+              }`}
             >
               <FiFilter className="w-4 h-4" />
               <span className="hidden sm:inline">
-                Sort:{" "}
-                {sortableFields.find((f) => f.key === sortConfig.field)?.label}{" "}
-                {sortConfig.direction === "asc" ? "↑" : "↓"}
+                Sort ({sortConfigs.length}):{" "}
+                {sortableFields.find((f) => f.key === primarySort.field)?.label}{" "}
+                {primarySort.direction === "asc" ? "↑" : "↓"}
+                {sortConfigs.length > 1 && " +" + (sortConfigs.length - 1)}
               </span>
               <span className="sm:hidden">
-                {sortConfig.direction === "asc" ? "↑" : "↓"}
+                {primarySort.direction === "asc" ? "↑" : "↓"}{" "}
+                {sortConfigs.length > 1 && "+" + (sortConfigs.length - 1)}
               </span>
             </button>
 
@@ -353,50 +375,110 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
                 ref={sortDropdownRef}
               >
                 <div className="p-3 border-b border-gray-200">
-                  <h3 className="text-sm font-medium text-gray-700">
-                    Sort Options
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Select field and direction
-                  </p>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-700">
+                        Multi-Field Sort
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Sort by multiple fields with priority
+                      </p>
+                    </div>
+                    {hasActiveSorts() && (
+                      <button
+                        onClick={onClearAllSorts}
+                        className="text-xs text-red-600 hover:text-red-800 underline"
+                        title="Clear all sorts"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="p-2">
-                  {sortableFields.map((field) => (
-                    <div
-                      key={field.key}
-                      className="flex items-center gap-2 p-2"
-                    >
-                      <span className="text-sm text-gray-700 flex-1 min-w-0">
-                        {field.label}
-                      </span>
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => handleSortAsc(field.key)}
-                          className={`px-2 py-1 text-xs rounded ${
-                            sortConfig.field === field.key &&
-                            sortConfig.direction === "asc"
-                              ? "bg-blue-600 text-white"
-                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                          }`}
-                          title={`Sort ${field.label} Ascending`}
-                        >
-                          ↑
-                        </button>
-                        <button
-                          onClick={() => handleSortDesc(field.key)}
-                          className={`px-2 py-1 text-xs rounded ${
-                            sortConfig.field === field.key &&
-                            sortConfig.direction === "desc"
-                              ? "bg-blue-600 text-white"
-                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                          }`}
-                          title={`Sort ${field.label} Descending`}
-                        >
-                          ↓
-                        </button>
+                  {/* Active Sorts Display */}
+                  {sortConfigs.length > 0 && (
+                    <div className="mb-3 p-2 bg-blue-50 rounded">
+                      <div className="text-xs font-medium text-blue-700 mb-1">
+                        Active Sorts (by priority):
                       </div>
+                      {sortConfigs.map((config, index) => {
+                        const fieldLabel =
+                          sortableFields.find((f) => f.key === config.field)
+                            ?.label || config.field;
+                        return (
+                          <div
+                            key={config.field}
+                            className="flex items-center justify-between text-xs text-blue-600 py-1"
+                          >
+                            <span>
+                              {index + 1}. {fieldLabel}{" "}
+                              {config.direction === "asc" ? "↑" : "↓"}
+                            </span>
+                            <button
+                              onClick={() => onClearSort(config.field)}
+                              className="text-red-500 hover:text-red-700 ml-2"
+                              title={`Remove ${fieldLabel} sort`}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
+                  )}
+
+                  {/* Available Fields */}
+                  {sortableFields.map((field) => {
+                    const currentSort = getSortState(field.key);
+                    const isActive = !!currentSort;
+
+                    return (
+                      <div
+                        key={field.key}
+                        className={`flex items-center gap-2 p-2 rounded ${
+                          isActive ? "bg-yellow-50" : ""
+                        }`}
+                      >
+                        <span className="text-sm text-gray-700 flex-1 min-w-0">
+                          {field.label}
+                          {isActive && (
+                            <span className="text-xs text-yellow-600 ml-1">
+                              (Priority:{" "}
+                              {sortConfigs.findIndex(
+                                (c) => c.field === field.key
+                              ) + 1}
+                              )
+                            </span>
+                          )}
+                        </span>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => handleSortAsc(field.key)}
+                            className={`px-2 py-1 text-xs rounded ${
+                              currentSort?.direction === "asc"
+                                ? "bg-blue-600 text-white"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            }`}
+                            title={`Sort ${field.label} Ascending`}
+                          >
+                            ↑
+                          </button>
+                          <button
+                            onClick={() => handleSortDesc(field.key)}
+                            className={`px-2 py-1 text-xs rounded ${
+                              currentSort?.direction === "desc"
+                                ? "bg-blue-600 text-white"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            }`}
+                            title={`Sort ${field.label} Descending`}
+                          >
+                            ↓
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
