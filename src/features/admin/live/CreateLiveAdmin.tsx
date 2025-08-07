@@ -2,12 +2,16 @@
 import React, { useState } from "react";
 import {
   createLiveSession,
+  updateLiveSession,
   LiveSession,
 } from "../../../services/live/liveServicesApis";
+import { useMutation } from "@tanstack/react-query";
 
 interface CreateLiveAdminProps {
   onClose: () => void;
   refetch: () => void;
+  editSession?: LiveSession | null; // Add edit session prop
+  isEditMode?: boolean; // Add edit mode flag
 }
 
 enum Trainers {
@@ -19,7 +23,10 @@ enum Trainers {
 const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
   onClose,
   refetch,
+  editSession = null,
+  isEditMode = false,
 }) => {
+  const clientId = import.meta.env.VITE_CLIENT_ID;
   const initialForm: Omit<LiveSession, "id"> = {
     topic_name: "",
     description: "",
@@ -30,13 +37,44 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
     recording_link: "",
   };
 
-  const [form, setForm] = useState(initialForm);
-
-  const createMutation = async (sessionData: Omit<LiveSession, "id">) => {
-    const clientId = import.meta.env.VITE_CLIENT_ID;
-    const response = await createLiveSession(clientId, sessionData);
-    return response;
+  // Initialize form with edit data if in edit mode
+  const getInitialFormData = () => {
+    if (isEditMode && editSession) {
+      return {
+        topic_name: editSession.topic_name || "",
+        description: editSession.description || "",
+        instructor: editSession.instructor || "",
+        class_datetime: editSession.class_datetime || "",
+        duration_minutes: editSession.duration_minutes || 60,
+        join_link: editSession.join_link || "",
+        recording_link: editSession.recording_link || "",
+      };
+    }
+    return initialForm;
   };
+
+  const [form, setForm] = useState(getInitialFormData());
+
+  // useMutation for create
+  const { mutateAsync: createLiveSessionMutate } = useMutation({
+    mutationFn: (sessionData: Omit<LiveSession, "id">) => {
+      return createLiveSession(clientId, sessionData);
+    },
+  });
+
+  // useMutation for update
+  const { mutateAsync: updateLiveSessionMutate } = useMutation({
+    mutationFn: (sessionData: LiveSession) => {
+      if (!sessionData.id) {
+        throw new Error("Session ID is required for update");
+      }
+      return updateLiveSession(
+        clientId,
+        sessionData.id.toString(),
+        sessionData
+      );
+    },
+  });
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -53,12 +91,26 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createMutation(form);
+      if (isEditMode && editSession) {
+        // Update existing session
+        const updatedSession: LiveSession = {
+          ...form,
+          id: editSession.id,
+        };
+        await updateLiveSessionMutate(updatedSession);
+      } else {
+        // Create new session
+        await createLiveSessionMutate(form);
+      }
+
       setForm(initialForm);
       onClose();
       refetch();
     } catch (error) {
-      console.error("Error creating live session:", error);
+      console.error(
+        `Error ${isEditMode ? "updating" : "creating"} live session:`,
+        error
+      );
       onClose();
     }
   };
@@ -66,7 +118,7 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
   return (
     <div className="bg-white p-6 rounded-xl w-full max-w-2xl">
       <h2 className="text-xl font-bold text-[#255C79] mb-4">
-        Create Upcoming Session
+        {isEditMode ? "Edit Live Session" : "Create Upcoming Session"}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Topic Name */}
@@ -212,7 +264,7 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
             type="submit"
             className="bg-[#255C79] hover:bg-[#1E4A63] text-white font-medium py-2 px-4 rounded"
           >
-            Create
+            {isEditMode ? "Update" : "Create"}
           </button>
         </div>
       </form>
