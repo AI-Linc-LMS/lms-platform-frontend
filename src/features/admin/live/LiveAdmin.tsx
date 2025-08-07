@@ -6,8 +6,8 @@ import {
 } from "../../../services/live/liveServicesApis";
 import CreateLiveAdmin from "./CreateLiveAdmin";
 import { useState } from "react";
-import PastRecordings from "../../live/components/PastRecordings";
 import Modal from "../../../commonComponents/modals/GenricModal";
+import RecordingCard from "./recordingCard";
 
 const LiveAdmin = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -46,7 +46,7 @@ const LiveAdmin = () => {
       ) : error ? (
         <p>Error loading sessions</p>
       ) : (
-        <PastRecordings
+        <RecordingCard
           pastLiveSessions={(data || []).sort(
             (a: LiveSession, b: LiveSession) =>
               new Date(b.class_datetime).getTime() -
