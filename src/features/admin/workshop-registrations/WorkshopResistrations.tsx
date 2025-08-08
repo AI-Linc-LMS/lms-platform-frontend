@@ -40,10 +40,56 @@ const WorkshopRegistration = () => {
     "name",
     "email",
   ]);
-  const [sortAscending, setSortAscending] = useState(false); // Default to descending
 
-  const handleSort = () => {
-    setSortAscending(!sortAscending);
+  // Multi-field sort state - array of sort configurations with priority order
+  const [sortConfigs, setSortConfigs] = useState<
+    Array<{
+      field: string;
+      direction: "asc" | "desc";
+    }>
+  >([
+    { field: "id", direction: "desc" }, // Default to descending ID
+  ]);
+
+  const handleSort = (field: string, direction?: "asc" | "desc") => {
+    setSortConfigs((prev) => {
+      const existingIndex = prev.findIndex((config) => config.field === field);
+
+      if (direction) {
+        // Direct direction specified
+        if (existingIndex >= 0) {
+          // Update existing field
+          const newConfigs = [...prev];
+          newConfigs[existingIndex] = { field, direction };
+          return newConfigs;
+        } else {
+          // Add new field to sort configs
+          return [...prev, { field, direction }];
+        }
+      } else {
+        // Toggle logic for backward compatibility
+        if (existingIndex >= 0) {
+          const newConfigs = [...prev];
+          newConfigs[existingIndex] = {
+            field,
+            direction: prev[existingIndex].direction === "asc" ? "desc" : "asc",
+          };
+          return newConfigs;
+        } else {
+          return [...prev, { field, direction: "asc" }];
+        }
+      }
+    });
+  };
+
+  // Clear a specific sort field
+  const clearSort = (field: string) => {
+    setSortConfigs((prev) => prev.filter((config) => config.field !== field));
+  };
+
+  // Clear all sorts except ID (keep ID as default)
+  const clearAllSorts = () => {
+    setSortConfigs([{ field: "id", direction: "desc" }]);
   };
 
   // Column visibility state
@@ -307,12 +353,113 @@ const WorkshopRegistration = () => {
 
   const filteredData = useMemo(() => {
     let data = filterWorkshopData(workshopData, search, filters);
-    // Sort by ID - descending by default (newest first), ascending when toggled
-    data = [...data].sort((a, b) =>
-      sortAscending ? a.id - b.id : b.id - a.id
-    );
+
+    // Define sortable fields priority order (same as in SearchAndExport)
+    const sortableFieldsPriority = [
+      "id",
+      "name",
+      "email",
+      "phone_number",
+      "session_number",
+      "session_date",
+      "registered_at",
+      "updated_at",
+      "submitted_at",
+      "follow_up_date",
+      "meeting_scheduled_at",
+      "next_payment_date",
+      "assignment_submitted_at",
+      "amount_paid",
+      "amount_pending",
+      "score",
+      "offered_scholarship_percentage",
+      "offered_amount",
+      "platform_amount",
+      "workshop_name",
+      "course_name",
+      "first_call_status",
+      "second_call_status",
+      "sales_done_by",
+    ];
+
+    // Sort sortConfigs by priority order defined in sortableFieldsPriority
+    const prioritizedSortConfigs = sortConfigs.slice().sort((a, b) => {
+      const aIndex = sortableFieldsPriority.indexOf(a.field);
+      const bIndex = sortableFieldsPriority.indexOf(b.field);
+      const aPriority = aIndex === -1 ? 999 : aIndex;
+      const bPriority = bIndex === -1 ? 999 : bIndex;
+      return aPriority - bPriority;
+    });
+
+    // Multi-field sorting with priority
+    data = [...data].sort((a, b) => {
+      for (const { field, direction } of prioritizedSortConfigs) {
+        const aValue = a[field as keyof WorkshopRegistrationData];
+        const bValue = b[field as keyof WorkshopRegistrationData];
+
+        let diff = 0;
+
+        // Handle different data types
+        if (field === "id") {
+          // Numeric sorting for ID
+          diff = (aValue as number) - (bValue as number);
+        } else {
+          // Date field sorting
+          const dateFields = [
+            "registered_at",
+            "updated_at",
+            "submitted_at",
+            "follow_up_date",
+            "meeting_scheduled_at",
+            "next_payment_date",
+            "assignment_submitted_at",
+            "session_date",
+          ];
+
+          if (dateFields.includes(field)) {
+            const aDate = aValue ? new Date(aValue as string).getTime() : 0;
+            const bDate = bValue ? new Date(bValue as string).getTime() : 0;
+            diff = aDate - bDate;
+          } else {
+            // Numeric field sorting
+            const numericFields = [
+              "session_number",
+              "amount_paid",
+              "amount_pending",
+              "score",
+              "offered_scholarship_percentage",
+              "offered_amount",
+              "platform_amount",
+            ];
+
+            if (numericFields.includes(field)) {
+              const aNum = parseFloat(aValue as string) || 0;
+              const bNum = parseFloat(bValue as string) || 0;
+              diff = aNum - bNum;
+            } else {
+              // String field sorting (alphabetical)
+              const aStr = (aValue as string)?.toLowerCase() || "";
+              const bStr = (bValue as string)?.toLowerCase() || "";
+              diff = aStr.localeCompare(bStr);
+            }
+          }
+        }
+
+        // Apply direction and return if there's a difference
+        const result = direction === "asc" ? diff : -diff;
+        if (result !== 0) {
+          return result;
+        }
+
+        // If values are equal, continue to next sort field
+      }
+
+      // If all sort fields are equal, maintain original order
+      return 0;
+    });
+
     return data;
-  }, [search, workshopData, filters, sortAscending]);
+  }, [search, workshopData, filters, sortConfigs]);
 
   const handleExport = () => {
     // Combine permanent columns with visible columns for export
@@ -435,8 +582,10 @@ const WorkshopRegistration = () => {
         freezeColumns={freezeColumns}
         freezeColumnOptions={freezeColumnOptions}
         onFreezeColumnChange={handleFreezeColumnChange}
-        handleSort={handleSort}
-        sortAscending={sortAscending}
+        sortConfigs={sortConfigs}
+        onSortChange={handleSort}
+        onClearSort={clearSort}
+        onClearAllSorts={clearAllSorts}
       />
 
       <ActiveFiltersDisplay
