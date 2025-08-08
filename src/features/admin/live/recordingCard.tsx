@@ -1,12 +1,8 @@
 import React, { useState } from "react";
-import {
-  LiveSession,
-  updateLiveSession,
-} from "../../../services/live/liveServicesApis";
+import { LiveSession } from "../../../services/live/liveServicesApis";
 import { UserState } from "../../learn/components/assessment/types/assessmentTypes";
 import { useSelector } from "react-redux";
-import { useMutation } from "@tanstack/react-query";
-import AddRecordingLinkModal from "./AddRecordingModal";
+import CreateLiveAdmin from "./CreateLiveAdmin";
 
 interface RecordingCardProps {
   pastLiveSessions: LiveSession[];
@@ -23,7 +19,7 @@ const RecordingCard: React.FC<RecordingCardProps> = ({
   const [filterDate, setFilterDate] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedRecording, setSelectedRecording] =
     useState<LiveSession | null>(null);
 
@@ -50,14 +46,6 @@ const RecordingCard: React.FC<RecordingCardProps> = ({
     });
   };
 
-  const updateMutation = useMutation({
-    mutationFn: async (sessionData: LiveSession) => {
-      const clientId = import.meta.env.VITE_CLIENT_ID;
-      const sessionId = sessionData.id || "";
-      return await updateLiveSession(clientId, sessionId, sessionData);
-    },
-  });
-
   const handleWatchRecording = (zoomRecordingLink: string) => {
     if (zoomRecordingLink) {
       window.open(zoomRecordingLink, "_blank");
@@ -66,19 +54,12 @@ const RecordingCard: React.FC<RecordingCardProps> = ({
   console.log(selectedRecording?.recording_link);
   const handleAddRecordingLink = (recording: LiveSession) => {
     setSelectedRecording(recording);
-    setIsModalOpen(true);
+    setIsEditModalOpen(true);
   };
 
-  const handleSaveRecordingLink = (link: string) => {
-    if (selectedRecording) {
-      const updatedRecording: LiveSession = {
-        ...selectedRecording,
-        recording_link: link,
-      };
-      updateMutation.mutate(updatedRecording);
-      refetch();
-    }
-    setIsModalOpen(false);
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedRecording(null);
   };
 
   return (
@@ -176,20 +157,24 @@ const RecordingCard: React.FC<RecordingCardProps> = ({
                         onClick={() => handleAddRecordingLink(recording)}
                         className="bg-[#255C79] hover:bg-[#1E4A63] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-95"
                       >
-                        {!recording?.recording_link ? "Add Link" : "Edit Link"}
+                        {!recording?.recording_link
+                          ? "Add Link"
+                          : "Edit Session"}
                       </button>
                     </div>
                   )}
-                  {recording?.recording_link && <div className="flex justify-end">
-                    <button
-                      onClick={() =>
-                        handleWatchRecording(recording?.recording_link || "")
-                      }
-                      className="bg-[#255C79] hover:bg-[#1E4A63] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-95"
-                    >
-                      Watch Recording
-                    </button>
-                  </div>}
+                  {recording?.recording_link && (
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() =>
+                          handleWatchRecording(recording?.recording_link || "")
+                        }
+                        className="bg-[#255C79] hover:bg-[#1E4A63] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-95"
+                      >
+                        Watch Recording
+                      </button>
+                    </div>
+                  )}
                   {!recording?.recording_link && (
                     <div className="flex justify-end">
                       <button
@@ -209,13 +194,17 @@ const RecordingCard: React.FC<RecordingCardProps> = ({
         </div>
       )}
 
-      {/* Modal */}
-      <AddRecordingLinkModal
-        isOpen={isModalOpen}
-        recordingLink={selectedRecording?.recording_link || null}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveRecordingLink}
-      />
+      {/* Edit Modal */}
+      {isEditModalOpen && selectedRecording && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50">
+          <CreateLiveAdmin
+            onClose={handleCloseEditModal}
+            refetch={refetch}
+            editSession={selectedRecording}
+            isEditMode={true}
+          />
+        </div>
+      )}
     </div>
   );
 };
