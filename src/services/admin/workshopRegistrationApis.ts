@@ -143,9 +143,7 @@ export const getEmailJobs = async (clientId: string) => {
 
 export const restartFailedJob = async (clientId: string, jobId: string) => {
   try {
-    const response = await axiosInstance.post(`/admin-dashboard/api/clients/${clientId}/email-jobs/${jobId}/`, {
-      "job_id": jobId
-    });
+    const response = await axiosInstance.post(`/admin-dashboard/api/clients/${clientId}/email-resend-jobs/${jobId}/`);
     return response.data;
   } catch (error: unknown) {
     throw new Error(
