@@ -271,32 +271,6 @@ const WebinarManagement: React.FC = () => {
     }
   };
 
-  const handleDeleteWorkshop = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this workshop?')) return;
-
-    try {
-      setLoading(true);
-      
-      if (id.toString().startsWith('workshop_')) {
-        setWorkshops(prev => prev.filter(workshop => workshop.id !== id));
-        alert('Workshop removed from list.');
-      } else {
-        await axiosInstance.delete(`${API_URL}${id}/`);
-        await fetchWorkshops();
-        alert('Workshop deleted successfully!');
-      }
-    } catch (error: unknown) {
-      console.error('Error deleting workshop:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('Error response:', error.response?.data);
-        alert(`Error deleting workshop: ${error.response?.data?.message || error.message}`);
-      } else {
-        alert('An unexpected error occurred while deleting the workshop.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleEdit = (workshop: WorkshopVariable) => {
     setEditingWorkshop(workshop);
@@ -307,7 +281,7 @@ const WebinarManagement: React.FC = () => {
       WorkshopTitle: workshop.WorkshopTitle || '',
       UpcomingWorkshopDate: formatDateForInput(workshop.UpcomingWorkshopDate || ''),
       WorkshopTime: formatTimeForInput(workshop.WorkshopTime || ''),
-      SessionNumber: extractSessionNumber(workshop.SessionNumber || 1),
+      SessionNumber: extractSessionNumber(workshop.SessionNumber || ''),
       WhatsAppGroupLink: workshop.WhatsAppGroupLink || '',
       ZoomJoiningLink: workshop.ZoomJoiningLink || ''
     });
@@ -320,7 +294,7 @@ const WebinarManagement: React.FC = () => {
       WorkshopTitle: '',
       UpcomingWorkshopDate: '',
       WorkshopTime: '',
-      SessionNumber: 1,
+      SessionNumber: '',
       WhatsAppGroupLink: '',
       ZoomJoiningLink: ''
     });
@@ -357,30 +331,31 @@ const WebinarManagement: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4 lg:p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Workshop Management</h1>
-          <p className="text-gray-600 mt-2">Manage your workshop schedules and information</p>
+        <div className="mb-6 lg:mb-8">
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Workshop Management</h1>
+          <p className="text-gray-600 mt-2 text-sm lg:text-base">Manage your workshop schedules and information</p>
         </div>
 
         <div className="mb-6">
-          <button
+          {/* <button
             onClick={() => setShowForm(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+            disabled={true}
+            className="bg-gray-400 cursor-not-allowed text-white px-6 py-3 rounded-lg font-medium"
           >
             + Create New Workshop
-          </button>
+          </button> */}
         </div>
 
         {showForm && (
-          <div className="mb-8 bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">
+          <div className="mb-6 lg:mb-8 bg-white rounded-lg shadow-md p-4 lg:p-6">
+            <h2 className="text-lg lg:text-xl font-semibold mb-4">
               {editingWorkshop ? 'Edit Workshop' : 'Create New Workshop'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="lg:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Workshop Title *
                   </label>
@@ -388,31 +363,31 @@ const WebinarManagement: React.FC = () => {
                     type="text"
                     value={formData.WorkshopTitle}
                     onChange={(e) => setFormData({...formData, WorkshopTitle: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm lg:text-base"
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Upcoming Workshop Date * (DD-MM-YYYY)
+                    Workshop Date *
                   </label>
                   <input
                     type="date"
                     value={formData.UpcomingWorkshopDate}
                     onChange={(e) => setFormData({...formData, UpcomingWorkshopDate: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm lg:text-base"
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Workshop Time * (HH:MM:SS)
+                    Workshop Time *
                   </label>
                   <input
                     type="time"
                     value={formData.WorkshopTime}
                     onChange={(e) => setFormData({...formData, WorkshopTime: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm lg:text-base"
                     required
                   />
                 </div>
@@ -424,8 +399,8 @@ const WebinarManagement: React.FC = () => {
                     type="number"
                     min="1"
                     value={formData.SessionNumber || ''}
-                    onChange={(e) => setFormData({...formData, SessionNumber: parseInt(e.target.value) || 1})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(e) => setFormData({...formData, SessionNumber: parseInt(e.target.value) || ''})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm lg:text-base"
                     required
                   />
                 </div>
@@ -437,7 +412,7 @@ const WebinarManagement: React.FC = () => {
                     type="url"
                     value={formData.WhatsAppGroupLink}
                     onChange={(e) => setFormData({...formData, WhatsAppGroupLink: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm lg:text-base"
                     placeholder="https://chat.whatsapp.com/..."
                   />
                 </div>
@@ -449,16 +424,16 @@ const WebinarManagement: React.FC = () => {
                     type="url"
                     value={formData.ZoomJoiningLink}
                     onChange={(e) => setFormData({...formData, ZoomJoiningLink: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm lg:text-base"
                     placeholder="https://zoom.us/j/..."
                   />
                 </div>
               </div>
-              <div className="flex space-x-3">
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
                 <button
                   type="submit"
                   disabled={loading}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm lg:text-base"
                 >
                   {loading ? 'Processing...' : (editingWorkshop ? 'Update Workshop' : 'Create Workshop')}
                 </button>
@@ -466,7 +441,7 @@ const WebinarManagement: React.FC = () => {
                   type="button"
                   onClick={resetForm}
                   disabled={loading}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-2 rounded-md font-medium transition-colors disabled:opacity-50"
+                  className="w-full sm:w-auto bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-2 rounded-md font-medium transition-colors disabled:opacity-50 text-sm lg:text-base"
                 >
                   Cancel
                 </button>
@@ -476,7 +451,7 @@ const WebinarManagement: React.FC = () => {
         )}
 
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
+          <div className="px-4 lg:px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">Workshop List</h2>
           </div>
           
@@ -490,65 +465,131 @@ const WebinarManagement: React.FC = () => {
               No workshops found. Create your first workshop to get started.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Session</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Links</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {workshops.map((workshop, index) => (
-                    <tr key={workshop.id || index}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{workshop.WorkshopTitle}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{workshop.UpcomingWorkshopDate}</div>
-                        <div className="text-sm text-gray-500">{workshop.WorkshopTime}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Session</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Links</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {workshops.map((workshop, index) => (
+                      <tr key={workshop.id || index}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{workshop.WorkshopTitle}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{workshop.UpcomingWorkshopDate}</div>
+                          <div className="text-sm text-gray-500">{workshop.WorkshopTime}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {typeof workshop.SessionNumber === 'string' ? workshop.SessionNumber : `Session ${workshop.SessionNumber}`}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <div className="space-y-1">
+                            {workshop.WhatsAppGroupLink && (
+                              <a href={workshop.WhatsAppGroupLink} target="_blank" rel="noopener noreferrer" 
+                                 className="text-green-600 hover:text-green-800 block">WhatsApp</a>
+                            )}
+                            {workshop.ZoomJoiningLink && (
+                              <a href={workshop.ZoomJoiningLink} target="_blank" rel="noopener noreferrer"
+                                 className="text-blue-600 hover:text-blue-800 block">Zoom</a>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <button
+                            onClick={() => handleEdit(workshop)}
+                            disabled={loading}
+                            className="text-indigo-600 hover:text-indigo-900 disabled:opacity-50"
+                          >
+                            Edit
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="lg:hidden">
+                {workshops.map((workshop, index) => (
+                  <div key={workshop.id || index} className="border-b border-gray-200 p-4">
+                    <div className="space-y-3">
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-900 mb-1">Workshop Title</h3>
+                        <p className="text-sm text-gray-700">{workshop.WorkshopTitle}</p>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Date</h4>
+                          <p className="text-sm text-gray-900">{workshop.UpcomingWorkshopDate}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Time</h4>
+                          <p className="text-sm text-gray-900">{workshop.WorkshopTime}</p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Session</h4>
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           {typeof workshop.SessionNumber === 'string' ? workshop.SessionNumber : `Session ${workshop.SessionNumber}`}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="space-y-1">
-                          {workshop.WhatsAppGroupLink && (
-                            <a href={workshop.WhatsAppGroupLink} target="_blank" rel="noopener noreferrer" 
-                               className="text-green-600 hover:text-green-800 block">WhatsApp</a>
-                          )}
-                          {workshop.ZoomJoiningLink && (
-                            <a href={workshop.ZoomJoiningLink} target="_blank" rel="noopener noreferrer"
-                               className="text-blue-600 hover:text-blue-800 block">Zoom</a>
-                          )}
+                      </div>
+
+                      {(workshop.WhatsAppGroupLink || workshop.ZoomJoiningLink) && (
+                        <div>
+                          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Links</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {workshop.WhatsAppGroupLink && (
+                              <a 
+                                href={workshop.WhatsAppGroupLink} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200"
+                              >
+                                WhatsApp
+                              </a>
+                            )}
+                            {workshop.ZoomJoiningLink && (
+                              <a 
+                                href={workshop.ZoomJoiningLink} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200"
+                              >
+                                Zoom
+                              </a>
+                            )}
+                          </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      )}
+
+                      <div className="pt-2">
                         <button
                           onClick={() => handleEdit(workshop)}
                           disabled={loading}
-                          className="text-indigo-600 hover:text-indigo-900 mr-3 disabled:opacity-50"
+                          className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md font-medium text-sm transition-colors disabled:opacity-50"
                         >
-                          Edit
+                          Edit Workshop
                         </button>
-                        <button
-                          onClick={() => handleDeleteWorkshop(workshop.id || `workshop_${index}`)}
-                          disabled={loading}
-                          className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
