@@ -31,6 +31,7 @@ import PaymentLinkGeneratorPage from "./features/admin/pages/PaymentLinkGenerato
 import EmailSelfServe from "./features/admin/emailSend/EmailSelfServe";
 import LiveAdmin from "./features/admin/live/LiveAdmin";
 import CommunityPage from "./features/community/pages/CommunityPage";
+import WebinarManagement from "./pages/admin/WebinarManagement";
 
 export interface RouteConfig {
   path: string;
@@ -185,7 +186,7 @@ const routes: RouteConfig[] = [
     isPrivate: true,
     requiredRole: "admin_or_instructor",
   },
-
+  
   {
     path: "/continue-learning",
     component: ContinueLearningAll,
@@ -232,9 +233,15 @@ const routes: RouteConfig[] = [
     isPrivate: true,
   },
   {
-    path:"/community",
+    path: "/community",
     component: CommunityPage,
     isPrivate: true,
+  },
+  {
+    path:"/admin/webinar-management",
+    component: WebinarManagement, 
+    isPrivate: true,
+    
   }
 ];
 
