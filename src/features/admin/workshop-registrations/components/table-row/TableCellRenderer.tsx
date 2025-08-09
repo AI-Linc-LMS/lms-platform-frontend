@@ -22,7 +22,7 @@ interface TableCellRendererProps {
   renderStatusDropdown: (
     value: string,
     options: { value: string; color: string }[],
-    field: "first_call_status" | "second_call_status"
+    field: "first_call_status" | "second_call_status" | "course_name"
   ) => React.ReactNode;
   getStatusBadgeClass: (
     status: string,
@@ -30,12 +30,22 @@ interface TableCellRendererProps {
   ) => string;
   getAmountColor: (amount: string | number | null | undefined) => string;
   formatDate: (dateString: string) => string;
-  openOfferedAmountModal: () => void;
-  handleEditFollowUpDate: (entry: WorkshopRegistrationData) => void;
+  openEditModal: () => void;
+  openOfferedAmountModal: (field: "offered_amount" | "sales_done_by") => void;
+  fieldForDateEdit:
+    | "follow_up_date"
+    | "meeting_scheduled_at"
+    | "next_payment_date";
+  handleEditFollowUpDate: (
+    entry: WorkshopRegistrationData,
+    field: "follow_up_date" | "meeting_scheduled_at" | "next_payment_date"
+  ) => void;
   FIRST_CALL_STATUS_OPTIONS: { value: string; color: string }[];
   SECOND_CALL_STATUS_OPTIONS: { value: string; color: string }[];
+  COURSE_NAME_OPTIONS: { value: string; color: string }[];
   visibleColumns?: string[];
   permanentColumns?: string[];
+  stickyStyle?: React.CSSProperties;
 }
 
 export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
@@ -56,11 +66,14 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
   getAmountColor,
   formatDate,
   openOfferedAmountModal,
+  openEditModal,
   handleEditFollowUpDate,
   FIRST_CALL_STATUS_OPTIONS,
   SECOND_CALL_STATUS_OPTIONS,
+  COURSE_NAME_OPTIONS,
   visibleColumns = [],
   permanentColumns = [],
+  stickyStyle,
 }) => {
   if (
     !permanentColumns.includes(columnKey) &&
@@ -125,47 +138,95 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
     typeof value === "number" && !isNaN(value) ? value.toFixed(digits) : "N/A";
 
   switch (columnKey) {
+    case "id":
+      return (
+        <td
+          key={columnKey}
+          className="p-3 border-r w-[60px] min-w-[60px] max-w-[60px] border-b border-t border-gray-300 text-start font-medium"
+          style={stickyStyle}
+        >
+          {entry.id}
+        </td>
+      );
     case "name":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-b border-t border-gray-300"
+          style={stickyStyle}
+        >
           {entry.name}
         </td>
       );
     case "email":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300 min-w-[200px]"
+          style={stickyStyle}
+        >
           {entry.email}
         </td>
       );
     case "phone_number":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300 w-[140px]"
+          style={stickyStyle}
+        >
           {entry.phone_number}
         </td>
       );
     case "workshop_name":
       return (
-        <td key={columnKey} className="p-3">
-          <span className="text-xs text-[10px]">{entry.workshop_name}</span>
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
+          <span className="text-sm">{entry.workshop_name}</span>
         </td>
       );
     case "session_number":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span className="bg-green-100 items-center justify-center text-center text-green-800 px-2 py-1 rounded-full text-xs font-medium">
             {entry.session_number || 1}
           </span>
         </td>
       );
+    case "session_date":
+      return (
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
+          {entry.session_date ? formatDate(entry.session_date) : "N/A"}
+        </td>
+      );
     case "referal_code":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           {renderReferralCode()}
         </td>
       );
     case "attended_webinars":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
               typeof entry.attended_webinars === "boolean"
@@ -182,7 +243,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "is_assessment_attempted":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
               entry.is_assessment_attempted || "not_attempted",
@@ -195,7 +260,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "is_certificate_amount_paid":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
               entry.is_certificate_amount_paid,
@@ -208,7 +277,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "is_prebooking_amount_paid":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
               entry.is_prebooking_amount_paid,
@@ -221,7 +294,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "is_course_amount_paid":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
               entry.is_course_amount_paid,
@@ -234,19 +311,31 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "amount_paid":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getAmountColor(
               entry.amount_paid
             )}`}
           >
-            {formatNumber(entry.amount_paid)}
+            {entry.amount_paid !== undefined &&
+            entry.amount_paid !== null &&
+            !isNaN(parseFloat(String(entry.amount_paid)))
+              ? parseFloat(String(entry.amount_paid)).toFixed(2)
+              : "N/A"}
           </span>
         </td>
       );
     case "amount_pending":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium text-amber-800 bg-amber-100`}
           >
@@ -256,7 +345,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "score":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span className="text-xs text-yellow-900 p-2 rounded-full bg-yellow-300 font-medium">
             {entry.score || "N/A"}
           </span>
@@ -264,7 +357,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "offered_scholarship_percentage":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span className="text-xs text-green-800 p-2 rounded-full bg-green-100 font-medium">
             {entry.offered_scholarship_percentage || "N/A"}
           </span>
@@ -272,7 +369,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "offered_amount":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <div className="flex items-center gap-2">
             <span
               className={`px-2 py-1 rounded-full text-xs font-medium ${getAmountColor(
@@ -283,7 +384,7 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
             </span>
             <button
               className="p-1 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 transition-colors duration-200 flex items-center justify-center"
-              onClick={openOfferedAmountModal}
+              onClick={() => openOfferedAmountModal("offered_amount")}
               type="button"
               title="Edit offered amount"
             >
@@ -306,7 +407,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "platform_amount":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getAmountColor(
               entry.platform_amount
@@ -318,7 +423,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "assignment_submitted_at":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           {entry.assignment_submitted_at && entry.assignment_submitted_at !== ""
             ? formatDate(entry.assignment_submitted_at)
             : "N/A"}
@@ -326,7 +435,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "referral_code_assessment":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span className="text-xs font-medium">
             {entry.referral_code_assessment || "N/A"}
           </span>
@@ -334,7 +447,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "assessment_status":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
               entry.assessment_status || "N/A",
@@ -347,7 +464,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "first_call_status":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           {renderStatusDropdown(
             firstCallStatus || "N/A",
             FIRST_CALL_STATUS_OPTIONS,
@@ -357,7 +478,11 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "first_call_comment":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="flex justify-between p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           <div
             className="text-sm text-gray-700 cursor-pointer hover:text-blue-600 transition-colors"
             onClick={() =>
@@ -369,11 +494,35 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
               <span className="text-blue-600 text-xs ml-1">See more</span>
             )}
           </div>
+          <button
+            className="p-1 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 transition-colors duration-200 flex items-center justify-center"
+            onClick={openEditModal}
+            type="button"
+            title="Edit call comment"
+          >
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+              />
+            </svg>
+          </button>
         </td>
       );
     case "second_call_status":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           {renderStatusDropdown(
             secondCallStatus || "N/A",
             SECOND_CALL_STATUS_OPTIONS,
@@ -383,49 +532,188 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
       );
     case "second_call_comment":
       return (
-        <td key={columnKey} className="p-3">
-          <div
-            className="text-sm text-gray-700 cursor-pointer hover:text-blue-600 transition-colors"
-            onClick={() =>
-              handleCommentClick(secondCallComment || "", "second_call")
-            }
-          >
-            {truncateComment(secondCallComment || "")}
-            {secondCallComment && secondCallComment.length > 25 && (
-              <span className="text-blue-600 text-xs ml-1">See more</span>
-            )}
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
+          <div className="flex flex-row items-center justify-between gap-2">
+            <div
+              className="text-sm text-gray-700 cursor-pointer hover:text-blue-600 transition-colors"
+              onClick={() =>
+                handleCommentClick(secondCallComment || "", "second_call")
+              }
+            >
+              {truncateComment(secondCallComment || "")}
+              {secondCallComment && secondCallComment.length > 25 && (
+                <span className="text-blue-600 text-xs ml-1">See more</span>
+              )}
+            </div>
+            <button
+              className="p-1 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 transition-colors duration-200 flex items-center justify-center"
+              onClick={openEditModal}
+              type="button"
+              title="Edit call comment"
+            >
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
+              </svg>
+            </button>
           </div>
         </td>
       );
     case "follow_up_comment":
       return (
-        <td key={columnKey} className="p-3">
-          <div
-            className="text-sm text-gray-700 cursor-pointer hover:text-blue-600 transition-colors"
-            onClick={() =>
-              handleCommentClick(followUpComment || "", "follow_up")
-            }
-          >
-            {truncateComment(followUpComment || "")}
-            {followUpComment && followUpComment.length > 25 && (
-              <span className="text-blue-600 text-xs ml-1">See more</span>
-            )}
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
+          <div className="flex flex-row items-center justify-between gap-2">
+            <div
+              className="text-sm text-gray-700 cursor-pointer hover:text-blue-600 transition-colors"
+              onClick={() =>
+                handleCommentClick(followUpComment || "", "follow_up")
+              }
+            >
+              {truncateComment(followUpComment || "")}
+              {followUpComment && followUpComment.length > 25 && (
+                <span className="text-blue-600 text-xs ml-1">See more</span>
+              )}
+            </div>
+            <button
+              className="p-1 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 transition-colors duration-200 flex items-center justify-center"
+              onClick={openEditModal}
+              type="button"
+              title="Edit follow up comment"
+            >
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
+              </svg>
+            </button>
           </div>
         </td>
       );
     case "follow_up_date":
       return (
-        <td key={columnKey} className="p-3">
-          <div className="flex items-center justify-center gap-2">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
+          <div className="flex items-center justify-between gap-2">
             <div className="flex items-center justify-center gap-2">
               {entry.follow_up_date && entry.follow_up_date !== ""
                 ? formatDate(entry.follow_up_date)
                 : "N/A"}
             </div>
+            <div>
+              <button
+                onClick={() => handleEditFollowUpDate(entry, "follow_up_date")}
+                className="text-blue-500 hover:text-blue-700 bg-blue-100 rounded-full p-1"
+                title="Edit follow-up date"
+              >
+                <FiEdit2 className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        </td>
+      );
+    case "sales_done_by":
+      return (
+        <td
+          key={columnKey}
+          className="flex justify-between p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
+          {entry.sales_done_by || "N/A"}
+          <button
+            className="p-1 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 transition-colors duration-200 flex items-center justify-center"
+            onClick={() => openOfferedAmountModal("sales_done_by")}
+            type="button"
+            title="Edit offered amount"
+          >
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+              />
+            </svg>
+          </button>
+        </td>
+      );
+    case "meeting_scheduled_at":
+      return (
+        <td
+          key={columnKey}
+          className="p-3 items-center border-r border-gray-300"
+          style={stickyStyle}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-center gap-2">
+              {entry.meeting_scheduled_at && entry.meeting_scheduled_at !== ""
+                ? formatDate(entry.meeting_scheduled_at)
+                : "N/A"}
+            </div>
+            <div>
+              <button
+                onClick={() =>
+                  handleEditFollowUpDate(entry, "meeting_scheduled_at")
+                }
+                className="text-blue-500 hover:text-blue-700 bg-blue-100 rounded-full p-1"
+                title="Edit meeting scheduled date"
+              >
+                <FiEdit2 className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        </td>
+      );
+
+    case "next_payment_date":
+      return (
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-2">
+              {entry.next_payment_date && entry.next_payment_date !== ""
+                ? formatDate(entry.next_payment_date)
+                : "N/A"}
+            </div>
             <button
-              onClick={() => handleEditFollowUpDate(entry)}
+              onClick={() => handleEditFollowUpDate(entry, "next_payment_date")}
               className="text-blue-500 hover:text-blue-700 bg-blue-100 rounded-full p-1"
-              title="Edit follow-up date"
+              title="Edit next payment date"
             >
               <FiEdit2 className="w-3 h-3" />
             </button>
@@ -435,24 +723,51 @@ export const TableCellRenderer: React.FC<TableCellRendererProps> = ({
 
     case "registered_at":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           {formatDate(entry.registered_at)}
         </td>
       );
     case "updated_at":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           {formatDate(entry.updated_at || "N/A")}
         </td>
       );
     case "submitted_at":
       return (
-        <td key={columnKey} className="p-3">
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
           {entry.submitted_at && entry.submitted_at !== ""
             ? formatDate(entry.submitted_at)
             : "N/A"}
         </td>
       );
+    case "course_name": {
+      return (
+        <td
+          key={columnKey}
+          className="p-3 border-r border-gray-300"
+          style={stickyStyle}
+        >
+          {renderStatusDropdown(
+            entry.program ?? "N/A",
+            COURSE_NAME_OPTIONS,
+            "course_name"
+          )}
+        </td>
+      );
+    }
     default:
       return null;
   }

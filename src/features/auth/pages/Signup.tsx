@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PrimaryButton from "../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import GoogleSignupButton from "../../../commonComponents/common-buttons/google-login-button/GoogleSignupButton";
@@ -10,6 +10,7 @@ export interface SignupFormData {
   last_name: string;
   email: string;
   phone: string;
+  country_code: string;
   password: string;
   confirm_password: string;
 }
@@ -17,6 +18,72 @@ export interface SignupFormData {
 interface FieldErrors {
   [key: string]: string;
 }
+
+interface Country {
+  code: string;
+  name: string;
+  dialCode: string;
+  flag: string;
+}
+
+// Expanded countries list
+const countries: Country[] = [
+  { code: "IN", name: "India", dialCode: "+91", flag: "🇮🇳" },
+  { code: "US", name: "United States", dialCode: "+1", flag: "🇺🇸" },
+  { code: "GB", name: "United Kingdom", dialCode: "+44", flag: "🇬🇧" },
+  { code: "CA", name: "Canada", dialCode: "+1", flag: "🇨🇦" },
+  { code: "AU", name: "Australia", dialCode: "+61", flag: "🇦🇺" },
+  { code: "DE", name: "Germany", dialCode: "+49", flag: "🇩🇪" },
+  { code: "FR", name: "France", dialCode: "+33", flag: "🇫🇷" },
+  { code: "JP", name: "Japan", dialCode: "+81", flag: "🇯🇵" },
+  { code: "CN", name: "China", dialCode: "+86", flag: "🇨🇳" },
+  { code: "BR", name: "Brazil", dialCode: "+55", flag: "🇧🇷" },
+  { code: "AE", name: "UAE", dialCode: "+971", flag: "🇦🇪" },
+  { code: "SG", name: "Singapore", dialCode: "+65", flag: "🇸🇬" },
+  { code: "MY", name: "Malaysia", dialCode: "+60", flag: "🇲🇾" },
+  { code: "TH", name: "Thailand", dialCode: "+66", flag: "🇹🇭" },
+  { code: "PH", name: "Philippines", dialCode: "+63", flag: "🇵🇭" },
+  { code: "ID", name: "Indonesia", dialCode: "+62", flag: "🇮🇩" },
+  { code: "VN", name: "Vietnam", dialCode: "+84", flag: "🇻🇳" },
+  { code: "KR", name: "South Korea", dialCode: "+82", flag: "🇰🇷" },
+  { code: "HK", name: "Hong Kong", dialCode: "+852", flag: "🇭🇰" },
+  { code: "TW", name: "Taiwan", dialCode: "+886", flag: "🇹🇼" },
+  { code: "SA", name: "Saudi Arabia", dialCode: "+966", flag: "🇸🇦" },
+  { code: "EG", name: "Egypt", dialCode: "+20", flag: "🇪🇬" },
+  { code: "ZA", name: "South Africa", dialCode: "+27", flag: "🇿🇦" },
+  { code: "NG", name: "Nigeria", dialCode: "+234", flag: "🇳🇬" },
+  { code: "KE", name: "Kenya", dialCode: "+254", flag: "🇰🇪" },
+  { code: "GH", name: "Ghana", dialCode: "+233", flag: "🇬🇭" },
+  { code: "MX", name: "Mexico", dialCode: "+52", flag: "🇲🇽" },
+  { code: "AR", name: "Argentina", dialCode: "+54", flag: "🇦🇷" },
+  { code: "CL", name: "Chile", dialCode: "+56", flag: "🇨🇱" },
+  { code: "CO", name: "Colombia", dialCode: "+57", flag: "🇨🇴" },
+  { code: "PE", name: "Peru", dialCode: "+51", flag: "🇵🇪" },
+  { code: "VE", name: "Venezuela", dialCode: "+58", flag: "🇻🇪" },
+  { code: "RU", name: "Russia", dialCode: "+7", flag: "🇷🇺" },
+  { code: "TR", name: "Turkey", dialCode: "+90", flag: "🇹🇷" },
+  { code: "IT", name: "Italy", dialCode: "+39", flag: "🇮🇹" },
+  { code: "ES", name: "Spain", dialCode: "+34", flag: "🇪🇸" },
+  { code: "NL", name: "Netherlands", dialCode: "+31", flag: "🇳🇱" },
+  { code: "BE", name: "Belgium", dialCode: "+32", flag: "🇧🇪" },
+  { code: "CH", name: "Switzerland", dialCode: "+41", flag: "🇨🇭" },
+  { code: "AT", name: "Austria", dialCode: "+43", flag: "🇦🇹" },
+  { code: "SE", name: "Sweden", dialCode: "+46", flag: "🇸🇪" },
+  { code: "NO", name: "Norway", dialCode: "+47", flag: "🇳🇴" },
+  { code: "DK", name: "Denmark", dialCode: "+45", flag: "🇩🇰" },
+  { code: "FI", name: "Finland", dialCode: "+358", flag: "🇫🇮" },
+  { code: "PL", name: "Poland", dialCode: "+48", flag: "🇵🇱" },
+  { code: "CZ", name: "Czech Republic", dialCode: "+420", flag: "🇨🇿" },
+  { code: "HU", name: "Hungary", dialCode: "+36", flag: "🇭🇺" },
+  { code: "GR", name: "Greece", dialCode: "+30", flag: "🇬🇷" },
+  { code: "PT", name: "Portugal", dialCode: "+351", flag: "🇵🇹" },
+  { code: "IE", name: "Ireland", dialCode: "+353", flag: "🇮🇪" },
+  { code: "IL", name: "Israel", dialCode: "+972", flag: "🇮🇱" },
+  { code: "BD", name: "Bangladesh", dialCode: "+880", flag: "🇧🇩" },
+  { code: "PK", name: "Pakistan", dialCode: "+92", flag: "🇵🇰" },
+  { code: "LK", name: "Sri Lanka", dialCode: "+94", flag: "🇱🇰" },
+  { code: "NP", name: "Nepal", dialCode: "+977", flag: "🇳🇵" },
+];
 
 const Signup: React.FC = () => {
   const navigate = useNavigate();
@@ -26,6 +93,7 @@ const Signup: React.FC = () => {
     last_name: "",
     email: "",
     phone: "",
+    country_code: "+91", // Default to India
     password: "",
     confirm_password: "",
   });
@@ -33,6 +101,41 @@ const Signup: React.FC = () => {
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState<Country>(countries[0]); // Default to India
+  const [countrySearch, setCountrySearch] = useState("");
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Filter countries based on search term
+  const filteredCountries = countries.filter(country =>
+    country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+    country.dialCode.includes(countrySearch) ||
+    country.code.toLowerCase().includes(countrySearch.toLowerCase())
+  );
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowCountryDropdown(false);
+        setCountrySearch("");
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Focus search input when dropdown opens
+  useEffect(() => {
+    if (showCountryDropdown && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [showCountryDropdown]);
 
   const validatePassword = (password: string) => {
     const errors: string[] = [];
@@ -104,8 +207,8 @@ const Signup: React.FC = () => {
         }
         // Remove all non-digit characters for validation
         const digitsOnly = value.replace(/\D/g, "");
-        if (digitsOnly.length < 10) {
-          return "Phone number must be at least 10 digits";
+        if (digitsOnly.length < 7) {
+          return "Phone number must be at least 7 digits";
         }
         if (digitsOnly.length > 15) {
           return "Phone number cannot exceed 15 digits";
@@ -137,16 +240,44 @@ const Signup: React.FC = () => {
     return "";
   };
 
+  const handleCountrySelect = (country: Country) => {
+    setSelectedCountry(country);
+    setFormData((prev) => ({
+      ...prev,
+      country_code: country.dialCode,
+    }));
+    setShowCountryDropdown(false);
+    setCountrySearch("");
+  };
+
+  const handleCountryDropdownToggle = () => {
+    setShowCountryDropdown(!showCountryDropdown);
+    setCountrySearch("");
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const fieldName = name as keyof SignupFormData;
 
-    // Limit phone number to 15 digits
+    // Handle phone number input - only allow digits and limit to 15
     if (fieldName === "phone") {
       const digitsOnly = value.replace(/\D/g, "");
       if (digitsOnly.length > 15) {
         return; // Don't update if exceeding 15 digits
       }
+      setFormData((prev) => ({
+        ...prev,
+        phone: digitsOnly,
+      }));
+
+      // Clear field error when user starts typing
+      if (fieldErrors.phone) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          phone: "",
+        }));
+      }
+      return;
     }
 
     setFormData((prev) => ({
@@ -188,6 +319,7 @@ const Signup: React.FC = () => {
     const errors: FieldErrors = {};
 
     Object.keys(formData).forEach((key) => {
+      if (key === "country_code") return; // Skip country_code validation
       const fieldError = validateField(
         key as keyof SignupFormData,
         formData[key as keyof typeof formData]
@@ -225,12 +357,13 @@ const Signup: React.FC = () => {
     try {
       const clientId = import.meta.env.VITE_CLIENT_ID;
 
-      // Create API data without confirm_password
-      const signupData: SignupFormData = {
+      // Create API data with full phone number including country code
+      const signupData = {
         first_name: formData.first_name,
         last_name: formData.last_name,
         email: formData.email,
-        phone: formData.phone,
+        phone: `${formData.country_code}${formData.phone}`, // Combine country code and phone
+        country_code: formData.country_code, // Include country_code
         password: formData.password,
         confirm_password: formData.confirm_password,
       };
@@ -279,11 +412,6 @@ const Signup: React.FC = () => {
         <div className="w-full max-w-lg space-y-4">
           <div className="text-center">
             <div className="flex justify-center items-center">
-              {/* <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M20 40C31.0457 40 40 31.0457 40 20C40 8.9543 31.0457 0 20 0C8.9543 0 0 8.9543 0 20C0 31.0457 8.9543 40 20 40Z" fill="#000" />
-                <path d="M12 13L28 27" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M12 27L28 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg> */}
               <span className="text-2xl font-bold bg-gradient-to-r from-[#0BC5EA] to-[#6B46C1] bg-clip-text text-transparent">
                 AI LINC
               </span>
@@ -312,9 +440,8 @@ const Signup: React.FC = () => {
                       required
                       value={formData.first_name}
                       onChange={handleChange}
-                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${
-                        getFieldError("first_name") ? "border-red-500" : ""
-                      }`}
+                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("first_name") ? "border-red-500" : ""
+                        }`}
                       placeholder="John"
                     />
                   </div>
@@ -341,9 +468,8 @@ const Signup: React.FC = () => {
                       required
                       value={formData.last_name}
                       onChange={handleChange}
-                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${
-                        getFieldError("last_name") ? "border-red-500" : ""
-                      }`}
+                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("last_name") ? "border-red-500" : ""
+                        }`}
                       placeholder="Doe"
                     />
                   </div>
@@ -371,9 +497,8 @@ const Signup: React.FC = () => {
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${
-                      getFieldError("email") ? "border-red-500" : ""
-                    }`}
+                    className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("email") ? "border-red-500" : ""
+                      }`}
                     placeholder="example@email.com"
                   />
                 </div>
@@ -384,6 +509,7 @@ const Signup: React.FC = () => {
                 )}
               </div>
 
+              {/* Phone Number with Searchable Country Flag */}
               <div>
                 <label
                   htmlFor="phone"
@@ -391,7 +517,100 @@ const Signup: React.FC = () => {
                 >
                   Phone Number
                 </label>
-                <div className="mt-1">
+                <div className="mt-1 flex">
+                  {/* Country Selector with Search */}
+                  <div className="relative" ref={dropdownRef}>
+                    <button
+                      type="button"
+                      onClick={handleCountryDropdownToggle}
+                      className={`h-12 px-3 border border-r-0 rounded-l-xl bg-white flex items-center gap-2 text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("phone") ? "border-red-500" : "border-gray-300"
+                        }`}
+                    >
+                      <span className="text-lg">{selectedCountry.flag}</span>
+                      <span className="text-sm font-medium">{selectedCountry.dialCode}</span>
+                      <svg
+                        className={`w-4 h-4 text-gray-400 transition-transform ${showCountryDropdown ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
+
+                    {/* Searchable Country Dropdown */}
+                    {showCountryDropdown && (
+                      <div className="absolute top-full left-0 mt-1 w-80 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
+                        {/* Search Input */}
+                        <div className="p-3 border-b border-gray-200">
+                          <div className="relative">
+                            <input
+                              ref={searchInputRef}
+                              type="text"
+                              value={countrySearch}
+                              onChange={(e) => setCountrySearch(e.target.value)}
+                              placeholder="Search countries..."
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79]"
+                            />
+                            <svg
+                              className="absolute right-3 top-2.5 w-4 h-4 text-gray-400"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+
+                        {/* Countries List */}
+                        <div className="max-h-60 overflow-y-auto">
+                          {filteredCountries.length > 0 ? (
+                            filteredCountries.map((country) => (
+                              <button
+                                key={country.code}
+                                type="button"
+                                onClick={() => handleCountrySelect(country)}
+                                className={`w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 last:border-b-0 ${selectedCountry.code === country.code ? 'bg-blue-50' : ''
+                                  }`}
+                              >
+                                <span className="text-lg">{country.flag}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-gray-900 truncate">
+                                    {country.name}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {country.dialCode}
+                                  </div>
+                                </div>
+                                {selectedCountry.code === country.code && (
+                                  <svg className="w-4 h-4 text-[#255C79]" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                )}
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-4 py-6 text-center text-sm text-gray-500">
+                              No countries found
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Phone Input */}
                   <input
                     id="phone"
                     name="phone"
@@ -400,11 +619,10 @@ const Signup: React.FC = () => {
                     required
                     value={formData.phone}
                     onChange={handleChange}
-                    className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${
-                      getFieldError("phone") ? "border-red-500" : ""
-                    }`}
-                    placeholder="+91 945323XXXX"
-                    maxLength={20}
+                    className={`block flex-1 h-12 px-4 py-3 border border-l-0 rounded-r-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("phone") ? "border-red-500" : "border-gray-300"
+                      }`}
+                    placeholder="9453234567"
+                    maxLength={15}
                   />
                 </div>
                 {getFieldError("phone") && (
@@ -431,9 +649,8 @@ const Signup: React.FC = () => {
                       required
                       value={formData.password}
                       onChange={handleChange}
-                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${
-                        getFieldError("password") ? "border-red-500" : ""
-                      }`}
+                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("password") ? "border-red-500" : ""
+                        }`}
                       placeholder="Create a password"
                     />
                     <button
@@ -536,11 +753,10 @@ const Signup: React.FC = () => {
                       required
                       value={formData.confirm_password}
                       onChange={handleChange}
-                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${
-                        getFieldError("confirm_password")
+                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("confirm_password")
                           ? "border-red-500"
                           : ""
-                      }`}
+                        }`}
                       placeholder="Confirm your password"
                     />
                   </div>

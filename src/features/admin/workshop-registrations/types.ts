@@ -14,6 +14,7 @@ export interface WorkshopRegistrationData {
   is_prebooking_amount_paid: string;
   is_course_amount_paid: string;
   first_call_status: string;
+  program: string;
   first_call_comment: string;
   second_call_status: string;
   second_call_comment: string;
@@ -40,6 +41,9 @@ export interface WorkshopRegistrationData {
     edited_by: string;
     timestamp: string;
   }>;
+  next_payment_date: string;
+  sales_done_by: string;
+  meeting_scheduled_at: string;
 }
 
 export interface EditRegistrationData {
@@ -50,9 +54,11 @@ export interface EditRegistrationData {
   follow_up_comment?: string;
   follow_up_date?: string;
   offered_amount?: string;
+  program?: string;
 }
 
 export interface FilterState {
+  course_name: string;
   name: string;
   email: string;
   phone_number: string;
@@ -98,6 +104,9 @@ export interface FilterState {
     start: string;
     end: string;
   };
+  next_payment_date: { start: string; end: string };
+  sales_done_by: string;
+  meeting_scheduled_at:  { start: string; end: string };
 } 
 
 export interface AttendanceData {

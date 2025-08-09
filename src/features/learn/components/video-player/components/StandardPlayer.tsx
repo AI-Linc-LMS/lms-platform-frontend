@@ -68,9 +68,6 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
         onProgressUpdate(calculatedProgress);
       }
 
-      // Throttle saving to localStorage to avoid excessive writes
-      // We'll save every ~5 seconds of actual viewing via useEffect
-
       // Check if video has reached the completion threshold percentage
       if (
         calculatedProgress >= activityCompletionThreshold &&

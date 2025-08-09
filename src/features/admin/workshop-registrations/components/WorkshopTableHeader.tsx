@@ -5,13 +5,18 @@ import {
   FollowUpDateFilterDropdown,
 } from "./FilterDropdown";
 import { FiCheck, FiFilter } from "react-icons/fi";
+import { COURSE_NAME_OPTIONS } from "./table-row/TableRowUtils";
 
 const FIRST_CALL_STATUS_OPTIONS = [
   { value: "Connected scheduled interview", color: "bg-green-500" },
   { value: "Connected denied interview", color: "bg-red-500" },
   { value: "Couldn't Connect", color: "bg-yellow-400" },
-  { value: "Call back requested", color: "bg-green-500" },
-  { value: "Career Counselling", color: "bg-blue-500" },
+  { value: "Call back requested", color: "bg-green-200" },
+  { value: "Career Counselling", color: "bg-blue-200" },
+  { value: "Connected", color: "bg-green-200" },
+  { value: "Duplicate", color: "bg-purple-400" },
+  { value: "Converted", color: "bg-green-500" },
+  { value: "Rescheduled", color: "bg-yellow-400" },
   { value: "N/A", color: "bg-gray-400" },
 ];
 const SECOND_CALL_STATUS_OPTIONS = [
@@ -41,6 +46,10 @@ interface WorkshopTableHeaderProps {
   data?: WorkshopRegistrationData[];
   visibleColumns?: string[];
   permanentColumns?: string[];
+  showSelection?: boolean;
+  isAllSelected?: boolean;
+  onSelectAll?: (selected: boolean) => void;
+  freezeColumns?: string[];
 }
 
 // Reusable MultiSelectDropdown component
@@ -239,14 +248,27 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
   data = [],
   visibleColumns = [],
   permanentColumns = [],
+  showSelection = false,
+  isAllSelected = false,
+  onSelectAll,
+  freezeColumns = [],
 }) => {
   const filterConfigs = [
+    // ID column
+    { column: "id", label: "ID" },
     // Personal details
     { column: "name", label: "Name" },
     { column: "email", label: "Email" },
     { column: "phone_number", label: "Mobile Number" },
     { column: "workshop_name", label: "Workshop Name" },
-    { column: "session_number", label: "Session" },
+    { column: "session_number", label: "Registered Session" },
+    { column: "session_date", label: "Session Date", isDate: true },
+    {
+      column: "course_name",
+      label: "Course Name",
+      enum: COURSE_NAME_OPTIONS,
+      default: "flagship",
+    },
     { column: "referal_code", label: "Referral Code" },
     // Call details
     {
@@ -263,6 +285,13 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
     { column: "second_call_comment", label: "2nd Call Comment" },
     { column: "follow_up_comment", label: "Follow Up Comment" },
     { column: "follow_up_date", label: "Follow Up Date", isDate: true },
+    {
+      column: "meeting_scheduled_at",
+      label: "Meeting Scheduled",
+      isDate: true,
+    },
+    { column: "next_payment_date", label: "Next Payment Date", isDate: true },
+    { column: "sales_done_by", label: "Sales Done By" },
     // Assessment details
     { column: "attended_webinars", label: "Attendee" },
     {
@@ -300,6 +329,11 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
     "follow_up_comment",
   ];
 
+  const COMMENT_FILLED_OPTIONS = [
+    { value: "filled", label: "Filled" },
+    { value: "not_filled", label: "Not Filled" },
+  ];
+
   // Helper to get all unique values for a field from a filtered dataset
   const getUniqueFieldValues = (
     field: keyof WorkshopRegistrationData,
@@ -308,8 +342,21 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
     const values = new Set<string>();
     filtered.forEach((item) => {
       const val = item[field];
-      if (val && typeof val === "string") values.add(val);
-      if (val && typeof val === "number") values.add(val.toString());
+
+      // Special handling for attended_webinars
+      if (field === "attended_webinars") {
+        if (val === null || val === undefined || val === "") {
+          values.add("N/A");
+        } else if (typeof val === "boolean") {
+          values.add(val.toString());
+        } else {
+          values.add(val.toString());
+        }
+      } else {
+        // For other fields, only add non-empty values
+        if (val && typeof val === "string") values.add(val);
+        if (val && typeof val === "number") values.add(val.toString());
+      }
     });
 
     // Special handling for assessment field to include default values
@@ -318,7 +365,12 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
       values.add("attempted");
     }
 
-    return Array.from(values);
+    // For attended_webinars, ensure N/A is always available
+    if (field === "attended_webinars") {
+      values.add("N/A");
+    }
+
+    return Array.from(values).sort((a, b) => a.localeCompare(b));
   };
 
   // Click outside handler
@@ -338,30 +390,86 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
     }
   }, [openFilter, onToggleFilter]);
 
+  // Calculate sticky positioning for frozen columns
+
+  const getStickyPosition = (columnKey: string) => {
+    if (!freezeColumns.includes(columnKey)) return {};
+
+    const frozenIndex = freezeColumns.indexOf(columnKey);
+    let leftPosition = 0;
+
+    // Add selection column width if present
+    if (showSelection) {
+      leftPosition += 40; // 12 * 4 = 48px for w-12
+    }
+
+    // Calculate left position based on frozen column order
+    for (let i = 0; i < frozenIndex; i++) {
+      const prevColumn = freezeColumns[i];
+      // Fixed column widths to eliminate gaps
+      if (prevColumn === "id") leftPosition += 60;
+      else if (prevColumn === "name") leftPosition += 118;
+      else if (prevColumn === "email") leftPosition += 225;
+    }
+    return {
+      position: "sticky" as const,
+      left: `${leftPosition}px`,
+      zIndex: 20,
+      backgroundColor: "rgb(243 244 246)", // bg-gray-100
+      borderRight: "1px solid rgb(229 231 235)", // Add border for visual separation
+    };
+  };
+
   return (
-    <thead className="bg-gray-100 sticky top-0 z-10">
+    <thead className="bg-gray-100 sticky top-0 z-20">
       <tr>
+        {/* Selection header */}
+        {showSelection && (
+          <th
+            className="p-3 w-12 bg-gray-100 border-r border-gray-300"
+            style={{
+              position: "sticky",
+              left: 0,
+              zIndex: 25,
+              backgroundColor: "rgb(243 244 246)",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={isAllSelected}
+              onChange={(e) => onSelectAll?.(e.target.checked)}
+              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+            />
+          </th>
+        )}
         {filterConfigs
           .filter(
             (config) =>
               permanentColumns.includes(config.column) ||
               visibleColumns.includes(config.column)
           )
-          .map((config) => (
-            <th
-              key={config.column}
-              className={[
-                "p-3 sticky top-0 z-10 bg-gray-100",
-                (config.column === "first_call_status" ||
-                  config.column === "second_call_status") &&
-                  "w-[150px] min-w-[150px]",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              <div className="flex items-center gap-1">
-                <span>{config.label}</span>
-                {!commentFields.includes(config.column) && (
+          .map((config) => {
+            const stickyStyle = getStickyPosition(config.column);
+            return (
+              <th
+                key={config.column}
+                className={[
+                  "p-3 bg-gray-100 border-r border-gray-300 w-[200px] min-w-[200px] text-left",
+                  (config.column === "first_call_status" ||
+                    config.column === "second_call_status") &&
+                    "w-[150px] min-w-[150px]",
+                  config.column === "id" &&
+                    "w-[60px] min-w-[60px] max-w-[60px]",
+                  config.column === "name" && "w-[120px] min-w-[120px]",
+                  config.column === "email" && "w-[200px] min-w-[200px]",
+                  config.column === "phone_number" && "w-[130px] min-w-[130px]",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                style={stickyStyle}
+              >
+                <div className="flex items-center gap-1">
+                  <span>{config.label}</span>
                   <button
                     type="button"
                     className={`p-1 rounded hover:bg-gray-400 ${
@@ -379,18 +487,66 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
                   >
                     <FiFilter className="w-4 h-4" />
                   </button>
-                )}
-              </div>
-              {/* Popover filter UI */}
-              {openFilter === config.column &&
-                !commentFields.includes(config.column) && (
+                </div>
+                {/* Popover filter UI */}
+                {openFilter === config.column && (
                   <div
                     ref={(el) => {
                       popoverRefs.current[config.column] = el;
                     }}
-                    className="absolute left-0 top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
+                    className="absolute top-full z-50 mt-2 bg-white border border-gray-200 rounded shadow-lg p-4 min-w-[180px]"
                   >
-                    {config.isDate ? (
+                    {(config.column as string) === "course_name" ? (
+                      <MultiSelectDropdown
+                        value={
+                          filters[config.column as keyof FilterState] as string
+                        }
+                        onChange={(value) =>
+                          onUpdateFilter(
+                            config.column as keyof FilterState,
+                            value
+                          )
+                        }
+                        data={COURSE_NAME_OPTIONS.map((e) => e.value)}
+                        colorMap={Object.fromEntries(
+                          COURSE_NAME_OPTIONS.map((e) => [e.value, ""])
+                        )}
+                      />
+                    ) : commentFields.includes(config.column) ? (
+                      <div className="flex flex-col gap-2">
+                        {COMMENT_FILLED_OPTIONS.map((opt) => (
+                          <label
+                            key={opt.value}
+                            className="flex items-center gap-2 cursor-pointer"
+                          >
+                            <input
+                              type="radio"
+                              name={`comment-filter-${config.column}`}
+                              value={opt.value}
+                              checked={
+                                filters[config.column as keyof FilterState] ===
+                                opt.value
+                              }
+                              onChange={() =>
+                                onUpdateFilter(
+                                  config.column as keyof FilterState,
+                                  opt.value
+                                )
+                              }
+                            />
+                            <span className="text-sm">{opt.label}</span>
+                          </label>
+                        ))}
+                        <button
+                          className="absolute right-4 bottom-2 mt-2 text-xs text-red-600 hover:text-red-800"
+                          onClick={() =>
+                            onClearFilter(config.column as keyof FilterState)
+                          }
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    ) : config.isDate ? (
                       config.column === "follow_up_date" ? (
                         <FollowUpDateFilterDropdown
                           column={config.column as keyof FilterState}
@@ -441,7 +597,10 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
                         }
                         data={config.enum.map((e) => e.value)}
                         colorMap={Object.fromEntries(
-                          config.enum.map((e) => [e.value, e.color])
+                          config.enum.map((e) => [
+                            e.value,
+                            "color" in e ? e.color : "",
+                          ])
                         )}
                       />
                     ) : (
@@ -463,10 +622,13 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
                     )}
                   </div>
                 )}
-            </th>
-          ))}
+              </th>
+            );
+          })}
         {/* Action column header */}
-        <th className="p-3 text-center w-[80px] min-w-[80px]">Action</th>
+        <th className="p-3 text-center w-[80px] min-w-[80px] bg-gray-100">
+          Action
+        </th>
       </tr>
     </thead>
   );

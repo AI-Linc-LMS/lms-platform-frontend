@@ -242,7 +242,7 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
               if (iframe.contentDocument && iframe.contentDocument.head) {
                 iframe.contentDocument.head.appendChild(styleEl);
               }
-            } catch (err) {
+            } catch {
               //console.error('VideoPlayer - Error injecting styles:', err);
             }
           };
@@ -254,7 +254,7 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
           return () => {
             iframe.removeEventListener("load", injectStyles);
           };
-        } catch (err) {
+        } catch {
           //console.error('VideoPlayer - Error setting up seekbar disabling:', err);
         }
       };
@@ -334,10 +334,12 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
                     method: "setCurrentTime",
                     value: lastKnownTime,
                   });
-                  iframeRef.current.contentWindow.postMessage(
-                    seekBackMessage,
-                    "*"
-                  );
+                  if (iframeRef.current?.contentWindow) {
+                    iframeRef.current.contentWindow.postMessage(
+                      seekBackMessage,
+                      "*"
+                    );
+                  }
 
                   // Show warning
                   setShowSeekWarning(true);
@@ -372,10 +374,12 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
                   method: "setCurrentTime",
                   value: lastKnownTime,
                 });
-                iframeRef.current.contentWindow.postMessage(
-                  seekBackMessage,
-                  "*"
-                );
+                if (iframeRef.current?.contentWindow) {
+                  iframeRef.current.contentWindow.postMessage(
+                    seekBackMessage,
+                    "*"
+                  );
+                }
                 setShowSeekWarning(true);
                 setTimeout(() => setShowSeekWarning(false), 3000);
                 return;
@@ -415,6 +419,16 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
           }
         }
 
+        // Handle play event
+        if (data.event === "play") {
+          // Video play event - activity tracking handled by simplified approach
+        }
+
+        // Handle pause event
+        if (data.event === "pause") {
+          // Video pause event - activity tracking handled by simplified approach
+        }
+
         // For first watch, prevent seeking ahead of the last watched point
         if (
           isFirstWatch &&
@@ -436,8 +450,12 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
               method: "setCurrentTime",
               value: lastKnownTime,
             });
-            iframeRef.current.contentWindow?.postMessage(seekBackMessage, "*");
+            if (iframeRef.current?.contentWindow) {
+              iframeRef.current.contentWindow.postMessage(seekBackMessage, "*");
+            }
           }
+        } else if (data.event === "seeked") {
+          // Normal seeking for non-first-watch - no special handling needed
         }
 
         // Also handle end event for backward compatibility
@@ -453,8 +471,8 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
           setProgressPercent(100);
           setLastKnownTime(0); // Reset for next viewing
         }
-      } catch (e) {
-        //console.error('VideoPlayer - Error processing Vimeo message:', e);
+      } catch {
+        // Ignore parsing errors for non-JSON messages
       }
     };
 

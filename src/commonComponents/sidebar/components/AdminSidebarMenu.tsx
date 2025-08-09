@@ -1,16 +1,16 @@
 import { AdminNavigationLinks } from '../../../constants/AdminNavigationLinks';
 import SidebarList from '../sidebarItems/SidebarList';
 import { SidebarLinkInfo } from '../../../constants/typings';
-import { FiLink } from 'react-icons/fi';
-import { Link, useLocation } from 'react-router-dom';
+// import { FiLink } from 'react-icons/fi';
+// import { Link, useLocation } from 'react-router-dom';
 
 interface AdminSidebarMenuProps {
   isExpanded: boolean;
 }
 
 const AdminSidebarMenu = ({ isExpanded }: AdminSidebarMenuProps) => {
-  const location = useLocation();
-  const isActive = location.pathname === '/admin/payment-links';
+  // const location = useLocation();
+  // const isActive = location.pathname === '/admin/payment-links';
 
   return (
     <div
@@ -25,7 +25,7 @@ const AdminSidebarMenu = ({ isExpanded }: AdminSidebarMenuProps) => {
         />
       ))}
 
-      <div className="w-full">
+      {/* <div className="w-full">
         <Link
           to="/admin/payment-links"
           className={`flex items-center w-full px-4 text-base transition-colors ${
@@ -36,7 +36,7 @@ const AdminSidebarMenu = ({ isExpanded }: AdminSidebarMenuProps) => {
         >
           <div className="flex items-center">
             <FiLink 
-              className={`w-[22px] h-[22px] min-w-[22px] ${
+              className={`w-[18px] h-[18px] min-w-[16px] ${
                 isActive 
                   ? 'stroke-[#255C79] stroke-[1.5]' 
                   : 'stroke-[#536066] stroke-1'
@@ -47,7 +47,7 @@ const AdminSidebarMenu = ({ isExpanded }: AdminSidebarMenuProps) => {
             )}
           </div>
         </Link>
-      </div>
+      </div> */}
     </div>
   );
 };

@@ -26,6 +26,7 @@ import {
   handleMobileNavigation,
 } from "./utils/authRedirectUtils";
 // import FloatingActivityTimer from "./components/FloatingActivityTimer";
+import { CommunityPage, ThreadDetailPage } from "./features/community";
 
 function App() {
   return (
@@ -316,8 +317,6 @@ function AppContent() {
 
   return (
     <>
-      {/* {isAuthenticated && <FloatingActivityTimer />} */}
-      {isAuthenticated}
       <Routes>
         {routes.map((route) => {
           if (route.isPrivate) {
@@ -355,10 +354,26 @@ function AppContent() {
             />
           );
         })}
+        <Route path="/community" element={<CommunityPage />} />
+        <Route
+          path="/community/thread/:threadId"
+          element={<ThreadDetailPage />}
+        />
 
         {/* Handle unknown routes - keeps authenticated users on the app */}
         <Route path="*" element={<InvalidRoute />} />
       </Routes>
+
+      {/* Only show FloatingActivityTimer when authenticated and not on login/register pages */}
+      {/* Commented out per instructions */}
+      {/* {isAuthenticated && 
+       location.pathname !== '/login' && 
+       location.pathname !== '/register' && 
+       location.pathname !== '/signup' && 
+       location.pathname !== '/forgot-password' && 
+       location.pathname !== '/otp' && (
+        <FloatingActivityTimer />
+      )} */}
     </>
   );
 }

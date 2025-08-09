@@ -1,4 +1,7 @@
 import { JSX } from "react";
+import ScholarshipCountdown from "./ScholarshipCountDown";
+import { ScholarshipRedemptionData } from "../types/assessmentTypes";
+import { PaymentResult } from "../../../../../services/payment/razorpayService";
 
 type Metric = {
   label: string;
@@ -10,9 +13,32 @@ type Metric = {
 
 type PerformanceReportProps = {
   data: Metric[];
+  // Updated props for ScholarshipCountdown with integrated payment
+  redeemData: ScholarshipRedemptionData;
+  isFlagshipSeatBooked?: boolean;
+  isFlagshipCoursePaid?: boolean;
+  assessmentDate?: string;
+  // New required props for integrated payment functionality
+  clientId: number;
+  assessmentId: string;
+  // Payment callback functions
+  onPaymentSuccess?: (result: PaymentResult, type: 'seat-booking' | 'course-payment') => void;
+  onPaymentError?: (error: string) => void;
+  showToast?: (type: "success" | "error" | "warning" | "loading", title: string, message: string) => void;
 };
 
-const PerformanceReport = ({ data }: PerformanceReportProps) => {
+const PerformanceReport = ({ 
+  data, 
+  redeemData,
+  // isFlagshipSeatBooked = false,
+  isFlagshipCoursePaid = false,
+  assessmentDate,
+  clientId,
+  assessmentId,
+  onPaymentSuccess,
+  onPaymentError,
+  showToast
+}: PerformanceReportProps) => {
   return (
     <div className="px-2 sm:px-4">
       <div className="flex flex-col items-center mb-3 sm:mb-4">
@@ -22,7 +48,28 @@ const PerformanceReport = ({ data }: PerformanceReportProps) => {
         <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-[#264D64] text-center mb-4 sm:mb-6 lg:mb-8 px-2">
           AILINC Student Performance Report
         </h2>
+        
+       
       </div>
+       {/* Only show ScholarshipCountdown if not already purchased */}
+       {!isFlagshipCoursePaid && (
+          <div className="w-full  mb-6">
+            <ScholarshipCountdown
+              assessmentDate={assessmentDate}
+              expiryDays={7}
+              redeemData={redeemData}
+              // isFlagshipSeatBooked is not a valid prop for ScholarshipCountdown, so it is removed
+              // isFlagshipCoursePaid={isFlagshipCoursePaid}
+              clientId={clientId}
+              assessmentId={assessmentId}
+              onPaymentSuccess={onPaymentSuccess}
+              onPaymentError={onPaymentError}
+              showToast={showToast}
+              className="w-full"
+            />
+          </div>
+        )}
+      
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8 justify-between items-center">
         {data.map((metric: Metric, idx: number) => {
           const isPlacementReadiness = metric.label === "Placement Readiness";

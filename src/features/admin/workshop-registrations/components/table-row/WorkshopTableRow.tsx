@@ -22,12 +22,17 @@ import {
   getStatusBadgeClass,
   getAmountColor,
 } from "./index";
+import { COURSE_NAME_OPTIONS } from "./TableRowUtils";
 
 interface WorkshopTableRowProps {
   entry: WorkshopRegistrationData;
   visibleColumns?: string[];
   permanentColumns?: string[];
-  refetch: () => void; // Add this line
+  refetch: () => void;
+  isSelected?: boolean;
+  onSelectionChange?: (entryId: number, selected: boolean) => void;
+  showSelection?: boolean;
+  freezeColumns?: string[];
 }
 
 export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
@@ -35,6 +40,10 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   visibleColumns = [],
   permanentColumns = [],
   refetch,
+  isSelected = false,
+  onSelectionChange,
+  showSelection = false,
+  freezeColumns = [],
 }) => {
   const [copiedCode, setCopiedCode] = React.useState<string | null>(null);
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -44,7 +53,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
       editRegistration(clientId, entry.id.toString(), data),
     onSuccess: () => {
       setModalOpen(false);
-       // Refetch data after successful update
+      // Refetch data after successful update
     },
     onError: () => {
       setModalOpen(false);
@@ -74,11 +83,12 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   const [offeredAmount, setOfferedAmount] = useState(
     entry.offered_amount || ""
   );
+  const [salesDoneBy, setSalesDoneBy] = useState(entry.sales_done_by || "");
 
   // Cooldown state for each status field
   const [cooldown, setCooldown] = useState<{ [key: string]: boolean }>({});
   const [quickStatusDropdown, setQuickStatusDropdown] = useState<
-    null | "first_call_status" | "second_call_status"
+    null | "first_call_status" | "second_call_status" | "course_name"
   >(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -93,7 +103,6 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     useState(secondCallComment);
   const [modalFollowUpComment, setModalFollowUpComment] =
     useState(followUpComment);
-  const [modalOfferedAmount, setModalOfferedAmount] = useState(offeredAmount);
 
   // Tooltip state
   const [tooltipData, setTooltipData] = useState<{
@@ -113,8 +122,14 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   const [offeredAmountModalOpen, setOfferedAmountModalOpen] = useState(false);
   const [paymentHistoryOpen, setPaymentHistoryOpen] = useState(false);
   const [followUpDateModalOpen, setFollowUpDateModalOpen] = useState(false);
+  const [fieldForDateEdit, setFieldForDateEdit] = useState<
+    "follow_up_date" | "meeting_scheduled_at" | "next_payment_date"
+  >("follow_up_date");
   const [selectedEntryForDateEdit, setSelectedEntryForDateEdit] =
     useState<WorkshopRegistrationData | null>(null);
+  const [editSalesAndOfferedAmount, setEditSalesAndOfferedAmount] = useState<
+    "offered_amount" | "sales_done_by"
+  >("offered_amount");
 
   const handleCommentClick = (
     comment: string,
@@ -127,7 +142,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
   };
 
   const handleStatusChange = (
-    field: "first_call_status" | "second_call_status",
+    field: "first_call_status" | "second_call_status" | "course_name",
     value: string
   ) => {
     if (field === "first_call_status") {
@@ -136,26 +151,28 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     if (field === "second_call_status") {
       setSecondCallStatus(value);
     }
-
-    // Call API to update the status
-    updateMutation.mutate(
-      {
-        first_call_status:
-          field === "first_call_status" ? value : firstCallStatus,
-        first_call_comment: firstCallComment,
-        second_call_status:
-          field === "second_call_status" ? value : secondCallStatus,
-        second_call_comment: secondCallComment,
-      },
-      {
-        onSuccess: (_data, variables) => {
-          setFirstCallStatus(variables.first_call_status || "");
-          setFirstCallComment(variables.first_call_comment || "");
-          setSecondCallStatus(variables.second_call_status || "");
-          setSecondCallComment(variables.second_call_comment || "");
+    if (field === "course_name") {
+      updateMutation.mutate({ program: value });
+    } else {
+      updateMutation.mutate(
+        {
+          first_call_status:
+            field === "first_call_status" ? value : firstCallStatus,
+          first_call_comment: firstCallComment,
+          second_call_status:
+            field === "second_call_status" ? value : secondCallStatus,
+          second_call_comment: secondCallComment,
         },
-      }
-    );
+        {
+          onSuccess: (_data, variables) => {
+            setFirstCallStatus(variables.first_call_status || "");
+            setFirstCallComment(variables.first_call_comment || "");
+            setSecondCallStatus(variables.second_call_status || "");
+            setSecondCallComment(variables.second_call_comment || "");
+          },
+        }
+      );
+    }
   };
 
   const openEditModal = () => {
@@ -167,26 +184,35 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     setModalOpen(true);
   };
 
-  const openOfferedAmountModal = () => {
-    setModalOfferedAmount(offeredAmount);
+  const openOfferedAmountModal = (
+    field: "offered_amount" | "sales_done_by"
+  ) => {
+    setEditSalesAndOfferedAmount(field);
     setOfferedAmountModalOpen(true);
   };
 
-  const handleEditFollowUpDate = (entry: WorkshopRegistrationData) => {
+  const handleEditFollowUpDate = (
+    entry: WorkshopRegistrationData,
+    field: "follow_up_date" | "meeting_scheduled_at" | "next_payment_date"
+  ) => {
+    setFieldForDateEdit(field);
     setSelectedEntryForDateEdit(entry);
     setFollowUpDateModalOpen(true);
   };
 
-  const handleSaveFollowUpDate = (date: string) => {
+  const handleSaveFollowUpDate = (
+    date: string,
+    field: "follow_up_date" | "meeting_scheduled_at" | "next_payment_date"
+  ) => {
     if (selectedEntryForDateEdit) {
       updateMutation.mutate(
-        { follow_up_date: date },
+        { [field]: date },
         {
           onSuccess: () => {
             // Update the entry's follow_up_date in the local state
             if (selectedEntryForDateEdit.id === entry.id) {
               // Update the entry object directly
-              entry.follow_up_date = date;
+              entry[field] = date;
             }
           },
         }
@@ -255,12 +281,16 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
 
   // Define column order
   const columnOrder = [
+    // ID column (fixed)
+    "id",
     // Personal details
     "name",
     "email",
     "phone_number",
     "workshop_name",
     "session_number",
+    "session_date",
+    "course_name",
     "referal_code",
     // Call details
     "first_call_status",
@@ -269,6 +299,9 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     "second_call_comment",
     "follow_up_comment",
     "follow_up_date",
+    "meeting_scheduled_at",
+    "next_payment_date",
+    "sales_done_by",
     // Assessment details
     "attended_webinars",
     "is_assessment_attempted",
@@ -291,10 +324,43 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     "submitted_at",
   ];
 
+  // Calculate sticky positioning for frozen columns
+  const getStickyPosition = (columnKey: string) => {
+    if (!freezeColumns.includes(columnKey)) return {};
+
+    const frozenIndex = freezeColumns.indexOf(columnKey);
+    let leftPosition = 0;
+
+    // Add selection column width if present
+    if (showSelection) {
+      leftPosition += 40; // 12 * 4 = 48px for w-12
+    }
+
+    // Calculate left position based on frozen column order
+    for (let i = 0; i < frozenIndex; i++) {
+      const prevColumn = freezeColumns[i];
+      // Fixed column widths to match header and eliminate gaps
+      if (prevColumn === "id") leftPosition += 60;
+      else if (prevColumn === "name") leftPosition += 118;
+      else if (prevColumn === "email") leftPosition += 225;
+      else if (prevColumn === "phone_number") leftPosition += 140;
+    }
+
+    return {
+      position: "sticky" as const,
+      left: `${leftPosition}px`,
+      zIndex: 15,
+      backgroundColor: isSelected ? "rgb(239 246 255)" : "rgb(255 255 255)", // bg-blue-50 if selected, bg-white if not
+      borderRight: "1px solid rgb(229 231 235)",
+      borderBottom: "1px solid #000",
+      borderTop: "1px solid #000",
+    };
+  };
+
   const renderStatusDropdown = (
     value: string,
     options: { value: string; color: string }[],
-    field: "first_call_status" | "second_call_status"
+    field: "first_call_status" | "second_call_status" | "course_name"
   ) => (
     <StatusDropdown
       value={value}
@@ -310,7 +376,28 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
 
   return (
     <>
-      <tr className="border-t">
+      <tr className={`border-t ${isSelected ? "bg-blue-50" : ""}`}>
+        {/* Selection checkbox */}
+        {showSelection && (
+          <td
+            className="p-3 w-12 border-r border-gray-300 border-b border-t"
+            style={{
+              position: "sticky",
+              left: 0,
+              zIndex: 15,
+              backgroundColor: isSelected
+                ? "rgb(239 246 255)"
+                : "rgb(255 255 255)",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={(e) => onSelectionChange?.(entry.id, e.target.checked)}
+              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+            />
+          </td>
+        )}
         {columnOrder.map((columnKey) => (
           <TableCellRenderer
             key={columnKey}
@@ -321,6 +408,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
             secondCallStatus={secondCallStatus}
             secondCallComment={secondCallComment}
             followUpComment={followUpComment}
+            fieldForDateEdit={fieldForDateEdit}
             offeredAmount={offeredAmount}
             copiedCode={copiedCode}
             setCopiedCode={setCopiedCode}
@@ -331,11 +419,14 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
             getAmountColor={getAmountColor}
             formatDate={formatDate}
             openOfferedAmountModal={openOfferedAmountModal}
+            openEditModal={openEditModal}
             handleEditFollowUpDate={handleEditFollowUpDate}
             FIRST_CALL_STATUS_OPTIONS={FIRST_CALL_STATUS_OPTIONS}
             SECOND_CALL_STATUS_OPTIONS={SECOND_CALL_STATUS_OPTIONS}
+            COURSE_NAME_OPTIONS={COURSE_NAME_OPTIONS}
             visibleColumns={visibleColumns}
             permanentColumns={permanentColumns}
+            stickyStyle={getStickyPosition(columnKey)}
           />
         ))}
         <TableRowActions
@@ -405,15 +496,41 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
       <EditOfferedAmountModal
         isOpen={offeredAmountModalOpen}
         onClose={() => setOfferedAmountModalOpen(false)}
-        offeredAmount={modalOfferedAmount}
-        onOfferedAmountChange={setModalOfferedAmount}
-        onSave={(offeredAmount) => {
+        field={editSalesAndOfferedAmount} // "offered_amount" or "sales_done_by"
+        offeredAmount={
+          editSalesAndOfferedAmount === "offered_amount"
+            ? offeredAmount
+            : salesDoneBy
+        }
+        onOfferedAmountChange={(value) => {
+          if (editSalesAndOfferedAmount === "offered_amount") {
+            setOfferedAmount(value);
+          } else {
+            setSalesDoneBy(value);
+          }
+        }}
+        onSave={(value, field) => {
+          if (field === "offered_amount") {
+            setOfferedAmount(value);
+          } else {
+            setSalesDoneBy(value);
+          }
+
           setOfferedAmountModalOpen(false);
+
+          // ✅ Send only the updated field as payload
           updateMutation.mutate(
-            { offered_amount: offeredAmount },
+            {
+              [field]: value,
+            },
             {
               onSuccess: () => {
-                setOfferedAmount(offeredAmount);
+                // Optional re-sync if needed
+                if (field === "offered_amount") {
+                  setOfferedAmount(value);
+                } else {
+                  setSalesDoneBy(value);
+                }
               },
             }
           );
@@ -430,6 +547,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
 
       <EditFollowUpDateModal
         isOpen={followUpDateModalOpen}
+        field={fieldForDateEdit}
         onClose={() => setFollowUpDateModalOpen(false)}
         entry={selectedEntryForDateEdit || entry}
         onSave={handleSaveFollowUpDate}

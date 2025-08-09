@@ -17,7 +17,7 @@ export const filterWorkshopData = (
     //console.log('Active Filters:', activeFilters);
   }
   
-  return workshopData.filter((entry) => {
+  const filteredData = workshopData.filter((entry) => {
     // Global search
     const globalSearch = `${entry.name || ''} ${entry.email || ''}`
       .toLowerCase()
@@ -115,7 +115,7 @@ export const filterWorkshopData = (
     const sessionMatch = (() => {
       if (!filters.session_number) return true;
       const filterVal = filters.session_number.trim();
-      const sessionValue = entry.session_number?.toString() || '';
+      const sessionValue = entry.session_number?.toString() || 'N/a';
       if (filterVal.includes(',')) {
         return matchesSelectedOptions(sessionValue, filterVal);
       } else {
@@ -149,9 +149,15 @@ export const filterWorkshopData = (
     const attendedWebinarsMatch = (() => {
       if (!filters.attended_webinars) return true;
       const filterVal = filters.attended_webinars.trim();
-      const attendedValue = typeof entry.attended_webinars === 'boolean' 
-        ? entry.attended_webinars.toString() 
-        : (entry.attended_webinars || '');
+      let attendedValue;
+      
+      if (entry.attended_webinars === null || entry.attended_webinars === undefined || entry.attended_webinars === '') {
+        attendedValue = 'N/A';
+      } else if (typeof entry.attended_webinars === 'boolean') {
+        attendedValue = entry.attended_webinars.toString();
+      } else {
+        attendedValue = entry.attended_webinars.toString();
+      }
       
       if (filterVal.includes(',')) {
         return matchesSelectedOptions(attendedValue, filterVal);
@@ -219,9 +225,17 @@ export const filterWorkshopData = (
       }
     })();
 
-    const firstCallCommentMatch =
-      !filters.first_call_comment ||
-      (entry.first_call_comment && entry.first_call_comment.toLowerCase().includes(filters.first_call_comment.toLowerCase()));
+    const firstCallCommentMatch = (() => {
+      const filterVal = filters.first_call_comment;
+      if (!filterVal) return true;
+      if (filterVal === "filled") {
+        return !!(entry.first_call_comment && entry.first_call_comment.trim() !== "");
+      }
+      if (filterVal === "not_filled") {
+        return !entry.first_call_comment || entry.first_call_comment.trim() === "";
+      }
+      return entry.first_call_comment && entry.first_call_comment.toLowerCase().includes(filterVal.toLowerCase());
+    })();
 
     const secondCallStatusMatch = (() => {
       if (!filters.second_call_status) return true;
@@ -237,13 +251,29 @@ export const filterWorkshopData = (
       }
     })();
 
-    const secondCallCommentMatch =
-      !filters.second_call_comment ||
-      (entry.second_call_comment && entry.second_call_comment.toLowerCase().includes(filters.second_call_comment.toLowerCase()));
+    const secondCallCommentMatch = (() => {
+      const filterVal = filters.second_call_comment;
+      if (!filterVal) return true;
+      if (filterVal === "filled") {
+        return !!(entry.second_call_comment && entry.second_call_comment.trim() !== "");
+      }
+      if (filterVal === "not_filled") {
+        return !entry.second_call_comment || entry.second_call_comment.trim() === "";
+      }
+      return entry.second_call_comment && entry.second_call_comment.toLowerCase().includes(filterVal.toLowerCase());
+    })();
 
-    const followUpCommentMatch =
-      !filters.follow_up_comment ||
-      (entry.follow_up_comment && entry.follow_up_comment.toLowerCase().includes(filters.follow_up_comment.toLowerCase()));
+    const followUpCommentMatch = (() => {
+      const filterVal = filters.follow_up_comment;
+      if (!filterVal) return true;
+      if (filterVal === "filled") {
+        return !!(entry.follow_up_comment && entry.follow_up_comment.trim() !== "");
+      }
+      if (filterVal === "not_filled") {
+        return !entry.follow_up_comment || entry.follow_up_comment.trim() === "";
+      }
+      return entry.follow_up_comment && entry.follow_up_comment.toLowerCase().includes(filterVal.toLowerCase());
+    })();
 
     const amountPaidMatch = (() => {
       if (!filters.amount_paid) return true;
@@ -394,6 +424,59 @@ export const filterWorkshopData = (
       (!followUpStartDate || (followUpDate && followUpDate >= followUpStartDate)) &&
       (!followUpEndDate || (followUpDate && followUpDate <= followUpEndDate));
 
+    // Course name/program filter
+    const courseNameMatch = (() => {
+      if (!filters.course_name) return true;
+      const filterVal = filters.course_name.trim().toLowerCase();
+      // Support multi-select
+      if (filterVal.includes(',')) {
+        return matchesSelectedOptions((entry.program || '').toLowerCase(), filterVal);
+      } else {
+        return (entry.program || 'flagship').toLowerCase() === filterVal;
+      }
+    })();
+
+    const nextPaymentDate = entry.next_payment_date && entry.next_payment_date !== "" ? new Date(entry.next_payment_date) : null;
+    const nextPaymentStartDate = filters.next_payment_date && filters.next_payment_date.start
+      ? new Date(filters.next_payment_date.start + "T00:00:00")
+      : null;
+    const nextPaymentEndDate = filters.next_payment_date && filters.next_payment_date.end
+      ? new Date(filters.next_payment_date.end + "T23:59:59")
+      : null;
+
+    const nextPaymentDateMatch =
+      (!nextPaymentStartDate || (nextPaymentDate && nextPaymentDate >= nextPaymentStartDate)) &&
+      (!nextPaymentEndDate || (nextPaymentDate && nextPaymentDate <= nextPaymentEndDate));
+
+      const salesDoneByMatch = (() => {
+        if (!filters.sales_done_by) return true;
+        const filterVal = filters.sales_done_by.trim();
+        if (filterVal.includes(',')) {
+          // Multi-select: match any selected value exactly (OR query)
+          const result = matchesSelectedOptions(entry.sales_done_by, filterVal);
+          
+          return result;
+        } else {
+          // Single search string: substring match
+          return matchesSearchString(entry.sales_done_by, filterVal);
+        }
+      })();
+      
+
+
+    // Meeting Scheduled filter
+    const meetingScheduledDate = entry.meeting_scheduled_at && entry.meeting_scheduled_at !== "" ? new Date(entry.meeting_scheduled_at) : null;
+    const meetingScheduledStartDate = filters.meeting_scheduled_at && filters.meeting_scheduled_at.start
+      ? new Date(filters.meeting_scheduled_at.start + "T00:00:00")
+      : null;
+    const meetingScheduledEndDate = filters.meeting_scheduled_at && filters.meeting_scheduled_at.end
+      ? new Date(filters.meeting_scheduled_at.end + "T23:59:59")
+      : null;
+
+    const meetingScheduledDateMatch =
+      (!meetingScheduledStartDate || (meetingScheduledDate && meetingScheduledDate >= meetingScheduledStartDate)) &&
+      (!meetingScheduledEndDate || (meetingScheduledDate && meetingScheduledDate <= meetingScheduledEndDate));
+
     const finalResult = (
       nameMatch &&
       emailMatch &&
@@ -424,11 +507,26 @@ export const filterWorkshopData = (
       dateMatch &&
       updatedDateMatch &&
       submittedDateMatch &&
-      followUpDateMatch
+      followUpDateMatch &&
+      courseNameMatch &&
+      nextPaymentDateMatch &&
+      meetingScheduledDateMatch &&
+      salesDoneByMatch
     );
 
     return finalResult;
   });
+
+  // Sort the filtered data by updated_at (date and time) in descending order (newest first)
+  const sortedData = filteredData.sort((a, b) => {
+    const dateA = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+    const dateB = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+    
+    // Sort in descending order (newest first)
+    return dateB - dateA;
+  });
+
+  return sortedData;
 };
 
 export const exportToExcel = (
@@ -534,6 +632,7 @@ export const getInitialFilterState = (): FilterState => ({
   session_number: "",
   session_date: "",
   referal_code: "",
+  course_name: "",
   attended_webinars: "",
   is_assessment_attempted: "",
   is_certificate_amount_paid: "",
@@ -557,6 +656,9 @@ export const getInitialFilterState = (): FilterState => ({
   assessment_status: "",
   registered_at: { start: "", end: "" },
   updated_at: { start: "", end: "" },
+  next_payment_date: { start: "", end: "" },
+  sales_done_by: "",
+  meeting_scheduled_at: { start: "", end: "" },
 });
 
 export const hasActiveFilters = (filters: FilterState): boolean => {

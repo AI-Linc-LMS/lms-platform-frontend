@@ -324,6 +324,36 @@ const PaymentCardSection: React.FC<{
     }
   };
 
+  const handleDirectFullPayment = (programType: 'nanodegree' | 'flagship') => {
+    if (programType === 'nanodegree') {
+      // If nanodegree course is already paid, show a toast
+      if (isNanodegreeCoursePaid) {
+        showToast(
+          "success",
+          "Already Purchased",
+          "You have already purchased the complete Nanodegree program."
+        );
+        return;
+      }
+
+      // Directly initiate full course payment without seat booking
+      setShowNanoDegreeCourseModal(true);
+    } else if (programType === 'flagship') {
+      // If flagship course is already paid, show a toast
+      if (isFlagshipCoursePaid) {
+        showToast(
+          "success",
+          "Already Purchased",
+          "You have already purchased the complete Flagship Career Launchpad."
+        );
+        return;
+      }
+
+      // Directly initiate full course payment without seat booking
+      setShowFlagshipCourseModal(true);
+    }
+  };
+
   const handleFlagshipPayment = () => {
     if (isFlagshipCoursePaid) {
       showToast(
@@ -359,8 +389,11 @@ const PaymentCardSection: React.FC<{
   };
 
   const confirmNanodegreeCoursePayment = () => {
+    // Only subtract the seat booking amount if the user has actually paid for seat booking
+    const courseRemainingAmount = isNanodegreeSeatBooked ? 4999 - 499 : 4999;
+
     setShowNanoDegreeCourseModal(false);
-    initiateCoursePayment(clientId, 4500, {
+    initiateCoursePayment(clientId, courseRemainingAmount, {
       prefill: {
         name: user.full_name || "User",
         email: user.email || "",
@@ -389,10 +422,15 @@ const PaymentCardSection: React.FC<{
   };
 
   const confirmFlagshipCoursePayment = () => {
+    // Only subtract the seat booking amount if the user has actually paid for seat booking
+    const courseRemainingAmount = isFlagshipSeatBooked
+      ? (redeemData?.payable_amount - 999) || 9001
+      : redeemData?.payable_amount || 10000;
+
     setShowFlagshipCourseModal(false);
     initiateFlagshipCoursePayment(
       clientId,
-      redeemData?.payable_amount - 999 || 9001,
+      courseRemainingAmount,
       {
         prefill: {
           name: user.full_name || "User",
@@ -422,7 +460,8 @@ const PaymentCardSection: React.FC<{
   const nanodegreeCoursePurchaseData = {
     percentage_scholarship: 0,
     total_amount: 4999,
-    payable_amount: 4500,
+    payable_amount: isNanodegreeSeatBooked ? 4500 : 4999, // Only discount if seat is booked
+    seat_booking_amount: isNanodegreeSeatBooked ? 499 : 0, // Only show if seat is booked
   };
 
   const flagshipPurchaseData = {
@@ -434,7 +473,10 @@ const PaymentCardSection: React.FC<{
   const flagshipCoursePurchaseData = {
     percentage_scholarship: redeemData?.percentage_scholarship || 90,
     total_amount: redeemData?.total_amount || 120000,
-    payable_amount: redeemData?.payable_amount - 999 || 9001,
+    payable_amount: isFlagshipSeatBooked
+      ? (redeemData?.payable_amount - 999) || 9001
+      : redeemData?.payable_amount || 10000, // Only discount if seat is booked
+    seat_booking_amount: isFlagshipSeatBooked ? 999 : 0, // Only show if seat is booked
   };
 
   // Helper function to get button text and style for Nanodegree
@@ -447,7 +489,7 @@ const PaymentCardSection: React.FC<{
       };
     } else if (isNanodegreeSeatBooked) {
       return {
-        text: "Seat Booked, Now Pay for Course ₹4500",
+        text: `Pay Remaining Course Fee ₹${4500}`,
         disabled: false,
         className: "bg-[#14212B] text-white hover:bg-[#223344]",
       };
@@ -470,9 +512,8 @@ const PaymentCardSection: React.FC<{
       };
     } else if (isFlagshipSeatBooked) {
       return {
-        text: `Seat Booked, Now Pay for Course ₹${
-          redeemData?.payable_amount - 999 || 9001
-        }`,
+        text: `Pay Remaining Course Fee ₹${redeemData?.payable_amount - 999 || 9001
+          }`,
         disabled: false,
         className: "bg-[#14212B] text-white hover:bg-[#223344]",
       };
@@ -577,6 +618,30 @@ const PaymentCardSection: React.FC<{
                 Fully refundable within 7 days
               </span>
             </div>
+            {!isNanodegreeCoursePaid && (
+              <div className="mt-2 sm:mt-3 space-y-2">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                  <p className="text-xs sm:text-sm text-green-800 mb-2">
+                    {isNanodegreeSeatBooked
+                      ? "Complete your enrollment with the remaining course fee"
+                      : "Want to skip the seat booking and get full course access immediately?"}
+                  </p>
+                  <button
+                    onClick={() => handleDirectFullPayment('nanodegree')}
+                    className="w-full bg-[#14212B] text-white font-semibold py-2 sm:py-3 rounded-lg shadow hover:bg-[#223344] transition-colors duration-200 text-sm sm:text-base"
+                  >
+                    {isNanodegreeSeatBooked
+                      ? `Pay Remaining Course Fee (₹4500)`
+                      : `Pay Full Course Fee (₹4999)`}
+                  </button>
+                  <p className="text-xs text-green-600 mt-1">
+                    {isNanodegreeSeatBooked
+                      ? "Complete your Nanodegree program enrollment"
+                      : "Instant access to entire Nanodegree program"}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Flagship Card */}
@@ -643,7 +708,9 @@ const PaymentCardSection: React.FC<{
                 </div>
                 <div className="flex items-end gap-2 mb-1">
                   <span className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#14212B]">
-                    ₹{redeemData?.payable_amount ?? 10000}
+                    ₹{isFlagshipSeatBooked
+                      ? (redeemData?.payable_amount - 999) || 9001
+                      : redeemData?.payable_amount ?? 10000}
                   </span>
                   <span className="text-sm sm:text-base text-gray-400 line-through">
                     ₹{redeemData?.total_amount ?? 120000}
@@ -707,6 +774,30 @@ const PaymentCardSection: React.FC<{
                 Fully refundable within 7 days
               </span>
             </div>
+            {!isFlagshipCoursePaid && (
+              <div className="mt-2 sm:mt-3 space-y-2">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
+                  <p className="text-xs sm:text-sm text-yellow-800 mb-2">
+                    {isFlagshipSeatBooked
+                      ? "Complete your enrollment with the remaining course fee"
+                      : "Ready to unlock the full Flagship Career Launchpad experience?"}
+                  </p>
+                  <button
+                    onClick={() => handleDirectFullPayment('flagship')}
+                    className="w-full bg-[#14212B] text-white font-semibold py-2 sm:py-3 rounded-lg shadow hover:bg-[#223344] transition-colors duration-200 text-sm sm:text-base"
+                  >
+                    {isFlagshipSeatBooked
+                      ? `Pay Remaining Course Fee (₹${(redeemData?.payable_amount - 999) || 9001})`
+                      : `Pay Full Course Fee (₹${redeemData?.payable_amount ?? 10000})`}
+                  </button>
+                  <p className="text-xs text-yellow-600 mt-1">
+                    {isFlagshipSeatBooked
+                      ? "Complete your Flagship Career Launchpad enrollment"
+                      : "Immediate access to mentorship and career support"}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -716,20 +807,20 @@ const PaymentCardSection: React.FC<{
         isNanodegreeCoursePaid ||
         isFlagshipSeatBooked ||
         isFlagshipCoursePaid) && (
-        <div className="w-full flex justify-center mt-6">
-          <span className="text-gray-500 text-base text-center w-full max-w-2xl border-t border-gray-200 pt-4 block font-medium">
-            {isNanodegreeCoursePaid
-              ? "🎉 Congratulations! You have successfully enrolled in the Nanodegree program. Our team will reach out to you soon with access details and next steps."
-              : isNanodegreeSeatBooked && !isNanodegreeCoursePaid
-              ? "✅ Your seat has been reserved! Complete your enrollment by paying for the full course to get started."
-              : isFlagshipCoursePaid
-              ? "🎉 Welcome to the Flagship Career Launchpad! Our team will contact you soon with your personalized learning path and mentor assignment."
-              : isFlagshipSeatBooked && !isFlagshipCoursePaid
-              ? "✅ Your Flagship seat has been reserved! Complete your enrollment by paying for the full course to get started."
-              : "Thank you for your payment. Our team will reach out to you soon with next steps and further information."}
-          </span>
-        </div>
-      )}
+          <div className="w-full flex justify-center mt-6">
+            <span className="text-gray-500 text-base text-center w-full max-w-2xl border-t border-gray-200 pt-4 block font-medium">
+              {isNanodegreeCoursePaid
+                ? "🎉 Congratulations! You have successfully enrolled in the Nanodegree program. Our team will reach out to you soon with access details and next steps."
+                : isNanodegreeSeatBooked && !isNanodegreeCoursePaid
+                  ? "✅ Your seat has been reserved! Complete your enrollment by paying for the full course to get started."
+                  : isFlagshipCoursePaid
+                    ? "🎉 Welcome to the Flagship Career Launchpad! Our team will contact you soon with your personalized learning path and mentor assignment."
+                    : isFlagshipSeatBooked && !isFlagshipCoursePaid
+                      ? "✅ Your Flagship seat has been reserved! Complete your enrollment by paying for the full course to get started."
+                      : "Thank you for your payment. Our team will reach out to you soon with next steps and further information."}
+            </span>
+          </div>
+        )}
 
       {/* Nanodegree Payment Confirmation Modal */}
       <PaymentConfirmationModal
@@ -777,18 +868,18 @@ const PaymentCardSection: React.FC<{
         }
         step={
           nanodegreePaymentState.step === "error" ||
-          nanodegreeCoursePaymentState.step === "error" ||
-          flagshipPaymentState.step === "error" ||
-          flagshipCoursePaymentState.step === "error"
+            nanodegreeCoursePaymentState.step === "error" ||
+            flagshipPaymentState.step === "error" ||
+            flagshipCoursePaymentState.step === "error"
             ? "creating"
             : ((nanodegreePaymentState.step ||
-                nanodegreeCoursePaymentState.step ||
-                flagshipPaymentState.step ||
-                flagshipCoursePaymentState.step) as
-                | "creating"
-                | "processing"
-                | "verifying"
-                | "complete")
+              nanodegreeCoursePaymentState.step ||
+              flagshipPaymentState.step ||
+              flagshipCoursePaymentState.step) as
+              | "creating"
+              | "processing"
+              | "verifying"
+              | "complete")
         }
         onClose={() => {
           // Handle processing modal close if needed

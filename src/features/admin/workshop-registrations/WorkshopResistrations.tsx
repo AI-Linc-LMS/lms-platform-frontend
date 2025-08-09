@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { getWorkshopRegistrations } from "../../../services/admin/workshopRegistrationApis";
 import { WorkshopRegistrationData, FilterState } from "./types";
 import {
@@ -16,21 +17,87 @@ import {
   NoDataState,
   Pagination,
   ActiveFiltersDisplay,
+  MeetingReminderStatus,
 } from "./components";
+import EmailConfirmationModal from "./components/modals/EmailConfirmationModal";
+import { useMeetingReminder } from "./hooks/useMeetingReminder";
 
 const WorkshopRegistration = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 15;
   const [filters, setFilters] = useState<FilterState>(getInitialFilterState());
   const [openFilter, setOpenFilter] = useState<keyof FilterState | null>(null);
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [showSelection, setShowSelection] = useState(false);
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [selectedEmailsForConfirmation, setSelectedEmailsForConfirmation] =
+    useState<Array<{ email: string; name: string }>>([]);
+  const [freezeColumns, setFreezeColumns] = useState<string[]>([
+    "id",
+    "name",
+    "email",
+  ]);
+
+  // Multi-field sort state - array of sort configurations with priority order
+  const [sortConfigs, setSortConfigs] = useState<
+    Array<{
+      field: string;
+      direction: "asc" | "desc";
+    }>
+  >([
+    { field: "id", direction: "desc" }, // Default to descending ID
+  ]);
+
+  const handleSort = (field: string, direction?: "asc" | "desc") => {
+    setSortConfigs((prev) => {
+      const existingIndex = prev.findIndex((config) => config.field === field);
+
+      if (direction) {
+        // Direct direction specified
+        if (existingIndex >= 0) {
+          // Update existing field
+          const newConfigs = [...prev];
+          newConfigs[existingIndex] = { field, direction };
+          return newConfigs;
+        } else {
+          // Add new field to sort configs
+          return [...prev, { field, direction }];
+        }
+      } else {
+        // Toggle logic for backward compatibility
+        if (existingIndex >= 0) {
+          const newConfigs = [...prev];
+          newConfigs[existingIndex] = {
+            field,
+            direction: prev[existingIndex].direction === "asc" ? "desc" : "asc",
+          };
+          return newConfigs;
+        } else {
+          return [...prev, { field, direction: "asc" }];
+        }
+      }
+    });
+  };
+
+  // Clear a specific sort field
+  const clearSort = (field: string) => {
+    setSortConfigs((prev) => prev.filter((config) => config.field !== field));
+  };
+
+  // Clear all sorts except ID (keep ID as default)
+  const clearAllSorts = () => {
+    setSortConfigs([{ field: "id", direction: "desc" }]);
+  };
 
   // Column visibility state
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
   // Permanent columns that are always visible
   const permanentColumns = [
+    "id",
     "name",
     "email",
     "phone_number",
@@ -38,6 +105,72 @@ const WorkshopRegistration = () => {
     "is_course_amount_paid",
     "registered_at",
   ];
+
+  // Freeze columns configuration
+  const freezeColumnOptions = [
+    { key: "id", label: "ID", required: true },
+    { key: "name", label: "Name", required: true },
+    { key: "email", label: "Email", required: true },
+    { key: "phone_number", label: "Phone", required: false },
+  ];
+
+  // Handle freeze column selection
+  const handleFreezeColumnChange = (columnKey: string, selected: boolean) => {
+    setFreezeColumns((prev) => {
+      let newFreezeColumns = [...prev];
+
+      if (selected) {
+        // Add the column
+        if (!newFreezeColumns.includes(columnKey)) {
+          newFreezeColumns.push(columnKey);
+        }
+
+        // If phone is selected, ensure id, name and email are also selected
+        if (columnKey === "phone_number") {
+          if (!newFreezeColumns.includes("id")) {
+            newFreezeColumns.push("id");
+          }
+          if (!newFreezeColumns.includes("name")) {
+            newFreezeColumns.push("name");
+          }
+          if (!newFreezeColumns.includes("email")) {
+            newFreezeColumns.push("email");
+          }
+        }
+        if (columnKey === "email") {
+          if (!newFreezeColumns.includes("id")) {
+            newFreezeColumns.push("id");
+          }
+          if (!newFreezeColumns.includes("name")) {
+            newFreezeColumns.push("name");
+          }
+        }
+        if (columnKey === "name") {
+          if (!newFreezeColumns.includes("id")) {
+            newFreezeColumns.push("id");
+          }
+        }
+      } else {
+        // Remove the column
+        newFreezeColumns = newFreezeColumns.filter((col) => col !== columnKey);
+
+        // If removing id, name or email, also remove dependent columns
+        if (columnKey === "id") {
+          // If removing id, remove all other columns since id is required for all
+          newFreezeColumns = newFreezeColumns.filter(
+            (col) => col !== "name" && col !== "email" && col !== "phone_number"
+          );
+        }
+        if (columnKey === "name" || columnKey === "email") {
+          newFreezeColumns = newFreezeColumns.filter(
+            (col) => col !== "phone_number"
+          );
+        }
+      }
+
+      return newFreezeColumns;
+    });
+  };
 
   // Column configuration for optional columns
   const columnConfigs = [
@@ -68,7 +201,32 @@ const WorkshopRegistration = () => {
       defaultVisible: true,
     },
     { key: "follow_up_date", label: "Follow Up Date", defaultVisible: true },
-    { key: "session_number", label: "Session", defaultVisible: true },
+    {
+      key: "next_payment_date",
+      label: "Next Payment Date",
+      defaultVisible: true,
+    },
+    {
+      key: "meeting_scheduled_at",
+      label: "Meeting Scheduled (Date & Time)",
+      defaultVisible: true,
+    },
+    { key: "sales_done_by", label: "Sales Done By", defaultVisible: true },
+    {
+      key: "session_number",
+      label: "Registered Session",
+      defaultVisible: true,
+    },
+    {
+      key: "session_date",
+      label: "Session Date",
+      defaultVisible: true,
+    },
+    {
+      key: "course_name",
+      label: "Course Name",
+      defaultVisible: true,
+    },
     { key: "attended_webinars", label: "Attendee", defaultVisible: true },
     {
       key: "is_assessment_attempted",
@@ -146,23 +304,33 @@ const WorkshopRegistration = () => {
     updated_at: useRef<HTMLDivElement>(null),
     follow_up_comment: useRef<HTMLDivElement>(null),
     follow_up_date: useRef<HTMLDivElement>(null),
+    session_date: useRef<HTMLDivElement>(null),
+    course_name: useRef<HTMLDivElement>(null),
+    meeting_scheduled_at: useRef<HTMLDivElement>(null),
+    sales_done_by: useRef<HTMLDivElement>(null),
+    next_payment_date: useRef<HTMLDivElement>(null),
   };
 
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+  const lastScrollLeftRef = useRef(0);
+
+  // Detect horizontal scroll
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        openFilter &&
-        filterRefs[openFilter as keyof typeof filterRefs]?.current &&
-        !filterRefs[openFilter as keyof typeof filterRefs]?.current?.contains(
-          event.target as Node
-        )
-      ) {
+    const container = tableScrollRef.current;
+    if (!container) return;
+    lastScrollLeftRef.current = container.scrollLeft;
+    const handleHorizontalScroll = () => {
+      if (container.scrollLeft !== lastScrollLeftRef.current) {
+        // Horizontal scroll detected
         setOpenFilter(null);
+        lastScrollLeftRef.current = container.scrollLeft;
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [openFilter]);
+    container.addEventListener("scroll", handleHorizontalScroll);
+    return () => {
+      container.removeEventListener("scroll", handleHorizontalScroll);
+    };
+  }, []);
 
   const {
     data: workshopData = [],
@@ -177,15 +345,184 @@ const WorkshopRegistration = () => {
     refetchOnReconnect: false,
   });
 
-  const filteredData = useMemo(
-    () => filterWorkshopData(workshopData, search, filters),
-    [search, workshopData, filters]
-  );
+  // Meeting reminder hook - monitors for upcoming meetings and follow-ups
+  useMeetingReminder({
+    data: workshopData,
+    isEnabled: !isLoading && !error && workshopData.length > 0,
+  });
+
+  const filteredData = useMemo(() => {
+    let data = filterWorkshopData(workshopData, search, filters);
+
+    // Define sortable fields priority order (same as in SearchAndExport)
+    const sortableFieldsPriority = [
+      "id",
+      "name",
+      "email",
+      "phone_number",
+      "session_number",
+      "session_date",
+      "registered_at",
+      "updated_at",
+      "submitted_at",
+      "follow_up_date",
+      "meeting_scheduled_at",
+      "next_payment_date",
+      "assignment_submitted_at",
+      "amount_paid",
+      "amount_pending",
+      "score",
+      "offered_scholarship_percentage",
+      "offered_amount",
+      "platform_amount",
+      "workshop_name",
+      "course_name",
+      "first_call_status",
+      "second_call_status",
+      "sales_done_by",
+    ];
+
+    // Sort sortConfigs by priority order defined in sortableFieldsPriority
+    const prioritizedSortConfigs = sortConfigs.slice().sort((a, b) => {
+      const aIndex = sortableFieldsPriority.indexOf(a.field);
+      const bIndex = sortableFieldsPriority.indexOf(b.field);
+      const aPriority = aIndex === -1 ? 999 : aIndex;
+      const bPriority = bIndex === -1 ? 999 : bIndex;
+      return aPriority - bPriority;
+    });
+
+    // Multi-field sorting with priority
+    data = [...data].sort((a, b) => {
+      for (const { field, direction } of prioritizedSortConfigs) {
+        const aValue = a[field as keyof WorkshopRegistrationData];
+        const bValue = b[field as keyof WorkshopRegistrationData];
+
+        let diff = 0;
+
+        // Handle different data types
+        if (field === "id") {
+          // Numeric sorting for ID
+          diff = (aValue as number) - (bValue as number);
+        } else {
+          // Date field sorting
+          const dateFields = [
+            "registered_at",
+            "updated_at",
+            "submitted_at",
+            "follow_up_date",
+            "meeting_scheduled_at",
+            "next_payment_date",
+            "assignment_submitted_at",
+            "session_date",
+          ];
+
+          if (dateFields.includes(field)) {
+            const aDate = aValue ? new Date(aValue as string).getTime() : 0;
+            const bDate = bValue ? new Date(bValue as string).getTime() : 0;
+            diff = aDate - bDate;
+          } else {
+            // Numeric field sorting
+            const numericFields = [
+              "session_number",
+              "amount_paid",
+              "amount_pending",
+              "score",
+              "offered_scholarship_percentage",
+              "offered_amount",
+              "platform_amount",
+            ];
+
+            if (numericFields.includes(field)) {
+              const aNum = parseFloat(aValue as string) || 0;
+              const bNum = parseFloat(bValue as string) || 0;
+              diff = aNum - bNum;
+            } else {
+              // String field sorting (alphabetical)
+              const aStr = (aValue as string)?.toLowerCase() || "";
+              const bStr = (bValue as string)?.toLowerCase() || "";
+              diff = aStr.localeCompare(bStr);
+            }
+          }
+        }
+
+        // Apply direction and return if there's a difference
+        const result = direction === "asc" ? diff : -diff;
+        if (result !== 0) {
+          return result;
+        }
+
+        // If values are equal, continue to next sort field
+      }
+
+      // If all sort fields are equal, maintain original order
+      return 0;
+    });
+
+    return data;
+  }, [search, workshopData, filters, sortConfigs]);
 
   const handleExport = () => {
     // Combine permanent columns with visible columns for export
     const allVisibleColumns = [...permanentColumns, ...visibleColumns];
     exportToExcel(filteredData, allVisibleColumns);
+  };
+
+  const handleRemoveEmailFromConfirmation = (emailToRemove: string) => {
+    setSelectedEmailsForConfirmation((prev) =>
+      prev.filter((item) => item.email !== emailToRemove)
+    );
+    // Also remove from the main selectedRows state
+    const entryToRemove = filteredData.find(
+      (entry) => entry.email === emailToRemove
+    );
+    if (entryToRemove) {
+      setSelectedRows((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(entryToRemove.id);
+        return newSet;
+      });
+    }
+  };
+
+  const handleSendEmail = () => {
+    if (selectedRows.size === 0) return;
+
+    const selectedRecipients = workshopData
+      .filter((entry) => selectedRows.has(entry.id))
+      .map((entry) => ({ email: entry.email, name: entry.name }))
+      .filter((recipient) => recipient.email && recipient.email.includes("@"));
+
+    if (selectedRecipients.length === 0) return;
+
+    setSelectedEmailsForConfirmation(selectedRecipients);
+    setShowEmailConfirmation(true);
+  };
+
+  const handleRowSelection = (entryId: number, selected: boolean) => {
+    setSelectedRows((prev) => {
+      const newSet = new Set(prev);
+      if (selected) {
+        newSet.add(entryId);
+      } else {
+        newSet.delete(entryId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = (selected: boolean) => {
+    if (selected) {
+      setSelectedRows(new Set(filteredData.map((entry) => entry.id)));
+    } else {
+      setSelectedRows(new Set());
+    }
+  };
+
+  const toggleSelectionMode = () => {
+    setShowSelection(!showSelection);
+    if (showSelection) {
+      setSelectedRows(new Set());
+    }
   };
 
   const updateFilter = (
@@ -223,7 +560,7 @@ const WorkshopRegistration = () => {
     return <div className="p-6">Error loading workshop registrations</div>;
 
   return (
-    <div className="p-4 md:p-6 bg-gray-50 min-h-screen flex flex-col">
+    <div className="p-4 md:p-6 bg-gray-50 flex flex-col">
       <h1 className="text-xl md:text-2xl font-bold mb-6">
         Workshop Registrations
       </h1>
@@ -238,6 +575,17 @@ const WorkshopRegistration = () => {
         columnConfigs={columnConfigs}
         visibleColumns={visibleColumns}
         onColumnVisibilityChange={setVisibleColumns}
+        onSendEmail={handleSendEmail}
+        showSelection={showSelection}
+        onToggleSelection={toggleSelectionMode}
+        selectedCount={selectedRows.size}
+        freezeColumns={freezeColumns}
+        freezeColumnOptions={freezeColumnOptions}
+        onFreezeColumnChange={handleFreezeColumnChange}
+        sortConfigs={sortConfigs}
+        onSortChange={handleSort}
+        onClearSort={clearSort}
+        onClearAllSorts={clearAllSorts}
       />
 
       <ActiveFiltersDisplay
@@ -257,11 +605,27 @@ const WorkshopRegistration = () => {
             Total Students Registered: <strong>{workshopData.length}</strong>
           </>
         )}
+        {showSelection && selectedRows.size > 0 && (
+          <span className="ml-4 text-blue-600">
+            • <strong>{selectedRows.size}</strong> selected
+          </span>
+        )}
       </div>
+
+      {/* Meeting Reminder Status Indicator */}
+      <MeetingReminderStatus
+        isActive={!isLoading && !error && workshopData.length > 0}
+        dataCount={workshopData.length}
+        className="mb-4"
+      />
       <div className="flex flex-col bg-white shadow rounded flex-1 min-h-0">
         {/* Scrollable table container */}
-        <div className="flex-1 max-h-[100vh] overflow-auto min-h-0">
-          <table className="w-full text-sm text-left">
+        <div
+          ref={tableScrollRef}
+          data-table-container
+          className="flex-1 max-h-[100vh] overflow-auto min-h-[500px]"
+        >
+          <table className="w-full text-sm text-left border-collapse">
             <WorkshopTableHeader
               filters={filters}
               openFilter={openFilter}
@@ -274,6 +638,13 @@ const WorkshopRegistration = () => {
               data={workshopData}
               visibleColumns={visibleColumns}
               permanentColumns={permanentColumns}
+              showSelection={showSelection}
+              isAllSelected={
+                filteredData.length > 0 &&
+                filteredData.every((entry) => selectedRows.has(entry.id))
+              }
+              onSelectAll={handleSelectAll}
+              freezeColumns={freezeColumns}
             />
             <tbody>
               {paginatedData.length > 0 ? (
@@ -284,10 +655,28 @@ const WorkshopRegistration = () => {
                     visibleColumns={visibleColumns}
                     permanentColumns={permanentColumns}
                     refetch={refetch}
+                    isSelected={selectedRows.has(entry.id)}
+                    onSelectionChange={handleRowSelection}
+                    showSelection={showSelection}
+                    freezeColumns={freezeColumns}
                   />
                 ))
               ) : (
-                <NoDataState hasActiveFilters={hasActiveFilters(filters)} />
+                <tr>
+                  <td
+                    colSpan={
+                      permanentColumns.length +
+                        visibleColumns.length +
+                        (showSelection ? 1 : 0) || 1
+                    }
+                  >
+                    <div className="flex justify-center items-center min-h-[200px] w-full">
+                      <NoDataState
+                        hasActiveFilters={hasActiveFilters(filters)}
+                      />
+                    </div>
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
@@ -304,6 +693,21 @@ const WorkshopRegistration = () => {
           />
         </div>
       </div>
+
+      <EmailConfirmationModal
+        isOpen={showEmailConfirmation}
+        onClose={() => setShowEmailConfirmation(false)}
+        onConfirm={() => {
+          setShowEmailConfirmation(false);
+          // Navigate to email self-serve with pre-filled emails
+          navigate("/admin/email-send", {
+            state: { preFilledRecipients: selectedEmailsForConfirmation },
+          });
+        }}
+        selectedRecipients={selectedEmailsForConfirmation}
+        totalSelected={selectedEmailsForConfirmation.length}
+        onRemoveEmail={handleRemoveEmailFromConfirmation}
+      />
     </div>
   );
 };

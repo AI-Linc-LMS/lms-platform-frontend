@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 // import ailincimg from "../../../../assets/dashboard_assets/toplogoimg.png";
 import popper from "../../../../assets/dashboard_assets/poppers.png";
 import roadmap from "../../../../assets/roadmap/roadmap.png";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import CertificateTemplates from "../../../../components/certificate/CertificateTemplates";
 import ProgramCard from "./roadmap/ProgramCard";
@@ -14,6 +14,7 @@ import { PaymentResult } from "../../../../services/payment/razorpayService";
 import PaymentProcessingModal from "./PaymentProcessingModal";
 import PaymentSuccessModal from "./PaymentSuccessModal";
 import PaymentToast from "./PaymentToast";
+import CongratsModal from "./roadmap/CongratsModal";
 
 // Import types
 import {
@@ -51,10 +52,14 @@ const RoadmapPage = () => {
   const navigate = useNavigate();
   const { assessmentId } = useParams<{ assessmentId: string }>();
   const location = useLocation();
+  const queryClient = useQueryClient();
 
   const currentAssessmentId = assessmentId || location.state?.assessmentId;
   const clientId = parseInt(import.meta.env.VITE_CLIENT_ID) || 1;
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // FIXED: Set to true to show modal immediately on page load
+  const [showCongratsModal, setShowCongratsModal] = useState(true);
 
   const certificateRef = useRef<CertificateTemplatesRef>(null);
 
@@ -106,9 +111,9 @@ const RoadmapPage = () => {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["assessment-results", clientId, assessmentId],
+    queryKey: ["assessment-results", clientId, currentAssessmentId],
     queryFn: () =>
-      assessmentId
+      currentAssessmentId
         ? redeemScholarship(clientId, currentAssessmentId)
         : Promise.reject(new Error("No assessment ID")),
     refetchOnWindowFocus: true,
@@ -120,7 +125,7 @@ const RoadmapPage = () => {
 
   // Add countdown timer state
   const [scholarshipExpiryDate, setScholarshipExpiryDate] = useState<Date | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState<string>('');
+  const [, setTimeRemaining] = useState<string>('');
 
   // Add useEffect to set scholarship expiry date
   useEffect(() => {
@@ -159,11 +164,11 @@ const RoadmapPage = () => {
 
           setTimeRemaining(timeRemainingStr.trim());
         } else {
-          setTimeRemaining('Scholarship Expired');
+          // setTimeRemaining('Scholarship Expired');
         }
       } else {
         // If no expiry date is set, set a default 7-day period from now
-        setTimeRemaining('7 days');
+        // setTimeRemaining('7 days');
       }
     };
 
@@ -178,7 +183,7 @@ const RoadmapPage = () => {
   }, [scholarshipExpiryDate]);
 
   // State for countdown
-  const [countdown, setCountdown] = useState({
+  const [, setCountdown] = useState({
     days: 7,
     hours: 0,
     minutes: 0,
@@ -210,24 +215,6 @@ const RoadmapPage = () => {
     // Cleanup interval
     return () => clearInterval(countdownInterval);
   }, []);
-
-  // Add a function to lock scholarship
-  // const handleLockScholarship = async () => {
-  // try {
-  // TODO: Implement actual backend call to lock scholarship
-  //   showToast(
-  //     "success", 
-  //     "Scholarship Locked", 
-  //     "Your scholarship has been locked. You can now complete the payment later."
-  //   );
-  // } catch (error) {
-  // showToast(
-  //   "error", 
-  //   "Lock Failed", 
-  //   "Unable to lock scholarship. Please try again."
-  // );
-  // }
-  // };
 
   const handleDownloadCertificate = async () => {
     setIsDownloading(true);
@@ -291,8 +278,20 @@ const RoadmapPage = () => {
         showToast(
           "success",
           "Payment Successful!",
-          "Your certificate is now ready for download."
+          "Your certificate payment is complete. You can now download your certificate."
         );
+
+        // Invalidate and refetch the assessment results query to get updated payment status
+        queryClient.invalidateQueries({
+          queryKey: ["assessment-results", clientId, currentAssessmentId],
+        });
+
+        // Also refetch after a short delay to ensure backend processing is complete
+        setTimeout(() => {
+          queryClient.invalidateQueries({
+            queryKey: ["assessment-results", clientId, currentAssessmentId],
+          });
+        }, 2000);
       },
       onError: (error: string) => {
         //console.error("Certificate payment failed:", error);
@@ -362,6 +361,14 @@ const RoadmapPage = () => {
 
   return (
     <div className="mb-8 sm:mb-12 lg:mb-30">
+      {/* Congrats Modal - Now it will show immediately on page load */}
+      <CongratsModal
+      open={showCongratsModal}
+      onClose={() => {
+        console.log("Parent: Modal closing");
+        setShowCongratsModal(false);
+      }}
+    />   
       {/* Header */}
       <div className="flex flex-row items-center justify-center relative z-10 mb-6 sm:mb-8 lg:mb-10">
         {/* <img
@@ -419,20 +426,22 @@ const RoadmapPage = () => {
               <div className="flex flex-col items-center justify-center">
                 <button
                   onClick={handleCertificatePayment}
-                  className="flex items-center gap-2 bg-[#14212B] text-white font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-lg shadow hover:bg-[#223344] transition-colors duration-200 focus:outline-none text-sm sm:text-base"
+                  disabled={assessmentPaymentState.isProcessing}
+                  className={`flex items-center gap-2 font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-lg shadow transition-colors duration-200 focus:outline-none text-sm sm:text-base ${assessmentPaymentState.isProcessing
+                    ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                    : "bg-[#14212B] text-white hover:bg-[#223344]"
+                    }`}
                 >
-                  Download Certificate
+                  {assessmentPaymentState.isProcessing ? "Processing Payment..." : " Download Certificate"}
                 </button>
                 <span className="text-sm text-gray-500 italic text-center max-w-md font-sans px-2 mt-2">
-                  (You'll be required to pay Rs 49/- for the certificate)
+                  (You'll be required to pay Rs {redeemData?.assessment_price || 49}/- for the certificate)
                 </span>
-                {/* Scholarship Countdown Section */}
-
               </div>
             ) : (
               <button
                 onClick={handleDownloadCertificate}
-                className="flex items-center gap-2 bg-[#14212B] text-white font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-lg shadow hover:bg-[#223344] transition-colors duration-200 focus:outline-none text-sm sm:text-base"
+                className="flex items-center gap-2 bg-green-600 text-white font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-lg shadow hover:bg-green-700 transition-colors duration-200 focus:outline-none text-sm sm:text-base"
               >
                 {isDownloading ? "Downloading..." : "Download Certificate"}
                 <svg
@@ -457,75 +466,18 @@ const RoadmapPage = () => {
         {/* Main Content */}
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-[inset_0_4px_8px_rgba(0,0,0,0.1)] shadow-gray-300 border border-gray-300 ring-1 ring-white/40 py-4 sm:py-5 w-full mx-auto">
           {/* Performance Report Section */}
-          <PerformanceReport data={perfReportData} />
-          <div className="w-full bg-yellow-50 border-r-4 border-yellow-500 p-4 mt-4 rounded-r-lg shadow-md">
-            <div className="flex items-center justify-end">
-              <div className="flex items-center space-x-4">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-yellow-600"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <div>
-                  <h3 className="text-sm font-semibold text-yellow-800">
-                    Scholarship Offer
-                  </h3>
-                  <div className="flex items-center space-x-1 mt-1">
-                    {/* Compact Countdown Boxes */}
-                    <div className="flex flex-col items-center">
-                      <span className="text-sm font-bold text-yellow-700 bg-white rounded-lg px-2 py-0.5 shadow-md">
-                        {countdown.days}
-                      </span>
-                      <span className="text-[10px] text-yellow-600 mt-0.5">D</span>
-                    </div>
-                    <div className="text-sm font-bold text-yellow-700">:</div>
-                    <div className="flex flex-col items-center">
-                      <span className="text-sm font-bold text-yellow-700 bg-white rounded-lg px-2 py-0.5 shadow-md">
-                        {countdown.hours}
-                      </span>
-                      <span className="text-[10px] text-yellow-600 mt-0.5">H</span>
-                    </div>
-                    <div className="text-sm font-bold text-yellow-700">:</div>
-                    <div className="flex flex-col items-center">
-                      <span className="text-sm font-bold text-yellow-700 bg-white rounded-lg px-2 py-0.5 shadow-md">
-                        {countdown.minutes}
-                      </span>
-                      <span className="text-[10px] text-yellow-600 mt-0.5">M</span>
-                    </div>
-                    <div className="text-sm font-bold text-yellow-700">:</div>
-                    <div className="flex flex-col items-center">
-                      <span className="text-sm font-bold text-yellow-700 bg-white rounded-lg px-2 py-0.5 shadow-md">
-                        {countdown.seconds}
-                      </span>
-                      <span className="text-[10px] text-yellow-600 mt-0.5">S</span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-yellow-600 mt-1">
-                    Hurry! Claim your scholarship
-                  </p>
-                </div>
-              </div>
-            </div>
-            {timeRemaining === 'Scholarship Expired' && (
-              <div className="mt-1 text-red-600 font-medium text-xs">
-                Scholarship offer has expired
-              </div>
-            )}
-          </div>
+          <PerformanceReport
+            data={perfReportData}
+            redeemData={redeemData as ScholarshipRedemptionData}
+            clientId={clientId}
+            assessmentId={currentAssessmentId || ''}
+          />
 
           <div className="flex flex-col lg:flex-row mt-6 sm:mt-8 lg:mt-10 w-full min-h-[200px] sm:min-h-[222px] justify-evenly items-center gap-4 sm:gap-6 lg:gap-2 px-3">
             <AccuracyBarChart data={accuracyBarData} />
             <ScoreArc score={score} max={max} />
             <RatingBars data={ratingBarData} />
           </div>
-
 
           {/* Divider */}
           <div className="border-t border-gray-300 my-6 sm:my-8 lg:my-10 mx-4 sm:mx-6 lg:mx-7"></div>
@@ -606,6 +558,7 @@ const RoadmapPage = () => {
         orderId={paymentResult?.orderId}
         amount={paymentResult?.amount || 0}
         paymentType="assessment"
+        onDownloadCertificate={handleDownloadCertificate} // Add this line
       />
 
       {/* Payment Toast */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import {
   getEmailJobsStatus,
   restartFailedJob,
@@ -11,8 +12,17 @@ import EmailForm from "./EmailForm";
 import AccessDenied from "../../../components/AccessDenied";
 import { useRole } from "../../../hooks/useRole";
 
-const EmailSelfServe: React.FC = () => {
+interface EmailSelfServeProps {
+  preFilledEmails?: string[];
+  preFilledRecipients?: Array<{ email: string; name: string }>;
+}
+
+const EmailSelfServe: React.FC<EmailSelfServeProps> = ({
+  preFilledEmails = [],
+  preFilledRecipients = [],
+}) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const location = useLocation();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(true);
@@ -20,6 +30,31 @@ const EmailSelfServe: React.FC = () => {
   const [jobStatus, setJobStatus] = useState<Record<string, unknown> | null>(
     null
   );
+  
+  // Get pre-filled emails from location state or props
+  const emailsFromState =
+    (location.state as { preFilledEmails?: string[] })?.preFilledEmails || [];
+  const recipientsFromState =
+    (
+      location.state as {
+        preFilledRecipients?: Array<{ email: string; name: string }>;
+      }
+    )?.preFilledRecipients || [];
+
+  const finalPreFilledEmails =
+    preFilledEmails.length > 0 ? preFilledEmails : emailsFromState;
+  const finalPreFilledRecipients =
+    preFilledRecipients.length > 0 ? preFilledRecipients : recipientsFromState;
+
+  // Update showHistoryModal based on whether we have pre-filled emails or recipients
+  useEffect(() => {
+    if (
+      finalPreFilledEmails.length > 0 ||
+      finalPreFilledRecipients.length > 0
+    ) {
+      setShowHistoryModal(false);
+    }
+  }, [finalPreFilledEmails.length, finalPreFilledRecipients.length]);
 
   const {
     data: emailJobs,
@@ -145,9 +180,9 @@ const EmailSelfServe: React.FC = () => {
     );
   };
 
-  const { isSuperAdmin } = useRole();
+  const { isSuperAdmin, isAdminOrInstructor } = useRole();
 
-  if (!isSuperAdmin) {
+  if (!isSuperAdmin && !isAdminOrInstructor) {
     return <AccessDenied />;
   }
 
@@ -158,6 +193,7 @@ const EmailSelfServe: React.FC = () => {
         clientId={clientId}
         onJobCreated={handleJobCreated}
         onViewHistory={handleViewHistory}
+        preFilledRecipients={finalPreFilledRecipients}
       />
 
       {/* Email Jobs History Modal */}

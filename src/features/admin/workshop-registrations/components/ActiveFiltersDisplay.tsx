@@ -50,7 +50,7 @@ export const ActiveFiltersDisplay: React.FC<ActiveFiltersDisplayProps> = ({
       email: "Email",
       phone_number: "Phone",
       workshop_name: "Workshop",
-      session_number: "Session",
+      session_number: "Registered Session",
       referal_code: "Referral Code",
       attended_webinars: "Attended Webinars",
       is_assessment_attempted: "Assessment Attempted",
