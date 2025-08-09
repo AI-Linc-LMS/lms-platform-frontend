@@ -79,8 +79,8 @@ const WebinarManagement: React.FC = () => {
   const formatTimeForAPI = (timeString: string) => {
     if (!timeString) return '';
     // If time is HH:MM, add :00 for seconds
-    return timeString.includes(':') && timeString.split(':').length === 2 
-      ? `${timeString}:00` 
+    return timeString.includes(':') && timeString.split(':').length === 2
+      ? `${timeString}:00`
       : timeString;
   };
 
@@ -96,17 +96,17 @@ const WebinarManagement: React.FC = () => {
       setLoading(true);
       const response = await axiosInstance.get(API_URL);
       console.log('API Response:', response.data);
-      
+
       let workshopData = response.data;
       if (!Array.isArray(workshopData)) {
         workshopData = [workshopData];
       }
-      
+
       const workshopsWithIds = workshopData.map((workshop: WorkshopResponse, index: number) => ({
         ...workshop,
         id: workshop.id || `workshop_${index}`,
       }));
-      
+
       setWorkshops(workshopsWithIds);
     } catch (error: unknown) {
       console.error('Error fetching workshops:', error);
@@ -122,7 +122,7 @@ const WebinarManagement: React.FC = () => {
   const handleCreateWorkshop = async () => {
     try {
       setLoading(true);
-      
+
       const requestData = {
         WorkshopTitle: formData.WorkshopTitle,
         UpcomingWorkshopDate: formatDateForAPI(formData.UpcomingWorkshopDate),
@@ -131,17 +131,17 @@ const WebinarManagement: React.FC = () => {
         WhatsAppGroupLink: formData.WhatsAppGroupLink || "",
         ZoomJoiningLink: formData.ZoomJoiningLink || ""
       };
-      
+
       console.log('Create Request Data:', requestData);
-      
+
       const response = await axiosInstance.post(API_URL, requestData, {
         headers: {
           'Content-Type': 'application/json',
         }
       });
-      
+
       console.log('Create Response:', response.data);
-      
+
       await fetchWorkshops();
       resetForm();
       alert('Workshop created successfully!');
@@ -163,28 +163,28 @@ const WebinarManagement: React.FC = () => {
       alert('No workshop selected for editing');
       return;
     }
-    
+
     try {
       setLoading(true);
-      
+
       // Prepare the request data exactly as the API expects
       const requestData = {
         WorkshopTitle: formData.WorkshopTitle,
         UpcomingWorkshopDate: formatDateForAPI(formData.UpcomingWorkshopDate),
         WorkshopTime: formatTimeForAPI(formData.WorkshopTime),
-        SessionNumber: formData.SessionNumber.toString().startsWith('Session-') 
-          ? formData.SessionNumber 
+        SessionNumber: formData.SessionNumber.toString().startsWith('Session-')
+          ? formData.SessionNumber
           : formatSessionForAPI(formData.SessionNumber),
         WhatsAppGroupLink: formData.WhatsAppGroupLink || "",
         ZoomJoiningLink: formData.ZoomJoiningLink || ""
       };
-      
+
       console.log('PATCH Request Data:', requestData);
-      
+
       // Check if this is a real database ID or a temporary frontend ID
       const workshopId = editingWorkshop.id;
       let apiUrl = API_URL;
-      
+
       if (workshopId && !workshopId.toString().startsWith('workshop_')) {
         // Real database ID - append to URL
         apiUrl = `${API_URL}${workshopId}/`;
@@ -194,36 +194,36 @@ const WebinarManagement: React.FC = () => {
         console.log('Request URL (base):', apiUrl);
         console.log('Note: Using base URL as workshop has temporary/no ID');
       }
-      
+
       // Make the PATCH request to update the workshop
       const response = await axiosInstance.patch(apiUrl, requestData, {
         headers: {
           'Content-Type': 'application/json',
         }
       });
-      
+
       console.log('PATCH Response:', response.data);
-      
+
       // Check if response has 'updated' array as shown in your API response
       if (response.data && response.data.updated) {
         console.log('Updated fields:', response.data.updated);
       }
-      
+
       // Refresh the workshops list to show updated data
       await fetchWorkshops();
       resetForm();
       alert('Workshop updated successfully!');
-      
+
     } catch (error: unknown) {
       console.error('Error updating workshop:', error);
-      
+
       if (axios.isAxiosError(error)) {
         const statusCode = error.response?.status;
         const errorData = error.response?.data;
-        
+
         console.log('Error Status:', statusCode);
         console.log('Error Data:', errorData);
-        
+
         let errorMessage = '';
         if (errorData?.message) {
           errorMessage = errorData.message;
@@ -234,7 +234,7 @@ const WebinarManagement: React.FC = () => {
         } else {
           errorMessage = error.message;
         }
-        
+
         switch (statusCode) {
           case 400:
             alert(`Invalid data format: ${errorMessage}`);
@@ -274,9 +274,9 @@ const WebinarManagement: React.FC = () => {
 
   const handleEdit = (workshop: WorkshopVariable) => {
     setEditingWorkshop(workshop);
-    
+
     console.log('Editing workshop:', workshop);
-    
+
     setFormData({
       WorkshopTitle: workshop.WorkshopTitle || '',
       UpcomingWorkshopDate: formatDateForInput(workshop.UpcomingWorkshopDate || ''),
@@ -285,7 +285,7 @@ const WebinarManagement: React.FC = () => {
       WhatsAppGroupLink: workshop.WhatsAppGroupLink || '',
       ZoomJoiningLink: workshop.ZoomJoiningLink || ''
     });
-    
+
     setShowForm(true);
   };
 
@@ -304,7 +304,7 @@ const WebinarManagement: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validation
     if (!formData.WorkshopTitle.trim()) {
       alert('Workshop Title is required');
@@ -322,7 +322,7 @@ const WebinarManagement: React.FC = () => {
       alert('Session Number is required');
       return;
     }
-    
+
     if (editingWorkshop) {
       handleUpdateWorkshop();
     } else {
@@ -362,7 +362,7 @@ const WebinarManagement: React.FC = () => {
                   <input
                     type="text"
                     value={formData.WorkshopTitle}
-                    onChange={(e) => setFormData({...formData, WorkshopTitle: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, WorkshopTitle: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm lg:text-base"
                     required
                   />
@@ -374,7 +374,7 @@ const WebinarManagement: React.FC = () => {
                   <input
                     type="date"
                     value={formData.UpcomingWorkshopDate}
-                    onChange={(e) => setFormData({...formData, UpcomingWorkshopDate: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, UpcomingWorkshopDate: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm lg:text-base"
                     required
                   />
@@ -386,7 +386,7 @@ const WebinarManagement: React.FC = () => {
                   <input
                     type="time"
                     value={formData.WorkshopTime}
-                    onChange={(e) => setFormData({...formData, WorkshopTime: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, WorkshopTime: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm lg:text-base"
                     required
                   />
@@ -399,7 +399,7 @@ const WebinarManagement: React.FC = () => {
                     type="number"
                     min="1"
                     value={formData.SessionNumber || ''}
-                    onChange={(e) => setFormData({...formData, SessionNumber: parseInt(e.target.value) || ''})}
+                    onChange={(e) => setFormData({ ...formData, SessionNumber: parseInt(e.target.value) || '' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm lg:text-base"
                     required
                   />
@@ -411,7 +411,7 @@ const WebinarManagement: React.FC = () => {
                   <input
                     type="url"
                     value={formData.WhatsAppGroupLink}
-                    onChange={(e) => setFormData({...formData, WhatsAppGroupLink: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, WhatsAppGroupLink: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm lg:text-base"
                     placeholder="https://chat.whatsapp.com/..."
                   />
@@ -423,7 +423,7 @@ const WebinarManagement: React.FC = () => {
                   <input
                     type="url"
                     value={formData.ZoomJoiningLink}
-                    onChange={(e) => setFormData({...formData, ZoomJoiningLink: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, ZoomJoiningLink: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm lg:text-base"
                     placeholder="https://zoom.us/j/..."
                   />
@@ -454,7 +454,7 @@ const WebinarManagement: React.FC = () => {
           <div className="px-4 lg:px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">Workshop List</h2>
           </div>
-          
+
           {loading ? (
             <div className="p-6 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -496,12 +496,12 @@ const WebinarManagement: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <div className="space-y-1">
                             {workshop.WhatsAppGroupLink && (
-                              <a href={workshop.WhatsAppGroupLink} target="_blank" rel="noopener noreferrer" 
-                                 className="text-green-600 hover:text-green-800 block">WhatsApp</a>
+                              <a href={workshop.WhatsAppGroupLink} target="_blank" rel="noopener noreferrer"
+                                className="text-green-600 hover:text-green-800 block">WhatsApp</a>
                             )}
                             {workshop.ZoomJoiningLink && (
                               <a href={workshop.ZoomJoiningLink} target="_blank" rel="noopener noreferrer"
-                                 className="text-blue-600 hover:text-blue-800 block">Zoom</a>
+                                className="text-blue-600 hover:text-blue-800 block">Zoom</a>
                             )}
                           </div>
                         </td>
@@ -529,7 +529,7 @@ const WebinarManagement: React.FC = () => {
                         <h3 className="text-sm font-medium text-gray-900 mb-1">Workshop Title</h3>
                         <p className="text-sm text-gray-700">{workshop.WorkshopTitle}</p>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Date</h4>
@@ -553,19 +553,19 @@ const WebinarManagement: React.FC = () => {
                           <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Links</h4>
                           <div className="flex flex-wrap gap-2">
                             {workshop.WhatsAppGroupLink && (
-                              <a 
-                                href={workshop.WhatsAppGroupLink} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
+                              <a
+                                href={workshop.WhatsAppGroupLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200"
                               >
                                 WhatsApp
                               </a>
                             )}
                             {workshop.ZoomJoiningLink && (
-                              <a 
-                                href={workshop.ZoomJoiningLink} 
-                                target="_blank" 
+                              <a
+                                href={workshop.ZoomJoiningLink}
+                                target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200"
                               >
