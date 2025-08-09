@@ -8,6 +8,7 @@ import ReferalsController from "../commonComponents/icons/sidebarIcons/ReferalsC
 import EmailIconController from "../commonComponents/icons/sidebarIcons/EmailIconController";
 import LiveAdminIconController from "../commonComponents/icons/sidebarIcons/LiveAdminIconController";
 import PaymentIconsController from "../commonComponents/icons/sidebarIcons/PaymentIconsController";
+import WebinarManagementController from "../commonComponents/icons/sidebarIcons/WebinarManagementController";
 export const AdminNavigationLinks: SidebarLinkInfo[] = [
   {
     id: 1,
@@ -57,8 +58,9 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
       },
     ],
   },
+  
   {
-    id: 4,
+    id: 5,
     title: "Assesment Results",
     links: [
       {
@@ -70,7 +72,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
     ],
   },
   {
-    id: 5,
+    id: 6,
     title: "Referrals",
     links: [
       {
@@ -82,7 +84,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
     ],
   },
   {
-    id: 5,
+    id: 7,
     title: "Emails",
     links: [
       {
@@ -94,7 +96,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
     ],
   },
   {
-    id: 6,
+    id: 8,
     title: "Live",
     links: [
       {
@@ -106,15 +108,27 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
     ],
   },
   {
-    id: 7,
+    id: 9,
     title: "Payment Links",
     links: [
       {
         id: 1,
         title: "Payment Links",
         href: "/admin/payment-links",
-       
+
         icon: <PaymentIconsController />,
+      },
+    ],
+  },
+  {
+    id: 10,
+    title: "Webinar Management",
+    links: [
+      {
+        id: 1,
+        title: "Webinar Management",
+        href: "/admin/webinar-management",
+        icon: <WebinarManagementController />,
       },
     ],
   },
