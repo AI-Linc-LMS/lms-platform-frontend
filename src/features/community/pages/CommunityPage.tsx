@@ -109,6 +109,7 @@ const CommunityPage: React.FC = () => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState<{ [key: string]: boolean }>({});
+  const [showComingSoonPopup, setShowComingSoonPopup] = useState(true);
 
   const allTags = Array.from(new Set(threads.flatMap(thread => thread.tags)));
 
@@ -195,6 +196,33 @@ const CommunityPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Coming Soon Popup */}
+      {showComingSoonPopup && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-6 sm:p-8 max-w-md w-full shadow-2xl mx-4 transform animate-in fade-in zoom-in duration-300">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Users size={32} className="text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">Coming Soon!</h2>
+              <p className="text-gray-600 mb-8 leading-relaxed">
+                We're working hard to bring you an amazing community experience. 
+                Stay tuned for discussions, Q&A, and collaborative learning features.
+              </p>
+              <button
+                onClick={() => {
+                  setShowComingSoonPopup(false);
+                  navigate('/');
+                }}
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                Continue to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
