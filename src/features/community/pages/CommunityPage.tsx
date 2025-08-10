@@ -20,7 +20,7 @@ import RichTextEditor from '../components/RichTextEditor';
 const CommunityPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const [threads, setThreads] = useState<Thread[]>(
     [
       {
@@ -206,7 +206,7 @@ const CommunityPage: React.FC = () => {
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-3">Coming Soon!</h2>
               <p className="text-gray-600 mb-8 leading-relaxed">
-                We're working hard to bring you an amazing community experience. 
+                We're working hard to bring you an amazing community experience.
                 Stay tuned for discussions, Q&A, and collaborative learning features.
               </p>
               <button
