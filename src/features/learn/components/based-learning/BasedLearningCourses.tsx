@@ -57,7 +57,7 @@ const EnrollmentModal = ({ isOpen, onClose, courseTitle }: { isOpen: boolean; on
     if (!isOpen) return null;
 
     const handleBookSeat = () => {
-        window.open("https://app.ailinc.com/nanodegree-program-payment?data=dv_t0vcbz_n.6d1494d7", "_blank");
+        window.open("https://app.ailinc.com/flagship-program-payment?data=dv_t0riqr_f.5ac86e41", "_blank");
         onClose();
     };
 
