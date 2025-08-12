@@ -57,7 +57,7 @@ const EnrollmentModal = ({ isOpen, onClose, courseTitle }: { isOpen: boolean; on
     if (!isOpen) return null;
 
     const handleBookSeat = () => {
-        window.open("https://app.ailinc.com/flagship-program-payment?data=dv_t0riqr_f.5ac86e41", "_blank");
+        window.open("https://staging.ailinc.com/flagship-program-payment?data=dv_t0riqr_f.5ac86e41", "_blank");
         onClose();
     };
 
