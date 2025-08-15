@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AI Linc</string>
+    <string name="title_activity_main">AI Linc</string>
+    <string name="package_name">com.ailinc.lms</string>
+    <string name="custom_url_scheme">com.ailinc.lms</string>
+</resources>
