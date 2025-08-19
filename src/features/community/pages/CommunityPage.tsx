@@ -9,11 +9,14 @@ import {
   Plus,
   Search,
   Filter,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { CreateThread, Thread, VoteType } from "../types";
 import ThreadCard from "../components/ThreadCard";
 import RichTextEditor from "../components/RichTextEditor";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useToast } from "../../../contexts/ToastContext";
 import {
   addVoteOnThread,
   createThread,
@@ -29,15 +32,13 @@ const CommunityPage: React.FC = () => {
   const location = useLocation();
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const [threads, setThreads] = useState<Thread[]>([]);
+  const { success, error: showError } = useToast();
 
-  const {
-    data,
-    isLoading,
-    error,
-    refetch: refetchThreads,
-  } = useQuery<Thread[]>({
+  const { data, isLoading, error, refetch } = useQuery<Thread[]>({
     queryKey: ["threads", clientId],
     queryFn: () => getAllThreads(clientId),
+    retry: 2,
+    retryDelay: 1000,
   });
 
   useEffect(() => {
@@ -50,6 +51,16 @@ const CommunityPage: React.FC = () => {
     mutationFn: (newThread: CreateThread) => createThread(clientId, newThread),
     onSuccess: (data) => {
       setThreads((prev) => [...prev, data]);
+      success("Thread created", "Your thread has been created successfully.");
+      setShowNewThreadForm(false);
+      setNewThread({ title: "", body: "", tags: "" });
+    },
+    onError: (error) => {
+      console.error("Failed to create thread:", error);
+      showError(
+        "Failed to create thread",
+        "There was an error creating your thread. Please try again."
+      );
     },
   });
 
@@ -65,6 +76,13 @@ const CommunityPage: React.FC = () => {
         )
       );
     },
+    onError: (error) => {
+      console.error("Failed to upvote thread:", error);
+      showError(
+        "Failed to upvote",
+        "There was an error processing your vote. Please try again."
+      );
+    },
   });
 
   const downVoteFromThreadMutation = useMutation({
@@ -77,6 +95,13 @@ const CommunityPage: React.FC = () => {
             ? { ...thread, downvotes: thread.downvotes + 1 }
             : thread
         )
+      );
+    },
+    onError: (error) => {
+      console.error("Failed to downvote thread:", error);
+      showError(
+        "Failed to downvote",
+        "There was an error processing your vote. Please try again."
       );
     },
   });
@@ -118,6 +143,13 @@ const CommunityPage: React.FC = () => {
   };
 
   const handleVote = (threadId: number, type: VoteType): void => {
+    if (
+      upVoteToThreadMutation.isPending ||
+      downVoteFromThreadMutation.isPending
+    ) {
+      return; // Prevent multiple votes while one is in progress
+    }
+
     if (type === VoteType.Upvote) {
       upVoteToThreadMutation.mutate(threadId);
     } else if (type === VoteType.Downvote) {
@@ -142,6 +174,14 @@ const CommunityPage: React.FC = () => {
         ...prev,
         [threadId]: true,
       }));
+      success("Bookmarked", "Thread has been added to your bookmarks.");
+    },
+    onError: (error) => {
+      console.error("Failed to add bookmark:", error);
+      showError(
+        "Failed to bookmark",
+        "There was an error bookmarking this thread."
+      );
     },
   });
 
@@ -152,6 +192,17 @@ const CommunityPage: React.FC = () => {
         ...prev,
         [threadId]: false,
       }));
+      success(
+        "Bookmark removed",
+        "Thread has been removed from your bookmarks."
+      );
+    },
+    onError: (error) => {
+      console.error("Failed to remove bookmark:", error);
+      showError(
+        "Failed to remove bookmark",
+        "There was an error removing the bookmark."
+      );
     },
   });
 
@@ -164,16 +215,24 @@ const CommunityPage: React.FC = () => {
   };
 
   const handleCreateThread = (): void => {
-    if (newThread.title && newThread.body) {
-      createThreadMutation.mutate({
-        title: newThread.title,
-        body: newThread.body,
-        tags: newThread.tags
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter((tag) => tag),
-      });
+    if (!newThread.title.trim()) {
+      showError("Title required", "Please enter a title for your thread.");
+      return;
     }
+
+    if (!newThread.body.trim()) {
+      showError("Content required", "Please add some content to your thread.");
+      return;
+    }
+
+    createThreadMutation.mutate({
+      title: newThread.title.trim(),
+      body: newThread.body.trim(),
+      tags: newThread.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag),
+    });
   };
 
   const handleDeleteThread = (threadId: number): void => {
@@ -192,6 +251,79 @@ const CommunityPage: React.FC = () => {
     setShowMobileMenu(false);
     setShowMobileFilters(false);
   }, [location.pathname]);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-14 sm:h-16">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-600 rounded-md flex items-center justify-center">
+                  <Users className="text-white" size={16} />
+                </div>
+                <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
+                  Community
+                </h1>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading community threads...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-14 sm:h-16">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-600 rounded-md flex items-center justify-center">
+                  <Users className="text-white" size={16} />
+                </div>
+                <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
+                  Community
+                </h1>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white border border-red-200 rounded-lg p-8">
+            <div className="text-center">
+              <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Failed to load community
+              </h2>
+              <p className="text-gray-600 mb-6">
+                There was an error loading the community threads. Please try
+                again.
+              </p>
+              <button
+                onClick={() => refetch()}
+                className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 mx-auto"
+              >
+                <RefreshCw size={18} />
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -437,15 +569,30 @@ const CommunityPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleCreateThread}
-                    disabled={!newThread.title.trim() || !newThread.body.trim()}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    disabled={
+                      !newThread.title.trim() ||
+                      !newThread.body.trim() ||
+                      createThreadMutation.isPending
+                    }
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    Create Thread
+                    {createThreadMutation.isPending ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Creating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Plus size={16} />
+                        <span>Create Thread</span>
+                      </>
+                    )}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowNewThreadForm(false)}
-                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors font-medium text-sm sm:text-base"
+                    disabled={createThreadMutation.isPending}
+                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors font-medium text-sm sm:text-base disabled:opacity-50"
                   >
                     Cancel
                   </button>
@@ -486,23 +633,63 @@ const CommunityPage: React.FC = () => {
 
         {/* Threads List */}
         <div className="space-y-3 sm:space-y-4">
-          {filteredThreads.map((thread) => (
-            <ThreadCard
-              key={thread.id}
-              thread={thread}
-              isExpanded={expandedThreads.has(thread.id)}
-              isBookmarked={isBookmarked[thread.id] || false}
-              onVote={handleVote}
-              onToggleExpansion={toggleThreadExpansion}
-              onToggleBookmark={toggleBookmark}
-              onDeleteThread={(threadId) =>
-                setShowDeleteConfirm({ type: "thread", id: threadId })
-              }
-              onThreadClick={handleThreadClick}
-              onTagSelect={setSelectedTag}
-              canEdit={canEdit}
-            />
-          ))}
+          {filteredThreads.length > 0 ? (
+            filteredThreads.map((thread) => (
+              <ThreadCard
+                key={thread.id}
+                thread={thread}
+                isExpanded={expandedThreads.has(thread.id)}
+                isBookmarked={isBookmarked[thread.id] || false}
+                onVote={handleVote}
+                onToggleExpansion={toggleThreadExpansion}
+                onToggleBookmark={toggleBookmark}
+                onDeleteThread={(threadId) =>
+                  setShowDeleteConfirm({ type: "thread", id: threadId })
+                }
+                onThreadClick={handleThreadClick}
+                onTagSelect={setSelectedTag}
+                canEdit={canEdit}
+              />
+            ))
+          ) : (
+            <div className="bg-white border border-gray-200 rounded-lg p-8">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users size={32} className="text-gray-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  {searchTerm || selectedTag
+                    ? "No threads found"
+                    : "No threads yet"}
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  {searchTerm || selectedTag
+                    ? "Try adjusting your search or filter criteria."
+                    : "Be the first to start a discussion in the community."}
+                </p>
+                {!searchTerm && !selectedTag && (
+                  <button
+                    onClick={() => setShowNewThreadForm(true)}
+                    className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 mx-auto"
+                  >
+                    <Plus size={18} />
+                    Create First Thread
+                  </button>
+                )}
+                {(searchTerm || selectedTag) && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm("");
+                      setSelectedTag("");
+                    }}
+                    className="bg-gray-100 text-gray-700 px-6 py-3 rounded-md hover:bg-gray-200 transition-colors font-medium"
+                  >
+                    Clear Filters
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

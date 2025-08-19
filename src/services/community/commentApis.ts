@@ -1,7 +1,7 @@
-import { CreateComment } from "../../features/community/types";
+import { CreateComment, VoteType } from "../../features/community/types";
 import axiosInstance from "../axiosInstance";
 
-export const addBookmark = async (clientId: number, threadId: number ) => {
+export const addBookmark = async (clientId: number, threadId: number) => {
   try {
     const response = await axiosInstance.post(
       `/community-forum/api/clients/${clientId}/threads/${threadId}/bookmark/`
@@ -25,7 +25,7 @@ export const removeBookmark = async (clientId: number, threadId: number) => {
   }
 };
 
-export const getAllComments = async (clientId: number, threadId: string) => {
+export const getAllComments = async (clientId: number, threadId: number) => {
   try {
     const response = await axiosInstance.get(
       `/community-forum/api/clients/${clientId}/threads/${threadId}/comments/`
@@ -37,7 +37,11 @@ export const getAllComments = async (clientId: number, threadId: string) => {
   }
 };
 
-export const createComment = async (clientId: number, threadId: string, commentData: CreateComment) => {
+export const createComment = async (
+  clientId: number,
+  threadId: number,
+  commentData: CreateComment
+) => {
   try {
     const response = await axiosInstance.post(
       `/community-forum/api/clients/${clientId}/threads/${threadId}/comments/`,
@@ -50,7 +54,12 @@ export const createComment = async (clientId: number, threadId: string, commentD
   }
 };
 
-export const updateComment = async (clientId: number, threadId: string, commentId: string, commentData: Partial<CreateComment>) => {
+export const updateComment = async (
+  clientId: number,
+  threadId: number,
+  commentId: number,
+  commentData: Partial<CreateComment>
+) => {
   try {
     const response = await axiosInstance.put(
       `/community-forum/api/clients/${clientId}/threads/${threadId}/comments/${commentId}/`,
@@ -63,7 +72,11 @@ export const updateComment = async (clientId: number, threadId: string, commentI
   }
 };
 
-export const deleteComment = async (clientId: number, threadId: string, commentId: string) => {
+export const deleteComment = async (
+  clientId: number,
+  threadId: number,
+  commentId: number
+) => {
   try {
     const response = await axiosInstance.delete(
       `/community-forum/api/clients/${clientId}/threads/${threadId}/comments/${commentId}/`
@@ -75,10 +88,16 @@ export const deleteComment = async (clientId: number, threadId: string, commentI
   }
 };
 
-export const addVoteOnComment = async (clientId: number, threadId: string, commentId: string) => {
+export const addVoteOnComment = async (
+  clientId: number,
+  threadId: number,
+  commentId: number,
+  voteType: VoteType
+) => {
   try {
     const response = await axiosInstance.post(
-      `/community-forum/api/clients/${clientId}/threads/${threadId}/comments/${commentId}/vote/`
+      `/community-forum/api/clients/${clientId}/threads/${threadId}/comments/${commentId}/vote/`,
+      { vote_type: voteType }
     );
     return response.data;
   } catch (error) {
@@ -87,7 +106,11 @@ export const addVoteOnComment = async (clientId: number, threadId: string, comme
   }
 };
 
-export const removeVoteOnComment = async (clientId: number, threadId: string, commentId: string) => {
+export const removeVoteOnComment = async (
+  clientId: number,
+  threadId: string,
+  commentId: string
+) => {
   try {
     const response = await axiosInstance.delete(
       `/community-forum/api/clients/${clientId}/threads/${threadId}/comments/${commentId}/vote/`
