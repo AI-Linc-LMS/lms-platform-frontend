@@ -1,45 +1,49 @@
-export interface ThreadComment {
-  id: string;
-  content: string;
-  author: string;
-  createdAt: string;
-  avatar?: string;
-  upvotes: number;
-  downvotes: number;
-  isUpvoted?: boolean;
-  isDownvoted?: boolean;
+export interface Author {
+  id: number;
+  user_name: string;
+  profile_pic_url?: string;
+  role?: string;
 }
 
-export interface Answer {
-  id: string;
-  content: string;
-  author: string;
-  createdAt: string;
-  upvotes: number;
-  downvotes: number;
-  isUpvoted?: boolean;
-  isDownvoted?: boolean;
-  comments: ThreadComment[];
-  avatar?: string;
-  badge?: string;
-  isAccepted?: boolean;
+export interface Author {
+  id: number;
+  user_name: string;
+  profile_pic_url?: string;
+  role?: string;
 }
 
 export interface Thread {
-  id: string;
+  id: number;
   title: string;
-  content: string;
-  author: string;
-  createdAt: string;
+  body: string;
+  author: Author;
+  client?: number;
+  tags: string[];
+  created_at: string;
+  updated_at?: string;
   upvotes: number;
   downvotes: number;
-  answers: Answer[];
+  bookmarks_count?: number;
+  comments_count?: number;
+}
+
+export type CreateThread = {
+  title: string;
+  body: string;
   tags: string[];
-  isUpvoted?: boolean;
-  isDownvoted?: boolean;
-  avatar?: string;
-  isPinned?: boolean;
-  isSolved?: boolean;
-  views?: number;
-  badge?: string;
+};
+
+export type CreateComment = {
+  parent: number;
+  body: string;
+};
+
+export type AddVote = {
+  threadId: number;
+  vote_type: VoteType;
+};
+
+export enum VoteType {
+  Upvote = "upvote",
+  Downvote = "downvote",
 }

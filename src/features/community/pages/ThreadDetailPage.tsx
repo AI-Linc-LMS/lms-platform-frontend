@@ -1,19 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trash2, AlertCircle } from 'lucide-react';
-import { Thread, Answer } from '../types';
-import ThreadHeader from '../components/ThreadHeader';
-import AnswerForm from '../components/AnswerForm';
-import AnswerCard from '../components/AnswerCard';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, Trash2, AlertCircle } from "lucide-react";
+import { Thread, Answer, CreateComment } from "../types";
+import ThreadHeader from "../components/ThreadHeader";
+import AnswerForm from "../components/AnswerForm";
+import AnswerCard from "../components/AnswerCard";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { getThreadData } from "../../../services/community/threadApis";
+import { createComment } from "../../../services/community/commentApis";
 
 const ThreadDetailPage: React.FC = () => {
+  const clientId = import.meta.env.VITE_CLIENT_ID;
   const { threadId } = useParams<{ threadId: string }>();
+  const threadIdNum = Number(threadId);
   const navigate = useNavigate();
+
+  const { data, isLoading, error } = useQuery<Thread>({
+    queryKey: ["thread", threadIdNum],
+    queryFn: () => getThreadData(clientId, threadIdNum),
+  });
 
   // Mock thread data - in real app, fetch from API
   const [thread, setThread] = useState<Thread>({
-    id: '1',
-    title: 'Building a Modern Web Application: Best Practices and Architecture',
+    id: "1",
+    title: "Building a Modern Web Application: Best Practices and Architecture",
     content: `
       <p>I'm working on a new web application and want to ensure I'm following the best practices for modern web development. Here are some specific areas I'd like to discuss:</p>
       
@@ -72,18 +82,19 @@ const useApi = <T>(endpoint: string) => {
       
       <p>What are your thoughts on these approaches? Are there any modern best practices I'm missing?</p>
     `,
-    author: 'Sarah Chen',
-    createdAt: '2024-01-15',
+    author: "Sarah Chen",
+    createdAt: "2024-01-15",
     upvotes: 45,
     downvotes: 2,
-    tags: ['React', 'TypeScript', 'Architecture', 'Best Practices'],
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+    tags: ["React", "TypeScript", "Architecture", "Best Practices"],
+    avatar:
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
     isPinned: true,
     views: 1234,
-    badge: 'Senior Developer',
+    badge: "Senior Developer",
     answers: [
       {
-        id: 'a1',
+        id: "a1",
         content: `
           <p>Great question! I'll address each point with some modern best practices:</p>
 
@@ -118,111 +129,107 @@ const [state, dispatch] = useReducer(reducer, initialState);
 export const AppContext = createContext<AppState>(initialState);
           </code></pre>
         `,
-        author: 'David Kim',
-        createdAt: '2024-01-15',
+        author: "David Kim",
+        createdAt: "2024-01-15",
         upvotes: 78,
         downvotes: 1,
-        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
-        badge: 'Lead Developer',
+        avatar:
+          "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
+        badge: "Lead Developer",
         isAccepted: true,
         comments: [
           {
-            id: 'c1',
-            content: 'This is incredibly helpful! Could you elaborate more on error boundaries?',
-            author: 'Emily Johnson',
-            createdAt: '2024-01-15',
-            avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+            id: "c1",
+            content:
+              "This is incredibly helpful! Could you elaborate more on error boundaries?",
+            author: "Emily Johnson",
+            createdAt: "2024-01-15",
+            avatar:
+              "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
             upvotes: 12,
-            downvotes: 0
-          }
-        ]
-      }
-    ]
+            downvotes: 0,
+          },
+        ],
+      },
+    ],
   });
 
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ type: 'answer' | 'comment', id: string } | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<{
+    type: "answer" | "comment";
+    id: string;
+  } | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
 
   useEffect(() => {
     // Increment view count when component mounts
     if (thread) {
-      setThread(prev => ({ ...prev, views: (prev.views || 0) + 1 }));
+      setThread((prev) => ({ ...prev, views: (prev.views || 0) + 1 }));
     }
-  }, [threadId]);
+  }, [threadIdNum]);
 
   const getParticipants = (): string[] => {
     const participants = new Set<string>();
     participants.add(thread.author);
-    thread.answers.forEach(answer => {
+    thread.answers.forEach((answer) => {
       participants.add(answer.author);
-      answer.comments?.forEach(comment => participants.add(comment.author));
+      answer.comments?.forEach((comment) => participants.add(comment.author));
     });
     return Array.from(participants).slice(0, 8);
   };
 
-  const handleVoteThread = (type: 'up' | 'down') => {
-    setThread(prev => ({
+  const handleVoteThread = (type: "up" | "down") => {
+    setThread((prev) => ({
       ...prev,
-      upvotes: type === 'up' ? prev.upvotes + 1 : prev.upvotes,
-      downvotes: type === 'down' ? prev.downvotes + 1 : prev.downvotes,
-      isUpvoted: type === 'up' ? true : prev.isUpvoted,
-      isDownvoted: type === 'down' ? true : prev.isDownvoted
+      upvotes: type === "up" ? prev.upvotes + 1 : prev.upvotes,
+      downvotes: type === "down" ? prev.downvotes + 1 : prev.downvotes,
+      isUpvoted: type === "up" ? true : prev.isUpvoted,
+      isDownvoted: type === "down" ? true : prev.isDownvoted,
     }));
   };
 
-  const handleVoteAnswer = (answerId: string, type: 'up' | 'down') => {
-    setThread(prev => ({
+  const handleVoteAnswer = (answerId: string, type: "up" | "down") => {
+    setThread((prev) => ({
       ...prev,
-      answers: prev.answers.map(answer =>
+      answers: prev.answers.map((answer) =>
         answer.id === answerId
           ? {
-            ...answer,
-            upvotes: type === 'up' ? answer.upvotes + 1 : answer.upvotes,
-            downvotes: type === 'down' ? answer.downvotes + 1 : answer.downvotes,
-            isUpvoted: type === 'up' ? true : answer.isUpvoted,
-            isDownvoted: type === 'down' ? true : answer.isDownvoted
-          }
+              ...answer,
+              upvotes: type === "up" ? answer.upvotes + 1 : answer.upvotes,
+              downvotes:
+                type === "down" ? answer.downvotes + 1 : answer.downvotes,
+              isUpvoted: type === "up" ? true : answer.isUpvoted,
+              isDownvoted: type === "down" ? true : answer.isDownvoted,
+            }
           : answer
-      )
+      ),
     }));
   };
 
+  const addCommentMutation = useMutation({
+    mutationFn: (commentData: CreateComment) => createComment(clientId, threadIdNum ?? '', commentData),
+  });
+
   const handleAddAnswer = async (content: string) => {
-    const answer: Answer = {
-      id: Date.now().toString(),
-      content,
-      author: 'Current User',
-      createdAt: new Date().toISOString().split('T')[0],
-      upvotes: 0,
-      downvotes: 0,
-      comments: [],
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+    const answerData: CreateComment = {
+      body: content,
+      parent: threadIdNum ?? '',
     };
-
-    setThread(prev => ({
-      ...prev,
-      answers: [...prev.answers, answer]
-    }));
-
-    // Scroll to the new answer
-    setTimeout(() => {
-      document.getElementById(answer.id)?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+    addCommentMutation.mutate(answerData);
   };
 
   const handleEditAnswer = (answerId: string, content: string) => {
-    setThread(prev => ({
+    setThread((prev) => ({
       ...prev,
-      answers: prev.answers.map(answer =>
+      answers: prev.answers.map((answer) =>
         answer.id === answerId ? { ...answer, content } : answer
-      )
+      ),
     }));
   };
 
   const handleDeleteAnswer = (answerId: string) => {
-    setThread(prev => ({
+    setThread((prev) => ({
       ...prev,
-      answers: prev.answers.filter(answer => answer.id !== answerId)
+      answers: prev.answers.filter((answer) => answer.id !== answerId),
     }));
     setShowDeleteConfirm(null);
   };
@@ -231,27 +238,27 @@ export const AppContext = createContext<AppState>(initialState);
     const comment = {
       id: Date.now().toString(),
       content,
-      author: 'Current User',
-      createdAt: new Date().toISOString().split('T')[0],
+      author: "Current User",
+      createdAt: new Date().toISOString().split("T")[0],
       upvotes: 0,
-      downvotes: 0
+      downvotes: 0,
     };
 
-    setThread(prev => ({
+    setThread((prev) => ({
       ...prev,
-      answers: prev.answers.map(answer =>
+      answers: prev.answers.map((answer) =>
         answer.id === answerId
           ? { ...answer, comments: [...answer.comments, comment] }
           : answer
-      )
+      ),
     }));
   };
 
   const handleBackToCommunity = () => {
-    navigate('/community');
+    navigate("/community");
   };
 
-  const canEdit = (author: string) => author === 'Current User';
+  const canEdit = (author: string) => author === "Current User";
 
   if (!thread) {
     return (
@@ -259,7 +266,9 @@ export const AppContext = createContext<AppState>(initialState);
         <div className="text-center">
           <AlertCircle size={48} className="text-gray-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-700">Thread not found</h2>
-          <p className="text-gray-500 mb-6">The thread you're looking for doesn't exist or has been removed.</p>
+          <p className="text-gray-500 mb-6">
+            The thread you're looking for doesn't exist or has been removed.
+          </p>
           <button
             onClick={handleBackToCommunity}
             className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all font-semibold"
@@ -283,14 +292,17 @@ export const AppContext = createContext<AppState>(initialState);
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Trash2 size={20} className="text-red-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete {showDeleteConfirm.type}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Delete {showDeleteConfirm.type}
+              </h3>
               <p className="text-gray-600 mb-6 text-sm sm:text-base">
-                Are you sure you want to delete this {showDeleteConfirm.type}? This action cannot be undone.
+                Are you sure you want to delete this {showDeleteConfirm.type}?
+                This action cannot be undone.
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={() => {
-                    if (showDeleteConfirm.type === 'answer') {
+                    if (showDeleteConfirm.type === "answer") {
                       handleDeleteAnswer(showDeleteConfirm.id);
                     }
                   }}
@@ -341,7 +353,9 @@ export const AppContext = createContext<AppState>(initialState);
           <div className="flex items-center justify-between">
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
               <span className="sm:hidden">{thread.answers.length} Replies</span>
-              <span className="hidden sm:inline">{thread.answers.length} Answers</span>
+              <span className="hidden sm:inline">
+                {thread.answers.length} Answers
+              </span>
             </h2>
           </div>
 
@@ -355,7 +369,9 @@ export const AppContext = createContext<AppState>(initialState);
               answer={answer}
               onVote={(answerId, type) => handleVoteAnswer(answerId, type)}
               onEdit={handleEditAnswer}
-              onDelete={(answerId) => setShowDeleteConfirm({ type: 'answer', id: answerId })}
+              onDelete={(answerId) =>
+                setShowDeleteConfirm({ type: "answer", id: answerId })
+              }
               onAddComment={handleAddComment}
               canEdit={canEdit}
             />
