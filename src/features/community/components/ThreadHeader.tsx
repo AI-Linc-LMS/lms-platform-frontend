@@ -39,28 +39,21 @@ const ThreadHeader: React.FC<ThreadHeaderProps> = ({
         <div className="flex sm:flex-col items-center sm:items-center gap-3 sm:gap-2 min-w-[80px] order-2 sm:order-1">
           <button
             onClick={() => onVote(VoteType.Upvote)}
-            className={`p-2 sm:p-3 rounded-md transition-colors text-gray-400 hover:text-orange-600 hover:bg-orange-50`}
+            className={`p-2 sm:p-3 rounded-md transition-colors text-orange-600 hover:bg-orange-50`}
           >
             <ArrowUp size={20} className="sm:w-6 sm:h-6" />
           </button>
-          <span
-            className={`text-lg sm:text-xl font-bold px-2 sm:px-3 py-1 sm:py-2 rounded ${
-              thread.upvotes - thread.downvotes > 0
-                ? "text-orange-600"
-                : thread.upvotes - thread.downvotes < 0
-                ? "text-blue-600"
-                : "text-gray-500"
-            }`}
-          >
-            {thread.upvotes - thread.downvotes}
-          </span>
+          <div className="flex flex-col items-center text-xs sm:text-sm font-semibold">
+            <span className="text-orange-600 px-1.5 sm:px-2 py-0.5">
+              {thread.upvotes}
+            </span>
+            <span className="text-blue-600 px-1.5 sm:px-2 py-0.5">
+              {thread.downvotes}
+            </span>
+          </div>
           <button
             onClick={() => onVote(VoteType.Downvote)}
-            className={`p-2 sm:p-3 rounded-md transition-colors ${
-              thread.upvotes - thread.downvotes < 0
-                ? "text-blue-600 bg-blue-50"
-                : "text-gray-400 hover:text-blue-600 hover:bg-blue-50"
-            }`}
+            className={`p-2 sm:p-3 rounded-md transition-colors text-blue-600 hover:bg-blue-50`}
           >
             <ArrowDown size={20} className="sm:w-6 sm:h-6" />
           </button>

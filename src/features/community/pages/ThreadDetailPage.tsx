@@ -32,6 +32,7 @@ const ThreadDetailPage: React.FC = () => {
     data: threadData,
     isLoading,
     error,
+    refetch: refetchThread,
   } = useQuery<Thread>({
     queryKey: ["thread", threadIdNum],
     queryFn: () => getThreadData(clientId, threadIdNum),
@@ -91,13 +92,65 @@ const ThreadDetailPage: React.FC = () => {
     return Array.from(participants).slice(0, 8);
   };
 
-  // Get only top-level comments (those without a parent)
-  const getTopLevelComments = (): Comment[] => {
-    // If comments are already structured with nested replies, return all root comments
-    // Otherwise, filter out comments that have a parent
-    return comments.filter(
+  // Flatten all comments and replies with proper tracking
+  const getFlattenedComments = (): Array<
+    Comment & {
+      isReply: boolean;
+      parentAuthor?: string;
+      replyLevel: number;
+      originalParentId?: number;
+    }
+  > => {
+    const flattened: Array<
+      Comment & {
+        isReply: boolean;
+        parentAuthor?: string;
+        replyLevel: number;
+        originalParentId?: number;
+      }
+    > = [];
+
+    const addCommentsFlat = (
+      comments: Comment[],
+      parentAuthor?: string,
+      level: number = 0,
+      parentId?: number
+    ) => {
+      comments.forEach((comment) => {
+        // Add the comment itself
+        flattened.push({
+          ...comment,
+          isReply: level > 0,
+          parentAuthor: parentAuthor,
+          replyLevel: level,
+          originalParentId: level > 0 ? parentId : comment.id,
+        });
+
+        // If this comment has replies, they should be visible, and we haven't exceeded max depth
+        if (
+          comment.replies &&
+          comment.replies.length > 0 &&
+          visibleReplies.has(comment.id) &&
+          level < 3
+        ) {
+          // Limit nesting to 3 levels maximum
+          addCommentsFlat(
+            comment.replies,
+            comment.author.user_name,
+            level + 1,
+            level === 0 ? comment.id : parentId
+          );
+        }
+      });
+    };
+
+    // Start with top-level comments
+    const topLevelComments = comments.filter(
       (comment) => comment.parent === null || comment.parent === undefined
     );
+    addCommentsFlat(topLevelComments);
+
+    return flattened;
   };
 
   const toggleRepliesVisibility = (commentId: number) => {
@@ -145,6 +198,7 @@ const ThreadDetailPage: React.FC = () => {
     } else {
       downVoteFromThreadMutation.mutate();
     }
+    refetchThread();
   };
 
   const addVoteOnCommentMutation = useMutation({
@@ -387,7 +441,7 @@ const ThreadDetailPage: React.FC = () => {
   }
 
   const participants = getParticipants();
-  const topLevelComments = getTopLevelComments();
+  const flattenedComments = getFlattenedComments();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -506,8 +560,8 @@ const ThreadDetailPage: React.FC = () => {
           {/* Comments List */}
           {!isLoadingComments && !commentsError && (
             <>
-              {topLevelComments && topLevelComments.length > 0 ? (
-                topLevelComments.map((comment) => (
+              {flattenedComments && flattenedComments.length > 0 ? (
+                flattenedComments.map((comment) => (
                   <CommentCard
                     key={comment.id}
                     comment={comment}
@@ -522,9 +576,11 @@ const ThreadDetailPage: React.FC = () => {
                     }
                     onAddReply={handleAddReply}
                     canEdit={canEdit}
-                    nestingLevel={0}
                     onToggleReplies={toggleRepliesVisibility}
                     visibleReplies={visibleReplies}
+                    isReply={comment.isReply}
+                    parentAuthor={comment.parentAuthor}
+                    replyLevel={comment.replyLevel}
                   />
                 ))
               ) : (

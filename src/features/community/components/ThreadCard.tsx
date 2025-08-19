@@ -22,7 +22,6 @@ interface ThreadCardProps {
   onDeleteThread: (threadId: number) => void;
   onThreadClick: (threadId: number) => void;
   onTagSelect: (tag: string) => void;
-  canEdit: (author: string) => boolean;
 }
 
 const ThreadCard: React.FC<ThreadCardProps> = ({
@@ -35,7 +34,6 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
   onDeleteThread,
   onThreadClick,
   onTagSelect,
-  canEdit,
 }) => {
   const authorAvatar = getUserAvatar(
     thread.author.user_name,
@@ -71,11 +69,7 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
             </div>
             <button
               onClick={() => onVote(thread.id, VoteType.Downvote)}
-              className={`p-1.5 sm:p-2 rounded-md transition-colors ${
-                // thread.isDownvoted
-                //   ? "text-blue-600 bg-blue-50"
-                "text-gray-400 hover:text-blue-600 hover:bg-blue-50"
-              }`}
+              className={`p-1.5 sm:p-2 rounded-md transition-colors text-blue-600 hover:bg-blue-50`}
             >
               <ArrowDown size={16} className="sm:w-4 sm:h-4" />
             </button>
@@ -87,14 +81,14 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors line-clamp-2 pr-2">
                 {thread.title}
               </h3>
-              {canEdit(thread.author.user_name) && (
+              {thread?.author?.user_name && (
                 <div
                   className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button
                     onClick={() => onDeleteThread(thread.id)}
-                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
                   >
                     <Trash2 size={12} className="sm:w-3.5 sm:h-3.5" />
                   </button>

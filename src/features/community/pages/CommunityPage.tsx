@@ -34,7 +34,12 @@ const CommunityPage: React.FC = () => {
   const [threads, setThreads] = useState<Thread[]>([]);
   const { success, error: showError } = useToast();
 
-  const { data, isLoading, error, refetch } = useQuery<Thread[]>({
+  const {
+    data,
+    isLoading,
+    error,
+    refetch: refetchThreads,
+  } = useQuery<Thread[]>({
     queryKey: ["threads", clientId],
     queryFn: () => getAllThreads(clientId),
     retry: 2,
@@ -67,15 +72,6 @@ const CommunityPage: React.FC = () => {
   const upVoteToThreadMutation = useMutation({
     mutationFn: (threadId: number) =>
       addVoteOnThread(clientId, threadId, VoteType.Upvote),
-    onSuccess: (_data, threadId) => {
-      setThreads((prevThreads) =>
-        prevThreads.map((thread) =>
-          thread.id === threadId
-            ? { ...thread, upvotes: thread.upvotes + 1 }
-            : thread
-        )
-      );
-    },
     onError: (error) => {
       console.error("Failed to upvote thread:", error);
       showError(
@@ -88,15 +84,6 @@ const CommunityPage: React.FC = () => {
   const downVoteFromThreadMutation = useMutation({
     mutationFn: (threadId: number) =>
       addVoteOnThread(clientId, threadId, VoteType.Downvote),
-    onSuccess: (_data, threadId) => {
-      setThreads((prevThreads) =>
-        prevThreads.map((thread) =>
-          thread.id === threadId
-            ? { ...thread, downvotes: thread.downvotes + 1 }
-            : thread
-        )
-      );
-    },
     onError: (error) => {
       console.error("Failed to downvote thread:", error);
       showError(
@@ -155,6 +142,7 @@ const CommunityPage: React.FC = () => {
     } else if (type === VoteType.Downvote) {
       downVoteFromThreadMutation.mutate(threadId);
     }
+    refetchThreads();
   };
 
   const toggleThreadExpansion = (threadId: number): void => {
@@ -242,10 +230,6 @@ const CommunityPage: React.FC = () => {
     setShowDeleteConfirm(null);
   };
 
-  const canEdit = (author: string): boolean => {
-    return author === "Current User";
-  };
-
   useEffect(() => {
     setExpandedThreads(new Set());
     setShowMobileMenu(false);
@@ -312,7 +296,7 @@ const CommunityPage: React.FC = () => {
                 again.
               </p>
               <button
-                onClick={() => refetch()}
+                onClick={() => refetchThreads()}
                 className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 mx-auto"
               >
                 <RefreshCw size={18} />
@@ -648,7 +632,6 @@ const CommunityPage: React.FC = () => {
                 }
                 onThreadClick={handleThreadClick}
                 onTagSelect={setSelectedTag}
-                canEdit={canEdit}
               />
             ))
           ) : (

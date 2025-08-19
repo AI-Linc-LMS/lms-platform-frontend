@@ -12,9 +12,11 @@ interface CommentCardProps {
   onDelete: (commentId: number) => void;
   onAddReply: (parentId: number, content: string) => void;
   canEdit: (author: string) => boolean;
-  nestingLevel?: number;
   onToggleReplies?: (commentId: number) => void;
   visibleReplies?: Set<number>;
+  isReply?: boolean;
+  parentAuthor?: string;
+  replyLevel?: number;
 }
 
 const CommentCard: React.FC<CommentCardProps> = ({
@@ -24,9 +26,11 @@ const CommentCard: React.FC<CommentCardProps> = ({
   onDelete,
   onAddReply,
   canEdit,
-  nestingLevel = 0,
   onToggleReplies,
   visibleReplies = new Set(),
+  isReply = false,
+  parentAuthor,
+  replyLevel = 0,
 }) => {
   const [editingComment, setEditingComment] = useState(false);
   const [editedContent, setEditedContent] = useState(comment.body);
@@ -48,14 +52,52 @@ const CommentCard: React.FC<CommentCardProps> = ({
     setEditingComment(false);
   };
 
+  // Get styling based on reply level
+  const getReplyStyleClass = () => {
+    if (!isReply) return "";
+
+    switch (replyLevel) {
+      case 1:
+        return "border-l-4 border-blue-200";
+      case 2:
+        return "border-l-4 border-green-200";
+      default:
+        return "border-l-4 border-purple-200";
+    }
+  };
+
+  const getReplyIndicatorColor = () => {
+    if (!isReply) return "bg-blue-50 text-blue-700";
+
+    switch (replyLevel) {
+      case 1:
+        return "bg-blue-50 text-blue-700";
+      case 2:
+        return "bg-green-50 text-green-700";
+      default:
+        return "bg-purple-50 text-purple-700";
+    }
+  };
+
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden mt-5">
+    <div
+      className={`bg-white border border-gray-200 rounded-lg overflow-hidden mt-5 ${getReplyStyleClass()}`}
+    >
       {/* Reply indicator - show if this is a reply */}
-      {nestingLevel > 0 && (
-        <div className="bg-blue-50 border-b border-blue-100 px-4 py-2">
-          <div className="flex items-center gap-2 text-sm text-blue-700">
+      {isReply && (
+        <div
+          className={`border-b border-opacity-20 px-4 py-2 ${getReplyIndicatorColor()}`}
+        >
+          <div className="flex items-center gap-2 text-sm">
             <MessageCircle size={14} />
-            <span>Reply to comment</span>
+            <span>
+              {replyLevel === 1
+                ? "Reply to comment"
+                : replyLevel === 2
+                ? "Reply to reply"
+                : `Level ${replyLevel} reply`}
+              {parentAuthor && ` by ${parentAuthor}`}
+            </span>
           </div>
         </div>
       )}
@@ -153,10 +195,11 @@ const CommentCard: React.FC<CommentCardProps> = ({
                       Reply
                     </button>
 
-                    {/* Show/Hide replies button - show for comments that have replies */}
+                    {/* Show/Hide replies button - show for comments that have replies and aren't too deep */}
                     {comment.replies &&
                       comment.replies.length > 0 &&
-                      onToggleReplies && (
+                      onToggleReplies &&
+                      replyLevel < 3 && (
                         <button
                           onClick={() => onToggleReplies(comment.id)}
                           className="text-gray-600 hover:text-blue-600 font-medium text-xs sm:text-sm px-2 py-1 rounded hover:bg-blue-50 transition-colors"
@@ -223,28 +266,6 @@ const CommentCard: React.FC<CommentCardProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Nested Replies - shown when this comment's replies are visible */}
-      {comment.replies &&
-        comment.replies.length > 0 &&
-        visibleReplies.has(comment.id) && (
-          <div className="ml-4 sm:ml-8 border-l-2 border-gray-100 pl-4 space-y-4">
-            {comment.replies.map((reply) => (
-              <CommentCard
-                key={reply.id}
-                comment={reply}
-                onVote={onVote}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onAddReply={onAddReply}
-                canEdit={canEdit}
-                nestingLevel={nestingLevel + 1}
-                onToggleReplies={onToggleReplies}
-                visibleReplies={visibleReplies}
-              />
-            ))}
-          </div>
-        )}
     </div>
   );
 };
