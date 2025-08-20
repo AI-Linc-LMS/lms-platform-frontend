@@ -60,12 +60,21 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
     }
   };
 
-  const handleExploreClick = async () => {
+  const isInitiallyEnrolled = !!course && getEnrolledIds().has(course.id);
+  const [isEnrolled, setIsEnrolled] = useState<boolean>(isInitiallyEnrolled);
+
+  const handlePrimaryClick = async () => {
     if (!course) return;
+
+    if (isEnrolled) {
+      navigate(`/courses/${course.id}`);
+      return;
+    }
 
     if (isFree) {
       const enrolledIds = getEnrolledIds();
       if (enrolledIds.has(course.id)) {
+        setIsEnrolled(true);
         navigate(`/courses/${course.id}`);
         return;
       }
@@ -75,6 +84,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
         await enrollInCourse(clientId, course.id);
         enrolledIds.add(course.id);
         saveEnrolledIds(enrolledIds);
+        setIsEnrolled(true);
         setShowSuccessToast(true);
         setTimeout(() => {
           setShowSuccessToast(false);
@@ -87,6 +97,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
         setIsEnrolling(false);
       }
     } else {
+      // Paid or non-free: navigate to detail (enrollment handled elsewhere)
       navigate(`/courses/${course.id}`);
     }
   };
@@ -218,11 +229,11 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
       </div>
       <div className="mt-auto">
         <PrimaryButton
-          onClick={handleExploreClick}
+          onClick={handlePrimaryClick}
           className="w-full text-sm md:text-base rounded-xl"
           disabled={isEnrolling}
         >
-          {isEnrolling ? 'Processing…' : 'Explore More'}
+          {isEnrolling ? 'Processing…' : (isEnrolled ? 'Explore More' : 'Enroll Now')}
         </PrimaryButton>
       </div>
     </div>
