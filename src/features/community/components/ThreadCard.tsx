@@ -4,6 +4,7 @@ import {
   ArrowDown,
   Calendar,
   Trash2,
+  Edit2,
   Share2,
   Bookmark,
   ArrowRight,
@@ -20,6 +21,7 @@ interface ThreadCardProps {
   onToggleExpansion: (threadId: number) => void;
   onToggleBookmark: (threadId: number) => void;
   onDeleteThread: (threadId: number) => void;
+  onEditThread: (thread: Thread) => void;
   onThreadClick: (threadId: number) => void;
   onTagSelect: (tag: string) => void;
   canEdit: (author: string) => boolean;
@@ -33,6 +35,7 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
   onToggleExpansion,
   onToggleBookmark,
   onDeleteThread,
+  onEditThread,
   onThreadClick,
   onTagSelect,
   canEdit,
@@ -43,7 +46,7 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
   );
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow mx-1 sm:mx-0">
+    <div className="bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow mx-1 sm:mx-0 group">
       <div className="p-3 sm:p-6">
         <div className="flex gap-2 sm:gap-4">
           {/* Vote Section */}
@@ -87,11 +90,18 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors line-clamp-2 pr-2">
                 {thread.title}
               </h3>
+
               {canEdit(thread.author.user_name) && (
                 <div
                   className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                   onClick={(e) => e.stopPropagation()}
                 >
+                  <button
+                    onClick={() => onEditThread(thread)}
+                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                  >
+                    <Edit2 size={12} className="sm:w-3.5 sm:h-3.5" />
+                  </button>
                   <button
                     onClick={() => onDeleteThread(thread.id)}
                     className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
