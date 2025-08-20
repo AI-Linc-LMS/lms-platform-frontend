@@ -228,6 +228,7 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
                 isLoading={isLoading}
                 error={error}
                 course={transformCourseData(course)}
+                enrolled={true}
               />
             </div>
           ))}

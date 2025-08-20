@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Course } from "../../types/course.types";
 import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import { useNavigate } from "react-router-dom";
@@ -31,37 +31,27 @@ interface CourseCardProps {
   isLoading?: boolean;
   error?: Error | null;
   clientId?: number;
+  enrolled?: boolean; // optional external flag to force Explore More
 }
 
-const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoading = false, error = null, clientId = 1 }) => {
+const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoading = false, error = null, clientId = 1, enrolled = false }) => {
   const navigate = useNavigate();
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   const isFree = course?.is_free === true || course?.price === 0;
+  const backendSaysEnrolled = course?.is_enrolled === true;
 
-  // Prevent duplicate enroll API calls per course per client (persists in localStorage)
-  const storageKey = `enrolled_course_ids_${clientId}`;
-  const getEnrolledIds = (): Set<number> => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (!raw) return new Set<number>();
-      const parsed = JSON.parse(raw) as number[];
-      return new Set<number>(Array.isArray(parsed) ? parsed : []);
-    } catch {
-      return new Set<number>();
-    }
-  };
-  const saveEnrolledIds = (ids: Set<number>) => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(Array.from(ids)));
-    } catch {
-      // ignore storage errors
-    }
-  };
-
-  const isInitiallyEnrolled = !!course && getEnrolledIds().has(course.id);
+  const isInitiallyEnrolled = !!course && (backendSaysEnrolled || enrolled);
   const [isEnrolled, setIsEnrolled] = useState<boolean>(isInitiallyEnrolled);
+
+  // Sync from external prop/backend if it changes to true
+  useEffect(() => {
+    if (backendSaysEnrolled && !isEnrolled) setIsEnrolled(true);
+  }, [backendSaysEnrolled, isEnrolled]);
+  useEffect(() => {
+    if (enrolled && !isEnrolled) setIsEnrolled(true);
+  }, [enrolled, isEnrolled]);
 
   const handlePrimaryClick = async () => {
     if (!course) return;
@@ -72,27 +62,28 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
     }
 
     if (isFree) {
-      const enrolledIds = getEnrolledIds();
-      if (enrolledIds.has(course.id)) {
-        setIsEnrolled(true);
-        navigate(`/courses/${course.id}`);
-        return;
-      }
-
       try {
         setIsEnrolling(true);
         await enrollInCourse(clientId, course.id);
-        enrolledIds.add(course.id);
-        saveEnrolledIds(enrolledIds);
         setIsEnrolled(true);
         setShowSuccessToast(true);
+        window.dispatchEvent(new Event('course-enrolled'));
         setTimeout(() => {
           setShowSuccessToast(false);
           navigate(`/courses/${course.id}`);
         }, 900);
-      } catch {
-        // Fall back to navigation if enroll fails
-        navigate(`/courses/${course.id}`);
+      } catch (err: unknown) {
+        const status = typeof err === 'object' && err && 'response' in err && (err as { response?: { status?: number } }).response?.status;
+        const detail = typeof err === 'object' && err && 'response' in err && (err as { response?: { data?: { detail?: string } } }).response?.data?.detail;
+        // Treat already-enrolled as success
+        if (status === 409 || (status === 400 && typeof detail === 'string' && /already\s*enrolled/i.test(detail))) {
+          setIsEnrolled(true);
+          window.dispatchEvent(new Event('course-enrolled'));
+          navigate(`/courses/${course.id}`);
+          return;
+        }
+        alert('Enrollment failed. Please try again.');
+        return;
       } finally {
         setIsEnrolling(false);
       }
