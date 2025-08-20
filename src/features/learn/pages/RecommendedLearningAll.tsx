@@ -11,12 +11,13 @@ interface CourseData {
   title: string;
   description: string;
   difficulty_level: string;
-  duration_in_hours: string;
+  duration_in_hours: string | number;
   certificate_available: boolean;
   enrolled_students: {
     total: number;
     students_profile_pic: string[];
   };
+  is_free: boolean;
 }
 
 // Define mapped course data interface
@@ -25,15 +26,18 @@ interface MappedCourseData {
   title: string;
   description: string;
   level: string;
-  duration: string;
+  duration: string | number;
   certification: boolean;
   enrolledStudents: number;
   studentAvatars: string[];
+  isFree: boolean;
+  clientId: number;
+  courseId: number;
 }
 
 const RecommendedLearningAll = () => {
   const navigate = useNavigate();
-  const clientId = import.meta.env.VITE_CLIENT_ID;
+  const clientId = Number(import.meta.env.VITE_CLIENT_ID);
 
   const { data: courses, isLoading, error } = useQuery({
     queryKey: ["basedLearningCoursesAll", clientId],
@@ -50,6 +54,9 @@ const RecommendedLearningAll = () => {
     certification: course.certificate_available,
     enrolledStudents: course.enrolled_students.total || 0,
     studentAvatars: course.enrolled_students.students_profile_pic || [],
+    isFree: course.is_free,
+    clientId: clientId,
+    courseId: course.id,
   }));
 
   if (isLoading) {
