@@ -185,16 +185,43 @@ export const CourseCard = ({
         return text.substring(0, maxLength).trim() + '...';
     };
 
+    // LocalStorage-backed guard to avoid duplicate enroll calls across pages
+    const storageKey = `enrolled_course_ids_${clientId}`;
+    const getEnrolledIds = (): Set<number> => {
+        try {
+            const raw = localStorage.getItem(storageKey);
+            if (!raw) return new Set<number>();
+            const parsed = JSON.parse(raw) as number[];
+            return new Set<number>(Array.isArray(parsed) ? parsed : []);
+        } catch {
+            return new Set<number>();
+        }
+    };
+    const saveEnrolledIds = (ids: Set<number>) => {
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(Array.from(ids)));
+        } catch {
+            // ignore storage errors
+        }
+    };
+
     const handleEnrollNow = async () => {
         if (isFree) {
+            const enrolledIds = getEnrolledIds();
+            if (enrolledIds.has(courseId)) {
+                navigate(`/courses/${courseId}`);
+                return;
+            }
             try {
                 setIsEnrolling(true);
                 await enrollInCourse(clientId, courseId);
+                enrolledIds.add(courseId);
+                saveEnrolledIds(enrolledIds);
                 setShowSuccessToast(true);
                 setTimeout(() => {
                     setShowSuccessToast(false);
                     navigate(`/courses/${courseId}`);
-                }, 1200);
+                }, 900);
             } catch {
                 alert('Failed to enroll. Please try again.');
             } finally {
