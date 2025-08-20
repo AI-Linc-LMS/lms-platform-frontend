@@ -1,7 +1,7 @@
 import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import SecondaryButton from "../../../../commonComponents/common-buttons/secondary-button/SecondaryButton";
 import { useQuery } from "@tanstack/react-query";
-import { getAllRecommendedCourse } from '../../../../services/continue-course-learning/continueCourseApis';
+import { getAllRecommendedCourse, enrollInCourse } from '../../../../services/continue-course-learning/continueCourseApis';
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
@@ -11,12 +11,13 @@ interface CourseData {
     title: string;
     description: string;
     difficulty_level: string;
-    duration_in_hours: string;
+    duration_in_hours: string | number;
     certificate_available: boolean;
     enrolled_students: {
         total: number;
         students_profile_pic: string[];
     };
+    is_free: boolean;
 }
 
 // Define mapped course data interface
@@ -25,10 +26,12 @@ interface MappedCourseData {
     title: string;
     description: string;
     level: string;
-    duration: string;
+    duration: string | number;
     certification: boolean;
     enrolledStudents: number;
     studentAvatars: string[];
+    isFree: boolean;
+    clientId: number;
 }
 
 // Simple SVG icons as React components
@@ -149,10 +152,13 @@ interface CourseCardProps {
     title: string;
     description: string;
     level?: string;
-    duration?: string;
+    duration?: string | number;
     certification?: boolean;
     enrolledStudents?: number;
     studentAvatars?: string[];
+    isFree: boolean;
+    clientId: number;
+    courseId: number;
 }
 
 // Export the CourseCard component to be used in the See All page
@@ -163,14 +169,15 @@ export const CourseCard = ({
     duration = "3 hr 28 mins",
     certification = true,
     // enrolledStudents = 3200,
-    studentAvatars = []
+    studentAvatars = [],
+    isFree,
+    clientId,
+    courseId
 }: CourseCardProps) => {
     const [isEnrollmentModalOpen, setIsEnrollmentModalOpen] = useState(false);
-
-    // Format number with k for thousands
-    // const formatStudentCount = (count: number) => {
-    //     return count >= 1000 ? (count / 1000).toFixed(1) + 'k' : count;
-    // };
+    const [isEnrolling, setIsEnrolling] = useState(false);
+    const [showSuccessToast, setShowSuccessToast] = useState(false);
+    const navigate = useNavigate();
 
     // Truncate description if it's too long
     const truncateDescription = (text: string, maxLength: number = 120) => {
@@ -178,8 +185,65 @@ export const CourseCard = ({
         return text.substring(0, maxLength).trim() + '...';
     };
 
+    // LocalStorage-backed guard to avoid duplicate enroll calls across pages
+    const storageKey = `enrolled_course_ids_${clientId}`;
+    const getEnrolledIds = (): Set<number> => {
+        try {
+            const raw = localStorage.getItem(storageKey);
+            if (!raw) return new Set<number>();
+            const parsed = JSON.parse(raw) as number[];
+            return new Set<number>(Array.isArray(parsed) ? parsed : []);
+        } catch {
+            return new Set<number>();
+        }
+    };
+    const saveEnrolledIds = (ids: Set<number>) => {
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(Array.from(ids)));
+        } catch {
+            // ignore storage errors
+        }
+    };
+
+    const handleEnrollNow = async () => {
+        if (isFree) {
+            const enrolledIds = getEnrolledIds();
+            if (enrolledIds.has(courseId)) {
+                navigate(`/courses/${courseId}`);
+                return;
+            }
+            try {
+                setIsEnrolling(true);
+                await enrollInCourse(clientId, courseId);
+                enrolledIds.add(courseId);
+                saveEnrolledIds(enrolledIds);
+                setShowSuccessToast(true);
+                setTimeout(() => {
+                    setShowSuccessToast(false);
+                    navigate(`/courses/${courseId}`);
+                }, 900);
+            } catch {
+                alert('Failed to enroll. Please try again.');
+            } finally {
+                setIsEnrolling(false);
+            }
+        } else {
+            setIsEnrollmentModalOpen(true);
+        }
+    };
+
     return (
         <div className="flex flex-col">
+            {showSuccessToast && (
+                <div className="fixed top-4 right-4 z-50">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-green-600 text-white rounded-xl shadow-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-sm font-medium">Successfully enrolled! Redirecting…</span>
+                    </div>
+                </div>
+            )}
             <div className="rounded-3xl border border-[#80C9E0] p-6 flex flex-col w-full bg-white min-h-[350px]">
 
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">{title}</h2>
@@ -226,9 +290,10 @@ export const CourseCard = ({
                 <div className="flex gap-4 mt-auto">
                     <PrimaryButton
                         className="whitespace-nowrap text-sm"
-                        onClick={() => setIsEnrollmentModalOpen(true)}
+                        onClick={handleEnrollNow}
+                        disabled={isEnrolling}
                     >
-                        Enroll Now
+                        {isEnrolling ? 'Enrolling...' : 'Enroll Now'}
                     </PrimaryButton>
 
                     <SecondaryButton className="whitespace-nowrap text-sm" onClick={() => alert('Not Interested')} >Not Interested</SecondaryButton>
@@ -353,6 +418,8 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
         enrolledStudents: course.enrolled_students.total || 0,
         studentAvatars: course.enrolled_students.students_profile_pic || [],
         id: course.id, // for key
+        isFree: course.is_free,
+        clientId: clientId
     }));
 
     // Only display up to 4 courses in the dashboard
@@ -380,7 +447,7 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mx-auto pt-6">
                 {displayedCourses.map((course: MappedCourseData) => (
-                    <CourseCard key={course.id} {...course} />
+                    <CourseCard key={course.id} {...course} courseId={course.id} />
                 ))}
             </div>
         </div>
