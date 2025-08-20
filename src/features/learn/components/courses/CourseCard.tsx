@@ -40,12 +40,41 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
 
   const isFree = course?.is_free === true || course?.price === 0;
 
+  // Prevent duplicate enroll API calls per course per client (persists in localStorage)
+  const storageKey = `enrolled_course_ids_${clientId}`;
+  const getEnrolledIds = (): Set<number> => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) return new Set<number>();
+      const parsed = JSON.parse(raw) as number[];
+      return new Set<number>(Array.isArray(parsed) ? parsed : []);
+    } catch {
+      return new Set<number>();
+    }
+  };
+  const saveEnrolledIds = (ids: Set<number>) => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(Array.from(ids)));
+    } catch {
+      // ignore storage errors
+    }
+  };
+
   const handleExploreClick = async () => {
     if (!course) return;
+
     if (isFree) {
+      const enrolledIds = getEnrolledIds();
+      if (enrolledIds.has(course.id)) {
+        navigate(`/courses/${course.id}`);
+        return;
+      }
+
       try {
         setIsEnrolling(true);
         await enrollInCourse(clientId, course.id);
+        enrolledIds.add(course.id);
+        saveEnrolledIds(enrolledIds);
         setShowSuccessToast(true);
         setTimeout(() => {
           setShowSuccessToast(false);
