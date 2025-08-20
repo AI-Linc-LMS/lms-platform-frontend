@@ -145,27 +145,32 @@ const CommentCard: React.FC<CommentCardProps> = ({
                   </div>
 
                   <div className="flex items-center justify-between sm:justify-end gap-2">
-                    <button
-                      onClick={() => setShowCommentForm(!showCommentForm)}
-                      className="text-gray-600 hover:text-blue-600 font-medium text-xs sm:text-sm px-2 py-1 rounded hover:bg-blue-50 transition-colors flex items-center gap-1"
-                    >
-                      <MessageCircle size={14} />
-                      Reply
-                    </button>
-
-                    {/* Show/Hide replies button - show for comments that have replies */}
-                    {comment.replies &&
-                      comment.replies.length > 0 &&
-                      onToggleReplies && (
+                    {nestingLevel === 0 && (
+                      <>
                         <button
-                          onClick={() => onToggleReplies(comment.id)}
-                          className="text-gray-600 hover:text-blue-600 font-medium text-xs sm:text-sm px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                          onClick={() => setShowCommentForm(!showCommentForm)}
+                          className="text-gray-600 hover:text-blue-600 font-medium text-xs sm:text-sm px-2 py-1 rounded hover:bg-blue-50 transition-colors flex items-center gap-1"
                         >
-                          {visibleReplies.has(comment.id) ? "Hide" : "Show"}{" "}
-                          {comment.replies.length}{" "}
-                          {comment.replies.length === 1 ? "reply" : "replies"}
+                          <MessageCircle size={14} />
+                          Reply
                         </button>
-                      )}
+
+                        {comment.replies &&
+                          comment.replies.length > 0 &&
+                          onToggleReplies && (
+                            <button
+                              onClick={() => onToggleReplies(comment.id)}
+                              className="text-gray-600 hover:text-blue-600 font-medium text-xs sm:text-sm px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                            >
+                              {visibleReplies.has(comment.id) ? "Hide" : "Show"}{" "}
+                              {comment.replies.length}{" "}
+                              {comment.replies.length === 1
+                                ? "reply"
+                                : "replies"}
+                            </button>
+                          )}
+                      </>
+                    )}
 
                     {canEdit(comment.author.user_name) && (
                       <div className="flex items-center gap-1">
@@ -186,8 +191,8 @@ const CommentCard: React.FC<CommentCardProps> = ({
                   </div>
                 </div>
 
-                {/* Reply Form */}
-                {showCommentForm && (
+                {/* Reply Form - only show for top-level comments */}
+                {showCommentForm && nestingLevel === 0 && (
                   <div className="mt-3 sm:mt-4">
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4">
                       <RichTextEditor
@@ -228,7 +233,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
       {comment.replies &&
         comment.replies.length > 0 &&
         visibleReplies.has(comment.id) && (
-          <div className="ml-4 sm:ml-8 border-l-2 border-gray-100 pl-4 space-y-4">
+          <div className="ml-4 sm:ml-8 p-4 space-y-4">
             {comment.replies.map((reply) => (
               <CommentCard
                 key={reply.id}

@@ -43,17 +43,14 @@ const ThreadHeader: React.FC<ThreadHeaderProps> = ({
           >
             <ArrowUp size={20} className="sm:w-6 sm:h-6" />
           </button>
-          <span
-            className={`text-lg sm:text-xl font-bold px-2 sm:px-3 py-1 sm:py-2 rounded ${
-              thread.upvotes - thread.downvotes > 0
-                ? "text-orange-600"
-                : thread.upvotes - thread.downvotes < 0
-                ? "text-blue-600"
-                : "text-gray-500"
-            }`}
-          >
-            {thread.upvotes - thread.downvotes}
-          </span>
+          <div className="flex flex-col items-center text-xs sm:text-sm font-semibold">
+              <span className="text-orange-600 px-1.5 sm:px-2 py-0.5">
+                {thread.upvotes}
+              </span>
+              <span className="text-blue-600 px-1.5 sm:px-2 py-0.5">
+                {thread.downvotes}
+              </span>
+            </div>
           <button
             onClick={() => onVote(VoteType.Downvote)}
             className={`p-2 sm:p-3 rounded-md transition-colors ${

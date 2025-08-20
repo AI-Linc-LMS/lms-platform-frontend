@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { RootState } from "../../../redux/store";
 import {
   ChevronDown,
   ChevronUp,
@@ -21,6 +23,9 @@ import {
   addVoteOnThread,
   createThread,
   getAllThreads,
+  getAllTags,
+  updateThread,
+  deleteThread,
 } from "../../../services/community/threadApis";
 import {
   addBookmark,
@@ -31,12 +36,20 @@ const CommunityPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const user = useSelector((state: RootState) => state.user);
   const [threads, setThreads] = useState<Thread[]>([]);
   const { success, error: showError } = useToast();
 
   const { data, isLoading, error, refetch } = useQuery<Thread[]>({
     queryKey: ["threads", clientId],
     queryFn: () => getAllThreads(clientId),
+    retry: 2,
+    retryDelay: 1000,
+  });
+
+  const { data: tagsData } = useQuery<string[]>({
+    queryKey: ["tags", clientId],
+    queryFn: () => getAllTags(clientId),
     retry: 2,
     retryDelay: 1000,
   });
@@ -64,18 +77,52 @@ const CommunityPage: React.FC = () => {
     },
   });
 
+  const updateThreadMutation = useMutation({
+    mutationFn: (variables: {
+      threadId: string;
+      threadData: Partial<CreateThread>;
+    }) => updateThread(clientId, variables.threadId, variables.threadData),
+    onSuccess: (updatedThread) => {
+      setThreads((prev) =>
+        prev.map((thread) =>
+          thread.id === updatedThread.id ? updatedThread : thread
+        )
+      );
+      success("Thread updated", "Your thread has been updated successfully.");
+      setEditingThread(null);
+      setShowNewThreadForm(false);
+      setNewThread({ title: "", body: "", tags: "" });
+    },
+    onError: (error) => {
+      console.error("Failed to update thread:", error);
+      showError(
+        "Failed to update thread",
+        "There was an error updating your thread. Please try again."
+      );
+    },
+  });
+
+  const deleteThreadMutation = useMutation({
+    mutationFn: (threadId: string) => deleteThread(clientId, threadId),
+    onSuccess: (_, threadId) => {
+      setThreads((prev) =>
+        prev.filter((thread) => thread.id.toString() !== threadId)
+      );
+      success("Thread deleted", "The thread has been deleted successfully.");
+      setShowDeleteConfirm(null);
+    },
+    onError: (error) => {
+      console.error("Failed to delete thread:", error);
+      showError(
+        "Failed to delete thread",
+        "There was an error deleting the thread. Please try again."
+      );
+    },
+  });
+
   const upVoteToThreadMutation = useMutation({
     mutationFn: (threadId: number) =>
       addVoteOnThread(clientId, threadId, VoteType.Upvote),
-    onSuccess: (_data, threadId) => {
-      setThreads((prevThreads) =>
-        prevThreads.map((thread) =>
-          thread.id === threadId
-            ? { ...thread, upvotes: thread.upvotes + 1 }
-            : thread
-        )
-      );
-    },
     onError: (error) => {
       console.error("Failed to upvote thread:", error);
       showError(
@@ -88,15 +135,6 @@ const CommunityPage: React.FC = () => {
   const downVoteFromThreadMutation = useMutation({
     mutationFn: (threadId: number) =>
       addVoteOnThread(clientId, threadId, VoteType.Downvote),
-    onSuccess: (_data, threadId) => {
-      setThreads((prevThreads) =>
-        prevThreads.map((thread) =>
-          thread.id === threadId
-            ? { ...thread, downvotes: thread.downvotes + 1 }
-            : thread
-        )
-      );
-    },
     onError: (error) => {
       console.error("Failed to downvote thread:", error);
       showError(
@@ -109,6 +147,7 @@ const CommunityPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTag, setSelectedTag] = useState("");
   const [showNewThreadForm, setShowNewThreadForm] = useState(false);
+  const [editingThread, setEditingThread] = useState<Thread | null>(null);
   const [newThread, setNewThread] = useState({
     title: "",
     body: "",
@@ -128,7 +167,8 @@ const CommunityPage: React.FC = () => {
   );
   const [showComingSoonPopup, setShowComingSoonPopup] = useState(false);
 
-  const allTags = Array.from(new Set(threads.flatMap((thread) => thread.tags)));
+  const allTags =
+    tagsData || Array.from(new Set(threads.flatMap((thread) => thread.tags)));
 
   const filteredThreads = threads.filter((thread) => {
     const matchesSearch =
@@ -147,7 +187,7 @@ const CommunityPage: React.FC = () => {
       upVoteToThreadMutation.isPending ||
       downVoteFromThreadMutation.isPending
     ) {
-      return; // Prevent multiple votes while one is in progress
+      return;
     }
 
     if (type === VoteType.Upvote) {
@@ -155,6 +195,7 @@ const CommunityPage: React.FC = () => {
     } else if (type === VoteType.Downvote) {
       downVoteFromThreadMutation.mutate(threadId);
     }
+    refetch();
   };
 
   const toggleThreadExpansion = (threadId: number): void => {
@@ -175,6 +216,8 @@ const CommunityPage: React.FC = () => {
         [threadId]: true,
       }));
       success("Bookmarked", "Thread has been added to your bookmarks.");
+
+      refetch();
     },
     onError: (error) => {
       console.error("Failed to add bookmark:", error);
@@ -196,6 +239,8 @@ const CommunityPage: React.FC = () => {
         "Bookmark removed",
         "Thread has been removed from your bookmarks."
       );
+
+      refetch();
     },
     onError: (error) => {
       console.error("Failed to remove bookmark:", error);
@@ -225,25 +270,56 @@ const CommunityPage: React.FC = () => {
       return;
     }
 
-    createThreadMutation.mutate({
-      title: newThread.title.trim(),
-      body: newThread.body.trim(),
-      tags: newThread.tags
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter((tag) => tag),
+    if (editingThread) {
+      // Update existing thread
+      updateThreadMutation.mutate({
+        threadId: editingThread.id.toString(),
+        threadData: {
+          title: newThread.title.trim(),
+          body: newThread.body.trim(),
+          tags: newThread.tags
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter((tag) => tag),
+        },
+      });
+    } else {
+      // Create new thread
+      createThreadMutation.mutate({
+        title: newThread.title.trim(),
+        body: newThread.body.trim(),
+        tags: newThread.tags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter((tag) => tag),
+      });
+    }
+
+    refetch();
+  };
+
+  const handleEditThread = (thread: Thread): void => {
+    setEditingThread(thread);
+    setNewThread({
+      title: thread.title,
+      body: thread.body,
+      tags: thread.tags.join(", "),
     });
+    setShowNewThreadForm(true);
+  };
+
+  const handleCancelEdit = (): void => {
+    setEditingThread(null);
+    setNewThread({ title: "", body: "", tags: "" });
+    setShowNewThreadForm(false);
   };
 
   const handleDeleteThread = (threadId: number): void => {
-    setThreads((prevThreads) =>
-      prevThreads.filter((thread) => thread.id !== threadId)
-    );
-    setShowDeleteConfirm(null);
+    deleteThreadMutation.mutate(threadId.toString());
   };
 
   const canEdit = (author: string): boolean => {
-    return author === "Current User";
+    return user.username === author || user.full_name === author;
   };
 
   useEffect(() => {
@@ -515,7 +591,7 @@ const CommunityPage: React.FC = () => {
           {showNewThreadForm && (
             <div className="mb-4 sm:mb-6 p-4 sm:p-6 bg-white border border-gray-200 rounded-lg mx-1 sm:mx-0">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
-                Start a new discussion
+                {editingThread ? "Edit Thread" : "Start a new discussion"}
               </h3>
               <div className="space-y-3 sm:space-y-4">
                 <div>
@@ -572,26 +648,39 @@ const CommunityPage: React.FC = () => {
                     disabled={
                       !newThread.title.trim() ||
                       !newThread.body.trim() ||
-                      createThreadMutation.isPending
+                      createThreadMutation.isPending ||
+                      updateThreadMutation.isPending
                     }
                     className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    {createThreadMutation.isPending ? (
+                    {createThreadMutation.isPending ||
+                    updateThreadMutation.isPending ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Creating...</span>
+                        <span>
+                          {editingThread ? "Updating..." : "Creating..."}
+                        </span>
                       </>
                     ) : (
                       <>
                         <Plus size={16} />
-                        <span>Create Thread</span>
+                        <span>
+                          {editingThread ? "Update Thread" : "Create Thread"}
+                        </span>
                       </>
                     )}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setShowNewThreadForm(false)}
-                    disabled={createThreadMutation.isPending}
+                    onClick={
+                      editingThread
+                        ? handleCancelEdit
+                        : () => setShowNewThreadForm(false)
+                    }
+                    disabled={
+                      createThreadMutation.isPending ||
+                      updateThreadMutation.isPending
+                    }
                     className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors font-medium text-sm sm:text-base disabled:opacity-50"
                   >
                     Cancel
@@ -646,6 +735,7 @@ const CommunityPage: React.FC = () => {
                 onDeleteThread={(threadId) =>
                   setShowDeleteConfirm({ type: "thread", id: threadId })
                 }
+                onEditThread={handleEditThread}
                 onThreadClick={handleThreadClick}
                 onTagSelect={setSelectedTag}
                 canEdit={canEdit}
