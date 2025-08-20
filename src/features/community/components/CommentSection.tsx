@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
-import { ArrowUp, ArrowDown, MessageCircle } from 'lucide-react';
-import { ThreadComment } from '../types';
-import RichContentDisplay from './RichContentDisplay';
-import RichTextEditor from './RichTextEditor';
-import { getUserAvatar } from '../utils/avatarUtils';
+import React, { useState } from "react";
+import { ArrowUp, ArrowDown, MessageCircle } from "lucide-react";
+import { CreateComment, Comment, VoteType } from "../types";
+import RichContentDisplay from "./RichContentDisplay";
+import RichTextEditor from "./RichTextEditor";
+import { getUserAvatar } from "../utils/avatarUtils";
+import { useMutation } from "@tanstack/react-query";
+import { createComment } from "../../../services/community/commentApis";
 
 interface CommentSectionProps {
-  comments: ThreadComment[];
+  threadId: string;
+  comments: Comment[];
   showCommentForm: boolean;
   onAddComment: (content: string) => void;
   onCloseCommentForm: () => void;
@@ -14,21 +17,34 @@ interface CommentSectionProps {
 
 const CommentSection: React.FC<CommentSectionProps> = ({
   comments,
+  threadId,
   showCommentForm,
   onAddComment,
-  onCloseCommentForm
+  onCloseCommentForm,
 }) => {
-  const [newComment, setNewComment] = useState('');
+  const clientId = import.meta.env.VITE_CLIENT_ID;
+  const threadIdNum = Number(threadId);
+  const [newComment, setNewComment] = useState("");
+
+  const addReplyToCommentMutation = useMutation({
+    mutationFn: (variables: CreateComment) =>
+      createComment(clientId, threadIdNum ?? 0, variables),
+  });
 
   const handleSubmitComment = () => {
     if (newComment.trim()) {
       onAddComment(newComment);
-      setNewComment('');
+      setNewComment("");
       onCloseCommentForm();
     }
+
+    addReplyToCommentMutation.mutate({
+      parent: 2,
+      body: newComment,
+    });
   };
 
-  const handleVoteComment = (commentId: string, type: 'up' | 'down') => {
+  const handleVoteComment = (commentId: number, type: VoteType) => {
     // This would typically update the comment's vote count
     console.log(`Voting ${type} on comment ${commentId}`);
   };
@@ -42,7 +58,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({
             <div className="p-3 sm:p-4">
               <div className="prose prose-sm max-w-none mb-3">
                 <p className="text-gray-600 text-sm">
-                  Add a comment to this answer. You can use formatting tools to include:
+                  Add a comment to this answer. You can use formatting tools to
+                  include:
                 </p>
                 <ul className="text-gray-600 text-sm list-disc pl-5">
                   <li>Code snippets</li>
@@ -83,37 +100,48 @@ const CommentSection: React.FC<CommentSectionProps> = ({
       {comments.length > 0 && (
         <div className="mt-3 sm:mt-4 space-y-2 sm:space-y-3">
           {comments.map((comment) => {
-            const commentAuthorAvatar = getUserAvatar(comment.author, comment.avatar);
+            const commentAuthorAvatar = getUserAvatar(
+              comment.author.user_name,
+              comment.author.profile_pic_url
+            );
             return (
-              <div key={comment.id} className="bg-white border border-gray-200 rounded-lg p-3">
+              <div
+                key={comment.id}
+                className="bg-white border border-gray-200 rounded-lg p-3"
+              >
                 <RichContentDisplay
-                  content={comment.content}
+                  content={comment.body}
                   className="text-gray-700 mb-2 text-sm leading-relaxed"
                 />
                 <div className="flex items-center gap-2">
                   {commentAuthorAvatar.avatar ? (
                     <img
                       src={commentAuthorAvatar.avatar}
-                      alt={comment.author}
+                      alt={comment.author.user_name}
                       className="w-6 h-6 rounded-full object-cover"
                     />
                   ) : (
-                    <div className={`w-6 h-6 ${commentAuthorAvatar.color} rounded-full flex items-center justify-center text-white text-xs font-medium`}>
+                    <div
+                      className={`w-6 h-6 ${commentAuthorAvatar.color} rounded-full flex items-center justify-center text-white text-xs font-medium`}
+                    >
                       {commentAuthorAvatar.initials}
                     </div>
                   )}
-                  <span className="font-medium text-gray-900 text-sm">{comment.author}</span>
-                  <span className="text-xs text-gray-500">{comment.createdAt}</span>
+                  <span className="font-medium text-gray-900 text-sm">
+                    {comment.author.user_name}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {comment.created_at}
+                  </span>
 
                   {/* Vote buttons for comments */}
                   <div className="flex items-center gap-1 ml-auto">
                     <button
-                      onClick={() => handleVoteComment(comment.id, 'up')}
-                      className={`p-1 rounded transition-colors ${
-                        comment.isUpvoted 
-                          ? 'text-orange-600 bg-orange-50' 
-                          : 'text-gray-400 hover:text-orange-600 hover:bg-orange-50'
-                      }`}
+                      onClick={() =>
+                        handleVoteComment(comment.id, VoteType.Upvote)
+                      }
+                      className={`p-1 rounded transition-colors
+                        text-orange-600 bg-orange-50`}
                     >
                       <ArrowUp size={14} />
                     </button>
@@ -121,12 +149,11 @@ const CommentSection: React.FC<CommentSectionProps> = ({
                       {comment.upvotes - comment.downvotes}
                     </span>
                     <button
-                      onClick={() => handleVoteComment(comment.id, 'down')}
-                      className={`p-1 rounded transition-colors ${
-                        comment.isDownvoted 
-                          ? 'text-blue-600 bg-blue-50' 
-                          : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
-                      }`}
+                      onClick={() =>
+                        handleVoteComment(comment.id, VoteType.Downvote)
+                      }
+                      className={`p-1 rounded transition-colors text-blue-600 bg-blue-50
+                          `}
                     >
                       <ArrowDown size={14} />
                     </button>

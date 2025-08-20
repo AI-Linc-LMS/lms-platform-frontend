@@ -8,15 +8,15 @@ interface PrimaryButtonProps {
   type?: 'button' | 'submit' | 'reset';
 }
 
-const PrimaryButton: React.FC<PrimaryButtonProps> = ({ 
-  children, 
-  onClick, 
+const PrimaryButton: React.FC<PrimaryButtonProps> = ({
+  children,
+  onClick,
   className = "",
   disabled = false,
-  type = 'button'
+  type = 'button',
 }) => {
   return (
-    <button 
+    <button
       onClick={onClick}
       type={type}
       disabled={disabled}

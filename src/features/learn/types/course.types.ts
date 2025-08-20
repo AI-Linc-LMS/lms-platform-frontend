@@ -61,6 +61,8 @@ export interface Course {
   categories?: string[];
   liked_count?: number;
   is_liked_by_current_user?: boolean;
+  is_free?: boolean;
+  is_enrolled?: boolean;
   stats?: {
     video: { total: number };
     article: { total: number };
