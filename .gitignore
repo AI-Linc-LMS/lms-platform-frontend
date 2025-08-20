@@ -9,17 +9,121 @@ lerna-debug.log*
 
 node_modules
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 dist
 dist-ssr
 *.local
+
+# Testing
+coverage/
+*.lcov
+.nyc_output
+
+# Next.js (if applicable)
+.next/
+out/
+
+# Build outputs
+build/
+.cache/
+
+# Package managers
+.yarn/
+.pnp.*
+yarn.lock
+package-lock.json
+pnpm-lock.yaml
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.swp
+*.swo
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache directory
+.npm
+
+# ESLint cache
+.eslintcache
+
+# Stylelint cache
+.stylelintcache
+
+# Temporary folders
+tmp/
+temp/
+
+# Capacitor
+ios/
+android/
+.capacitor/
+
+# Native platforms
+capacitor.config.json.bak
+
+# iOS specific
+*.xcworkspace
+*.xcuserstate
+*.xcscheme
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Android specific
+*.apk
+*.aab
+*.ap_
+*.dex
+local.properties
+.gradle/
+gradle/
+gradlew
+gradlew.bat
+proguard/
+
+# React Native (if used with Capacitor)
+metro.config.js.bak
+
+# Xcode
+xcuserdata/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+
+# Android Studio
+.externalNativeBuild/
+.cxx/
+captures/
