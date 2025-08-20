@@ -1,4 +1,6 @@
+# ===========================
 # Logs
+# ===========================
 logs
 *.log
 npm-debug.log*
@@ -7,37 +9,49 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# ===========================
+# Dependencies
+# ===========================
 node_modules
+
+# ===========================
+# Environment Variables
+# ===========================
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# ===========================
+# Build Outputs
+# ===========================
 dist
 dist-ssr
-*.local
+.next/
+out/
+build/
+.cache/
 
+# ===========================
 # Testing
+# ===========================
 coverage/
 *.lcov
 .nyc_output
 
-# Next.js (if applicable)
-.next/
-out/
-
-# Build outputs
-build/
-.cache/
-
-# Package managers
+# ===========================
+# Package Managers
+# ===========================
 .yarn/
 .pnp.*
 yarn.lock
 package-lock.json
 pnpm-lock.yaml
 
-# OS generated files
+# ===========================
+# OS Generated Files
+# ===========================
 .DS_Store
 .DS_Store?
 ._*
@@ -47,7 +61,9 @@ ehthumbs.db
 Thumbs.db
 *~
 
-# Editor directories and files
+# ===========================
+# Editor & IDE Settings
+# ===========================
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -59,34 +75,48 @@ Thumbs.db
 *.swp
 *.swo
 
-# Runtime data
+# ===========================
+# Runtime Data
+# ===========================
 pids
 *.pid
 *.seed
 *.pid.lock
 
-# Optional npm cache directory
+# ===========================
+# npm Cache
+# ===========================
 .npm
 
-# ESLint cache
+# ===========================
+# ESLint / Stylelint Cache
+# ===========================
 .eslintcache
-
-# Stylelint cache
 .stylelintcache
 
-# Temporary folders
+# ===========================
+# Temporary Folders
+# ===========================
 tmp/
 temp/
 
-# Capacitor
-ios/
-android/
+# ===========================
+# Capacitor / Native Platforms
+# ===========================
 .capacitor/
 
-# Native platforms
-capacitor.config.json.bak
+# KEEP android/ and ios/ folders — required for native builds!
+# Safe to ignore only generated build artifacts:
+*.apk
+*.aab
+*.ap_
+*.dex
+.gradle/
+local.properties
+captures/
+output.json
 
-# iOS specific
+# iOS specific build artifacts (safe to ignore)
 *.xcworkspace
 *.xcuserstate
 *.xcscheme
@@ -96,22 +126,16 @@ DerivedData/
 *.dSYM.zip
 *.dSYM
 
-# Android specific
-*.apk
-*.aab
-*.ap_
-*.dex
-local.properties
-.gradle/
-gradle/
-gradlew
-gradlew.bat
-proguard/
-
+# ===========================
 # React Native (if used with Capacitor)
+# ===========================
 metro.config.js.bak
 
-# Xcode
+# ===========================
+# Android Studio & Xcode
+# ===========================
+.externalNativeBuild/
+.cxx/
 xcuserdata/
 *.moved-aside
 *.pbxuser
@@ -122,8 +146,3 @@ xcuserdata/
 !default.mode2v3
 *.perspectivev3
 !default.perspectivev3
-
-# Android Studio
-.externalNativeBuild/
-.cxx/
-captures/
