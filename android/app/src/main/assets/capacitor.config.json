@@ -1,0 +1,8 @@
+{
+	"appId": "com.ailinc.lms",
+	"appName": "AI Linc",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https"
+	}
+}

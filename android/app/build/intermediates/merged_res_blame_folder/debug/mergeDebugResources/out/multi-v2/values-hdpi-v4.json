@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.ailinc.lms.app-mergeDebugResources-27:/values-hdpi-v4/values-hdpi-v4.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\soumi\\.gradle\\caches\\8.11.1\\transforms\\c23a582a8f84e9d10e040b1a2b643578\\transformed\\appcompat-1.6.1\\res\\values-hdpi-v4\\values-hdpi-v4.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "6",
+                        "endColumns": "13",
+                        "endOffsets": "327"
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,6 @@
+com.ailinc.lms.test.app-annotation-experimental-1.3.0-0 C:\Users\soumi\.gradle\caches\8.11.1\transforms\4d5e535594f3255f0e0f5cff1e306cf7\transformed\annotation-experimental-1.3.0\res
+com.ailinc.lms.test.app-core-1.5.0-1 C:\Users\soumi\.gradle\caches\8.11.1\transforms\e2056f6eb2f3c71ce220a3c449d51b72\transformed\core-1.5.0\res
+com.ailinc.lms.test.app-androidTest-2 C:\Users\soumi\Desktop\lms-platform-frontend\android\app\build\generated\res\resValues\androidTest\debug
+com.ailinc.lms.test.app-mergeDebugAndroidTestResources-3 C:\Users\soumi\Desktop\lms-platform-frontend\android\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\merged.dir
+com.ailinc.lms.test.app-mergeDebugAndroidTestResources-4 C:\Users\soumi\Desktop\lms-platform-frontend\android\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\stripped.dir
+com.ailinc.lms.test.app-debugAndroidTest-5 C:\Users\soumi\Desktop\lms-platform-frontend\android\app\build\intermediates\merged_res\debugAndroidTest\mergeDebugAndroidTestResources

@@ -1,0 +1,3 @@
+com.ailinc.lms.test
+style WhiteBackgroundDialogTheme
+style WhiteBackgroundTheme
