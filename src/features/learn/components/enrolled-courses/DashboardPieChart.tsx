@@ -1,8 +1,3 @@
-// import { useState, useEffect } from 'react';
-
-import { useQuery } from "@tanstack/react-query";
-import { getCourseDashboard } from "../../../../services/enrolled-courses-content/courseContentApis";
-
 interface Category {
   name: string;
   value: number;
@@ -24,16 +19,8 @@ interface ApiResponse {
   [key: string]: number; // For any other fields that might be present
 }
 
-const DashboardPieChart = ({ courseId }: { courseId: number }) => {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["DashboardPieChart"],
-    queryFn: () => getCourseDashboard(1, courseId),
-  });
+const DashboardPieChart = ({  data, isLoading, error }: { data: ApiResponse | null; isLoading: boolean; error: Error | null }) => {
 
-  // Add //console log to see the raw API response
-  //console.log("API Response for DashboardPieChart:", data);
-
-  // Process API data to match our component structure
   const processApiData = (apiData: ApiResponse): DashboardData => {
     // Extract progress values from API response
     const {
