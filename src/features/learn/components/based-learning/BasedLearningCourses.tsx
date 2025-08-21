@@ -244,6 +244,12 @@ export const CourseCard = ({
                             <span className="text-sm">Certification Available</span>
                         </div>
                     )}
+
+                    {isFree && (
+                        <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-2">
+                            <span className="text-sm font-semibold">Free</span>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex items-center mb-6">
