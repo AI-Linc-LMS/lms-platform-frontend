@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Course } from "../../types/course.types";
 import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import { useNavigate } from "react-router-dom";
 import { VideoIcon, DocumentIcon, CodeIcon, FAQIcon } from "../../../../commonComponents/icons/learnIcons/CourseIcons";
 import { AssignmentIcon } from './CourseIcons';
+import { enrollInCourse } from "../../../../services/continue-course-learning/continueCourseApis";
 
 // Stats block for showing counts of different content types
 const StatBlock = ({ icon, count, label }: { icon: React.ReactNode, count: number, label: string }) => {
@@ -29,13 +30,65 @@ interface CourseCardProps {
   className?: string;
   isLoading?: boolean;
   error?: Error | null;
+  clientId?: number;
+  enrolled?: boolean; // optional external flag to force Explore More
 }
 
-const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoading = false, error = null }) => {
+const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoading = false, error = null, clientId = 1, enrolled = false }) => {
   const navigate = useNavigate();
+  const [isEnrolling, setIsEnrolling] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
-  const handleExploreClick = () => {
-    if (course) {
+  const isFree = course?.is_free === true || course?.price === 0;
+  const backendSaysEnrolled = course?.is_enrolled === true;
+
+  const isInitiallyEnrolled = !!course && (backendSaysEnrolled || enrolled);
+  const [isEnrolled, setIsEnrolled] = useState<boolean>(isInitiallyEnrolled);
+
+  // Sync from external prop/backend if it changes to true
+  useEffect(() => {
+    if (backendSaysEnrolled && !isEnrolled) setIsEnrolled(true);
+  }, [backendSaysEnrolled, isEnrolled]);
+  useEffect(() => {
+    if (enrolled && !isEnrolled) setIsEnrolled(true);
+  }, [enrolled, isEnrolled]);
+
+  const handlePrimaryClick = async () => {
+    if (!course) return;
+
+    if (isEnrolled) {
+      navigate(`/courses/${course.id}`);
+      return;
+    }
+
+    if (isFree) {
+      try {
+        setIsEnrolling(true);
+        await enrollInCourse(clientId, course.id);
+        setIsEnrolled(true);
+        setShowSuccessToast(true);
+        window.dispatchEvent(new Event('course-enrolled'));
+        setTimeout(() => {
+          setShowSuccessToast(false);
+          navigate(`/courses/${course.id}`);
+        }, 900);
+      } catch (err: unknown) {
+        const status = typeof err === 'object' && err && 'response' in err && (err as { response?: { status?: number } }).response?.status;
+        const detail = typeof err === 'object' && err && 'response' in err && (err as { response?: { data?: { detail?: string } } }).response?.data?.detail;
+        // Treat already-enrolled as success
+        if (status === 409 || (status === 400 && typeof detail === 'string' && /already\s*enrolled/i.test(detail))) {
+          setIsEnrolled(true);
+          window.dispatchEvent(new Event('course-enrolled'));
+          navigate(`/courses/${course.id}`);
+          return;
+        }
+        alert('Enrollment failed. Please try again.');
+        return;
+      } finally {
+        setIsEnrolling(false);
+      }
+    } else {
+      // Paid or non-free: navigate to detail (enrollment handled elsewhere)
       navigate(`/courses/${course.id}`);
     }
   };
@@ -98,9 +151,24 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
     <div
       className={`w-full border border-[#80C9E0] p-4 rounded-2xl md:rounded-3xl bg-white flex flex-col h-full overflow-visible ${className}`}
     >
+      {showSuccessToast && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className="flex items-center gap-3 px-4 py-3 bg-green-600 text-white rounded-xl shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+            <span className="text-sm font-medium">Successfully enrolled! Redirecting…</span>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 items-center overflow-visible">
         <div>
             <h1 className="font-bold font-sans text-lg text-[#343A40]">{course.title}</h1>
+            {isFree && (
+              <div className="mt-1 flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-2 w-fit">
+                <span className="text-sm font-semibold">Free</span>
+              </div>
+            )}
             <p className="text-[#6C757D] font-normal text-sm md:text-md mt-1">
             {course.description && course.description.length > 70
               ? course.description.slice(0, 70) + "..."
@@ -157,10 +225,11 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
       </div>
       <div className="mt-auto">
         <PrimaryButton
-          onClick={handleExploreClick}
+          onClick={handlePrimaryClick}
           className="w-full text-sm md:text-base rounded-xl"
+          disabled={isEnrolling}
         >
-          Explore More
+          {isEnrolling ? 'Processing…' : (isEnrolled ? 'Explore More' : 'Enroll Now')}
         </PrimaryButton>
       </div>
     </div>
