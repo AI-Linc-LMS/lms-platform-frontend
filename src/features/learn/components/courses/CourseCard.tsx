@@ -164,6 +164,11 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 items-center overflow-visible">
         <div>
             <h1 className="font-bold font-sans text-lg text-[#343A40]">{course.title}</h1>
+            {isFree && (
+              <div className="mt-1 flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-2 w-fit">
+                <span className="text-sm font-semibold">Free</span>
+              </div>
+            )}
             <p className="text-[#6C757D] font-normal text-sm md:text-md mt-1">
             {course.description && course.description.length > 70
               ? course.description.slice(0, 70) + "..."
