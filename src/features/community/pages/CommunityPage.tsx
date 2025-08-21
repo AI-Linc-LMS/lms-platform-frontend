@@ -165,7 +165,7 @@ const CommunityPage: React.FC = () => {
   const [isBookmarked, setIsBookmarked] = useState<{ [key: number]: boolean }>(
     {}
   );
-  const [showComingSoonPopup, setShowComingSoonPopup] = useState(true);
+  const [showComingSoonPopup, setShowComingSoonPopup] = useState(false);
 
   const allTags =
     tagsData || Array.from(new Set(threads.flatMap((thread) => thread.tags)));
