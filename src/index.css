@@ -116,6 +116,28 @@ body {
   display: block !important;
 }
 
+/* Ensure full-bleed behavior for embedded HTML blocks */
+.course-description, .course-description * {
+  box-sizing: border-box !important;
+  white-space: normal !important;
+  overflow: visible !important;
+}
+
+.course-description > * {
+  margin-bottom: 1rem !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+@media (max-width: 768px) {
+  .rendered-html-content,
+  .course-description {
+    width: 100% !important;
+  }
+}
+
 /* First level content elements */
 .course-description > * {
   margin-bottom: 1rem !important;
