@@ -384,7 +384,7 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
                     </svg>
                     <h3 className="text-xl font-medium text-gray-700 mb-2">No courses available yet</h3>
                     <p className="text-gray-500 mb-6">We couldn't find any recommended courses based on your learning history.</p>
-                    <PrimaryButton className="mx-auto" onClick={() => window.location.href = '/'}>
+                    <PrimaryButton className="mx-auto" onClick={() => window.location.href = '/courses'}>
                         Explore Courses
                     </PrimaryButton>
                 </div>
