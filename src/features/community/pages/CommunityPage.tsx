@@ -5,6 +5,8 @@ import { RootState } from "../../../redux/store";
 import {
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Trash2,
   Users,
   Menu,
@@ -14,13 +16,12 @@ import {
   AlertCircle,
   RefreshCw,
 } from "lucide-react";
-import { CreateThread, Thread, VoteType } from "../types";
+import { CreateThread, Thread } from "../types";
 import ThreadCard from "../components/ThreadCard";
 import RichTextEditor from "../components/RichTextEditor";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "../../../contexts/ToastContext";
 import {
-  addVoteOnThread,
   createThread,
   getAllThreads,
   getAllTags,
@@ -62,12 +63,6 @@ const CommunityPage: React.FC = () => {
 
   const createThreadMutation = useMutation({
     mutationFn: (newThread: CreateThread) => createThread(clientId, newThread),
-    onSuccess: (data) => {
-      setThreads((prev) => [...prev, data]);
-      success("Thread created", "Your thread has been created successfully.");
-      setShowNewThreadForm(false);
-      setNewThread({ title: "", body: "", tags: "" });
-    },
     onError: (error) => {
       console.error("Failed to create thread:", error);
       showError(
@@ -82,17 +77,6 @@ const CommunityPage: React.FC = () => {
       threadId: string;
       threadData: Partial<CreateThread>;
     }) => updateThread(clientId, variables.threadId, variables.threadData),
-    onSuccess: (updatedThread) => {
-      setThreads((prev) =>
-        prev.map((thread) =>
-          thread.id === updatedThread.id ? updatedThread : thread
-        )
-      );
-      success("Thread updated", "Your thread has been updated successfully.");
-      setEditingThread(null);
-      setShowNewThreadForm(false);
-      setNewThread({ title: "", body: "", tags: "" });
-    },
     onError: (error) => {
       console.error("Failed to update thread:", error);
       showError(
@@ -120,30 +104,6 @@ const CommunityPage: React.FC = () => {
     },
   });
 
-  const upVoteToThreadMutation = useMutation({
-    mutationFn: (threadId: number) =>
-      addVoteOnThread(clientId, threadId, VoteType.Upvote),
-    onError: (error) => {
-      console.error("Failed to upvote thread:", error);
-      showError(
-        "Failed to upvote",
-        "There was an error processing your vote. Please try again."
-      );
-    },
-  });
-
-  const downVoteFromThreadMutation = useMutation({
-    mutationFn: (threadId: number) =>
-      addVoteOnThread(clientId, threadId, VoteType.Downvote),
-    onError: (error) => {
-      console.error("Failed to downvote thread:", error);
-      showError(
-        "Failed to downvote",
-        "There was an error processing your vote. Please try again."
-      );
-    },
-  });
-
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTag, setSelectedTag] = useState("");
   const [showNewThreadForm, setShowNewThreadForm] = useState(false);
@@ -166,6 +126,8 @@ const CommunityPage: React.FC = () => {
     {}
   );
   const [showComingSoonPopup, setShowComingSoonPopup] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const threadsPerPage = 10;
 
   const allTags =
     tagsData || Array.from(new Set(threads.flatMap((thread) => thread.tags)));
@@ -178,24 +140,19 @@ const CommunityPage: React.FC = () => {
     return matchesSearch && matchesTag;
   });
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredThreads.length / threadsPerPage);
+  const startIndex = (currentPage - 1) * threadsPerPage;
+  const endIndex = startIndex + threadsPerPage;
+  const currentThreads = filteredThreads.slice(startIndex, endIndex);
+
+  // Reset to first page when search/filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedTag]);
+
   const handleThreadClick = (threadId: number) => {
     navigate(`/community/thread/${threadId}`);
-  };
-
-  const handleVote = (threadId: number, type: VoteType): void => {
-    if (
-      upVoteToThreadMutation.isPending ||
-      downVoteFromThreadMutation.isPending
-    ) {
-      return;
-    }
-
-    if (type === VoteType.Upvote) {
-      upVoteToThreadMutation.mutate(threadId);
-    } else if (type === VoteType.Downvote) {
-      downVoteFromThreadMutation.mutate(threadId);
-    }
-    refetch();
   };
 
   const toggleThreadExpansion = (threadId: number): void => {
@@ -210,15 +167,6 @@ const CommunityPage: React.FC = () => {
 
   const addBookmarkMutation = useMutation({
     mutationFn: (threadId: number) => addBookmark(clientId, threadId),
-    onSuccess: (_data, threadId) => {
-      setIsBookmarked((prev) => ({
-        ...prev,
-        [threadId]: true,
-      }));
-      success("Bookmarked", "Thread has been added to your bookmarks.");
-
-      refetch();
-    },
     onError: (error) => {
       console.error("Failed to add bookmark:", error);
       showError(
@@ -230,18 +178,6 @@ const CommunityPage: React.FC = () => {
 
   const removeBookmarkMutation = useMutation({
     mutationFn: (threadId: number) => removeBookmark(clientId, threadId),
-    onSuccess: (_data, threadId) => {
-      setIsBookmarked((prev) => ({
-        ...prev,
-        [threadId]: false,
-      }));
-      success(
-        "Bookmark removed",
-        "Thread has been removed from your bookmarks."
-      );
-
-      refetch();
-    },
     onError: (error) => {
       console.error("Failed to remove bookmark:", error);
       showError(
@@ -257,6 +193,11 @@ const CommunityPage: React.FC = () => {
     } else {
       addBookmarkMutation.mutate(threadId);
     }
+    setIsBookmarked((prev) => ({
+      ...prev,
+      [threadId]: !prev[threadId],
+    }));
+    refetch();
   };
 
   const handleCreateThread = (): void => {
@@ -541,7 +482,7 @@ const CommunityPage: React.FC = () => {
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              <select
+              {/* <select
                 value={selectedTag}
                 onChange={(e) => setSelectedTag(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[140px]"
@@ -552,7 +493,7 @@ const CommunityPage: React.FC = () => {
                     {tag}
                   </option>
                 ))}
-              </select>
+              </select> */}
             </div>
 
             {/* Mobile Search */}
@@ -722,24 +663,25 @@ const CommunityPage: React.FC = () => {
 
         {/* Threads List */}
         <div className="space-y-3 sm:space-y-4">
-          {filteredThreads.length > 0 ? (
-            filteredThreads.map((thread) => (
-              <ThreadCard
-                key={thread.id}
-                thread={thread}
-                isExpanded={expandedThreads.has(thread.id)}
-                isBookmarked={isBookmarked[thread.id] || false}
-                onVote={handleVote}
-                onToggleExpansion={toggleThreadExpansion}
-                onToggleBookmark={toggleBookmark}
-                onDeleteThread={(threadId) =>
-                  setShowDeleteConfirm({ type: "thread", id: threadId })
-                }
-                onEditThread={handleEditThread}
-                onThreadClick={handleThreadClick}
-                onTagSelect={setSelectedTag}
-                canEdit={canEdit}
-              />
+          {currentThreads.length > 0 ? (
+            currentThreads.map((thread) => (
+              <div key={thread.id} onClick={() => handleThreadClick(thread.id)}>
+                <ThreadCard
+                  thread={thread}
+                  isExpanded={expandedThreads.has(thread.id)}
+                  isBookmarked={isBookmarked[thread.id] || false}
+                  refetch={refetch}
+                  onToggleExpansion={toggleThreadExpansion}
+                  onToggleBookmark={toggleBookmark}
+                  onDeleteThread={(threadId) =>
+                    setShowDeleteConfirm({ type: "thread", id: threadId })
+                  }
+                  onEditThread={handleEditThread}
+                  onThreadClick={handleThreadClick}
+                  onTagSelect={setSelectedTag}
+                  canEdit={canEdit}
+                />
+              </div>
             ))
           ) : (
             <div className="bg-white border border-gray-200 rounded-lg p-8">
@@ -781,6 +723,88 @@ const CommunityPage: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* Pagination */}
+        {filteredThreads.length > threadsPerPage && (
+          <div className="mt-6 sm:mt-8 flex justify-center">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft size={20} />
+              </button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => {
+                    // Show first page, last page, current page, and pages around current page
+                    const shouldShow =
+                      page === 1 ||
+                      page === totalPages ||
+                      Math.abs(page - currentPage) <= 1;
+
+                    if (!shouldShow) {
+                      // Show ellipsis for gaps
+                      if (page === 2 && currentPage > 4) {
+                        return (
+                          <span key={page} className="px-2 py-1 text-gray-500">
+                            ...
+                          </span>
+                        );
+                      }
+                      if (
+                        page === totalPages - 1 &&
+                        currentPage < totalPages - 3
+                      ) {
+                        return (
+                          <span key={page} className="px-2 py-1 text-gray-500">
+                            ...
+                          </span>
+                        );
+                      }
+                      return null;
+                    }
+
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                          currentPage === page
+                            ? "bg-blue-600 text-white"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    );
+                  }
+                )}
+              </div>
+
+              <button
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Results info */}
+        {filteredThreads.length > 0 && (
+          <div className="mt-4 text-center text-sm text-gray-500">
+            Showing {startIndex + 1}-
+            {Math.min(endIndex, filteredThreads.length)} of{" "}
+            {filteredThreads.length} threads
+          </div>
+        )}
       </div>
     </div>
   );

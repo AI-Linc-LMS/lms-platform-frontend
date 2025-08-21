@@ -1,13 +1,14 @@
 import React, { useState } from "react";
-import { ArrowUp, ArrowDown, Edit3, Trash2, MessageCircle } from "lucide-react";
-import { Comment, VoteType } from "../types";
+import { Edit3, Trash2, MessageCircle } from "lucide-react";
+import { Comment } from "../types";
 import RichContentDisplay from "./RichContentDisplay";
 import RichTextEditor from "./RichTextEditor";
 import { getUserAvatar } from "../utils/avatarUtils";
+import VoteCard from "./Vote";
 
 interface CommentCardProps {
+  threadId: number;
   comment: Comment;
-  onVote: (commentId: number, type: VoteType) => void;
   onEdit: (commentId: number, content: string) => void;
   onDelete: (commentId: number) => void;
   onAddReply: (parentId: number, content: string) => void;
@@ -15,11 +16,12 @@ interface CommentCardProps {
   nestingLevel?: number;
   onToggleReplies?: (commentId: number) => void;
   visibleReplies?: Set<number>;
+  refetch: () => void;
 }
 
-const CommentCard: React.FC<CommentCardProps> = ({
+const  CommentCard: React.FC<CommentCardProps> = ({
+  threadId,
   comment,
-  onVote,
   onEdit,
   onDelete,
   onAddReply,
@@ -27,6 +29,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
   nestingLevel = 0,
   onToggleReplies,
   visibleReplies = new Set(),
+  refetch,
 }) => {
   const [editingComment, setEditingComment] = useState(false);
   const [editedContent, setEditedContent] = useState(comment.body);
@@ -62,28 +65,14 @@ const CommentCard: React.FC<CommentCardProps> = ({
       <div className="p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
           {/* Vote Section */}
-          <div className="flex sm:flex-col items-center sm:items-center gap-3 sm:gap-2 min-w-[60px] order-2 sm:order-1">
-            <button
-              onClick={() => onVote(comment.id, VoteType.Upvote)}
-              className={`p-1.5 sm:p-2 rounded-md transition-colors text-orange-600 hover:bg-orange-50`}
-            >
-              <ArrowUp size={16} className="sm:w-4 sm:h-4" />
-            </button>
-            <div className="flex flex-col items-center text-xs sm:text-sm font-semibold">
-              <span className="text-orange-600 px-1.5 sm:px-2 py-0.5">
-                {comment.upvotes}
-              </span>
-              <span className="text-blue-600 px-1.5 sm:px-2 py-0.5">
-                {comment.downvotes}
-              </span>
-            </div>
-            <button
-              onClick={() => onVote(comment.id, VoteType.Downvote)}
-              className={`p-1.5 sm:p-2 rounded-md transition-colors text-blue-600 hover:bg-blue-50`}
-            >
-              <ArrowDown size={16} className="sm:w-4 sm:h-4" />
-            </button>
-          </div>
+          <VoteCard
+            threadId={threadId}
+            Vote="comment"
+            commentId={comment.id}
+            upvote={comment.upvotes}
+            downvote={comment.downvotes}
+            refetch={refetch}
+          />
 
           {/* Content */}
           <div className="flex-1 order-1 sm:order-2">
@@ -238,14 +227,13 @@ const CommentCard: React.FC<CommentCardProps> = ({
               <CommentCard
                 key={reply.id}
                 comment={reply}
-                onVote={onVote}
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onAddReply={onAddReply}
                 canEdit={canEdit}
                 nestingLevel={nestingLevel + 1}
-                onToggleReplies={onToggleReplies}
-                visibleReplies={visibleReplies}
+                threadId={threadId}
+                refetch={refetch}
               />
             ))}
           </div>
