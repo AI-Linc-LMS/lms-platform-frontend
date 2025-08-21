@@ -1,8 +1,9 @@
 import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import SecondaryButton from "../../../../commonComponents/common-buttons/secondary-button/SecondaryButton";
 import { useQuery } from "@tanstack/react-query";
-import { getAllRecommendedCourse } from '../../../../services/continue-course-learning/continueCourseApis';
+import { getAllRecommendedCourse, enrollInCourse } from '../../../../services/continue-course-learning/continueCourseApis';
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 // Define the course data interface
 interface CourseData {
@@ -10,12 +11,13 @@ interface CourseData {
     title: string;
     description: string;
     difficulty_level: string;
-    duration_in_hours: string;
+    duration_in_hours: string | number;
     certificate_available: boolean;
     enrolled_students: {
         total: number;
         students_profile_pic: string[];
     };
+    is_free: boolean;
 }
 
 // Define mapped course data interface
@@ -24,10 +26,12 @@ interface MappedCourseData {
     title: string;
     description: string;
     level: string;
-    duration: string;
+    duration: string | number;
     certification: boolean;
     enrolledStudents: number;
     studentAvatars: string[];
+    isFree: boolean;
+    clientId: number;
 }
 
 // Simple SVG icons as React components
@@ -51,15 +55,110 @@ const AwardIcon = () => (
     </svg>
 );
 
-// Course Card Component with dynamic data
+// Enrollment Modal Component
+const EnrollmentModal = ({ isOpen, onClose, courseTitle }: { isOpen: boolean; onClose: () => void; courseTitle: string }) => {
+    if (!isOpen) return null;
+
+    const handleBookSeat = () => {
+        window.open("https://app.ailinc.com/flagship-program-payment?data=dv_t0riqr_f.5ac86e41", "_blank");
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 backdrop-blur-md bg-white/30 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 relative shadow-2xl">
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                    ×
+                </button>
+
+                <div className="text-center">
+                    <div className="w-16 h-16 bg-[#2A8CB0] rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9,22 9,12 15,12 15,22"></polyline>
+                        </svg>
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-gray-800 mb-2">Book Your Seat</h3>
+                    <h4 className="text-lg font-semibold text-gray-700 mb-4">{courseTitle}</h4>
+
+                    <div className="bg-gradient-to-r from-[#E9F7FA] to-[#F0F9FF] rounded-xl p-4 mb-6 border border-[#80C9E0]">
+                        <div className="text-3xl font-bold text-[#2A8CB0] mb-1">₹499</div>
+                        <div className="text-sm text-gray-600">Secure your learning seat today</div>
+                    </div>
+
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-6">
+                        <div className="flex items-center justify-center mb-2">
+                            <svg className="w-5 h-5 text-yellow-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"></path>
+                            </svg>
+                            <span className="text-sm font-medium text-yellow-800">Limited Seats Available!</span>
+                        </div>
+                        <p className="text-xs text-yellow-700">Only a few seats left for this batch</p>
+                    </div>
+
+                    <ul className="text-left text-gray-600 mb-6 space-y-2">
+                        <li className="flex items-center">
+                            <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                            </svg>
+                            Reserved seat in live sessions
+                        </li>
+                        <li className="flex items-center">
+                            <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                            </svg>
+                            Priority access to course materials
+                        </li>
+                        <li className="flex items-center">
+                            <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                            </svg>
+                            Direct mentor interaction
+                        </li>
+                        <li className="flex items-center">
+                            <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                            </svg>
+                            Certificate upon completion
+                        </li>
+                    </ul>
+
+                    <div className="flex gap-3">
+                        <button
+                            onClick={onClose}
+                            className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-colors"
+                        >
+                            Maybe Later
+                        </button>
+                        <button
+                            onClick={handleBookSeat}
+                            className="flex-1 px-4 py-3 bg-[#2A8CB0] text-white rounded-xl hover:bg-[#1E7A99] font-medium transition-colors shadow-lg"
+                        >
+                            Book My Seat
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Define CourseCardProps interface
 interface CourseCardProps {
     title: string;
     description: string;
     level?: string;
-    duration?: string;
+    duration?: string | number;
     certification?: boolean;
     enrolledStudents?: number;
     studentAvatars?: string[];
+    isFree: boolean;
+    clientId: number;
+    courseId: number;
 }
 
 // Export the CourseCard component to be used in the See All page
@@ -70,12 +169,15 @@ export const CourseCard = ({
     duration = "3 hr 28 mins",
     certification = true,
     // enrolledStudents = 3200,
-    studentAvatars = []
+    studentAvatars = [],
+    isFree,
+    clientId,
+    courseId
 }: CourseCardProps) => {
-    // Format number with k for thousands
-    // const formatStudentCount = (count: number) => {
-    //     return count >= 1000 ? (count / 1000).toFixed(1) + 'k' : count;
-    // };
+    const [isEnrollmentModalOpen, setIsEnrollmentModalOpen] = useState(false);
+    const [isEnrolling, setIsEnrolling] = useState(false);
+    const [showSuccessToast, setShowSuccessToast] = useState(false);
+    const navigate = useNavigate();
 
     // Truncate description if it's too long
     const truncateDescription = (text: string, maxLength: number = 120) => {
@@ -83,9 +185,43 @@ export const CourseCard = ({
         return text.substring(0, maxLength).trim() + '...';
     };
 
+    const handleEnrollNow = async () => {
+        console.log('handleEnrollNow called', { isFree, courseId, clientId });
+        if (isFree) {
+            try {
+                console.log('Starting enrollment API call...');
+                setIsEnrolling(true);
+                await enrollInCourse(clientId, courseId);
+                console.log('Enrollment successful, updating state');
+                setShowSuccessToast(true);
+                setTimeout(() => {
+                    setShowSuccessToast(false);
+                    navigate(`/courses/${courseId}`);
+                }, 900);
+            } catch (error) {
+                console.error('Enrollment failed:', error);
+                alert('Failed to enroll. Please try again.');
+            } finally {
+                setIsEnrolling(false);
+            }
+        } else {
+            console.log('Course is not free, showing modal');
+            setIsEnrollmentModalOpen(true);
+        }
+    };
+
     return (
         <div className="flex flex-col">
-
+            {showSuccessToast && (
+                <div className="fixed top-4 right-4 z-50">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-green-600 text-white rounded-xl shadow-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-sm font-medium">Successfully enrolled! Redirecting…</span>
+                    </div>
+                </div>
+            )}
             <div className="rounded-3xl border border-[#80C9E0] p-6 flex flex-col w-full bg-white min-h-[350px]">
 
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">{title}</h2>
@@ -106,6 +242,12 @@ export const CourseCard = ({
                         <div className="flex items-center gap-2 border border-[#DEE2E6] rounded-xl  px-4 py-2">
                             <AwardIcon />
                             <span className="text-sm">Certification Available</span>
+                        </div>
+                    )}
+
+                    {isFree && (
+                        <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-2">
+                            <span className="text-sm font-semibold">Free</span>
                         </div>
                     )}
                 </div>
@@ -130,14 +272,23 @@ export const CourseCard = ({
                 </div>
 
                 <div className="flex gap-4 mt-auto">
-                    <PrimaryButton className="whitespace-nowrap text-sm" onClick={() => alert('Enrollment will start soon...')}>Enroll Now</PrimaryButton>
-
+                    <PrimaryButton
+                        className="whitespace-nowrap text-sm"
+                        onClick={handleEnrollNow}
+                        disabled={isEnrolling}
+                    >
+                        {isEnrolling ? 'Enrolling...' : 'Enroll Now'}
+                    </PrimaryButton>
 
                     <SecondaryButton className="whitespace-nowrap text-sm" onClick={() => alert('Not Interested')} >Not Interested</SecondaryButton>
-
-
                 </div>
             </div>
+
+            <EnrollmentModal
+                isOpen={isEnrollmentModalOpen}
+                onClose={() => setIsEnrollmentModalOpen(false)}
+                courseTitle={title}
+            />
         </div>
     );
 };
@@ -233,7 +384,7 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
                     </svg>
                     <h3 className="text-xl font-medium text-gray-700 mb-2">No courses available yet</h3>
                     <p className="text-gray-500 mb-6">We couldn't find any recommended courses based on your learning history.</p>
-                    <PrimaryButton className="mx-auto" onClick={() => window.location.href = '/'}>
+                    <PrimaryButton className="mx-auto" onClick={() => window.location.href = '/courses'}>
                         Explore Courses
                     </PrimaryButton>
                 </div>
@@ -251,6 +402,8 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
         enrolledStudents: course.enrolled_students.total || 0,
         studentAvatars: course.enrolled_students.students_profile_pic || [],
         id: course.id, // for key
+        isFree: course.is_free,
+        clientId: clientId
     }));
 
     // Only display up to 4 courses in the dashboard
@@ -278,7 +431,7 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mx-auto pt-6">
                 {displayedCourses.map((course: MappedCourseData) => (
-                    <CourseCard key={course.id} {...course} />
+                    <CourseCard key={course.id} {...course} courseId={course.id} />
                 ))}
             </div>
         </div>

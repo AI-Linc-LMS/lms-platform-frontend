@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, MessageCircle, Info, Send } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 
-interface AnswerFormProps {
+interface CommentFormProps {
   onSubmit: (content: string) => Promise<void>;
 }
 
-const AnswerForm: React.FC<AnswerFormProps> = ({ onSubmit }) => {
+const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
   const [showForm, setShowForm] = useState(false);
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,7 +20,7 @@ const AnswerForm: React.FC<AnswerFormProps> = ({ onSubmit }) => {
       setContent('');
       setShowForm(false);
     } catch (error) {
-      console.error('Failed to submit answer:', error);
+      console.error('Failed to submit comment:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -39,7 +39,7 @@ const AnswerForm: React.FC<AnswerFormProps> = ({ onSubmit }) => {
               <MessageCircle className="text-white" size={18} />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900">Your Answer</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">Your Comment</h3>
               <p className="text-sm text-gray-500">Share your knowledge with the community</p>
             </div>
           </div>
@@ -52,7 +52,7 @@ const AnswerForm: React.FC<AnswerFormProps> = ({ onSubmit }) => {
         <div className="p-4 sm:p-6">
           <div className="prose prose-sm max-w-none mb-4">
             <p className="text-gray-600 text-sm">
-              Format your answer using the toolbar below. You can:
+              Format your comment using the toolbar below. You can:
             </p>
             <ul className="text-gray-600 text-sm list-disc pl-5">
               <li>Add code snippets with syntax highlighting</li>
@@ -72,7 +72,7 @@ const AnswerForm: React.FC<AnswerFormProps> = ({ onSubmit }) => {
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-4 gap-3 sm:gap-4">
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Info size={16} />
-              <span>Your answer will be visible to the community</span>
+              <span>Your comment will be visible to the community</span>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
               <button
@@ -94,7 +94,7 @@ const AnswerForm: React.FC<AnswerFormProps> = ({ onSubmit }) => {
                 ) : (
                   <>
                     <Send size={16} />
-                    <span>Post Answer</span>
+                    <span>Post Comment</span>
                   </>
                 )}
               </button>
@@ -106,4 +106,4 @@ const AnswerForm: React.FC<AnswerFormProps> = ({ onSubmit }) => {
   );
 };
 
-export default AnswerForm;
+export default CommentForm;

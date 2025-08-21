@@ -90,16 +90,21 @@ const PartialPaymentPage: React.FC = () => {
   const programConfigs: Record<ProgramType, ProgramConfig> = {
     "flagship-program": {
       title: "AI-LINC Flagship Career Launchpad",
-      subtitle: "Mentorship • Referrals • Job-Ready",
-      description: "Premium program with MAANG mentorship and direct referrals",
+      subtitle: "7-day full access trial – 100% Refund",
+      description: "Premium program with MAANG mentorship and direct referrals. Complete our trial challenge for a full refund!",
       features: [
-        "Live sessions with MAANG experts",
-        "Direct referral to hiring partners",
-        "90-Day guided work with MAANG mentor",
-        "AI-powered resume & branding help",
-        "Portfolio building & mock interviews",
-        "Lifetime job portal access",
-        "Certificate + career readiness report",
+        "Join for ₹499 – Pay a small token amount for a 7-day full access trial.",
+        "Complete the Challenge – Attend at least 50% of live classes and submit 1 small AI projects during the trial week.",
+        "Share & Grow – Post your project results on LinkedIn/Instagram tagging Ai-linc. ",
+        "Get a 100% Refund – Complete all challenge steps, and your ₹499 is refunded.",
+        // "Share project on LinkedIn/Instagram tagging Ai-linc",
+        // "Live sessions with MAANG experts",
+        // "Direct referral to hiring partners",
+        // "90-Day guided work with MAANG mentor",
+        // "AI-powered resume & branding help",
+        // "Portfolio building & mock interviews",
+        // "Lifetime job portal access",
+        // "Certificate + career readiness report",
       ],
       color: "#f59e0b",
       type_id: "flagship-course"
@@ -307,7 +312,7 @@ const PartialPaymentPage: React.FC = () => {
               </div>
               <div className="text-left sm:text-right">
                 <div className="text-3xl sm:text-4xl font-bold">₹{amount.toLocaleString()}</div>
-                <div className="text-blue-100">Partial Payment</div>
+                {/* <div className="text-blue-100">Partial Payment</div> */}
               </div>
             </div>
           </div>
@@ -320,7 +325,7 @@ const PartialPaymentPage: React.FC = () => {
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Program Overview</h2>
                 <p className="text-gray-600 mb-4 sm:mb-6">{programConfigs[decodedData.programType as ProgramType]?.description}</p>
 
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">What You'll Get:</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">How it works:</h3>
                 <ul className="space-y-2 sm:space-y-3">
                   {programConfigs[decodedData.programType as ProgramType]?.features.map((feature, index) => (
                     <li key={index} className="flex items-start">
