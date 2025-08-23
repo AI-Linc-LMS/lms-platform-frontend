@@ -1,7 +1,5 @@
 import React from "react";
 import {
-  ArrowUp,
-  ArrowDown,
   Calendar,
   Trash2,
   Edit2,
@@ -9,15 +7,16 @@ import {
   Bookmark,
   ArrowRight,
 } from "lucide-react";
-import { Thread, VoteType } from "../types";
+import { Thread } from "../types";
 import { getUserAvatar } from "../utils/avatarUtils";
 import RichbodyDisplay from "./RichContentDisplay";
+import VoteCard from "./Vote";
 
 interface ThreadCardProps {
   thread: Thread;
   isExpanded: boolean;
   isBookmarked: boolean;
-  onVote: (threadId: number, type: VoteType) => void;
+  refetch: () => void;
   onToggleExpansion: (threadId: number) => void;
   onToggleBookmark: (threadId: number) => void;
   onDeleteThread: (threadId: number) => void;
@@ -31,7 +30,7 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
   thread,
   isExpanded,
   isBookmarked,
-  onVote,
+  refetch,
   onToggleExpansion,
   onToggleBookmark,
   onDeleteThread,
@@ -49,42 +48,13 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
     <div className="bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow mx-1 sm:mx-0 group">
       <div className="p-3 sm:p-6">
         <div className="flex gap-2 sm:gap-4">
-          {/* Vote Section */}
-          <div
-            className="flex flex-col items-center gap-1 min-w-[50px] sm:min-w-[60px]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => onVote(thread.id, VoteType.Upvote)}
-              className={`p-1.5 sm:p-2 rounded-md transition-colors ${
-                // thread.isUpvoted
-                //   ? "text-orange-600 bg-orange-50"
-                "text-gray-400 hover:text-orange-600 hover:bg-orange-50"
-              }`}
-            >
-              <ArrowUp size={16} className="sm:w-4 sm:h-4" />
-            </button>
-            <div className="flex flex-col items-center text-xs sm:text-sm font-semibold">
-              <span className="text-orange-600 px-1.5 sm:px-2 py-0.5">
-                {thread.upvotes}
-              </span>
-              <span className="text-blue-600 px-1.5 sm:px-2 py-0.5">
-                {thread.downvotes}
-              </span>
-            </div>
-            <button
-              onClick={() => onVote(thread.id, VoteType.Downvote)}
-              className={`p-1.5 sm:p-2 rounded-md transition-colors ${
-                // thread.isDownvoted
-                //   ? "text-blue-600 bg-blue-50"
-                "text-gray-400 hover:text-blue-600 hover:bg-blue-50"
-              }`}
-            >
-              <ArrowDown size={16} className="sm:w-4 sm:h-4" />
-            </button>
-          </div>
-
-          {/* body */}
+          <VoteCard
+            threadId={thread.id}
+            Vote="thread"
+            upvote={thread.upvotes}
+            downvote={thread.downvotes}
+            refetch={refetch}
+          />
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between mb-2 sm:mb-3">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors line-clamp-2 pr-2">
