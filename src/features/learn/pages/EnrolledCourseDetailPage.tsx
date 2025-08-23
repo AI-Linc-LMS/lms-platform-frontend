@@ -5,7 +5,7 @@ import DashboardPieChart from "../components/enrolled-courses/DashboardPieChart"
 import BackToHomeButton from "../../../commonComponents/common-buttons/back-buttons/back-to-home-button/BackToHomeButton";
 import CourseContent from "../components/enrolled-courses/CourseContent";
 import EnrolledLeaderBoard from "../components/enrolled-courses/EnrolledLeader";
-import { getCourseById } from "../../../services/enrolled-courses-content/courseContentApis";
+import { getCourseById, getCourseDashboard } from "../../../services/enrolled-courses-content/courseContentApis";
 import { useQuery } from "@tanstack/react-query";
 
 const EnrolledCourseDetailPage: React.FC = () => {
@@ -19,6 +19,13 @@ const EnrolledCourseDetailPage: React.FC = () => {
   } = useQuery({
     queryKey: ["course", courseId],
     queryFn: () => getCourseById(1, parseInt(courseId!)),
+  });
+
+  const { data, isLoading: isLoadingDashboard, error: errorDashboard } = useQuery({
+    queryKey: ["DashboardPieChart", courseId],
+    queryFn: () => getCourseDashboard(1, parseInt(courseId!)),
+    refetchOnWindowFocus: true,
+    refetchOnMount: true
   });
 
   //console.log("course", course);
@@ -296,7 +303,7 @@ const EnrolledCourseDetailPage: React.FC = () => {
           <CourseContent course={course} isLoading={isLoading} error={error} />
         </div>
         <div className="flex flex-col gap-4 w-full md:w-auto">
-          <DashboardPieChart courseId={parseInt(courseId)} />
+          <DashboardPieChart data={data} isLoading={isLoadingDashboard} error={errorDashboard} />
           <EnrolledLeaderBoard courseId={parseInt(courseId)} />
         </div>
       </div>

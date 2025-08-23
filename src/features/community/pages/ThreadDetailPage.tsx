@@ -1,21 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Trash2, AlertCircle } from "lucide-react";
-import { Thread, Comment, CreateComment, VoteType } from "../types";
+import { Thread, Comment, CreateComment } from "../types";
 import ThreadHeader from "../components/ThreadHeader";
 import CommentForm from "../components/CommentForm";
 import CommentCard from "../components/CommentCard";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "../../../contexts/ToastContext";
+import { getThreadData } from "../../../services/community/threadApis";
 import {
-  addVoteOnThread,
-  getThreadData,
-} from "../../../services/community/threadApis";
-import {
-  addVoteOnComment,
+  addBookmark,
   createComment,
   deleteComment,
   getAllComments,
+  removeBookmark,
   updateComment,
 } from "../../../services/community/commentApis";
 
@@ -32,6 +30,7 @@ const ThreadDetailPage: React.FC = () => {
     data: threadData,
     isLoading,
     error,
+    refetch: refetchThread,
   } = useQuery<Thread>({
     queryKey: ["thread", threadIdNum],
     queryFn: () => getThreadData(clientId, threadIdNum),
@@ -108,75 +107,6 @@ const ThreadDetailPage: React.FC = () => {
       newVisibleReplies.add(commentId);
     }
     setVisibleReplies(newVisibleReplies);
-  };
-
-  const upVoteToThreadMutation = useMutation({
-    mutationFn: () => addVoteOnThread(clientId, threadIdNum, VoteType.Upvote),
-    onError: (error) => {
-      console.error("Failed to upvote thread:", error);
-      showError(
-        "Failed to upvote",
-        "There was an error processing your vote. Please try again."
-      );
-    },
-  });
-
-  const downVoteFromThreadMutation = useMutation({
-    mutationFn: () => addVoteOnThread(clientId, threadIdNum, VoteType.Downvote),
-    onError: (error) => {
-      console.error("Failed to downvote thread:", error);
-      showError(
-        "Failed to downvote",
-        "There was an error processing your vote. Please try again."
-      );
-    },
-  });
-
-  const handleVoteThread = (type: VoteType) => {
-    if (
-      upVoteToThreadMutation.isPending ||
-      downVoteFromThreadMutation.isPending
-    ) {
-      return; // Prevent multiple votes while one is in progress
-    }
-
-    if (type === VoteType.Upvote) {
-      upVoteToThreadMutation.mutate();
-    } else {
-      downVoteFromThreadMutation.mutate();
-    }
-  };
-
-  const addVoteOnCommentMutation = useMutation({
-    mutationFn: (variables: { commentId: number; type: VoteType }) =>
-      addVoteOnComment(
-        clientId,
-        threadIdNum ?? 0,
-        variables.commentId,
-        variables.type
-      ),
-    onSuccess: () => {
-      // Refetch comments to get updated vote counts
-      refetchComments();
-    },
-    onError: (error) => {
-      console.error("Failed to vote on comment:", error);
-      showError(
-        "Failed to vote",
-        "There was an error processing your vote on the comment."
-      );
-    },
-  });
-
-  const handleVoteComment = (commentId: number, type: VoteType) => {
-    if (addVoteOnCommentMutation.isPending) {
-      return; // Prevent multiple votes while one is in progress
-    }
-
-    addVoteOnCommentMutation.mutate({
-      commentId,
-      type,
-    });
   };
 
   const addCommentMutation = useMutation({
@@ -279,6 +209,38 @@ const ThreadDetailPage: React.FC = () => {
       console.error("Failed to add reply:", error);
       // Error toast is already handled in mutation onError
     }
+  };
+
+  const addBookmarkMutation = useMutation({
+    mutationFn: (threadId: number) => addBookmark(clientId, threadId),
+    onError: (error) => {
+      console.error("Failed to add bookmark:", error);
+      showError(
+        "Failed to bookmark",
+        "There was an error bookmarking this thread."
+      );
+    },
+  });
+
+  const removeBookmarkMutation = useMutation({
+    mutationFn: (threadId: number) => removeBookmark(clientId, threadId),
+    onError: (error) => {
+      console.error("Failed to remove bookmark:", error);
+      showError(
+        "Failed to remove bookmark",
+        "There was an error removing the bookmark."
+      );
+    },
+  });
+
+  const toggleBookmark = (): void => {
+    if (isBookmarked) {
+      removeBookmarkMutation.mutate(threadIdNum);
+    } else {
+      addBookmarkMutation.mutate(threadIdNum);
+    }
+    setIsBookmarked((prev) => !prev);
+    refetchThread();
   };
 
   const handleEditComment = (commentId: number, content: string) => {
@@ -450,13 +412,10 @@ const ThreadDetailPage: React.FC = () => {
         <ThreadHeader
           thread={thread}
           comments={comments}
-          onVote={(type: VoteType) =>
-            handleVoteThread(
-              type === VoteType.Upvote ? VoteType.Upvote : VoteType.Downvote
-            )
-          }
-          onToggleBookmark={() => setIsBookmarked(!isBookmarked)}
+          isBookmarked={isBookmarked}
+          onToggleBookmark={toggleBookmark}
           participants={participants}
+          refetch={refetchThread}
         />
 
         {/* Comments Section */}
@@ -510,10 +469,9 @@ const ThreadDetailPage: React.FC = () => {
                 topLevelComments.map((comment) => (
                   <CommentCard
                     key={comment.id}
+                    threadId={thread.id}
+                    refetch={refetchComments}
                     comment={comment}
-                    onVote={(commentId: number, type: VoteType) =>
-                      handleVoteComment(commentId, type)
-                    }
                     onEdit={(commentId: number, content: string) =>
                       handleEditComment(commentId, content)
                     }
