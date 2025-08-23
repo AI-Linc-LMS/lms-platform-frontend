@@ -7,13 +7,18 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "android": "npm run build && npx cap sync android && npx cap open android",
+    "ios": "npm run build && npx cap sync ios && npx cap open ios"
   },
   "dependencies": {
+    "@capacitor/android": "6.2.1",
+    "@capacitor/core": "6.2.1",
     "@codemirror/lang-css": "^6.3.1",
     "@codemirror/lang-html": "^6.4.9",
     "@codemirror/lang-javascript": "^6.2.3",
     "@codemirror/theme-one-dark": "^6.1.2",
+    "@codetrix-studio/capacitor-google-auth": "^3.4.0-rc.4",
     "@monaco-editor/react": "^4.7.0",
     "@reduxjs/toolkit": "^2.7.0",
     "@tailwindcss/vite": "^4.0.17",
@@ -50,6 +55,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@capacitor/cli": "6.2.1",
     "@eslint/js": "^9.21.0",
     "@types/react": "^19.1.1",
     "@types/react-dom": "^19.0.4",

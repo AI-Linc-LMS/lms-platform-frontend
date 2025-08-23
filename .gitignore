@@ -1,4 +1,6 @@
+# ===========================
 # Logs
+# ===========================
 logs
 *.log
 npm-debug.log*
@@ -7,19 +9,140 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# ===========================
+# Dependencies
+# ===========================
 node_modules
+
+# ===========================
+# Environment Variables
+# ===========================
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ===========================
+# Build Outputs
+# ===========================
 dist
 dist-ssr
-*.local
+.next/
+out/
+build/
+.cache/
 
-# Editor directories and files
+# ===========================
+# Testing
+# ===========================
+coverage/
+*.lcov
+.nyc_output
+
+# ===========================
+# Package Managers
+# ===========================
+.yarn/
+.pnp.*
+yarn.lock
+package-lock.json
+pnpm-lock.yaml
+
+# ===========================
+# OS Generated Files
+# ===========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+
+# ===========================
+# Editor & IDE Settings
+# ===========================
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.swp
+*.swo
+
+# ===========================
+# Runtime Data
+# ===========================
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# ===========================
+# npm Cache
+# ===========================
+.npm
+
+# ===========================
+# ESLint / Stylelint Cache
+# ===========================
+.eslintcache
+.stylelintcache
+
+# ===========================
+# Temporary Folders
+# ===========================
+tmp/
+temp/
+
+# ===========================
+# Capacitor / Native Platforms
+# ===========================
+.capacitor/
+
+# KEEP android/ and ios/ folders — required for native builds!
+# Safe to ignore only generated build artifacts:
+*.apk
+*.aab
+*.ap_
+*.dex
+.gradle/
+local.properties
+captures/
+output.json
+
+# iOS specific build artifacts (safe to ignore)
+*.xcworkspace
+*.xcuserstate
+*.xcscheme
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# ===========================
+# React Native (if used with Capacitor)
+# ===========================
+metro.config.js.bak
+
+# ===========================
+# Android Studio & Xcode
+# ===========================
+.externalNativeBuild/
+.cxx/
+xcuserdata/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3

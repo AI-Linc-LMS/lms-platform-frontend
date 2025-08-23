@@ -1,46 +1,46 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { Capacitor } from "@capacitor/core";
+import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
 import { useGoogleAuth } from "../../../hooks/useGoogleAuth";
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
 
-// Type definitions for Google Identity Services
-interface GoogleAccounts {
-  id: {
-    initialize: (config: {
-      client_id: string;
-      callback: (response: { credential: string }) => void;
-      auto_select?: boolean;
-      cancel_on_tap_outside?: boolean;
-    }) => void;
-    renderButton: (
-      element: HTMLElement,
-      config: {
-        theme: string;
-        size: string;
-        width: number;
-        text: string;
-        logo_alignment: string;
-      }
-    ) => void;
-  };
-}
-
-declare global {
-  interface Window {
-    google?: {
-      accounts: GoogleAccounts;
-    };
-  }
+interface GoogleAuthResult {
+  authentication?: { idToken?: string };
+  idToken?: string;
 }
 
 const GoogleLoginButton = () => {
   const { handleGoogleLogin, isLoading, error } = useGoogleAuth();
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
+  const isNative = Capacitor.isNativePlatform();
+
+  const handleNativeSignIn = useCallback(async () => {
+    try {
+      setInitError(null);
+      await GoogleAuth.initialize({
+        clientId: GOOGLE_CLIENT_ID,
+        scopes: ["profile", "email"],
+      });
+      const result = (await GoogleAuth.signIn()) as unknown as GoogleAuthResult;
+      const token = result.authentication?.idToken || result.idToken;
+      if (!token) {
+        setInitError("Google authentication failed. Please try again.");
+        return;
+      }
+      await handleGoogleLogin(token);
+    } catch {
+      setInitError("Google authentication failed. Please try again.");
+    }
+  }, [handleGoogleLogin]);
 
   useEffect(() => {
+    if (isNative) {
+      return;
+    }
+
     const loadGoogleScript = () => {
-      // Check if script is already loaded
       if (
         document.querySelector(
           "script[src='https://accounts.google.com/gsi/client']"
@@ -56,15 +56,12 @@ const GoogleLoginButton = () => {
       script.async = true;
       script.defer = true;
       script.onload = () => {
-        //console.log('[Google Auth] Script loaded successfully');
         setIsScriptLoaded(true);
-        // Add a small delay for mobile browsers
         setTimeout(() => {
           initializeGoogleSignIn();
         }, 100);
       };
       script.onerror = () => {
-        //console.error("Failed to load Google authentication script:", e);
         setInitError(
           "Failed to load Google authentication script. Please try again later."
         );
@@ -82,28 +79,25 @@ const GoogleLoginButton = () => {
         existingScript.remove();
       }
     };
-  }, []);
+  }, [isNative]);
 
   const initializeGoogleSignIn = () => {
     try {
       if (!window.google?.accounts?.id) {
-        //console.error('[Google Auth] Google accounts object not available');
         setInitError(
           "Google authentication not available. Please refresh the page."
         );
         return;
       }
 
-      //console.log('[Google Auth] Initializing Google Sign-In');
-
-      window.google.accounts.id.initialize({
+      const initConfig = {
         client_id: GOOGLE_CLIENT_ID,
         callback: handleGoogleResponse,
-        auto_select: false,
         cancel_on_tap_outside: true,
-      });
+      } as Parameters<typeof window.google.accounts.id.initialize>[0];
 
-      // Add a small delay before rendering button for mobile
+      window.google.accounts.id.initialize(initConfig);
+
       setTimeout(() => {
         const buttonElement = document.getElementById("google-signin-btn");
         if (buttonElement) {
@@ -114,16 +108,13 @@ const GoogleLoginButton = () => {
             text: "signin_with",
             logo_alignment: "center",
           });
-          //console.log('[Google Auth] Button rendered successfully');
         } else {
-          //console.error('[Google Auth] Button element not found');
           setInitError(
             "Unable to render Google sign-in button. Please refresh the page."
           );
         }
       }, 50);
     } catch {
-      //console.error('[Google Auth] Error initializing Google Sign-In:', error);
       setInitError(
         "Error initializing Google authentication. Please refresh the page."
       );
@@ -131,18 +122,42 @@ const GoogleLoginButton = () => {
   };
 
   const handleGoogleResponse = (response: { credential: string }) => {
-    //console.log('[Google Auth] Received response from Google');
     if (response.credential) {
       handleGoogleLogin(response.credential);
     } else {
-      //console.error('[Google Auth] No credential received from Google');
       setInitError(
         "No authentication data received from Google. Please try again."
       );
     }
   };
 
-  // Show loading state while script is loading
+  if (isNative) {
+    return (
+      <div className="w-full text-center">
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={handleNativeSignIn}
+            disabled={isLoading}
+            className={`w-full max-w-xs h-12 bg-white border rounded-lg flex items-center justify-center ${
+              isLoading ? "opacity-60 cursor-not-allowed" : "hover:bg-gray-50"
+            }`}
+          >
+            <img
+              src="https://developers.google.com/identity/images/g-logo.png"
+              alt="Google logo"
+              className="h-5 w-5 mr-2"
+            />
+            <span className="text-gray-800 text-sm font-medium">Sign in with Google</span>
+          </button>
+        </div>
+        {(error || initError) && (
+          <p className="text-red-500 mt-2 text-sm">{error || initError}</p>
+        )}
+      </div>
+    );
+  }
+
   if (!isScriptLoaded && !initError) {
     return (
       <div className="w-full text-center">

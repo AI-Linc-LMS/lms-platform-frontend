@@ -62,9 +62,8 @@ const QuizContent: React.FC<QuizContentProps> = ({
             <div
               key={quiz.id}
               onClick={() => onSelect(quiz.id)}
-              className={`cursor-pointer p-3 flex justify-between items-center transition ${
-                isSelected ? "bg-blue-50 border-blue-300" : "hover:shadow"
-              } ${!isLastItem ? "border-b border-gray-300" : ""}`}
+              className={`cursor-pointer p-3 flex justify-between items-center transition ${isSelected ? "bg-blue-50 border-blue-300" : "hover:shadow"
+                } ${!isLastItem ? "border-b border-gray-300" : ""}`}
             >
               <div className="flex items-start gap-3">
                 <span className="text-xl">
@@ -76,9 +75,8 @@ const QuizContent: React.FC<QuizContentProps> = ({
                 </span>
                 <div>
                   <h3
-                    className={`text-sm font-medium ${
-                      isSelected ? "text-[#007B9F]" : "text-gray-800"
-                    }`}
+                    className={`text-sm font-medium ${isSelected ? "text-[#007B9F]" : "text-gray-800"
+                      }`}
                   >
                     {isSelected && quizzes ? quiz.title : quiz.title}
                   </h3>
