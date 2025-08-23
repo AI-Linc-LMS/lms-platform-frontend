@@ -63,6 +63,11 @@ const CommunityPage: React.FC = () => {
 
   const createThreadMutation = useMutation({
     mutationFn: (newThread: CreateThread) => createThread(clientId, newThread),
+    onSuccess: () => {
+      setShowNewThreadForm(false);
+      refetch();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
     onError: (error) => {
       console.error("Failed to create thread:", error);
       showError(
@@ -77,6 +82,10 @@ const CommunityPage: React.FC = () => {
       threadId: string;
       threadData: Partial<CreateThread>;
     }) => updateThread(clientId, variables.threadId, variables.threadData),
+    onSuccess: () => {
+      setShowNewThreadForm(false);
+      refetch();
+    },
     onError: (error) => {
       console.error("Failed to update thread:", error);
       showError(
@@ -235,17 +244,10 @@ const CommunityPage: React.FC = () => {
           .filter((tag) => tag),
       });
     }
-
-    refetch();
   };
 
   const handleEditThread = (thread: Thread): void => {
     setEditingThread(thread);
-    setNewThread({
-      title: thread.title,
-      body: thread.body,
-      tags: thread.tags.join(", "),
-    });
     setShowNewThreadForm(true);
   };
 
