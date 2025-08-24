@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Trash2, AlertCircle } from "lucide-react";
-import { Thread, Comment, CreateComment } from "../types";
+import { Thread, Comment, CreateComment, Tag } from "../types";
 import ThreadHeader from "../components/ThreadHeader";
 import CommentForm from "../components/CommentForm";
 import CommentCard from "../components/CommentCard";
@@ -12,6 +12,7 @@ import {
   getThreadData,
   updateThread,
   deleteThread,
+  getAllTags,
 } from "../../../services/community/threadApis";
 import {
   addBookmark,
@@ -57,17 +58,45 @@ const ThreadDetailPage: React.FC = () => {
     queryFn: () => getAllComments(clientId, threadIdNum),
   });
 
+  const { data: tagsData } = useQuery<Tag[]>({
+    queryKey: ["tags", clientId],
+    queryFn: () => getAllTags(clientId),
+    retry: 2,
+    retryDelay: 1000,
+  });
+
+  const allTags: Tag[] = useMemo(
+    () =>
+      tagsData || [
+        // Fallback with some default tags if API doesn't return structured data
+        { id: 1, name: "python" },
+        { id: 2, name: "excel" },
+        { id: 3, name: "react" },
+        { id: 4, name: "typescript" },
+        { id: 5, name: "api" },
+      ],
+    [tagsData]
+  );
+
   useEffect(() => {
     if (threadData) {
       setThread(threadData);
       // Initialize edit form data with current thread data
+      // Convert tag names to IDs for editing
+      const tagIds = threadData.tags
+        .map((tagName) => {
+          const tag = allTags.find((t) => t.name === tagName);
+          return tag ? tag.id : 0; // Default to 0 if tag not found
+        })
+        .filter((id) => id !== 0); // Remove invalid tags
+
       setEditedThreadData({
         title: threadData.title,
         body: threadData.body,
-        tags: threadData.tags,
+        tags: tagIds,
       });
     }
-  }, [threadData]);
+  }, [threadData, allTags]);
 
   useEffect(() => {
     if (commentsData) {
@@ -85,7 +114,7 @@ const ThreadDetailPage: React.FC = () => {
   const [editedThreadData, setEditedThreadData] = useState({
     title: "",
     body: "",
-    tags: [] as string[],
+    tags: [] as number[],
   });
 
   const getParticipants = (): string[] => {
@@ -194,7 +223,7 @@ const ThreadDetailPage: React.FC = () => {
   const updateThreadMutation = useMutation({
     mutationFn: (variables: {
       threadId: string;
-      threadData: Partial<{ title: string; body: string; tags: string[] }>;
+      threadData: Partial<{ title: string; body: string; tags: number[] }>;
     }) => updateThread(clientId, variables.threadId, variables.threadData),
     onSuccess: () => {
       refetchThread();
@@ -323,10 +352,18 @@ const ThreadDetailPage: React.FC = () => {
   const handleEditThread = (thread: Thread) => {
     // Set the editing state and populate the form with current thread data
     setEditingThread(true);
+    // Convert tag names to IDs for editing
+    const tagIds = thread.tags
+      .map((tagName) => {
+        const tag = allTags.find((t) => t.name === tagName);
+        return tag ? tag.id : 0; // Default to 0 if tag not found
+      })
+      .filter((id) => id !== 0); // Remove invalid tags
+
     setEditedThreadData({
       title: thread.title,
       body: thread.body,
-      tags: thread.tags,
+      tags: tagIds,
     });
   };
 
@@ -359,10 +396,18 @@ const ThreadDetailPage: React.FC = () => {
     setEditingThread(false);
     // Reset form data to original thread data
     if (thread) {
+      // Convert tag names to IDs for editing
+      const tagIds = thread.tags
+        .map((tagName) => {
+          const tag = allTags.find((t) => t.name === tagName);
+          return tag ? tag.id : 0; // Default to 0 if tag not found
+        })
+        .filter((id) => id !== 0); // Remove invalid tags
+
       setEditedThreadData({
         title: thread.title,
         body: thread.body,
-        tags: thread.tags,
+        tags: tagIds,
       });
     }
   };
@@ -535,6 +580,7 @@ const ThreadDetailPage: React.FC = () => {
           onEditThread={handleEditThread}
           onDeleteThread={handleDeleteThread}
           canEdit={canEdit}
+          allTags={allTags}
         />
 
         {/* Thread Edit Form */}
@@ -585,16 +631,33 @@ const ThreadDetailPage: React.FC = () => {
               </label>
               <input
                 type="text"
-                value={editedThreadData.tags.join(", ")}
-                onChange={(e) =>
+                value={editedThreadData.tags
+                  .map((tagId) => {
+                    const tag = allTags.find((t) => t.id === tagId);
+                    return tag ? tag.name : "";
+                  })
+                  .filter((name) => name !== "")
+                  .join(", ")}
+                onChange={(e) => {
+                  const tagNames = e.target.value
+                    .split(",")
+                    .map((tag) => tag.trim())
+                    .filter((tag) => tag.length > 0);
+
+                  const tagIds = tagNames
+                    .map((tagName) => {
+                      const tag = allTags.find(
+                        (t) => t.name.toLowerCase() === tagName.toLowerCase()
+                      );
+                      return tag ? tag.id : 0; // Default to 0 if tag not found
+                    })
+                    .filter((id) => id !== 0); // Remove invalid tags
+
                   setEditedThreadData((prev) => ({
                     ...prev,
-                    tags: e.target.value
-                      .split(",")
-                      .map((tag) => tag.trim())
-                      .filter((tag) => tag.length > 0),
-                  }))
-                }
+                    tags: tagIds,
+                  }));
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter tags separated by commas..."
               />

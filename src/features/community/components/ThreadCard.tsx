@@ -7,7 +7,7 @@ import {
   Bookmark,
   ArrowRight,
 } from "lucide-react";
-import { Thread } from "../types";
+import { Thread, Tag } from "../types";
 import { getUserAvatar } from "../utils/avatarUtils";
 import RichbodyDisplay from "./RichContentDisplay";
 import VoteCard from "./Vote";
@@ -24,6 +24,7 @@ interface ThreadCardProps {
   onThreadClick: (threadId: number) => void;
   onTagSelect: (tag: string) => void;
   canEdit: (author: string) => boolean;
+  allTags?: Tag[]; // Add allTags to props
 }
 
 const ThreadCard: React.FC<ThreadCardProps> = ({
@@ -38,11 +39,21 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
   onThreadClick,
   onTagSelect,
   canEdit,
+  allTags = [],
 }) => {
   const authorAvatar = getUserAvatar(
     thread.author.user_name,
     thread.author.profile_pic_url
   );
+
+  // Helper function to get tag objects from tag names in thread
+  const getThreadTags = (): Tag[] => {
+    return thread.tags
+      .map((tagName) => allTags.find((tag) => tag.name === tagName))
+      .filter(Boolean) as Tag[];
+  };
+
+  const threadTags = getThreadTags();
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow mx-1 sm:mx-0 group">
@@ -119,13 +130,13 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
               className="flex flex-wrap gap-1 sm:gap-2 mb-3 sm:mb-4"
               onClick={(e) => e.stopPropagation()}
             >
-              {thread.tags.map((tag) => (
+              {threadTags.map((tag) => (
                 <span
-                  key={tag}
+                  key={tag.id}
                   className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 cursor-pointer transition-colors"
-                  onClick={() => onTagSelect(tag)}
+                  onClick={() => onTagSelect(tag.name)}
                 >
-                  {tag}
+                  {tag.name}
                 </span>
               ))}
             </div>
