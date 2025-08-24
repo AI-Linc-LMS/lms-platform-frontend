@@ -3,7 +3,7 @@ import {
   Calendar,
   Trash2,
   Edit2,
-  Share2,
+  MessageCircle,
   Bookmark,
   ArrowRight,
 } from "lucide-react";
@@ -57,13 +57,16 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
           />
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between mb-2 sm:mb-3">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors line-clamp-2 pr-2">
+              <h3
+                onClick={() => onThreadClick(thread.id)}
+                className="text-base sm:text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors line-clamp-2 pr-2"
+              >
                 {thread.title}
               </h3>
 
               {canEdit(thread.author.user_name) && (
                 <div
-                  className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                  className="flex items-center gap-1 flex-shrink-0"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button
@@ -84,6 +87,7 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
 
             {/* Thread body Preview */}
             <div
+              onClick={() => onThreadClick(thread.id)}
               className={`relative ${
                 !isExpanded && "max-h-[300px] overflow-hidden"
               }`}
@@ -205,27 +209,47 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => onToggleBookmark(thread.id)}
-                      className={`p-1.5 rounded-md transition-colors ${
+                      className={`flex items-center gap-1 p-1.5 rounded-md transition-colors ${
                         isBookmarked
                           ? "text-yellow-600 bg-yellow-50"
                           : "text-gray-400 hover:text-yellow-600 hover:bg-yellow-50"
                       }`}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        minWidth: 0,
+                      }}
                     >
-                      <Bookmark size={22} className="sm:w-5 sm:h-5" />
+                      <Bookmark className="sm:w-6 sm:h-6" />
+                      <span
+                        className={`font-semibold text-[11px] leading-tight ${
+                          isBookmarked ? "text-yellow-600" : "text-gray-500"
+                        }`}
+                        style={{ letterSpacing: "0.2px", textAlign: "center" }}
+                      >
+                        {thread.bookmarks_count}
+                      </span>
                     </button>
-                    <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors">
-                      <Share2 size={22} className="sm:w-5 sm:h-5" />
+                    <div className="flex items-center gap-1 p-1.5">
+                      <MessageCircle
+                        size={18}
+                        className="text-blue-400 sm:w-5 sm:h-5"
+                      />
+                      <span
+                        className="font-semibold text-[11px] leading-tight text-blue-500"
+                        style={{ letterSpacing: "0.2px", textAlign: "center" }}
+                      >
+                        {thread.comments_count ?? 0}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => onThreadClick(thread.id)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
+                    >
+                      View Thread
+                      <ArrowRight size={16} className="ml-1" />
                     </button>
                   </div>
-
-                  {/* View Thread Button */}
-                  <button
-                    onClick={() => onThreadClick(thread.id)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
-                  >
-                    View Thread
-                    <ArrowRight size={16} className="ml-1" />
-                  </button>
                 </div>
               </div>
             </div>

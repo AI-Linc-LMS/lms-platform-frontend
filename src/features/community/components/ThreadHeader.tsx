@@ -1,5 +1,5 @@
 import React from "react";
-import { Calendar, Bookmark, Share2, Flag } from "lucide-react";
+import { Calendar, Bookmark, MessageCircle, Edit2, Trash2 } from "lucide-react";
 import { Thread } from "../types";
 import RichContentDisplay from "./RichContentDisplay";
 import { getUserAvatar } from "../utils/avatarUtils";
@@ -13,6 +13,9 @@ interface ThreadHeaderProps {
   isBookmarked: boolean;
   participants: string[];
   refetch: () => void;
+  onEditThread?: (thread: Thread) => void;
+  onDeleteThread?: (threadId: number) => void;
+  canEdit?: (author: string) => boolean;
 }
 
 const ThreadHeader: React.FC<ThreadHeaderProps> = ({
@@ -22,6 +25,9 @@ const ThreadHeader: React.FC<ThreadHeaderProps> = ({
   isBookmarked,
   participants,
   refetch,
+  onEditThread,
+  onDeleteThread,
+  canEdit,
 }) => {
   const authorAvatar = getUserAvatar(
     thread.author.user_name,
@@ -46,6 +52,27 @@ const ThreadHeader: React.FC<ThreadHeaderProps> = ({
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4 leading-tight">
               {thread.title}
             </h1>
+
+            {/* Edit/Delete buttons for thread */}
+            {canEdit &&
+              onEditThread &&
+              onDeleteThread &&
+              canEdit(thread.author.user_name) && (
+                <div className="flex items-center gap-1 mb-3 sm:mb-4">
+                  <button
+                    onClick={() => onEditThread(thread)}
+                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                  >
+                    <Edit2 size={12} className="sm:w-3.5 sm:h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => onDeleteThread(thread.id)}
+                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  >
+                    <Trash2 size={12} className="sm:w-3.5 sm:h-3.5" />
+                  </button>
+                </div>
+              )}
 
             {/* Tags */}
             <div className="flex flex-wrap gap-1 sm:gap-2 mb-4 sm:mb-6">
@@ -148,22 +175,32 @@ const ThreadHeader: React.FC<ThreadHeaderProps> = ({
       <div className="flex items-center justify-end gap-1 sm:gap-2 mt-4 pt-4 border-t border-gray-200">
         <button
           onClick={onToggleBookmark}
-          className={`p-1.5 rounded-md transition-colors ${
+          className={`flex items-center gap-1 p-1.5 rounded-md transition-colors ${
             isBookmarked
               ? "text-yellow-600 bg-yellow-50"
               : "text-gray-400 hover:text-yellow-600 hover:bg-yellow-50"
           }`}
         >
-          <Bookmark size={16} className={`sm:w-4 sm:h-4 `} />
+          <Bookmark size={18} className="sm:w-5 sm:h-5" />
+          <span
+            className={`font-semibold text-xs ${
+              isBookmarked ? "text-yellow-600" : "text-gray-500"
+            }`}
+            style={{ letterSpacing: "0.2px" }}
+          >
+            {thread.bookmarks_count}
+          </span>
         </button>
 
-        <button className="p-1.5 sm:p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-md transition-colors">
-          <Share2 size={16} className="sm:w-4 sm:h-4" />
-        </button>
-
-        <button className="p-1.5 sm:p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-md transition-colors">
-          <Flag size={16} className="sm:w-4 sm:h-4" />
-        </button>
+        <div className="flex items-center gap-1 p-1.5">
+          <MessageCircle size={16} className="text-blue-400 sm:w-4 sm:h-4" />
+          <span
+            className="font-semibold text-xs text-blue-500"
+            style={{ letterSpacing: "0.2px" }}
+          >
+            {thread.comments_count ?? comments.length}
+          </span>
+        </div>
       </div>
     </div>
   );
