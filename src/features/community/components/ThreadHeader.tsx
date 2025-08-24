@@ -1,6 +1,6 @@
 import React from "react";
 import { Calendar, Bookmark, MessageCircle, Edit2, Trash2 } from "lucide-react";
-import { Thread } from "../types";
+import { Thread, Tag } from "../types";
 import RichContentDisplay from "./RichContentDisplay";
 import { getUserAvatar } from "../utils/avatarUtils";
 import { Comment } from "../types/index";
@@ -16,6 +16,7 @@ interface ThreadHeaderProps {
   onEditThread?: (thread: Thread) => void;
   onDeleteThread?: (threadId: number) => void;
   canEdit?: (author: string) => boolean;
+  allTags?: Tag[]; // Add allTags prop
 }
 
 const ThreadHeader: React.FC<ThreadHeaderProps> = ({
@@ -28,11 +29,21 @@ const ThreadHeader: React.FC<ThreadHeaderProps> = ({
   onEditThread,
   onDeleteThread,
   canEdit,
+  allTags = [],
 }) => {
   const authorAvatar = getUserAvatar(
     thread.author.user_name,
     thread.author.profile_pic_url
   );
+
+  // Helper function to get tag objects from tag names in thread
+  const getThreadTags = (): Tag[] => {
+    return thread.tags
+      .map((tagName) => allTags.find((tag) => tag.name === tagName))
+      .filter(Boolean) as Tag[];
+  };
+
+  const threadTags = getThreadTags();
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
@@ -76,12 +87,12 @@ const ThreadHeader: React.FC<ThreadHeaderProps> = ({
 
             {/* Tags */}
             <div className="flex flex-wrap gap-1 sm:gap-2 mb-4 sm:mb-6">
-              {thread.tags.map((tag) => (
+              {threadTags.map((tag) => (
                 <span
-                  key={tag}
+                  key={tag.id}
                   className="inline-flex items-center px-2 py-1 text-xs sm:text-sm font-medium bg-blue-100 text-blue-800 rounded-full"
                 >
-                  {tag}
+                  {tag.name}
                 </span>
               ))}
             </div>
