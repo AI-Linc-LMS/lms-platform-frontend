@@ -667,23 +667,21 @@ const CommunityPage: React.FC = () => {
         <div className="space-y-3 sm:space-y-4">
           {currentThreads.length > 0 ? (
             currentThreads.map((thread) => (
-              <div key={thread.id} onClick={() => handleThreadClick(thread.id)}>
-                <ThreadCard
-                  thread={thread}
-                  isExpanded={expandedThreads.has(thread.id)}
-                  isBookmarked={isBookmarked[thread.id] || false}
-                  refetch={refetch}
-                  onToggleExpansion={toggleThreadExpansion}
-                  onToggleBookmark={toggleBookmark}
-                  onDeleteThread={(threadId) =>
-                    setShowDeleteConfirm({ type: "thread", id: threadId })
-                  }
-                  onEditThread={handleEditThread}
-                  onThreadClick={handleThreadClick}
-                  onTagSelect={setSelectedTag}
-                  canEdit={canEdit}
-                />
-              </div>
+              <ThreadCard
+                thread={thread}
+                isExpanded={expandedThreads.has(thread.id)}
+                isBookmarked={isBookmarked[thread.id] || false}
+                refetch={refetch}
+                onToggleExpansion={toggleThreadExpansion}
+                onToggleBookmark={toggleBookmark}
+                onDeleteThread={(threadId) =>
+                  setShowDeleteConfirm({ type: "thread", id: threadId })
+                }
+                onEditThread={handleEditThread}
+                onThreadClick={handleThreadClick}
+                onTagSelect={setSelectedTag}
+                canEdit={canEdit}
+              />
             ))
           ) : (
             <div className="bg-white border border-gray-200 rounded-lg p-8">

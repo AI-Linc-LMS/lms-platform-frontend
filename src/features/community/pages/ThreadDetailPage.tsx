@@ -5,9 +5,14 @@ import { Thread, Comment, CreateComment } from "../types";
 import ThreadHeader from "../components/ThreadHeader";
 import CommentForm from "../components/CommentForm";
 import CommentCard from "../components/CommentCard";
+import RichTextEditor from "../components/RichTextEditor";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "../../../contexts/ToastContext";
-import { getThreadData } from "../../../services/community/threadApis";
+import {
+  getThreadData,
+  updateThread,
+  deleteThread,
+} from "../../../services/community/threadApis";
 import {
   addBookmark,
   createComment,
@@ -16,8 +21,13 @@ import {
   removeBookmark,
   updateComment,
 } from "../../../services/community/commentApis";
+import { useSelector } from "react-redux";
+import { RootState } from "../../../redux/store";
 
 const ThreadDetailPage: React.FC = () => {
+  // Pagination for top-level comments
+  const [commentsPage, setCommentsPage] = useState(1);
+  const commentsPerPage = 1;
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const { threadId } = useParams<{ threadId: string }>();
   const threadIdNum = Number(threadId);
@@ -25,6 +35,7 @@ const ThreadDetailPage: React.FC = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const navigate = useNavigate();
   const { success, error: showError } = useToast();
+  const user = useSelector((state: RootState) => state.user);
 
   const {
     data: threadData,
@@ -49,6 +60,12 @@ const ThreadDetailPage: React.FC = () => {
   useEffect(() => {
     if (threadData) {
       setThread(threadData);
+      // Initialize edit form data with current thread data
+      setEditedThreadData({
+        title: threadData.title,
+        body: threadData.body,
+        tags: threadData.tags,
+      });
     }
   }, [threadData]);
 
@@ -64,6 +81,12 @@ const ThreadDetailPage: React.FC = () => {
   } | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [visibleReplies, setVisibleReplies] = useState<Set<number>>(new Set());
+  const [editingThread, setEditingThread] = useState(false);
+  const [editedThreadData, setEditedThreadData] = useState({
+    title: "",
+    body: "",
+    tags: [] as string[],
+  });
 
   const getParticipants = (): string[] => {
     const participants = new Set<string>();
@@ -168,6 +191,38 @@ const ThreadDetailPage: React.FC = () => {
     },
   });
 
+  const updateThreadMutation = useMutation({
+    mutationFn: (variables: {
+      threadId: string;
+      threadData: Partial<{ title: string; body: string; tags: string[] }>;
+    }) => updateThread(clientId, variables.threadId, variables.threadData),
+    onSuccess: () => {
+      refetchThread();
+    },
+    onError: (error) => {
+      console.error("Failed to update thread:", error);
+      showError(
+        "Failed to update thread",
+        "There was an error updating the thread. Please try again."
+      );
+    },
+  });
+
+  const deleteThreadMutation = useMutation({
+    mutationFn: (threadId: string) => deleteThread(clientId, threadId),
+    onSuccess: () => {
+      success("Thread deleted", "The thread has been deleted successfully.");
+      navigate("/community");
+    },
+    onError: (error) => {
+      console.error("Failed to delete thread:", error);
+      showError(
+        "Failed to delete thread",
+        "There was an error deleting the thread. Please try again."
+      );
+    },
+  });
+
   const handleAddComment = async (content: string) => {
     if (!content.trim()) {
       showError(
@@ -265,11 +320,64 @@ const ThreadDetailPage: React.FC = () => {
     setShowDeleteConfirm(null);
   };
 
+  const handleEditThread = (thread: Thread) => {
+    // Set the editing state and populate the form with current thread data
+    setEditingThread(true);
+    setEditedThreadData({
+      title: thread.title,
+      body: thread.body,
+      tags: thread.tags,
+    });
+  };
+
+  const handleSaveThreadEdit = async () => {
+    if (!editedThreadData.title.trim() || !editedThreadData.body.trim()) {
+      showError(
+        "Invalid thread data",
+        "Please provide both title and body for the thread."
+      );
+      return;
+    }
+
+    try {
+      await updateThreadMutation.mutateAsync({
+        threadId: threadIdNum.toString(),
+        threadData: {
+          title: editedThreadData.title,
+          body: editedThreadData.body,
+          tags: editedThreadData.tags,
+        },
+      });
+      setEditingThread(false);
+    } catch (error) {
+      console.error("Failed to update thread:", error);
+      // Error toast is already handled in mutation onError
+    }
+  };
+
+  const handleCancelThreadEdit = () => {
+    setEditingThread(false);
+    // Reset form data to original thread data
+    if (thread) {
+      setEditedThreadData({
+        title: thread.title,
+        body: thread.body,
+        tags: thread.tags,
+      });
+    }
+  };
+
+  const handleDeleteThread = (threadId: number) => {
+    deleteThreadMutation.mutate(threadId.toString());
+  };
+
   const handleBackToCommunity = () => {
     navigate("/community");
   };
 
-  const canEdit = (author: string) => author === "Current User";
+  const canEdit = (author: string): boolean => {
+    return user.username === author || user.full_name === author;
+  };
 
   // Validate thread ID
   if (!threadId || isNaN(threadIdNum) || threadIdNum <= 0) {
@@ -351,6 +459,14 @@ const ThreadDetailPage: React.FC = () => {
   const participants = getParticipants();
   const topLevelComments = getTopLevelComments();
 
+  // Pagination logic for top-level comments
+  const totalCommentPages = Math.ceil(
+    (topLevelComments?.length ?? 0) / commentsPerPage
+  );
+  const startIdx = (commentsPage - 1) * commentsPerPage;
+  const endIdx = startIdx + commentsPerPage;
+  const paginatedComments = topLevelComments.slice(startIdx, endIdx);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Delete Confirmation Modal */}
@@ -416,7 +532,92 @@ const ThreadDetailPage: React.FC = () => {
           onToggleBookmark={toggleBookmark}
           participants={participants}
           refetch={refetchThread}
+          onEditThread={handleEditThread}
+          onDeleteThread={handleDeleteThread}
+          canEdit={canEdit}
         />
+
+        {/* Thread Edit Form */}
+        {editingThread && canEdit(thread.author.user_name) && (
+          <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Edit Thread
+            </h2>
+
+            {/* Title Input */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Title
+              </label>
+              <input
+                type="text"
+                value={editedThreadData.title}
+                onChange={(e) =>
+                  setEditedThreadData((prev) => ({
+                    ...prev,
+                    title: e.target.value,
+                  }))
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter thread title..."
+              />
+            </div>
+
+            {/* Body Editor */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Content
+              </label>
+              <RichTextEditor
+                value={editedThreadData.body}
+                onChange={(content) =>
+                  setEditedThreadData((prev) => ({ ...prev, body: content }))
+                }
+                placeholder="Write your thread content..."
+                height="h-48"
+              />
+            </div>
+
+            {/* Tags Input */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tags (comma-separated)
+              </label>
+              <input
+                type="text"
+                value={editedThreadData.tags.join(", ")}
+                onChange={(e) =>
+                  setEditedThreadData((prev) => ({
+                    ...prev,
+                    tags: e.target.value
+                      .split(",")
+                      .map((tag) => tag.trim())
+                      .filter((tag) => tag.length > 0),
+                  }))
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter tags separated by commas..."
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <button
+                onClick={handleSaveThreadEdit}
+                disabled={updateThreadMutation.isPending}
+                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {updateThreadMutation.isPending ? "Saving..." : "Save Changes"}
+              </button>
+              <button
+                onClick={handleCancelThreadEdit}
+                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Comments Section */}
         <div className="space-y-4 sm:space-y-6">
@@ -465,26 +666,40 @@ const ThreadDetailPage: React.FC = () => {
           {/* Comments List */}
           {!isLoadingComments && !commentsError && (
             <>
-              {topLevelComments && topLevelComments.length > 0 ? (
-                topLevelComments.map((comment) => (
-                  <CommentCard
-                    key={comment.id}
-                    threadId={thread.id}
-                    refetch={refetchComments}
-                    comment={comment}
-                    onEdit={(commentId: number, content: string) =>
-                      handleEditComment(commentId, content)
-                    }
-                    onDelete={(commentId: number) =>
-                      setShowDeleteConfirm({ type: "comment", id: commentId })
-                    }
-                    onAddReply={handleAddReply}
-                    canEdit={canEdit}
-                    nestingLevel={0}
-                    onToggleReplies={toggleRepliesVisibility}
-                    visibleReplies={visibleReplies}
-                  />
-                ))
+              {paginatedComments && paginatedComments.length > 0 ? (
+                <>
+                  {topLevelComments.slice(0, endIdx).map((comment) => (
+                    <CommentCard
+                      key={comment.id}
+                      threadId={thread.id}
+                      refetch={refetchComments}
+                      comment={comment}
+                      onEdit={(commentId: number, content: string) =>
+                        handleEditComment(commentId, content)
+                      }
+                      onDelete={(commentId: number) =>
+                        setShowDeleteConfirm({ type: "comment", id: commentId })
+                      }
+                      onAddReply={handleAddReply}
+                      canEdit={canEdit}
+                      nestingLevel={0}
+                      onToggleReplies={toggleRepliesVisibility}
+                      visibleReplies={visibleReplies}
+                    />
+                  ))}
+                  {totalCommentPages > commentsPage && (
+                    <div className="flex justify-center mt-2">
+                      <span
+                        onClick={() => setCommentsPage(commentsPage + 1)}
+                        className="text-blue-600 hover:underline cursor-pointer text-sm font-medium"
+                        role="button"
+                        tabIndex={0}
+                      >
+                        See more comments
+                      </span>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="bg-white border border-gray-200 rounded-lg p-8">
                   <div className="text-center">

@@ -63,7 +63,7 @@ const  CommentCard: React.FC<CommentCardProps> = ({
         </div>
       )}
       <div className="p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+        <div className="flex flex-row gap-4 sm:gap-6">
           {/* Vote Section */}
           <VoteCard
             threadId={threadId}
@@ -133,7 +133,7 @@ const  CommentCard: React.FC<CommentCardProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between sm:justify-end gap-2">
+                  <div className="flex items-center justify-end gap-2">
                     {nestingLevel === 0 && (
                       <>
                         <button
