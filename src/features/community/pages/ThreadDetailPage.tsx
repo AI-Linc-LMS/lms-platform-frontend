@@ -28,7 +28,7 @@ import { RootState } from "../../../redux/store";
 const ThreadDetailPage: React.FC = () => {
   // Pagination for top-level comments
   const [commentsPage, setCommentsPage] = useState(1);
-  const commentsPerPage = 1;
+  const commentsPerPage = 10;
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const { threadId } = useParams<{ threadId: string }>();
   const threadIdNum = Number(threadId);
@@ -142,13 +142,20 @@ const ThreadDetailPage: React.FC = () => {
     return Array.from(participants).slice(0, 8);
   };
 
-  // Get only top-level comments (those without a parent)
+  // Get only top-level comments (those without a parent) sorted by newest first
   const getTopLevelComments = (): Comment[] => {
     // If comments are already structured with nested replies, return all root comments
     // Otherwise, filter out comments that have a parent
-    return comments.filter(
-      (comment) => comment.parent === null || comment.parent === undefined
-    );
+    return comments
+      .filter(
+        (comment) => comment.parent === null || comment.parent === undefined
+      )
+      .sort((a, b) => {
+        // Sort by created_at in descending order (newest first)
+        return (
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      });
   };
 
   const toggleRepliesVisibility = (commentId: number) => {
