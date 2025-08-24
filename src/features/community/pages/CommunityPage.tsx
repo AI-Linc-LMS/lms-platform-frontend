@@ -672,7 +672,7 @@ const CommunityPage: React.FC = () => {
       </div>
 
       {/* Stats */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <div className="w-full sm:mx-auto sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* <div className="bg-white p-3 sm:p-4 rounded-lg border border-gray-200 mb-4 sm:mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 sm:gap-6 text-xs sm:text-sm">

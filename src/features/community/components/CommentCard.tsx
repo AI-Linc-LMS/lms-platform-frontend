@@ -19,7 +19,7 @@ interface CommentCardProps {
   refetch: () => void;
 }
 
-const  CommentCard: React.FC<CommentCardProps> = ({
+const CommentCard: React.FC<CommentCardProps> = ({
   threadId,
   comment,
   onEdit,
@@ -165,13 +165,13 @@ const  CommentCard: React.FC<CommentCardProps> = ({
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => setEditingComment(true)}
-                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          className="p-1.5  text-blue-600 bg-blue-50 hover:text-blue-900 hover:bg-blue-100 rounded-md transition-colors"
                         >
                           <Edit3 size={12} className="sm:w-3.5 sm:h-3.5" />
                         </button>
                         <button
                           onClick={() => onDelete(comment.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          className="p-1.5 text-red-600 bg-red-50 hover:text-red-900 hover:bg-red-100 rounded-md transition-colors"
                         >
                           <Trash2 size={12} className="sm:w-3.5 sm:h-3.5" />
                         </button>
@@ -223,19 +223,27 @@ const  CommentCard: React.FC<CommentCardProps> = ({
         comment.replies.length > 0 &&
         visibleReplies.has(comment.id) && (
           <div className="ml-4 sm:ml-8 p-4 space-y-4">
-            {comment.replies.map((reply) => (
-              <CommentCard
-                key={reply.id}
-                comment={reply}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onAddReply={onAddReply}
-                canEdit={canEdit}
-                nestingLevel={nestingLevel + 1}
-                threadId={threadId}
-                refetch={refetch}
-              />
-            ))}
+            {comment.replies
+              .sort((a, b) => {
+                // Sort replies by created_at in descending order (newest first)
+                return (
+                  new Date(b.created_at).getTime() -
+                  new Date(a.created_at).getTime()
+                );
+              })
+              .map((reply) => (
+                <CommentCard
+                  key={reply.id}
+                  comment={reply}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  onAddReply={onAddReply}
+                  canEdit={canEdit}
+                  nestingLevel={nestingLevel + 1}
+                  threadId={threadId}
+                  refetch={refetch}
+                />
+              ))}
           </div>
         )}
     </div>

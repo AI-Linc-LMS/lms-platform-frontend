@@ -72,14 +72,14 @@ const ThreadHeader: React.FC<ThreadHeaderProps> = ({
                 <div className="flex items-center gap-1 mb-3 sm:mb-4">
                   <button
                     onClick={() => onEditThread(thread)}
-                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                  >
+                    className="p-1.5  text-blue-600 bg-blue-50 hover:text-blue-900 hover:bg-blue-100 rounded-md transition-colors"
+                    >
                     <Edit2 size={12} className="sm:w-3.5 sm:h-3.5" />
                   </button>
                   <button
                     onClick={() => onDeleteThread(thread.id)}
-                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                  >
+                   className="p-1.5 text-red-600 bg-red-50 hover:text-red-900 hover:bg-red-100 rounded-md transition-colors"
+                    >
                     <Trash2 size={12} className="sm:w-3.5 sm:h-3.5" />
                   </button>
                 </div>
