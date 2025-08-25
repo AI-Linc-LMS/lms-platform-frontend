@@ -11,7 +11,7 @@ const PopupEnrollment: React.FC<PopupEnrollmentProps> = ({ onEnroll, onDecline }
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
         <button
           onClick={onEnroll}
-          className="w-full sm:w-auto px-8 py-3 text-lg font-medium text-white bg-[#1F4F68] rounded-lg hover:bg-[#163a4f] transition-colors duration-200"
+          className="w-full sm:w-auto px-8 py-3 text-lg font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg  transition-colors duration-200"
         >
           Enroll Now
         </button>
