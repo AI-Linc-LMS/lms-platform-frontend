@@ -4,7 +4,7 @@ import userImg from "../commonComponents/icons/nav/User Image.png";
 import { useRef, useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useRole } from "../hooks/useRole";
 import { logout } from "../redux/slices/userSlice";
 import { handleMobileNavigation } from "../utils/authRedirectUtils";
@@ -17,7 +17,9 @@ interface UserState {
 const TopNav: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const notificationTimerRef = useRef<number | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useSelector((state: { user: UserState }) => state.user);
   const dispatch = useDispatch();
 
@@ -26,6 +28,20 @@ const TopNav: React.FC = () => {
 
   const toggleDropdown = () => {
     setShowDropdown(!showDropdown);
+  };
+
+  // Notification toast state for bell icon
+  const [showNotification, setShowNotification] = useState(false);
+
+  const triggerNotification = () => {
+    setShowNotification(true);
+    if (notificationTimerRef.current) {
+      window.clearTimeout(notificationTimerRef.current);
+    }
+    notificationTimerRef.current = window.setTimeout(() => {
+      setShowNotification(false);
+      notificationTimerRef.current = null;
+    }, 4000);
   };
 
   const handleLogout = () => {
@@ -61,6 +77,18 @@ const TopNav: React.FC = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // Auto show 4s notification when landing on home path
+  useEffect(() => {
+    if (location.pathname === "/") {
+      triggerNotification();
+    }
+    return () => {
+      if (notificationTimerRef.current) {
+        window.clearTimeout(notificationTimerRef.current);
+      }
+    };
+  }, [location.pathname]);
   //console.log("user", user);
   return (
     <div className="w-full flex justify-between md:justify-end items-center px-4 pt-4">
@@ -85,8 +113,41 @@ const TopNav: React.FC = () => {
         <div className="bg-gray-100 p-2 rounded-md">
           <img src={sunIcon} alt="Loading" className="w-7 h-7" />
         </div>
-        <div className="bg-gray-100 p-2 rounded-md">
-          <img src={bellIcon} alt="Notifications" className="w-7 h-7" />
+        <div className="relative">
+          <div
+            className="bg-gray-100 p-2 rounded-md cursor-pointer"
+            onClick={triggerNotification}
+            aria-label="Notifications"
+            role="button"
+          >
+            <img src={bellIcon} alt="Notifications" className="w-7 h-7" />
+          </div>
+
+          {showNotification && (
+            <div
+              className="absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg p-4 z-50"
+              role="alert"
+              aria-live="polite"
+            >
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Community is live!</p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Join discussions, ask questions, and connect with peers.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3">
+                <Link
+                  to="/community"
+                  className="inline-block text-sm text-white bg-[#17627A] hover:bg-[#124F65] px-3 py-1 rounded"
+                  onClick={() => setShowNotification(false)}
+                >
+                  Go to Community
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
         <div className="relative" ref={dropdownRef}>
           <img
