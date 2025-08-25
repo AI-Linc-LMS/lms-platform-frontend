@@ -16,15 +16,17 @@ import {
   AlertCircle,
   RefreshCw,
 } from "lucide-react";
-import { CreateThread, Thread } from "../types";
+import { CreateThread, Thread, Tag } from "../types";
 import ThreadCard from "../components/ThreadCard";
 import RichTextEditor from "../components/RichTextEditor";
+import TagInput from "../components/TagInput";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "../../../contexts/ToastContext";
 import {
   createThread,
   getAllThreads,
   getAllTags,
+  createTag,
   updateThread,
   deleteThread,
 } from "../../../services/community/threadApis";
@@ -48,7 +50,7 @@ const CommunityPage: React.FC = () => {
     retryDelay: 1000,
   });
 
-  const { data: tagsData } = useQuery<string[]>({
+  const { data: tagsData } = useQuery<Tag[]>({
     queryKey: ["tags", clientId],
     queryFn: () => getAllTags(clientId),
     retry: 2,
@@ -113,6 +115,21 @@ const CommunityPage: React.FC = () => {
     },
   });
 
+  const createTagMutation = useMutation({
+    mutationFn: (tagName: string) => createTag(clientId, tagName),
+    onSuccess: (newTag) => {
+      // Add new tag to available tags
+      allTags.push(newTag);
+    },
+    onError: (error) => {
+      console.error("Failed to create tag:", error);
+      showError(
+        "Failed to create tag",
+        "There was an error creating the tag. Please try again."
+      );
+    },
+  });
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTag, setSelectedTag] = useState("");
   const [showNewThreadForm, setShowNewThreadForm] = useState(false);
@@ -120,7 +137,7 @@ const CommunityPage: React.FC = () => {
   const [newThread, setNewThread] = useState({
     title: "",
     body: "",
-    tags: "",
+    tagIds: [] as number[], // Changed from tags: "" to tagIds: []
   });
   const [expandedThreads, setExpandedThreads] = useState<Set<number>>(
     new Set()
@@ -138,8 +155,14 @@ const CommunityPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const threadsPerPage = 10;
 
-  const allTags =
-    tagsData || Array.from(new Set(threads.flatMap((thread) => thread.tags)));
+  const allTags: Tag[] = tagsData || [
+    // Fallback with some default tags if API doesn't return structured data
+    { id: 1, name: "python" },
+    { id: 2, name: "excel" },
+    { id: 3, name: "react" },
+    { id: 4, name: "typescript" },
+    { id: 5, name: "api" },
+  ];
 
   const filteredThreads = threads.filter((thread) => {
     const matchesSearch =
@@ -227,10 +250,7 @@ const CommunityPage: React.FC = () => {
         threadData: {
           title: newThread.title.trim(),
           body: newThread.body.trim(),
-          tags: newThread.tags
-            .split(",")
-            .map((tag) => tag.trim())
-            .filter((tag) => tag),
+          tags: newThread.tagIds, // Send array of tag IDs
         },
       });
     } else {
@@ -238,22 +258,32 @@ const CommunityPage: React.FC = () => {
       createThreadMutation.mutate({
         title: newThread.title.trim(),
         body: newThread.body.trim(),
-        tags: newThread.tags
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter((tag) => tag),
+        tags: newThread.tagIds, // Send array of tag IDs
       });
     }
   };
 
   const handleEditThread = (thread: Thread): void => {
     setEditingThread(thread);
+    // Convert thread tags to tag IDs for editing
+    const tagIds = thread.tags
+      .map((tagName) => {
+        const tag = allTags.find((t) => t.name === tagName);
+        return tag ? tag.id : -1; // Use -1 for unknown tags
+      })
+      .filter((id) => id !== -1);
+
+    setNewThread({
+      title: thread.title,
+      body: thread.body,
+      tagIds: tagIds,
+    });
     setShowNewThreadForm(true);
   };
 
   const handleCancelEdit = (): void => {
     setEditingThread(null);
-    setNewThread({ title: "", body: "", tags: "" });
+    setNewThread({ title: "", body: "", tagIds: [] });
     setShowNewThreadForm(false);
   };
 
@@ -263,6 +293,10 @@ const CommunityPage: React.FC = () => {
 
   const canEdit = (author: string): boolean => {
     return user.username === author || user.full_name === author;
+  };
+
+  const handleCreateTag = async (tagName: string): Promise<Tag> => {
+    return await createTagMutation.mutateAsync(tagName);
   };
 
   useEffect(() => {
@@ -491,8 +525,8 @@ const CommunityPage: React.FC = () => {
               >
                 <option value="">All Tags</option>
                 {allTags.map((tag) => (
-                  <option key={tag} value={tag}>
-                    {tag}
+                  <option key={tag.id} value={tag.name}>
+                    {tag.name}
                   </option>
                 ))}
               </select> */}
@@ -521,8 +555,8 @@ const CommunityPage: React.FC = () => {
                 >
                   <option value="">All Tags</option>
                   {allTags.map((tag) => (
-                    <option key={tag} value={tag}>
-                      {tag}
+                    <option key={tag.id} value={tag.name}>
+                      {tag.name}
                     </option>
                   ))}
                 </select>
@@ -537,23 +571,43 @@ const CommunityPage: React.FC = () => {
                 {editingThread ? "Edit Thread" : "Start a new discussion"}
               </h3>
               <div className="space-y-3 sm:space-y-4">
-                <div>
-                  <label
-                    htmlFor="thread-title"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Title
-                  </label>
-                  <input
-                    id="thread-title"
-                    type="text"
-                    placeholder="Thread title"
-                    value={newThread.title}
-                    onChange={(e) =>
-                      setNewThread({ ...newThread, title: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
-                  />
+                <div className="flex w-full justify-between gap-4">
+                  <div className="w-2/3">
+                    <label
+                      htmlFor="thread-title"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Title
+                    </label>
+                    <input
+                      id="thread-title"
+                      type="text"
+                      placeholder="Thread title"
+                      value={newThread.title}
+                      onChange={(e) =>
+                        setNewThread({ ...newThread, title: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
+                    />
+                  </div>
+                  <div className="w-1/3">
+                    <label
+                      htmlFor="thread-tags"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Tags
+                    </label>
+                    <TagInput
+                      availableTags={allTags}
+                      selectedTagIds={newThread.tagIds}
+                      onTagsChange={(tagIds) =>
+                        setNewThread({ ...newThread, tagIds })
+                      }
+                      onCreateTag={handleCreateTag}
+                      placeholder="Search or create tags (e.g. React, TypeScript, API)..."
+                      className="w-full"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -564,24 +618,6 @@ const CommunityPage: React.FC = () => {
                     onChange={(body) => setNewThread({ ...newThread, body })}
                     placeholder="What would you like to discuss? You can format text, add code snippets, and upload images..."
                     height="h-64 sm:h-96"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="thread-tags"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Tags
-                  </label>
-                  <input
-                    id="thread-tags"
-                    type="text"
-                    placeholder="Add tags separated by commas (e.g. React, TypeScript, API)"
-                    value={newThread.tags}
-                    onChange={(e) =>
-                      setNewThread({ ...newThread, tags: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                   />
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -636,7 +672,7 @@ const CommunityPage: React.FC = () => {
       </div>
 
       {/* Stats */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <div className="w-full sm:mx-auto sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* <div className="bg-white p-3 sm:p-4 rounded-lg border border-gray-200 mb-4 sm:mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 sm:gap-6 text-xs sm:text-sm">
@@ -667,23 +703,22 @@ const CommunityPage: React.FC = () => {
         <div className="space-y-3 sm:space-y-4">
           {currentThreads.length > 0 ? (
             currentThreads.map((thread) => (
-              <div key={thread.id} onClick={() => handleThreadClick(thread.id)}>
-                <ThreadCard
-                  thread={thread}
-                  isExpanded={expandedThreads.has(thread.id)}
-                  isBookmarked={isBookmarked[thread.id] || false}
-                  refetch={refetch}
-                  onToggleExpansion={toggleThreadExpansion}
-                  onToggleBookmark={toggleBookmark}
-                  onDeleteThread={(threadId) =>
-                    setShowDeleteConfirm({ type: "thread", id: threadId })
-                  }
-                  onEditThread={handleEditThread}
-                  onThreadClick={handleThreadClick}
-                  onTagSelect={setSelectedTag}
-                  canEdit={canEdit}
-                />
-              </div>
+              <ThreadCard
+                thread={thread}
+                isExpanded={expandedThreads.has(thread.id)}
+                isBookmarked={isBookmarked[thread.id] || false}
+                refetch={refetch}
+                onToggleExpansion={toggleThreadExpansion}
+                onToggleBookmark={toggleBookmark}
+                onDeleteThread={(threadId) =>
+                  setShowDeleteConfirm({ type: "thread", id: threadId })
+                }
+                onEditThread={handleEditThread}
+                onThreadClick={handleThreadClick}
+                onTagSelect={setSelectedTag}
+                canEdit={canEdit}
+                allTags={allTags}
+              />
             ))
           ) : (
             <div className="bg-white border border-gray-200 rounded-lg p-8">

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Course } from "../../types/course.types";
-import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import { useNavigate } from "react-router-dom";
 import { VideoIcon, DocumentIcon, CodeIcon, FAQIcon } from "../../../../commonComponents/icons/learnIcons/CourseIcons";
 import { AssignmentIcon } from './CourseIcons';
@@ -224,13 +223,12 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
         </div>
       </div>
       <div className="mt-auto">
-        <PrimaryButton
+        <button
           onClick={handlePrimaryClick}
-          className="w-full text-sm md:text-base rounded-xl"
-          disabled={isEnrolling}
+          className={`w-full px-8 py-3 text-lg font-medium text-white ${!isEnrolled ? 'bg-green-600 hover:bg-green-700' : 'bg-[#255C79] hover:bg-[#1E4A63]'} rounded-lg  transition-colors duration-200`}
         >
           {isEnrolling ? 'Processing…' : (isEnrolled ? 'Explore More' : 'Enroll Now')}
-        </PrimaryButton>
+        </button>
       </div>
     </div>
   );
