@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { Thread } from "../types";
 import { getUserAvatar } from "../utils/avatarUtils";
-import RichbodyDisplay from "./RichContentDisplay";
+import RichContentDisplay from "./RichContentDisplay";
 import VoteCard from "./Vote";
 
 interface ThreadCardProps {
@@ -88,9 +88,10 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
                 !isExpanded && "max-h-[300px] overflow-hidden"
               }`}
             >
-              <RichbodyDisplay
+              <RichContentDisplay
                 content={thread.body}
                 className="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base"
+                darkMode={false}
               />
               {!isExpanded && thread.body.length > 300 && (
                 <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent" />

@@ -63,6 +63,7 @@ const ThreadHeader: React.FC<ThreadHeaderProps> = ({
             <RichContentDisplay
               content={thread.body}
               className="mb-4 sm:mb-6 text-sm sm:text-base leading-relaxed text-gray-700"
+              darkMode={false}
             />
 
             {/* Author Info */}
