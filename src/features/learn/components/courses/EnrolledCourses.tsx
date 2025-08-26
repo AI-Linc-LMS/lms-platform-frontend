@@ -135,6 +135,7 @@ const EmptyCoursesState = () => {
 const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
   className = "",
 }) => {
+  const clientId = import.meta.env.VITE_CLIENT_ID;
   const dispatch = useDispatch();
   const Courses = useSelector(
     (state: RootState) => state.courses.courses
@@ -143,7 +144,7 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["Courses"],
-    queryFn: () => getEnrolledCourses(1),
+    queryFn: () => getEnrolledCourses(clientId),
   });
 
   //console.log("enrolled courses data:", data);

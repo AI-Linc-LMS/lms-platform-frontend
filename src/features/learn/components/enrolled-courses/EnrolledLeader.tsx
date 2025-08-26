@@ -4,14 +4,15 @@ import React, { useState } from "react";
 
 const EnrolledLeaderBoard = ({ courseId }: { courseId: number }) => {
   const [showInfo, setShowInfo] = useState(false);
-
+  const clientId = import.meta.env.VITE_CLIENT_ID;
+  
   const {
     data = [],
     isLoading,
     error,
   } = useQuery<Array<{ rank: number; name: string; score: number }>>({
     queryKey: ["leaderboard", courseId],
-    queryFn: () => getCourseLeaderboard(1, courseId),
+    queryFn: () => getCourseLeaderboard(clientId, courseId),
   });
 
   const renderSkeleton = () => (

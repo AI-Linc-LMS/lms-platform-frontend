@@ -66,7 +66,7 @@ export const useAssessment = (assessmentId?: string) => {
     error: questionsError,
   } = useQuery({
     queryKey: ["questionsData", currentAssessmentId],
-    queryFn: () => startAssessment(1, currentAssessmentId),
+    queryFn: () => startAssessment(clientId, currentAssessmentId),
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     staleTime: 0,

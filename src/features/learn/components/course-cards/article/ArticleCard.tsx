@@ -45,10 +45,11 @@ interface ArticleData {
 
 const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkComplete }) => {
   const navigate = useNavigate();
+  const clientId = import.meta.env.VITE_CLIENT_ID;
 
   const { data: articleData, isLoading, error } = useQuery<ArticleData>({
     queryKey: ['article', courseId, contentId],
-    queryFn: () => getCourseContent(1, courseId, contentId),
+    queryFn: () => getCourseContent(clientId, courseId, contentId),
     enabled: !!contentId && !!courseId,
     // Ensure fresh data when switching between content
     staleTime: 0,
@@ -86,7 +87,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
 
   const handleMarkComplete = async () => {
     try {
-      await submitContent(1, courseId, contentId, 'Article', {});
+      await submitContent(clientId, courseId, contentId, 'Article', {});
       setIsCompleted(!isCompleted);
       onMarkComplete();
       navigate(0);
