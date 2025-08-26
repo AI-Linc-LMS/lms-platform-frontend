@@ -38,9 +38,12 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   isSidebarContentOpen
 }) => {
   const { data, isLoading, error } = useQuery<ProblemData>({
-    queryKey: ['problem', contentId],
+    queryKey: ['problem', courseId, contentId],
     queryFn: () => getCourseContent(1, courseId, contentId),
     enabled: !!contentId && !!courseId,
+    // Ensure fresh data when switching between content
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes but always refetch
   });
 
 
