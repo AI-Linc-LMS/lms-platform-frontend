@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSubmoduleById } from "../../../services/enrolled-courses-content/courseContentApis";
 import CourseSidebar from "../../../commonComponents/sidebar/courseSidebar/CourseSidebar";
 import CourseSidebarContent from "../../../commonComponents/sidebar/courseSidebar/CourseSidebarContent";
@@ -50,6 +50,7 @@ const CourseTopicDetailPage: React.FC = () => {
     submoduleId: string;
   }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [currentContentIndex, setCurrentContentIndex] = useState(0);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [selectedQuizId, setSelectedQuizId] = useState<number>(1);
@@ -68,8 +69,56 @@ const CourseTopicDetailPage: React.FC = () => {
   const [selectedContentId, setSelectedContentId] = useState<
     number | undefined
   >();
+  const [isSwitchingTopic, setIsSwitchingTopic] = useState(false);
 
   //console.log("activeSidebarLabel", activeSidebarLabel);
+  
+  // Effect to clear all cached content when switching topics/submodules
+  useEffect(() => {
+    if (courseId && submoduleId) {
+      setIsSwitchingTopic(true);
+      
+      // Clear all content-related queries when switching to a new topic
+      queryClient.removeQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey;
+          return (
+            Array.isArray(queryKey) &&
+            queryKey.length >= 2 &&
+            (queryKey[0] === "video" ||
+              queryKey[0] === "quiz" ||
+              queryKey[0] === "article" ||
+              queryKey[0] === "problem" ||
+              queryKey[0] === "assignment" ||
+              queryKey[0] === "comments" ||
+              queryKey[0] === "submodule")
+          );
+        },
+      });
+      
+      // Also clear cache more aggressively
+      queryClient.invalidateQueries();
+      queryClient.refetchQueries();
+
+      // Clear window temporary data that causes stale sidebar content
+      const w = window as unknown as { temporarySubmoduleData?: SubmoduleData };
+      if (w.temporarySubmoduleData) {
+        delete w.temporarySubmoduleData;
+      }
+
+      // Reset component state when switching topics
+      setCurrentContentIndex(0);
+      setSelectedVideoId(null);
+      setSelectedQuizId(1);
+      setSelectedArticleId(1);
+      setSelectedProblemId(undefined);
+      setSelectedProjectId(undefined);
+      setSelectedAssignmentId(0);
+      setSelectedContentId(undefined);
+      setActiveSidebarLabel("All");
+    }
+  }, [courseId, submoduleId, queryClient]);
+
   // Effect to close sidebar on mobile
   useEffect(() => {
     if (isMobile) {
@@ -85,7 +134,7 @@ const CourseTopicDetailPage: React.FC = () => {
     isLoading: isSubmoduleLoading,
     error: submoduleError,
   } = useQuery<SubmoduleData>({
-    queryKey: ["submodule", submoduleId],
+    queryKey: ["submodule", courseId, submoduleId],
     queryFn: () =>
       getSubmoduleById(
         1,
@@ -93,7 +142,17 @@ const CourseTopicDetailPage: React.FC = () => {
         parseInt(submoduleId || "0")
       ),
     enabled: !!courseId && !!submoduleId,
+    // Ensure fresh data when switching between topics
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes but always refetch
   });
+
+  // Reset switching state when submodule data is loaded
+  useEffect(() => {
+    if (submoduleData && isSwitchingTopic) {
+      setIsSwitchingTopic(false);
+    }
+  }, [submoduleData, isSwitchingTopic]);
 
   // Set default selected content when submodule data changes
   useEffect(() => {
@@ -352,6 +411,29 @@ const CourseTopicDetailPage: React.FC = () => {
     });
 
     if (firstContent) {
+      // Clear cache for the previous content when switching content types
+      if (selectedContentId && selectedContentId !== firstContent.id && courseId) {
+        const queryKeyMap = {
+          VideoTutorial: "video",
+          CodingProblem: "problem", 
+          Development: "development",
+          Assignment: "assignment",
+          Article: "article",
+          Quiz: "quiz"
+        };
+        
+        // Find the previous content type to clear its cache
+        const previousContent = submoduleData?.data?.find(content => content.id === selectedContentId);
+        if (previousContent) {
+          const previousQueryType = queryKeyMap[previousContent.content_type as keyof typeof queryKeyMap];
+          if (previousQueryType) {
+            queryClient.removeQueries({
+              queryKey: [previousQueryType, parseInt(courseId), selectedContentId]
+            });
+          }
+        }
+      }
+
       const contentIndex = submoduleData?.data?.indexOf(firstContent) ?? 0;
       setCurrentContentIndex(contentIndex);
       setSelectedContentId(firstContent.id);
@@ -400,6 +482,29 @@ const CourseTopicDetailPage: React.FC = () => {
     } else {
       // Close sidebar on first click for all other tabs
       setIsSidebarContentOpen(false);
+    }
+
+    // Clear cache for the previous content to prevent stale data
+    if (selectedContentId && selectedContentId !== contentId && courseId) {
+      const queryKeyMap = {
+        VideoTutorial: "video",
+        CodingProblem: "problem", 
+        Development: "development",
+        Assignment: "assignment",
+        Article: "article",
+        Quiz: "quiz"
+      };
+      
+      // Find the previous content type to clear its cache
+      const previousContent = submoduleData?.data?.find(content => content.id === selectedContentId);
+      if (previousContent) {
+        const previousQueryType = queryKeyMap[previousContent.content_type as keyof typeof queryKeyMap];
+        if (previousQueryType) {
+          queryClient.removeQueries({
+            queryKey: [previousQueryType, parseInt(courseId), selectedContentId]
+          });
+        }
+      }
     }
 
     setSelectedContentId(contentId);
@@ -632,7 +737,7 @@ const CourseTopicDetailPage: React.FC = () => {
             />
             {isSidebarContentOpen && (
               <CourseSidebarContent
-                submoduleData={submoduleData}
+                submoduleData={isSwitchingTopic ? undefined : submoduleData}
                 activeLabel={activeSidebarLabel}
                 onClose={() => setIsSidebarContentOpen(false)}
                 videoProps={videoProps}
@@ -657,7 +762,7 @@ const CourseTopicDetailPage: React.FC = () => {
             ></div>
             <div className="absolute right-0 top-0 h-full w-[90vw] max-w-[350px] z-50">
               <CourseSidebarContent
-                submoduleData={submoduleData}
+                submoduleData={isSwitchingTopic ? undefined : submoduleData}
                 activeLabel={activeSidebarLabel}
                 onClose={() => setIsSidebarContentOpen(false)}
                 videoProps={videoProps}
@@ -735,6 +840,7 @@ const CourseTopicDetailPage: React.FC = () => {
           >
             {currentContent?.content_type === "VideoTutorial" && (
               <VideoCard
+                key={`video-${submoduleId}-${currentContent.id}`}
                 currentWeek={{ title: `Week ${submoduleData?.weekNo || 1}` }}
                 currentTopic={{ title: currentContent.title }}
                 contentId={currentContent.id}
@@ -751,6 +857,7 @@ const CourseTopicDetailPage: React.FC = () => {
             )}
             {currentContent?.content_type === "CodingProblem" && (
               <ProblemCard
+                key={`problem-${submoduleId}-${currentContent.id}`}
                 isSidebarContentOpen={isSidebarContentOpen}
                 contentId={currentContent.id}
                 courseId={parseInt(courseId || "0")}
@@ -765,6 +872,7 @@ const CourseTopicDetailPage: React.FC = () => {
             )}
             {currentContent?.content_type === "Quiz" && (
               <QuizCard
+                key={`quiz-${submoduleId}-${currentContent.id}`}
                 contentId={currentContent.id}
                 courseId={parseInt(courseId || "0")}
                 isSidebarContentOpen={isSidebarContentOpen}
@@ -773,6 +881,7 @@ const CourseTopicDetailPage: React.FC = () => {
             )}
             {currentContent?.content_type === "Article" && (
               <ArticleCard
+                key={`article-${submoduleId}-${currentContent.id}`}
                 contentId={currentContent.id}
                 courseId={parseInt(courseId || "0")}
                 onMarkComplete={() => {
@@ -782,6 +891,7 @@ const CourseTopicDetailPage: React.FC = () => {
             )}
             {currentContent?.content_type === "Assignment" && (
               <SubjectiveCard
+                key={`assignment-${submoduleId}-${currentContent.id}`}
                 contentId={currentContent.id}
                 courseId={parseInt(courseId || "0")}
               />
