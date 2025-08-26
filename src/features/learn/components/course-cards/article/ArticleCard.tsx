@@ -47,8 +47,12 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ contentId, courseId, onMarkCo
   const navigate = useNavigate();
 
   const { data: articleData, isLoading, error } = useQuery<ArticleData>({
-    queryKey: ['article', contentId],
+    queryKey: ['article', courseId, contentId],
     queryFn: () => getCourseContent(1, courseId, contentId),
+    enabled: !!contentId && !!courseId,
+    // Ensure fresh data when switching between content
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes but always refetch
   });
 
   const [isCompleted, setIsCompleted] = useState<boolean>(false);

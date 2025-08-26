@@ -5,6 +5,11 @@ export interface Author {
   role?: string;
 }
 
+export interface Tag {
+  id: number;
+  name: string;
+}
+
 export interface Thread {
   id: number;
   title: string;
@@ -23,7 +28,7 @@ export interface Thread {
 export type CreateThread = {
   title: string;
   body: string;
-  tags: string[];
+  tags: number[]; // Changed to number[] to support array of tag IDs
 };
 
 export type CreateComment = {

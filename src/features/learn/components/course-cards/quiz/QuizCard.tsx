@@ -89,9 +89,12 @@ const QuizCard: React.FC<QuizCardProps> = ({
     isLoading,
     error,
   } = useQuery<QuizData>({
-    queryKey: ["quiz", contentId],
+    queryKey: ["quiz", courseId, contentId],
     queryFn: () => getCourseContent(1, courseId, contentId),
     enabled: !!contentId && !!courseId && !injectedData,
+    // Ensure fresh data when switching between content
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes but always refetch
   });
 
   useEffect(() => {

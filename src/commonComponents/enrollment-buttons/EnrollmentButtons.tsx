@@ -10,7 +10,7 @@ const EnrollmentButtons: React.FC<EnrollmentButtonsProps> = ({ onEnroll, onDecli
     <div className="flex flex-col sm:flex-row w-full gap-3 sm:gap-4 my-4">
       <button
         onClick={onEnroll}
-        className="w-full sm:w-auto px-6 py-3 sm:py-4 text-base sm:text-lg font-medium text-white bg-[#1F4F68] rounded-lg hover:bg-[#163a4f] transition-colors duration-200"
+        className="w-full sm:w-auto px-6 py-3 sm:py-4 text-base sm:text-lg font-medium text-white rounded-lg transition-colors duration-200 bg-green-600 hover:bg-green-700"
       >
         Enroll Now
       </button>

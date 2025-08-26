@@ -41,6 +41,19 @@ export const getAllTags = async (clientId: number) => {
   }
 };
 
+export const createTag = async (clientId: number, tagName: string) => {
+  try {
+    const response = await axiosInstance.post(
+      `/community-forum/api/clients/${clientId}/tags/`,
+      { name: tagName }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error creating tag:", error);
+    throw error;
+  }
+};
+
 export const getThreadData = async (clientId: number, threadId: number) => {
   try {
     const response = await axiosInstance.get(
