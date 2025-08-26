@@ -55,9 +55,12 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({
   ];
 
   const { data, isLoading, error } = useQuery<AssignmentData>({
-    queryKey: ["assignment", contentId],
+    queryKey: ["assignment", courseId, contentId],
     queryFn: () => getCourseContent(1, courseId, contentId),
     enabled: !!contentId && !!courseId,
+    // Ensure fresh data when switching between content
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes but always refetch
   });
 
   // Check if content is empty to show/hide placeholder

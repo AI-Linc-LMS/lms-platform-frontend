@@ -87,11 +87,14 @@ const VideoCard: React.FC<VideoCardProps> = ({
   }, [contentId, courseId]);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["video", contentId],
+    queryKey: ["video", courseId, contentId],
     queryFn: () => getCourseContent(1, courseId, contentId),
     enabled: !!contentId && !!courseId,
     retry: 3,
     retryDelay: 1000,
+    // Ensure fresh data when switching between content
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes but always refetch
   });
 
   // Process the video URL when data changes
