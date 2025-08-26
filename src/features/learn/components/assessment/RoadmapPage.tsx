@@ -377,7 +377,7 @@ const RoadmapPage = () => {
           className="w-6 h-6 sm:w-8 sm:h-8 mr-2"
         /> */}
         {/* <p className="font-bold text-center text-[#264D64] text-lg sm:text-xl lg:text-2xl">
-          Ai Linc
+          {clientName}
         </p> */}
       </div>
 
