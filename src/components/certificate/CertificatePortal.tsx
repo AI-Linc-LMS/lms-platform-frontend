@@ -30,7 +30,8 @@ const CertificatePortal: React.FC = () => {
     window.addEventListener("resize", checkIfMobile);
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
-
+  
+  const clientId = import.meta.env.VITE_CLIENT_ID;
   // Fetch certificates from API
   const {
     data: certificates = [],
@@ -38,7 +39,7 @@ const CertificatePortal: React.FC = () => {
     error,
   } = useQuery<Certificate[]>({
     queryKey: ["availableCertificates"],
-    queryFn: () => getAvailableCertificates(1),
+    queryFn: () => getAvailableCertificates(clientId),
   });
 
   const filteredCertificates = useMemo(() => {

@@ -47,10 +47,11 @@ const DEFAULT_SUBMISSION: SubmissionHistoryItem = {
 const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTheme }) => {
   const [selectedSubmissionCode, setSelectedSubmissionCode] = useState<string | null>(null);
   const [viewingSubmissionId, setViewingSubmissionId] = useState<number | null>(null);
-
+  const clientId = import.meta.env.VITE_CLIENT_ID;
+  
   const { data: submissionHistory, isLoading: isLoadingHistory, error: historyError } = useQuery({
     queryKey: ['submissions', courseId, contentId],
-    queryFn: () => pastSubmissions(1, courseId, contentId),
+    queryFn: () => pastSubmissions(clientId, courseId, contentId),
     retry: 2, // Retry failed requests twice
     staleTime: 30000, // Consider data fresh for 30 seconds
   });

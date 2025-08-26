@@ -35,13 +35,14 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
   hoveredCell,
   setHoveredCell,
 }) => {
+  const clientId = import.meta.env.VITE_CLIENT_ID;
   const {
     data: apiData,
     isLoading,
     error,
   } = useQuery<ApiDataType>({
     queryKey: ["activityData"],
-    queryFn: () => getUserActivityHeatmapData(1),
+    queryFn: () => getUserActivityHeatmapData(clientId),
   });
   ////console.log("apiData", apiData);
   const [monthOffset, setMonthOffset] = useState(0);
