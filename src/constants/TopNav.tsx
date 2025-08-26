@@ -2,8 +2,7 @@ import sunIcon from "../commonComponents/icons/nav/sunIcon.png";
 import bellIcon from "../commonComponents/icons/nav/BellIcon.png";
 import userImg from "../commonComponents/icons/nav/User Image.png";
 import { useRef, useState, useEffect, useCallback } from "react";
-import { useSelector } from "react-redux";
-import { useDispatch } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useRole } from "../hooks/useRole";
 import { logout } from "../redux/slices/userSlice";
@@ -16,6 +15,7 @@ interface UserState {
 
 const TopNav: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showNotification, setShowNotification] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
   const notificationTimerRef = useRef<number | null>(null);
@@ -30,9 +30,6 @@ const TopNav: React.FC = () => {
   const toggleDropdown = () => {
     setShowDropdown(!showDropdown);
   };
-
-  // Notification toast state for bell icon
-  const [showNotification, setShowNotification] = useState(false);
 
   const hideNotification = useCallback(() => {
     setShowNotification(false);
@@ -54,22 +51,16 @@ const TopNav: React.FC = () => {
 
   const handleLogout = () => {
     try {
-      // Clear user data from localStorage
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-
-      // Dispatch logout action
       dispatch(logout());
-
-      // Navigate to login using mobile navigation
       handleMobileNavigation("/login", navigate, true, false);
     } catch {
-      //console.error("Error during logout:", error);
       handleMobileNavigation("/login", navigate, true, false);
     }
   };
 
-  // Close dropdown on outside click
+  // Close dropdown and notification when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -94,10 +85,14 @@ const TopNav: React.FC = () => {
     };
   }, [showNotification, hideNotification]);
 
-  // Auto show 4s notification when landing on home path
+  // Show notification only ONCE per user when landing on home path
   useEffect(() => {
     if (location.pathname === "/") {
-      triggerNotification();
+      const hasSeenCommunityModal = localStorage.getItem("hasSeenCommunityModal");
+      if (!hasSeenCommunityModal) {
+        triggerNotification();
+        localStorage.setItem("hasSeenCommunityModal", "true");
+      }
     }
     return () => {
       if (notificationTimerRef.current) {
@@ -105,19 +100,12 @@ const TopNav: React.FC = () => {
       }
     };
   }, [location.pathname, triggerNotification]);
-  //console.log("user", user);
+
   return (
     <div className="w-full flex justify-between md:justify-end items-center px-4 pt-4">
-      <div className="md:hidden">
-        {/* <div className="w-12 h-12 bg-[#1A5A7A] text-white rounded-full flex items-center justify-center"> */}
-        {/* <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg> */}
-        {/* </div> */}
-      </div>
+      <div className="md:hidden"></div>
 
       <div className="flex items-center gap-5">
-        {/* Admin Button - Only visible to admin and instructor users */}
         {(isAdminOrInstructor || isSuperAdmin) && (
           <Link
             to="/admin/dashboard"
@@ -151,13 +139,22 @@ const TopNav: React.FC = () => {
                 role="alert"
                 aria-live="polite"
               >
-                <div className="flex items-start gap-3">
+                <div className="flex justify-between items-start gap-3">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">Community is live!</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      Community is live!
+                    </p>
                     <p className="text-sm text-gray-600 mt-1">
                       Join discussions, ask questions, and connect with peers.
                     </p>
                   </div>
+                  {/* Close Button */}
+                  <button
+                    onClick={hideNotification}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    ✕
+                  </button>
                 </div>
                 <div className="mt-3">
                   <Link
@@ -181,7 +178,6 @@ const TopNav: React.FC = () => {
             key={`profile-${userId}`}
           />
 
-          {/* Dropdown Menu */}
           {showDropdown && (
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
               <Link
@@ -191,13 +187,6 @@ const TopNav: React.FC = () => {
               >
                 Profile
               </Link>
-              {/* <Link
-                to="/settings"
-                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                onClick={() => setShowDropdown(false)}
-              >
-                Settings
-              </Link> */}
               <button
                 onClick={handleLogout}
                 className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
