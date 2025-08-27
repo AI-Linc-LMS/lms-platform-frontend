@@ -38,40 +38,61 @@ function getDemoCategories(title: string): string[] {
   const titleLower = title?.toLowerCase() || '';
   const categories = [];
   
-  // Assign categories based on title keywords (just for demo)
-  if (titleLower.includes('web') || titleLower.includes('react') || titleLower.includes('javascript')) {
-    categories.push('front_end');
-  }
-  
-  if (titleLower.includes('node') || titleLower.includes('python') || titleLower.includes('api')) {
-    categories.push('back_end');
-  }
-  
-  if (titleLower.includes('full') || titleLower.includes('stack') || 
-      (categories.includes('front_end') && categories.includes('back_end'))) {
-    categories.push('full_stack');
-  }
-  
-  if (titleLower.includes('design') || titleLower.includes('ui') || titleLower.includes('ux')) {
-    categories.push('ui_ux');
-  }
-  
-  if (titleLower.includes('data') || titleLower.includes('analytics') || titleLower.includes('machine')) {
+  // Check for data science tools first (highest priority)
+  if (titleLower.includes('tableau') || titleLower.includes('power bi') || 
+      titleLower.includes('analytics') || titleLower.includes('data science') ||
+      titleLower.includes('machine learning') || titleLower.includes('ai') ||
+      titleLower.includes('python data') || titleLower.includes('r programming') ||
+      titleLower.includes('statistics') || titleLower.includes('data visualization')) {
     categories.push('data_science');
   }
   
-  if (titleLower.includes('market') || titleLower.includes('seo') || titleLower.includes('content')) {
+  // Assign categories based on title keywords (just for demo)
+  if (titleLower.includes('web') || titleLower.includes('react') || titleLower.includes('javascript') ||
+      titleLower.includes('html') || titleLower.includes('css') || titleLower.includes('vue') ||
+      titleLower.includes('angular') || titleLower.includes('frontend') || titleLower.includes('front-end')) {
+    categories.push('front_end');
+  }
+  
+  if (titleLower.includes('node') || titleLower.includes('python') || titleLower.includes('api') ||
+      titleLower.includes('database') || titleLower.includes('sql') || titleLower.includes('backend') ||
+      titleLower.includes('back-end') || titleLower.includes('server') || titleLower.includes('django') ||
+      titleLower.includes('flask') || titleLower.includes('express')) {
+    categories.push('back_end');
+  }
+  
+  // Full stack should only include courses that are actually full stack development
+  if ((titleLower.includes('full') && titleLower.includes('stack')) || 
+      titleLower.includes('fullstack') || titleLower.includes('mern') || 
+      titleLower.includes('mean') || titleLower.includes('full-stack')) {
+    categories.push('full_stack');
+  }
+  
+  if (titleLower.includes('design') || titleLower.includes('ui') || titleLower.includes('ux') ||
+      titleLower.includes('figma') || titleLower.includes('adobe') || titleLower.includes('photoshop')) {
+    categories.push('ui_ux');
+  }
+  
+  if (titleLower.includes('market') || titleLower.includes('seo') || titleLower.includes('content') ||
+      titleLower.includes('social media') || titleLower.includes('advertising') || 
+      titleLower.includes('digital marketing')) {
     categories.push('marketing');
   }
   
-  if (titleLower.includes('business') || titleLower.includes('management') || titleLower.includes('finance')) {
+  if (titleLower.includes('business') || titleLower.includes('management') || titleLower.includes('finance') ||
+      titleLower.includes('accounting') || titleLower.includes('entrepreneurship') || 
+      titleLower.includes('strategy')) {
     categories.push('business');
   }
   
-  // If no categories detected, assign a random one
+  // If no categories detected, assign based on common patterns
   if (categories.length === 0) {
-    const allCategories = ['full_stack', 'front_end', 'back_end', 'ui_ux', 'data_science', 'marketing', 'business'];
-    categories.push(allCategories[Math.floor(Math.random() * allCategories.length)]);
+    if (titleLower.includes('course') || titleLower.includes('tutorial') || titleLower.includes('learn')) {
+      const allCategories = ['front_end', 'back_end', 'ui_ux', 'data_science', 'marketing', 'business'];
+      categories.push(allCategories[Math.floor(Math.random() * allCategories.length)]);
+    } else {
+      categories.push('business'); // Default fallback
+    }
   }
   
   return categories;
