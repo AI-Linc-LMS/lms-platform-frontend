@@ -17,7 +17,7 @@ const Login: React.FC = () => {
     e.preventDefault();
     login({ email, password });
   };
-
+  const clientName = import.meta.env.VITE_CLIENT_NAME || "Ai-Linc";
   return (
     <div className="flex flex-col min-h-screen bg-[#F8F9FA] relative">
       <div className="flex flex-1">
@@ -50,7 +50,7 @@ const Login: React.FC = () => {
                   <path d="M12 27L28 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg> */}
                 <span className="text-2xl font-bold bg-gradient-to-r from-[#0BC5EA] to-[#6B46C1] bg-clip-text text-transparent">
-                  AI LINC
+                  {clientName}
                 </span>
               </div>
               <h2 className="mt-6 text-3xl font-bold text-gray-900">
@@ -242,7 +242,7 @@ const Login: React.FC = () => {
           <div className="border-t border-gray-700 pt-4">
             <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
               <div className="text-sm text-gray-400">
-                © 2025 AI LINC. All rights reserved.
+                © 2025 {clientName}. All rights reserved.
               </div>
               <div className="flex flex-wrap justify-center md:justify-end gap-4 text-sm">
                 <a

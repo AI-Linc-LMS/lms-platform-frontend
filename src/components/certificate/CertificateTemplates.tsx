@@ -17,6 +17,7 @@ const CertificateTemplates = forwardRef<
   CertificateTemplatesRef,
   CertificateTemplatesProps
 >(({ certificate }, ref) => {
+  const clientName = import.meta.env.VITE_CLIENT_NAME || "Ai-Linc";
   const certificateRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -107,7 +108,7 @@ const CertificateTemplates = forwardRef<
         }}
       >
         <div className="absolute top-4 md:top-6 left-4 md:left-8 text-3xl font-bold text-[#42c6ff] z-10">
-          AI LINC
+          {clientName}
         </div>
 
         <div className="flex flex-col justify-center items-center h-full text-center -mt-8">
