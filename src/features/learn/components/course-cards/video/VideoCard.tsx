@@ -88,7 +88,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["video", courseId, contentId],
-    queryFn: () => getCourseContent(1, courseId, contentId),
+    queryFn: () => getCourseContent(clientId, courseId, contentId),
     enabled: !!contentId && !!courseId,
     retry: 3,
     retryDelay: 1000,

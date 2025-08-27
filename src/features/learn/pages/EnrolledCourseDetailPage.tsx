@@ -9,6 +9,7 @@ import { getCourseById, getCourseDashboard } from "../../../services/enrolled-co
 import { useQuery } from "@tanstack/react-query";
 
 const EnrolledCourseDetailPage: React.FC = () => {
+  const clientId = import.meta.env.VITE_CLIENT_ID;
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
 
@@ -18,12 +19,12 @@ const EnrolledCourseDetailPage: React.FC = () => {
     error,
   } = useQuery({
     queryKey: ["course", courseId],
-    queryFn: () => getCourseById(1, parseInt(courseId!)),
+    queryFn: () => getCourseById(clientId, parseInt(courseId!)),
   });
 
   const { data, isLoading: isLoadingDashboard, error: errorDashboard } = useQuery({
     queryKey: ["DashboardPieChart", courseId],
-    queryFn: () => getCourseDashboard(1, parseInt(courseId!)),
+    queryFn: () => getCourseDashboard(clientId, parseInt(courseId!)),
     refetchOnWindowFocus: true,
     refetchOnMount: true
   });

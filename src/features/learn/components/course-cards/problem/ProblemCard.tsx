@@ -37,9 +37,10 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   onComplete,
   isSidebarContentOpen
 }) => {
+  const clientId = import.meta.env.VITE_CLIENT_ID;
   const { data, isLoading, error } = useQuery<ProblemData>({
     queryKey: ['problem', courseId, contentId],
-    queryFn: () => getCourseContent(1, courseId, contentId),
+    queryFn: () => getCourseContent(clientId, courseId, contentId),
     enabled: !!contentId && !!courseId,
     // Ensure fresh data when switching between content
     staleTime: 0,
@@ -612,6 +613,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                   contentId={contentId}
                   courseId={courseId}
                   isDarkTheme={isDarkTheme}
+                  clientId={clientId}
                 />
               )}
             </div>
