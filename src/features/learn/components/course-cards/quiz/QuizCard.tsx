@@ -67,6 +67,8 @@ const QuizCard: React.FC<QuizCardProps> = ({
   onStartNextQuiz,
   isVisible = true,
 }) => {
+  const clientId = import.meta.env.VITE_CLIENT_ID;
+
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [alreadyCompleted, setAlreadyCompleted] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -89,9 +91,12 @@ const QuizCard: React.FC<QuizCardProps> = ({
     isLoading,
     error,
   } = useQuery<QuizData>({
-    queryKey: ["quiz", contentId],
-    queryFn: () => getCourseContent(1, courseId, contentId),
+    queryKey: ["quiz", courseId, contentId],
+    queryFn: () => getCourseContent(clientId, courseId, contentId),
     enabled: !!contentId && !!courseId && !injectedData,
+    // Ensure fresh data when switching between content
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes but always refetch
   });
 
   useEffect(() => {
@@ -141,11 +146,12 @@ const QuizCard: React.FC<QuizCardProps> = ({
     return () => clearInterval(interval);
   }, [data?.duration_in_minutes, isVisible]);
 
+
   // Fetch past submissions after quiz is completed
   useEffect(() => {
     if (quizCompleted || alreadyCompleted) {
       setLoadingAttempts(true);
-      pastSubmissions(1, courseId, contentId)
+      pastSubmissions(clientId, courseId, contentId)
         .then((data) => {
           // Sort by created_at descending, take first 8
           const sorted = [...data].sort(
@@ -343,7 +349,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
 
   const finishQuiz = async () => {
     // Calculate total score when quiz is completed
-    const response = await submitContent(1, courseId, contentId, "Quiz", {
+    const response = await submitContent(clientId, courseId, contentId, "Quiz", {
       userAnswers,
     });
     ////console.log("response", response);

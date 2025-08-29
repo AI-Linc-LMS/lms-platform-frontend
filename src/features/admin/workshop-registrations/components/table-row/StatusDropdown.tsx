@@ -74,7 +74,7 @@ export const StatusDropdown: React.FC<StatusDropdownProps> = ({
         <FiChevronDown className="w-3 h-3 ml-auto mt-1 text-gray-500" />
       </button>
       {quickStatusDropdown === field && !cooldown[field] && (
-        <div className="absolute left-0 top-full z-50 mt-1 bg-white border border-gray-200 rounded shadow-lg w-56 max-h-40 overflow-y-auto">
+        <div className="absolute left-0 top-full z-50 mt-1 bg-white border border-gray-200 rounded shadow-lg w-56 max-h-40w overflow-y-auto">
           {options.map((opt) => (
             <button
               key={opt.value}

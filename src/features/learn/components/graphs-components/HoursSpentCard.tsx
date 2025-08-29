@@ -27,10 +27,11 @@ const HoursSpentCard = ({
   timeRange,
   setTimeRange,
 }: HoursSpentCardProps) => {
+  const clientId = import.meta.env.VITE_CLIENT_ID;
 
   const { data, isLoading, error } = useQuery<HoursSpentData>({
     queryKey: ["hoursSpentData", timeRange],
-    queryFn: () => getHoursSpentData(1, Number(timeRange)),
+    queryFn: () => getHoursSpentData(clientId, Number(timeRange)),
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,

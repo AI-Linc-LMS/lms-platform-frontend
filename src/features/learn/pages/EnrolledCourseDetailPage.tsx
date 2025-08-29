@@ -5,10 +5,11 @@ import DashboardPieChart from "../components/enrolled-courses/DashboardPieChart"
 import BackToHomeButton from "../../../commonComponents/common-buttons/back-buttons/back-to-home-button/BackToHomeButton";
 import CourseContent from "../components/enrolled-courses/CourseContent";
 import EnrolledLeaderBoard from "../components/enrolled-courses/EnrolledLeader";
-import { getCourseById } from "../../../services/enrolled-courses-content/courseContentApis";
+import { getCourseById, getCourseDashboard } from "../../../services/enrolled-courses-content/courseContentApis";
 import { useQuery } from "@tanstack/react-query";
 
 const EnrolledCourseDetailPage: React.FC = () => {
+  const clientId = import.meta.env.VITE_CLIENT_ID;
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
 
@@ -18,7 +19,14 @@ const EnrolledCourseDetailPage: React.FC = () => {
     error,
   } = useQuery({
     queryKey: ["course", courseId],
-    queryFn: () => getCourseById(1, parseInt(courseId!)),
+    queryFn: () => getCourseById(clientId, parseInt(courseId!)),
+  });
+
+  const { data, isLoading: isLoadingDashboard, error: errorDashboard } = useQuery({
+    queryKey: ["DashboardPieChart", courseId],
+    queryFn: () => getCourseDashboard(clientId, parseInt(courseId!)),
+    refetchOnWindowFocus: true,
+    refetchOnMount: true
   });
 
   //console.log("course", course);
@@ -46,34 +54,147 @@ const EnrolledCourseDetailPage: React.FC = () => {
     return (
       <>
         <BackToHomeButton />
-        <div className="p-4">
-          <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
-            <div className="flex">
-              <div className="flex-shrink-0">
+        <div className="p-4 flex items-center justify-center">
+          <div className="w-full max-w-md rounded-3xl border border-[#80C9E0] bg-white p-8 shadow-xl">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-[#2A8CB0] rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg
-                  className="h-5 w-5 text-red-400"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="32"
+                  height="32"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    clipRule="evenodd"
-                  />
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                  <polyline points="9,22 9,12 15,12 15,22"></polyline>
                 </svg>
               </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-700">
-                  This course is not assigned to you. Please contact your
-                  administrator for access.
+
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                Book Your Seat
+              </h2>
+              {course?.course_title ? (
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">
+                  {course.course_title}
+                </h3>
+              ) : (
+                <p className="text-gray-600 mb-4">
+                  Secure your learning seat today
+                </p>
+              )}
+
+              <div className="rounded-xl p-4 mb-6 border border-[#80C9E0] bg-[#E9F7FA]">
+                <div className="text-3xl font-bold text-[#2A8CB0] mb-1">₹499</div>
+                <div className="text-sm text-gray-600">
+                  Secure your learning seat today
+                </div>
+              </div>
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-6 text-left">
+                <div className="flex items-center mb-1">
+                  <svg
+                    className="w-5 h-5 text-yellow-600 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    ></path>
+                  </svg>
+                  <span className="text-sm font-medium text-yellow-800">
+                    Limited Seats Available!
+                  </span>
+                </div>
+                <p className="text-xs text-yellow-700">
+                  Only a few seats left for this batch
                 </p>
               </div>
+
+              <ul className="text-left text-gray-700 mb-6 space-y-2">
+                <li className="flex items-center">
+                  <svg
+                    className="w-5 h-5 text-green-500 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    ></path>
+                  </svg>
+                  Reserved seat in live sessions
+                </li>
+                <li className="flex items-center">
+                  <svg
+                    className="w-5 h-5 text-green-500 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    ></path>
+                  </svg>
+                  Priority access to course materials
+                </li>
+                <li className="flex items-center">
+                  <svg
+                    className="w-5 h-5 text-green-500 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    ></path>
+                  </svg>
+                  Direct mentor interaction
+                </li>
+                <li className="flex items-center">
+                  <svg
+                    className="w-5 h-5 text-green-500 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    ></path>
+                  </svg>
+                  Certificate upon completion
+                </li>
+              </ul>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => navigate("/")}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-colors"
+                >
+                  Maybe Later
+                </button>
+                <PrimaryButton
+                  className="flex-1 !px-3 sm:!px-4 !py-2 sm:!py-3 !rounded-xl !text-sm sm:!text-base"
+                  onClick={() =>
+                    window.open(
+                      "https://staging.ailinc.com/flagship-program-payment?data=dv_t0riqr_f.5ac86e41",
+                      "_blank"
+                    )
+                  }
+                >
+                  Book My Seat
+                </PrimaryButton>
+              </div>
             </div>
-          </div>
-          <div className="mt-4">
-            <PrimaryButton onClick={() => navigate("/")}>
-              Back to Courses
-            </PrimaryButton>
           </div>
         </div>
       </>
@@ -183,7 +304,7 @@ const EnrolledCourseDetailPage: React.FC = () => {
           <CourseContent course={course} isLoading={isLoading} error={error} />
         </div>
         <div className="flex flex-col gap-4 w-full md:w-auto">
-          <DashboardPieChart courseId={parseInt(courseId)} />
+          <DashboardPieChart data={data} isLoading={isLoadingDashboard} error={errorDashboard} />
           <EnrolledLeaderBoard courseId={parseInt(courseId)} />
         </div>
       </div>
