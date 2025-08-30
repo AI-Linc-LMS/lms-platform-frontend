@@ -35,6 +35,7 @@ export function VideoPlayer({
 
   useEffect(() => {
     setSavedProgress(0);
+    setIsProgressLoaded(false);
   }, [videoUrl, videoId]);
   // Generate a stable identifier for the video that will work across sessions
   useEffect(() => {

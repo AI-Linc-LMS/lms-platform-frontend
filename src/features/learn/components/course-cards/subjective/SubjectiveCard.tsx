@@ -53,11 +53,15 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({
     "#D53F8C", // Pink
     "#000000", // Black
   ];
+  const clientId = import.meta.env.VITE_CLIENT_ID;
 
   const { data, isLoading, error } = useQuery<AssignmentData>({
-    queryKey: ["assignment", contentId],
-    queryFn: () => getCourseContent(1, courseId, contentId),
+    queryKey: ["assignment", courseId, contentId],
+    queryFn: () => getCourseContent(clientId, courseId, contentId),
     enabled: !!contentId && !!courseId,
+    // Ensure fresh data when switching between content
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes but always refetch
   });
 
   // Check if content is empty to show/hide placeholder
@@ -193,7 +197,7 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({
 
   const handleSubmit = async () => {
     // Handle submission logic here
-    const response = await submitContent(1, courseId, contentId, "Assignment", {
+    const response = await submitContent(clientId, courseId, contentId, "Assignment", {
       answer,
     });
     //console.log("response", response);

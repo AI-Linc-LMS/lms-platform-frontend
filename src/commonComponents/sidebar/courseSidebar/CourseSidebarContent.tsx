@@ -106,7 +106,7 @@ interface CourseSidebarContentProps {
   problemProps?: ProblemProps;
   developmentProps?: DevelopmentProps;
   subjectiveProps?: SubjectiveProps;
-  submoduleData: SubmoduleData;
+  submoduleData?: SubmoduleData;
   selectedContentId?: number;
   onContentSelect: (contentId: number, contentType: ContentType) => void;
 }
@@ -126,6 +126,16 @@ const CourseSidebarContent = ({
 }: CourseSidebarContentProps) => {
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Reset refresh trigger when submoduleData changes (new topic loaded)
+  useEffect(() => {
+    setRefreshTrigger(0);
+    // Clear any stale temporary data when submodule data changes
+    const w = window as unknown as { temporarySubmoduleData?: SubmoduleData };
+    if (w.temporarySubmoduleData) {
+      delete w.temporarySubmoduleData;
+    }
+  }, [submoduleData]);
 
   // Listen for progress updates (for demo purposes - in a real app use state mgmt)
   useEffect(() => {
@@ -177,12 +187,21 @@ const CourseSidebarContent = ({
     }
   };
 
-  // Get actual data to use - either from updated temp data or original
+  // Get actual data to use - prioritize fresh submoduleData over stale temp data
   const w = window as unknown as { temporarySubmoduleData?: SubmoduleData };
-  const actualData =
-    refreshTrigger > 0 && w.temporarySubmoduleData
-      ? w.temporarySubmoduleData
-      : submoduleData;
+  const actualData = submoduleData || (refreshTrigger > 0 && w.temporarySubmoduleData ? w.temporarySubmoduleData : undefined);
+
+  // Show loading state when no data is available
+  if (!actualData) {
+    return (
+      <div className="bg-white h-full p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#17627A] mx-auto mb-2"></div>
+          <p className="text-gray-600 text-sm">Loading content...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Transform submodule data into videos if available
   const videos = actualData?.data

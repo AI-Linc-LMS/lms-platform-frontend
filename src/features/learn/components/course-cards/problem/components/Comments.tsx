@@ -29,9 +29,12 @@ const Comments: React.FC<CommentsProps> = ({ contentId, courseId, isDarkTheme })
 
   // Comments fetching
   const { data: commentsData, isLoading: isLoadingComments, refetch: refetchComments } = useQuery({
-    queryKey: ['comments', contentId],
+    queryKey: ['comments', courseId, contentId],
     queryFn: () => getCommentsByContentId(clientId, courseId, contentId),
     enabled: !!contentId && !!courseId,
+    // Ensure fresh data when switching between content
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes but always refetch
   });
 
   // Create comment mutation

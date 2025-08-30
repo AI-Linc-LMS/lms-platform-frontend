@@ -16,7 +16,7 @@ const Comments: React.FC<CommentsProps> = ({
   contentId,
   courseId,
   isDarkTheme,
-  clientId = 1, // Default value for clientId
+  clientId,
 }) => {
   const [newComment, setNewComment] = useState("");
   const [visibleComments, setVisibleComments] = useState(5);
@@ -28,14 +28,15 @@ const Comments: React.FC<CommentsProps> = ({
     refetch: refetchComments,
   } = useQuery({
     queryKey: ["comments", contentId],
-    queryFn: () => getCommentsByContentId(clientId, courseId, contentId),
+    queryFn: () =>
+      getCommentsByContentId(Number(clientId), courseId, contentId),
     enabled: !!contentId && !!courseId,
   });
 
   // Create comment mutation
   const createCommentMutation = useMutation({
     mutationFn: (comment: string) =>
-      createComment(clientId, courseId, contentId, comment),
+      createComment(Number(clientId), courseId, contentId, comment),
     onSuccess: () => {
       refetchComments();
       setNewComment("");
@@ -47,7 +48,7 @@ const Comments: React.FC<CommentsProps> = ({
     if (newComment.trim()) {
       try {
         await createCommentMutation.mutateAsync(newComment.trim());
-      } catch (error) {
+      } catch {
         //console.error('Error posting comment:', error);
       }
     }
