@@ -13,7 +13,7 @@ import EnrolledCourses from "../components/courses/EnrolledCourses";
 import { RootState } from "../../../redux/store";
 import React, { ReactNode } from "react";
 import LockSvg from "../../../commonComponents/icons/empty-state-handel/LockSvg";
-// import { FiPlayCircle, FiArrowRight, FiClock, FiCheckCircle, FiTrendingUp } from "react-icons/fi";
+
 // Props type for the overlay card component
 interface EnrollToCourseOverlayProps {
   title: string;
@@ -35,9 +35,9 @@ const EnrollToCourseOverlay: React.FC<EnrollToCourseOverlayProps> = ({
       </div>
 
       {/* Overlay content */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center  backdrop-blur-sm rounded-xl z-10">
+      <div className="absolute inset-0 flex flex-col items-center justify-center backdrop-blur-sm rounded-xl z-10">
         <div className="p-6 rounded-xl max-w-[90%] flex flex-col items-center">
-          <div className="w-[60px] h-[60px] rounded-full  flex items-center justify-center mb-4">
+          <div className="w-[60px] h-[60px] rounded-full flex items-center justify-center mb-4">
             <LockSvg />
           </div>
           <h3 className="text-lg font-bold text-gray-800 mb-2 text-center">
@@ -65,10 +65,11 @@ const Learn = () => {
 
   return (
     <div className="w-full min-h-screen">
-      <div className="max-w-[1500px] ">
-        <div className="flex flex-col lg:flex-row gap-4 w-full">
-          {/* Left Column */}
-          <div className="flex-1 min-w-0 space-y-4">
+      {/* Full width container */}
+      <div className="w-full px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_384px] gap-6 w-full">
+          {/* Left Column - Takes all available space */}
+          <div className="min-w-0 space-y-6 overflow-hidden">
             <WelcomeSection />
 
             <div className="relative">
@@ -83,38 +84,36 @@ const Learn = () => {
 
             <EnrolledCourses />
 
-            <div className="space-y-2">
+            <div className="space-y-4">
               <ContinueCourses />
               <ContinueCoursesDetails clientId={clientId} />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-4">
               <BasedLearningCourses clientId={clientId} />
             </div>
           </div>
 
-          {/* Right Column */}
-          <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 space-y-4">
-            <div className="relative">
-              {hasNoCourses ? (
-                <EnrollToCourseOverlay
-                  title="Enroll to a Course to Unlock Weekly & Daily Progress"
-                  className="min-h-[600px]"
-                >
-                  <div className="flex flex-col gap-6 w-full">
-                    <Leaderboard clientId={clientId} />
-                    <DailyProgress clientId={clientId} />
-                    <StreakTable clientId={clientId} />
-                  </div>
-                </EnrollToCourseOverlay>
-              ) : (
-                <>
+          {/* Right Column - Free-flowing sidebar */}
+          <div className="w-full space-y-6">
+            {hasNoCourses ? (
+              <EnrollToCourseOverlay
+                title="Enroll to a Course to Unlock Weekly & Daily Progress"
+                className="min-h-[600px]"
+              >
+                <div className="space-y-6 w-full">
                   <Leaderboard clientId={clientId} />
                   <DailyProgress clientId={clientId} />
                   <StreakTable clientId={clientId} />
-                </>
-              )}
-            </div>
+                </div>
+              </EnrollToCourseOverlay>
+            ) : (
+              <div className="space-y-6">
+                <Leaderboard clientId={clientId} />
+                <DailyProgress clientId={clientId} />
+                <StreakTable clientId={clientId} />
+              </div>
+            )}
           </div>
         </div>
       </div>
