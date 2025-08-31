@@ -22,6 +22,7 @@ import {
   ReferralFormData,
 } from "../../../types/referral";
 import { useToast } from "../../../contexts/ToastContext";
+import PermissionDeniedModal from "../workshop-registrations/components/modals/PermissionDeniedModal";
 
 const Referals = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -40,13 +41,16 @@ const Referals = () => {
 
   // New: referral type state
   const [selectedReferralType, setSelectedReferralType] = useState("workshop");
+  const [permissionDeniedOpen, setPermissionDeniedOpen] = useState(false);
 
   // Removed assessments query
 
   // Function to generate referral link based on type
   const generateReferralLink = (referralCode: string) => {
     if (selectedReferralType === "assessment") {
-      return `https://ailinc.com/assessment?ref=${encodeURIComponent(referralCode)}`;
+      return `https://ailinc.com/assessment?ref=${encodeURIComponent(
+        referralCode
+      )}`;
     } else {
       return `https://ailinc.com/workshop-registration?ref=${referralCode}`;
     }
@@ -334,9 +338,11 @@ const Referals = () => {
               setEditingReferral(null);
             }}
             onSubmit={(data: ReferralData) => {
+              setPermissionDeniedOpen(true);
+              return;
               if (editingReferral) {
                 updateMutation.mutate({
-                  id: editingReferral.id.toString(),
+                  id: editingReferral?.id.toString() ?? "",
                   data,
                 });
               } else {
@@ -356,13 +362,20 @@ const Referals = () => {
               setIsDeleteModalOpen(false);
               setReferralToDelete(null);
             }}
-            onConfirm={() =>
-              deleteMutation.mutate(referralToDelete.id.toString())
-            }
+            onConfirm={() => {
+              setPermissionDeniedOpen(true);
+              return;
+              deleteMutation.mutate(referralToDelete?.id.toString() ?? "");
+            }}
             referral={referralToDelete}
             isLoading={deleteMutation.isPending}
           />
         )}
+
+        <PermissionDeniedModal
+          isOpen={permissionDeniedOpen}
+          onClose={() => setPermissionDeniedOpen(false)}
+        />
       </div>
     </div>
   );
