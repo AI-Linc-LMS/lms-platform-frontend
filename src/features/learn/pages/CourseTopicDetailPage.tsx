@@ -836,7 +836,7 @@ const CourseTopicDetailPage: React.FC = () => {
 
           {/* Content display based on active tab */}
           <div
-            className={`mb-20 md:mb-0 ${!isSidebarContentOpen ? "ml-12" : ""}`}
+            className={`mb-20 md:mb-0 ${!isSidebarContentOpen ? "md:ml-12" : ""}`}
           >
             {currentContent?.content_type === "VideoTutorial" && (
               <VideoCard

@@ -284,7 +284,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
     : (data as CourseContentResponse)?.details?.description || "";
 
   return (
-    <div className="flex-1 max-w-full">
+    <div className="flex-1 w-full max-w-full">
       {/* Week and Topic Navigation */}
       <div className="bg-gray-100 p-3 md:p-4 rounded-t-2xl">
         <div className="flex items-center space-x-2 text-sm md:text-base overflow-hidden">
@@ -345,7 +345,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
       </div>
 
       {/* Likes and Report */}
-      <div className="flex justify-between items-center my-4 px-2 md:px-0">
+      <div className="flex justify-between items-center my-4 px-0 md:px-0">
         <div className="flex items-center space-x-2">
           {/* <button className="flex items-center text-[#343A40] cursor-pointer">
             <svg
@@ -438,7 +438,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
       </div>
 
       {/* Tab Content */}
-      <div className="py-4 md:py-6 px-2 md:px-0">
+      <div className="w-full py-4 md:py-6 px-0 md:px-0">
         {activeTab === "description" && (
           <div>
             {/* We'll keep the title from the component data only, not duplicate it */}
