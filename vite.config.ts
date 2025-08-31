@@ -17,30 +17,53 @@ export default defineConfig({
         name: "AiLinc - AI Learning Platform",
         short_name: "AiLinc",
         description: "AI-powered learning and assessment platform",
-        theme_color: "#ffffff",
+        theme_color: "#1A5A7A",
         background_color: "#ffffff",
         display: "standalone",
         orientation: "portrait",
         scope: "/",
         start_url: "/",
+        id: "/",
         icons: [
           {
-            src: "pwa-192x192.png",
+            src: "pwa-192x192.svg",
             sizes: "192x192",
-            type: "image/png",
+            type: "image/svg+xml",
+            purpose: "any"
           },
           {
-            src: "pwa-512x512.png",
+            src: "pwa-512x512.svg",
             sizes: "512x512",
-            type: "image/png",
+            type: "image/svg+xml",
+            purpose: "any"
           },
           {
-            src: "pwa-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any maskable",
+            src: "pwa-192x192.svg",
+            sizes: "192x192",
+            type: "image/svg+xml",
+            purpose: "maskable"
           },
+          {
+            src: "pwa-512x512.svg",
+            sizes: "512x512",
+            type: "image/svg+xml",
+            purpose: "maskable"
+          }
         ],
+        screenshots: [
+          {
+            src: "pwa-screenshot-wide.png",
+            sizes: "1280x720",
+            type: "image/png",
+            form_factor: "wide"
+          },
+          {
+            src: "pwa-screenshot-mobile.png",
+            sizes: "390x844",
+            type: "image/png",
+            form_factor: "narrow"
+          }
+        ]
       },
       injectManifest: {
         globPatterns: ["**/*.{js,css,html,ico,svg}"],

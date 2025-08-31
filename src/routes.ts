@@ -32,6 +32,7 @@ import EmailSelfServe from "./features/admin/emailSend/EmailSelfServe";
 import LiveAdmin from "./features/admin/live/LiveAdmin";
 import CommunityPage from "./features/community/pages/CommunityPage";
 import WebinarManagement from "./pages/admin/WebinarManagement";
+import { PWATestPage } from "./components/PWATestPage";
 
 export interface RouteConfig {
   path: string;
@@ -59,6 +60,11 @@ const routes: RouteConfig[] = [
   {
     path: "/otp",
     component: Otp,
+    isPrivate: false,
+  },
+  {
+    path: "/pwa-test",
+    component: PWATestPage,
     isPrivate: false,
   },
   {
