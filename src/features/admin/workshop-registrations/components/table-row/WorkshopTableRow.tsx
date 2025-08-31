@@ -23,6 +23,7 @@ import {
   getAmountColor,
 } from "./index";
 import { COURSE_NAME_OPTIONS } from "./TableRowUtils";
+import PermissionDeniedModal from "../modals/PermissionDeniedModal";
 
 interface WorkshopTableRowProps {
   entry: WorkshopRegistrationData;
@@ -145,6 +146,8 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     field: "first_call_status" | "second_call_status" | "course_name",
     value: string
   ) => {
+    setPermissionDeniedOpen(true);
+    return;
     if (field === "first_call_status") {
       setFirstCallStatus(value);
     }
@@ -205,18 +208,20 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     field: "follow_up_date" | "meeting_scheduled_at" | "next_payment_date"
   ) => {
     if (selectedEntryForDateEdit) {
-      updateMutation.mutate(
-        { [field]: date },
-        {
-          onSuccess: () => {
-            // Update the entry's follow_up_date in the local state
-            if (selectedEntryForDateEdit.id === entry.id) {
-              // Update the entry object directly
-              entry[field] = date;
-            }
-          },
-        }
-      );
+      setPermissionDeniedOpen(true);
+      console.log(date, field);
+      // updateMutation.mutate(
+      //   { [field]: date },
+      //   {
+      //     onSuccess: () => {
+      //       // Update the entry's follow_up_date in the local state
+      //       if (selectedEntryForDateEdit.id === entry.id) {
+      //         // Update the entry object directly
+      //         entry[field] = date;
+      //       }
+      //     },
+      //   }
+      // );
     }
   };
 
@@ -278,6 +283,8 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
       document.body.style.width = "";
     };
   }, [modalOpen, commentModalOpen, editHistoryOpen]);
+
+  const [permissionDeniedOpen, setPermissionDeniedOpen] = useState(false);
 
   // Define column order
   const columnOrder = [
@@ -435,7 +442,6 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
           onPaymentHistoryClick={() => setPaymentHistoryOpen(true)}
         />
       </tr>
-
       {/* Global Tooltip */}
       {tooltipData.show && (
         <div
@@ -450,8 +456,8 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
           <div className="absolute top-3 -right-2 w-1 h-1 border-l-6 border-l-gray-300 border-t-6 border-t-transparent border-b-6 border-b-transparent"></div>
         </div>
       )}
-
       {/* Modals */}
+      
       <EditModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -466,6 +472,8 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
         onSecondCallCommentChange={setModalSecondCallComment}
         onFollowUpCommentChange={setModalFollowUpComment}
         onSave={(data) => {
+          setPermissionDeniedOpen(true);
+          return;
           setModalOpen(false);
           updateMutation.mutate(data, {
             onSuccess: () => {
@@ -480,13 +488,11 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
         FIRST_CALL_STATUS_OPTIONS={FIRST_CALL_STATUS_OPTIONS}
         SECOND_CALL_STATUS_OPTIONS={SECOND_CALL_STATUS_OPTIONS}
       />
-
       <EditHistoryModal
         isOpen={editHistoryOpen}
         onClose={() => setEditHistoryOpen(false)}
         entry={entry}
       />
-
       <CommentModal
         isOpen={commentModalOpen}
         onClose={() => setCommentModalOpen(false)}
@@ -503,6 +509,8 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
             : salesDoneBy
         }
         onOfferedAmountChange={(value) => {
+          setPermissionDeniedOpen(true);
+          return;
           if (editSalesAndOfferedAmount === "offered_amount") {
             setOfferedAmount(value);
           } else {
@@ -510,6 +518,8 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
           }
         }}
         onSave={(value, field) => {
+          setPermissionDeniedOpen(true);
+          return;
           if (field === "offered_amount") {
             setOfferedAmount(value);
           } else {
@@ -536,7 +546,6 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
           );
         }}
       />
-
       <PaymentHistoryModal
         isOpen={paymentHistoryOpen}
         onClose={() => setPaymentHistoryOpen(false)}
@@ -544,13 +553,17 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
           Array.isArray(entry.payment_history) ? entry.payment_history : []
         }
       />
-
+      
       <EditFollowUpDateModal
         isOpen={followUpDateModalOpen}
         field={fieldForDateEdit}
         onClose={() => setFollowUpDateModalOpen(false)}
         entry={selectedEntryForDateEdit || entry}
         onSave={handleSaveFollowUpDate}
+      />
+      <PermissionDeniedModal
+        isOpen={permissionDeniedOpen}
+        onClose={() => setPermissionDeniedOpen(false)}
       />
     </>
   );
