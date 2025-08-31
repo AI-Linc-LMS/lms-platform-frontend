@@ -99,7 +99,7 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
         // Update existing session
         const updatedSession: LiveSession = {
           ...form,
-          id: editSession.id,
+          id: editSession?.id,
         };
         await updateLiveSessionMutate(updatedSession);
       } else {
