@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import axiosInstance from '../../services/axiosInstance';
+import PermissionDeniedModal from '../../features/admin/workshop-registrations/components/modals/PermissionDeniedModal';
 
 interface WorkshopVariable {
   id?: string;
@@ -118,9 +119,12 @@ const WebinarManagement: React.FC = () => {
       setLoading(false);
     }
   };
-
+  const [permissionDeniedOpen, setPermissionDeniedOpen] = useState(false);
   const handleCreateWorkshop = async () => {
     try {
+      setPermissionDeniedOpen(false);
+      return;
+
       setLoading(true);
 
       const requestData = {
@@ -164,6 +168,8 @@ const WebinarManagement: React.FC = () => {
       return;
     }
 
+    setPermissionDeniedOpen(true);
+    return;
     try {
       setLoading(true);
 
@@ -697,6 +703,11 @@ const WebinarManagement: React.FC = () => {
           )}
         </div>
       </div>
+
+      <PermissionDeniedModal
+        isOpen={permissionDeniedOpen}
+        onClose={() => setPermissionDeniedOpen(false)}
+      />
     </div>
   );
 };
