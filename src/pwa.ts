@@ -53,11 +53,8 @@ export class PWAManager {
   async registerServiceWorker(): Promise<void> {
     if ('serviceWorker' in navigator) {
       try {
-        const isDevelopment = import.meta.env.MODE === 'development';
-        if (isDevelopment) {
-          return;
-        }
-        this.registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        // Allow service worker registration in development for testing
+        this.registration = await navigator.serviceWorker.register('/sw-custom.js', { scope: '/' });
         this.sendConfigToServiceWorker();
         this.registration.addEventListener('updatefound', () => {
           const newWorker = this.registration?.installing;
