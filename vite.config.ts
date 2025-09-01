@@ -52,13 +52,13 @@ export default defineConfig({
         ],
         screenshots: [
           {
-            src: "pwa-screenshot-wide.png",
+            src: "screenshot/desktop-view.png",
             sizes: "1280x720",
             type: "image/png",
             form_factor: "wide"
           },
           {
-            src: "pwa-screenshot-mobile.png",
+            src: "screenshot/mobile-view.png",
             sizes: "390x844",
             type: "image/png",
             form_factor: "narrow"
