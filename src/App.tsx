@@ -16,6 +16,7 @@ import { setupActivitySyncListeners } from "./utils/userActivitySync";
 import { ToastProvider } from "./contexts/ToastContext";
 import { ToastContainer } from "./components/ToastContainer";
 import { PWAProvider } from "./components/PWAProvider";
+import { IOSPWAInstallPrompt } from "./components/IOSPWAInstallPrompt";
 import AdminRoute from "./commonComponents/private-route/AdminRoute";
 import {
   AuthRedirectProvider,
@@ -377,6 +378,9 @@ function AppContent() {
        location.pathname !== '/otp' && (
         <FloatingActivityTimer />
       )} */}
+
+      {/* iOS PWA Installation Prompt */}
+      <IOSPWAInstallPrompt appName="AiLinc" />
     </>
   );
 }

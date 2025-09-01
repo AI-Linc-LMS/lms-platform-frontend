@@ -33,6 +33,7 @@ import LiveAdmin from "./features/admin/live/LiveAdmin";
 import CommunityPage from "./features/community/pages/CommunityPage";
 import WebinarManagement from "./pages/admin/WebinarManagement";
 import { PWATestPage } from "./components/PWATestPage";
+import { IOSPWATestPage } from "./components/IOSPWATestPage";
 
 export interface RouteConfig {
   path: string;
@@ -65,6 +66,11 @@ const routes: RouteConfig[] = [
   {
     path: "/pwa-test",
     component: PWATestPage,
+    isPrivate: false,
+  },
+  {
+    path: "/ios-pwa-test",
+    component: IOSPWATestPage,
     isPrivate: false,
   },
   {
