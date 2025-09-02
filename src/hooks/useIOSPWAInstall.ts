@@ -25,21 +25,15 @@ export const useIOSPWAInstall = (): UseIOSPWAInstallReturn => {
   const isIOS = isIOSDevice();
   const isInstalled = isPWAInstalled();
 
-  // Check if user has dismissed in this session
-  const isSessionDismissed = useCallback(() => {
-    return sessionStorage.getItem('ios-pwa-install-dismissed') === 'true';
-  }, []);
-
   // Check if user has permanently dismissed
   const isPermanentlyDismissed = useCallback(() => {
     return localStorage.getItem('ios-pwa-install-dismissed') === 'true';
   }, []);
 
-  // Determine if prompt should be shown - show once per session for iOS users
+  // Determine if prompt should be shown - show on every page refresh for iOS users
   const shouldShowPrompt = isIOS && 
                           !isInstalled && 
                           !isPermanentlyDismissed() && 
-                          !isSessionDismissed() && 
                           !isDismissed;
 
   const showPrompt = useCallback(() => {
@@ -52,8 +46,7 @@ export const useIOSPWAInstall = (): UseIOSPWAInstallReturn => {
   const dismissPrompt = useCallback(() => {
     setIsVisible(false);
     setIsDismissed(true);
-    // Mark as dismissed for this session
-    sessionStorage.setItem('ios-pwa-install-dismissed', 'true');
+    // No session storage - will show again on next refresh
   }, []);
 
   const dismissPermanently = useCallback(() => {
@@ -61,10 +54,9 @@ export const useIOSPWAInstall = (): UseIOSPWAInstallReturn => {
     setIsDismissed(true);
     // Mark as permanently dismissed
     localStorage.setItem('ios-pwa-install-dismissed', 'true');
-    sessionStorage.removeItem('ios-pwa-install-dismissed');
   }, []);
 
-  // Auto-show prompt once per session for iOS users
+  // Auto-show prompt on every page refresh for iOS users
   useEffect(() => {
     if (shouldShowPrompt) {
       const timer = setTimeout(() => {
