@@ -1,6 +1,5 @@
 import { useLocation, Link } from 'react-router-dom';
 import CoursesIconController from '../icons/sidebarIcons/CoursesIconController';
-import { IOSPWAInstallButton } from '../../components/IOSPWAInstallButton';
 
 const MobileNavBar = () => {
   const location = useLocation();
@@ -69,11 +68,6 @@ const MobileNavBar = () => {
           label="Live" 
           isActive={isActive('/live')}
         />
-        
-        {/* iOS PWA Install Button - Only shows on iOS devices */}
-        <div className="flex flex-col items-center justify-center">
-          <IOSPWAInstallButton variant="minimal" />
-        </div>
       </div>
     </div>
   );
