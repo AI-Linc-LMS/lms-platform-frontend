@@ -1,11 +1,9 @@
 import { useSelector } from "react-redux";
-// import { useNavigate } from "react-router-dom";
 import Leaderboard from "../components/LeaderboardTable";
 import TimeTrackingDashboard from "../components/graphs-components/TimeTrackingDashboard";
 import BasedLearningCourses from "../components/based-learning/BasedLearningCourses";
 import ContinueCourses from "../components/continue-learning/ContinueCourses";
 import ContinueCoursesDetails from "../components/continue-learning/ContinueCoursesDetails";
-// import Referrals from "../components/referrals/Referrals";
 import WelcomeSection from "../components/WelcomeSection";
 import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
@@ -14,7 +12,6 @@ import { RootState } from "../../../redux/store";
 import React, { ReactNode } from "react";
 import LockSvg from "../../../commonComponents/icons/empty-state-handel/LockSvg";
 
-// Props type for the overlay card component
 interface EnrollToCourseOverlayProps {
   title: string;
   children: ReactNode;
@@ -57,8 +54,6 @@ const EnrollToCourseOverlay: React.FC<EnrollToCourseOverlayProps> = ({
 
 const Learn = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
-  // const navigate = useNavigate();
-  // Get enrolled courses from Redux store
   const courses = useSelector((state: RootState) => state.courses.courses);
   // Check if user has no enrolled courses
   const hasNoCourses = !courses || courses.length === 0;
