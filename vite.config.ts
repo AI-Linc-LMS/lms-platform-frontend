@@ -15,13 +15,13 @@ export default defineConfig({
       // includeAssets: static files in /public copied as-is to the build output
       // and available to the service worker. Useful for favicons, mask icons, etc.
       includeAssets: [
-        "favicon.ico",
         "pwa-192x192.png",
         "pwa-512x512.png",
         "pwa-screenshot-mobile.png",
-        "apple-touch-icon.png",
+        "screenshot/desktop-view.png",
+        "screenshot/mobile-view.png",
         "kumain_logo.jpg",
-        "masked-icon.svg",
+        "logo.png",
       ],
       manifest: {
         name: "AiLinc - AI Learning Platform",

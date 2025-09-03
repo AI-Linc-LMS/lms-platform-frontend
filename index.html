@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <!-- Browser tab favicon (shown in desktop browser tabs) -->
-    <link rel="icon" type="image/svg+xml" href="/vittee.svg" />
+    <link rel="icon" type="image/png" href="/pwa-192x192.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
     <!-- PWA Meta Tags: used by Android/Chrome for splash background and status bar -->
@@ -14,9 +14,8 @@
     <meta name="msapplication-TileColor" content="#1A5A7A" />
     <meta name="msapplication-config" content="/browserconfig.xml" />
     
-    <!-- iOS Home Screen icon: generated PNG for best results -->
-    <!-- Run `npm run gen:pwa-assets` to create /apple-touch-icon.png -->
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- iOS Home Screen icon: use existing PNG file -->
+    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
 
     <!-- iOS startup splash screens (portrait). Generated files live in /public after running the generator. -->
     <!-- iPhone 15 Pro Max / 14 Pro Max / 13 Pro Max / 12 Pro Max (428x926 @3) -->
@@ -47,11 +46,11 @@
     <link rel="apple-touch-startup-image" href="/splash-1136x640.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" />
 
     <!-- Additional favicon sizes (optional, for desktop browsers; not used by PWA install). -->
-    <link rel="icon" type="image/svg+xml" sizes="192x192" href="/pwa-192x192.svg" />
-    <link rel="icon" type="image/svg+xml" sizes="512x512" href="/pwa-512x512.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/pwa-512x512.png" />
 
-    <!-- Safari pinned tab icon (macOS): monochrome mask filled with the given color. -->
-    <link rel="mask-icon" href="/vittee.svg" color="#1A5A7A" />
+    <!-- Safari pinned tab icon (macOS): use PNG instead of SVG -->
+    <link rel="mask-icon" href="/pwa-192x192.png" color="#1A5A7A" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
