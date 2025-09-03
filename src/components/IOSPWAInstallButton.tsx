@@ -15,8 +15,8 @@ export const IOSPWAInstallButton: React.FC<IOSPWAInstallButtonProps> = ({
 }) => {
   const { isIOS, isInstalled, showPrompt } = useIOSPWAInstall();
 
-  // Don't show button if not iOS or already installed
-  if (!isIOS || isInstalled) {
+  // Always show button for iOS users, regardless of installation status
+  if (!isIOS) {
     return null;
   }
 
@@ -34,14 +34,14 @@ export const IOSPWAInstallButton: React.FC<IOSPWAInstallButtonProps> = ({
     <button
       onClick={showPrompt}
       className={`${baseClasses} ${variantClasses[variant]} ${className}`}
-      title="Install App"
+      title={isInstalled ? "Reinstall App" : "Install App"}
     >
       {variant === 'minimal' ? (
         <Smartphone className={iconSize} />
       ) : (
         <>
           <Download className={iconSize} />
-          <span>{children || 'Install App'}</span>
+          <span>{children || (isInstalled ? 'Reinstall App' : 'Install App')}</span>
         </>
       )}
     </button>
