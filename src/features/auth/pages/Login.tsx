@@ -20,7 +20,7 @@ const Login: React.FC = () => {
   const clientName = import.meta.env.VITE_CLIENT_NAME || "Ai-Linc";
   const logoUrl = import.meta.env.VITE_CLIENT_LOGO;
 
-  console.log(logoUrl)
+  console.log(logoUrl);
   return (
     <div className="flex flex-col min-h-screen bg-[#F8F9FA] relative">
       <div className="flex flex-1">
@@ -49,7 +49,7 @@ const Login: React.FC = () => {
               <div className="flex flex-col justify-center items-center">
                 {logoUrl && (
                   <img
-                    src={"https://drive.google.com/file/d/1wzVTkBAzi52nG78ctBBdz55KpGmA7h08/view?usp=sharing"}
+                    src={logoUrl}
                     alt={`${clientName} logo`}
                     className="h-10 mx-auto"
                   />

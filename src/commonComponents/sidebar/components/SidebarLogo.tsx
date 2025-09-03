@@ -1,5 +1,3 @@
-// import ArrowIcon from '../Icons/ArrowIcon';
-
 import ArrowIcon from "../../icons/sidebarIcons/ArrowIcon";
 
 interface SidebarLogoPartProps {
@@ -12,14 +10,14 @@ const SidebarLogoPart = ({
   onClickArrow,
 }: SidebarLogoPartProps) => {
   const clientName = import.meta.env.VITE_CLIENT_NAME;
-  const logoUrl = import.meta.env.VITE_LOGO_URL;
+  const logoUrl = import.meta.env.VITE_CLIENT_LOGO;
   return (
     <div className="relative text-neutral-900 overflow-visible w-full text-center items-center h-14 border-b-[0.5px] border-[#D3D3D318] font-bold">
       {logoUrl && (
         <img
           src={logoUrl}
           alt={`${clientName} logo`}
-          className="h-10 mx-auto"
+          className="h-full mx-auto"
         />
       )}
       {clientName && (
