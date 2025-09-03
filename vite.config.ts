@@ -30,7 +30,7 @@ export default defineConfig({
         name: "AiLinc - AI Learning Platform",
         short_name: "AiLinc",
         description: "AI-powered learning and assessment platform",
-        theme_color: "#1A5A7A",
+        theme_color: "#ffffff",
         background_color: "#ffffff",
         display: "standalone",
         orientation: "portrait",
