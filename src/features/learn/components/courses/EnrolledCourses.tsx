@@ -7,11 +7,11 @@ import {
   setCourses,
 } from "../../../../redux/slices/courseSlice";
 import { RootState } from "../../../../redux/store";
-import CourseCard from "./CourseCard";
 import leftArrow from "../../../../assets/dashboard_assets/leftArrow.png";
 import rightArrow from "../../../../assets/dashboard_assets/rightArrow.png";
 import { Course as CardCourse, Module } from "../../types/course.types";
 import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
+import CourseCardV2 from "./course-card-v2/CourseCardV2";
 
 interface EnrolledCoursesProps {
   className?: string;
@@ -225,11 +225,9 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
               className="flex-shrink-0 w-full md:w-1/2 scroll-snap-align-start transition-transform duration-300 overflow-visible"
               style={{ scrollSnapAlign: "start" }}
             >
-              <CourseCard
-                isLoading={isLoading}
-                error={error}
+              <CourseCardV2
                 course={transformCourseData(course)}
-                enrolled={true}
+                enrolled={false}
               />
             </div>
           ))}
