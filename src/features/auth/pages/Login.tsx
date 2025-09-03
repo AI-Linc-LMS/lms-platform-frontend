@@ -18,6 +18,9 @@ const Login: React.FC = () => {
     login({ email, password });
   };
   const clientName = import.meta.env.VITE_CLIENT_NAME || "Ai-Linc";
+  const logoUrl = import.meta.env.VITE_CLIENT_LOGO;
+
+  console.log(logoUrl);
   return (
     <div className="flex flex-col min-h-screen bg-[#F8F9FA] relative">
       <div className="flex flex-1">
@@ -43,12 +46,14 @@ const Login: React.FC = () => {
         <div className="w-full md:w-1/2 flex items-center justify-center px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="w-full max-w-md space-y-8 bg-white md:bg-transparent p-6 rounded-3xl shadow-sm md:shadow-none">
             <div className="text-center">
-              <div className="flex justify-center items-center">
-                {/* <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 40C31.0457 40 40 31.0457 40 20C40 8.9543 31.0457 0 20 0C8.9543 0 0 8.9543 0 20C0 31.0457 8.9543 40 20 40Z" fill="#000" />
-                  <path d="M12 13L28 27" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M12 27L28 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg> */}
+              <div className="flex flex-col justify-center items-center">
+                {logoUrl && (
+                  <img
+                    src={logoUrl}
+                    alt={`${clientName} logo`}
+                    className="h-10 mx-auto"
+                  />
+                )}
                 <span className="text-2xl font-bold bg-gradient-to-r from-[#0BC5EA] to-[#6B46C1] bg-clip-text text-transparent">
                   {clientName}
                 </span>
@@ -201,13 +206,16 @@ const Login: React.FC = () => {
                 </span>
               </div>
               <p className="text-gray-400 text-sm leading-relaxed">
-                Empowering education through innovative AI-powered learning solutions.
+                Empowering education through innovative AI-powered learning
+                solutions.
               </p>
             </div>
 
             {/* Quick Links */}
             <div className="text-center">
-              <h3 className="font-semibold text-white mb-3 text-sm">Quick Links</h3>
+              <h3 className="font-semibold text-white mb-3 text-sm">
+                Quick Links
+              </h3>
               <div className="space-y-2">
                 <a
                   href="https://ailinc.com/about"
@@ -230,7 +238,9 @@ const Login: React.FC = () => {
 
             {/* Contact Info */}
             <div className="text-center md:text-right">
-              <h3 className="font-semibold text-white mb-3 text-sm">Get in Touch</h3>
+              <h3 className="font-semibold text-white mb-3 text-sm">
+                Get in Touch
+              </h3>
               <div className="space-y-2 text-sm text-gray-400">
                 <p>communications@ailinc.com</p>
                 <p>9693941136</p>
