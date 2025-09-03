@@ -15,13 +15,16 @@ export default defineConfig({
       // includeAssets: static files in /public copied as-is to the build output
       // and available to the service worker. Useful for favicons, mask icons, etc.
       includeAssets: [
-        "favicon.ico",
         "pwa-192x192.png",
         "pwa-512x512.png",
-        "pwa-screenshot-mobile.png",
-        "apple-touch-icon.png",
+        "pwa-192x192.svg",
+        "pwa-512x512.svg",
+        "screenshot/desktop-view.png",
+        "screenshot/mobile-view.png",
         "kumain_logo.jpg",
-        "masked-icon.svg",
+        "logo.png",
+        "vittee.svg",
+        "vittee_no_bg.svg",
       ],
       manifest: {
         name: "AiLinc - AI Learning Platform",
@@ -36,7 +39,7 @@ export default defineConfig({
         id: "/",
         // icons: used by Android/Chrome and other browsers for the installed app icon
         // and to generate the splash screen (with theme/background colors).
-        // Prefer PNG for widest compatibility; add maskable variants for better adaptive shapes.
+        // Prioritize PNG for iOS compatibility, include SVG for scalability
         icons: [
           { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
           { src: "pwa-512x512.png", sizes: "512x512", type: "image/png" },
