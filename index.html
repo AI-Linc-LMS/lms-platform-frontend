@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <!-- Browser tab favicon (shown in desktop browser tabs) -->
     <link rel="icon" type="image/svg+xml" href="/pwa-512x512.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- iOS viewport settings for better PWA experience -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     
     <!-- PWA Meta Tags: used by Android/Chrome for splash background and status bar -->
     <meta name="theme-color" content="#1A5A7A" />
@@ -14,7 +15,7 @@
     <meta name="msapplication-TileColor" content="#1A5A7A" />
     <meta name="msapplication-config" content="/browserconfig.xml" />
     
-    <!-- iOS Home Screen icon: use PNG for better iOS compatibility -->
+    <!-- iOS Home Screen icon: SVG for scalability, modern iOS supports it well -->
     <link rel="apple-touch-icon" href="/pwa-192x192.svg" />
 
     <!-- Let iOS auto-generate splash screens from manifest icons and background color -->
