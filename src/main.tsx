@@ -17,35 +17,12 @@ const queryClient = new QueryClient({
     },
   },
 });
-const envConfig = {
+
+initializePWA({
   clientId: import.meta.env.VITE_CLIENT_ID,
   baseURL: import.meta.env.VITE_API_URL,
   environment: import.meta.env.MODE,
-};
-
-console.log("Main.tsx: Initializing PWA with config:", envConfig);
-
-// Add immediate debugging
-setTimeout(() => {
-  console.log("=== PWA DEBUG INFO ===");
-  console.log("Service Worker supported:", "serviceWorker" in navigator);
-  console.log(
-    "Service Worker controller:",
-    navigator.serviceWorker?.controller
-  );
-  console.log(
-    "Session storage PWA config:",
-    window.sessionStorage.getItem("pwa-config")
-  );
-
-  // Test API call to see what happens
-  console.log("Making test API call...");
-  fetch(`https://be-app.ailinc.com/accounts/clients/${envConfig.clientId}/test`)
-    .then(() => console.log("Test API call completed"))
-    .catch((e) => console.log("Test API call failed:", e));
-}, 2000);
-
-initializePWA(envConfig);
+});
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
