@@ -39,12 +39,20 @@ export default defineConfig({
         id: "/",
         // icons: used by Android/Chrome and other browsers for the installed app icon
         // and to generate the splash screen (with theme/background colors).
-        // Using SVG for perfect scalability on all devices
+        // PNG first for better Android splash screen compatibility, then SVG
         icons: [
+          { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
+          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png" },
+          // iOS specific sizes for better compatibility
+          { src: "pwa-192x192.png", sizes: "152x152", type: "image/png" },
+          { src: "pwa-192x192.png", sizes: "180x180", type: "image/png" },
+          { src: "pwa-192x192.png", sizes: "167x167", type: "image/png" },
+          // Maskable icons for Android
+          { src: "pwa-192x192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
+          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+          // SVG for scalability
           { src: "pwa-192x192.svg", sizes: "192x192", type: "image/svg+xml" },
-          { src: "pwa-512x512.svg", sizes: "512x512", type: "image/svg+xml" },
-          { src: "pwa-192x192.svg", sizes: "192x192", type: "image/svg+xml", purpose: "maskable" },
-          { src: "pwa-512x512.svg", sizes: "512x512", type: "image/svg+xml", purpose: "maskable" }
+          { src: "pwa-512x512.svg", sizes: "512x512", type: "image/svg+xml" }
         ],
         // screenshots: displayed in installation prompts (Chrome) and store listings
         // to showcase app UI in different form factors.

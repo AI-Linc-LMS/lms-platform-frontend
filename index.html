@@ -10,13 +10,22 @@
     <!-- PWA Meta Tags: used by Android/Chrome for splash background and status bar -->
     <meta name="theme-color" content="#ffffff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="AiLinc" />
     <meta name="msapplication-TileColor" content="#ffffff" />
     <meta name="msapplication-config" content="/browserconfig.xml" />
     
-    <!-- iOS Home Screen icon: SVG for scalability, modern iOS supports it well -->
-    <link rel="apple-touch-icon" href="/pwa-192x192.svg" />
+    <!-- iOS specific optimizations -->
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    
+    <!-- iOS Home Screen icon: PNG for better compatibility with white theme -->
+    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
+    
+    <!-- iOS multiple icon sizes for better device compatibility -->
+    <link rel="apple-touch-icon" sizes="152x152" href="/pwa-192x192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/pwa-192x192.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/pwa-192x192.png" />
 
     <!-- Let iOS auto-generate splash screens from manifest icons and background color -->
 
