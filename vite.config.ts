@@ -37,17 +37,7 @@ export default defineConfig({
         scope: "/",
         start_url: "/",
         id: "/",
-        // icons: used by Android/Chrome and other browsers for the installed app icon
-        // and to generate the splash screen (with theme/background colors).
-        // Prioritize PNG for iOS compatibility, include SVG for scalability
-        icons: [
-          { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
-          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png" },
-          { src: "pwa-192x192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
-          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" }
-        ],
-        // screenshots: displayed in installation prompts (Chrome) and store listings
-        // to showcase app UI in different form factors.
+      
         screenshots: [
           {
             src: "screenshot/desktop-view.png",
