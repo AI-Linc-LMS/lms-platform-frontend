@@ -12,7 +12,17 @@ export default defineConfig({
       strategies: "injectManifest",
       srcDir: "public",
       filename: "sw-custom.js",
-      includeAssets: ["favicon.ico", "apple-touch-icon.png", "masked-icon.svg"],
+      // includeAssets: static files in /public copied as-is to the build output
+      // and available to the service worker. Useful for favicons, mask icons, etc.
+      includeAssets: [
+        "favicon.ico",
+        "pwa-192x192.png",
+        "pwa-512x512.png",
+        "pwa-screenshot-mobile.png",
+        "apple-touch-icon.png",
+        "kumain_logo.jpg",
+        "masked-icon.svg",
+      ],
       manifest: {
         name: "AiLinc - AI Learning Platform",
         short_name: "AiLinc",
@@ -24,32 +34,17 @@ export default defineConfig({
         scope: "/",
         start_url: "/",
         id: "/",
+        // icons: used by Android/Chrome and other browsers for the installed app icon
+        // and to generate the splash screen (with theme/background colors).
+        // Prefer PNG for widest compatibility; add maskable variants for better adaptive shapes.
         icons: [
-          {
-            src: "pwa-192x192.svg",
-            sizes: "192x192",
-            type: "image/svg+xml",
-            purpose: "any"
-          },
-          {
-            src: "pwa-512x512.svg",
-            sizes: "512x512",
-            type: "image/svg+xml",
-            purpose: "any"
-          },
-          {
-            src: "pwa-192x192.svg",
-            sizes: "192x192",
-            type: "image/svg+xml",
-            purpose: "maskable"
-          },
-          {
-            src: "pwa-512x512.svg",
-            sizes: "512x512",
-            type: "image/svg+xml",
-            purpose: "maskable"
-          }
+          { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
+          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png" },
+          { src: "pwa-192x192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
+          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" }
         ],
+        // screenshots: displayed in installation prompts (Chrome) and store listings
+        // to showcase app UI in different form factors.
         screenshots: [
           {
             src: "screenshot/desktop-view.png",
@@ -66,7 +61,8 @@ export default defineConfig({
         ]
       },
       injectManifest: {
-        globPatterns: ["**/*.{js,css,html,ico,svg}"],
+        // Precache these file types so icons/screenshots are available offline
+        globPatterns: ["**/*.{js,css,html,ico,svg,png}"],
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
       },
     }),
