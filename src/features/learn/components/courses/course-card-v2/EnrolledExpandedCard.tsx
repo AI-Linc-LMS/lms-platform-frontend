@@ -1,5 +1,5 @@
 import React from "react";
-import { Course } from "../../../types/course.types";
+import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
 import { DocumentIcon } from "../../../../../commonComponents/icons/learnIcons/CourseIcons";
 import {
@@ -11,22 +11,6 @@ import {
   calculateProgress,
   getTimeAgo,
 } from "./utils/courseDataUtils";
-
-// Extended interface for additional backend properties
-interface ExtendedCourse extends Omit<Course, "stats"> {
-  difficulty_level?: string;
-  duration_in_hours?: number;
-  stats?: {
-    video?: {
-      total: number;
-      completed?: number;
-    };
-    quiz?: {
-      total: number;
-      completed?: number;
-    };
-  };
-}
 
 // Enrolled Banner Component
 const EnrolledBanner: React.FC<{ isEnrolled: boolean }> = ({ isEnrolled }) => {
@@ -71,8 +55,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
 
   return (
     <div
-      className={`w-full border border-[#80C9E0] p-4 pt-5 rounded-2xl md:rounded-3xl bg-white flex flex-col self-start relative overflow-visible ${className}`}
-      style={{ height: "fit-content" }}
+      className={`w-full border border-[#80C9E0] p-4 pt-5 rounded-2xl md:rounded-3xl bg-white flex flex-col self-start relative overflow-visible min-h-[700px] max-h-[800px] ${className}`}
     >
       {/* Enrolled Banner - Top Left */}
       <EnrolledBanner isEnrolled={true} />
@@ -144,7 +127,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
           </svg>
           <span className="text-sm font-medium text-[#495057]">
-            {(course as ExtendedCourse).difficulty_level || "Medium"}
+            {course.difficulty_level || "Medium"}
           </span>
         </div>
 
@@ -159,9 +142,8 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
             <polyline points="12,6 12,12 16,14" />
           </svg>
           <span className="text-sm font-medium text-[#495057]">
-            {(course as ExtendedCourse).duration_in_hours &&
-            (course as ExtendedCourse).duration_in_hours! > 0
-              ? `${(course as ExtendedCourse).duration_in_hours} hours`
+            {course.duration_in_hours != null && course.duration_in_hours > 0
+              ? `${course.duration_in_hours} hours`
               : "Self-paced"}
           </span>
         </div>
@@ -185,26 +167,45 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
           </span>
         </div>
 
-        <div className="flex items-center gap-1 ml-auto">
-          <div className="flex">
-            {[...Array(5)].map((_, i) => (
-              <svg
-                key={i}
-                className="w-4 h-4 text-[#FFC107]"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-            ))}
+        {/* Rating - only show if rating exists */}
+        {course.rating != null && course.rating > 0 && (
+          <div className="flex items-center gap-1 ml-auto">
+            <div className="flex">
+              {[...Array(5)].map((_, i) => (
+                <svg
+                  key={i}
+                  className={`w-4 h-4 ${
+                    i < Math.floor(course.rating!)
+                      ? "text-[#FFC107]"
+                      : "text-gray-300"
+                  }`}
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              ))}
+            </div>
+            <span className="text-sm font-medium text-[#495057] ml-1">
+              {course.rating.toFixed(1)}/5
+            </span>
           </div>
-          <span className="text-sm font-medium text-[#495057] ml-1">4.8/5</span>
-        </div>
+        )}
       </div>
 
       {/* Course Description */}
       <div className="mb-4">
-        <p className="text-[#495057] text-sm leading-relaxed">
+        <p
+          className="text-[#495057] text-sm leading-relaxed h-[4.5rem] overflow-hidden"
+          style={
+            {
+              display: "-webkit-box",
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: "vertical",
+              textOverflow: "ellipsis",
+            } as React.CSSProperties
+          }
+        >
           {course.description ||
             "Learn comprehensive skills in this professionally designed course."}
         </p>
