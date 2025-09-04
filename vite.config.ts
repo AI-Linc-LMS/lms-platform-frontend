@@ -25,6 +25,16 @@ export default defineConfig({
         "logo.png",
         "vittee.svg",
         "vittee_no_bg.svg",
+        // iOS splash screen images
+        "splash-1290x2796.svg",
+        "splash-1179x2556.svg",
+        "splash-1284x2778.svg",
+        "splash-1170x2532.svg",
+        "splash-1125x2436.svg",
+        "splash-1242x2688.svg",
+        "splash-828x1792.svg",
+        "splash-750x1334.svg",
+        "splash-640x1136.svg",
       ],
       manifest: {
         name: "AiLinc - AI Learning Platform",
