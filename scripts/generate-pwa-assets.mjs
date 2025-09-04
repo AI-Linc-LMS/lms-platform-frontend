@@ -1,127 +1,59 @@
-// Generates PWA icons and an iOS splash image from a source logo
-// Requires: `npm i -D sharp`
+#!/usr/bin/env node
+
+// Generate iOS splash screens (PNG) using sharp.
+// No external tools required. Background set to match manifest background.
 
 import sharp from 'sharp';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { existsSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const root = resolve(__dirname, '..');
-const publicDir = resolve(root, 'public');
+console.log('Generating iOS splash screens...');
 
-const srcLogo = resolve(publicDir, 'kumain_logo.jpg');
+const publicDir = join(process.cwd(), 'public');
+if (!existsSync(publicDir)) mkdirSync(publicDir, { recursive: true });
 
-const themeColor = '#1A5A7A'; // matches manifest theme_color
+const background = '#ffffff';
+// Prefer the same icon Android uses for splash (PWA icon)
+const logoCandidates = ['pwa-512x512.png', 'pwa-192x192.png', 'logo.png', 'kumain_logo.jpg'];
+const logoPath = logoCandidates.map(n => join(publicDir, n)).find(p => existsSync(p));
 
-/**
- * Create a square icon PNG of given size with the logo centered on a solid background.
- */
-async function makeIcon(size, outPath) {
-  const canvas = sharp({
-    create: {
-      width: size,
-      height: size,
-      channels: 4,
-      background: themeColor,
-    },
-  });
-
-  const logo = await sharp(srcLogo)
-    .resize({
-      width: Math.floor(size * 0.65),
-      height: Math.floor(size * 0.65),
-      fit: 'inside',
-      withoutEnlargement: true,
-    })
-    .toBuffer();
-
-  await canvas
-    .composite([
-      { input: logo, gravity: 'center' },
-    ])
-    .png()
-    .toFile(outPath);
-}
-
-/**
- * Create an iOS startup splash image with given pixel dimensions.
- */
 async function makeSplash(width, height, outPath) {
-  const canvas = sharp({
-    create: {
-      width,
-      height,
-      channels: 4,
-      background: themeColor,
-    },
-  });
-
-  const logo = await sharp(srcLogo)
-    .resize({
-      width: Math.floor(Math.min(width, height) * 0.35),
-      height: Math.floor(Math.min(width, height) * 0.35),
-      fit: 'inside',
-      withoutEnlargement: true,
-    })
-    .toBuffer();
-
-  await canvas
-    .composite([{ input: logo, gravity: 'center' }])
-    .png()
-    .toFile(outPath);
+  const canvas = sharp({ create: { width, height, channels: 4, background } });
+  let image = canvas;
+  if (logoPath) {
+    const size = Math.floor(Math.min(width, height) * 0.35);
+    const logo = await sharp(logoPath)
+      .resize({ width: size, height: size, fit: 'inside', withoutEnlargement: true })
+      .toBuffer();
+    image = canvas.composite([{ input: logo, gravity: 'center' }]);
+  }
+  await image.png().toFile(outPath);
+  console.log('✔', outPath);
 }
 
 async function run() {
-  if (!existsSync(srcLogo)) {
-    console.error(`Source logo not found: ${srcLogo}`);
-    process.exit(1);
-  }
-
-  const outIcon192 = resolve(publicDir, 'pwa-192x192.png');
-  const outIcon512 = resolve(publicDir, 'pwa-512x512.png');
-  const outAppleIcon = resolve(publicDir, 'apple-touch-icon.png'); // 180x180
-  // Common iPhone portrait/landscape sizes (CSS dp and pixel ratio)
-  const iosSplashSpecs = [
-    { dpw: 320, dph: 568, ratio: 2, name: 'iphone-se-1' },        // 640x1136
-    { dpw: 375, dph: 667, ratio: 2, name: 'iphone-8' },           // 750x1334
-    { dpw: 375, dph: 812, ratio: 3, name: 'iphone-x' },           // 1125x2436
-    { dpw: 390, dph: 844, ratio: 3, name: 'iphone-12-14' },       // 1170x2532
-    { dpw: 393, dph: 852, ratio: 3, name: 'iphone-15-pro' },      // 1179x2556
-    { dpw: 414, dph: 896, ratio: 2, name: 'iphone-11' },          // 828x1792
-    { dpw: 414, dph: 896, ratio: 3, name: 'iphone-11-pro-max' },  // 1242x2688
-    { dpw: 428, dph: 926, ratio: 3, name: 'iphone-14-15-pro-max'} // 1284x2778
+  // Portrait base sizes (we also produce landscape variants)
+  const sizes = [
+    { w: 1290, h: 2796 }, // 430x932@3x (14 Pro/15 Plus)
+    { w: 1179, h: 2556 }, // 393x852@3x (15 Pro)
+    { w: 1284, h: 2778 }, // 428x926@3x (14/15 Pro Max)
+    { w: 1170, h: 2532 }, // 390x844@3x (12/13/14/15)
+    { w: 1125, h: 2436 }, // 375x812@3x (X/XS/11 Pro)
+    { w: 1242, h: 2688 }, // 414x896@3x (11 Pro Max/XS Max)
+    { w: 828,  h: 1792 }, // 414x896@2x (11/XR)
+    { w: 750,  h: 1334 }, // 375x667@2x (8/7/6s/6)
+    { w: 640,  h: 1136 }, // 320x568@2x (SE 1st gen)
   ];
 
-  try {
-    // Ensure public dir exists (it should)
-    if (!existsSync(publicDir)) mkdirSync(publicDir, { recursive: true });
-
-    console.log('Generating PWA icons from', srcLogo);
-    await makeIcon(192, outIcon192);
-    console.log('✓ Created', outIcon192);
-    await makeIcon(512, outIcon512);
-    console.log('✓ Created', outIcon512);
-    await makeIcon(180, outAppleIcon);
-    console.log('✓ Created', outAppleIcon);
-
-    console.log('Generating iOS splash images (portrait & landscape)');
-    for (const spec of iosSplashSpecs) {
-      const w = spec.dpw * spec.ratio;
-      const h = spec.dph * spec.ratio;
-      const portrait = resolve(publicDir, `splash-${w}x${h}.png`);
-      const landscape = resolve(publicDir, `splash-${h}x${w}.png`);
-      await makeSplash(w, h, portrait);
-      console.log('✓ Created', portrait);
-      await makeSplash(h, w, landscape);
-      console.log('✓ Created', landscape);
-    }
-
-    console.log('All assets generated.');
-  } catch (err) {
-    console.error(err);
-    process.exit(1);
+  for (const { w, h } of sizes) {
+    await makeSplash(w, h, join(publicDir, `splash-${w}x${h}.png`));
+    await makeSplash(h, w, join(publicDir, `splash-${h}x${w}.png`));
   }
+
+  console.log('All splash images generated.');
 }
 
-run();
+run().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
