@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Course } from "../../../types/course.types";
+import { Course } from "../../../types/final-course.types";
 import NotEnrolledCollapsedCard from "./NotEnrolledCollapsedCard";
 import EnrolledCollapsedCard from "./EnrolledCollapsedCard";
 import NotEnrolledExpandedCard from "./NotEnrolledExpandedCard";
@@ -22,16 +22,8 @@ const CourseCardV2: React.FC<CourseCardV2Props> = ({
 }) => {
   // Each card has its own independent expand state
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState<boolean>(enrolled);
 
-  // Determine enrollment status from backend data or props
-  const backendSaysEnrolled = course?.is_enrolled === true;
-  const isInitiallyEnrolled = !!course && (backendSaysEnrolled || enrolled);
-  const [isEnrolled, setIsEnrolled] = useState<boolean>(isInitiallyEnrolled);
-
-  // Sync from external prop/backend if it changes to true
-  useEffect(() => {
-    if (backendSaysEnrolled && !isEnrolled) setIsEnrolled(true);
-  }, [backendSaysEnrolled, isEnrolled]);
 
   useEffect(() => {
     if (enrolled && !isEnrolled) setIsEnrolled(true);
@@ -75,6 +67,7 @@ const CourseCardV2: React.FC<CourseCardV2Props> = ({
     );
   }
 
+  console.log(isEnrolled,isExpanded,enrolled)
   // Determine which card component to render based on enrollment and expansion state
   if (isEnrolled) {
     if (isExpanded) {

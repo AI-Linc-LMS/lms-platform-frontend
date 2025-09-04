@@ -1,14 +1,7 @@
 import React from "react";
-import { Course } from "../../../types/course.types";
+import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
 import { generateTrustedByCompanies } from "./utils/courseDataUtils";
-
-// Extended interface for additional backend properties
-interface ExtendedCourse extends Course {
-  duration_in_hours?: number;
-  trusted_by?: Array<{ name: string } | string>;
-  difficulty_level?: string;
-}
 
 interface NotEnrolledCollapsedCardProps {
   course: Course;
@@ -34,8 +27,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
 
   return (
     <div
-      className={`w-full border border-[#80C9E0] p-6 rounded-2xl md:rounded-3xl bg-white flex flex-col overflow-visible relative self-start ${className}`}
-      style={{ height: "fit-content" }}
+      className={`w-full border border-[#80C9E0] p-6 rounded-2xl md:rounded-3xl bg-white flex flex-col overflow-visible relative ${className}`}
     >
       {/* Expand Button - Top Right */}
       <div className="absolute top-4 right-4 z-10">
@@ -62,7 +54,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
 
       {/* Course Title */}
       <div className="mb-6 pr-12">
-        <h1 className="font-bold font-sans text-2xl md:text-3xl text-[#343A40] leading-tight">
+        <h1 className="font-bold font-sans text-2xl text-[#343A40]">
           {course.title}
         </h1>
       </div>
@@ -114,28 +106,27 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
             />
           </svg>
           <span className="font-medium text-[#495057]">
-            {(course as ExtendedCourse).difficulty_level || "Medium"}
+            {course.difficulty_level || "Medium"}
           </span>
         </div>
 
-        {/* Duration */}
-        <div className="flex items-center gap-2 bg-[#F8F9FA] rounded-lg px-4 py-2">
-          <svg
-            className="w-4 h-4 text-[#6C757D]"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12,6 12,12 16,14" />
-          </svg>
-          <span className="font-medium text-[#495057]">
-            {(course as ExtendedCourse).duration_in_hours &&
-            (course as ExtendedCourse).duration_in_hours! > 0
-              ? `${(course as ExtendedCourse).duration_in_hours} hours`
-              : "20 hours"}
-          </span>
-        </div>
+        {/* Duration - only show if duration exists and is greater than 0 */}
+        {course.duration_in_hours != null && course.duration_in_hours > 0 && (
+          <div className="flex items-center gap-2 bg-[#F8F9FA] rounded-lg px-4 py-2">
+            <svg
+              className="w-4 h-4 text-[#6C757D]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12,6 12,12 16,14" />
+            </svg>
+            <span className="font-medium text-[#495057]">
+              {course.duration_in_hours} hours
+            </span>
+          </div>
+        )}
 
         {/* Price */}
         <div className="flex items-center gap-2 bg-[#FFF3CD] border border-[#FFEAA7] rounded-lg px-4 py-2">
@@ -153,33 +144,41 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
             />
           </svg>
           <span className="font-medium text-[#856404]">
-            {isFree ? "Free" : `$${course.price || 299}`}
+            {isFree ? "Free" : `${course.price || 299}`}
           </span>
         </div>
       </div>
 
-      {/* Rating */}
-      <div className="flex items-center justify-end mb-6">
-        <div className="flex items-center gap-1">
-          {[...Array(5)].map((_, i) => (
-            <svg
-              key={i}
-              className="w-5 h-5 text-[#FFC107]"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
-          ))}
-          <span className="ml-2 text-lg font-medium text-[#495057]">4.8/5</span>
+      {/* Rating - only show if rating exists */}
+      {course.rating != null && course.rating > 0 && (
+        <div className="flex items-center justify-end mb-6">
+          <div className="flex items-center gap-1">
+            {[...Array(5)].map((_, i) => (
+              <svg
+                key={i}
+                className={`w-5 h-5 ${
+                  i < Math.floor(course.rating!)
+                    ? "text-[#FFC107]"
+                    : "text-gray-300"
+                }`}
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            ))}
+            <span className="ml-2 text-lg font-medium text-[#495057]">
+              {course.rating.toFixed(1)}/5
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Action Button */}
       <div className="mt-auto">
         <button
           onClick={handlePrimaryClick}
-          className="w-full px-8 py-4 text-lg font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors duration-200"
+          className="w-full px-8 py-2 text-lg font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors duration-200"
         >
           Enroll Now
         </button>

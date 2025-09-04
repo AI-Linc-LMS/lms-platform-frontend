@@ -1,31 +1,11 @@
-import { Course } from "../../../../types/course.types";
+import { Course } from "../../../../types/final-course.types";
 
-// Extended interface for backend course data that includes additional fields
-interface ExtendedCourse extends Omit<Course, 'enrolled_students'> {
-  trusted_by?: Array<{ name: string } | string>;
-  tags?: Array<{ name: string } | string>;
-  difficulty_level?: string;
-  certificate_available?: boolean;
-  duration_in_hours?: number;
-  enrolled_students?: {
-    total: number;
-    students_profile_pic?: string[];
-  };
-  stats?: {
-    video: { total: number; completed?: number };
-    article: { total: number; completed?: number };
-    coding_problem: { total: number; completed?: number };
-    quiz: { total: number; completed?: number };
-    assignment: { total: number; completed?: number };
-  };
-}
-
-// Type utility to work with both Course and ExtendedCourse
-type CourseData = Course | ExtendedCourse;
+// Type utility to work with Course data
+type CourseData = Course;
 
 // Type guards and utility functions
-export const hasExtendedProps = (course: CourseData): course is ExtendedCourse => {
-  return 'trusted_by' in course || 'difficulty_level' in course || 'certificate_available' in course;
+export const hasExtendedProps = (course: CourseData): boolean => {
+  return !!(course.trusted_by || course.difficulty_level || course.certificate_available);
 };
 
 // Utility functions to generate dynamic data based on course information
@@ -37,10 +17,9 @@ export const generateDynamicStreak = (courseId: number): number => {
 };
 
 export const generateDynamicBadges = (course: CourseData): number => {
-  const extCourse = course as ExtendedCourse;
-  const videosCompleted = extCourse.stats?.video?.completed || 0;
-  const quizzesCompleted = extCourse.stats?.quiz?.completed || 0;
-  const assignmentsCompleted = extCourse.stats?.assignment?.completed || 0;
+  const videosCompleted = course.stats?.video?.completed || 0;
+  const quizzesCompleted = course.stats?.quiz?.completed || 0;
+  const assignmentsCompleted = course.stats?.assignment?.completed || 0;
   
   // Calculate badges based on completion
   let badges = 0;
@@ -89,10 +68,9 @@ export const generateNextLesson = (course: CourseData) => {
 };
 
 export const generateTrustedByCompanies = (course: CourseData) => {
-  const extCourse = course as ExtendedCourse;
   // If course already has trusted_by data, use it
-  if (extCourse.trusted_by && extCourse.trusted_by.length > 0) {
-    return extCourse.trusted_by;
+  if (course.trusted_by && course.trusted_by.length > 0) {
+    return course.trusted_by;
   }
   
   // Generate based on course type/title
@@ -117,10 +95,9 @@ export const generateTrustedByCompanies = (course: CourseData) => {
 };
 
 export const generateCourseTags = (course: CourseData) => {
-  const extCourse = course as ExtendedCourse;
   // If course already has tags, use them
-  if (extCourse.tags && extCourse.tags.length > 0) {
-    return extCourse.tags;
+  if (course.tags && course.tags.length > 0) {
+    return course.tags;
   }
   
   // Generate tags based on course title and difficulty
@@ -140,14 +117,14 @@ export const generateCourseTags = (course: CourseData) => {
   }
   
   // Add difficulty-based tags
-  if (extCourse.difficulty_level === "Beginner") {
+  if (course.difficulty_level === "Beginner") {
     baseTags.push("Beginner Friendly");
-  } else if (extCourse.difficulty_level === "Advanced") {
+  } else if (course.difficulty_level === "Advanced") {
     baseTags.push("Advanced Level");
   }
   
   // Add certificate tag if available
-  if (extCourse.certificate_available) {
+  if (course.certificate_available) {
     baseTags.push("Certificate Included");
   }
   
@@ -156,11 +133,10 @@ export const generateCourseTags = (course: CourseData) => {
 };
 
 export const calculateProgress = (course: CourseData) => {
-  const extCourse = course as ExtendedCourse;
-  const videosCompleted = extCourse.stats?.video?.completed || 0;
-  const videosTotal = extCourse.stats?.video?.total || 1;
-  const quizzesCompleted = extCourse.stats?.quiz?.completed || 0;
-  const quizzesTotal = extCourse.stats?.quiz?.total || 1;
+  const videosCompleted = course.stats?.video?.completed || 0;
+  const videosTotal = course.stats?.video?.total || 1;
+  const quizzesCompleted = course.stats?.quiz?.completed || 0;
+  const quizzesTotal = course.stats?.quiz?.total || 1;
   
   // Calculate weighted progress (videos 70%, quizzes 30%)
   const videoProgress = (videosCompleted / videosTotal) * 0.7;

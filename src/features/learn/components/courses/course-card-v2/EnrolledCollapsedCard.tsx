@@ -1,5 +1,5 @@
 import React from "react";
-import { Course } from "../../../types/course.types";
+import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
 import {
   generateTrustedByCompanies,
