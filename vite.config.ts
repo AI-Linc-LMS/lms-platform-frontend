@@ -37,8 +37,8 @@ export default defineConfig({
         "splash-640x1136.svg",
       ],
       manifest: {
-        name: "AiLinc - AI Learning Platform",
-        short_name: "AiLinc",
+        name: "FullStack Academy",
+        short_name: "FullStack Academy ",
         description: "AI-powered learning and assessment platform",
         theme_color: "#ffffff",
         background_color: "#ffffff",
