@@ -1,7 +1,10 @@
 import React from "react";
 import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
-import { generateTrustedByCompanies } from "./utils/courseDataUtils";
+import {
+  formatPrice,
+  generateTrustedByCompanies,
+} from "./utils/courseDataUtils";
 
 interface NotEnrolledCollapsedCardProps {
   course: Course;
@@ -20,14 +23,15 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
     navigate(`/courses/${course.id}`);
   };
 
-  const isFree = course?.is_free === true || course?.price === 0;
+  const formattedPrice = formatPrice(course?.price || "0");
+  const isFree = course?.is_free === true || formattedPrice === "0";
 
   // Generate trusted companies for display
   const trustedCompanies = generateTrustedByCompanies(course);
 
   return (
     <div
-      className={`w-full border border-[#80C9E0] p-6 rounded-2xl md:rounded-3xl bg-white flex flex-col overflow-visible relative ${className}`}
+      className={`w-full border border-[#80C9E0] p-4 rounded-2xl md:rounded-3xl bg-white flex flex-col overflow-visible relative ${className}`}
     >
       {/* Expand Button - Top Right */}
       <div className="absolute top-4 right-4 z-10">
@@ -54,7 +58,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
 
       {/* Course Title */}
       <div className="mb-6 pr-12">
-        <h1 className="font-bold font-sans text-2xl text-[#343A40]">
+        <h1 className="font-bold font-sans text-xl text-[#343A40]">
           {course.title}
         </h1>
       </div>
@@ -144,7 +148,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
             />
           </svg>
           <span className="font-medium text-[#856404]">
-            {isFree ? "Free" : `${course.price || 299}`}
+            {isFree ? "Free" : `${formattedPrice}`}
           </span>
         </div>
       </div>
