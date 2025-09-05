@@ -37,8 +37,8 @@ export default defineConfig({
         "splash-640x1136.svg",
       ],
       manifest: {
-        name: "AiLinc - AI Learning Platform",
-        short_name: "AiLinc",
+        name: "Kakatiya university",
+        short_name: "Kakatiya University",
         description: "AI-powered learning and assessment platform",
         theme_color: "#ffffff",
         background_color: "#ffffff",
@@ -59,10 +59,7 @@ export default defineConfig({
           { src: "pwa-192x192.png", sizes: "167x167", type: "image/png" },
           // Maskable icons for Android
           { src: "pwa-192x192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
-          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
-          // SVG for scalability
-          { src: "pwa-192x192.svg", sizes: "192x192", type: "image/svg+xml" },
-          { src: "pwa-512x512.svg", sizes: "512x512", type: "image/svg+xml" }
+          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" }
         ],
         // screenshots: displayed in installation prompts (Chrome) and store listings
         // to showcase app UI in different form factors.
