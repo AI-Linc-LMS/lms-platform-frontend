@@ -3,97 +3,60 @@ import { useQuery } from "@tanstack/react-query";
 import { useDispatch, useSelector } from "react-redux";
 import { getEnrolledCourses } from "../../../../services/enrolled-courses-content/coursesApis";
 import {
-  Course as ReduxCourse,
   setCourses,
 } from "../../../../redux/slices/courseSlice";
 import { RootState } from "../../../../redux/store";
-import CourseCard from "./CourseCard";
 import leftArrow from "../../../../assets/dashboard_assets/leftArrow.png";
 import rightArrow from "../../../../assets/dashboard_assets/rightArrow.png";
-import { Course as CardCourse, Module } from "../../types/course.types";
+import { Course } from "../../types/final-course.types";
 import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
+import CourseCardV2 from "./course-card-v2/CourseCardV2";
 
 interface EnrolledCoursesProps {
   className?: string;
 }
 
-// Extend ReduxCourse type to include stats, ensuring 'stats' is always defined to match Course interface
-interface EnrolledCourse extends ReduxCourse {
-  stats: {
-    video: { total: number };
-    article: { total: number };
-    coding_problem: { total: number };
-    quiz: { total: number };
-    assignment: { total: number };
-  };
-}
-
-// Helper function to trim description text
-const trimDescription = (
-  description: string,
-  maxLength: number = 100
-): string => {
-  if (!description) return "";
-  if (description.length <= maxLength) return description;
-  return description.substring(0, maxLength).trim() + "...";
-};
-
-// Helper function to transform the Redux course type to the CourseCard expected type
-const transformCourseData = (reduxCourse: EnrolledCourse): CardCourse => {
-  // Create a module with submodule that contains the stats from the API
-  const mockModules: Module[] = [
-    {
-      id: 1,
-      title: "Course Content",
-      weekno: 1,
-      completion_percentage: 0,
-      submodules: [
-        {
-          id: 1,
-          title: "Content Stats",
-          description: "Course content statistics",
-          order: 1,
-          // Use the stats from the API response if available
-          article_count: reduxCourse.stats?.article?.total || 0,
-          assignment_count: reduxCourse.stats?.assignment?.total || 0,
-          coding_problem_count: reduxCourse.stats?.coding_problem?.total || 0,
-          quiz_count: reduxCourse.stats?.quiz?.total || 0,
-          video_count: reduxCourse.stats?.video?.total || 0,
-        },
-      ],
-    },
-  ];
-
+// Helper function to transform Redux course data to match Course interface
+const transformCourseData = (backendCourse: Course): Course => {
+  // Backend data already matches our Course interface structure
+  // Just ensure we have the expected data structure
   return {
-    id: reduxCourse.id,
-    title: reduxCourse.title,
-    description: trimDescription(reduxCourse.description),
-    course_id: reduxCourse.id,
-    course_title: reduxCourse.title,
-    course_description: trimDescription(reduxCourse.description),
-    enrolled_students: reduxCourse.enrolled_students?.length || 0,
-    is_certified: reduxCourse.certificate_available || false,
-    updated_at: reduxCourse.updated_at,
-    instructors:
-      reduxCourse.instructors?.map((instructor) => ({
-        id: instructor.id.toString(),
-        name: instructor.name,
-        bio: instructor.bio,
-        linkedin_profile: instructor.linkedin,
-        profile_pic_url: instructor.profile_pic_url,
-      })) || [],
-    stats: reduxCourse.stats
-      ? {
-          video: { total: reduxCourse.stats.video?.total || 0 },
-          article: { total: reduxCourse.stats.article?.total || 0 },
-          coding_problem: {
-            total: reduxCourse.stats.coding_problem?.total || 0,
+    ...backendCourse,
+    // Ensure instructor IDs are numbers as expected by interface
+    instructors: backendCourse.instructors?.map((instructor) => ({
+      id: instructor.id,
+      name: instructor.name,
+      bio: instructor.bio || "",
+      profile_pic_url: instructor.profile_pic_url || undefined,
+      linkedin_profile: instructor.linkedin_profile || undefined,
+    })) || [],
+    // Add frontend-specific fields with default values
+    is_enrolled: true, // Since this is enrolled courses
+    liked_count: backendCourse.liked_by?.length || 0,
+    is_liked_by_current_user: false, // TODO: Check if current user liked
+    rating: backendCourse.rating || 0, // Default rating - should come from backend
+    // Generate modules from stats for backwards compatibility
+    modules: [
+      {
+        id: 1,
+        title: "Course Content",
+        weekno: 1,
+        completion_percentage: 0,
+        submodules: [
+          {
+            id: 1,
+            title: "Content Overview",
+            description: "Course content statistics",
+            order: 1,
+            article_count: backendCourse.stats?.article?.total || 0,
+            assignment_count: backendCourse.stats?.assignment?.total || 0,
+            coding_problem_count: backendCourse.stats?.coding_problem?.total || 0,
+            quiz_count: backendCourse.stats?.quiz?.total || 0,
+            video_count: backendCourse.stats?.video?.total || 0,
           },
-          quiz: { total: reduxCourse.stats.quiz?.total || 0 },
-          assignment: { total: reduxCourse.stats.assignment?.total || 0 },
-        }
-      : undefined,
-    modules: mockModules, // Use modules with stats from API
+        ],
+      },
+    ],
   };
 };
 
@@ -139,7 +102,7 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
   const dispatch = useDispatch();
   const Courses = useSelector(
     (state: RootState) => state.courses.courses
-  ) as EnrolledCourse[];
+  ) as unknown as Course[];
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const { data, isLoading, error } = useQuery({
@@ -219,17 +182,15 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
           className={`flex overflow-x-auto overflow-y-visible scroll-smooth space-x-4 transition-all duration-300 pt-8 ${className}`}
           style={{ scrollSnapType: "x mandatory" }}
         >
-          {Courses.map((course: EnrolledCourse) => (
+          {Courses.map((course: Course) => (
             <div
               key={course.id}
               className="flex-shrink-0 w-full md:w-1/2 scroll-snap-align-start transition-transform duration-300 overflow-visible"
               style={{ scrollSnapAlign: "start" }}
             >
-              <CourseCard
-                isLoading={isLoading}
-                error={error}
+              <CourseCardV2
                 course={transformCourseData(course)}
-                enrolled={true}
+                enrolled={false}
               />
             </div>
           ))}
