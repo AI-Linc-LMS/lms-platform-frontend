@@ -155,3 +155,16 @@ export const getTimeAgo = (courseId: number): string => {
     return `${days} day${days > 1 ? 's' : ''} ago`;
   }
 };
+
+
+export const formatPrice = (price: string): string => {
+  const p = Number(price);
+  if (isNaN(p) || p < 0) return "0";
+  if (p >= 1000000) {
+    return `${(p / 1000000).toFixed(p % 1000000 === 0 ? 0 : 1)}M`;
+  } else if (p >= 1000) {
+    return `${(p / 1000).toFixed(p % 1000 === 0 ? 0 : 1)}K`;
+  } else {
+    return p.toString();
+  }
+};
