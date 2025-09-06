@@ -188,11 +188,15 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
         </div>
       )}
 
-      {course.certificate_available && (
-        <>
-          {course.certificate_available.map((cert, idx) => (
-            <div className="flex flex-wrap gap-2 mb-4" key={idx}>
-              <span className="bg-[#FFF3E0] text-[#F57C00] text-xs font-medium px-3 py-1 rounded-full">
+      {/* Certificate Available Section */}
+      {course?.certificate_available &&
+        course.certificate_available.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {course.certificate_available.map((cert, idx) => (
+              <span
+                key={idx}
+                className="bg-[#FFF3E0] text-[#F57C00] text-xs font-medium px-3 py-1 rounded-full"
+              >
                 <svg
                   className="w-3 h-3 inline mr-1"
                   fill="none"
@@ -208,10 +212,9 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
                 </svg>
                 {cert}
               </span>
-            </div>
-          ))}
-        </>
-      )}
+            ))}
+          </div>
+        )}
 
       {/* Rating and Learners */}
       <div className="mb-4 min-h-[5rem]">

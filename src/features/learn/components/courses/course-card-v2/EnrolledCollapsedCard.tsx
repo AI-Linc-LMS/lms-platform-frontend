@@ -180,7 +180,7 @@ export const ProgressCard = ({
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="text-base font-bold text-[#495057]">
-                  {progressPercentage}%
+                  {progressPercentage ?? 0}%
                 </span>
               </div>
             </div>
