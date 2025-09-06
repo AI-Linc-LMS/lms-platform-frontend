@@ -48,9 +48,43 @@ export const PWASplashScreen: React.FC<{ delayMs?: number }>
           />
           <span className="text-2xl font-semibold tracking-tight">AiLinc</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3" role="status">
           <span className="sr-only">Loading</span>
-          <span className="h-10 w-10 rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-emerald-500 animate-spin" />
+          {/* Inline SVG spinner to ensure animation even if CSS animations are purged */}
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 50 50"
+            xmlns="http://www.w3.org/2000/svg"
+            className="text-emerald-500"
+            aria-hidden="true"
+          >
+            <circle
+              cx="25"
+              cy="25"
+              r="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="5"
+              strokeOpacity="0.2"
+            />
+            <path
+              d="M45 25a20 20 0 0 1-20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="5"
+              strokeLinecap="round"
+            >
+              <animateTransform
+                attributeName="transform"
+                type="rotate"
+                from="0 25 25"
+                to="360 25 25"
+                dur="1s"
+                repeatCount="indefinite"
+              />
+            </path>
+          </svg>
         </div>
         <div className="text-sm text-slate-500 dark:text-slate-400">Preparing your experience…</div>
       </div>
@@ -59,4 +93,3 @@ export const PWASplashScreen: React.FC<{ delayMs?: number }>
 };
 
 export default PWASplashScreen;
-
