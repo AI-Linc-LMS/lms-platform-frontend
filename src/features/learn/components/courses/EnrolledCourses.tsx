@@ -190,7 +190,7 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
             >
               <CourseCardV2
                 course={transformCourseData(course)}
-                enrolled={false}
+                enrolled={true}
               />
             </div>
           ))}
