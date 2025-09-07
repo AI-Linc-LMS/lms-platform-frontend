@@ -11,7 +11,7 @@ import { AchievementSection } from "./utils/AchivementSection";
 import { FeaturesSection } from "./NotEnrolledExpandedCard";
 
 // Enrolled Banner Component
-const EnrolledBanner: React.FC<{ isEnrolled: boolean }> = ({ isEnrolled }) => {
+export const EnrolledBanner: React.FC<{ isEnrolled: boolean }> = ({ isEnrolled }) => {
   if (!isEnrolled) return null;
 
   return (
@@ -50,7 +50,6 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
       className={`w-full border border-[#80C9E0] p-3 pt-4 rounded-xl md:rounded-2xl bg-white flex flex-col self-start ${className}`}
     >
       {/* Enrolled Banner - Top Left */}
-      <EnrolledBanner isEnrolled={true} />
 
       {/* Header with title and collapse button */}
       <div className="flex justify-between items-start mb-3">
