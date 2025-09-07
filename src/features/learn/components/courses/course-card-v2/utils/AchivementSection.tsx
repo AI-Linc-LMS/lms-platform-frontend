@@ -111,7 +111,7 @@ export const AchievementSection = ({ course }: { course: Course }) => {
 
   return (
     <div className="mb-3">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between my-2">
         <h3 className="text-[#495057] font-semibold text-xs">Achievements</h3>
         <span className="text-blue-600 text-xs">
           {userAchievements.length}/{totalPossibleAchievements}

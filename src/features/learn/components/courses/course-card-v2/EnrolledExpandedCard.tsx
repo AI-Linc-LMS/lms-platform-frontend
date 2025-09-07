@@ -15,12 +15,12 @@ const EnrolledBanner: React.FC<{ isEnrolled: boolean }> = ({ isEnrolled }) => {
   if (!isEnrolled) return null;
 
   return (
-    <div className="absolute top-0 left-0 z-10">
-      <div className="bg-green-600 text-center w-[100px] text-white text-xs font-semibold px-3 py-1 rounded-tl-2xl md:rounded-tl-3xl rounded-br-lg shadow-md">
+    <div className="absolute top-5 left-0 z-10">
+      <div className="bg-green-600 text-center w-[100px] text-white text-xs font-semibold px-3 py-1 rounded-tl-2xl rounded-br-lg shadow-md">
         Enrolled
       </div>
     </div>
-  );
+  ); 
 };
 
 interface EnrolledExpandedCardProps {
@@ -128,7 +128,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
             />
           </svg>
           <span className="text-xs font-medium text-[#856404]">
-            {isFree ? "Free" : `$${formattedPrice}`}
+            {isFree ? "Free" : `${formattedPrice}`}
           </span>
         </div>
 
@@ -158,13 +158,6 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
         )}
       </div>
 
-      {/* Course Description */}
-      <div className="mb-3">
-        <p className="text-[#495057] text-sm leading-relaxed">
-          {course.description.slice(0, 150)} ...
-        </p>
-      </div>
-
       <ProgressCard
         progressPercentage={course.progress_percentage}
         course={course}
@@ -180,9 +173,16 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
         </button>
       </div>
 
+      {/* Course Description */}
+      <div className="my-3">
+        <p className="text-[#495057] text-sm leading-relaxed">
+          {course.description.slice(0, 150)} ...
+        </p>
+      </div>
+
       {/* Recent Activity Section */}
       {course.recent_activity && course.recent_activity.length > 0 && (
-        <div className="bg-orange-50 rounded-md p-2.5 mb-2.5">
+        <div className="bg-orange-50 rounded-md p-2.5 my-2.5">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-orange-800 font-semibold text-xs">
               Recent Activity
@@ -201,7 +201,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
 
       {/* Content Section */}
       <div className="my-3">
-        <h3 className="text-[#495057] font-semibold text-sm mb-3 uppercase tracking-wide">
+        <h3 className="text-[#495057] font-semibold text-sm my-3 uppercase tracking-wide">
           CONTENT
         </h3>
         <div className="grid grid-cols-5 gap-3">
@@ -366,7 +366,7 @@ export const NextLessionSection = ({ course }: { course: Course }) => {
   return (
     <div>
       {course?.next_lesson && (
-        <div className="bg-green-50 border border-green-200 rounded-md p-2.5 mb-3">
+        <div className="bg-green-50 border border-green-200 rounded-md p-2.5 my-3">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-green-800 font-semibold text-xs">
               Next Lesson

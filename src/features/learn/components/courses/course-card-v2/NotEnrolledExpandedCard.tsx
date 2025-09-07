@@ -358,12 +358,30 @@ export const FeaturesSection: React.FC<{ course: Course }> = ({ course }) => {
   return (
     <div>
       {course.features && course.features.length > 0 && (
-        <div className="mb-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 text-xs">
+        <div className="mb-4 bg-white border border-[#E9ECEF] p-4 rounded-lg shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <svg
+              className="w-5 h-5 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <h3 className="text-[#343A40] font-semibold text-sm">
+              Key Features
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
             {course.features.map((feature, index) => (
-              <div className="flex items-center gap-1.5" key={index}>
+              <div className="flex items-start gap-2 p-2" key={index}>
                 <svg
-                  className="w-3 h-3 text-green-600 flex-shrink-0"
+                  className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -375,10 +393,8 @@ export const FeaturesSection: React.FC<{ course: Course }> = ({ course }) => {
                     d="M5 13l4 4L19 7"
                   />
                 </svg>
-                <span className="text-[#495057]">
+                <span className="text-[#495057] leading-relaxed">
                   {feature}
-                  <br />
-                  <span className="text-xs text-[#6C757D]">{feature}</span>
                 </span>
               </div>
             ))}
