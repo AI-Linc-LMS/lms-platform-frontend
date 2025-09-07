@@ -11,19 +11,16 @@ const isRunningAsPWA = (): boolean => {
 };
 
 type Props = {
-  // Total splash spinner phase duration before switching to progress bar
-  splashDelayMs?: number;
-  // Duration over which progress fills to 100%
-  progressDurationMs?: number;
+  // Duration for the progress animation in ms (default 3s)
+  durationMs?: number;
 };
 
 export const PWASplashScreen: React.FC<Props>
-  = ({ splashDelayMs = 1800, progressDurationMs = 1000 }) => {
+  = ({ durationMs = 3000 }) => {
   const [visible, setVisible] = useState(false);
-  const [phase, setPhase] = useState<"splash" | "progress">("splash");
   const [progress, setProgress] = useState(0);
-  const intervalRef = useRef<number | null>(null);
-  const timeoutRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const startRef = useRef<number | null>(null);
 
   const shouldShow = useMemo(() => {
     try {
@@ -36,33 +33,48 @@ export const PWASplashScreen: React.FC<Props>
   useEffect(() => {
     if (!shouldShow) return;
     setVisible(true);
-    setPhase("splash");
-    // After splash phase, switch to progress phase
-    timeoutRef.current = window.setTimeout(() => {
-      setPhase("progress");
-      setProgress(10);
+    setProgress(0);
 
-      const startedAt = Date.now();
-      const duration = Math.max(400, progressDurationMs);
+    const duration = Math.max(300, durationMs);
+    startRef.current = performance.now();
 
-      if (intervalRef.current) window.clearInterval(intervalRef.current);
-      intervalRef.current = window.setInterval(() => {
-        const elapsed = Date.now() - startedAt;
-        const pct = Math.min(100, Math.round((elapsed / duration) * 100));
-        setProgress(pct);
-        if (pct >= 100) {
-          if (intervalRef.current) window.clearInterval(intervalRef.current);
-          // Small delay for a pleasant finish
-          window.setTimeout(() => setVisible(false), 200);
-        }
-      }, 80);
-    }, Math.max(500, splashDelayMs));
+    const step = (now: number) => {
+      const start = startRef.current ?? now;
+      const elapsed = now - start;
+      const pct = Math.min(100, Math.round((elapsed / duration) * 100));
+      setProgress(pct);
+      if (pct < 100) {
+        rafRef.current = requestAnimationFrame(step);
+      } else {
+        // Smooth finish before hiding
+        window.setTimeout(() => setVisible(false), 300);
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(step);
+
+    // Skip animation on click or Enter/Space
+    const onClick = () => {
+      setProgress(100);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      window.setTimeout(() => setVisible(false), 150);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        setProgress(100);
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        window.setTimeout(() => setVisible(false), 150);
+      }
+    };
+    window.addEventListener('click', onClick);
+    window.addEventListener('keydown', onKeyDown);
 
     return () => {
-      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
-      if (intervalRef.current) window.clearInterval(intervalRef.current);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      window.removeEventListener('click', onClick);
+      window.removeEventListener('keydown', onKeyDown);
     };
-  }, [shouldShow, splashDelayMs, progressDurationMs]);
+  }, [shouldShow, durationMs]);
 
   if (!visible) return null;
 
@@ -72,7 +84,7 @@ export const PWASplashScreen: React.FC<Props>
       aria-busy="true"
       className="fixed inset-0 z-[10000] flex items-center justify-center bg-white text-slate-800"
     >
-      <div className="flex flex-col items-center gap-5">
+      <div className="flex flex-col items-center gap-5 px-6">
         <div className="flex items-center gap-3">
           <img
             src="/pwa-192x192.png"
@@ -84,55 +96,22 @@ export const PWASplashScreen: React.FC<Props>
           {/* <span className="text-2xl font-semibold tracking-tight">AiLinc</span> */}
         </div>
 
-        {phase === "splash" ? (
-          <div className="flex items-center gap-3" role="status">
-            <span className="sr-only">Loading</span>
-            {/* Inline SVG spinner */}
-            <svg
-              width="40"
-              height="40"
-              viewBox="0 0 50 50"
-              xmlns="http://www.w3.org/2000/svg"
-              className="text-emerald-500"
-              aria-hidden="true"
-            >
-              <circle
-                cx="25"
-                cy="25"
-                r="20"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="5"
-                strokeOpacity="0.2"
-              />
-              <path
-                d="M45 25a20 20 0 0 1-20 20"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="5"
-                strokeLinecap="round"
-              >
-                <animateTransform
-                  attributeName="transform"
-                  type="rotate"
-                  from="0 25 25"
-                  to="360 25 25"
-                  dur="1s"
-                  repeatCount="indefinite"
-                />
-              </path>
-            </svg>
-          </div>
-        ) : (
-          <div className="w-64 h-2 rounded-full bg-slate-200 overflow-hidden" aria-label="Loading progress">
-            <div
-              className="h-full bg-emerald-500 transition-all duration-100"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        )}
+        <div
+          className="w-64 h-2 rounded-full bg-slate-200 overflow-hidden"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={progress}
+        >
+          <div
+            className="h-full bg-emerald-500 transition-[width] duration-75"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
 
-        <div className="text-sm text-slate-500">Preparing your experience…</div>
+        <div className="text-sm text-slate-500" aria-live="polite">
+          {progress < 30 ? 'Initializing...' : progress < 60 ? 'Loading components...' : progress < 90 ? 'Almost ready...' : 'Welcome to AiLinc!'}
+        </div>
       </div>
     </div>
   );
