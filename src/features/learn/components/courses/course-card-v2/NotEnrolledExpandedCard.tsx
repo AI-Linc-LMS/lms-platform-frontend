@@ -9,10 +9,9 @@ import {
   InstructorSection,
   WhatsIncludedSection,
 } from "./EnrolledExpandedCard";
-import { CertifiedBySection } from "./EnrolledCollapsedCard";
 import {
   formatPrice,
-  generateTrustedByCompanies,
+//  generateTrustedByCompanies,
 } from "./utils/courseDataUtils";
 
 interface NotEnrolledExpandedCardProps {
@@ -35,7 +34,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
   const formattedPrice = formatPrice(course?.price || "0");
 
   const isFree = course?.is_free === true || formattedPrice === "0";
-  const trustedCompanies = generateTrustedByCompanies(course);
+//  const trustedCompanies = generateTrustedByCompanies(course);
 
   return (
     <div
@@ -68,7 +67,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
       </div>
 
       {/* Created and Certified By Section */}
-      <CertifiedBySection trustedCompanies={trustedCompanies} />
+      {/* <CertifiedBySection trustedCompanies={trustedCompanies} /> */}
 
       {/* Course Info Row */}
       <div className="flex flex-wrap items-center gap-4 mb-4">
