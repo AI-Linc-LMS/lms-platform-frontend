@@ -1,7 +1,7 @@
 import React from "react";
 import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
-import { FileText } from "lucide-react";
+import { FileText, PlayCircle, Play, Trophy } from "lucide-react";
 import {
   AchievementSection,
   ContentMetricsSection,
@@ -48,7 +48,6 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
 
       {/* Minified Content */}
       <div className="p-6 pt-4">
-
         {/* Quick Overview */}
         <QuickOverviewSection course={course} />
 
@@ -59,7 +58,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
         <ContinueLearningButton onClick={handlePrimaryClick} className="mb-4" />
 
         {/* Course Description */}
-        <div className="my-4">
+        <div className="mt-10 mb-6">
           <p className="text-sm leading-[1.5] text-[#374151] m-0">
             {course.description ||
               "Learn how to build intelligent, goal-driven digital products using Agentic AI systems. This course covers advanced techniques for creating autonomous AI agents that can make decisions and take actions in complex environments."}
@@ -87,14 +86,27 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
           </div>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2 text-[11px] text-[#6b7280]">
-              <i className="fas fa-play-circle text-[10px] text-[#10b981]"></i>
+              <PlayCircle className="w-[10px] h-[10px] text-[#10b981]" />
               <span>
                 {course.stats?.video?.completed || 12}/
                 {course.stats?.video?.total || 247} videos watched
               </span>
             </div>
             <div className="flex items-center gap-2 text-[11px] text-[#6b7280]">
-              <i className="fas fa-check-circle text-[10px] text-[#10b981]"></i>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-[10px] h-[10px] text-[#10b981]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 12l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
               <span>
                 {course.stats?.quiz?.completed || 3}/
                 {course.stats?.quiz?.total || 23} quizzes completed
@@ -118,22 +130,22 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
                   key={index}
                   className="flex items-center gap-2 text-[11px] text-[#92400e]"
                 >
-                  <i
-                    className={`fas ${
-                      index === 0 ? "fa-play" : "fa-trophy"
-                    } text-[10px] text-[#a16207]`}
-                  ></i>
+                  {index === 0 ? (
+                    <Play className="w-[10px] h-[10px] text-[#a16207]" />
+                  ) : (
+                    <Trophy className="w-[10px] h-[10px] text-[#a16207]" />
+                  )}
                   <span>{activity}</span>
                 </div>
               ))
             ) : (
               <>
                 <div className="flex items-center gap-2 text-[11px] text-[#92400e]">
-                  <i className="fas fa-play text-[10px] text-[#a16207]"></i>
+                  <Play className="w-[10px] h-[10px] text-[#a16207]" />
                   <span>Completed: "Introduction to Data Visualization"</span>
                 </div>
                 <div className="flex items-center gap-2 text-[11px] text-[#92400e]">
-                  <i className="fas fa-trophy text-[10px] text-[#a16207]"></i>
+                  <Trophy className="w-[10px] h-[10px] text-[#a16207]" />
                   <span>Earned: "Data Analysis Basics" badge</span>
                 </div>
               </>
@@ -154,20 +166,20 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
         <div className="bg-[#fef3c7] border border-[#fde68a] rounded-lg p-3 mb-4">
           <div className="flex items-center gap-2.5 mb-2">
             <div className="w-8 h-8 bg-[#f59e0b] rounded-full flex items-center justify-center">
-                <svg
+              <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="w-5 h-5 text-white"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
-                >
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
                   d="M12 3c.132 2.5-1.5 4.5-3 6.5C7 11 6 13 6 15a6 6 0 0012 0c0-2-1-4-3-5.5C13.5 7.5 12 5.5 12 3z"
                 />
-                </svg>
+              </svg>
             </div>
             <div className="flex flex-col">
               <span className="text-lg font-bold text-[#92400e] leading-none">
