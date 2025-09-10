@@ -80,6 +80,24 @@ export class PWAManager {
             }
           }
         });
+
+        // Proactively check for SW updates periodically and on tab focus
+        const isDev = import.meta.env?.DEV === true || import.meta.env?.MODE === 'development';
+        const intervalMs = isDev ? 30_000 : 15 * 60_000; // 30s dev, 15m prod
+
+        const doUpdateCheck = () => {
+          try {
+            this.registration?.update();
+          } catch {}
+        };
+
+        // Periodic checks
+        setInterval(doUpdateCheck, intervalMs);
+        // Check when tab gains focus or comes back online
+        window.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') doUpdateCheck();
+        });
+        window.addEventListener('online', doUpdateCheck);
       } catch (error) {
         console.error('Service Worker registration failed:', error);
       }
