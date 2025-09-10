@@ -117,7 +117,13 @@ export const PWASplashScreen: React.FC<Props>
           />
         </div>
 
-        <div className="text-sm text-slate-500" aria-live="polite">
+        <div
+          className={`${progress >= 90
+              ? 'text-base font-semibold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-600 drop-shadow-sm'
+              : 'text-sm text-slate-500'
+            } transition-colors duration-300`}
+          aria-live="polite"
+        >
           {progress < 30
             ? 'Initializing...'
             : progress < 60
