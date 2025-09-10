@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Course } from "../../../types/final-course.types";
 import NotEnrolledCollapsedCard from "./NotEnrolledCollapsedCard";
 import EnrolledCollapsedCard from "./EnrolledCollapsedCard";
@@ -23,20 +23,69 @@ const CourseCardV2: React.FC<CourseCardV2Props> = ({
   // Each card has its own independent expand state
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState<boolean>(enrolled);
-
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [cardHeight, setCardHeight] = useState<string>("auto");
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (enrolled && !isEnrolled) setIsEnrolled(true);
   }, [enrolled, isEnrolled]);
 
-  // Handler for expanding the card
+  // Handler for expanding the card with smooth transition
   const handleExpand = () => {
-    setIsExpanded(true);
+    if (cardRef.current) {
+      const currentHeight = cardRef.current.offsetHeight;
+      setCardHeight(`${currentHeight}px`);
+
+      setIsTransitioning(true);
+
+      // Small delay to capture current height, then expand
+      setTimeout(() => {
+        setIsExpanded(true);
+        setTimeout(() => {
+          if (cardRef.current) {
+            const newHeight = cardRef.current.scrollHeight;
+            setCardHeight(`${newHeight}px`);
+
+            // After transition completes, set back to auto
+            setTimeout(() => {
+              setCardHeight("auto");
+              setIsTransitioning(false);
+            }, 300);
+          }
+        }, 50);
+      }, 50);
+    }
   };
 
-  // Handler for collapsing the card
+  // Handler for collapsing the card with smooth transition
   const handleCollapse = () => {
-    setIsExpanded(false);
+    if (cardRef.current) {
+      const currentHeight = cardRef.current.scrollHeight;
+      setCardHeight(`${currentHeight}px`);
+
+      setIsTransitioning(true);
+
+      // Force reflow to apply current height
+      void cardRef.current.offsetHeight;
+
+      // Small delay then switch content and measure new height
+      setTimeout(() => {
+        setIsExpanded(false);
+        setTimeout(() => {
+          if (cardRef.current) {
+            const newHeight = cardRef.current.scrollHeight;
+            setCardHeight(`${newHeight}px`);
+
+            // After transition completes, set back to auto
+            setTimeout(() => {
+              setCardHeight("auto");
+              setIsTransitioning(false);
+            }, 300);
+          }
+        }, 10);
+      }, 10);
+    }
   };
 
   // Loading state
@@ -67,46 +116,94 @@ const CourseCardV2: React.FC<CourseCardV2Props> = ({
     );
   }
 
-  console.log(isEnrolled,isExpanded,enrolled)
+  console.log(isEnrolled, isExpanded, enrolled);
   // Determine which card component to render based on enrollment and expansion state
   if (isEnrolled) {
     if (isExpanded) {
       // Enrolled + Expanded
       return (
-        <EnrolledExpandedCard
-          course={course}
-          className={className}
-          onCollapse={handleCollapse}
-        />
+        <div
+          ref={cardRef}
+          className={`
+            transition-all duration-300 ease-in-out
+            ${isTransitioning ? "opacity-95" : "opacity-100"}
+          `}
+          style={{
+            height: cardHeight,
+            overflow: isTransitioning ? "hidden" : "visible",
+          }}
+        >
+          <EnrolledExpandedCard
+            course={course}
+            className={className}
+            onCollapse={handleCollapse}
+          />
+        </div>
       );
     } else {
       // Enrolled + Collapsed
       return (
-        <EnrolledCollapsedCard
-          course={course}
-          className={className}
-          onExpand={handleExpand}
-        />
+        <div
+          ref={cardRef}
+          className={`
+            transition-all duration-300 ease-in-out
+            ${isTransitioning ? "opacity-95" : "opacity-100"}
+          `}
+          style={{
+            height: cardHeight,
+            overflow: isTransitioning ? "hidden" : "visible",
+          }}
+        >
+          <EnrolledCollapsedCard
+            course={course}
+            className={className}
+            onExpand={handleExpand}
+          />
+        </div>
       );
     }
   } else {
     if (isExpanded) {
       // Not Enrolled + Expanded
       return (
-        <NotEnrolledExpandedCard
-          course={course}
-          className={className}
-          onCollapse={handleCollapse}
-        />
+        <div
+          ref={cardRef}
+          className={`
+            transition-all duration-300 ease-in-out
+            ${isTransitioning ? "opacity-95" : "opacity-100"}
+          `}
+          style={{
+            height: cardHeight,
+            overflow: isTransitioning ? "hidden" : "visible",
+          }}
+        >
+          <NotEnrolledExpandedCard
+            course={course}
+            className={className}
+            onCollapse={handleCollapse}
+          />
+        </div>
       );
     } else {
       // Not Enrolled + Collapsed
       return (
-        <NotEnrolledCollapsedCard
-          course={course}
-          className={className}
-          onExpand={handleExpand}
-        />
+        <div
+          ref={cardRef}
+          className={`
+            transition-all duration-300 ease-in-out
+            ${isTransitioning ? "opacity-95" : "opacity-100"}
+          `}
+          style={{
+            height: cardHeight,
+            overflow: isTransitioning ? "hidden" : "visible",
+          }}
+        >
+          <NotEnrolledCollapsedCard
+            course={course}
+            className={className}
+            onExpand={handleExpand}
+          />
+        </div>
       );
     }
   }
