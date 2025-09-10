@@ -1,5 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
+// Use client name from Vite env (fallback to default)
+const CLIENT_NAME: string = import.meta.env.VITE_CLIENT_NAME ?? "AiLinc";
+if (import.meta.env.DEV) {
+  // Quick debug to verify env value during development
+   
+  console.debug("[PWASplashScreen] VITE_CLIENT_NAME:", import.meta.env.VITE_CLIENT_NAME);
+}
+
 // Detect if the app is running as an installed PWA (standalone) on iOS/Android/Desktop
 const isRunningAsPWA = (): boolean => {
   const isStandaloneMedia = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
@@ -109,8 +117,20 @@ export const PWASplashScreen: React.FC<Props>
           />
         </div>
 
-        <div className="text-sm text-slate-500" aria-live="polite">
-          {progress < 30 ? 'Initializing...' : progress < 60 ? 'Loading components...' : progress < 90 ? 'Almost ready...' : 'Welcome to AiLinc!'}
+        <div
+          className={`${progress >= 90
+              ? 'text-base font-semibold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-600 drop-shadow-sm'
+              : 'text-sm text-slate-500'
+            } transition-colors duration-300`}
+          aria-live="polite"
+        >
+          {progress < 30
+            ? 'Initializing...'
+            : progress < 60
+            ? 'Loading components...'
+            : progress < 90
+            ? 'Almost ready...'
+            : `Welcome to ${CLIENT_NAME}!`}
         </div>
       </div>
     </div>
