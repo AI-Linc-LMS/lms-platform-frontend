@@ -5,6 +5,14 @@ import {
   VideoIcon,
   DocumentIcon,
 } from "../../../../../commonComponents/icons/learnIcons/CourseIcons";
+import {
+  InstructorSection,
+  WhatsIncludedSection,
+} from "./EnrolledExpandedCard";
+import {
+  formatPrice,
+//  generateTrustedByCompanies,
+} from "./utils/courseDataUtils";
 
 interface NotEnrolledExpandedCardProps {
   course: Course;
@@ -23,11 +31,14 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
     navigate(`/courses/${course.id}`);
   };
 
-  const isFree = course?.is_free === true || course?.price === 0;
+  const formattedPrice = formatPrice(course?.price || "0");
+
+  const isFree = course?.is_free === true || formattedPrice === "0";
+//  const trustedCompanies = generateTrustedByCompanies(course);
 
   return (
     <div
-      className={`w-full border border-[#80C9E0] p-4 pt-5 rounded-2xl md:rounded-3xl bg-white flex flex-col self-start relative overflow-visible min-h-[700px] max-h-[800px] ${className}`}
+      className={`w-full border border-[#80C9E0] p-4 pt-5 rounded-2xl md:rounded-3xl bg-white flex flex-col self-start relative overflow-visible ${className}`}
     >
       {/* Header with title and collapse button */}
       <div className="flex justify-between items-start mb-4">
@@ -56,36 +67,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
       </div>
 
       {/* Created and Certified By Section */}
-      {course.trusted_by && course.trusted_by.length > 0 && (
-        <div className="mb-4">
-          <p className="text-[#6C757D] text-xs font-medium mb-2 uppercase tracking-wide">
-            CREATED AND CERTIFIED BY
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {course.trusted_by!.map(
-              (company: { name: string } | string, index: number) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-2 bg-[#F8F9FA] border border-[#E9ECEF] rounded-lg px-3 py-1"
-                >
-                  <div
-                    className={`w-4 h-4 rounded ${
-                      index % 3 === 0
-                        ? "bg-blue-500"
-                        : index % 3 === 1
-                        ? "bg-blue-700"
-                        : "bg-blue-600"
-                    }`}
-                  ></div>
-                  <span className="text-sm font-medium text-[#495057]">
-                    {typeof company === "string" ? company : company.name}
-                  </span>
-                </div>
-              )
-            )}
-          </div>
-        </div>
-      )}
+      {/* <CertifiedBySection trustedCompanies={trustedCompanies} /> */}
 
       {/* Course Info Row */}
       <div className="flex flex-wrap items-center gap-4 mb-4">
@@ -134,7 +116,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
             />
           </svg>
           <span className="text-sm font-medium text-[#856404]">
-            {isFree ? "Free" : `$${course.price}`}
+            {isFree ? "Free" : `${formattedPrice}`}
           </span>
         </div>
 
@@ -183,89 +165,55 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
       </div>
 
       {/* Key Features */}
-      <div className="mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-          <div className="flex items-center gap-2">
-            <svg
-              className="w-4 h-4 text-green-600 flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            <span className="text-[#495057]">
-              Used by 90% of Fortune 500 companies
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <svg
-              className="w-4 h-4 text-green-600 flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            <span className="text-[#495057]">
-              Boost your analytics career with real-world skills
-            </span>
-          </div>
-        </div>
-      </div>
+      <FeaturesSection course={course} />
 
       {/* Course Tags */}
       {course.tags && course.tags!.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
-          {course.tags!.map(
-            (tag: { name: string; color?: string }, index: number) => (
-              <span
-                key={index}
-                className={`text-xs font-medium px-3 py-1 rounded-full ${
-                  index % 3 === 0
-                    ? "bg-[#E3F2FD] text-[#1976D2]"
-                    : index % 3 === 1
-                    ? "bg-[#E8F5E8] text-[#2E7D32]"
-                    : "bg-[#FFF3E0] text-[#F57C00]"
-                }`}
-              >
-                {tag.name}
-              </span>
-            )
-          )}
+          {course.tags!.map((tag, index) => (
+            <span
+              key={index}
+              className={`text-xs font-medium px-3 py-1 rounded-full ${
+                index % 3 === 0
+                  ? "bg-[#E3F2FD] text-[#1976D2]"
+                  : index % 3 === 1
+                  ? "bg-[#E8F5E8] text-[#2E7D32]"
+                  : "bg-[#FFF3E0] text-[#F57C00]"
+              }`}
+            >
+              {tag}
+            </span>
+          ))}
         </div>
       )}
 
-      {course.certificate_available && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          <span className="bg-[#FFF3E0] text-[#F57C00] text-xs font-medium px-3 py-1 rounded-full">
-            <svg
-              className="w-3 h-3 inline mr-1"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-              />
-            </svg>
-            Industry Certificate
-          </span>
-        </div>
-      )}
+      {/* Certificate Available Section */}
+      {course?.certificate_available &&
+        course.certificate_available.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {course.certificate_available.map((cert, idx) => (
+              <span
+                key={idx}
+                className="bg-[#FFF3E0] text-[#F57C00] text-xs font-medium px-3 py-1 rounded-full"
+              >
+                <svg
+                  className="w-3 h-3 inline mr-1"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
+                  />
+                </svg>
+                {cert}
+              </span>
+            ))}
+          </div>
+        )}
 
       {/* Rating and Learners */}
       <div className="mb-4 min-h-[5rem]">
@@ -320,62 +268,14 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
                   ))}
               </div>
             )}
-          {course.instructors &&
-            course.instructors.length > 0 &&
-            !course.enrolled_students?.students_profile_pic && (
-              <div className="flex -space-x-2 mt-2">
-                {course.instructors.slice(0, 4).map((instructor, index) => (
-                  <div
-                    key={index}
-                    className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white overflow-hidden"
-                  >
-                    <img
-                      src={instructor.profile_pic_url}
-                      alt={instructor.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+          <div className="mt-6">
+            <InstructorSection course={course} />
+          </div>
         </div>
       </div>
 
       {/* What's Included Section */}
-      <div className="mb-6">
-        <div className="bg-[#F8F9FA] rounded-lg p-3">
-          <div className="flex items-center gap-2 mb-3">
-            <svg
-              className="w-4 h-4 text-[#FF6B35]"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span className="font-semibold text-[#495057]">
-              What's Included:
-            </span>
-          </div>
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center gap-2">
-              <DocumentIcon />
-              <span className="text-[#495057]">
-                Real datasets & project templates
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <DocumentIcon />
-              <span className="text-[#495057]">
-                Free resume template for Data Analyst roles
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <WhatsIncludedSection course={course} />
 
       {/* Bottom Navigation Icons */}
       <div className="flex justify-center gap-6 mb-4">
@@ -444,7 +344,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
           onClick={handlePrimaryClick}
           className="w-full px-8 py-3 text-lg font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors duration-200"
         >
-          {`Enroll Now - ${isFree ? "Free" : `$${course.price}`}`}
+          {`Enroll Now - ${isFree ? "Free" : `${formattedPrice}`}`}
         </button>
       </div>
     </div>
@@ -452,3 +352,54 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
 };
 
 export default NotEnrolledExpandedCard;
+
+export const FeaturesSection: React.FC<{ course: Course }> = ({ course }) => {
+  return (
+    <div>
+      {course.features && course.features.length > 0 && (
+        <div className="mb-4 bg-white border border-[#E9ECEF] p-4 rounded-lg shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <svg
+              className="w-5 h-5 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <h3 className="text-[#343A40] font-semibold text-sm">
+              Key Features
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+            {course.features.map((feature, index) => (
+              <div className="flex items-start gap-2 p-2" key={index}>
+                <svg
+                  className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                <span className="text-[#495057] leading-relaxed">
+                  {feature}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
