@@ -16,6 +16,7 @@ export default defineConfig({
       // and available to the service worker. Useful for favicons, mask icons, etc.
       includeAssets: [
         "pwa-192x192.png",
+        // "pwa-152x152.png",
         "pwa-512x512.png",
         "pwa-192x192.svg",
         "pwa-512x512.svg",
@@ -52,17 +53,27 @@ export default defineConfig({
         // PNG first for better Android splash screen compatibility, then SVG
         icons: [
           { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
-          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png" },
+          { src: "pwa-152x152.png", sizes: "152x152", type: "image/png" },
           // iOS specific sizes for better compatibility
-          { src: "pwa-192x192.png", sizes: "152x152", type: "image/png" },
+          { src: "pwa-152x152.png", sizes: "152x152", type: "image/png" },
           { src: "pwa-192x192.png", sizes: "180x180", type: "image/png" },
           { src: "pwa-192x192.png", sizes: "167x167", type: "image/png" },
           // Maskable icons for Android
-          { src: "pwa-192x192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
-          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+          {
+            src: "pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "maskable",
+          },
+          {
+            src: "pwa-152x152.png",
+            sizes: "152x152",
+            type: "image/png",
+            purpose: "maskable",
+          },
           // SVG for scalability
           { src: "pwa-192x192.svg", sizes: "192x192", type: "image/svg+xml" },
-          { src: "pwa-512x512.svg", sizes: "512x512", type: "image/svg+xml" }
+          { src: "pwa-512x512.svg", sizes: "512x512", type: "image/svg+xml" },
         ],
         // screenshots: displayed in installation prompts (Chrome) and store listings
         // to showcase app UI in different form factors.
@@ -71,15 +82,15 @@ export default defineConfig({
             src: "screenshot/desktop-view.png",
             sizes: "1280x720",
             type: "image/png",
-            form_factor: "wide"
+            form_factor: "wide",
           },
           {
             src: "screenshot/mobile-view.png",
             sizes: "390x844",
             type: "image/png",
-            form_factor: "narrow"
-          }
-        ]
+            form_factor: "narrow",
+          },
+        ],
       },
       injectManifest: {
         // Precache these file types so icons/screenshots are available offline
