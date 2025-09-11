@@ -26,6 +26,9 @@ export default defineConfig({
         "logo.png",
         "vittee.svg",
         "vittee_no_bg.svg",
+        // Client-provided icons used for Android splash (from manifest)
+        "CareerBridge Solutions ( 192 x 192 px. ).png",
+        "CareerBridge Solutions ( 152 x 152 px . ).png",
         // iOS splash screen images
         "splash-1290x2796.svg",
         "splash-1179x2556.svg",
@@ -48,30 +51,33 @@ export default defineConfig({
         scope: "/",
         start_url: "/",
         id: "/",
-        // icons: used by Android/Chrome and other browsers for the installed app icon
-        // and to generate the splash screen (with theme/background colors).
-        // PNG first for better Android splash screen compatibility, then SVG
+        // icons: Android uses these to create the OS splash image
+        // Use client-provided PNGs so splash shows the desired artwork
         icons: [
-          { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
-          { src: "pwa-152x152.png", sizes: "152x152", type: "image/png" },
-          // iOS specific sizes for better compatibility
-          { src: "pwa-152x152.png", sizes: "152x152", type: "image/png" },
-          { src: "pwa-192x192.png", sizes: "180x180", type: "image/png" },
-          { src: "pwa-192x192.png", sizes: "167x167", type: "image/png" },
-          // Maskable icons for Android
           {
-            src: "pwa-192x192.png",
+            src: "CareerBridge Solutions ( 192 x 192 px. ).png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: "CareerBridge Solutions ( 152 x 152 px . ).png",
+            sizes: "152x152",
+            type: "image/png",
+          },
+          // Maskable variants to improve Android splash/icon rendering
+          {
+            src: "CareerBridge Solutions ( 192 x 192 px. ).png",
             sizes: "192x192",
             type: "image/png",
             purpose: "maskable",
           },
           {
-            src: "pwa-152x152.png",
+            src: "CareerBridge Solutions ( 152 x 152 px . ).png",
             sizes: "152x152",
             type: "image/png",
             purpose: "maskable",
           },
-          // SVG for scalability
+          // Keep scalable/vector fallbacks
           { src: "pwa-192x192.svg", sizes: "192x192", type: "image/svg+xml" },
           { src: "pwa-512x512.svg", sizes: "512x512", type: "image/svg+xml" },
         ],
