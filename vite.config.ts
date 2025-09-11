@@ -16,10 +16,10 @@ export default defineConfig({
       // and available to the service worker. Useful for favicons, mask icons, etc.
       includeAssets: [
         "pwa-192x192.png",
-        // "pwa-152x152.png",
-        "pwa-512x512.png",
+        "pwa-152x152.png",
+        // "pwa-512x512.png",
         "pwa-192x192.svg",
-        "pwa-512x512.svg",
+        // "pwa-512x512.svg",
         "screenshot/desktop-view.png",
         "screenshot/mobile-view.png",
         "kumain_logo.jpg",
