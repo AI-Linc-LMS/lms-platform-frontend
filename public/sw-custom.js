@@ -12,8 +12,13 @@ const { StaleWhileRevalidate, CacheFirst, NetworkFirst } = workbox.strategies;
 // Clean up outdated precaches
 cleanupOutdatedCaches();
 
-// Precache all static assets
-precacheAndRoute(self.__WB_MANIFEST);
+// Precache all static assets (handle dev where manifest may be undefined)
+try {
+  precacheAndRoute(self.__WB_MANIFEST || []);
+} catch (e) {
+   
+  console.log('Workbox precacheAndRoute failed (likely dev):', e);
+}
 
 // Get configuration from session storage when available
 let pwaConfig = {};

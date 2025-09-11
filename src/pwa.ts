@@ -32,6 +32,7 @@ export class PWAManager {
   private installPromptEvent: BeforeInstallPromptEvent | null = null;
   private registration: ServiceWorkerRegistration | null = null;
   private config: PWAConfig = {};
+  private hasUpdate: boolean = false;
 
   constructor() {
     this.setupInstallPrompt();
@@ -56,6 +57,10 @@ export class PWAManager {
         // Allow service worker registration in development for testing
         this.registration = await navigator.serviceWorker.register('/sw-custom.js', { scope: '/' });
         this.sendConfigToServiceWorker();
+        // If there's already an updated SW waiting, notify immediately so UI can prompt user
+        if (this.registration.waiting) {
+          this.notifyUpdateAvailable();
+        }
         this.registration.addEventListener('updatefound', () => {
           const newWorker = this.registration?.installing;
           if (newWorker) {
@@ -88,7 +93,7 @@ export class PWAManager {
         const doUpdateCheck = () => {
           try {
             this.registration?.update();
-          } catch {}
+          } catch { /* empty */ }
         };
 
         // Periodic checks
@@ -197,6 +202,16 @@ export class PWAManager {
 
   onUpdateAvailable(callback: (info: PWAUpdateInfo) => void): () => void {
     this.updateCallbacks.push(callback);
+    // If an update is already known, notify new subscribers immediately
+    if (this.hasUpdate) {
+      const info: PWAUpdateInfo = {
+        updateAvailable: true,
+        registration: this.registration || undefined,
+      };
+      try {
+        callback(info);
+      } catch {}
+    }
     return () => {
       const index = this.updateCallbacks.indexOf(callback);
       if (index > -1) {
@@ -226,6 +241,7 @@ export class PWAManager {
   }
 
   private notifyUpdateAvailable(): void {
+    this.hasUpdate = true;
     const info: PWAUpdateInfo = {
       updateAvailable: true,
       registration: this.registration || undefined
@@ -243,6 +259,11 @@ export class PWAManager {
 
   private notifyOnlineStatus(isOffline: boolean): void {
     this.offlineCallbacks.forEach(callback => callback(isOffline));
+  }
+
+  isUpdateAvailable(): boolean {
+    // Consider known flag or explicit waiting worker
+    return this.hasUpdate || !!this.registration?.waiting;
   }
 }
 
