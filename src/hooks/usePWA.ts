@@ -26,7 +26,7 @@ export interface PWAState {
 export const usePWA = (): PWAState => {
   const [canInstall, setCanInstall] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
-  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(() => pwaManager.isUpdateAvailable());
   const [isUpdating, setIsUpdating] = useState(false);
   const [isOffline, setIsOffline] = useState(() => pwaManager.isOffline());
 
@@ -99,12 +99,19 @@ export const usePWA = (): PWAState => {
     // Initial state check
     setCanInstall(pwaManager.canInstall());
     setIsOffline(pwaManager.isOffline());
+    // Re-check update availability shortly after mount to avoid race conditions
+    const timer = setTimeout(() => {
+      if (pwaManager.isUpdateAvailable()) {
+        setUpdateAvailable(true);
+      }
+    }, 1000);
 
     // Cleanup subscriptions
     return () => {
       unsubscribeInstall();
       unsubscribeUpdate();
       unsubscribeOffline();
+      clearTimeout(timer);
     };
   }, []);
 
