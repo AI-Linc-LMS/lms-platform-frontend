@@ -118,7 +118,7 @@ const EmptyCoursesState = () => {
       <h3 className="text-xl font-bold text-[#343A40] mb-2">
         No enrolled courses found
       </h3>
-      <p className="text-[#6C757D] text-center max-w-md mb-8 font-sans text-[14px] md:text-[16px]">
+      <p className="text-[#6C757D] text-center max-w-md mb-8  text-[14px] md:text-[16px]">
         You haven't enrolled in any courses yet. Browse our catalog to find
         courses that match your interests and start your learning journey.
       </p>
@@ -176,10 +176,10 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
     <div className="overflow-visible">
       <div className="flex justify-between items-center">
         <div className="mb-4">
-          <h1 className="text-[#343A40] font-bold text-[18px] md:text-[22px] font-sans">
+          <h1 className="text-[#343A40] font-bold text-[18px] md:text-[22px] ">
             Enrolled Courses
           </h1>
-          <p className="text-[#6C757D] font-sans font-normal text-[14px] md:text-[16px]">
+          <p className="text-[#6C757D]  font-normal text-[14px] md:text-[16px]">
             {hasNoCourses
               ? "You haven't enrolled in any courses yet"
               : "Here is a list of enrolled courses"}

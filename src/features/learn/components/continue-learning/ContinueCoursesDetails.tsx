@@ -39,7 +39,7 @@ const EmptyContinueState = () => {
       <h3 className="text-xl font-bold text-[#343A40] mb-2">
         No courses in progress
       </h3>
-      <p className="text-[#6C757D] text-center max-w-md mb-8 font-sans text-[14px] md:text-[16px]">
+      <p className="text-[#6C757D] text-center max-w-md mb-8 text-[14px] md:text-[16px]">
         You haven't started any courses yet. Explore our catalog to find a
         course that interests you and begin your learning journey.
       </p>

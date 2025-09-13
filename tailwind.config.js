@@ -5,8 +5,8 @@ module.exports = {
       fontFamily: {
         oswald: ["Oswald", "sans-serif"],
         "playfair-display": ["Playfair Display", "serif"],
+          sans: ['Lato', 'sans-serif'],
         lato: ["Lato", "sans-serif"],
-        "awesome-serif": ["Awesome Serif", "serif"],
       },
       keyframes: {
         slideUp: {
