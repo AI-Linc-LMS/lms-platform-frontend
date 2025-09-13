@@ -11,6 +11,7 @@ const CourseDetailPage = lazy(
 const CourseTopicDetailPage = lazy(
   () => import("./features/learn/pages/CourseTopicDetailPage")
 );
+
 const Login = lazy(() => import("./features/auth/pages/Login"));
 const ForgotPassword = lazy(() => import("./features/auth/pages/ForgotPassword"));
 const Signup = lazy(() => import("./features/auth/pages/Signup"));
