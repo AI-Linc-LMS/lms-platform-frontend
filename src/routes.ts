@@ -1,37 +1,80 @@
-import Jobs from "./features/jobs/pages/Jobs";
-import JobDetail from "./features/jobs/pages/JobDetail";
-import Learn from "./features/learn/pages/Learn";
-import Live from "./features/live/pages/Live";
+import { lazy } from "react";
+
+const Jobs = lazy(() => import("./features/jobs/pages/Jobs"));
+const JobDetail = lazy(() => import("./features/jobs/pages/JobDetail"));
+const Learn = lazy(() => import("./features/learn/pages/Learn"));
+const Live = lazy(() => import("./features/live/pages/Live"));
 // Might have potential bug
-import CourseDetailPage from "./features/learn/pages/EnrolledCourseDetailPage";
-import CourseTopicDetailPage from "./features/learn/pages/CourseTopicDetailPage";
-import Login from "./features/auth/pages/Login";
-import ForgotPassword from "./features/auth/pages/ForgotPassword";
-import Signup from "./features/auth/pages/Signup";
-import CourseBuilder from "./features/admin/course-builder/pages/CourseBuilder";
-import AdminCourseDetailPage from "./features/admin/course-builder/pages/CourseDetailPage";
-import Courses from "./features/learn/pages/Courses";
-import ContinueLearningAll from "./features/learn/pages/ContinueLearningAll";
-import RecommendedLearningAll from "./features/learn/pages/RecommendedLearningAll";
-import Dashboard from "./features/admin/dashboard/pages/Dashboard";
-import ManageStudents from "./features/admin/manage-students/pages/ManageStudents";
-import ShortAssessment from "./features/learn/pages/ShortAssessment";
-import InstructionPage from "./features/learn/pages/InstructionPage";
-import AssessmentsList from "./features/learn/pages/AssessmentsList";
-import ProfileSettings from "./components/UserProfile";
-import AssesmentStudentsResults from "./features/admin/assesment-results/AssesmentStudentsResults";
-import Otp from "./features/auth/pages/Otp";
-import WorkshopResistrations from "./features/admin/workshop-registrations/WorkshopResistrations";
-import CertificatePortal from "./components/certificate/CertificatePortal";
-import PhoneVerificationPage from "./features/learn/pages/PhoneVerificationPage";
-import RoadmapPage from "./features/learn/components/assessment/RoadmapPage";
-import Referals from "./features/admin/referals/Referals";
-import PartialPaymentPage from "./features/learn/pages/PartialPaymentPage";
-import PaymentLinkGeneratorPage from "./features/admin/pages/PaymentLinkGeneratorPage";
-import EmailSelfServe from "./features/admin/emailSend/EmailSelfServe";
-import LiveAdmin from "./features/admin/live/LiveAdmin";
-import CommunityPage from "./features/community/pages/CommunityPage";
-import WebinarManagement from "./pages/admin/WebinarManagement";
+const CourseDetailPage = lazy(
+  () => import("./features/learn/pages/EnrolledCourseDetailPage")
+);
+const CourseTopicDetailPage = lazy(
+  () => import("./features/learn/pages/CourseTopicDetailPage")
+);
+const Login = lazy(() => import("./features/auth/pages/Login"));
+const ForgotPassword = lazy(() => import("./features/auth/pages/ForgotPassword"));
+const Signup = lazy(() => import("./features/auth/pages/Signup"));
+const CourseBuilder = lazy(
+  () => import("./features/admin/course-builder/pages/CourseBuilder")
+);
+const AdminCourseDetailPage = lazy(
+  () => import("./features/admin/course-builder/pages/CourseDetailPage")
+);
+const Courses = lazy(() => import("./features/learn/pages/Courses"));
+const ContinueLearningAll = lazy(
+  () => import("./features/learn/pages/ContinueLearningAll")
+);
+const RecommendedLearningAll = lazy(
+  () => import("./features/learn/pages/RecommendedLearningAll")
+);
+const Dashboard = lazy(
+  () => import("./features/admin/dashboard/pages/Dashboard")
+);
+const ManageStudents = lazy(
+  () => import("./features/admin/manage-students/pages/ManageStudents")
+);
+const ShortAssessment = lazy(
+  () => import("./features/learn/pages/ShortAssessment")
+);
+const InstructionPage = lazy(
+  () => import("./features/learn/pages/InstructionPage")
+);
+const AssessmentsList = lazy(
+  () => import("./features/learn/pages/AssessmentsList")
+);
+const ProfileSettings = lazy(() => import("./components/UserProfile"));
+const AssesmentStudentsResults = lazy(
+  () => import("./features/admin/assesment-results/AssesmentStudentsResults")
+);
+const Otp = lazy(() => import("./features/auth/pages/Otp"));
+const WorkshopResistrations = lazy(
+  () =>
+    import("./features/admin/workshop-registrations/WorkshopResistrations")
+);
+const CertificatePortal = lazy(
+  () => import("./components/certificate/CertificatePortal")
+);
+const PhoneVerificationPage = lazy(
+  () => import("./features/learn/pages/PhoneVerificationPage")
+);
+const RoadmapPage = lazy(
+  () => import("./features/learn/components/assessment/RoadmapPage")
+);
+const Referals = lazy(() => import("./features/admin/referals/Referals"));
+const PartialPaymentPage = lazy(
+  () => import("./features/learn/pages/PartialPaymentPage")
+);
+const PaymentLinkGeneratorPage = lazy(
+  () => import("./features/admin/pages/PaymentLinkGeneratorPage")
+);
+const EmailSelfServe = lazy(
+  () => import("./features/admin/emailSend/EmailSelfServe")
+);
+const LiveAdmin = lazy(() => import("./features/admin/live/LiveAdmin"));
+const CommunityPage = lazy(
+  () => import("./features/community/pages/CommunityPage")
+);
+const WebinarManagement = lazy(() => import("./pages/admin/WebinarManagement"));
 
 export interface RouteConfig {
   path: string;
