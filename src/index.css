@@ -3,6 +3,7 @@
 @tailwind utilities;
 @import "tailwindcss";
 
+/*Lato Font*/
 @font-face {
     font-family: 'Lato';
     src:
@@ -44,6 +45,42 @@
     src:
             url('assets/font/Lato/Lato-Black.ttf') format('truetype');
     font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+}
+/*Oswald font*/
+@font-face {
+    font-family: 'Oswald';
+    src:
+            url('assets/font/Oswald/Oswald-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Oswald';
+    src:
+            url('assets/font/Oswald/Oswald-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Oswald';
+    src:
+            url('assets/font/Oswald/Oswald-Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Oswald';
+    src:
+            url('assets/font/Oswald/Oswald-SemiBold.ttf') format('truetype');
+    font-weight: 600;
     font-style: normal;
     font-display: swap;
 }
