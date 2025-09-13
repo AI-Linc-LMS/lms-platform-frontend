@@ -207,7 +207,7 @@ const DashboardPieChart = ({  data, isLoading, error }: { data: ApiResponse | nu
         <h1 className="font-sans text-base md:text-[18px] text-[#343A40]">
           Dashboard
         </h1>
-        <p className="text-[#495057] font-normal text-xs md:text-[12px] font-sans">
+        <p className="text-[#495057] font-normal text-xs md:text-[12px]">
           A simple overview of your status.
         </p>
 
@@ -251,7 +251,7 @@ const DashboardPieChart = ({  data, isLoading, error }: { data: ApiResponse | nu
             </svg>
           </div>
           <div>
-            <p className="text-[10px] font-medium font-sans text-[#6C757D]">
+            <p className="text-[10px] font-medium text-[#6C757D]">
               Check out this awesome visual that shows exactly how far you've
               come in your course! It's like a fun map of your progress!
             </p>
