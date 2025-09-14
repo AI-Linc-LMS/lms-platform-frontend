@@ -9,7 +9,6 @@ import rightArrow from "../../../../assets/dashboard_assets/rightArrow.png";
 import { Course } from "../../types/final-course.types";
 import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import CourseCardV2 from "./course-card-v2/CourseCardV2";
-import { dummyCourse } from "../../types/dummycourse";
 
 interface EnrolledCoursesProps {
   className?: string;
@@ -188,7 +187,7 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
               className="flex-shrink-0 w-full md:w-1/2 scroll-snap-align-start transition-transform duration-300 overflow-visible"
               style={{ scrollSnapAlign: "start" }}
             >
-              <CourseCardV2 course={dummyCourse} enrolled={true} />
+              <CourseCardV2 course={course} enrolled={true} />
             </div>
           ))}
         </div>
