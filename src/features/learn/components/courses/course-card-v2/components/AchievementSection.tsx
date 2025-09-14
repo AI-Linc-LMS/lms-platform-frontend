@@ -72,19 +72,19 @@ export const AchievementSection: React.FC = () => {
           return (
             <div
               key={achievement.id}
-              className={`flex flex-col items-center gap-1 p-2 rounded-md text-center transition-all duration-200 ${
+              className={`flex flex-col items-center gap-1 p-2 rounded-md justify-between text-center transition-all duration-200 ${
                 achievement.earned
                   ? "bg-[#dbeafe] border border-[#bfdbfe]"
                   : "bg-[#f3f4f6] border border-[#e5e7eb] opacity-60"
               }`}
             >
               <IconComponent
-                className={`w-4 h-4 ${
+                className={`w-6 h-6 ${
                   achievement.earned ? "text-[#1d4ed8]" : "text-[#9ca3af]"
                 }`}
               />
               <span
-                className={`text-[9px] font-medium uppercase tracking-[0.3px] ${
+                className={`text-[11px] font-medium uppercase tracking-[0.3px] ${
                   achievement.earned ? "text-[#1e40af]" : "text-[#6b7280]"
                 }`}
               >

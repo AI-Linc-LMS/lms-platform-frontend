@@ -32,6 +32,7 @@ export class PWAManager {
   private installPromptEvent: BeforeInstallPromptEvent | null = null;
   private registration: ServiceWorkerRegistration | null = null;
   private config: PWAConfig = {};
+  private hasUpdate: boolean = false;
 
   constructor() {
     this.setupInstallPrompt();
@@ -56,6 +57,10 @@ export class PWAManager {
         // Allow service worker registration in development for testing
         this.registration = await navigator.serviceWorker.register('/sw-custom.js', { scope: '/' });
         this.sendConfigToServiceWorker();
+        // If there's already an updated SW waiting, notify immediately so UI can prompt user
+        if (this.registration.waiting) {
+          this.notifyUpdateAvailable();
+        }
         this.registration.addEventListener('updatefound', () => {
           const newWorker = this.registration?.installing;
           if (newWorker) {
@@ -80,6 +85,24 @@ export class PWAManager {
             }
           }
         });
+
+        // Proactively check for SW updates periodically and on tab focus
+        const isDev = import.meta.env?.DEV === true || import.meta.env?.MODE === 'development';
+        const intervalMs = isDev ? 30_000 : 15 * 60_000; // 30s dev, 15m prod
+
+        const doUpdateCheck = () => {
+          try {
+            this.registration?.update();
+          } catch { /* empty */ }
+        };
+
+        // Periodic checks
+        setInterval(doUpdateCheck, intervalMs);
+        // Check when tab gains focus or comes back online
+        window.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') doUpdateCheck();
+        });
+        window.addEventListener('online', doUpdateCheck);
       } catch (error) {
         console.error('Service Worker registration failed:', error);
       }
@@ -179,6 +202,16 @@ export class PWAManager {
 
   onUpdateAvailable(callback: (info: PWAUpdateInfo) => void): () => void {
     this.updateCallbacks.push(callback);
+    // If an update is already known, notify new subscribers immediately
+    if (this.hasUpdate) {
+      const info: PWAUpdateInfo = {
+        updateAvailable: true,
+        registration: this.registration || undefined,
+      };
+      try {
+        callback(info);
+      } catch {}
+    }
     return () => {
       const index = this.updateCallbacks.indexOf(callback);
       if (index > -1) {
@@ -208,6 +241,7 @@ export class PWAManager {
   }
 
   private notifyUpdateAvailable(): void {
+    this.hasUpdate = true;
     const info: PWAUpdateInfo = {
       updateAvailable: true,
       registration: this.registration || undefined
@@ -225,6 +259,11 @@ export class PWAManager {
 
   private notifyOnlineStatus(isOffline: boolean): void {
     this.offlineCallbacks.forEach(callback => callback(isOffline));
+  }
+
+  isUpdateAvailable(): boolean {
+    // Consider known flag or explicit waiting worker
+    return this.hasUpdate || !!this.registration?.waiting;
   }
 }
 

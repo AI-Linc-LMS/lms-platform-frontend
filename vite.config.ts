@@ -12,6 +12,10 @@ export default defineConfig({
       strategies: "injectManifest",
       srcDir: "public",
       filename: "sw-custom.js",
+      devOptions: {
+        enabled: true,
+        type: "classic",
+      },
       // includeAssets: static files in /public copied as-is to the build output
       // and available to the service worker. Useful for favicons, mask icons, etc.
       includeAssets: [
