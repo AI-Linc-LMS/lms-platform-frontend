@@ -1,4 +1,4 @@
-import { useSelector } from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 // import { useNavigate } from "react-router-dom";
 import Leaderboard from "../components/LeaderboardTable";
 import TimeTrackingDashboard from "../components/graphs-components/TimeTrackingDashboard";
@@ -11,9 +11,13 @@ import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
 import EnrolledCourses from "../components/courses/EnrolledCourses";
 import { RootState } from "../../../redux/store";
-import React, { ReactNode } from "react";
+import React, {ReactNode, useEffect} from "react";
 import LockSvg from "../../../commonComponents/icons/empty-state-handel/LockSvg";
 import NoCourse from "../components/courses/NoCourse.tsx";
+import {useQuery} from "@tanstack/react-query";
+import {getEnrolledCourses} from "../../../services/enrolled-courses-content/coursesApis.ts";
+import {setCourses} from "../../../redux/slices/courseSlice.ts";
+import SkeletonLoader from "../components/SkeletonLoader.tsx";
 
 // Props type for the overlay card component
 interface EnrollToCourseOverlayProps {
@@ -62,7 +66,22 @@ const Learn = () => {
   // Get enrolled courses from Redux store
   const courses = useSelector((state: RootState) => state.courses.courses);
   // Check if user has no enrolled courses
-  const hasNoCourses = true//!courses || courses.length === 0;
+  const hasNoCourses = !courses || courses.length === 0;
+
+    const dispatch = useDispatch();
+
+    const { data, isLoading } = useQuery({
+        queryKey: ["Courses"],
+        queryFn: () => getEnrolledCourses(clientId),
+    });
+
+    //console.log("enrolled courses data:", data);
+
+    useEffect(() => {
+        if (data) {
+            dispatch(setCourses(data));
+        }
+    }, [data, dispatch]);
 
   return (
     <div className="w-full min-h-screen">
@@ -74,13 +93,13 @@ const Learn = () => {
               {!hasNoCourses ? <WelcomeSection /> : null}
 
             <div className="relative">
-              {hasNoCourses ? (
+              {isLoading ? <SkeletonLoader/> : hasNoCourses ? (
                 <NoCourse/>
               ) : (
                 <TimeTrackingDashboard />
               )}
             </div>
-              {!hasNoCourses ? (<EnrolledCourses />) : null}
+              {hasNoCourses ? null : <EnrolledCourses />}
 
             <div className="space-y-4">
               <ContinueCourses />
