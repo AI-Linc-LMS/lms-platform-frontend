@@ -115,11 +115,14 @@ const TopNav: React.FC = () => {
 
   return (
     <div className="w-full bg-white shadow flex justify-between md:justify-end items-center px-4 py-2">
-      <div className="md:hidden"></div>
-      <div className="flex items-center gap-3 md:gap-5">
-        {(isAdminOrInstructor || isSuperAdmin) && (
-          <Link
-            to="/admin/dashboard"
+        <div className="md:hidden">
+            <h2 onClick={()=>navigate('/')} className="font-bruno  font-bold bg-gradient-to-r from-[#0BC5EA] to-[#6B46C1] bg-clip-text text-transparent text-sm">Ai
+                Linc</h2>
+        </div>
+        <div className="flex items-center gap-3 md:gap-5">
+            {(isAdminOrInstructor || isSuperAdmin) && (
+                <Link
+                    to="/admin/dashboard"
             className="bg-[#17627A] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#124F65] transition-colors"
           >
             Admin
