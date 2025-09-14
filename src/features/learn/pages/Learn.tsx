@@ -11,54 +11,12 @@ import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
 import EnrolledCourses from "../components/courses/EnrolledCourses";
 import { RootState } from "../../../redux/store";
-import React, {ReactNode, useEffect} from "react";
-import LockSvg from "../../../commonComponents/icons/empty-state-handel/LockSvg";
+import {useEffect} from "react";
 import NoCourse from "../components/courses/NoCourse.tsx";
 import {useQuery} from "@tanstack/react-query";
 import {getEnrolledCourses} from "../../../services/enrolled-courses-content/coursesApis.ts";
 import {setCourses} from "../../../redux/slices/courseSlice.ts";
 import SkeletonLoader from "../components/SkeletonLoader.tsx";
-
-// Props type for the overlay card component
-interface EnrollToCourseOverlayProps {
-  title: string;
-  children: ReactNode;
-  className?: string;
-}
-
-// Overlay card component to show over sections when no courses enrolled
-const EnrollToCourseOverlay: React.FC<EnrollToCourseOverlayProps> = ({
-  title,
-  children,
-  className = "",
-}) => {
-  return (
-    <div className={`relative w-full ${className}`}>
-      {/* Blurred original content */}
-      <div className="filter blur-sm opacity-40 pointer-events-none">
-        {children}
-      </div>
-
-      {/* Overlay content */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center backdrop-blur-sm rounded-xl z-10">
-        <div className="p-6 rounded-xl max-w-[90%] flex flex-col items-center">
-          <div className="w-[60px] h-[60px] rounded-full flex items-center justify-center mb-4">
-            <LockSvg />
-          </div>
-          <h3 className="text-lg font-bold text-gray-800 mb-2 text-center">
-            {title}
-          </h3>
-          <button
-            onClick={() => (window.location.href = "/courses")}
-            className="bg-[#17627A] text-white py-2 px-6 rounded-xl transition-all duration-200 hover:bg-[#12536A] text-center mt-4 font-medium text-sm"
-          >
-            View all Courses
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const Learn = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -86,54 +44,41 @@ const Learn = () => {
   return (
     <div className="w-full min-h-screen">
       {/* Full width container */}
-      <div className="w-full p-0 md:px-4 md:py-2">
-        <div className={`grid grid-cols-1 ${!hasNoCourses ? ('lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_384px]'):''} gap-6 w-full`}>
-          {/* Left Column - Takes all available space */}
-          <div className="min-w-0 space-y-6 overflow-hidden">
-              {!hasNoCourses ? <WelcomeSection /> : null}
+        {hasNoCourses ? isLoading ? <SkeletonLoader/> : <NoCourse/> :
+            <div className="w-full p-0 md:px-4 md:py-2">
+            <div className={`grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_384px] gap-6 w-full`}>
+                {/* Left Column - Takes all available space */}
+                <div className="min-w-0 space-y-6 overflow-hidden">
+                    <WelcomeSection />
 
-            <div className="relative">
-              {isLoading ? <SkeletonLoader/> : hasNoCourses ? (
-                <NoCourse/>
-              ) : (
-                <TimeTrackingDashboard />
-              )}
-            </div>
-              {hasNoCourses ? null : <EnrolledCourses />}
+                    <div className="relative">
+                        {isLoading ? <SkeletonLoader/>  : (
+                            <TimeTrackingDashboard />
+                        )}
+                    </div>
+                    <EnrolledCourses />
 
-            <div className="space-y-4">
-              <ContinueCourses />
-              <ContinueCoursesDetails clientId={clientId} />
-            </div>
+                    <div className="space-y-4">
+                        <ContinueCourses />
+                        <ContinueCoursesDetails clientId={clientId} />
+                    </div>
 
-            <div className="space-y-4">
-              <BasedLearningCourses clientId={clientId} />
-            </div>
-          </div>
-
-          {/* Right Column - Free-flowing sidebar */}
-          <div className="w-full space-y-6">
-            {hasNoCourses ? (
-              <EnrollToCourseOverlay
-                title="Enroll to a Course to Unlock Weekly & Daily Progress"
-                className="min-h-[600px]"
-              >
-                <div className="space-y-6 w-full">
-                  <Leaderboard clientId={clientId} />
-                  <DailyProgress clientId={clientId} />
-                  <StreakTable clientId={clientId} />
+                    <div className="space-y-4">
+                        <BasedLearningCourses clientId={clientId} />
+                    </div>
                 </div>
-              </EnrollToCourseOverlay>
-            ) : (
-              <div className="space-y-6">
-                <Leaderboard clientId={clientId} />
-                <DailyProgress clientId={clientId} />
-                <StreakTable clientId={clientId} />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+
+                {/* Right Column - Free-flowing sidebar */}
+                <div className="w-full space-y-6">
+                    <div className="space-y-6">
+                        <Leaderboard clientId={clientId} />
+                        <DailyProgress clientId={clientId} />
+                        <StreakTable clientId={clientId} />
+                    </div>
+                </div>
+            </div>
+        </div>}
+
     </div>
   );
 };

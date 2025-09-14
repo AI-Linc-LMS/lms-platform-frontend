@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import NoCourseBgMobile from "../../../../assets/dashboard_assets/no-course-mlite.webp";
+import NoCourseBgWeb from "../../../../assets/dashboard_assets/no-course.webp";
 
 const NoCourse = () => {
   const navigate = useNavigate();
@@ -40,25 +41,25 @@ const NoCourse = () => {
       </div>
 
       {/* Web View */}
-      <div className="hidden md:flex items-center justify-center max-h-[calc(100vh-100px)] px-0 bg-gray-50">
-        <div className="flex items-center gap-16 w-full">
+      <div className="hidden md:flex items-center justify-center min-h-[calc(100vh-100px)] px-16 bg-gray-50">
+        <div className="flex items-center gap-24 w-full max-w-7xl mx-auto">
           {/* Left side */}
-          <div className="w-full text-left">
-            <h1 className="text-5xl font-bold text-gray-900 mb-4">
+          <div className="w-5/12 text-left">
+            <h1 className="text-6xl font-bold text-gray-800 mb-6 leading-tight">
               Ready to Start Learning?
             </h1>
-            <p className="text-lg text-gray-600 mb-8">
+            <p className="text-xl text-gray-600 mb-10">
               Your personal dashboard is empty. Discover exciting courses and begin
               your journey to new skills!
             </p>
             <button
-              className="flex items-center justify-center w-auto bg-[#255C79] text-white font-bold py-4 px-12 rounded-xl shadow-lg transform transition-transform cursor-pointer hover:scale-95"
+              className="group flex items-center justify-center w-auto bg-[#255C79] text-white font-bold py-4 px-12 rounded-xl shadow-lg transform transition-transform cursor-pointer hover:scale-105"
               onClick={() => navigate("/courses")}
             >
               Explore Courses{" "}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 ml-2"
+                className="h-6 w-6 ml-3 transition-transform transform group-hover:translate-x-2"
                 viewBox="0 0 20 20"
                 fill="currentColor"
               >
@@ -70,10 +71,13 @@ const NoCourse = () => {
               </svg>
             </button>
           </div>
-          {/* Right side */}
-          <div className="w-full bg-cover bg-center h-[calc(100vh-100px)]"
-          >
-              SOME UI here
+          {/* Right side with animation */}
+          <div className="w-7/12 h-full flex items-center justify-center transform transition-transform duration-500 ease-in-out hover:scale-105">
+            <img
+              alt="Start Courses"
+              className="rounded-2xl shadow-2xl"
+              src={NoCourseBgWeb}
+            />
           </div>
         </div>
       </div>
