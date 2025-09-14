@@ -1,14 +1,13 @@
 import { SidebarLinkInfo } from "./typings";
-import AdminDashboardController from "../commonComponents/icons/sidebarIcons/AdminDashboardController";
-import CourseBuilderController from "../commonComponents/icons/sidebarIcons/CourseBuilderController";
-import ManageStudentsController from "../commonComponents/icons/sidebarIcons/ManagestudentsController";
-import WorkshopRegistrationController from "../commonComponents/icons/sidebarIcons/WorkshopRegistrationController";
-import AssesmentStudentResultsController from "../commonComponents/icons/sidebarIcons/AssesmentStudentsResultsController";
-import ReferalsController from "../commonComponents/icons/sidebarIcons/ReferalsController";
-import EmailIconController from "../commonComponents/icons/sidebarIcons/EmailIconController";
-import LiveAdminIconController from "../commonComponents/icons/sidebarIcons/LiveAdminIconController";
-import PaymentIconsController from "../commonComponents/icons/sidebarIcons/PaymentIconsController";
-import WebinarManagementController from "../commonComponents/icons/sidebarIcons/WebinarManagementController";
+import { MdOutlineDashboard, MdOutlineEmail, MdPayment } from "react-icons/md";
+import { PiStudent } from "react-icons/pi";
+import { VscBook } from "react-icons/vsc";
+import { LiaChalkboardTeacherSolid } from "react-icons/lia";
+import { GoTasklist } from "react-icons/go";
+import { BsPersonFillAdd } from "react-icons/bs";
+import { RiLiveLine } from "react-icons/ri";
+import { GrWorkshop } from "react-icons/gr";
+
 export const AdminNavigationLinks: SidebarLinkInfo[] = [
   {
     id: 1,
@@ -18,7 +17,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
         id: 1,
         title: "Dashboard",
         href: "/admin/dashboard",
-        icon: <AdminDashboardController />,
+        icon: <MdOutlineDashboard />,
       },
     ],
   },
@@ -30,7 +29,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
         id: 2,
         title: "Manage Students",
         href: "/admin/manage-students",
-        icon: <ManageStudentsController />,
+        icon: <PiStudent />,
       },
     ],
   },
@@ -42,7 +41,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
         id: 1,
         title: "Course Builder",
         href: "/admin/courses",
-        icon: <CourseBuilderController />,
+        icon: <VscBook />,
       },
     ],
   },
@@ -54,11 +53,11 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
         id: 1,
         title: "Workshop Registrations",
         href: "/admin/workshop-registrations",
-        icon: <WorkshopRegistrationController />,
+        icon: <LiaChalkboardTeacherSolid />,
       },
     ],
   },
-  
+
   {
     id: 5,
     title: "Assesment Results",
@@ -67,7 +66,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
         id: 1,
         title: "Assesment Results",
         href: "/admin/assesment-results",
-        icon: <AssesmentStudentResultsController />,
+        icon: <GoTasklist />,
       },
     ],
   },
@@ -79,7 +78,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
         id: 1,
         title: "Referrals",
         href: "/admin/referals",
-        icon: <ReferalsController />,
+        icon: <BsPersonFillAdd />,
       },
     ],
   },
@@ -91,7 +90,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
         id: 1,
         title: "Emails",
         href: "/admin/email-send",
-        icon: <EmailIconController />,
+        icon: <MdOutlineEmail />,
       },
     ],
   },
@@ -103,7 +102,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
         id: 1,
         title: "Live",
         href: "/admin/live",
-        icon: <LiveAdminIconController />,
+        icon: <RiLiveLine />,
       },
     ],
   },
@@ -116,7 +115,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
         title: "Payment Links",
         href: "/admin/payment-links",
 
-        icon: <PaymentIconsController />,
+        icon: <MdPayment />,
       },
     ],
   },
@@ -128,7 +127,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
         id: 1,
         title: "Webinar Management",
         href: "/admin/webinar-management",
-        icon: <WebinarManagementController />,
+        icon: <GrWorkshop />,
       },
     ],
   },

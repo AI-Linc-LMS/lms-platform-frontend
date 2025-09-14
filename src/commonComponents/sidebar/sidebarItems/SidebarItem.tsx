@@ -41,7 +41,7 @@ const SidebarItem = ({
             }`}
           >
             <div
-              className={`w-[26px] h-[20px] flex items-center justify-center ${
+              className={`w-[20px] h-[20px] flex items-center justify-center ${
                 isActive ? "text-white" : "text-black"
               }`}
             >
