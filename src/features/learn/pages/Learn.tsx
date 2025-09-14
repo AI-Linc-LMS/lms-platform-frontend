@@ -66,7 +66,7 @@ const Learn = () => {
   return (
     <div className="w-full min-h-screen">
       {/* Full width container */}
-      <div className="w-full px-4 py-6">
+      <div className="w-full px-0 md:px-4 py-2">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_384px] gap-6 w-full">
           {/* Left Column - Takes all available space */}
           <div className="min-w-0 space-y-6 overflow-hidden">
