@@ -13,6 +13,7 @@ import EnrolledCourses from "../components/courses/EnrolledCourses";
 import { RootState } from "../../../redux/store";
 import React, { ReactNode } from "react";
 import LockSvg from "../../../commonComponents/icons/empty-state-handel/LockSvg";
+import NoCourse from "../components/courses/NoCourse.tsx";
 
 // Props type for the overlay card component
 interface EnrollToCourseOverlayProps {
@@ -61,28 +62,25 @@ const Learn = () => {
   // Get enrolled courses from Redux store
   const courses = useSelector((state: RootState) => state.courses.courses);
   // Check if user has no enrolled courses
-  const hasNoCourses = !courses || courses.length === 0;
+  const hasNoCourses = true//!courses || courses.length === 0;
 
   return (
     <div className="w-full min-h-screen">
       {/* Full width container */}
-      <div className="w-full px-0 md:px-4 py-2">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_384px] gap-6 w-full">
+      <div className="w-full p-0 md:px-4 md:py-2">
+        <div className={`grid grid-cols-1 ${!hasNoCourses ? ('lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_384px]'):''} gap-6 w-full`}>
           {/* Left Column - Takes all available space */}
           <div className="min-w-0 space-y-6 overflow-hidden">
-            <WelcomeSection />
+              {!hasNoCourses ? <WelcomeSection /> : null}
 
             <div className="relative">
               {hasNoCourses ? (
-                <EnrollToCourseOverlay title="Enroll to a Course to Unlock Stats">
-                  <TimeTrackingDashboard />
-                </EnrollToCourseOverlay>
+                <NoCourse/>
               ) : (
                 <TimeTrackingDashboard />
               )}
             </div>
-
-            <EnrolledCourses />
+              {!hasNoCourses ? (<EnrolledCourses />) : null}
 
             <div className="space-y-4">
               <ContinueCourses />
