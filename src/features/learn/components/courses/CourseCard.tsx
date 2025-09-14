@@ -225,7 +225,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = "", isLoadi
       <div className="mt-auto">
         <button
           onClick={handlePrimaryClick}
-          className={`w-full px-8 py-3 text-lg font-medium text-white ${!isEnrolled ? 'bg-green-600 hover:bg-green-700' : 'bg-[#255C79] hover:bg-[#1E4A63]'} rounded-lg  transition-colors duration-200`}
+          className={`w-full px-8 py-3 text-lg font-medium text-white ${!isEnrolled ? 'bg-green-600 hover:bg-green-700' : 'bg-[#255C79] hover:bg-[#1E4A63]'} rounded-xl  transition-colors duration-200`}
         >
           {isEnrolling ? 'Processing…' : (isEnrolled ? 'Explore More' : 'Enroll Now')}
         </button>
