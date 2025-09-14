@@ -340,7 +340,7 @@ export const CourseCard = ({
           </div>
         </div>
       )}
-      <div className="rounded-3xl border border-[#80C9E0] p-6 flex flex-col w-full bg-white min-h-[350px]">
+      <div className="rounded-xl border border-[#80C9E0] p-6 flex flex-col w-full bg-white min-h-[350px]">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">{title}</h2>
         <p className="text-gray-600 mb-6">{truncateDescription(description)}</p>
 
@@ -466,7 +466,7 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
           {[1, 2].map((i) => (
             <div
               key={i}
-              className="rounded-3xl border border-[#80C9E0] p-6 flex flex-col w-full bg-white min-h-[350px] animate-pulse"
+              className="rounded-xl border border-[#80C9E0] p-6 flex flex-col w-full bg-white min-h-[350px] animate-pulse"
             >
               <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
               <div className="h-4 bg-gray-200 rounded w-3/4 mb-6"></div>
@@ -606,3 +606,4 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
 };
 
 export default BasedLearningCourses;
+;
