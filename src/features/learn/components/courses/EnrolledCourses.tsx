@@ -100,7 +100,7 @@ const transformCourseData = (reduxCourse: EnrolledCourse): CardCourse => {
 // Empty state component
 const EmptyCoursesState = () => {
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-6 bg-white rounded-3xl border border-[#80C9E0] shadow-sm transition-all duration-300 transform hover:scale-[1.01]">
+    <div className="flex flex-col items-center justify-center py-12 px-6 bg-white rounded-xl border border-[#80C9E0] shadow-sm transition-all duration-300 transform hover:scale-[1.01]">
       <svg
         className="w-20 h-20 text-[#2A8CB0] mb-6"
         fill="none"

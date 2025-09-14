@@ -372,3 +372,35 @@ body {
   opacity: 0;
 }
 /* =============================== Page Load Animation - END ================================== */
+
+/* =============================== Dropdown Animation ================================== */
+@keyframes dropdown-open {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes dropdown-close {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+}
+
+.animate-dropdown-open {
+  animation: dropdown-open 0.1s ease-out forwards;
+}
+
+.animate-dropdown-close {
+  animation: dropdown-close 0.1s ease-in forwards;
+}
+/* =============================== Dropdown Animation - END ================================== */
