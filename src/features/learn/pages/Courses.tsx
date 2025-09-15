@@ -109,10 +109,10 @@ const Courses = () => {
       )}
 
       <div className="mb-6">
-        <h1 className="text-[#343A40] font-bold text-[18px] md:text-[22px] font-sans">
+        <h1 className="text-[#343A40] font-bold text-[18px] md:text-[22px] ">
           Our Courses & Assessments
         </h1>
-        <p className="text-[#6C757D] font-sans font-normal text-[14px] md:text-[16px]">
+        <p className="text-[#6C757D]  font-normal text-[14px] md:text-[16px]">
           {hasNoCourses ? "No courses available at the moment" : "Here's the List of all our Courses and available Assessments"}
         </p>
       </div>

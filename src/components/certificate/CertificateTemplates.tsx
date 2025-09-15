@@ -134,7 +134,7 @@ const CertificateTemplates = forwardRef<
             NO CODE DEVELOPMENT BOOTCAMP USING AGENTIC/GENERATIVE AI
           </div>
 
-          <div className="font-lato text-lg text-center">
+          <div className="text-lg text-center">
             Issued on {issuedDate}
           </div>
         </div>
