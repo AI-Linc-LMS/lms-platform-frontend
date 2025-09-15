@@ -33,6 +33,10 @@ export class PWAManager {
   private registration: ServiceWorkerRegistration | null = null;
   private config: PWAConfig = {};
   private hasUpdate: boolean = false;
+  // Reload behavior guards
+  private hadControllerAtLoad: boolean = false;
+  private shouldReloadOnControllerChange: boolean = false;
+  private reloadGuardTriggered: boolean = false;
 
   constructor() {
     this.setupInstallPrompt();
@@ -54,6 +58,8 @@ export class PWAManager {
   async registerServiceWorker(): Promise<void> {
     if ('serviceWorker' in navigator) {
       try {
+        // Track whether this page was already controlled by a SW
+        this.hadControllerAtLoad = !!navigator.serviceWorker.controller;
         // Allow service worker registration in development for testing
         this.registration = await navigator.serviceWorker.register('/sw-custom.js', { scope: '/' });
         this.sendConfigToServiceWorker();
@@ -72,7 +78,12 @@ export class PWAManager {
           }
         });
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-          window.location.reload();
+          // Reload only when this tab was already controlled (i.e., real update),
+          // or when we explicitly requested an update; and do it just once.
+          if ((this.hadControllerAtLoad || this.shouldReloadOnControllerChange) && !this.reloadGuardTriggered) {
+            this.reloadGuardTriggered = true;
+            window.location.reload();
+          }
         });
         navigator.serviceWorker.addEventListener('message', (event) => {
           if (event.data && event.data.type === 'REQUEST_PWA_CONFIG') {
@@ -196,7 +207,15 @@ export class PWAManager {
 
   async updateServiceWorker(): Promise<void> {
     if (this.registration && this.registration.waiting) {
+      // Ensure next controllerchange triggers a single reload
+      this.shouldReloadOnControllerChange = true;
       this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+  }
+
+  async clearAllCaches(): Promise<void> {
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHES' });
     }
   }
 
