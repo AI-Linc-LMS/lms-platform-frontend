@@ -18,13 +18,10 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
         <h1 className="text-[32px] font-bold text-[#374151] m-0 leading-[1.2]">
           {course.title}
         </h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="flex flex-col items-end gap-1">
             <span className="bg-[#10b981] text-white px-2 py-1 rounded-xl text-[11px] font-semibold uppercase tracking-[0.5px]">
               Active
-            </span>
-            <span className="text-[11px] text-[#6b7280] font-medium">
-              Enrolled 3 days ago
             </span>
           </div>
           <button

@@ -9,7 +9,6 @@ import rightArrow from "../../../../assets/dashboard_assets/rightArrow.png";
 import { Course } from "../../types/final-course.types";
 import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import CourseCardV2 from "./course-card-v2/CourseCardV2";
-import { dummyCourse } from "../../types/dummycourse";
 
 interface EnrolledCoursesProps {
   className?: string;
@@ -63,7 +62,7 @@ export const transformCourseData = (backendCourse: Course): Course => {
 // Empty state component
 const EmptyCoursesState = () => {
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-6 bg-white rounded-3xl border border-[#80C9E0] shadow-sm transition-all duration-300 transform hover:scale-[1.01]">
+    <div className="flex flex-col items-center justify-center py-12 px-6 bg-white rounded-xl border border-[#80C9E0] shadow-sm transition-all duration-300 transform hover:scale-[1.01]">
       <svg
         className="w-20 h-20 text-[#2A8CB0] mb-6"
         fill="none"
@@ -81,7 +80,7 @@ const EmptyCoursesState = () => {
       <h3 className="text-xl font-bold text-[#343A40] mb-2">
         No enrolled courses found
       </h3>
-      <p className="text-[#6C757D] text-center max-w-md mb-8 font-sans text-[14px] md:text-[16px]">
+      <p className="text-[#6C757D] text-center max-w-md mb-8  text-[14px] md:text-[16px]">
         You haven't enrolled in any courses yet. Browse our catalog to find
         courses that match your interests and start your learning journey.
       </p>
@@ -139,10 +138,10 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
     <div className="overflow-visible">
       <div className="flex justify-between items-center">
         <div className="mb-4">
-          <h1 className="text-[#343A40] font-bold text-[18px] md:text-[22px] font-sans">
+          <h1 className="text-[#343A40] font-bold text-[18px] md:text-[22px] ">
             Enrolled Courses
           </h1>
-          <p className="text-[#6C757D] font-sans font-normal text-[14px] md:text-[16px]">
+          <p className="text-[#6C757D]  font-normal text-[14px] md:text-[16px]">
             {hasNoCourses
               ? "You haven't enrolled in any courses yet"
               : "Here is a list of enrolled courses"}
@@ -188,7 +187,7 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
               className="flex-shrink-0 w-full md:w-1/2 scroll-snap-align-start transition-transform duration-300 overflow-visible"
               style={{ scrollSnapAlign: "start" }}
             >
-              <CourseCardV2 course={dummyCourse} enrolled={true} />
+              <CourseCardV2 course={course} enrolled={true} />
             </div>
           ))}
         </div>

@@ -15,7 +15,7 @@ const CourseIconGroup: React.FC<CourseIconGroupProps> = ({ iconData }) => {
           <div className="flex-shrink-0">
             {item.icon}
           </div>
-          <p className="font-medium font-sans text-[10px] md:text-[11px] text-[#495057] mt-0.5 leading-none">
+          <p className="font-medium text-[10px] md:text-[11px] text-[#495057] mt-0.5 leading-none">
             {item.completed}/{item.total}
           </p>
         </div>
