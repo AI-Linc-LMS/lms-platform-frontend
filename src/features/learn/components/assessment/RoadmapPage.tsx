@@ -2,19 +2,14 @@ import React, { useRef, useState, useEffect } from "react";
 // import ailincimg from "../../../../assets/dashboard_assets/toplogoimg.png";
 import popper from "../../../../assets/dashboard_assets/poppers.png";
 import roadmap from "../../../../assets/roadmap/roadmap.png";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import CertificateTemplates from "../../../../components/certificate/CertificateTemplates";
-import ProgramCard from "./roadmap/ProgramCard";
 import MentorFeedbackSection from "./roadmap/MentorFeedback";
 import PerformanceReport from "./roadmap/PerformanceReport";
 import { useSelector } from "react-redux";
-import { useAssessmentPayment } from "../../../../hooks/useRazorpayPayment";
-import { PaymentResult } from "../../../../services/payment/razorpayService";
-import PaymentProcessingModal from "./PaymentProcessingModal";
 import PaymentSuccessModal from "./PaymentSuccessModal";
 import PaymentToast from "./PaymentToast";
-import CongratsModal from "./roadmap/CongratsModal";
 
 // Import types
 import {
@@ -46,20 +41,20 @@ import { certificateFallbackData } from "./data/assessmentData";
 import { redeemScholarship } from "../../../../services/assesment/assesmentApis";
 
 // Add this import for countdown timer
-import { differenceInDays, addDays } from 'date-fns';
+import { differenceInDays, addDays } from "date-fns";
 
 const RoadmapPage = () => {
   const navigate = useNavigate();
   const { assessmentId } = useParams<{ assessmentId: string }>();
   const location = useLocation();
-  const queryClient = useQueryClient();
+  //const queryClient = useQueryClient();
 
   const currentAssessmentId = assessmentId || location.state?.assessmentId;
   const clientId = parseInt(import.meta.env.VITE_CLIENT_ID) || 1;
   const [isDownloading, setIsDownloading] = useState(false);
 
   // FIXED: Set to true to show modal immediately on page load
-  const [showCongratsModal, setShowCongratsModal] = useState(true);
+  //  const [showCongratsModal, setShowCongratsModal] = useState(true);
 
   const certificateRef = useRef<CertificateTemplatesRef>(null);
 
@@ -84,13 +79,13 @@ const RoadmapPage = () => {
     message: "",
   });
 
-  const showToast = (
-    type: "success" | "error" | "warning" | "loading",
-    title: string,
-    message: string
-  ) => {
-    setToast({ show: true, type, title, message });
-  };
+  // const showToast = (
+  //   type: "success" | "error" | "warning" | "loading",
+  //   title: string,
+  //   message: string
+  // ) => {
+  //   setToast({ show: true, type, title, message });
+  // };
 
   const hideToast = () => {
     setToast((prev) => ({ ...prev, show: false }));
@@ -124,8 +119,9 @@ const RoadmapPage = () => {
   });
 
   // Add countdown timer state
-  const [scholarshipExpiryDate, setScholarshipExpiryDate] = useState<Date | null>(null);
-  const [, setTimeRemaining] = useState<string>('');
+  const [scholarshipExpiryDate, setScholarshipExpiryDate] =
+    useState<Date | null>(null);
+  const [, setTimeRemaining] = useState<string>("");
 
   // Add useEffect to set scholarship expiry date
   useEffect(() => {
@@ -146,21 +142,26 @@ const RoadmapPage = () => {
 
         if (daysLeft >= 0) {
           // More precise formatting
-          const hoursLeft = Math.floor(
-            (scholarshipExpiryDate.getTime() - now.getTime()) / (1000 * 60 * 60)
-          ) % 24;
+          const hoursLeft =
+            Math.floor(
+              (scholarshipExpiryDate.getTime() - now.getTime()) /
+                (1000 * 60 * 60)
+            ) % 24;
 
-          const minutesLeft = Math.floor(
-            (scholarshipExpiryDate.getTime() - now.getTime()) / (1000 * 60)
-          ) % 60;
+          const minutesLeft =
+            Math.floor(
+              (scholarshipExpiryDate.getTime() - now.getTime()) / (1000 * 60)
+            ) % 60;
 
           // Construct detailed time remaining string
-          let timeRemainingStr = '';
+          let timeRemainingStr = "";
           if (daysLeft > 0) {
-            timeRemainingStr += `${daysLeft} day${daysLeft !== 1 ? 's' : ''} `;
+            timeRemainingStr += `${daysLeft} day${daysLeft !== 1 ? "s" : ""} `;
           }
-          timeRemainingStr += `${hoursLeft} hour${hoursLeft !== 1 ? 's' : ''} `;
-          timeRemainingStr += `${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''}`;
+          timeRemainingStr += `${hoursLeft} hour${hoursLeft !== 1 ? "s" : ""} `;
+          timeRemainingStr += `${minutesLeft} minute${
+            minutesLeft !== 1 ? "s" : ""
+          }`;
 
           setTimeRemaining(timeRemainingStr.trim());
         } else {
@@ -187,7 +188,7 @@ const RoadmapPage = () => {
     days: 7,
     hours: 0,
     minutes: 0,
-    seconds: 0
+    seconds: 0,
   });
 
   // Countdown effect
@@ -201,7 +202,9 @@ const RoadmapPage = () => {
 
       if (difference > 0) {
         const d = Math.floor(difference / (1000 * 60 * 60 * 24));
-        const h = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const h = Math.floor(
+          (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+        );
         const m = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
         const s = Math.floor((difference % (1000 * 60)) / 1000);
 
@@ -234,26 +237,26 @@ const RoadmapPage = () => {
     }
   };
 
-  const handleCertificatePayment = () => {
-    if (!currentAssessmentId) {
-      showToast("error", "Error", "Assessment ID not found");
-      return;
-    }
+  // const handleCertificatePayment = () => {
+  //   if (!currentAssessmentId) {
+  //     showToast("error", "Error", "Assessment ID not found");
+  //     return;
+  //   }
 
-    const certificatePrice = redeemData?.assessment_price ?? 49;
+  //   const certificatePrice = redeemData?.assessment_price ?? 49;
 
-    initiateAssessmentPayment(clientId, certificatePrice, {
-      prefill: {
-        name: user?.full_name || "User",
-        email: user?.email || "",
-      },
-      metadata: {
-        assessmentId: currentAssessmentId,
-        type_id: currentAssessmentId,
-        payment_type: "ASSESSMENT",
-      },
-    });
-  };
+  //   initiateAssessmentPayment(clientId, certificatePrice, {
+  //     prefill: {
+  //       name: user?.full_name || "User",
+  //       email: user?.email || "",
+  //     },
+  //     metadata: {
+  //       assessmentId: currentAssessmentId,
+  //       type_id: currentAssessmentId,
+  //       payment_type: "ASSESSMENT",
+  //     },
+  //   });
+  // };
 
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
@@ -265,47 +268,47 @@ const RoadmapPage = () => {
   const stats = redeemData?.stats;
 
   // Certificate payment hook
-  const { paymentState: assessmentPaymentState, initiateAssessmentPayment } =
-    useAssessmentPayment({
-      onSuccess: (result: PaymentResult) => {
-        //console.log("Certificate payment successful:", result);
-        setPaymentResult({
-          paymentId: result.paymentId,
-          orderId: result.orderId,
-          amount: result.amount,
-        });
-        setShowSuccessModal(true);
-        showToast(
-          "success",
-          "Payment Successful!",
-          "Your certificate payment is complete. You can now download your certificate."
-        );
+  // const { paymentState: assessmentPaymentState, initiateAssessmentPayment } =
+  //   useAssessmentPayment({
+  //     onSuccess: (result: PaymentResult) => {
+  //       //console.log("Certificate payment successful:", result);
+  //       setPaymentResult({
+  //         paymentId: result.paymentId,
+  //         orderId: result.orderId,
+  //         amount: result.amount,
+  //       });
+  //       setShowSuccessModal(true);
+  //       showToast(
+  //         "success",
+  //         "Payment Successful!",
+  //         "Your certificate payment is complete. You can now download your certificate."
+  //       );
 
-        // Invalidate and refetch the assessment results query to get updated payment status
-        queryClient.invalidateQueries({
-          queryKey: ["assessment-results", clientId, currentAssessmentId],
-        });
+  //       // Invalidate and refetch the assessment results query to get updated payment status
+  //       queryClient.invalidateQueries({
+  //         queryKey: ["assessment-results", clientId, currentAssessmentId],
+  //       });
 
-        // Also refetch after a short delay to ensure backend processing is complete
-        setTimeout(() => {
-          queryClient.invalidateQueries({
-            queryKey: ["assessment-results", clientId, currentAssessmentId],
-          });
-        }, 2000);
-      },
-      onError: (error: string) => {
-        //console.error("Certificate payment failed:", error);
-        showToast("error", "Payment Failed", error);
-      },
-      onDismiss: () => {
-        //console.log("Certificate payment dismissed");
-        showToast(
-          "warning",
-          "Payment Cancelled",
-          "Payment was cancelled. You can try again anytime."
-        );
-      },
-    });
+  //       // Also refetch after a short delay to ensure backend processing is complete
+  //       setTimeout(() => {
+  //         queryClient.invalidateQueries({
+  //           queryKey: ["assessment-results", clientId, currentAssessmentId],
+  //         });
+  //       }, 2000);
+  //     },
+  //     onError: (error: string) => {
+  //       //console.error("Certificate payment failed:", error);
+  //       showToast("error", "Payment Failed", error);
+  //     },
+  //     onDismiss: () => {
+  //       //console.log("Certificate payment dismissed");
+  //       showToast(
+  //         "warning",
+  //         "Payment Cancelled",
+  //         "Payment was cancelled. You can try again anytime."
+  //       );
+  //     },
+  //   });
 
   // Certificate data for the assessment
   const certificateData = {
@@ -362,13 +365,13 @@ const RoadmapPage = () => {
   return (
     <div className="mb-8 sm:mb-12 lg:mb-30">
       {/* Congrats Modal - Now it will show immediately on page load */}
-      <CongratsModal
+      {/* <CongratsModal
       open={showCongratsModal}
       onClose={() => {
         console.log("Parent: Modal closing");
         setShowCongratsModal(false);
       }}
-    />   
+    />    */}
       {/* Header */}
       <div className="flex flex-row items-center justify-center relative z-10 mb-6 sm:mb-8 lg:mb-10">
         {/* <img
@@ -422,7 +425,7 @@ const RoadmapPage = () => {
               Your performance in the assessment has qualified you for an
               exclusive opportunity.
             </p>
-            {redeemData?.is_paid && redeemData?.txn_status !== "paid" ? (
+            {/* {redeemData?.is_paid && redeemData?.txn_status !== "paid" ? (
               <div className="flex flex-col items-center justify-center">
                 <button
                   onClick={handleCertificatePayment}
@@ -434,32 +437,31 @@ const RoadmapPage = () => {
                 >
                   {assessmentPaymentState.isProcessing ? "Processing Payment..." : " Download Certificate"}
                 </button>
-                <span className="text-sm text-gray-500 italic text-center max-w-md font-sans px-2 mt-2">
+                <span className="text-sm text-gray-500 italic text-center max-w-md px-2 mt-2">
                   (You'll be required to pay Rs {redeemData?.assessment_price || 49}/- for the certificate)
                 </span>
               </div>
-            ) : (
-              <button
-                onClick={handleDownloadCertificate}
-                className="flex items-center gap-2 bg-green-600 text-white font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-lg shadow hover:bg-green-700 transition-colors duration-200 focus:outline-none text-sm sm:text-base"
+            ) : ( */}
+            <button
+              onClick={handleDownloadCertificate}
+              className="flex items-center gap-2 bg-green-600 text-white font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-lg shadow hover:bg-green-700 transition-colors duration-200 focus:outline-none text-sm sm:text-base"
+            >
+              {isDownloading ? "Downloading..." : "Download Certificate"}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-4 h-4 sm:w-5 sm:h-5 ml-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
               >
-                {isDownloading ? "Downloading..." : "Download Certificate"}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-4 h-4 sm:w-5 sm:h-5 ml-1"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
-                  />
-                </svg>
-              </button>
-            )}
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
+                />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -470,7 +472,7 @@ const RoadmapPage = () => {
             data={perfReportData}
             redeemData={redeemData as ScholarshipRedemptionData}
             clientId={clientId}
-            assessmentId={currentAssessmentId || ''}
+            assessmentId={currentAssessmentId || ""}
           />
 
           <div className="flex flex-col lg:flex-row mt-6 sm:mt-8 lg:mt-10 w-full min-h-[200px] sm:min-h-[222px] justify-evenly items-center gap-4 sm:gap-6 lg:gap-2 px-3">
@@ -515,14 +517,14 @@ const RoadmapPage = () => {
         </div>
 
         {/* Upskilling Roadmap Section */}
-        <UpskillingRoadmapSection />
+        {/* <UpskillingRoadmapSection /> */}
 
         {/* Nanodegree Program Card */}
-        <ProgramCard
+        {/* <ProgramCard
           redeemData={redeemData as ScholarshipRedemptionData}
           clientId={clientId}
           assessmentId={assessmentId ?? "ai-linc-scholarship-test-2"}
-        />
+        /> */}
       </div>
 
       {/* Hidden Certificate Component */}
@@ -534,21 +536,21 @@ const RoadmapPage = () => {
       </div>
 
       {/* Payment Processing Modal */}
-      <PaymentProcessingModal
+      {/* <PaymentProcessingModal
         isOpen={assessmentPaymentState.isProcessing}
         step={
           assessmentPaymentState.step === "error"
             ? "creating"
             : (assessmentPaymentState.step as
-              | "creating"
-              | "processing"
-              | "verifying"
-              | "complete")
+                | "creating"
+                | "processing"
+                | "verifying"
+                | "complete")
         }
         onClose={() => {
           // Handle processing modal close if needed
         }}
-      />
+      /> */}
 
       {/* Payment Success Modal */}
       <PaymentSuccessModal
@@ -576,7 +578,7 @@ const RoadmapPage = () => {
 export default RoadmapPage;
 
 // --- UpskillingRoadmapSection ---
-const UpskillingRoadmapSection: React.FC = () => (
+export const UpskillingRoadmapSection: React.FC = () => (
   <div className="w-full flex flex-col items-center justify-center bg-gradient-to-b from-[#f8fcfc] to-white mt-6 sm:mt-8 lg:mt-10 px-4 sm:px-6 lg:px-0">
     <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#264D64] text-center mb-3 sm:mb-4 leading-tight px-2">
       Upskilling Roadmap After Your
