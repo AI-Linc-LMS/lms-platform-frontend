@@ -70,6 +70,10 @@ export const usePWA = (): PWAState => {
   // Dismiss update notification
   const dismissUpdate = useCallback(() => {
     setUpdateAvailable(false);
+    // Persistently clear PWA-level update flag to avoid repeated prompts
+    try {
+      pwaManager.clearUpdateFlag?.();
+    } catch { /* no-op */ }
   }, []);
 
   // Dismiss install notification

@@ -33,6 +33,7 @@ export class PWAManager {
   private registration: ServiceWorkerRegistration | null = null;
   private config: PWAConfig = {};
   private hasUpdate: boolean = false;
+  private updateDismissed: boolean = false;
   // Reload behavior guards
   private hadControllerAtLoad: boolean = false;
   private shouldReloadOnControllerChange: boolean = false;
@@ -66,7 +67,7 @@ export class PWAManager {
           updateViaCache: 'none',
         });
         // Proactively check for a newer SW right after registration
-        try { await this.registration.update(); } catch {}
+        try { await this.registration.update(); } catch { /* no-op: update check best-effort */ }
         this.sendConfigToServiceWorker();
         // If there's already an updated SW waiting, notify immediately so UI can prompt user
         if (this.registration.waiting) {
@@ -76,7 +77,8 @@ export class PWAManager {
           const newWorker = this.registration?.installing;
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // Only prompt when there's a waiting worker (i.e., no skipWaiting)
+              if (newWorker.state === 'installed' && this.registration?.waiting) {
                 this.notifyUpdateAvailable();
               }
             });
@@ -109,7 +111,7 @@ export class PWAManager {
         const doUpdateCheck = () => {
           try {
             this.registration?.update();
-          } catch { /* empty */ }
+          } catch { /* no-op */ }
         };
 
         // Periodic checks
@@ -215,7 +217,14 @@ export class PWAManager {
       // Ensure next controllerchange triggers a single reload
       this.shouldReloadOnControllerChange = true;
       this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      return;
     }
+    // No waiting worker: clear the flag and notify subscribers to reset UI
+    this.hasUpdate = false;
+    const info: PWAUpdateInfo = { updateAvailable: false, registration: this.registration || undefined };
+    this.updateCallbacks.forEach(cb => {
+      try { cb(info); } catch { /* no-op */ }
+    });
   }
 
   async clearAllCaches(): Promise<void> {
@@ -234,7 +243,7 @@ export class PWAManager {
       };
       try {
         callback(info);
-      } catch {}
+      } catch { /* no-op: subscriber errors should not break others */ }
     }
     return () => {
       const index = this.updateCallbacks.indexOf(callback);
@@ -266,11 +275,20 @@ export class PWAManager {
 
   private notifyUpdateAvailable(): void {
     this.hasUpdate = true;
+    this.updateDismissed = false;
     const info: PWAUpdateInfo = {
       updateAvailable: true,
       registration: this.registration || undefined
     };
     this.updateCallbacks.forEach(callback => callback(info));
+  }
+
+  /**
+   * Mark the current update notification as acknowledged so UI can dismiss it persistently
+   */
+  clearUpdateFlag(): void {
+    this.hasUpdate = false;
+    this.updateDismissed = true;
   }
 
   private notifyInstallAvailable(): void {
@@ -286,8 +304,10 @@ export class PWAManager {
   }
 
   isUpdateAvailable(): boolean {
-    // Consider known flag or explicit waiting worker
-    return this.hasUpdate || !!this.registration?.waiting;
+    // Consider known flag or explicit waiting worker, unless user dismissed
+    const waiting = !!this.registration?.waiting;
+    const available = this.hasUpdate || waiting;
+    return available && !this.updateDismissed;
   }
 }
 

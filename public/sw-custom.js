@@ -202,17 +202,8 @@ self.addEventListener('activate', (event) => {
       // Clear all runtime caches to avoid stale data after updates
       await clearRuntimeCaches();
       await self.clients.claim();
+      // Avoid forcing navigation on clients; rely on controllerchange in app to reload when desired
       const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-      // Proactively refresh each client once so new HTML/JS loads even on very old pages
-      try {
-        for (const client of clients) {
-          if (client && typeof client.navigate === 'function') {
-            await client.navigate(client.url);
-          }
-        }
-      } catch (e) {
-        // Best-effort refresh; ignore errors
-      }
       clients.forEach((client) => {
         client.postMessage({ type: 'REQUEST_PWA_CONFIG' });
       });
