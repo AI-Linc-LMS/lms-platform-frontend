@@ -9,7 +9,7 @@ import {
 import routes from "./routes";
 import Container from "./constants/Container";
 import { Outlet } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useTokenExpirationHandler } from "./hooks/useTokenExpirationHandler";
 import useUserActivityTracking from "./hooks/useUserActivityTracking";
 import { setupActivitySyncListeners } from "./utils/userActivitySync";
@@ -29,6 +29,7 @@ import {
 } from "./utils/authRedirectUtils";
 // import FloatingActivityTimer from "./components/FloatingActivityTimer";
 import { CommunityPage, ThreadDetailPage } from "./features/community";
+import LoadingSpinner from "./commonComponents/loading-spinner/LoadingSpinner";
 
 function App() {
   return (
@@ -321,52 +322,54 @@ function AppContent() {
 
   return (
     <>
-      <Routes>
-        {routes.map((route) => {
-          if (route.isPrivate) {
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
+          {routes.map((route) => {
+            if (route.isPrivate) {
+              return (
+                <Route
+                  key={route.path}
+                  path={route.path}
+                  element={
+                    <Container>
+                      <Outlet />
+                    </Container>
+                  }
+                >
+                  <Route
+                    index
+                    element={
+                      route.requiredRole === "admin_or_instructor" ? (
+                        <AdminRoute>
+                          <route.component />
+                        </AdminRoute>
+                      ) : (
+                        <route.component />
+                      )
+                    }
+                  />
+                </Route>
+              );
+            }
+
             return (
               <Route
                 key={route.path}
                 path={route.path}
-                element={
-                  <Container>
-                    <Outlet />
-                  </Container>
-                }
-              >
-                <Route
-                  index
-                  element={
-                    route.requiredRole === "admin_or_instructor" ? (
-                      <AdminRoute>
-                        <route.component />
-                      </AdminRoute>
-                    ) : (
-                      <route.component />
-                    )
-                  }
-                />
-              </Route>
+                element={<route.component />}
+              />
             );
-          }
+          })}
+          <Route path="/community" element={<CommunityPage />} />
+          <Route
+            path="/community/thread/:threadId"
+            element={<ThreadDetailPage />}
+          />
 
-          return (
-            <Route
-              key={route.path}
-              path={route.path}
-              element={<route.component />}
-            />
-          );
-        })}
-        <Route path="/community" element={<CommunityPage />} />
-        <Route
-          path="/community/thread/:threadId"
-          element={<ThreadDetailPage />}
-        />
-
-        {/* Handle unknown routes - keeps authenticated users on the app */}
-        <Route path="*" element={<InvalidRoute />} />
-      </Routes>
+          {/* Handle unknown routes - keeps authenticated users on the app */}
+          <Route path="*" element={<InvalidRoute />} />
+        </Routes>
+      </Suspense>
 
       {/* Only show FloatingActivityTimer when authenticated and not on login/register pages */}
       {/* Commented out per instructions */}
