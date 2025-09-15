@@ -12,7 +12,7 @@ const WelcomeSection = () => {
     if (hour >= 5 && hour < 12) {
       return "Good morning";
     } else if (hour >= 12 && hour < 17) {
-      return "Good afternoon";
+      return "Good afternoonss";
     } else {
       return "Good evening";
     } 
@@ -32,7 +32,7 @@ const WelcomeSection = () => {
 
   return (
     <div className="mx-0">
-      <h1 className="text-2xl text-black font-sans font-bold md:text-[22px]">
+      <h1 className="text-2xl text-black font-bold md:text-[22px]">
         {greeting},{" "}
         <span className="inline-block group perspective-[1000px]">
           <span className="relative inline-block transition-transform duration-500 transform group-hover:rotate-y-180 text-[#2A8CB0]">
@@ -40,7 +40,7 @@ const WelcomeSection = () => {
           </span>
         </span>
       </h1>
-      <p className="text-[#495057] md:text-[18px] font-normal font-sans">
+      <p className="text-[#495057] md:text-[18px] font-normal">
         Here is a glimpse of your overall progress.
       </p>
     </div>

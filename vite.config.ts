@@ -13,7 +13,8 @@ export default defineConfig({
       srcDir: "public",
       filename: "sw-custom.js",
       devOptions: {
-        enabled: true,
+        // Disable SW in dev to avoid HMR conflicts/reloads
+        enabled: false,
         type: "classic",
       },
       // includeAssets: static files in /public copied as-is to the build output
@@ -83,8 +84,8 @@ export default defineConfig({
         ]
       },
       injectManifest: {
-        // Precache these file types so icons/screenshots are available offline
-        globPatterns: ["**/*.{js,css,html,ico,svg,png}"],
+        // Precache static assets; exclude HTML to avoid stale index.html
+        globPatterns: ["**/*.{js,css,ico,svg,png}"],
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
       },
     }),

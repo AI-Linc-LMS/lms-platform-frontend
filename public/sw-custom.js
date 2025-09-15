@@ -8,9 +8,28 @@ importScripts('https://storage.googleapis.com/workbox-cdn/releases/6.5.4/workbox
 const { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } = workbox.precaching;
 const { registerRoute, NavigationRoute } = workbox.routing;
 const { StaleWhileRevalidate, CacheFirst, NetworkFirst } = workbox.strategies;
+const { ExpirationPlugin } = workbox.expiration;
+
+const PRECACHE_PREFIX = 'workbox-precache';
+
+async function clearRuntimeCaches() {
+  const keys = await caches.keys();
+  await Promise.all(
+    keys
+      .filter((key) => !key.startsWith(PRECACHE_PREFIX))
+      .map((key) => caches.delete(key))
+  );
+}
 
 // Clean up outdated precaches
 cleanupOutdatedCaches();
+
+// Always activate updated SW immediately and take control of pages
+self.addEventListener('install', () => {
+  // Ensure the new service worker activates immediately
+  self.skipWaiting();
+});
+
 
 // Precache all static assets (handle dev where manifest may be undefined)
 try {
@@ -36,25 +55,39 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
+
+  if (event.data && event.data.type === 'CLEAR_CACHES') {
+    event.waitUntil(
+      clearRuntimeCaches().then(() => {
+        console.log('Service Worker: Runtime caches cleared');
+      })
+    );
+  }
 });
 
-// Navigation route for SPA
-const handler = createHandlerBoundToURL('/index.html');
-const navigationRoute = new NavigationRoute(handler, {
-  denylist: [/^\/_/, /\/[^/?]+\.[^/]+$/],
-});
-registerRoute(navigationRoute);
+// Navigation handling for SPA
+// Use NetworkFirst for navigations so index.html is always fetched fresh
+registerRoute(
+  ({ request }) => request.mode === 'navigate',
+  new NetworkFirst({
+    cacheName: 'html-cache',
+    networkTimeoutSeconds: 5,
+  }),
+);
 
 // Google Fonts Stylesheets
 registerRoute(
   /^https:\/\/fonts\.googleapis\.com\/.*/i,
   new StaleWhileRevalidate({
     cacheName: 'google-fonts-stylesheets',
-    plugins: [{
-      cacheKeyWillBeUsed: async ({ request }) => {
-        return `${request.url}?timestamp=${Math.floor(Date.now() / (1000 * 60 * 60 * 24))}`;
-      }
-    }]
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: 7 * 24 * 60 * 60 }),
+      {
+        cacheKeyWillBeUsed: async ({ request }) => {
+          return `${request.url}?timestamp=${Math.floor(Date.now() / (1000 * 60 * 60 * 24))}`;
+        }
+      },
+    ]
   })
 );
 
@@ -63,6 +96,7 @@ registerRoute(
   /^https:\/\/fonts\.gstatic\.com\/.*/i,
   new CacheFirst({
     cacheName: 'google-fonts-webfonts',
+    plugins: [new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: 60 * 24 * 60 * 60 })],
   })
 );
 
@@ -71,6 +105,7 @@ registerRoute(
   /\.(?:png|jpg|jpeg|gif|webp|svg)$/i,
   new StaleWhileRevalidate({
     cacheName: 'image-cache',
+    plugins: [new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 7 * 24 * 60 * 60 })],
   })
 );
 
@@ -154,24 +189,25 @@ registerRoute(
         
         return request;
       }
-    }]
+    }, new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 5 * 60 })]
   })
 );
 
 // Handle activation
 self.addEventListener('activate', (event) => {
   console.log('Service Worker activated with config:', pwaConfig);
-  
-  // Try to get config from clients
+
   event.waitUntil(
-    self.clients.claim().then(() => {
-      return self.clients.matchAll();
-    }).then((clients) => {
-      // Ask all clients for their config
+    (async () => {
+      // Clear all runtime caches to avoid stale data after updates
+      await clearRuntimeCaches();
+      await self.clients.claim();
+      // Avoid forcing navigation on clients; rely on controllerchange in app to reload when desired
+      const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
       clients.forEach((client) => {
         client.postMessage({ type: 'REQUEST_PWA_CONFIG' });
       });
-    })
+    })()
   );
 });
 

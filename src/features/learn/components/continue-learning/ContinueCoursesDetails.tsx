@@ -39,7 +39,7 @@ const EmptyContinueState = () => {
       <h3 className="text-xl font-bold text-[#343A40] mb-2">
         No courses in progress
       </h3>
-      <p className="text-[#6C757D] text-center max-w-md mb-8 font-sans text-[14px] md:text-[16px]">
+      <p className="text-[#6C757D] text-center max-w-md mb-8 text-[14px] md:text-[16px]">
         You haven't started any courses yet. Explore our catalog to find a
         course that interests you and begin your learning journey.
       </p>
@@ -110,7 +110,7 @@ const ContinueCoursesDetails = ({ clientId }: { clientId: number }) => {
               {[1, 2, 3, 4, 5].map((i) => (
                 <div
                   key={i}
-                  className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-gray-200"
+                  className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-gray-200"
                 ></div>
               ))}
             </div>
@@ -154,7 +154,7 @@ const ContinueCoursesDetails = ({ clientId }: { clientId: number }) => {
     }));
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 md:pt-8">
       {courses.map((course, index) => (
         <CourseCard key={index} {...course} />
       ))}
