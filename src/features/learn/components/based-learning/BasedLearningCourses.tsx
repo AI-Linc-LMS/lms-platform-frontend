@@ -390,7 +390,7 @@ export const CourseCard = ({
           </span>
         </div>
 
-        <div className="flex gap-4 mt-auto">
+        <div className="flex flex-col md:flex-row gap-4 mt-auto">
           <button
             onClick={handleEnrollNow}
             className={`w-full px-8 py-3 text-lg font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg  transition-colors duration-200`}

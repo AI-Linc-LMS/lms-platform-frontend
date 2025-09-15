@@ -5,7 +5,6 @@ import TimeTrackingDashboard from "../components/graphs-components/TimeTrackingD
 import BasedLearningCourses from "../components/based-learning/BasedLearningCourses";
 import ContinueCourses from "../components/continue-learning/ContinueCourses";
 import ContinueCoursesDetails from "../components/continue-learning/ContinueCoursesDetails";
-// import Referrals from "../components/referrals/Referrals";
 import WelcomeSection from "../components/WelcomeSection";
 import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
@@ -20,8 +19,6 @@ import SkeletonLoader from "../components/SkeletonLoader.tsx";
 
 const Learn = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
-  // const navigate = useNavigate();
-  // Get enrolled courses from Redux store
   const courses = useSelector((state: RootState) => state.courses.courses);
   // Check if user has no enrolled courses
   const hasNoCourses = !courses || courses.length === 0;

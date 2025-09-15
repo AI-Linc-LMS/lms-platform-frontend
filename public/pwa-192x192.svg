@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1A5A7A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2E7D8F;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="192" height="192" fill="url(#bg)" rx="24" ry="24"/>
+  
+  <!-- Logo container -->
+  <g transform="translate(48, 72)">
+    <!-- Logo text/icon would go here -->
+    <text x="48" y="24" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="white" text-anchor="middle">AiLinc</text>
+    <text x="48" y="44" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">AI Learning</text>
+  </g>
+</svg>

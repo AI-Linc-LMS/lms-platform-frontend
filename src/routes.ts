@@ -76,6 +76,8 @@ const CommunityPage = lazy(
   () => import("./features/community/pages/CommunityPage")
 );
 const WebinarManagement = lazy(() => import("./pages/admin/WebinarManagement"));
+import { PWATestPage } from "./components/PWATestPage";
+import { IOSPWATestPage } from "./components/IOSPWATestPage";
 
 export interface RouteConfig {
   path: string;
@@ -103,6 +105,16 @@ const routes: RouteConfig[] = [
   {
     path: "/otp",
     component: Otp,
+    isPrivate: false,
+  },
+  {
+    path: "/pwa-test",
+    component: PWATestPage,
+    isPrivate: false,
+  },
+  {
+    path: "/ios-pwa-test",
+    component: IOSPWATestPage,
     isPrivate: false,
   },
   {
