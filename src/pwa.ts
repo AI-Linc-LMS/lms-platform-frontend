@@ -61,7 +61,12 @@ export class PWAManager {
         // Track whether this page was already controlled by a SW
         this.hadControllerAtLoad = !!navigator.serviceWorker.controller;
         // Allow service worker registration in development for testing
-        this.registration = await navigator.serviceWorker.register('/sw-custom.js', { scope: '/' });
+        this.registration = await navigator.serviceWorker.register('/sw-custom.js', {
+          scope: '/',
+          updateViaCache: 'none',
+        });
+        // Proactively check for a newer SW right after registration
+        try { await this.registration.update(); } catch {}
         this.sendConfigToServiceWorker();
         // If there's already an updated SW waiting, notify immediately so UI can prompt user
         if (this.registration.waiting) {
