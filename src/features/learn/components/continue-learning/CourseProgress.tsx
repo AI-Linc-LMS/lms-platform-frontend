@@ -29,7 +29,7 @@ const CourseProgress: React.FC<CourseProgressProps> = ({
           <h1 className="font-sans font-medium text-[13px] text-[#343A40]">
             Module {moduleNumber}/{totalModules}
           </h1>
-          <p className="text-[13px] font-sans text-[#495057] font-normal">
+          <p className="text-[13px] text-[#495057] font-normal">
             {moduleName}
           </p>
         </div>
