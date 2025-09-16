@@ -107,7 +107,7 @@ const CourseActions: React.FC<CourseActionsProps> = ({
               alt={currentIsLiked ? "Liked" : "Not liked"}
               className="w-5 h-5"
             />
-            <p className="font-sans font-medium text-xs sm:text-[14px] text-[#495057]">
+            <p className="font-medium text-xs sm:text-[14px] text-[#495057]">
               {likeMutation.isPending ? "..." : currentLikeCount}
             </p>
           </button>
