@@ -14,7 +14,7 @@ if (!existsSync(publicDir)) mkdirSync(publicDir, { recursive: true });
 
 const background = '#ffffff';
 // Prefer the same icon Android uses for splash (PWA icon)
-const logoCandidates = ['pwa-512x512.png', 'pwa-192x192.png', 'logo.png', 'kumain_logo.jpg'];
+const logoCandidates = ['Pure Coloured Icon PNG.png', 'Garage University Coloured Logo.png', 'GarageUniversity White Logo.png', 'Garage University SVG.svg', 'pwa-512x512.png', 'pwa-192x192.png', 'logo.png', 'kumain_logo.jpg'];
 const logoPath = logoCandidates.map(n => join(publicDir, n)).find(p => existsSync(p));
 
 async function makeSplash(width, height, outPath) {
@@ -28,7 +28,7 @@ async function makeSplash(width, height, outPath) {
     image = canvas.composite([{ input: logo, gravity: 'center' }]);
   }
   await image.png().toFile(outPath);
-  console.log('✔', outPath);
+  console.log('\u2714', outPath);
 }
 
 async function run() {

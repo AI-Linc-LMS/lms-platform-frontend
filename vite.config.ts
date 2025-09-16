@@ -20,6 +20,10 @@ export default defineConfig({
       // includeAssets: static files in /public copied as-is to the build output
       // and available to the service worker. Useful for favicons, mask icons, etc.
       includeAssets: [
+        "Garage University Coloured Logo.png",
+        "Garage University SVG.svg",
+        "GarageUniversity White Logo.png",
+        "Pure Coloured Icon PNG.png",
         "pwa-192x192.png",
         "pwa-512x512.png",
         "pwa-192x192.svg",
@@ -31,15 +35,24 @@ export default defineConfig({
         "vittee.svg",
         "vittee_no_bg.svg",
         // iOS splash screen images
-        "splash-1290x2796.svg",
-        "splash-1179x2556.svg",
-        "splash-1284x2778.svg",
-        "splash-1170x2532.svg",
-        "splash-1125x2436.svg",
-        "splash-1242x2688.svg",
-        "splash-828x1792.svg",
-        "splash-750x1334.svg",
-        "splash-640x1136.svg",
+        "splash-1290x2796.png",
+        "splash-2796x1290.png",
+        "splash-1179x2556.png",
+        "splash-2556x1179.png",
+        "splash-1284x2778.png",
+        "splash-2778x1284.png",
+        "splash-1170x2532.png",
+        "splash-2532x1170.png",
+        "splash-1125x2436.png",
+        "splash-2436x1125.png",
+        "splash-1242x2688.png",
+        "splash-2688x1242.png",
+        "splash-828x1792.png",
+        "splash-1792x828.png",
+        "splash-750x1334.png",
+        "splash-1334x750.png",
+        "splash-640x1136.png",
+        "splash-1136x640.png",
       ],
       manifest: {
         name: "AiLinc - AI Learning Platform",
@@ -54,18 +67,18 @@ export default defineConfig({
         id: "/",
         // icons: used by Android/Chrome and other browsers for the installed app icon
         // and to generate the splash screen (with theme/background colors).
-        // PNG first for better Android splash screen compatibility, then SVG
+        // Place brand-forward assets first, then keep legacy PWA sizes for compatibility.
         icons: [
+          { src: "Pure Coloured Icon PNG.png", sizes: "1485x1485", type: "image/png" },
+          { src: "Pure Coloured Icon PNG.png", sizes: "1485x1485", type: "image/png", purpose: "any maskable" },
+          { src: "Garage University SVG.svg", sizes: "512x512", type: "image/svg+xml" },
+          { src: "Garage University Coloured Logo.png", sizes: "2774x1006", type: "image/png" },
+          { src: "GarageUniversity White Logo.png", sizes: "2774x1006", type: "image/png" },
           { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
           { src: "pwa-512x512.png", sizes: "512x512", type: "image/png" },
-          // iOS specific sizes for better compatibility
           { src: "pwa-192x192.png", sizes: "152x152", type: "image/png" },
           { src: "pwa-192x192.png", sizes: "180x180", type: "image/png" },
           { src: "pwa-192x192.png", sizes: "167x167", type: "image/png" },
-          // Maskable icons for Android
-          { src: "pwa-192x192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
-          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
-          // SVG for scalability
           { src: "pwa-192x192.svg", sizes: "192x192", type: "image/svg+xml" },
           { src: "pwa-512x512.svg", sizes: "512x512", type: "image/svg+xml" }
         ],

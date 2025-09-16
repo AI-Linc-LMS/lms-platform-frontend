@@ -95,10 +95,10 @@ export const PWASplashScreen: React.FC<Props>
       <div className="flex flex-col items-center gap-5 px-6">
         <div className="flex items-center gap-3">
           <img
-            src="/pwa-192x192.png"
+            src="/Pure%20Coloured%20Icon%20PNG.png"
             width={56}
             height={56}
-            alt="AiLinc logo"
+            alt="Garage University icon"
             className="rounded-xl shadow-sm"
           />
           {/* <span className="text-2xl font-semibold tracking-tight">AiLinc</span> */}
