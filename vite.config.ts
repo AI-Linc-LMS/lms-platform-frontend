@@ -55,8 +55,8 @@ export default defineConfig({
         "splash-1136x640.png",
       ],
       manifest: {
-        name: "AiLinc - AI Learning Platform",
-        short_name: "AiLinc",
+        name: "Garage University",
+        short_name: "garage university",
         description: "AI-powered learning and assessment platform",
         theme_color: "#ffffff",
         background_color: "#ffffff",
