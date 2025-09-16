@@ -2,6 +2,7 @@ import axios from "axios";
 import { store } from "../redux/store";
 import { logout } from "../redux/slices/userSlice";
 import { SignupFormData } from "../features/auth/pages/Signup";
+import axiosInstance from "./axiosInstance.ts";
 
 export interface LoginCredentials {
   email: string;
@@ -190,3 +191,14 @@ export const verifyOtp = async (otp: string, clientId: number, email: string) =>
       throw new Error(axiosError?.response?.data?.detail || "Verify OTP failed");
     }
 };
+
+export const initApp = async (clientId: number) => {
+    try {
+        const response = await axiosInstance.get(`api/clients/${clientId}/client-info/`);
+        return response.data;
+    }
+    catch (error) {
+        const axiosError = error as ApiError;
+        throw new Error(axiosError?.response?.data?.detail || "App Init Error");
+    }
+}
