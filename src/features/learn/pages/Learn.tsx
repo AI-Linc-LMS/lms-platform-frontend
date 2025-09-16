@@ -3,8 +3,8 @@ import {useDispatch, useSelector} from "react-redux";
 import Leaderboard from "../components/LeaderboardTable";
 import TimeTrackingDashboard from "../components/graphs-components/TimeTrackingDashboard";
 import BasedLearningCourses from "../components/based-learning/BasedLearningCourses";
-import ContinueCourses from "../components/continue-learning/ContinueCourses";
-import ContinueCoursesDetails from "../components/continue-learning/ContinueCoursesDetails";
+// import ContinueCourses from "../components/continue-learning/ContinueCourses";
+// import ContinueCoursesDetails from "../components/continue-learning/ContinueCoursesDetails";
 import WelcomeSection from "../components/WelcomeSection";
 import DailyProgress from "../components/DailyProgressTable";
 import StreakTable from "../components/StreakTable";
@@ -56,8 +56,8 @@ const Learn = () => {
                     <EnrolledCourses />
 
                     <div className="space-y-4">
-                        <ContinueCourses />
-                        <ContinueCoursesDetails clientId={clientId} />
+                        {/* <ContinueCourses />
+                        <ContinueCoursesDetails clientId={clientId} /> */}
                     </div>
 
                     <div className="space-y-4">

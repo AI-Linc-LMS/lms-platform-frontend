@@ -26,7 +26,7 @@ interface MappedCourseData {
   title: string;
   description: string;
   level: string;
-  duration: string | number;
+  duration: number;
   certification: boolean;
   enrolledStudents: number;
   studentAvatars: string[];
@@ -50,7 +50,7 @@ const RecommendedLearningAll = () => {
     title: course.title,
     description: course.description,
     level: course.difficulty_level,
-    duration: course.duration_in_hours,
+    duration: typeof course.duration_in_hours === 'string' ? parseFloat(course.duration_in_hours) : Number(course.duration_in_hours),
     certification: course.certificate_available,
     enrolledStudents: course.enrolled_students.total || 0,
     studentAvatars: course.enrolled_students.students_profile_pic || [],
