@@ -1,12 +1,11 @@
 import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
-import SecondaryButton from "../../../../commonComponents/common-buttons/secondary-button/SecondaryButton";
 import { useQuery } from "@tanstack/react-query";
 import {
   getAllRecommendedCourse,
   enrollInCourse,
 } from "../../../../services/continue-course-learning/continueCourseApis";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 // Define the course data interface
 interface CourseData {
@@ -268,6 +267,9 @@ interface CourseCardProps {
   courseId: number;
 }
 
+const CARD_INTERACTION_CLASSES =
+  "transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.15)]";
+
 // Export the CourseCard component to be used in the See All page
 export const CourseCard = ({
   title,
@@ -284,6 +286,10 @@ export const CourseCard = ({
   const [isEnrollmentModalOpen, setIsEnrollmentModalOpen] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [cardHeight, setCardHeight] = useState<string>("auto");
+  const cardRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   // Truncate description if it's too long
@@ -317,6 +323,170 @@ export const CourseCard = ({
     }
   };
 
+  // transition helpers (mirrors CourseCardV2)
+  const handleExpand = () => {
+    if (cardRef.current) {
+      const currentHeight = cardRef.current.offsetHeight;
+      setCardHeight(`${currentHeight}px`);
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setIsExpanded(true);
+        setTimeout(() => {
+          if (cardRef.current) {
+            const newHeight = cardRef.current.scrollHeight;
+            setCardHeight(`${newHeight}px`);
+            setTimeout(() => {
+              setCardHeight("auto");
+              setIsTransitioning(false);
+            }, 300);
+          }
+        }, 50);
+      }, 50);
+    }
+  };
+
+  const handleCollapse = () => {
+    if (cardRef.current) {
+      const currentHeight = cardRef.current.scrollHeight;
+      setCardHeight(`${currentHeight}px`);
+      setIsTransitioning(true);
+      void cardRef.current.offsetHeight;
+      setTimeout(() => {
+        setIsExpanded(false);
+        setTimeout(() => {
+          if (cardRef.current) {
+            const newHeight = cardRef.current.scrollHeight;
+            setCardHeight(`${newHeight}px`);
+            setTimeout(() => {
+              setCardHeight("auto");
+              setIsTransitioning(false);
+            }, 300);
+          }
+        }, 10);
+      }, 10);
+    }
+  };
+
+  const Collapsed = () => (
+    <div
+      className={`rounded-2xl md:rounded-3xl bg-white shadow-2xl ${CARD_INTERACTION_CLASSES}`}
+    >
+      <div className="p-6 pb-4 border-b border-[#f3f4f6]">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[32px] font-bold text-[#374151] leading-[1.2] m-0">
+            {title}
+          </h2>
+          <button
+            aria-label="expand"
+            onClick={handleExpand}
+            className="bg-[#f3f4f6] border border-[#e5e7eb] rounded-full w-9 h-9 flex items-center justify-center text-[#6b7280] transition-all duration-300 hover:bg-[#e5e7eb] hover:scale-105"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+        <p className="text-xs tracking-widest text-[#6C757D] mt-1">CREATED AND CERTIFIED BY</p>
+        <div className="flex items-center gap-2 mt-2">
+          <span className="h-6 px-3 inline-flex items-center rounded-md border border-[#DEE2E6] text-xs text-gray-700">Microsoft</span>
+          <span className="h-6 px-3 inline-flex items-center rounded-md border border-[#DEE2E6] text-xs text-gray-700">IBM</span>
+          <span className="h-6 px-3 inline-flex items-center rounded-md border border-[#DEE2E6] text-xs text-gray-700">Cisco</span>
+        </div>
+      </div>
+
+      <div className="p-6 pt-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 bg-[#F8F9FA] rounded-lg px-3 py-2"><ZapIcon /><span className="text-sm font-medium text-[#495057]">{level}</span></div>
+          <div className="flex items-center gap-2 bg-[#F8F9FA] rounded-lg px-3 py-2"><ClockIcon /><span className="text-sm font-medium text-[#495057]">{duration} hours</span></div>
+          <div className="flex items-center gap-2 bg-[#FFF3CD] border border-[#FFEAA7] rounded-lg px-3 py-2"><span className="text-sm font-medium text-[#856404]">{isFree ? "Free" : "$299"}</span></div>
+          <div className="flex items-center gap-1 ml-auto">
+            <div className="flex text-[#FFC107]">★★★★★</div>
+            <span className="text-sm font-medium text-[#495057]">4.8/5</span>
+          </div>
+        </div>
+
+        <button onClick={handleExpand} className="w-full mt-5 h-12 rounded-xl bg-[#10b981] text-white font-semibold hover:bg-[#059669] hover:-translate-y-0.5">View More</button>
+      </div>
+    </div>
+  );
+
+  const Expanded = () => (
+    <div
+      className={`rounded-2xl md:rounded-3xl border border-[#80C9E0] bg-white shadow-2xl ${CARD_INTERACTION_CLASSES}`}
+    >
+      <div className="p-6 pb-4 border-b border-[#f3f4f6] flex items-start justify-between">
+        <div>
+          <h2 className="text-[32px] font-bold text-[#374151] leading-[1.2] m-0">{title}</h2>
+          <p className="text-xs tracking-widest text-[#6C757D] mt-1">CREATED AND CERTIFIED BY</p>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="h-6 px-3 inline-flex items-center rounded-md border border-[#DEE2E6] text-xs text-gray-700">Microsoft</span>
+            <span className="h-6 px-3 inline-flex items-center rounded-md border border-[#DEE2E6] text-xs text-gray-700">IBM</span>
+            <span className="h-6 px-3 inline-flex items-center rounded-md border border-[#DEE2E6] text-xs text-gray-700">Cisco</span>
+          </div>
+          <p className="text-[#495057] text-sm leading-relaxed mt-3">{truncateDescription(description, 140)}</p>
+        </div>
+        <button aria-label="collapse" onClick={handleCollapse} className="bg-[#f3f4f6] border border-[#e5e7eb] rounded-full w-9 h-9 flex items-center justify-center text-[#6b7280] transition-all duration-300 hover:bg-[#e5e7eb] hover:scale-105">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 9l7 7 7-7" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="p-6 pt-4">
+        <div className="flex flex-wrap gap-3 mb-4">
+          <div className="flex items-center gap-2 bg-[#F8F9FA] rounded-lg px-3 py-2"><ZapIcon /><span className="text-sm font-medium text-[#495057]">{level}</span></div>
+          <div className="flex items-center gap-2 bg-[#F8F9FA] rounded-lg px-3 py-2"><ClockIcon /><span className="text-sm font-medium text-[#495057]">{duration} hours</span></div>
+          {certification && (<div className="flex items-center gap-2 bg-[#F8F9FA] rounded-lg px-3 py-2"><AwardIcon /><span className="text-sm font-medium text-[#495057]">Industry Certified</span></div>)}
+          <div className="flex items-center gap-2 bg-[#FFF3CD] border border-[#FFEAA7] rounded-lg px-3 py-2"><span className="text-sm font-medium text-[#856404]">{isFree ? "Free" : "$299"}</span></div>
+          <div className="flex items-center gap-1 ml-auto">
+            <div className="flex text-[#FFC107]">★★★★★</div>
+            <span className="text-sm font-medium text-[#495057]">4.8/5</span>
+          </div>
+        </div>
+
+        <button onClick={handleEnrollNow} className="w-full mb-4 h-12 rounded-xl bg-[#10b981] text-white font-semibold hover:bg-[#059669] hover:-translate-y-0.5">
+          {isEnrolling ? "Enrolling..." : isFree ? "Enroll Now" : "Enroll Now - $299"}
+        </button>
+
+        <ul className="space-y-2 text-[#495057] mb-4 text-sm">
+          <li className="flex items-start gap-2"><span className="text-green-600">✔</span><span>Learn to build real dashboards recruiters love to see</span></li>
+          <li className="flex items-start gap-2"><span className="text-green-600">✔</span><span>Master the most in-demand BI tool quickly</span></li>
+          <li className="flex items-start gap-2"><span className="text-green-600">✔</span><span>Boost analytics career with hands-on projects</span></li>
+        </ul>
+
+        <div className="flex flex-wrap gap-2 mb-4">
+          <span className="px-3 py-1 rounded-md bg-[#EEF0FF] text-[#3B5BDB] text-xs font-semibold">Career Boost</span>
+          <span className="px-3 py-1 rounded-md bg-[#EEF0FF] text-[#3B5BDB] text-xs font-semibold">Hands-On Projects</span>
+          {certification && (<span className="px-3 py-1 rounded-md bg-[#EEF0FF] text-[#3B5BDB] text-xs font-semibold">Industry Certificate</span>)}
+        </div>
+
+        <div className="flex items-center gap-3 bg-white border border-[#DEE2E6] rounded-xl p-3 mb-4">
+          <div className="text-[#FFC107]">★★★★★</div>
+          <span className="text-sm text-[#495057]">4.8/5 rating from 500+ learners</span>
+        </div>
+
+        <div className="flex items-center mb-4">
+          <div className="flex -space-x-2 mr-3">
+            {studentAvatars.slice(0, 4).map((avatar, index) => (
+              <div key={index} className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white overflow-hidden">
+                <img src={avatar || "/api/placeholder/32/32"} alt="Student avatar" className="w-full h-full object-cover" />
+              </div>
+            ))}
+          </div>
+          <span className="text-[#495057] text-sm">Join 500+ learners and get placement-ready skills</span>
+        </div>
+
+        <div className="bg-[#F8FBFF] border border-[#80C9E0] rounded-xl p-4">
+          <p className="font-semibold text-gray-800 mb-2">What's Included:</p>
+          <ul className="text-sm text-[#495057] space-y-2">
+            <li className="flex items-start gap-2"><span className="text-[#2A8CB0]">•</span><span>Real datasets & project templates</span></li>
+            <li className="flex items-start gap-2"><span className="text-[#2A8CB0]">•</span><span>Free resume template for Data Analyst roles</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex flex-col">
       {showSuccessToast && (
@@ -340,71 +510,12 @@ export const CourseCard = ({
           </div>
         </div>
       )}
-      <div className="rounded-xl border border-[#80C9E0] p-6 flex flex-col w-full bg-white min-h-[350px]">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">{title}</h2>
-        <p className="text-gray-600 mb-6">{truncateDescription(description)}</p>
-
-        <div className="flex flex-wrap gap-4 mb-8">
-          <div className="flex items-center gap-2 border border-[#DEE2E6] rounded-xl px-4 py-2">
-            <ZapIcon />
-            <span className="text-sm">{level}</span>
-          </div>
-
-          <div className="flex items-center gap-2 border border-[#DEE2E6] rounded-xl  px-4 py-2">
-            <ClockIcon />
-            <span className="text-sm">{duration} hours</span>
-          </div>
-
-          {certification && (
-            <div className="flex items-center gap-2 border border-[#DEE2E6] rounded-xl  px-4 py-2">
-              <AwardIcon />
-              <span className="text-sm">Certification Available</span>
-            </div>
-          )}
-
-          {isFree && (
-            <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-2">
-              <span className="text-sm font-semibold">Free</span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center mb-6">
-          <div className="flex -space-x-2 mr-3">
-            {studentAvatars.slice(0, 4).map((avatar, index) => (
-              <div
-                key={index}
-                className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white overflow-hidden"
-              >
-                <img
-                  src={avatar || "/api/placeholder/32/32"}
-                  alt="Student avatar"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
-          </div>
-          <span className="text-gray-700">
-            {/* {formatStudentCount(enrolledStudents)}  */}
-            500+ students already enrolled
-          </span>
-        </div>
-
-        <div className="flex flex-col md:flex-row gap-4 mt-auto">
-          <button
-            onClick={handleEnrollNow}
-            className={`w-full px-8 py-3 text-lg font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg  transition-colors duration-200`}
-          >
-            {isEnrolling ? "Enrolling..." : "Enroll Now"}
-          </button>
-
-          <SecondaryButton
-            className="whitespace-nowrap text-sm"
-            onClick={() => alert("Not Interested")}
-          >
-            Not Interested
-          </SecondaryButton>
-        </div>
+      <div
+        ref={cardRef}
+        className={`transition-all duration-300 ease-in-out ${isTransitioning ? "opacity-95" : "opacity-100"}`}
+        style={{ height: cardHeight, overflow: isTransitioning ? "hidden" : "visible" }}
+      >
+        {isExpanded ? <Expanded /> : <Collapsed />}
       </div>
 
       <EnrollmentModal
