@@ -56,7 +56,7 @@ export default defineConfig({
       ],
       manifest: {
         name: "Garage University",
-        short_name: "Garage university",
+        short_name: "Garage University",
         description: "AI-powered learning and assessment platform",
         theme_color: "#ffffff",
         background_color: "#ffffff",
