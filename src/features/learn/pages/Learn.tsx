@@ -56,8 +56,8 @@ const Learn = () => {
                     <EnrolledCourses />
 
                     <div className="space-y-4">
-                        <ContinueCourses />
-                        <ContinueCoursesDetails clientId={clientId} />
+                        {/* <ContinueCourses />
+                        <ContinueCoursesDetails clientId={clientId} /> */}
                     </div>
 
                     <div className="space-y-4">
