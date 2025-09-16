@@ -26,7 +26,7 @@ const BackToHomeButton: React.FC = () => {
           />
         </svg>
       </button>
-      <span className="font-normal text-[20px] font-sans text-[#12293A]">
+      <span className="font-normal text-[20px] text-[#12293A]">
         Back to Home
       </span>
     </div>

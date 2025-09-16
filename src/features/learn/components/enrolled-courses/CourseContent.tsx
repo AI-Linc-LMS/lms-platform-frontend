@@ -211,7 +211,7 @@ const CourseContent: React.FC<CourseContentProps> = ({ course, isLoading, error 
 
   return (
     <div className="w-full bg-white rounded-3xl p-4 md:p-6 shadow-sm relative">
-      <h1 className="font-semibold text-xl md:text-[25px] font-sans">{course.course_title}</h1>
+      <h1 className="font-semibold text-xl md:text-[25px]">{course.course_title}</h1>
       <p className="text-sm md:text-[14px] text-[#6C757D] font-normal">{course.course_description}</p>
 
       {/* Avatars */}

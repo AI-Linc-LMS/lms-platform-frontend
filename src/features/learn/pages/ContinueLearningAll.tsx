@@ -42,10 +42,10 @@ const ContinueLearningAll = () => {
           <BackArrowIcon width={24} height={24} />
         </button>
         <div>
-          <h1 className="text-[#343A40] font-bold text-2xl font-sans">
+          <h1 className="text-[#343A40] font-bold text-2xl ">
             Continue Learning
           </h1>
-          <p className="text-[#6C757D] font-sans font-normal text-lg">
+          <p className="text-[#6C757D]  font-normal text-lg">
             Continue where you left from
           </p>
         </div>

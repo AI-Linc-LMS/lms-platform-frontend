@@ -10,10 +10,9 @@ const SidebarItem = ({
   isExpanded: boolean;
   isActive: boolean;
 }) => {
-
   return (
-    <li>
-      <Link to={linkInfo.href}>
+    <li className="relative group flex items-center">
+      <Link to={linkInfo.href} className="w-full">
         {isExpanded ? (
           <div
             className={`flex relative font-medium w-full h-[56px] transition-all duration-300 ease-in-out items-center justify-start hover-element rounded-2xl ${
@@ -42,7 +41,7 @@ const SidebarItem = ({
             }`}
           >
             <div
-              className={`w-[26px] h-[20px] flex items-center justify-center ${
+              className={`w-[20px] h-[20px] flex items-center justify-center ${
                 isActive ? "text-white" : "text-black"
               }`}
             >
@@ -51,8 +50,14 @@ const SidebarItem = ({
           </div>
         )}
       </Link>
+      {!isExpanded && (
+        <div className="absolute left-full top-1/2 -translate-y-1/2 ml-4 px-2 py-1 bg-gray-700 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none z-20">
+          {linkInfo.title}
+        </div>
+      )}
     </li>
   );
 };
 
 export default SidebarItem;
+
