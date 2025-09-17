@@ -6,6 +6,8 @@ import {
 } from "../../../../services/continue-course-learning/continueCourseApis";
 import { useNavigate } from "react-router-dom";
 import { useState, useRef } from "react";
+import { CompanyLogosSection } from "../courses/course-card-v2/components/CompanyLogosSection";
+import { IconActionsSection } from "../courses/course-card-v2/components";
 
 // Define the course data interface
 interface CourseData {
@@ -397,12 +399,15 @@ export const CourseCard = ({
             {subtitle && (
               <p className="text-xs sm:text-sm text-[#6C757D] mb-2">{subtitle}</p>
             )}
-            <p className="text-xs tracking-wider text-[#6C757D] mb-2">CREATED AND CERTIFIED BY</p>
+            {/* <p className="text-xs tracking-wider text-[#6C757D] mb-2">CREATED AND CERTIFIED BY</p>
             <div className="flex flex-wrap items-center gap-1 sm:gap-2">
               <span className="h-5 sm:h-6 px-2 sm:px-3 inline-flex items-center rounded-md border border-[#DEE2E6] text-xs text-gray-700">Microsoft</span>
               <span className="h-5 sm:h-6 px-2 sm:px-3 inline-flex items-center rounded-md border border-[#DEE2E6] text-xs text-gray-700">IBM</span>
               <span className="h-5 sm:h-6 px-2 sm:px-3 inline-flex items-center rounded-md border border-[#DEE2E6] text-xs text-gray-700">Cisco</span>
-            </div>
+            </div> */}
+
+            <CompanyLogosSection />
+
           </div>
           <button
             aria-label="expand"
@@ -437,8 +442,8 @@ export const CourseCard = ({
           </div>
         </div>
 
-        <button 
-          onClick={handleExpand} 
+        <button
+          onClick={handleExpand}
           className="w-full mt-4 sm:mt-5 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-[#10b981] text-white font-semibold text-sm sm:text-base hover:bg-[#059669] hover:-translate-y-0.5 transition-all duration-200 touch-manipulation"
         >
           Enroll Now - {isFree ? "Free" : `$${price}`}
@@ -459,19 +464,22 @@ export const CourseCard = ({
           {subtitle && (
             <p className="text-sm sm:text-base text-[#6C757D] mb-2">{subtitle}</p>
           )}
-          <p className="text-xs tracking-wider text-[#6C757D] mb-2">CREATED AND CERTIFIED BY</p>
-          <div className="flex flex-wrap items-center gap-1 sm:gap-2 mb-3">
-            <span className="h-5 sm:h-6 px-2 sm:px-3 inline-flex items-center rounded-md border border-[#DEE2E6] text-xs text-gray-700">Microsoft</span>
+          {/* <p className="text-xs tracking-wider text-[#6C757D] mb-2">CREATED AND CERTIFIED BY</p> */}
+          {/* <div className="flex flex-wrap items-center gap-1 sm:gap-2 mb-3">
+            <span className="h-5 sm:h-6 px-2 sm:px-3 inline-flex items-center rounded-md border border-[#DEE2E6] text-xs text-gray-700"> Microsoft</span>
             <span className="h-5 sm:h-6 px-2 sm:px-3 inline-flex items-center rounded-md border border-[#DEE2E6] text-xs text-gray-700">IBM</span>
             <span className="h-5 sm:h-6 px-2 sm:px-3 inline-flex items-center rounded-md border border-[#DEE2E6] text-xs text-gray-700">Cisco</span>
-          </div>
-          <p className="text-[#495057] text-xs sm:text-sm leading-relaxed">
+          </div> */}
+
+          <CompanyLogosSection />
+
+          <p className="text-[#495057] text-xs sm:text-sm leading-relaxed my-2">
             {truncateDescription(description, 140)}
           </p>
         </div>
-        <button 
-          aria-label="collapse" 
-          onClick={handleCollapse} 
+        <button
+          aria-label="collapse"
+          onClick={handleCollapse}
           className="bg-[#f3f4f6] border border-[#e5e7eb] rounded-full w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-[#6b7280] transition-all duration-300 hover:bg-[#e5e7eb] hover:scale-105 flex-shrink-0"
         >
           <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -507,8 +515,8 @@ export const CourseCard = ({
           </div>
         </div>
 
-        <button 
-          onClick={handleEnrollNow} 
+        <button
+          onClick={handleEnrollNow}
           className="w-full mb-3 sm:mb-4 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-[#10b981] text-white font-semibold text-sm sm:text-base hover:bg-[#059669] hover:-translate-y-0.5 transition-all duration-200 touch-manipulation"
           disabled={isEnrolling}
         >
@@ -534,6 +542,26 @@ export const CourseCard = ({
           </li>
         </ul>
 
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 my-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-[#F8F9FA] rounded-lg px-2 sm:px-3 py-1.5 sm:py-2">
+            <ZapIcon />
+            <span className="text-xs sm:text-sm font-medium text-[#495057]">{level}</span>
+          </div>
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-[#F8F9FA] rounded-lg px-2 sm:px-3 py-1.5 sm:py-2">
+            <ClockIcon />
+            <span className="text-xs sm:text-sm font-medium text-[#495057]">{duration} hours</span>
+          </div>
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-[#FFF3CD] border border-[#FFEAA7] rounded-lg px-2 sm:px-3 py-1.5 sm:py-2">
+            <span className="text-xs sm:text-sm font-medium text-[#856404]">
+              {isFree ? "Free" : `$${price}`}
+            </span>
+          </div>
+          {/* <div className="flex items-center gap-1 ml-auto">
+            <div className="flex text-[#FFC107] text-sm">★★★★★</div>
+            <span className="text-xs sm:text-sm font-medium text-[#495057]">4.8/5</span>
+          </div> */}
+        </div>
+
         <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
           <span className="px-2 sm:px-3 py-1 rounded-md bg-[#EEF0FF] text-[#3B5BDB] text-xs font-semibold">Career Boost</span>
           <span className="px-2 sm:px-3 py-1 rounded-md bg-[#EEF0FF] text-[#3B5BDB] text-xs font-semibold">Hands-On Projects</span>
@@ -541,6 +569,8 @@ export const CourseCard = ({
             <span className="px-2 sm:px-3 py-1 rounded-md bg-[#EEF0FF] text-[#3B5BDB] text-xs font-semibold">Industry Certificate</span>
           )}
         </div>
+
+
 
         <div className="flex items-center gap-3 bg-white border border-[#DEE2E6] rounded-lg sm:rounded-xl p-2 sm:p-3 mb-3 sm:mb-4">
           <div className="text-[#FFC107] text-sm">★★★★★</div>
@@ -576,6 +606,7 @@ export const CourseCard = ({
           </ul>
         </div>
       </div>
+      <IconActionsSection />
     </div>
   );
 
@@ -814,3 +845,4 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
 
 export default BasedLearningCourses;
 ;
+
