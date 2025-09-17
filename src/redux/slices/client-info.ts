@@ -53,6 +53,7 @@ const clientSlice = createSlice({
     initialState,
     reducers: {
         setClientInfo: (state, action: PayloadAction<ClientData>) => {
+            console.log('clientInfo', action.payload);
             state.data = action.payload;
         }
     },
