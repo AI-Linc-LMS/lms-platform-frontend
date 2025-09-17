@@ -115,18 +115,18 @@ const TopNav: React.FC = () => {
 
   return (
     <div className="w-full bg-white shadow flex justify-between md:justify-end items-center px-4 py-2">
-        <div className="md:hidden">
-            <img 
-                src={import.meta.env.VITE_CLIENT_LOGO} 
-                alt="Logo" 
-                className="h-8 w-auto cursor-pointer" 
-                onClick={() => navigate('/')}
-            />
-        </div>
-        <div className="flex items-center gap-3 md:gap-5">
-            {(isAdminOrInstructor || isSuperAdmin) && (
-                <Link
-                    to="/admin/dashboard"
+      <div className="md:hidden">
+        <img
+          src={import.meta.env.VITE_CLIENT_LOGO}
+          alt="Logo"
+          className="h-8 w-auto cursor-pointer"
+          onClick={() => navigate('/')}
+        />
+      </div>
+      <div className="flex items-center gap-3 md:gap-5">
+        {(isAdminOrInstructor || isSuperAdmin) && (
+          <Link
+            to="/admin/dashboard"
             className="bg-[#17627A] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#124F65] transition-colors"
           >
             Admin
@@ -150,11 +150,10 @@ const TopNav: React.FC = () => {
               />
               <div
                 ref={notificationRef}
-                className={`absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg p-4 z-50 ${
-                  showNotification
+                className={`absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg p-4 z-50 ${showNotification
                     ? "animate-dropdown-open"
                     : "animate-dropdown-close"
-                }`}
+                  }`}
                 role="alert"
                 aria-live="polite"
                 onAnimationEnd={() => {
@@ -204,11 +203,10 @@ const TopNav: React.FC = () => {
 
           {isDropdownVisible && (
             <div
-              className={`absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 ${
-                showDropdown
+              className={`absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 ${showDropdown
                   ? "animate-dropdown-open"
                   : "animate-dropdown-close"
-              }`}
+                }`}
               onAnimationEnd={() => {
                 if (!showDropdown) {
                   setIsDropdownVisible(false);
