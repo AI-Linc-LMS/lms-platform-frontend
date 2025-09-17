@@ -85,23 +85,23 @@ const ZapIcon = () => (
   </svg>
 );
 
-const AwardIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="text-gray-600"
-  >
-    <circle cx="12" cy="8" r="7"></circle>
-    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
-  </svg>
-);
+// const AwardIcon = () => (
+//   <svg
+//     xmlns="http://www.w3.org/2000/svg"
+//     width="18"
+//     height="18"
+//     viewBox="0 0 24 24"
+//     fill="none"
+//     stroke="currentColor"
+//     strokeWidth="2"
+//     strokeLinecap="round"
+//     strokeLinejoin="round"
+//     className="text-gray-600"
+//   >
+//     <circle cx="12" cy="8" r="7"></circle>
+//     <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+//   </svg>
+// );
 
 // Enrollment Modal Component
 const EnrollmentModal = ({
@@ -498,12 +498,12 @@ export const CourseCard = ({
             <ClockIcon />
             <span className="text-xs sm:text-sm font-medium text-[#495057]">{duration} hours</span>
           </div>
-          {certification && (
+          {/* {certification && (
             <div className="flex items-center gap-1.5 sm:gap-2 bg-[#F8F9FA] rounded-lg px-2 sm:px-3 py-1.5 sm:py-2">
               <AwardIcon />
               <span className="text-xs sm:text-sm font-medium text-[#495057]">Industry Certified</span>
             </div>
-          )}
+          )} */}
           <div className="flex items-center gap-1.5 sm:gap-2 bg-[#FFF3CD] border border-[#FFEAA7] rounded-lg px-2 sm:px-3 py-1.5 sm:py-2">
             <span className="text-xs sm:text-sm font-medium text-[#856404]">
               {isFree ? "Free" : `$${price}`}
