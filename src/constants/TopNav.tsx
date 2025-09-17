@@ -119,7 +119,7 @@ const TopNav: React.FC = () => {
             <img 
                 src={import.meta.env.VITE_CLIENT_LOGO} 
                 alt="Logo" 
-                className="h-16 w-auto cursor-pointer" 
+                className="h-12 w-auto cursor-pointer" 
                 onClick={() => navigate('/')}
             />
         </div>
