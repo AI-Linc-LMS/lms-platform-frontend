@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
-import { useAppSelector } from "../../../redux/store";
+import {RootState, useAppSelector} from "../../../redux/store";
 import GoogleLoginButton from "../../../commonComponents/common-buttons/google-login-button/GoogleLoginButton";
 import logimg from "../../../assets/login-placeholder/login-picture.png";
+import {useSelector} from "react-redux";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -17,10 +18,8 @@ const Login: React.FC = () => {
     e.preventDefault();
     login({ email, password });
   };
-  const clientName = import.meta.env.VITE_CLIENT_NAME || "Ai-Linc";
-  const logoUrl = import.meta.env.VITE_CLIENT_LOGO;
+    const clientInfo = useSelector((state: RootState) => state.clientInfo)
 
-  console.log(logoUrl);
   return (
     <div className="flex flex-col min-h-screen bg-[#F8F9FA] relative">
       <div className="flex flex-1">
@@ -47,15 +46,15 @@ const Login: React.FC = () => {
           <div className="w-full max-w-md space-y-8 bg-white md:bg-transparent p-6 rounded-3xl shadow-sm md:shadow-none">
             <div className="text-center">
               <div className="flex flex-col justify-center items-center">
-                {logoUrl && (
+                {clientInfo.data?.logo_url && (
                   <img
-                    src={logoUrl}
-                    alt={`${clientName} logo`}
+                    src={clientInfo.data?.logo_url}
+                    alt={`${clientInfo.data?.name}`}
                     className="h-10 mx-auto"
                   />
                 )}
                 <span className="text-2xl font-bold bg-gradient-to-r from-[#0BC5EA] to-[#6B46C1] bg-clip-text text-transparent">
-                  {clientName}
+                  {clientInfo.data?.name}
                 </span>
               </div>
               <h2 className="mt-6 text-3xl font-bold text-gray-900">
@@ -252,7 +251,7 @@ const Login: React.FC = () => {
           <div className="border-t border-gray-700 pt-4">
             <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
               <div className="text-sm text-gray-400">
-                © 2025 {clientName}. All rights reserved.
+                © 2025 {clientInfo.data?.name}. All rights reserved.
               </div>
               <div className="flex flex-wrap justify-center md:justify-end gap-4 text-sm">
                 <a
