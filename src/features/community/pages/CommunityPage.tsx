@@ -618,6 +618,7 @@ const CommunityPage: React.FC = () => {
                     onChange={(body) => setNewThread({ ...newThread, body })}
                     placeholder="What would you like to discuss? You can format text, add code snippets, and upload images..."
                     height="h-64 sm:h-96"
+                    darkMode={false}
                   />
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3">

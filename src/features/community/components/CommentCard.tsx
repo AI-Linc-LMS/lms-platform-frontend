@@ -104,6 +104,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
                 <RichContentDisplay
                   content={comment.body}
                   className="mb-3 sm:mb-4 text-sm sm:text-base leading-relaxed text-gray-700"
+                  darkMode={false}
                 />
 
                 {/* Author Info and Actions */}

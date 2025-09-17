@@ -112,6 +112,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({
                 <RichContentDisplay
                   content={comment.body}
                   className="text-gray-700 mb-2 text-sm leading-relaxed"
+                  darkMode={false}
                 />
                 <div className="flex items-center gap-2">
                   {commentAuthorAvatar.avatar ? (
