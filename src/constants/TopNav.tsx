@@ -6,6 +6,7 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useRole } from "../hooks/useRole";
 import { logout } from "../redux/slices/userSlice";
 import { handleMobileNavigation } from "../utils/authRedirectUtils";
+import {RootState} from "../redux/store.ts";
 
 interface UserState {
   profile_picture?: string;
@@ -24,6 +25,7 @@ const TopNav: React.FC = () => {
   const location = useLocation();
   const user = useSelector((state: { user: UserState }) => state.user);
   const dispatch = useDispatch();
+  const clientInfo = useSelector((state: RootState) => state.clientInfo);
 
   const userId = user.id;
   const { isAdminOrInstructor, isSuperAdmin } = useRole();
@@ -116,8 +118,9 @@ const TopNav: React.FC = () => {
   return (
     <div className="w-full bg-white shadow flex justify-between md:justify-end items-center px-4 py-2">
         <div className="md:hidden">
-            <h2 onClick={()=>navigate('/')} className="font-bruno  font-bold bg-gradient-to-r from-[#0BC5EA] to-[#6B46C1] bg-clip-text text-transparent text-sm">Ai
-                Linc</h2>
+            <h2 onClick={()=>navigate('/')} className="font-bruno  font-bold bg-gradient-to-r from-[#0BC5EA] to-[#6B46C1] bg-clip-text text-transparent text-sm">
+                {clientInfo.data?.name}
+            </h2>
         </div>
         <div className="flex items-center gap-3 md:gap-5">
             {(isAdminOrInstructor || isSuperAdmin) && (
