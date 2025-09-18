@@ -1,15 +1,17 @@
 import React, {ComponentType, useEffect, useState} from 'react';
 import {initApp} from '../services/authApis';
 import logo from '/logo.png';
-import {setClientInfo} from "../redux/slices/client-info.ts";
+import {ClientData, setClientInfo} from "../redux/slices/client-info.ts";
 import {useDispatch} from "react-redux";
+import AccountInactive from "../features/learn/pages/AccountInactive.tsx";
 
 const withAppInitializer = <P extends object>(WrappedComponent: ComponentType<P>) => {
     const AppInitializer: React.FC<P> = (props) => {
         const [isInitialized, setIsInitialized] = useState(false);
         const [error, setError] = useState<string | null>(null);
-        const [response, setResponse] = useState(null);
+        const [response, setResponse] = useState<ClientData>();
         const dispatch = useDispatch();
+        const [isInactive, setIsInactive] = useState<boolean>(false);
 
         useEffect(() => {
             const initialize = async () => {
@@ -18,7 +20,13 @@ const withAppInitializer = <P extends object>(WrappedComponent: ComponentType<P>
                     if (!clientId) {
                         throw new Error('Client ID is not configured');
                     }
-                    setResponse(await initApp(Number(clientId)));
+                    const result:ClientData = await initApp(Number(clientId));
+                    if(result.is_active) {
+                        setResponse(result);
+                    }
+                    else {
+                        setIsInactive(true);
+                    }
                     // setClientInfo(response);
                     setTimeout(() => {
                         setIsInitialized(true);
@@ -97,6 +105,10 @@ const withAppInitializer = <P extends object>(WrappedComponent: ComponentType<P>
                     `}</style>
                 </div>
             );
+        }
+
+        if(isInactive) {
+            return <AccountInactive/>
         }
 
         return <WrappedComponent {...props} />;
