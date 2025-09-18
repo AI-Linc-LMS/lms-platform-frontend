@@ -134,14 +134,17 @@ export const generateCourseTags = (course: CourseData) => {
 
 export const calculateProgress = (course: CourseData) => {
   const videosCompleted = course.stats?.video?.completed || 0;
-  const videosTotal = course.stats?.video?.total || 1;
+  const videosTotal = course.stats?.video?.total || 0;
   const quizzesCompleted = course.stats?.quiz?.completed || 0;
-  const quizzesTotal = course.stats?.quiz?.total || 1;
-  
+  const quizzesTotal = course.stats?.quiz?.total || 0;
+
+  if (videosTotal === 0 && quizzesTotal === 0) return 0;
+
   // Calculate weighted progress (videos 70%, quizzes 30%)
-  const videoProgress = (videosCompleted / videosTotal) * 0.7;
-  const quizProgress = (quizzesCompleted / quizzesTotal) * 0.3;
-  
+  const videoProgress = videosTotal > 0 ? (videosCompleted / videosTotal) * 0.7 : 0;
+  const quizProgress = quizzesTotal > 0 ? (quizzesCompleted / quizzesTotal) * 0.3 : 0;
+
+  // Return exact rounded value; do not force a minimum
   return Math.round((videoProgress + quizProgress) * 100);
 };
 

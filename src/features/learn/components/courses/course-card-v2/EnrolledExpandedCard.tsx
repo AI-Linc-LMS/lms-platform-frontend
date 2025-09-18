@@ -2,10 +2,10 @@ import React from "react";
 import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
 import { FileText, PlayCircle, Play, Trophy } from "lucide-react";
+import { calculateProgress } from "./utils/courseDataUtils";
 import {
   AchievementSection,
   ContentMetricsSection,
-  CompanyLogosSection,
   QuickOverviewSection,
   IconActionsSection,
   CardHeader,
@@ -15,6 +15,8 @@ import {
   NextLessonSection,
   CourseCardContainer,
 } from "./components";
+import { CertifiedBySection } from "./components/shared";
+import { generateTrustedByCompanies } from "./utils/courseDataUtils";
 
 interface EnrolledExpandedCardProps {
   course: Course;
@@ -41,9 +43,9 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
       {/* Card Header */}
       <CardHeader course={course} onCollapse={onCollapse} />
 
-      {/* Company Logos */}
+      {/* Trusted By (backend or fallback) */}
       <div className="px-6 pb-3">
-        <CompanyLogosSection />
+        <CertifiedBySection trustedCompanies={generateTrustedByCompanies(course)} />
       </div>
 
       {/* Minified Content */}
@@ -75,21 +77,20 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
               Your Progress
             </span>
             <span className="text-[13px] font-bold text-[#10b981]">
-              {course.progress_percentage || 15}%
+              {(course.progress_percentage ?? calculateProgress(course))}%
             </span>
           </div>
           <div className="w-full h-1.5 bg-[#e5e7eb] rounded-full overflow-hidden mb-2.5">
             <div
               className="h-full bg-gradient-to-r from-[#10b981] to-[#059669] rounded-full transition-all duration-300"
-              style={{ width: `${course.progress_percentage || 15}%` }}
+              style={{ width: `${course.progress_percentage ?? calculateProgress(course)}%` }}
             ></div>
           </div>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2 text-[11px] text-[#6b7280]">
               <PlayCircle className="w-[10px] h-[10px] text-[#10b981]" />
               <span>
-                {course.stats?.video?.completed || 12}/
-                {course.stats?.video?.total || 247} videos watched
+                {course.stats?.video?.completed ?? 0}/{course.stats?.video?.total ?? 0} videos watched
               </span>
             </div>
             <div className="flex items-center gap-2 text-[11px] text-[#6b7280]">
@@ -108,8 +109,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
                 />
               </svg>
               <span>
-                {course.stats?.quiz?.completed || 3}/
-                {course.stats?.quiz?.total || 23} quizzes completed
+                {course.stats?.quiz?.completed ?? 0}/{course.stats?.quiz?.total ?? 0} quizzes completed
               </span>
             </div>
           </div>
