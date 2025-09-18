@@ -36,9 +36,12 @@ export interface ClientData {
     "id": number,
     "name": string,
     "slug": string,
-    "logo_url": string,
-    "is_active": boolean
+    "app_logo_url": string,
+    "app_icon_url": string,
+    "is_active": boolean,
+    "features": {id: number, name: string}[]
 }
+
 
 interface ClientInfoState {
     data?: ClientData;

@@ -46,9 +46,9 @@ const Login: React.FC = () => {
           <div className="w-full max-w-md space-y-8 bg-white md:bg-transparent p-6 rounded-3xl shadow-sm md:shadow-none">
             <div className="text-center">
               <div className="flex flex-col justify-center items-center">
-                {clientInfo.data?.logo_url && (
+                {clientInfo.data?.app_logo_url && (
                   <img
-                    src={clientInfo.data?.logo_url}
+                    src={clientInfo.data?.app_logo_url}
                     alt={`${clientInfo.data?.name}`}
                     className="h-10 mx-auto"
                   />
