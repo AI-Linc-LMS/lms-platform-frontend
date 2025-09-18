@@ -5,7 +5,11 @@ type CourseData = Course;
 
 // Type guards and utility functions
 export const hasExtendedProps = (course: CourseData): boolean => {
-  return !!(course.trusted_by || course.difficulty_level || course.certificate_available);
+  return !!(
+    course.trusted_by?.length ||
+    course.difficulty_level ||
+    typeof course.certificate_available === 'boolean'
+  );
 };
 
 // Utility functions to generate dynamic data based on course information
@@ -67,81 +71,28 @@ export const generateNextLesson = (course: CourseData) => {
   return lessons[randomIndex];
 };
 
+// Use backend-provided trusted_by as-is; do not generate mocks
 export const generateTrustedByCompanies = (course: CourseData) => {
-  // If course already has trusted_by data, use it
-  if (course.trusted_by && course.trusted_by.length > 0) {
-    return course.trusted_by;
-  }
-  
-  // Generate based on course type/title
-  const allCompanies = [
-    { name: "Microsoft", color: "bg-blue-500" },
-    { name: "Google", color: "bg-blue-600" },
-    { name: "Amazon", color: "bg-orange-500" },
-    { name: "Apple", color: "bg-gray-600" },
-    { name: "Meta", color: "bg-blue-700" },
-    { name: "Netflix", color: "bg-red-600" },
-    { name: "Tesla", color: "bg-red-500" },
-    { name: "IBM", color: "bg-blue-700" },
-    { name: "Oracle", color: "bg-red-700" },
-    { name: "Salesforce", color: "bg-blue-400" },
-  ];
-  
-  // Select 2-4 companies based on course ID
-  const numCompanies = Math.floor((course.id % 3) + 2); // 2-4 companies
-  const startIndex = course.id % (allCompanies.length - numCompanies);
-  
-  return allCompanies.slice(startIndex, startIndex + numCompanies);
+  return course.trusted_by || [];
 };
 
+// Use backend-provided tags; do not generate mocks
 export const generateCourseTags = (course: CourseData) => {
-  // If course already has tags, use them
-  if (course.tags && course.tags.length > 0) {
-    return course.tags;
-  }
-  
-  // Generate tags based on course title and difficulty
-  const baseTags = [];
-  const title = course.title.toLowerCase();
-  
-  if (title.includes('excel') || title.includes('data')) {
-    baseTags.push("Data Analysis", "Business Intelligence", "Spreadsheets");
-  } else if (title.includes('python') || title.includes('programming')) {
-    baseTags.push("Programming", "Software Development", "Coding");
-  } else if (title.includes('design') || title.includes('ui')) {
-    baseTags.push("Design", "User Experience", "Creative");
-  } else if (title.includes('marketing') || title.includes('business')) {
-    baseTags.push("Marketing", "Business", "Strategy");
-  } else {
-    baseTags.push("Professional Skills", "Career Development", "Industry Knowledge");
-  }
-  
-  // Add difficulty-based tags
-  if (course.difficulty_level === "Beginner") {
-    baseTags.push("Beginner Friendly");
-  } else if (course.difficulty_level === "Advanced") {
-    baseTags.push("Advanced Level");
-  }
-  
-  // Add certificate tag if available
-  if (course.certificate_available) {
-    baseTags.push("Certificate Included");
-  }
-  
-  // Return up to 3 tags
-  return baseTags.slice(0, 3).map(tag => ({ name: tag }));
+  return course.tags || [];
 };
 
 export const calculateProgress = (course: CourseData) => {
   const videosCompleted = course.stats?.video?.completed || 0;
-  const videosTotal = course.stats?.video?.total || 1;
+  const videosTotal = course.stats?.video?.total || 0;
   const quizzesCompleted = course.stats?.quiz?.completed || 0;
-  const quizzesTotal = course.stats?.quiz?.total || 1;
-  
+  const quizzesTotal = course.stats?.quiz?.total || 0;
+
+  if (videosTotal === 0 && quizzesTotal === 0) return 0;
+
   // Calculate weighted progress (videos 70%, quizzes 30%)
-  const videoProgress = (videosCompleted / videosTotal) * 0.7;
-  const quizProgress = (quizzesCompleted / quizzesTotal) * 0.3;
-  
+  const videoProgress = videosTotal > 0 ? (videosCompleted / videosTotal) * 0.7 : 0;
+  const quizProgress = quizzesTotal > 0 ? (quizzesCompleted / quizzesTotal) * 0.3 : 0;
+
   return Math.round((videoProgress + quizProgress) * 100);
 };
 

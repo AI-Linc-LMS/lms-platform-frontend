@@ -1,10 +1,7 @@
 import React from "react";
 import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
-import {
-  generateTrustedByCompanies,
-  calculateProgress,
-} from "./utils/courseDataUtils";
+import { calculateProgress } from "./utils/courseDataUtils";
 import {
   EnrolledBannerSection,
   ContinueLearningButton,
@@ -30,8 +27,8 @@ const EnrolledCollapsedCard: React.FC<EnrolledCollapsedCardProps> = ({
     navigate(`/courses/${course.id}`);
   };
 
-  // Generate dynamic data
-  const trustedCompanies = generateTrustedByCompanies(course);
+  // Use backend-provided trusted companies
+  const trustedCompanies = course.trusted_by || [];
   const progressPercentage = calculateProgress(course);
 
   return (

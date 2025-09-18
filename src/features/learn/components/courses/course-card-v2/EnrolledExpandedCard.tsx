@@ -5,7 +5,6 @@ import { FileText, PlayCircle, Play, Trophy } from "lucide-react";
 import {
   AchievementSection,
   ContentMetricsSection,
-  CompanyLogosSection,
   QuickOverviewSection,
   IconActionsSection,
   CardHeader,
@@ -15,6 +14,7 @@ import {
   NextLessonSection,
   CourseCardContainer,
 } from "./components";
+import { CertifiedBySection } from "./components/shared";
 
 interface EnrolledExpandedCardProps {
   course: Course;
@@ -41,10 +41,12 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
       {/* Card Header */}
       <CardHeader course={course} onCollapse={onCollapse} />
 
-      {/* Company Logos */}
-      <div className="px-6 pb-3">
-        <CompanyLogosSection />
-      </div>
+      {/* Trusted By (from backend) */}
+      {course.trusted_by && course.trusted_by.length > 0 && (
+        <div className="px-6 pb-3">
+          <CertifiedBySection trustedCompanies={course.trusted_by} />
+        </div>
+      )}
 
       {/* Minified Content */}
       <div className="p-6 pt-4">
@@ -59,11 +61,8 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
 
         {/* Course Description */}
         <div className="mt-10 mb-6">
-          <p className="text-sm leading-[1.5] text-[#374151] m-0">
-            {course.description ||
-              "Learn how to build intelligent, goal-driven digital products using Agentic AI systems. This course covers advanced techniques for creating autonomous AI agents that can make decisions and take actions in complex environments."}
-          </p>
-        </div>
+          <p className="text-sm leading-[1.5] text-[#374151] m-0">{course.description}</p>
+      </div>
 
         {/* Content Metrics */}
         <ContentMetricsSection course={course} />
@@ -74,22 +73,19 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
             <span className="text-[13px] font-semibold text-[#374151]">
               Your Progress
             </span>
-            <span className="text-[13px] font-bold text-[#10b981]">
-              {course.progress_percentage || 15}%
-            </span>
+            <span className="text-[13px] font-bold text-[#10b981]">{course.progress_percentage || 0}%</span>
           </div>
           <div className="w-full h-1.5 bg-[#e5e7eb] rounded-full overflow-hidden mb-2.5">
             <div
               className="h-full bg-gradient-to-r from-[#10b981] to-[#059669] rounded-full transition-all duration-300"
-              style={{ width: `${course.progress_percentage || 15}%` }}
+              style={{ width: `${course.progress_percentage || 0}%` }}
             ></div>
           </div>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2 text-[11px] text-[#6b7280]">
               <PlayCircle className="w-[10px] h-[10px] text-[#10b981]" />
               <span>
-                {course.stats?.video?.completed || 12}/
-                {course.stats?.video?.total || 247} videos watched
+                {course.stats?.video?.completed || 0}/{course.stats?.video?.total || 0} videos watched
               </span>
             </div>
             <div className="flex items-center gap-2 text-[11px] text-[#6b7280]">
@@ -108,28 +104,23 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
                 />
               </svg>
               <span>
-                {course.stats?.quiz?.completed || 3}/
-                {course.stats?.quiz?.total || 23} quizzes completed
+                {course.stats?.quiz?.completed || 0}/{course.stats?.quiz?.total || 0} quizzes completed
               </span>
             </div>
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <div className="bg-[#fef3c7] border border-[#fde68a] rounded-lg p-3 mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-[13px] font-semibold text-[#92400e]">
-              Recent Activity
-            </span>
-            <span className="text-[11px] text-[#a16207]">2 hours ago</span>
-          </div>
-          <div className="space-y-1">
-            {course.recent_activity && course.recent_activity.length > 0 ? (
-              course.recent_activity.slice(0, 2).map((activity, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-2 text-[11px] text-[#92400e]"
-                >
+        {/* Recent Activity (only if provided) */}
+        {course.recent_activity && course.recent_activity.length > 0 && (
+          <div className="bg-[#fef3c7] border border-[#fde68a] rounded-lg p-3 mb-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-[13px] font-semibold text-[#92400e]">
+                Recent Activity
+              </span>
+            </div>
+            <div className="space-y-1">
+              {course.recent_activity.slice(0, 2).map((activity, index) => (
+                <div key={index} className="flex items-center gap-2 text-[11px] text-[#92400e]">
                   {index === 0 ? (
                     <Play className="w-[10px] h-[10px] text-[#a16207]" />
                   ) : (
@@ -137,24 +128,15 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
                   )}
                   <span>{activity}</span>
                 </div>
-              ))
-            ) : (
-              <>
-                <div className="flex items-center gap-2 text-[11px] text-[#92400e]">
-                  <Play className="w-[10px] h-[10px] text-[#a16207]" />
-                  <span>Completed: "Introduction to Data Visualization"</span>
-                </div>
-                <div className="flex items-center gap-2 text-[11px] text-[#92400e]">
-                  <Trophy className="w-[10px] h-[10px] text-[#a16207]" />
-                  <span>Earned: "Data Analysis Basics" badge</span>
-                </div>
-              </>
-            )}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Achievements Section */}
-        <AchievementSection />
+        {/* Achievements Section - show only if provided */}
+        {course.achievements && course.achievements.length > 0 && (
+          <AchievementSection achievements={course.achievements} />
+        )}
 
         {/* Next Lesson */}
         <NextLessonSection
@@ -163,6 +145,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
         />
 
         {/* Study Streak */}
+        {typeof course.streak === 'number' && course.streak > 0 && (
         <div className="bg-[#fef3c7] border border-[#fde68a] rounded-lg p-3 mb-4">
           <div className="flex items-center gap-2.5 mb-2">
             <div className="w-8 h-8 bg-[#f59e0b] rounded-full flex items-center justify-center">
@@ -183,7 +166,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
             </div>
             <div className="flex flex-col">
               <span className="text-lg font-bold text-[#92400e] leading-none">
-                {course.streak || 7}
+                {course.streak}
               </span>
               <span className="text-[10px] text-[#a16207] font-medium uppercase tracking-[0.3px]">
                 Day Streak
@@ -195,7 +178,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
               <div
                 key={index}
                 className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-semibold ${
-                  index < (course.streak || 7)
+                  index < (course.streak || 0)
                     ? "bg-[#10b981] text-white"
                     : "bg-[#f3f4f6] text-[#6b7280]"
                 }`}
@@ -205,6 +188,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
             ))}
           </div>
         </div>
+        )}
 
         {/* Instructors Section */}
         {course.instructors && course.instructors.length > 0 && (

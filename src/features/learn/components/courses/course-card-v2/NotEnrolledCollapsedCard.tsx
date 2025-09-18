@@ -1,10 +1,7 @@
 import React from "react";
 import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
-import {
-  formatPrice,
-  generateTrustedByCompanies,
-} from "./utils/courseDataUtils";
+import { formatPrice } from "./utils/courseDataUtils";
 
 interface NotEnrolledCollapsedCardProps {
   course: Course;
@@ -26,8 +23,8 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
   const formattedPrice = formatPrice(course?.price || "0");
   const isFree = course?.is_free === true || formattedPrice === "0";
 
-  // Generate trusted companies for display
-  const trustedCompanies = generateTrustedByCompanies(course);
+  // Use backend-provided trusted companies
+  const trustedCompanies = course.trusted_by || [];
 
   return (
     <div

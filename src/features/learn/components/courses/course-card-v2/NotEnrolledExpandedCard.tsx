@@ -159,8 +159,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
             } as React.CSSProperties
           }
         >
-          {course.description ||
-            "Comprehensive course designed to enhance your skills."}
+          {course.description}
         </p>
       </div>
 
@@ -170,50 +169,47 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
       {/* Course Tags */}
       {course.tags && course.tags!.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
-          {course.tags!.map((tag, index) => (
-            <span
-              key={index}
-              className={`text-xs font-medium px-3 py-1 rounded-full ${
-                index % 3 === 0
-                  ? "bg-[#E3F2FD] text-[#1976D2]"
-                  : index % 3 === 1
-                  ? "bg-[#E8F5E8] text-[#2E7D32]"
-                  : "bg-[#FFF3E0] text-[#F57C00]"
-              }`}
-            >
-              {tag}
-            </span>
-          ))}
+          {course.tags!.map((tag, index) => {
+            const tagName = typeof tag === "string" ? tag : tag.name;
+            return (
+              <span
+                key={index}
+                className={`text-xs font-medium px-3 py-1 rounded-full ${
+                  index % 3 === 0
+                    ? "bg-[#E3F2FD] text-[#1976D2]"
+                    : index % 3 === 1
+                    ? "bg-[#E8F5E8] text-[#2E7D32]"
+                    : "bg-[#FFF3E0] text-[#F57C00]"
+                }`}
+              >
+                {tagName}
+              </span>
+            );
+          })}
         </div>
       )}
 
-      {/* Certificate Available Section */}
-      {course?.certificate_available &&
-        course.certificate_available.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {course.certificate_available.map((cert, idx) => (
-              <span
-                key={idx}
-                className="bg-[#FFF3E0] text-[#F57C00] text-xs font-medium px-3 py-1 rounded-full"
-              >
-                <svg
-                  className="w-3 h-3 inline mr-1"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-                  />
-                </svg>
-                {cert}
-              </span>
-            ))}
-          </div>
-        )}
+      {/* Certificate Available */}
+      {course?.certificate_available && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          <span className="bg-[#FFF3E0] text-[#F57C00] text-xs font-medium px-3 py-1 rounded-full">
+            <svg
+              className="w-3 h-3 inline mr-1"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
+              />
+            </svg>
+            Certificate Available
+          </span>
+        </div>
+      )}
 
       {/* Rating and Learners */}
       <div className="mb-4 min-h-[5rem]">

@@ -1,6 +1,7 @@
 import React from "react";
 import { Flame, Trophy, Play } from "lucide-react";
 import { Course } from "../../../../types/final-course.types";
+import { calculateProgress } from "../utils/courseDataUtils";
 
 interface QuickOverviewSectionProps {
   course: Course;
@@ -9,11 +10,14 @@ interface QuickOverviewSectionProps {
 export const QuickOverviewSection: React.FC<QuickOverviewSectionProps> = ({
   course,
 }) => {
-  const progressPercentage = course.progress_percentage || 15;
-  const videosWatched = course.stats?.video?.completed || 12;
-  const totalVideos = course.stats?.video?.total || 247;
-  const dayStreak = course.streak || 7;
-  const badges = course.achievements?.length || 3;
+  const computedProgress = calculateProgress(course);
+  // Keep UI-friendly defaults when data is not provided by backend
+  const progressPercentage =
+    course.progress_percentage ?? (computedProgress || 15);
+  const videosWatched = course.stats?.video?.completed ?? 12;
+  const totalVideos = course.stats?.video?.total ?? 247;
+  const dayStreak = course.streak ?? 7;
+  const badges = course.badges ?? course.achievements?.length ?? 3;
 
   return (
     <div className="flex items-center gap-5 mb-4 p-4 bg-[#f8fafc] rounded-lg border border-[#e2e8f0]">

@@ -95,11 +95,13 @@ export interface Course {
   liked_count?: number;
   last_accessed?: string;
 
-  //feilds to be added
-  tags: string[];
+  // fields possibly added/extended
+  // Backend provides booleans for certificate availability
+  certificate_available: boolean;
+  // Backend may provide arrays of strings or objects with name/color
+  tags: Array<{ name: string; color?: string } | string>;
+  trusted_by: Array<{ name: string; color?: string } | string>;
   rating?: number;
-  trusted_by: string[];
-  certificate_available?: string[];
   achievements?: Achievements[];
   badges?: number;
   streak?: number;

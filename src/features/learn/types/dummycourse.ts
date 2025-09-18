@@ -104,7 +104,7 @@ export const dummyCourse: Course = {
   tags: ["React", "Frontend", "Web Development"],
   rating: 4.7,
   trusted_by: ["Google", "Microsoft", "Amazon"],
-  certificate_available: ["Completion Certificate"],
+  certificate_available: true,
   achievements: [
     Achievements.FIRST_STEP,
     Achievements.QUIZ_MASTER,

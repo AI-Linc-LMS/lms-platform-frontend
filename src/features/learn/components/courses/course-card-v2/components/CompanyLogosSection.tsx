@@ -10,29 +10,9 @@ interface CompanyLogosProps {
   companies?: CompanyLogo[];
 }
 
-const DEFAULT_COMPANIES: CompanyLogo[] = [
-  {
-    name: "Microsoft",
-    logoUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg",
-    alt: "Microsoft",
-  },
-  {
-    name: "IBM",
-    logoUrl: "https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg",
-    alt: "IBM",
-  },
-  {
-    name: "Cisco",
-    logoUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/0/08/Cisco_logo_blue_2016.svg",
-    alt: "Cisco",
-  },
-];
+export const CompanyLogosSection: React.FC<CompanyLogosProps> = ({ companies }) => {
+  if (!companies || companies.length === 0) return null;
 
-export const CompanyLogosSection: React.FC<CompanyLogosProps> = ({
-  companies = DEFAULT_COMPANIES,
-}) => {
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <span className="text-[11px] text-[#9ca3af] font-normal uppercase tracking-[0.5px]">
@@ -44,11 +24,7 @@ export const CompanyLogosSection: React.FC<CompanyLogosProps> = ({
             key={company.name}
             className="flex items-center gap-1.5 px-2 py-1 bg-[#f8fafc] border border-[#e2e8f0] rounded-md text-[11px] font-semibold text-[#475569]"
           >
-            <img
-              src={company.logoUrl}
-              alt={company.alt}
-              className="w-4 h-4 object-contain"
-            />
+            <img src={company.logoUrl} alt={company.alt} className="w-4 h-4 object-contain" />
             <span>{company.name}</span>
           </div>
         ))}
