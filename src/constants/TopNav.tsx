@@ -6,6 +6,7 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useRole } from "../hooks/useRole";
 import { logout } from "../redux/slices/userSlice";
 import { handleMobileNavigation } from "../utils/authRedirectUtils";
+import {RootState} from "../redux/store.ts";
 
 interface UserState {
   profile_picture?: string;
@@ -23,6 +24,7 @@ const TopNav: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useSelector((state: { user: UserState }) => state.user);
+  const clientInfo = useSelector((state: RootState) => state.clientInfo);
   const dispatch = useDispatch();
   // clientInfo available via store if needed in future
 
@@ -119,8 +121,8 @@ const TopNav: React.FC = () => {
         
         <div className="md:hidden">
         <img
-          src={import.meta.env.VITE_CLIENT_LOGO}
-          alt="Logo"
+          src={clientInfo.data?.app_logo_url}
+          alt={clientInfo.data?.name}
           className="h-8 w-auto cursor-pointer"
           onClick={() => navigate('/')}
         />
