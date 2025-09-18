@@ -6,6 +6,7 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useRole } from "../hooks/useRole";
 import { logout } from "../redux/slices/userSlice";
 import { handleMobileNavigation } from "../utils/authRedirectUtils";
+import {RootState} from "../redux/store.ts";
 
 interface UserState {
   profile_picture?: string;
@@ -24,6 +25,7 @@ const TopNav: React.FC = () => {
   const location = useLocation();
   const user = useSelector((state: { user: UserState }) => state.user);
   const dispatch = useDispatch();
+  const clientInfo = useSelector((state: RootState) => state.clientInfo);
 
   const userId = user.id;
   const { isAdminOrInstructor, isSuperAdmin } = useRole();
