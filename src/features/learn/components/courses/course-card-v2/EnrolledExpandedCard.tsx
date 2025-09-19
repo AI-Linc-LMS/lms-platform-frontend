@@ -53,7 +53,6 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
       {/* Minified Content */}
       <div className="p-6 pt-4">
         {/* Quick Overview */}
-        {JSON.stringify(course)}
         <QuickOverviewSection course={course} />
 
         {/* Next Up Section */}
