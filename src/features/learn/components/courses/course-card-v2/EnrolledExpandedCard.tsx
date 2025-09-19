@@ -2,10 +2,10 @@ import React from "react";
 import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
 import { FileText, PlayCircle, Play, Trophy } from "lucide-react";
+import { calculateProgress } from "./utils/courseDataUtils";
 import {
   AchievementSection,
   ContentMetricsSection,
-  CompanyLogosSection,
   QuickOverviewSection,
   IconActionsSection,
   CardHeader,
@@ -15,6 +15,8 @@ import {
   NextLessonSection,
   CourseCardContainer,
 } from "./components";
+import { CertifiedBySection } from "./components/shared";
+import { generateTrustedByCompanies } from "./utils/courseDataUtils";
 
 interface EnrolledExpandedCardProps {
   course: Course;
@@ -41,9 +43,11 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
       {/* Card Header */}
       <CardHeader course={course} onCollapse={onCollapse} />
 
-      {/* Company Logos */}
+      {/* Trusted By (backend or fallback) */}
       <div className="px-6 pb-3">
-        <CompanyLogosSection />
+        <CertifiedBySection
+          trustedCompanies={generateTrustedByCompanies(course)}
+        />
       </div>
 
       {/* Minified Content */}
@@ -76,13 +80,17 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
               Your Progress
             </span>
             <span className="text-[13px] font-bold text-[#10b981]">
-              {course.progress_percentage ?? 0}%
+              {course.progress_percentage ? calculateProgress(course) : 0}%
             </span>
           </div>
           <div className="w-full h-1.5 bg-[#e5e7eb] rounded-full overflow-hidden mb-2.5">
             <div
               className="h-full bg-gradient-to-r from-[#10b981] to-[#059669] rounded-full transition-all duration-300"
-              style={{ width: `${course.progress_percentage ?? 0}%` }}
+              style={{
+                width: `${
+                  course.progress_percentage ? calculateProgress(course) : 0
+                }%`,
+              }}
             ></div>
           </div>
           <div className="flex flex-col gap-1">
