@@ -416,9 +416,9 @@ const Signup: React.FC = () => {
         <div className="w-full max-w-lg space-y-4">
           <div className="text-center">
               <div className="flex flex-col justify-center items-center">
-                  {clientInfo.data?.logo_url && (
+                  {clientInfo.data?.app_logo_url && (
                       <img
-                          src={clientInfo.data?.logo_url}
+                          src={clientInfo.data?.app_logo_url}
                           alt={`${clientInfo.data?.name}`}
                           className="h-10 mx-auto"
                       />
