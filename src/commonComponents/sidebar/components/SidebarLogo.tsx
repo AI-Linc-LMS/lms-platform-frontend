@@ -14,9 +14,9 @@ const SidebarLogoPart = ({
   const clientInfo = useSelector((state: RootState) => state.clientInfo)
   return (
     <div className="relative text-neutral-900 overflow-visible w-full text-center items-center h-14 border-b-[0.5px] border-[#D3D3D318] font-bold">
-      {clientInfo.data?.logo_url && (
+      {clientInfo.data?.app_logo_url && (
         <img
-          src={clientInfo?.data?.logo_url}
+          src={clientInfo?.data?.app_logo_url}
           alt={`${clientInfo?.data?.name} logo`}
           className="h-full mx-auto"
         />

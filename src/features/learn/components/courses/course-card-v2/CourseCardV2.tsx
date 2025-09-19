@@ -116,7 +116,6 @@ const CourseCardV2: React.FC<CourseCardV2Props> = ({
     );
   }
 
-  console.log(isEnrolled, isExpanded, enrolled);
   // Determine which card component to render based on enrollment and expansion state
   if (isEnrolled) {
     if (isExpanded) {
