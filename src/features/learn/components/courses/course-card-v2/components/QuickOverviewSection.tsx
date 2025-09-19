@@ -9,11 +9,11 @@ interface QuickOverviewSectionProps {
 export const QuickOverviewSection: React.FC<QuickOverviewSectionProps> = ({
   course,
 }) => {
-  const progressPercentage = course.progress_percentage || 15;
-  const videosWatched = course.stats?.video?.completed || 12;
-  const totalVideos = course.stats?.video?.total || 247;
-  const dayStreak = course.streak || 7;
-  const badges = course.achievements?.length || 3;
+  const progressPercentage = course.progress_percentage ?? 0;
+  const videosWatched = course.stats?.video?.completed ?? 0;
+  const totalVideos = course.stats?.video?.total ?? 0;
+  const dayStreak = course.streak ?? 0;
+  const badges = course.achievements?.length ?? 0;
 
   return (
     <div className="flex items-center gap-5 mb-4 p-4 bg-[#f8fafc] rounded-lg border border-[#e2e8f0]">
@@ -24,14 +24,16 @@ export const QuickOverviewSection: React.FC<QuickOverviewSectionProps> = ({
             className="absolute top-0 left-0 w-full h-full rounded-full flex items-center justify-center"
             style={{
               background: `conic-gradient(#10b981 0deg, #10b981 ${
-                progressPercentage * 3.6
-              }deg, #e2e8f0 ${progressPercentage * 3.6}deg)`,
+                progressPercentage && progressPercentage * 3.6
+              }deg, #e2e8f0 ${
+                progressPercentage && progressPercentage * 3.6
+              }deg)`,
             }}
           >
             <div className="absolute w-[35px] h-[35px] bg-white rounded-full"></div>
           </div>
           <span className="relative z-10 text-xs font-bold text-[#374151]">
-            {progressPercentage}%
+            {progressPercentage ? progressPercentage : 0}%
           </span>
         </div>
         <div className="flex flex-col gap-0.5">

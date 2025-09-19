@@ -49,6 +49,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
       {/* Minified Content */}
       <div className="p-6 pt-4">
         {/* Quick Overview */}
+        {JSON.stringify(course)}
         <QuickOverviewSection course={course} />
 
         {/* Next Up Section */}
@@ -75,21 +76,21 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
               Your Progress
             </span>
             <span className="text-[13px] font-bold text-[#10b981]">
-              {course.progress_percentage || 15}%
+              {course.progress_percentage ?? 0}%
             </span>
           </div>
           <div className="w-full h-1.5 bg-[#e5e7eb] rounded-full overflow-hidden mb-2.5">
             <div
               className="h-full bg-gradient-to-r from-[#10b981] to-[#059669] rounded-full transition-all duration-300"
-              style={{ width: `${course.progress_percentage || 15}%` }}
+              style={{ width: `${course.progress_percentage ?? 0}%` }}
             ></div>
           </div>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2 text-[11px] text-[#6b7280]">
               <PlayCircle className="w-[10px] h-[10px] text-[#10b981]" />
               <span>
-                {course.stats?.video?.completed || 12}/
-                {course.stats?.video?.total || 247} videos watched
+                {course.stats?.video?.completed}/{course.stats?.video?.total}{" "}
+                videos watched
               </span>
             </div>
             <div className="flex items-center gap-2 text-[11px] text-[#6b7280]">
@@ -108,8 +109,8 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
                 />
               </svg>
               <span>
-                {course.stats?.quiz?.completed || 3}/
-                {course.stats?.quiz?.total || 23} quizzes completed
+                {course.stats?.quiz?.completed}/{course.stats?.quiz?.total}{" "}
+                quizzes completed
               </span>
             </div>
           </div>
@@ -183,7 +184,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
             </div>
             <div className="flex flex-col">
               <span className="text-lg font-bold text-[#92400e] leading-none">
-                {course.streak || 7}
+                {course.streak ?? 0}
               </span>
               <span className="text-[10px] text-[#a16207] font-medium uppercase tracking-[0.3px]">
                 Day Streak
@@ -195,7 +196,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
               <div
                 key={index}
                 className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-semibold ${
-                  index < (course.streak || 7)
+                  index < (course?.streak ?? 0)
                     ? "bg-[#10b981] text-white"
                     : "bg-[#f3f4f6] text-[#6b7280]"
                 }`}

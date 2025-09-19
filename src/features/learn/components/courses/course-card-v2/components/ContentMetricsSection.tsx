@@ -19,35 +19,39 @@ const CONTENT_METRICS: ContentMetric[] = [
     id: "videos",
     icon: Video,
     label: "Videos",
-    getValue: (course: Course) => course.stats?.video?.total || 247,
+    getValue: (course: Course) => course.stats?.video?.total,
     getTooltip: (value: number) => `${value} Videos`,
   },
   {
     id: "articles",
     icon: FileText,
     label: "Articles",
-    getValue: (course: Course) => course.stats?.article?.total || 45,
+    getValue: (course: Course) => course.stats?.article?.total,
     getTooltip: (value: number) => `${value} Articles`,
   },
   {
     id: "quizzes",
     icon: HelpCircle,
     label: "Quizzes",
-    getValue: (course: Course) => course.stats?.quiz?.total || 23,
+    getValue: (course: Course) => course.stats?.quiz?.total,
     getTooltip: (value: number) => `${value} Quizzes`,
   },
   {
     id: "problems",
     icon: Code,
     label: "Problems",
-    getValue: (course: Course) => course.stats?.coding_problem?.total || 18,
+    getValue: (course: Course) =>
+      course.stats?.coding_problem?.total
+        ? course.stats?.coding_problem?.total
+        : 0,
     getTooltip: (value: number) => `${value} Problems`,
   },
   {
     id: "assignments",
     icon: Edit,
     label: "Subjective",
-    getValue: (course: Course) => course.stats?.assignment?.total || 12,
+    getValue: (course: Course) =>
+      course.stats?.assignment?.total ? course.stats?.assignment?.total : 0,
     getTooltip: (value: number) => `${value} Subjective`,
   },
 ];

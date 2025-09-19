@@ -102,7 +102,7 @@ export interface Course {
   certificate_available?: string[];
   achievements?: Achievements[];
   badges?: number;
-  streak?: number;
+  streak?: number | undefined;
   recent_activity?: string[];
   progress_percentage?: number;
   next_lesson?: {
