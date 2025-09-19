@@ -1,5 +1,4 @@
 import { JSX } from "react";
-import ScholarshipCountdown from "./ScholarshipCountDown";
 import { ScholarshipRedemptionData } from "../types/assessmentTypes";
 import { PaymentResult } from "../../../../../services/payment/razorpayService";
 
@@ -26,18 +25,18 @@ type PerformanceReportProps = {
   onPaymentError?: (error: string) => void;
   showToast?: (type: "success" | "error" | "warning" | "loading", title: string, message: string) => void;
 };
-
+const clientName = import.meta.env.VITE_CLIENT_NAME ;
 const PerformanceReport = ({ 
   data, 
-  redeemData,
-  // isFlagshipSeatBooked = false,
-  isFlagshipCoursePaid = false,
-  assessmentDate,
-  clientId,
-  assessmentId,
-  onPaymentSuccess,
-  onPaymentError,
-  showToast
+  // redeemData,
+  // // isFlagshipSeatBooked = false,
+  // isFlagshipCoursePaid = false,
+  // assessmentDate,
+  // clientId,
+  // assessmentId,
+  // onPaymentSuccess,
+  // onPaymentError,
+  // showToast
 }: PerformanceReportProps) => {
   return (
     <div className="px-2 sm:px-4">
@@ -46,13 +45,13 @@ const PerformanceReport = ({
           ✨ AI Generated ✨
         </span>
         <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-[#264D64] text-center mb-4 sm:mb-6 lg:mb-8 px-2">
-          AILINC Student Performance Report
+          {clientName} Student Performance Report
         </h2>
         
        
       </div>
        {/* Only show ScholarshipCountdown if not already purchased */}
-       {!isFlagshipCoursePaid && (
+       {/* {!isFlagshipCoursePaid && (
           <div className="w-full  mb-6">
             <ScholarshipCountdown
               assessmentDate={assessmentDate}
@@ -68,7 +67,7 @@ const PerformanceReport = ({
               className="w-full"
             />
           </div>
-        )}
+        )} */}
       
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8 justify-between items-center">
         {data.map((metric: Metric, idx: number) => {

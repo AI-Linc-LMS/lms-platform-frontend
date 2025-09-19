@@ -50,7 +50,7 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
     leaderboardArray.length === 0
   ) {
     return (
-      <div className="flex flex-col w-full transition-all duration-300 bg-white p-4 rounded-3xl mt-10">
+      <div className="flex flex-col w-full transition-all duration-300 bg-white p-4 rounded-xl mt-10">
         <h2 className="text-xl font-semibold text-[#343A40] mb-3">
           Daily Progress
         </h2>
@@ -84,13 +84,13 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
               {[...Array(3)].map((_, index) => (
                 <tr key={index} className="animate-pulse">
                   <td className="px-2 py-2 text-xs border-b border-gray-300">
-                    <div className="h-4 bg-gray-200 rounded w-6 mx-auto"></div>
+                    <div className="h-4 bg-gray-200 rounded-xl w-6 mx-auto"></div>
                   </td>
                   <td className="px-2 py-2 text-xs border-b border-l border-gray-300">
-                    <div className="h-4 bg-gray-200 rounded w-20 mx-auto"></div>
+                    <div className="h-4 bg-gray-200 rounded-xl w-20 mx-auto"></div>
                   </td>
                   <td className="px-2 py-2 text-xs border-b border-l border-gray-300">
-                    <div className="h-4 bg-gray-200 rounded w-16 mx-auto"></div>
+                    <div className="h-4 bg-gray-200 rounded-xl w-16 mx-auto"></div>
                   </td>
                 </tr>
               ))}
@@ -99,12 +99,12 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
         </div>
         <div className="animate-pulse">
           <div className="flex justify-end items-center mb-1">
-            <div className="h-4 bg-gray-200 rounded w-16"></div>
+            <div className="h-4 bg-gray-200 rounded-xl w-16"></div>
           </div>
           <div className="h-8 rounded-full bg-gray-200"></div>
           <div className="flex justify-between mt-1">
-            <div className="h-4 bg-gray-200 rounded w-12"></div>
-            <div className="h-4 bg-gray-200 rounded w-12"></div>
+            <div className="h-4 bg-gray-200 rounded-xl w-12"></div>
+            <div className="h-4 bg-gray-200 rounded-xl w-12"></div>
           </div>
         </div>
       </div>
@@ -112,7 +112,7 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
   }
 
   return (
-    <div className="flex flex-col w-full lg:min-w-[270px] xl:min-w-[350px] transition-all duration-300 bg-white p-4 rounded-3xl mt-10">
+    <div className="flex flex-col w-full lg:min-w-[270px] xl:min-w-[350px] transition-all duration-300 bg-white p-4 rounded-xl mt-10">
       <h2 className="text-xl font-semibold text-[#343A40] mb-3">
         Daily Progress
       </h2>
