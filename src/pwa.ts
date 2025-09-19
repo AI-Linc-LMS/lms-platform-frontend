@@ -34,6 +34,8 @@ export class PWAManager {
   private config: PWAConfig = {};
   private hasUpdate: boolean = false;
   private updateDismissed: boolean = false;
+  private isOfflineState: boolean = !navigator.onLine;
+  private offlineCheckInterval: number | undefined;
   // Reload behavior guards
   private hadControllerAtLoad: boolean = false;
   private shouldReloadOnControllerChange: boolean = false;
@@ -42,6 +44,13 @@ export class PWAManager {
   constructor() {
     this.setupInstallPrompt();
     this.setupOnlineOfflineDetection();
+    this.checkOnlineStatus(); // Initial check
+    this.offlineCheckInterval = window.setInterval(() => this.checkOnlineStatus(), 30000); // Check every 30 seconds
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        this.checkOnlineStatus();
+      }
+    });
   }
 
   setConfig(config: PWAConfig): void {
@@ -179,7 +188,7 @@ export class PWAManager {
 
   private setupOnlineOfflineDetection(): void {
     window.addEventListener('online', () => {
-      this.notifyOnlineStatus(false);
+      this.checkOnlineStatus();
     });
     window.addEventListener('offline', () => {
       this.notifyOnlineStatus(true);
@@ -209,7 +218,7 @@ export class PWAManager {
   }
 
   isOffline(): boolean {
-    return !navigator.onLine;
+    return this.isOfflineState;
   }
 
   async updateServiceWorker(): Promise<void> {
@@ -299,7 +308,21 @@ export class PWAManager {
     this.installCallbacks.forEach(callback => callback(info));
   }
 
+  private async checkOnlineStatus(): Promise<void> {
+    try {
+      const response = await fetch(`/vite.svg?_=${new Date().getTime()}`, {
+        method: 'HEAD',
+        cache: 'no-store',
+      });
+      this.notifyOnlineStatus(!response.ok);
+    } catch {
+      this.notifyOnlineStatus(true);
+    }
+  }
+
   private notifyOnlineStatus(isOffline: boolean): void {
+    if (this.isOfflineState === isOffline) return;
+    this.isOfflineState = isOffline;
     this.offlineCallbacks.forEach(callback => callback(isOffline));
   }
 
