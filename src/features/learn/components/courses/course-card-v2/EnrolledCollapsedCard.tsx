@@ -92,13 +92,13 @@ const EnrolledCollapsedCard: React.FC<EnrolledCollapsedCardProps> = ({
                 className="absolute top-0 left-0 w-full h-full rounded-full flex items-center justify-center"
                 style={{
                   background: `conic-gradient(#10b981 0deg, #10b981 ${
-                    (progressPercentage || 0) * 3.6
-                  }deg, #e2e8f0 ${(progressPercentage || 0) * 3.6}deg)`,
+                    progressPercentage ?? 0 * 3.6
+                  }deg, #e2e8f0 ${progressPercentage ?? 0 * 3.6}deg)`,
                 }}
               >
                 <div className="absolute w-[35px] h-[35px] bg-white rounded-full"></div>
                 <span className="relative z-10 text-xs font-bold text-[#374151]">
-                  {progressPercentage || 0}%
+                  {progressPercentage ?? 0}%
                 </span>
               </div>
             </div>
@@ -107,8 +107,8 @@ const EnrolledCollapsedCard: React.FC<EnrolledCollapsedCardProps> = ({
                 Course Progress
               </span>
               <span className="text-[11px] text-[#6b7280]">
-                {course.stats?.video?.completed || 0}/
-                {course.stats?.video?.total || 0} videos
+                {course.stats?.video?.completed ?? 0}/
+                {course.stats?.video?.total ?? 0} videos
               </span>
             </div>
           </div>
@@ -118,7 +118,7 @@ const EnrolledCollapsedCard: React.FC<EnrolledCollapsedCardProps> = ({
             <div className="flex flex-col items-center gap-1 p-2 bg-white rounded-md border border-[#e2e8f0] min-w-[60px]">
               <i className="fas fa-fire text-base text-[#10b981]"></i>
               <span className="text-base font-bold text-[#374151] leading-none">
-                {course.streak || 0}
+                {course.streak ?? 0}
               </span>
               <span className="text-[10px] text-[#6b7280] font-medium text-center">
                 Day Streak
@@ -127,7 +127,7 @@ const EnrolledCollapsedCard: React.FC<EnrolledCollapsedCardProps> = ({
             <div className="flex flex-col items-center gap-1 p-2 bg-white rounded-md border border-[#e2e8f0] min-w-[60px]">
               <i className="fas fa-trophy text-base text-[#10b981]"></i>
               <span className="text-base font-bold text-[#374151] leading-none">
-                {course.badges || 0}
+                {course.badges ?? 0}
               </span>
               <span className="text-[10px] text-[#6b7280] font-medium text-center">
                 Badges
@@ -136,7 +136,7 @@ const EnrolledCollapsedCard: React.FC<EnrolledCollapsedCardProps> = ({
             <div className="flex flex-col items-center gap-1 p-2 bg-white rounded-md border border-[#e2e8f0] min-w-[60px]">
               <i className="fas fa-play text-base text-[#10b981]"></i>
               <span className="text-base font-bold text-[#374151] leading-none">
-                {course.stats?.video?.completed || 0}
+                {course.stats?.video?.completed ?? 0}
               </span>
               <span className="text-[10px] text-[#6b7280] font-medium text-center">
                 Videos
