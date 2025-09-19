@@ -1,6 +1,7 @@
 import React from "react";
 import { Flame, Trophy, Play } from "lucide-react";
 import { Course } from "../../../../types/final-course.types";
+import { calculateProgress } from "../utils/courseDataUtils";
 
 interface QuickOverviewSectionProps {
   course: Course;
@@ -33,7 +34,7 @@ export const QuickOverviewSection: React.FC<QuickOverviewSectionProps> = ({
             <div className="absolute w-[35px] h-[35px] bg-white rounded-full"></div>
           </div>
           <span className="relative z-10 text-xs font-bold text-[#374151]">
-            {progressPercentage ? progressPercentage : 0}%
+            {progressPercentage ? calculateProgress(course) : 0}%
           </span>
         </div>
         <div className="flex flex-col gap-0.5">
