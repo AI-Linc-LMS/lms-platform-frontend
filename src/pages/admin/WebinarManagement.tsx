@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import axiosInstance from '../../services/axiosInstance';
+import PermissionDeniedModal from '../../features/admin/workshop-registrations/components/modals/PermissionDeniedModal';
 
 interface WorkshopVariable {
   id?: string;
@@ -118,9 +119,12 @@ const WebinarManagement: React.FC = () => {
       setLoading(false);
     }
   };
-
+  const [permissionDeniedOpen, setPermissionDeniedOpen] = useState(false);
   const handleCreateWorkshop = async () => {
     try {
+      setPermissionDeniedOpen(false);
+      return;
+
       setLoading(true);
 
       const requestData = {
@@ -164,111 +168,108 @@ const WebinarManagement: React.FC = () => {
       return;
     }
 
-    try {
-      setLoading(true);
+    setPermissionDeniedOpen(true);
+    return;
+    // try {
+    //   setLoading(true);
 
-      // Prepare the request data exactly as the API expects
-      const requestData = {
-        WorkshopTitle: formData.WorkshopTitle,
-        UpcomingWorkshopDate: formatDateForAPI(formData.UpcomingWorkshopDate),
-        WorkshopTime: formatTimeForAPI(formData.WorkshopTime),
-        SessionNumber: formData.SessionNumber.toString().startsWith('Session-')
-          ? formData.SessionNumber
-          : formatSessionForAPI(formData.SessionNumber),
-        WhatsAppGroupLink: formData.WhatsAppGroupLink || "",
-        ZoomJoiningLink: formData.ZoomJoiningLink || ""
-      };
+    //   // Prepare the request data exactly as the API expects
+    //   const requestData = {
+    //     WorkshopTitle: formData.WorkshopTitle,
+    //     UpcomingWorkshopDate: formatDateForAPI(formData.UpcomingWorkshopDate),
+    //     WorkshopTime: formatTimeForAPI(formData.WorkshopTime),
+    //     SessionNumber: formData.SessionNumber.toString().startsWith('Session-')
+    //       ? formData.SessionNumber
+    //       : formatSessionForAPI(formData.SessionNumber),
+    //     WhatsAppGroupLink: formData.WhatsAppGroupLink || "",
+    //     ZoomJoiningLink: formData.ZoomJoiningLink || ""
+    //   };
 
-      console.log('PATCH Request Data:', requestData);
+    //   console.log('PATCH Request Data:', requestData);
 
-      // Check if this is a real database ID or a temporary frontend ID
-      const workshopId = editingWorkshop.id;
-      let apiUrl = API_URL;
+    //   // Check if this is a real database ID or a temporary frontend ID
+    //   const workshopId = editingWorkshop?.id;
+    //   let apiUrl = API_URL;
 
-      if (workshopId && !workshopId.toString().startsWith('workshop_')) {
-        // Real database ID - append to URL
-        apiUrl = `${API_URL}${workshopId}/`;
-        console.log('Request URL (with ID):', apiUrl);
-      } else {
-        // Temporary frontend ID or no ID - use base URL for single resource update
-        console.log('Request URL (base):', apiUrl);
-        console.log('Note: Using base URL as workshop has temporary/no ID');
-      }
+    //   if (workshopId && !workshopId?.toString().startsWith('workshop_')) {
+    //     // Real database ID - append to URL
+    //     apiUrl = `${API_URL}${workshopId}/`;
+    //     console.log('Request URL (with ID):', apiUrl);
+    //   } else {
+    //     // Temporary frontend ID or no ID - use base URL for single resource update
+    //     console.log('Request URL (base):', apiUrl);
+    //     console.log('Note: Using base URL as workshop has temporary/no ID');
+    //   }
 
-      // Make the PATCH request to update the workshop
-      const response = await axiosInstance.patch(apiUrl, requestData, {
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
+    //   // Make the PATCH request to update the workshop
+    //   const response = await axiosInstance.patch(apiUrl, requestData, {
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //     }
+    //   });
 
-      console.log('PATCH Response:', response.data);
+    //   console.log('PATCH Response:', response.data);
 
-      // Check if response has 'updated' array as shown in your API response
-      if (response.data && response.data.updated) {
-        console.log('Updated fields:', response.data.updated);
-      }
+    //   // Check if response has 'updated' array as shown in your API response
+    //   if (response.data && response.data.updated) {
+    //     console.log('Updated fields:', response.data.updated);
+    //   }
 
-      // Refresh the workshops list to show updated data
-      await fetchWorkshops();
-      resetForm();
-      alert('Workshop updated successfully!');
+    //   // Refresh the workshops list to show updated data
+    //   await fetchWorkshops();
+    //   resetForm();
+    //   alert('Workshop updated successfully!');
 
-    } catch (error: unknown) {
-      console.error('Error updating workshop:', error);
+    // } catch (error: unknown) {
+    //   console.error('Error updating workshop:', error);
 
-      if (axios.isAxiosError(error)) {
-        const statusCode = error.response?.status;
-        const errorData = error.response?.data;
+    //   if (axios.isAxiosError(error)) {
 
-        console.log('Error Status:', statusCode);
-        console.log('Error Data:', errorData);
+    //     let errorMessage = '';
+    //     if (error?.response?.data?.message) {
+    //       errorMessage = error.response.data.message;
+    //     } else if (error?.response?.data?.detail) {
+    //       errorMessage = errorData.detail;
+    //     } else if (typeof errorData === 'string') {
+    //       errorMessage = errorData;
+    //     } else {
+    //       errorMessage = error?.message;
+    //     }
 
-        let errorMessage = '';
-        if (errorData?.message) {
-          errorMessage = errorData.message;
-        } else if (errorData?.detail) {
-          errorMessage = errorData.detail;
-        } else if (typeof errorData === 'string') {
-          errorMessage = errorData;
-        } else {
-          errorMessage = error.message;
-        }
-
-        switch (statusCode) {
-          case 400:
-            alert(`Invalid data format: ${errorMessage}`);
-            break;
-          case 401:
-            alert('Authentication required. Please log in again.');
-            break;
-          case 403:
-            alert('Access denied. You need admin or superadmin role to perform this action.');
-            break;
-          case 404:
-            alert('Workshop not found. Trying to update using base URL instead.');
-            // If 404 with ID, try again with base URL
-            if (editingWorkshop.id && !editingWorkshop.id.toString().startsWith('workshop_')) {
-              console.log('Retrying update with base URL...');
-              // Recursive call would cause issues, so just inform user
-              alert('Please try the update operation again.');
-            }
-            break;
-          case 405:
-            alert('Update operation not allowed. Please check API permissions.');
-            break;
-          case 500:
-            alert('Server error. Please try again later.');
-            break;
-          default:
-            alert(`Error updating workshop (${statusCode}): ${errorMessage}`);
-        }
-      } else {
-        alert('An unexpected error occurred while updating the workshop.');
-      }
-    } finally {
-      setLoading(false);
-    }
+    //     switch (statusCode) {
+    //       case 400:
+    //         alert(`Invalid data format: ${errorMessage}`);
+    //         break;
+    //       case 401:
+    //         alert('Authentication required. Please log in again.');
+    //         break;
+    //       case 403:
+    //         alert('Access denied. You need admin or superadmin role to perform this action.');
+    //         break;
+    //       case 404:
+    //         alert('Workshop not found. Trying to update using base URL instead.');
+    //         // If 404 with ID, try again with base URL
+    //         if (editingWorkshop?.id && !editingWorkshop?.id?.toString().startsWith('workshop_')) {
+    //           console.log('Retrying update with base URL...');
+    //           // Recursive call would cause issues, so just inform user
+    //           alert('Please try the update operation again.');
+    //         }
+    //         break;
+    //       case 405:
+    //         alert('Update operation not allowed. Please check API permissions.');
+    //         break;
+    //       case 500:
+    //         alert('Server error. Please try again later.');
+    //         break;
+    //       default:
+    //         alert(`Error updating workshop (${statusCode}): ${errorMessage}`);
+    //     }
+    //   } else {
+    //     alert('An unexpected error occurred while updating the workshop.');
+    //   }
+    // } finally {
+    //   setLoading(false);
+    // }
   };
 
 
@@ -697,6 +698,11 @@ const WebinarManagement: React.FC = () => {
           )}
         </div>
       </div>
+
+      <PermissionDeniedModal
+        isOpen={permissionDeniedOpen}
+        onClose={() => setPermissionDeniedOpen(false)}
+      />
     </div>
   );
 };

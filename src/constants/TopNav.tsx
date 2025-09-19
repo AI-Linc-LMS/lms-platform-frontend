@@ -1,4 +1,3 @@
-import sunIcon from "../commonComponents/icons/nav/sunIcon.png";
 import bellIcon from "../commonComponents/icons/nav/BellIcon.png";
 import userImg from "../commonComponents/icons/nav/User Image.png";
 import { useRef, useState, useEffect, useCallback } from "react";
@@ -7,6 +6,7 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useRole } from "../hooks/useRole";
 import { logout } from "../redux/slices/userSlice";
 import { handleMobileNavigation } from "../utils/authRedirectUtils";
+import {RootState} from "../redux/store.ts";
 
 interface UserState {
   profile_picture?: string;
@@ -15,21 +15,36 @@ interface UserState {
 
 const TopNav: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
+  const [isNotificationVisible, setIsNotificationVisible] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
   const notificationTimerRef = useRef<number | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const user = useSelector((state: { user: UserState }) => state.user);
+  const clientInfo = useSelector((state: RootState) => state.clientInfo);
   const dispatch = useDispatch();
+  // clientInfo available via store if needed in future
 
   const userId = user.id;
   const { isAdminOrInstructor, isSuperAdmin } = useRole();
 
   const toggleDropdown = () => {
-    setShowDropdown(!showDropdown);
+    if (showDropdown) {
+      setShowDropdown(false);
+    } else {
+      setIsDropdownVisible(true);
+      setShowDropdown(true);
+    }
   };
+
+  const handleCloseDropdown = useCallback(() => {
+    if (showDropdown) {
+      setShowDropdown(false);
+    }
+  }, [showDropdown]);
 
   const hideNotification = useCallback(() => {
     setShowNotification(false);
@@ -40,6 +55,7 @@ const TopNav: React.FC = () => {
   }, []);
 
   const triggerNotification = useCallback(() => {
+    setIsNotificationVisible(true);
     setShowNotification(true);
     if (notificationTimerRef.current) {
       window.clearTimeout(notificationTimerRef.current);
@@ -67,11 +83,10 @@ const TopNav: React.FC = () => {
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
       ) {
-        setShowDropdown(false);
+        handleCloseDropdown();
       }
 
       if (
-        showNotification &&
         notificationRef.current &&
         !notificationRef.current.contains(event.target as Node)
       ) {
@@ -83,7 +98,7 @@ const TopNav: React.FC = () => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showNotification, hideNotification]);
+  }, [handleCloseDropdown, hideNotification]);
 
   // Show notification only ONCE per user when landing on home path
   useEffect(() => {
@@ -102,21 +117,25 @@ const TopNav: React.FC = () => {
   }, [location.pathname, triggerNotification]);
 
   return (
-    <div className="w-full flex justify-between md:justify-end items-center px-4 pt-4">
-      <div className="md:hidden"></div>
-
-      <div className="flex items-center gap-5">
-        {(isAdminOrInstructor || isSuperAdmin) && (
-          <Link
-            to="/admin/dashboard"
+    <div className="w-full bg-white shadow flex justify-between md:justify-end items-center px-4 py-2">
+        
+        <div className="md:hidden">
+        <img
+          src={clientInfo.data?.app_logo_url}
+          alt={clientInfo.data?.name}
+          className="h-8 w-auto cursor-pointer"
+          onClick={() => navigate('/')}
+        />
+        </div>
+        <div className="flex items-center gap-3 md:gap-5">
+            {(isAdminOrInstructor || isSuperAdmin) && (
+                <Link
+                    to="/admin/dashboard"
             className="bg-[#17627A] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#124F65] transition-colors"
           >
             Admin
           </Link>
         )}
-        <div className="bg-gray-100 p-2 rounded-md">
-          <img src={sunIcon} alt="Loading" className="w-7 h-7" />
-        </div>
         <div className="relative">
           <div
             className="bg-gray-100 p-2 rounded-md cursor-pointer"
@@ -124,10 +143,10 @@ const TopNav: React.FC = () => {
             aria-label="Notifications"
             role="button"
           >
-            <img src={bellIcon} alt="Notifications" className="w-7 h-7" />
+            <img src={bellIcon} alt="Notifications" className="w-4 md:w-7 h-auto" />
           </div>
 
-          {showNotification && (
+          {isNotificationVisible && (
             <>
               <div
                 className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-40"
@@ -135,9 +154,18 @@ const TopNav: React.FC = () => {
               />
               <div
                 ref={notificationRef}
-                className="absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg p-4 z-50"
+                className={`absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg p-4 z-50 ${
+                  showNotification
+                    ? "animate-dropdown-open"
+                    : "animate-dropdown-close"
+                }`}
                 role="alert"
                 aria-live="polite"
+                onAnimationEnd={() => {
+                  if (!showNotification) {
+                    setIsNotificationVisible(false);
+                  }
+                }}
               >
                 <div className="flex justify-between items-start gap-3">
                   <div className="flex-1">
@@ -173,17 +201,28 @@ const TopNav: React.FC = () => {
           <img
             src={user.profile_picture ?? userImg}
             alt="User Avatar"
-            className="w-8 h-8 rounded-full object-cover cursor-pointer"
+            className="w-7 md:w-8 h-auto rounded-full object-cover cursor-pointer"
             onClick={toggleDropdown}
             key={`profile-${userId}`}
           />
 
-          {showDropdown && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+          {isDropdownVisible && (
+            <div
+              className={`absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 ${
+                showDropdown
+                  ? "animate-dropdown-open"
+                  : "animate-dropdown-close"
+              }`}
+              onAnimationEnd={() => {
+                if (!showDropdown) {
+                  setIsDropdownVisible(false);
+                }
+              }}
+            >
               <Link
                 to="/user-profile"
                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                onClick={() => setShowDropdown(false)}
+                onClick={handleCloseDropdown}
               >
                 Profile
               </Link>

@@ -4,6 +4,8 @@ import PrimaryButton from "../../../commonComponents/common-buttons/primary-butt
 import GoogleSignupButton from "../../../commonComponents/common-buttons/google-login-button/GoogleSignupButton";
 import { signup } from "../../../services/authApis";
 import { useToast } from "../../../contexts/ToastContext";
+import {useSelector} from "react-redux";
+import {RootState} from "../../../redux/store.ts";
 
 export interface SignupFormData {
   first_name: string;
@@ -107,6 +109,8 @@ const Signup: React.FC = () => {
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const clientInfo = useSelector((state: RootState) => state.clientInfo)
 
   // Filter countries based on search term
   const filteredCountries = countries.filter(country =>
@@ -411,11 +415,18 @@ const Signup: React.FC = () => {
       <div className="w-full md:w-1/2 flex items-center justify-center px-4 sm:px-4 lg:px-6">
         <div className="w-full max-w-lg space-y-4">
           <div className="text-center">
-            <div className="flex justify-center items-center">
-              <span className="text-2xl font-bold bg-gradient-to-r from-[#0BC5EA] to-[#6B46C1] bg-clip-text text-transparent">
-                AI LINC
-              </span>
-            </div>
+              <div className="flex flex-col justify-center items-center">
+                  {clientInfo.data?.app_logo_url && (
+                      <img
+                          src={clientInfo.data?.app_logo_url}
+                          alt={`${clientInfo.data?.name}`}
+                          className="h-10 mx-auto"
+                      />
+                  )}
+                  <span className="text-2xl font-bold bg-gradient-to-r from-[#0BC5EA] to-[#6B46C1] bg-clip-text text-transparent">
+                  {clientInfo.data?.name}
+                </span>
+              </div>
             <h2 className="text-2xl font-bold text-gray-900">
               Create an account
             </h2>

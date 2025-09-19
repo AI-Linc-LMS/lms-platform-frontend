@@ -9,12 +9,14 @@ import {
 import routes from "./routes";
 import Container from "./constants/Container";
 import { Outlet } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useTokenExpirationHandler } from "./hooks/useTokenExpirationHandler";
 import useUserActivityTracking from "./hooks/useUserActivityTracking";
 import { setupActivitySyncListeners } from "./utils/userActivitySync";
 import { ToastProvider } from "./contexts/ToastContext";
 import { ToastContainer } from "./components/ToastContainer";
+import { PWAProvider } from "./components/PWAProvider";
+import { IOSPWAInstallPrompt } from "./components/IOSPWAInstallPrompt";
 import AdminRoute from "./commonComponents/private-route/AdminRoute";
 import {
   AuthRedirectProvider,
@@ -27,13 +29,16 @@ import {
 } from "./utils/authRedirectUtils";
 // import FloatingActivityTimer from "./components/FloatingActivityTimer";
 import { CommunityPage, ThreadDetailPage } from "./features/community";
+import LoadingSpinner from "./commonComponents/loading-spinner/LoadingSpinner";
 
 function App() {
   return (
     <AuthRedirectProvider>
       <ToastProvider>
         <Router>
-          <AppContent />
+          <PWAProvider>
+            <AppContent />
+          </PWAProvider>
           <ToastContainer />
         </Router>
       </ToastProvider>
@@ -317,52 +322,54 @@ function AppContent() {
 
   return (
     <>
-      <Routes>
-        {routes.map((route) => {
-          if (route.isPrivate) {
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
+          {routes.map((route) => {
+            if (route.isPrivate) {
+              return (
+                <Route
+                  key={route.path}
+                  path={route.path}
+                  element={
+                    <Container>
+                      <Outlet />
+                    </Container>
+                  }
+                >
+                  <Route
+                    index
+                    element={
+                      route.requiredRole === "admin_or_instructor" ? (
+                        <AdminRoute>
+                          <route.component />
+                        </AdminRoute>
+                      ) : (
+                        <route.component />
+                      )
+                    }
+                  />
+                </Route>
+              );
+            }
+
             return (
               <Route
                 key={route.path}
                 path={route.path}
-                element={
-                  <Container>
-                    <Outlet />
-                  </Container>
-                }
-              >
-                <Route
-                  index
-                  element={
-                    route.requiredRole === "admin_or_instructor" ? (
-                      <AdminRoute>
-                        <route.component />
-                      </AdminRoute>
-                    ) : (
-                      <route.component />
-                    )
-                  }
-                />
-              </Route>
+                element={<route.component />}
+              />
             );
-          }
+          })}
+          <Route path="/community" element={<CommunityPage />} />
+          <Route
+            path="/community/thread/:threadId"
+            element={<ThreadDetailPage />}
+          />
 
-          return (
-            <Route
-              key={route.path}
-              path={route.path}
-              element={<route.component />}
-            />
-          );
-        })}
-        <Route path="/community" element={<CommunityPage />} />
-        <Route
-          path="/community/thread/:threadId"
-          element={<ThreadDetailPage />}
-        />
-
-        {/* Handle unknown routes - keeps authenticated users on the app */}
-        <Route path="*" element={<InvalidRoute />} />
-      </Routes>
+          {/* Handle unknown routes - keeps authenticated users on the app */}
+          <Route path="*" element={<InvalidRoute />} />
+        </Routes>
+      </Suspense>
 
       {/* Only show FloatingActivityTimer when authenticated and not on login/register pages */}
       {/* Commented out per instructions */}
@@ -374,6 +381,9 @@ function AppContent() {
        location.pathname !== '/otp' && (
         <FloatingActivityTimer />
       )} */}
+
+      {/* iOS PWA Installation Prompt */}
+      <IOSPWAInstallPrompt appName="AiLinc" />
     </>
   );
 }

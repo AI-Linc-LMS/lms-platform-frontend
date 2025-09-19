@@ -84,7 +84,7 @@ const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
     Object.keys(data.streak).length === 0
   ) {
     return (
-      <div className="flex flex-col w-full  transition-all duration-300 p-4 rounded-3xl mt-12">
+      <div className="flex flex-col w-full  transition-all duration-300 px-0 md:p-4 rounded-3xl mt-12">
         <h2 className="text-xl font-semibold text-gray-800 mb-3">
           Weekly Streaks
         </h2>
@@ -111,38 +111,41 @@ const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
   }
 
   return (
-    <div className="flex flex-col w-full lg:min-w-[270px] xl:min-w-[350px] transition-all duration-300 p-4 rounded-3xl mt-12">
+    <div className="flex flex-col w-full lg:min-w-[270px] xl:min-w-[350px] transition-all duration-300 px-0 md:p-4 rounded-3xl mt-12">
       <h2 className="text-xl font-semibold text-gray-800 mb-3">
         Weekly Streaks
       </h2>
-      <p className="text-[14px] text-gray-500 mb-6">
+      <p className="text-[14px] text-gray-500 mb-4 md:mb-6">
         Study everyday to build your streak 💪
       </p>
+      <div className="rounded-xl bg-white p-4">
+          <div className="grid grid-cols-5 gap-4">
+              {days.map((day) => {
+                  const tooltipText = dayStyles[day].includes("border-[#AE0606]")
+                      ? "Missed day"
+                      : dayStyles[day].includes("bg-[#CDE5CE]")
+                          ? "Past streak"
+                          : dayStyles[day].includes("bg-[#417845]")
+                              ? "Current streak"
+                              : "";
 
-      <div className="grid grid-cols-5 gap-4">
-        {days.map((day) => {
-          const tooltipText = dayStyles[day].includes("border-[#AE0606]")
-            ? "Missed day"
-            : dayStyles[day].includes("bg-[#CDE5CE]")
-            ? "Past streak"
-            : dayStyles[day].includes("bg-[#417845]")
-            ? "Current streak"
-            : "";
-
-          return (
-            <div
-              key={day}
-              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm ${dayStyles[day]} group transition-transform duration-300 hover:scale-110`}
-            >
-              {tooltipText && (
-                <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 bg-gray-100 text-black text-xs rounded-md px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  {tooltipText}
-                </div>
-              )}
-              {day}
-            </div>
-          );
-        })}
+                  return (
+                      <div className="flex justify-center items-center w-full h-full">
+                          <div
+                              key={day}
+                              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm ${dayStyles[day]} group transition-transform duration-300 hover:scale-110`}
+                          >
+                              {tooltipText && (
+                                  <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 bg-gray-100 text-black text-xs rounded-xl px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                      {tooltipText}
+                                  </div>
+                              )}
+                              {day}
+                          </div>
+                      </div>
+                  );
+              })}
+          </div>
       </div>
     </div>
   );

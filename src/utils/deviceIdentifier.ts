@@ -204,6 +204,34 @@ export const getDeviceInfo = (): DeviceInfo => {
 };
 
 /**
+ * Detects if the current device is iOS (iPhone or iPad)
+ * @returns True if iOS device, false otherwise
+ */
+export const isIOSDevice = (): boolean => {
+  const userAgent = navigator.userAgent;
+  return /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
+};
+
+/**
+ * Detects if the current device is an iPhone specifically
+ * @returns True if iPhone, false otherwise
+ */
+export const isIPhoneDevice = (): boolean => {
+  const userAgent = navigator.userAgent;
+  return /iPhone/.test(userAgent) && !(window as any).MSStream;
+};
+
+/**
+ * Detects if the PWA is already installed (running in standalone mode)
+ * @returns True if PWA is installed/standalone, false otherwise
+ */
+export const isPWAInstalled = (): boolean => {
+  return window.matchMedia('(display-mode: standalone)').matches ||
+         (window.navigator as any).standalone === true ||
+         document.referrer.includes('android-app://');
+};
+
+/**
  * Gets a complete device fingerprint including session ID and device info
  * @returns Object containing session_id and device_info
  */

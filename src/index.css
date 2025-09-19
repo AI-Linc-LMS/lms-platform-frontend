@@ -2,8 +2,101 @@
 @tailwind utilities;
 @tailwind utilities;
 @import "tailwindcss";
+
+/*Lato Font*/
+@font-face {
+    font-family: 'Lato';
+    src:
+            url('assets/font/Lato/Lato-Thin.ttf') format('truetype');
+    font-weight: 100;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src:
+            url('assets/font/Lato/Lato-Light.ttf') format('truetype');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src:
+            url('assets/font/Lato/Lato-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src:
+            url('assets/font/Lato/Lato-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src:
+            url('assets/font/Lato/Lato-Black.ttf') format('truetype');
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+}
+/*Oswald font*/
+@font-face {
+    font-family: 'Oswald';
+    src:
+            url('assets/font/Oswald/Oswald-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Oswald';
+    src:
+            url('assets/font/Oswald/Oswald-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Oswald';
+    src:
+            url('assets/font/Oswald/Oswald-Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Oswald';
+    src:
+            url('assets/font/Oswald/Oswald-SemiBold.ttf') format('truetype');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+/*Playfair Display*/
+@font-face {
+    font-family: 'Playfair Display';
+    src: url('assets/font/Playfair_Display/PlayfairDisplay-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
 body {
   background-color: #F8F9FA;
+    font-family: "Lato", sans-serif ;
 }
 
 
@@ -257,3 +350,88 @@ body {
 .animate-slide-out-to-right {
   animation: slideOutToRight 0.3s cubic-bezier(0.55, 0.06, 0.68, 0.19);
 }
+
+/* =============================== Page Load Animation ================================== */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out forwards;
+}
+
+.animate-children-fade-up > * {
+  animation: fade-up 0.5s ease-out forwards;
+  opacity: 0;
+}
+/* =============================== Page Load Animation - END ================================== */
+
+/* =============================== Dropdown Animation ================================== */
+@keyframes dropdown-open {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes dropdown-close {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+}
+
+.animate-dropdown-open {
+  animation: dropdown-open 0.1s ease-out forwards;
+}
+
+.animate-dropdown-close {
+  animation: dropdown-close 0.1s ease-in forwards;
+}
+/* =============================== Dropdown Animation - END ================================== */
+
+/* =============================== Shimmer Animation ================================== */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.2) 20%,
+    rgba(255, 255, 255, 0.5) 60%,
+    rgba(255, 255, 255, 0)
+  );
+  animation: shimmer 2s infinite;
+}
+/* =============================== Shimmer Animation - END ================================== */

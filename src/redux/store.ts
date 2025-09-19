@@ -3,11 +3,13 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import authReducer from './slices/authSlice';
 import userReducer from './slices/userSlice';
 import coursesReducer from './slices/courseSlice';
+import clientReducer from "./slices/client-info.ts";
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     user: userReducer,
     courses: coursesReducer,
+      clientInfo: clientReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
