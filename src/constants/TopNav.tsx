@@ -1,4 +1,4 @@
-import bellIcon from "../commonComponents/icons/nav/BellIcon.png";
+import { Bell } from 'lucide-react';
 import userImg from "../commonComponents/icons/nav/User Image.png";
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
@@ -117,7 +117,7 @@ const TopNav: React.FC = () => {
   }, [location.pathname, triggerNotification]);
 
   return (
-    <div className="w-full bg-white shadow flex justify-between md:justify-end items-center px-4 py-2">
+    <div className="w-full bg-white flex justify-between md:justify-end items-center px-4 py-2 shadow-[0_1px_10px_rgba(0,0,0,0.05)] md:shadow border-b border-gray-200 md:border-b-0">
         
         <div className="md:hidden">
         <img
@@ -143,7 +143,7 @@ const TopNav: React.FC = () => {
             aria-label="Notifications"
             role="button"
           >
-            <img src={bellIcon} alt="Notifications" className="w-4 md:w-7 h-auto" />
+            <Bell className="w-5 md:w-6 h-auto text-gray-600" strokeWidth={1.5} />
           </div>
 
           {isNotificationVisible && (
