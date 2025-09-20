@@ -1,9 +1,21 @@
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { likeOrUnlikeCourse } from "../../../../services/enrolled-courses-content/coursesApis";
-import likeIcon from "../../../../commonComponents/icons/enrolled-courses/like.png";
-import unlikeIcon from "../../../../commonComponents/icons/enrolled-courses/unlike.png";
 import ReportIssueModal from "./ReportIssueModal";
+import {
+  FaHeart,
+  FaRegHeart,
+  FaFlag,
+  FaShare,
+  FaBookmark,
+  FaRegBookmark,
+  FaThumbsUp,
+  FaRegThumbsUp,
+  FaGraduationCap,
+  FaStar,
+  FaRocket,
+} from "react-icons/fa";
 
 interface CourseActionsProps {
   likeCount: number;
@@ -24,8 +36,9 @@ const CourseActions: React.FC<CourseActionsProps> = ({
   const [currentLikeCount, setCurrentLikeCount] = useState(likeCount);
   const [currentIsLiked, setCurrentIsLiked] = useState(isLiked);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
 
-  // Sync local state with props when they change
   useEffect(() => {
     setCurrentLikeCount(likeCount);
     setCurrentIsLiked(isLiked);
@@ -34,121 +47,305 @@ const CourseActions: React.FC<CourseActionsProps> = ({
   const likeMutation = useMutation({
     mutationFn: () => likeOrUnlikeCourse(clientId, courseId),
     onMutate: async () => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ["enrolledCourses"] });
-      await queryClient.cancelQueries({
-        queryKey: ["continueLearningCourses"],
-      });
-
-      // Snapshot the previous value
-      const previousLikeCount = currentLikeCount;
-      const previousIsLiked = currentIsLiked;
-
-      // Optimistically update to the new value
       const newIsLiked = !currentIsLiked;
       const newLikeCount = newIsLiked
         ? currentLikeCount + 1
-        : currentLikeCount - 1;
+        : Math.max(0, currentLikeCount - 1);
 
       setCurrentIsLiked(newIsLiked);
       setCurrentLikeCount(newLikeCount);
 
-      // Notify parent component
-      if (onLikeUpdate) {
-        onLikeUpdate(newLikeCount, newIsLiked);
-      }
-
-      // Return a context object with the snapshotted value
-      return { previousLikeCount, previousIsLiked };
+      return {
+        previousIsLiked: currentIsLiked,
+        previousLikeCount: currentLikeCount,
+      };
     },
-    onError: (
-      context:
-        | { previousLikeCount: number; previousIsLiked: boolean }
-        | undefined
-    ) => {
-      // If the mutation fails, use the context returned from onMutate to roll back
+    onError: (error, variables, context) => {
       if (context) {
-        setCurrentLikeCount(context.previousLikeCount);
         setCurrentIsLiked(context.previousIsLiked);
-
-        // Notify parent component of rollback
-        if (onLikeUpdate) {
-          onLikeUpdate(context.previousLikeCount, context.previousIsLiked);
-        }
+        setCurrentLikeCount(context.previousLikeCount);
       }
+      console.error("Error liking/unliking course:", error);
     },
-    onSettled: () => {
-      // Always refetch after error or success
-      queryClient.invalidateQueries({ queryKey: ["enrolledCourses"] });
-      queryClient.invalidateQueries({ queryKey: ["continueLearningCourses"] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["course", courseId.toString()],
+      });
+      if (onLikeUpdate) {
+        onLikeUpdate(currentLikeCount, currentIsLiked);
+      }
     },
   });
 
-  const handleLikeToggle = () => {
+  const handleLike = () => {
     likeMutation.mutate();
   };
 
-  const handleReportIssue = () => {
-    setIsReportModalOpen(true);
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Check out this course!",
+          text: "I found this amazing course that you might be interested in.",
+          url: window.location.href,
+        });
+      } catch (error) {
+        console.error("Error sharing:", error);
+      }
+    } else {
+      await navigator.clipboard.writeText(window.location.href);
+      // You could add a toast notification here
+    }
+  };
+
+  const handleBookmark = () => {
+    setIsBookmarked(!isBookmarked);
+  };
+
+  const handleFeedback = (positive: boolean) => {
+    // Handle feedback submission
+    setShowFeedback(false);
+    // Add API call here for feedback
   };
 
   return (
     <>
-      <div className="flex flex-col sm:flex-row gap-3 my-3 items-center justify-between">
-        <div className="flex flex-row gap-3 w-full sm:w-auto justify-center sm:justify-start">
-          <button
-            onClick={handleLikeToggle}
-            disabled={likeMutation.isPending}
-            className={`w-[100px] h-[45px] rounded-full bg-[#E9ECEF] flex flex-row items-center justify-center gap-2 p-3 cursor-pointer transition-colors ${likeMutation.isPending ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-          >
-            <img
-              src={currentIsLiked ? likeIcon : unlikeIcon}
-              alt={currentIsLiked ? "Liked" : "Not liked"}
-              className="w-5 h-5"
-            />
-            <p className="font-medium text-xs sm:text-[14px] text-[#495057]">
-              {likeMutation.isPending ? "..." : currentLikeCount}
-            </p>
-          </button>
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl lg:rounded-3xl p-6 sm:p-8 shadow-lg border border-gray-100">
+        {/* Header Section */}
+        <div className="flex items-center justify-between mb-6 sm:mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+              <FaGraduationCap className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
+                Course Interaction
+              </h3>
+              <p className="text-sm text-gray-600">
+                Share your experience and engage with the course
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm font-medium">
+            <FaStar className="w-3 h-3" />
+            <span>4.8 Rating</span>
+          </div>
         </div>
-        <div className="w-full sm:w-auto flex justify-center sm:justify-end mt-2 sm:mt-0">
-          <button
-            onClick={handleReportIssue}
-            className="flex flex-row gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+
+        {/* Main Action Buttons - Improved Layout */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+          {/* Enhanced Like Button */}
+          <motion.button
+            onClick={handleLike}
+            disabled={likeMutation.isPending}
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            className={`relative group overflow-hidden rounded-2xl border-2 transition-all duration-300 ${
+              currentIsLiked
+                ? "bg-gradient-to-br from-red-50 to-pink-50 border-red-200 text-red-600 shadow-lg"
+                : "bg-white border-gray-200 text-gray-600 hover:border-red-200 hover:text-red-600 hover:shadow-lg"
+            } ${likeMutation.isPending ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            <svg
-              width="22"
-              height="21"
-              viewBox="0 0 22 21"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M11 5.75C11.4142 5.75 11.75 6.08579 11.75 6.5V11.5C11.75 11.9142 11.4142 12.25 11 12.25C10.5858 12.25 10.25 11.9142 10.25 11.5V6.5C10.25 6.08579 10.5858 5.75 11 5.75Z"
-                fill="#AE0606"
-              />
-              <path
-                d="M11 15.5C11.5523 15.5 12 15.0523 12 14.5C12 13.9477 11.5523 13.5 11 13.5C10.4477 13.5 9.99998 13.9477 9.99998 14.5C9.99998 15.0523 10.4477 15.5 11 15.5Z"
-                fill="#AE0606"
-              />
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M7.2944 2.97643C8.36631 1.61493 9.50182 0.75 11 0.75C12.4981 0.75 13.6336 1.61493 14.7056 2.97643C15.7598 4.31544 16.8769 6.29622 18.3063 8.83053L18.7418 9.60267C19.9234 11.6976 20.8566 13.3523 21.3468 14.6804C21.8478 16.0376 21.9668 17.2699 21.209 18.3569C20.4736 19.4118 19.2466 19.8434 17.6991 20.0471C16.1576 20.25 14.0845 20.25 11.4248 20.25H10.5752C7.91552 20.25 5.84239 20.25 4.30082 20.0471C2.75331 19.8434 1.52637 19.4118 0.790989 18.3569C0.0331793 17.2699 0.152183 16.0376 0.653135 14.6804C1.14334 13.3523 2.07658 11.6977 3.25818 9.6027L3.69361 8.83067C5.123 6.29629 6.24019 4.31547 7.2944 2.97643ZM8.47297 3.90432C7.49896 5.14148 6.43704 7.01988 4.96495 9.62994L4.60129 10.2747C3.37507 12.4488 2.50368 13.9986 2.06034 15.1998C1.6227 16.3855 1.68338 17.0141 2.02148 17.4991C2.38202 18.0163 3.05873 18.3706 4.49659 18.5599C5.92858 18.7484 7.9026 18.75 10.6363 18.75H11.3636C14.0974 18.75 16.0714 18.7484 17.5034 18.5599C18.9412 18.3706 19.6179 18.0163 19.9785 17.4991C20.3166 17.0141 20.3773 16.3855 19.9396 15.1998C19.4963 13.9986 18.6249 12.4488 17.3987 10.2747L17.035 9.62993C15.5629 7.01987 14.501 5.14148 13.527 3.90431C12.562 2.67865 11.8126 2.25 11 2.25C10.1874 2.25 9.43793 2.67865 8.47297 3.90432Z"
-                fill="#AE0606"
-              />
-            </svg>
-            <p className="text-[#AE0606] font-medium text-xs sm:text-[14px]">
-              Report an issue
-            </p>
-          </button>
+            <div className="p-6 text-center">
+              <div className="flex justify-center mb-3">
+                {currentIsLiked ? (
+                  <motion.div
+                    initial={{ scale: 0.8 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
+                    <FaHeart className="w-8 h-8" />
+                  </motion.div>
+                ) : (
+                  <FaRegHeart className="w-8 h-8 group-hover:scale-110 transition-transform" />
+                )}
+              </div>
+              <div className="text-2xl sm:text-3xl font-bold mb-1">
+                {currentLikeCount}
+              </div>
+              <div className="text-sm font-medium">
+                {currentIsLiked ? "Loved it!" : "Like Course"}
+              </div>
+            </div>
+            <div
+              className={`absolute inset-0 bg-gradient-to-r from-red-400 to-pink-400 opacity-0 group-hover:opacity-10 transition-opacity duration-300`}
+            />
+          </motion.button>
+
+          {/* Enhanced Bookmark Button */}
+          <motion.button
+            onClick={handleBookmark}
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            className={`relative group overflow-hidden rounded-2xl border-2 transition-all duration-300 ${
+              isBookmarked
+                ? "bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 text-blue-600 shadow-lg"
+                : "bg-white border-gray-200 text-gray-600 hover:border-blue-200 hover:text-blue-600 hover:shadow-lg"
+            }`}
+          >
+            <div className="p-6 text-center">
+              <div className="flex justify-center mb-3">
+                {isBookmarked ? (
+                  <motion.div
+                    initial={{ scale: 0.8 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
+                    <FaBookmark className="w-7 h-7" />
+                  </motion.div>
+                ) : (
+                  <FaRegBookmark className="w-7 h-7 group-hover:scale-110 transition-transform" />
+                )}
+              </div>
+              <div className="text-sm font-medium mt-2">
+                {isBookmarked ? "Bookmarked" : "Save Course"}
+              </div>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-400 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
+          </motion.button>
+
+          {/* Enhanced Share Button */}
+          <motion.button
+            onClick={handleShare}
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            className="relative group overflow-hidden bg-white border-2 border-gray-200 rounded-2xl text-gray-600 hover:border-green-200 hover:text-green-600 hover:shadow-lg transition-all duration-300"
+          >
+            <div className="p-6 text-center">
+              <div className="flex justify-center mb-3">
+                <FaShare className="w-7 h-7 group-hover:scale-110 transition-transform" />
+              </div>
+              <div className="text-sm font-medium mt-2">Share Course</div>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
+          </motion.button>
+
+          {/* Enhanced Report Button */}
+          <motion.button
+            onClick={() => setIsReportModalOpen(true)}
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            className="relative group overflow-hidden bg-white border-2 border-gray-200 rounded-2xl text-gray-600 hover:border-orange-200 hover:text-orange-600 hover:shadow-lg transition-all duration-300"
+          >
+            <div className="p-6 text-center">
+              <div className="flex justify-center mb-3">
+                <FaFlag className="w-7 h-7 group-hover:scale-110 transition-transform" />
+              </div>
+              <div className="text-sm font-medium mt-2">Report Issue</div>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-400 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
+          </motion.button>
+        </div>
+
+        {/* Enhanced Feedback Section */}
+        <div className="relative">
+          <AnimatePresence>
+            {!showFeedback ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-6 border border-purple-100"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center"></div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 text-lg mb-1">
+                        How's your learning experience?
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        Your feedback helps us improve the course
+                      </p>
+                    </div>
+                  </div>
+                  <motion.button
+                    onClick={() => setShowFeedback(true)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-6 py-3 rounded-xl font-medium hover:from-purple-600 hover:to-indigo-600 transition-all duration-200 flex items-center gap-2 shadow-lg"
+                  >
+                    <FaRocket className="w-4 h-4" />
+                    Rate Course
+                  </motion.button>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-6 border border-green-100"
+              >
+                <h4 className="font-semibold text-gray-900 text-lg mb-4 text-center">
+                  Rate Your Experience
+                </h4>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <motion.button
+                    onClick={() => handleFeedback(true)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center justify-center gap-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-4 rounded-xl font-semibold transition-all duration-200 shadow-lg"
+                  >
+                    <FaThumbsUp className="w-5 h-5" />
+                    <span>Excellent Course!</span>
+                    <div className="flex">
+                      {[...Array(5)].map((_, i) => (
+                        <FaStar key={i} className="w-4 h-4 text-yellow-300" />
+                      ))}
+                    </div>
+                  </motion.button>
+
+                  <motion.button
+                    onClick={() => handleFeedback(false)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center justify-center gap-3 bg-white hover:bg-gray-50 text-gray-700 px-6 py-4 rounded-xl font-semibold transition-all duration-200 border-2 border-gray-200 hover:border-gray-300"
+                  >
+                    <FaRegThumbsUp className="w-5 h-5" />
+                    <span>Could be Better</span>
+                  </motion.button>
+                </div>
+
+                <div className="text-center mt-4">
+                  <button
+                    onClick={() => setShowFeedback(false)}
+                    className="text-gray-500 hover:text-gray-700 text-sm underline transition-colors"
+                  >
+                    Maybe later
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Course Stats Footer */}
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-600">
+            <div className="flex items-center gap-2">
+              <FaHeart className="w-4 h-4 text-red-500" />
+              <span className="font-medium">
+                {currentLikeCount} students love this course
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FaShare className="w-4 h-4 text-green-500" />
+              <span className="font-medium">Shared 1.2k times</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FaStar className="w-4 h-4 text-yellow-500" />
+              <span className="font-medium">4.8/5 rating</span>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* Report Modal */}
       <ReportIssueModal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
+        courseId={courseId}
         clientId={clientId}
       />
     </>

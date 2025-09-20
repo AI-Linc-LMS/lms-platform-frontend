@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useMutation } from "@tanstack/react-query";
 import { reportIssue } from "../../../../services/enrolled-courses-content/coursesApis";
+import {
+  FaTimes,
+  FaCheckCircle,
+  FaExclamationTriangle,
+  FaPaperPlane,
+  FaSpinner,
+  FaBug,
+  FaVideo,
+  FaVolumeUp,
+  FaFileAlt,
+  FaCode,
+} from "react-icons/fa";
 
 interface ReportIssueModalProps {
   isOpen: boolean;
@@ -17,15 +30,49 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
 }) => {
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
+  const [issueType, setIssueType] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
-  const [countdown, setCountdown] = useState(3); // Changed from 5 to 3
+  const [countdown, setCountdown] = useState(3);
+
+  const issueTypes = [
+    {
+      id: "video",
+      label: "Video Issues",
+      icon: FaVideo,
+      description: "Video not loading or playing",
+    },
+    {
+      id: "audio",
+      label: "Audio Problems",
+      icon: FaVolumeUp,
+      description: "Audio quality or sync issues",
+    },
+    {
+      id: "content",
+      label: "Content Error",
+      icon: FaFileAlt,
+      description: "Incorrect or missing content",
+    },
+    {
+      id: "technical",
+      label: "Technical Bug",
+      icon: FaBug,
+      description: "App crashes or errors",
+    },
+    {
+      id: "other",
+      label: "Other",
+      icon: FaCode,
+      description: "Something else",
+    },
+  ];
 
   const reportMutation = useMutation({
     mutationFn: () => reportIssue(clientId, subject, description),
     onSuccess: () => {
-      setIsSuccess(true); // Show success modal
-      setCountdown(3); // Reset countdown to 3
-    }
+      setIsSuccess(true);
+      setCountdown(3);
+    },
   });
 
   // Handle countdown and auto-close
@@ -57,8 +104,9 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
     if (!reportMutation.isPending) {
       setSubject("");
       setDescription("");
+      setIssueType("");
       setIsSuccess(false);
-      setCountdown(3); // Changed from 5 to 3
+      setCountdown(3);
       onClose();
     }
   };
@@ -67,138 +115,259 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setIsSuccess(false);
-      setCountdown(3); // Changed from 5 to 3
+      setCountdown(3);
     }
+  }, [isOpen]);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
   }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        {isSuccess ? (
-          // Success message view
-          <div className="text-center py-8">
-            <div className="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
-              <svg
-                className="w-8 h-8 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex justify-center overflow-auto"
+        onClick={handleClose}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: 20 }}
+          onClick={(e) => e.stopPropagation()}
+          className="bg-white rounded-2xl lg:rounded-3xl w-full max-w-lg shadow-2xl mt-20 mb-6 mx-4 flex flex-col"
+          style={{
+            maxHeight: "calc(100vh -14rem)", // 100vh - (mt-20 + mb-6)
+            minHeight: "fit-content",
+          }}
+        >
+          {isSuccess ? (
+            // Success View - Compact and centered
+            <div className="text-center p-6 sm:p-8 flex-shrink-0">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                className="w-16 h-16 sm:w-20 sm:h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">
-              Issue Reported Successfully!
-            </h2>
-            <p className="text-gray-600 mb-4">
-              Your issue has been reported and our team will get back to you soon.
-            </p>
-            <div className="text-sm text-gray-500">
-              This window will close automatically in {countdown} seconds...
-            </div>
-          </div>
-        ) : (
-          // Original form view
-          <>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-800">
-                Report an Issue
-              </h2>
-              <button
-                onClick={handleClose}
-                disabled={reportMutation.isPending}
-                className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
-              >
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M18 6L6 18M6 6L18 18"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-            </div>
+                <FaCheckCircle className="w-8 h-8 sm:w-10 sm:h-10 text-green-600" />
+              </motion.div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="subject"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Subject *
-                </label>
-                <input
-                  id="subject"
-                  type="text"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
+              <motion.h2
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-xl sm:text-2xl font-bold text-gray-900 mb-3"
+              >
+                Issue Reported Successfully! 🎉
+              </motion.h2>
+
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-gray-600 mb-6 leading-relaxed"
+              >
+                Thank you for helping us improve! Our support team will review
+                your report and get back to you within 24 hours.
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="flex items-center justify-center gap-2 text-sm text-gray-500 bg-gray-50 rounded-lg px-4 py-3"
+              >
+                <FaSpinner className="w-4 h-4 animate-spin" />
+                <span>Closing in {countdown} seconds...</span>
+              </motion.div>
+            </div>
+          ) : (
+            // Form View with proper flex layout
+            <>
+              {/* Fixed Header */}
+              <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100 flex-shrink-0">
+                <div>
+                  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-1">
+                    Report an Issue 🔧
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    Help us improve your learning experience
+                  </p>
+                </div>
+                <button
+                  onClick={handleClose}
                   disabled={reportMutation.isPending}
-                  placeholder="e.g., Video not loading, Audio issues..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
-                  required
-                />
+                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-50 text-gray-500 hover:text-gray-700 flex-shrink-0"
+                >
+                  <FaTimes className="w-5 h-5" />
+                </button>
               </div>
 
-              <div>
-                <label
-                  htmlFor="description"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Description *
-                </label>
-                <textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  disabled={reportMutation.isPending}
-                  rows={4}
-                  placeholder="Please describe the issue in detail..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 resize-none"
-                  required
-                />
+              {/* Scrollable Form Content */}
+              <div className="flex-1 overflow-y-auto overscroll-contain">
+                <div className="p-4 sm:p-6">
+                  <form
+                    onSubmit={handleSubmit}
+                    className="space-y-4 sm:space-y-5"
+                  >
+                    {/* Issue Type Selection */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-3">
+                        What type of issue are you experiencing? *
+                      </label>
+                      <div className="grid grid-cols-1 gap-2 sm:gap-3">
+                        {issueTypes.map((type) => (
+                          <button
+                            key={type.id}
+                            type="button"
+                            onClick={() => setIssueType(type.id)}
+                            disabled={reportMutation.isPending}
+                            className={`flex items-start gap-3 p-3 sm:p-4 rounded-xl border-2 transition-all text-left ${
+                              issueType === type.id
+                                ? "border-blue-500 bg-blue-50 text-blue-900"
+                                : "border-gray-200 hover:border-gray-300 text-gray-700"
+                            } ${
+                              reportMutation.isPending
+                                ? "opacity-50 cursor-not-allowed"
+                                : ""
+                            }`}
+                          >
+                            <type.icon
+                              className={`w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0 ${
+                                issueType === type.id
+                                  ? "text-blue-600"
+                                  : "text-gray-400"
+                              }`}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold text-sm">
+                                {type.label}
+                              </div>
+                              <div className="text-xs opacity-75 mt-0.5">
+                                {type.description}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Subject Input */}
+                    <div>
+                      <label
+                        htmlFor="subject"
+                        className="block text-sm font-semibold text-gray-900 mb-2"
+                      >
+                        Subject *
+                      </label>
+                      <input
+                        id="subject"
+                        type="text"
+                        value={subject}
+                        onChange={(e) => setSubject(e.target.value)}
+                        disabled={reportMutation.isPending}
+                        placeholder="Brief description of the issue..."
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-50 transition-all text-sm sm:text-base"
+                        required
+                      />
+                    </div>
+
+                    {/* Description Textarea */}
+                    <div>
+                      <label
+                        htmlFor="description"
+                        className="block text-sm font-semibold text-gray-900 mb-2"
+                      >
+                        Detailed Description *
+                      </label>
+                      <textarea
+                        id="description"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        disabled={reportMutation.isPending}
+                        rows={4}
+                        placeholder="Please provide as much detail as possible. What were you trying to do? What happened? What did you expect to happen?"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-50 resize-none transition-all text-sm sm:text-base"
+                        required
+                      />
+                      <div className="mt-2 text-xs text-gray-500">
+                        💡 Tip: Include steps to reproduce the issue for faster
+                        resolution
+                      </div>
+                    </div>
+
+                    {/* Help Text */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 sm:p-4 text-sm">
+                      <div className="flex items-start gap-3">
+                        <FaExclamationTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-blue-800 min-w-0">
+                          <div className="font-semibold mb-1">
+                            Need immediate help?
+                          </div>
+                          <div className="text-xs sm:text-sm">
+                            For urgent issues, contact our support team directly
+                            at support@ailinc.com or call +1-800-AILINC
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+                </div>
               </div>
 
-              <div className="flex gap-3 pt-4">
+              {/* Fixed Footer with Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 p-4 sm:p-6 border-t border-gray-100 flex-shrink-0 bg-white">
                 <button
                   type="button"
                   onClick={handleClose}
                   disabled={reportMutation.isPending}
-                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 disabled:opacity-50 transition-colors"
+                  className="flex-1 px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium disabled:opacity-50 transition-colors text-sm sm:text-base"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
+                  onClick={handleSubmit}
                   disabled={
                     reportMutation.isPending ||
                     !subject.trim() ||
-                    !description.trim()
+                    !description.trim() ||
+                    !issueType
                   }
-                  className="flex-1 px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 px-6 py-3 text-white bg-blue-600 hover:bg-blue-700 rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
                 >
-                  {reportMutation.isPending ? "Submitting..." : "Submit Report"}
+                  {reportMutation.isPending ? (
+                    <>
+                      <FaSpinner className="w-4 h-4 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <FaPaperPlane className="w-4 h-4" />
+                      Submit Report
+                    </>
+                  )}
                 </button>
               </div>
-            </form>
-          </>
-        )}
-      </div>
-    </div>
+            </>
+          )}
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 };
 

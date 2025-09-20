@@ -1,3 +1,15 @@
+import React from "react";
+import { motion } from "framer-motion";
+import {
+  FaChartPie,
+  FaVideo,
+  FaFileAlt,
+  FaCode,
+  FaQuestionCircle,
+  FaTrophy,
+  FaFire,
+} from "react-icons/fa";
+
 interface Category {
   name: string;
   value: number;
@@ -16,13 +28,19 @@ interface ApiResponse {
   coding_problem_progress: number;
   quiz_progress: number;
   total_progress: number;
-  [key: string]: number; // For any other fields that might be present
+  [key: string]: number;
 }
 
-const DashboardPieChart = ({  data, isLoading, error }: { data: ApiResponse | null; isLoading: boolean; error: Error | null }) => {
-
+const DashboardPieChart = ({
+  data,
+  isLoading,
+  error,
+}: {
+  data: ApiResponse | null;
+  isLoading: boolean;
+  error: Error | null;
+}) => {
   const processApiData = (apiData: ApiResponse): DashboardData => {
-    // Extract progress values from API response
     const {
       article_progress = 0,
       video_progress = 0,
@@ -34,231 +52,212 @@ const DashboardPieChart = ({  data, isLoading, error }: { data: ApiResponse | nu
     return {
       totalCompletion: total_progress,
       categories: [
-        { name: "Article", value: article_progress, color: "#3875F9", ring: 0 },
-        { name: "Video", value: video_progress, color: "#EED21B", ring: 1 },
+        { name: "Article", value: article_progress, color: "#3B82F6", ring: 0 },
+        { name: "Video", value: video_progress, color: "#EF4444", ring: 1 },
         {
           name: "Problems",
           value: coding_problem_progress,
-          color: "#417845",
+          color: "#10B981",
           ring: 2,
         },
-        { name: "Quiz", value: quiz_progress, color: "#2A8CB0", ring: 3 },
+        { name: "Quiz", value: quiz_progress, color: "#8B5CF6", ring: 3 },
       ],
     };
   };
 
-  // For testing purposes only - comment out in production
-  /* 
-  const mockApiData: ApiResponse = {
-    article_progress: 75,
-    video_progress: 80,
-    coding_problem_progress: 40,
-    quiz_progress: 60,
-    total_progress: 60
-  };
-  */
-
-  // Default data if none is provided
-  const defaultData = {
-    totalCompletion: 25,
-    categories: [
-      { name: "Article", value: 19, color: "#3875F9", ring: 0 },
-      { name: "Video", value: 22, color: "#EED21B", ring: 1 },
-      { name: "Problems", value: 5, color: "#417845", ring: 2 },
-      { name: "Quiz", value: 9, color: "#2A8CB0", ring: 3 },
-    ],
-  };
-
-  // Use provided data, mock data for testing, or defaults
-  // Uncomment the line below to test with mock data
-  // const chartData = processApiData(mockApiData);
-  const chartData = data ? processApiData(data) : defaultData;
-
-  // Ensure categories is always an array
-  const categories = chartData?.categories || defaultData.categories;
-
-  // Create concentric circles chart with consistent progress style
-  const ConcentricCirclesChart = ({
-    categories,
-  }: {
-    categories: Category[];
-  }) => {
-    // Define the radius values for each ring (from outer to inner)
-    const ringRadii = [45, 35, 25, 15];
-    const ringStrokeWidths = [10, 8, 6, 4];
-
-    return (
-      <div className="relative w-40 h-40">
-        <svg
-          viewBox="0 0 100 100"
-          className="w-full h-full transform -rotate-90"
-        >
-          {ringRadii.map((radius, index) => (
-            <circle
-              key={`bg-${index}`}
-              cx="50"
-              cy="50"
-              r={radius}
-              fill="none"
-              stroke="#EEEEEE"
-              strokeWidth={ringStrokeWidths[index]}
-            />
-          ))}
-
-          {/* Draw progress arcs for each category */}
-          {categories.map((category, index) => {
-            const radius = ringRadii[category.ring];
-            const strokeWidth = ringStrokeWidths[category.ring];
-            const circumference = 2 * Math.PI * radius;
-
-            // Calculate stroke dash properties
-            const strokeDasharray = circumference;
-            const strokeDashoffset =
-              circumference - (category.value / 100) * circumference;
-
-            return (
-              <circle
-                key={index}
-                cx="50"
-                cy="50"
-                r={radius}
-                fill="none"
-                stroke={category.color}
-                strokeWidth={strokeWidth}
-                strokeDasharray={strokeDasharray}
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap="round"
-                style={{
-                  transition: "stroke-dashoffset 0.5s ease",
-                }}
-              />
-            );
-          })}
-        </svg>
-      </div>
-    );
-  };
-
-  // Completion circle component
-  const CompletionCircle = ({ percentage }: { percentage: number }) => {
-    const circumference = 2 * Math.PI * 45;
-    const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
-    return (
-      <div className="relative w-32 h-32 md:w-40 md:h-40 flex items-center justify-center">
-        <svg
-          viewBox="0 0 100 100"
-          className="w-full h-full transform -rotate-90"
-        >
-          {/* Gray background circle */}
-          <circle
-            cx="50"
-            cy="50"
-            r="45"
-            fill="none"
-            stroke="#EEEEEE"
-            strokeWidth="10"
-          />
-
-          {/* Progress circle */}
-          <circle
-            cx="50"
-            cy="50"
-            r="45"
-            fill="none"
-            stroke="#2A9DC4"
-            strokeWidth="10"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-            style={{
-              transition: "stroke-dashoffset 0.5s ease",
-            }}
-          />
-        </svg>
-
-        {/* Percentage text in the center */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl md:text-3xl font-bold text-[#2A9DC4]">
-            {percentage}%
-          </span>
-          <span className="text-sm md:text-lg text-[#2A9DC4]">Completed</span>
-        </div>
-      </div>
-    );
+  const getCategoryIcon = (name: string) => {
+    switch (name.toLowerCase()) {
+      case "video":
+        return FaVideo;
+      case "article":
+        return FaFileAlt;
+      case "problems":
+        return FaCode;
+      case "quiz":
+        return FaQuestionCircle;
+      default:
+        return FaChartPie;
+    }
   };
 
   if (isLoading) {
-    return <div>Loading dashboard data...</div>;
-  }
-
-  if (error) {
-    return <div>Error loading dashboard data</div>;
-  }
-
-  // Ensure we have valid data before rendering
-  if (!categories || !Array.isArray(categories)) {
-    return <div>Invalid data format</div>;
-  }
-
-  return (
-    <div className="flex flex-col gap-4 items-center justify-center mx-auto">
-      <div className="w-full rounded-3xl bg-[#EFF9FC] border border-[#80C9E0] p-3 md:p-4 shadow-sm">
-        <h1 className="font-sans text-base md:text-[18px] text-[#343A40]">
-          Dashboard
-        </h1>
-        <p className="text-[#495057] font-normal text-xs md:text-[12px]">
-          A simple overview of your status.
-        </p>
-
-        {/* Charts container */}
-        <div className="flex flex-col md:flex-row items-center justify-center gap-4 mt-4 md:mt-6 mb-4 md:mb-6">
-          <ConcentricCirclesChart categories={categories} />
-          <CompletionCircle percentage={chartData.totalCompletion || 0} />
-        </div>
-
-        {/* Stats row */}
-        <div className="grid grid-cols-2 md:flex md:justify-between gap-2 md:gap-0">
-          {categories.map((category: Category, index: number) => (
-            <div key={index} className="flex flex-col items-center">
-              <span
-                className="text-xl md:text-2xl font-bold"
-                style={{ color: category.color }}
-              >
-                {category.value}%
-              </span>
-              {/* Category icons */}
-              <span className="text-xs md:text-sm">{category.name}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="w-full mx-auto h-auto md:h-[62px] bg-[#DEE2E6] rounded-xl flex flex-row items-center justify-center p-3 md:p-4 gap-2 md:gap-4 mt-3">
-          <div className="flex-shrink-0">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M15.5 8C15.5 12.1421 12.1421 15.5 8 15.5C3.85786 15.5 0.5 12.1421 0.5 8C0.5 3.85786 3.85786 0.5 8 0.5C12.1421 0.5 15.5 3.85786 15.5 8ZM8 12.3125C8.31065 12.3125 8.5625 12.0606 8.5625 11.75V7.25C8.5625 6.93935 8.31065 6.6875 8 6.6875C7.68935 6.6875 7.4375 6.93935 7.4375 7.25V11.75C7.4375 12.0606 7.68935 12.3125 8 12.3125ZM8 4.25C8.41423 4.25 8.75 4.58579 8.75 5C8.75 5.41421 8.41423 5.75 8 5.75C7.58577 5.75 7.25 5.41421 7.25 5C7.25 4.58579 7.58577 4.25 8 4.25Z"
-                fill="#6C757D"
-              />
-            </svg>
+    return (
+      <div className="w-full rounded-2xl lg:rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-6 lg:p-8 border border-blue-200 shadow-sm">
+        <div className="animate-pulse">
+          <div className="flex items-center gap-3 mb-4 sm:mb-6">
+            <div className="w-6 h-6 bg-blue-200 rounded"></div>
+            <div className="h-6 bg-blue-200 rounded w-32"></div>
           </div>
-          <div>
-            <p className="text-[10px] font-medium text-[#6C757D]">
-              Check out this awesome visual that shows exactly how far you've
-              come in your course! It's like a fun map of your progress!
-            </p>
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="w-32 h-32 sm:w-40 sm:h-40 bg-blue-200 rounded-full mx-auto mb-4"></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white rounded-xl p-3 sm:p-4">
+                <div className="h-8 bg-gray-200 rounded mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-16"></div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
-    </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="w-full rounded-2xl lg:rounded-3xl bg-white p-4 sm:p-6 lg:p-8 border border-red-200 shadow-sm">
+        <div className="text-center">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FaChartPie className="w-6 h-6 sm:w-8 sm:h-8 text-red-500" />
+          </div>
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+            Progress Unavailable
+          </h3>
+          <p className="text-sm text-gray-600">
+            Unable to load your learning progress
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const dashboardData = processApiData(data);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="w-full rounded-2xl lg:rounded-3xl bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 sm:p-6 lg:p-8 border border-blue-200 shadow-lg"
+    >
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-4 sm:mb-6">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+          <FaChartPie className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        </div>
+        <div>
+          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
+            Dashboard
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-600">
+            A quick overview of your learning status
+          </p>
+        </div>
+      </div>
+
+      {/* Progress Circle */}
+      <div className="text-center mb-6 sm:mb-8">
+        <div className="relative inline-block">
+          <svg
+            className="w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 -rotate-90"
+            viewBox="0 0 120 120"
+          >
+            {/* Background circle */}
+            <circle
+              cx="60"
+              cy="60"
+              r="54"
+              stroke="#E5E7EB"
+              strokeWidth="8"
+              fill="transparent"
+            />
+
+            {/* Progress circle */}
+            <motion.circle
+              cx="60"
+              cy="60"
+              r="54"
+              stroke="url(#gradient)"
+              strokeWidth="8"
+              fill="transparent"
+              strokeLinecap="round"
+              strokeDasharray={`${2 * Math.PI * 54}`}
+              strokeDashoffset={`${
+                2 * Math.PI * 54 * (1 - dashboardData.totalCompletion / 100)
+              }`}
+              initial={{ strokeDashoffset: `${2 * Math.PI * 54}` }}
+              animate={{
+                strokeDashoffset: `${
+                  2 * Math.PI * 54 * (1 - dashboardData.totalCompletion / 100)
+                }`,
+              }}
+              transition={{ duration: 2, ease: "easeOut" }}
+            />
+
+            <defs>
+              <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#3B82F6" />
+                <stop offset="50%" stopColor="#8B5CF6" />
+                <stop offset="100%" stopColor="#EF4444" />
+              </linearGradient>
+            </defs>
+          </svg>
+
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-1">
+                {dashboardData.totalCompletion}%
+              </div>
+              <div className="text-xs sm:text-sm text-gray-500 font-medium">
+                Completed
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Status Badge */}
+        <div className="mt-4">
+          {dashboardData.totalCompletion === 0 ? (
+            <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-sm font-medium">
+              <FaFire className="w-4 h-4" />
+              Ready to Start
+            </div>
+          ) : dashboardData.totalCompletion === 100 ? (
+            <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-sm font-medium">
+              <FaTrophy className="w-4 h-4" />
+              Completed!
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full text-sm font-medium">
+              <FaFire className="w-4 h-4" />
+              In Progress
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Category Breakdown */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {dashboardData.categories.map((category, index) => {
+          const Icon = getCategoryIcon(category.name);
+          return (
+            <motion.div
+              key={category.name}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="bg-white rounded-xl p-3 sm:p-4 text-center shadow-sm border border-gray-100 hover:shadow-md transition-all"
+            >
+              <div
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg mx-auto mb-2 sm:mb-3 flex items-center justify-center"
+                style={{ backgroundColor: `${category.color}15` }}
+              >
+                <Icon
+                  className="w-4 h-4 sm:w-5 sm:h-5"
+                  style={{ color: category.color }}
+                />
+              </div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
+                {category.value}%
+              </div>
+              <div className="text-xs sm:text-sm font-medium text-gray-600">
+                {category.name}
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </motion.div>
   );
 };
 
