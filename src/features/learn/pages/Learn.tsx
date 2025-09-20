@@ -1,7 +1,6 @@
 import {useDispatch, useSelector} from "react-redux";
 // import { useNavigate } from "react-router-dom";
 import Leaderboard from "../components/LeaderboardTable";
-import TimeTrackingDashboard from "../components/graphs-components/TimeTrackingDashboard";
 import BasedLearningCourses from "../components/based-learning/BasedLearningCourses";
 // import ContinueCourses from "../components/continue-learning/ContinueCourses";
 // import ContinueCoursesDetails from "../components/continue-learning/ContinueCoursesDetails";
@@ -46,7 +45,7 @@ const Learn = () => {
             <div className="w-full p-0 md:px-4 md:py-2">
             <div className={`grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_384px] gap-6 w-full`}>
                 {/* Left Column - Takes all available space */}
-                <div className="min-w-0 space-y-6 overflow-hidden">
+                <div className="min-w-0 space-y-4 md:space-y-6 overflow-hidden">
                     <WelcomeSection />
 
                     <div className="relative">
