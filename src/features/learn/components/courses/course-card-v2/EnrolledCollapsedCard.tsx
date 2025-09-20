@@ -84,7 +84,7 @@ const EnrolledCollapsedCard: React.FC<EnrolledCollapsedCardProps> = ({
       {/* Minified Content */}
       <div className="p-6">
         {/* Quick Overview */}
-        <div className="flex items-center gap-5 mb-4 p-4 bg-[#f8fafc] rounded-lg border border-[#e2e8f0]">
+        <div className="flex items-center gap-5 mb-4 p-4 bg-[#f8fafc] rounded-lg border border-[#e2e8f0] w-full overflow-x-auto">
           {/* Progress Summary */}
           <div className="flex items-center gap-3">
             <div className="relative w-[50px] h-[50px] rounded-full bg-[#e2e8f0] flex items-center justify-center">

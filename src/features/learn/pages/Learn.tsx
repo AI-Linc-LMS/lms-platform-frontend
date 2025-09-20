@@ -16,6 +16,7 @@ import {useQuery} from "@tanstack/react-query";
 import {getEnrolledCourses} from "../../../services/enrolled-courses-content/coursesApis.ts";
 import {setCourses} from "../../../redux/slices/courseSlice.ts";
 import SkeletonLoader from "../components/SkeletonLoader.tsx";
+import Streak from "../components/Streak.tsx";
 
 const Learn = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -50,7 +51,7 @@ const Learn = () => {
 
                     <div className="relative">
                         {isLoading ? <SkeletonLoader/>  : (
-                            <TimeTrackingDashboard />
+                            <Streak/>
                         )}
                     </div>
                     <EnrolledCourses />

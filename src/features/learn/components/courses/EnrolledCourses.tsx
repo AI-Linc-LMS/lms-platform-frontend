@@ -137,9 +137,9 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
   return (
     <div className="overflow-visible">
       <div className="flex justify-between items-center">
-        <div className="mb-4">
+        <div className="md:mb-4 mb-2">
           <h1 className="text-[#343A40] font-bold text-[18px] md:text-[22px] ">
-            Enrolled Courses
+            Continue Learning
           </h1>
           <p className="text-[#6C757D]  font-normal text-[14px] md:text-[16px]">
             {hasNoCourses
@@ -178,7 +178,7 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
       ) : (
         <div
           ref={scrollContainerRef}
-          className={`flex overflow-x-auto overflow-y-visible scroll-smooth space-x-4 transition-all duration-300 pt-8 ${className}`}
+          className={`flex overflow-x-auto overflow-y-visible scroll-smooth space-x-4 transition-all duration-300 md:pt-8 pt-3 ${className}`}
           style={{ scrollSnapType: "x mandatory" }}
         >
           {Courses.map((course: Course) => (
