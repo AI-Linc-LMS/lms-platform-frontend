@@ -12,12 +12,12 @@ const Streak = () => {
     const COLORS = ['#255C79', '#F3F4F6']; // teal-500, gray-100
 
     return (
-        <div className="bg-white px-2 py-4 rounded-xl flex items-center justify-between w-full max-w-sm mx-auto">
+        <div className="bg-white px-2 py-4 rounded-xl flex items-center justify-between w-full mx-auto">
             <div>
-                <p className="text-gray-800 text-lg">
+                <p className="text-gray-800 text-lg md:mb-2">
                     <span role="img" aria-label="fire">🔥</span> Your Streak: <span className="font-bold">{streak} days</span>
                 </p>
-                <p className="text-gray-500 text-sm text-wrap">
+                <p className="text-gray-500 text-sm md:text-base text-wrap">
                     Overall Course Progress: {progress}% complete
                 </p>
             </div>
