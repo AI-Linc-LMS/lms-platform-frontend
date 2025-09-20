@@ -1,6 +1,6 @@
 import React from "react";
 import { Course } from "../../../types/final-course.types";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import { formatPrice } from "./utils/courseDataUtils";
 import { CompanyLogosSection, CourseCardContainer } from "./components";
 
@@ -63,11 +63,11 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
   className = "",
   onExpand,
 }) => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
-  const handlePrimaryClick = () => {
-    navigate(`/courses/${course.id}`);
-  };
+  // const handlePrimaryClick = () => {
+  //   navigate(`/courses/${course.id}`);
+  // };
 
   const formattedPrice = formatPrice(course?.price || "0");
   const isFree = course?.is_free === true || formattedPrice === "0";
@@ -168,7 +168,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
         {/* Action Button */}
         <div className="mt-auto">
           <button
-            onClick={handlePrimaryClick}
+            onClick={onExpand}
             className={`px-5 py-3 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[#10b981] text-white hover:bg-[#059669] hover:-translate-y-0.5 ${"w-full"} ${className}`}
           >
             View More
