@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { getAllRecommendedCourse } from "../../../services/continue-course-learning/continueCourseApis";
-import { CourseCard } from "../components/based-learning/BasedLearningCourses";
 import LoadingSpinner from "../../../commonComponents/loading-spinner/LoadingSpinner";
 import BackArrowIcon from "../../../commonComponents/icons/BackArrowIcon";
 import CourseCardV2 from "../components/courses/course-card-v2/CourseCardV2";
