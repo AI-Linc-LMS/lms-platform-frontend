@@ -10,7 +10,6 @@ import {
   ContinueLearningButton,
   NextUpSection,
   CertifiedBySection,
-  CourseCardContainer,
 } from "./components";
 
 interface EnrolledCollapsedCardProps {
@@ -35,7 +34,9 @@ const EnrolledCollapsedCard: React.FC<EnrolledCollapsedCardProps> = ({
   const progressPercentage = calculateProgress(course);
 
   return (
-    <CourseCardContainer className={className}>
+    <div
+      className={`course-card w-full max-w-lg h-[320px]  bg-white rounded-2xl border border-blue-100 shadow-xl transition-all duration-300 ease-in-out relative overflow-visible ${className}`}
+    >
       {/* Enrolled Banner - Top Right */}
       <EnrolledBannerSection variant="collapsed" />
 
@@ -156,7 +157,7 @@ const EnrolledCollapsedCard: React.FC<EnrolledCollapsedCardProps> = ({
         {/* Continue Learning Button */}
         <ContinueLearningButton onClick={handlePrimaryClick} />
       </div>
-    </CourseCardContainer>
+    </div>
   );
 };
 

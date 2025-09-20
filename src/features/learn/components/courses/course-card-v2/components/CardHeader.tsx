@@ -1,6 +1,8 @@
 import React from "react";
 import { ChevronUp } from "lucide-react";
 import { Course } from "../../../../types/final-course.types";
+import { generateTrustedByCompanies } from "../utils/courseDataUtils";
+import { CertifiedBySection } from "./shared";
 
 interface CardHeaderProps {
   course: Course;
@@ -15,7 +17,7 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
     <div className="p-6 pb-3 border-b border-[#f3f4f6]">
       {/* Header Main */}
       <div className="flex items-center justify-between mb-2">
-        <h1 className="text-[32px] font-bold text-[#374151] m-0 leading-[1.2]">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-700 leading-tight pr-4 flex-1">
           {course.title}
         </h1>
         <div className="flex items-center gap-2">
@@ -33,6 +35,9 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
           </button>
         </div>
       </div>
+      <CertifiedBySection
+        trustedCompanies={generateTrustedByCompanies(course)}
+      />
     </div>
   );
 };

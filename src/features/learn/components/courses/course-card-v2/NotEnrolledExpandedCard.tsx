@@ -149,8 +149,8 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
 
   const formattedPrice = formatPrice(course?.price || "0");
   const isFree = course?.is_free === true || formattedPrice === "0";
-  const courseLevel = course?.difficulty_level || "Medium";
-  const courseDuration = course?.duration_in_hours || "20 hours";
+  const courseLevel = course?.difficulty_level;
+  const courseDuration = course?.duration_in_hours;
   const courseRating = course?.rating || 4.8;
 
   // Mock counts for demonstration
@@ -193,19 +193,8 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
         <CompanyLogosSection />
       </div>
 
-      <div className="flex items-center gap-4 mb-4 px-4 sm:px-6 pt-2">
-        {/* Primary Action Button */}
-        <button
-          onClick={handlePrimaryClick}
-          className={`px-5 py-3 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[#10b981] text-white hover:bg-[#059669] hover:-translate-y-0.5 ${"w-full"} ${className}`}
-        >
-          {`Enroll Now - ${isFree ? "Free" : `${formattedPrice}`}`}
-        </button>
-      </div>
-
-      {/* Content */}
-      <div className="p-4 sm:p-6">
-        {/* Course Info Chips */}
+      {/* Course Info Pills */}
+      <div className="p-3 sm:p-4 md:p-6">
         <div className="flex flex-wrap gap-2 mb-4">
           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-full text-xs font-medium text-gray-700 whitespace-nowrap">
             <svg
@@ -255,6 +244,19 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
           </div>
         </div>
 
+        <div className="flex items-center ">
+          {/* Primary Action Button */}
+          <button
+            onClick={handlePrimaryClick}
+            className={`px-5 py-3 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[#10b981] text-white hover:bg-[#059669] hover:-translate-y-0.5 ${"w-full"} ${className}`}
+          >
+            {`Enroll Now - ${isFree ? "Free" : `${formattedPrice}`}`}
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-4 sm:p-6">
         {/* Course Description */}
         <div className="mb-4">
           <p className="text-gray-600 text-sm leading-relaxed">
