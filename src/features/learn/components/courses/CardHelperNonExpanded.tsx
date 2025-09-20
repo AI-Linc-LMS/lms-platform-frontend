@@ -51,7 +51,6 @@ const StarRating = ({
 
 export default function CardHelper({
   course,
-  isExpanded,
   toggleExpanded,
   showSuccessToast,
   courseLevel,
@@ -62,7 +61,6 @@ export default function CardHelper({
   handlePrimaryClick,
 }: {
   course: Course;
-  isExpanded: boolean;
   toggleExpanded: () => void;
   showSuccessToast: boolean;
   courseLevel: string | undefined;

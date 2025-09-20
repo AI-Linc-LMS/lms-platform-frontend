@@ -195,7 +195,7 @@ const Courses = () => {
                 <>
                   <CourseCard
                     key={`regular-${course.id}`}
-                    course={course}
+                    course={course as any}
                     clientId={clientId}
                     isExpanded={expandedCourseId === course.id}
                     onToggleExpand={() =>
@@ -220,7 +220,7 @@ const Courses = () => {
             {filteredCourses.map((course) => (
               <CourseCard
                 key={`regular-${course.id}`}
-                course={course}
+                course={course as any}
                 clientId={clientId}
                 isExpanded={expandedCourseId === course.id}
                 onToggleExpand={() =>
