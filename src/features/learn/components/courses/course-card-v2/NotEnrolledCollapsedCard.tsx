@@ -2,7 +2,7 @@ import React from "react";
 import { Course } from "../../../types/final-course.types";
 // import { useNavigate } from "react-router-dom";
 import { formatPrice } from "./utils/courseDataUtils";
-import { CompanyLogosSection, CourseCardContainer } from "./components";
+import { CompanyLogosSection } from "./components";
 
 // Enhanced 3D Star Rating Component
 const StarRating = ({
@@ -68,48 +68,45 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
   // const handlePrimaryClick = () => {
   //   navigate(`/courses/${course.id}`);
   // };
-
+  console.log(course, 71);
   const formattedPrice = formatPrice(course?.price || "0");
   const isFree = course?.is_free === true || formattedPrice === "0";
   const courseRating = course?.rating || 4.8;
   const courseLevel = course?.difficulty_level;
-  const courseDuration = course?.duration_in_hours
-    ? `${course.duration_in_hours} hrs`
-    : "N/A";
+  const courseDuration = course?.duration_in_hours;
 
   return (
-    <CourseCardContainer className={className}>
-      {/* Header Section - Matching EnrolledCollapsedCard structure */}
-      <div className="p-3 sm:p-4 md:p-6 pb-2 sm:pb-3 border-b border-gray-100">
-        {/* Header Main - Responsive layout */}
-        <div className="flex items-start sm:items-center justify-between mb-2">
+    <div
+      className={`course-card w-full max-w-lg bg-white h-[320px] rounded-2xl border border-blue-100 shadow-xl transition-all duration-300 ease-in-out relative overflow-visible ${className}`}
+    >
+      {/* Card Header */}
+      <div className="p-4 sm:p-6 pb-3 border-b border-gray-100">
+        <div className="flex items-center justify-between mb-2">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-700 leading-tight pr-4 flex-1">
             {course.title}
           </h1>
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <button
-              onClick={onExpand}
-              className="bg-gray-100 border border-gray-200 rounded-full w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 flex items-center justify-center cursor-pointer transition-all duration-300 text-gray-500 hover:bg-gray-200 hover:scale-105"
-              aria-label="Expand course card"
+          <button
+            onClick={onExpand}
+            className="bg-gray-100 border border-gray-200 rounded-full w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 flex items-center justify-center cursor-pointer transition-all duration-300 text-gray-500 hover:bg-gray-200 hover:scale-105"
+            aria-label="Expand course card"
+          >
+            <svg
+              className="w-3 h-3 sm:w-3.5 sm:h-3.5 transition-transform duration-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <svg
-                className="w-3 h-3 sm:w-3.5 sm:h-3.5 transition-transform duration-300"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-          </div>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
         </div>
 
-        {/* Company Logos Section */}
+        {/* Company Logos */}
         <CompanyLogosSection />
       </div>
 
@@ -169,13 +166,13 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
         <div className="mt-auto">
           <button
             onClick={onExpand}
-            className={`px-5 py-3 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[#10b981] text-white hover:bg-[#059669] hover:-translate-y-0.5 ${"w-full"} ${className}`}
+            className={`px-5 py-3 mt-7.5 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[#10b981] text-white hover:bg-[#059669] hover:-translate-y-0.5 ${"w-full"} ${className}`}
           >
             View More
           </button>
         </div>
       </div>
-    </CourseCardContainer>
+    </div>
   );
 };
 

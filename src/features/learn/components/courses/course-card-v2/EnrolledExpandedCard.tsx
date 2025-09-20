@@ -13,10 +13,7 @@ import {
   ContinueLearningButton,
   NextUpSection,
   NextLessonSection,
-  CourseCardContainer,
 } from "./components";
-import { CertifiedBySection } from "./components/shared";
-import { generateTrustedByCompanies } from "./utils/courseDataUtils";
 
 interface EnrolledExpandedCardProps {
   course: Course;
@@ -36,19 +33,14 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
   };
 
   return (
-    <CourseCardContainer className={className}>
+    <div
+      className={`course-card w-full max-w-lg bg-white rounded-2xl border border-blue-100 shadow-xl transition-all duration-300 ease-in-out relative overflow-visible ${className}`}
+    >
       {/* Enrolled Banner - Top Right */}
       <EnrolledBannerSection variant="expanded" />
 
       {/* Card Header */}
       <CardHeader course={course} onCollapse={onCollapse} />
-
-      {/* MOBILE OPTIMIZED: Trusted By */}
-      <div className="px-3 sm:px-4 md:px-6 pb-2 sm:pb-3">
-        <CertifiedBySection
-          trustedCompanies={generateTrustedByCompanies(course)}
-        />
-      </div>
 
       {/* MOBILE OPTIMIZED: Minified Content */}
       <div className="p-3 sm:p-4 md:p-6 pt-2 sm:pt-3 md:pt-4">
@@ -263,7 +255,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
 
       {/* Icon Actions - Always Visible */}
       <IconActionsSection onContinueLearning={handlePrimaryClick} />
-    </CourseCardContainer>
+    </div>
   );
 };
 

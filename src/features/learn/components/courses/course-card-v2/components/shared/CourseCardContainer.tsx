@@ -20,11 +20,11 @@ export const CourseCardContainer: React.FC<CourseCardContainerProps> = ({
   children,
   className = "",
   maxWidth = "max-w-[500px]",
-  height = "h-[350px]", // default uniform height
+  // height = "h-[350px]", // default uniform height
 }) => {
   return (
     <div
-      className={`w-full ${maxWidth} ${height} ${CARD_BASE_STYLES} ${className}`}
+      className={`w-full ${maxWidth} h-[350px] ${CARD_BASE_STYLES} ${className}`}
       style={CARD_FONT_FAMILY}
     >
       {/* flex-1 ensures content expands to fill available space */}
