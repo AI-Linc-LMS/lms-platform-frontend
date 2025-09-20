@@ -200,22 +200,23 @@ const CourseCard: React.FC<CourseCardProps> = ({
 
   return (
     <>
-      {!isExpanded && onToggleExpand ? (
-        <CardHelper
-          course={course}
-          isExpanded={false}
-          isEnrolling={isEnrolling}
-          handlePrimaryClick={handlePrimaryClick}
-          handleIconAction={handleIconAction}
-          courseDuration={courseDuration}
-          courseLevel={courseLevel}
-          totalCounts={totalCounts}
-          coursePrice={coursePrice}
-          courseRating={courseRating}
-          toggleExpanded={onToggleExpand}
-          showSuccessToast={showSuccessToast}
-        />
+      {!isExpanded ? (
+        <CourseCardV2 course={course} enrolled={false} className={className} />
       ) : (
+        // <CardHelper
+        //   course={course}
+        //   isExpanded={false}
+        //   isEnrolling={isEnrolling}
+        //   handlePrimaryClick={handlePrimaryClick}
+        //   handleIconAction={handleIconAction}
+        //   courseDuration={courseDuration}
+        //   courseLevel={courseLevel}
+        //   totalCounts={totalCounts}
+        //   coursePrice={coursePrice}
+        //   courseRating={courseRating}
+        //   toggleExpanded={onToggleExpand}
+        //   showSuccessToast={showSuccessToast}
+        // />
         <CardHelperExpanded
           course={course}
           isExpanded={true}
