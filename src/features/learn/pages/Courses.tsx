@@ -1,17 +1,22 @@
-import  { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useLocation} from 'react-router-dom';
-import { getAllCourse } from '../../../services/enrolled-courses-content/courseContentApis';
-import CourseCard from '../components/courses/CourseCard';
-import EmptyCoursesState from '../components/courses/EmptyCoursesState';
-import MobileFilters from '../components/courses/MobileFilters';
-import DesktopFilters from '../components/courses/DesktopFilters';
-import DesktopSearch from '../components/courses/DesktopSearch';
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "react-router-dom";
+import { getAllCourse } from "../../../services/enrolled-courses-content/courseContentApis";
+import CourseCard from "../components/courses/CourseCard";
+import EmptyCoursesState from "../components/courses/EmptyCoursesState";
+import MobileFilters from "../components/courses/MobileFilters";
+import DesktopFilters from "../components/courses/DesktopFilters";
+import DesktopSearch from "../components/courses/DesktopSearch";
 // import AssessmentBanner from '../components/assessment/AssessmentBanner';
-import AssessmentSuccessNotification from '../components/assessment/AssessmentSuccessNotification';
-import { useCourseFilters } from '../hooks/useCourseFilters';
-import { categoryOptions, levelOptions, priceOptions, ratingOptions } from '../components/courses/FilterOptions';
-import { adaptCourses } from '../utils/courseAdapter';
+import AssessmentSuccessNotification from "../components/assessment/AssessmentSuccessNotification";
+import { useCourseFilters } from "../hooks/useCourseFilters";
+import {
+  categoryOptions,
+  levelOptions,
+  priceOptions,
+  ratingOptions,
+} from "../components/courses/FilterOptions";
+import { adaptCourses } from "../utils/courseAdapter";
 // import { FiPlayCircle, FiArrowRight, FiClock, FiCheckCircle } from 'react-icons/fi';
 
 interface AssessmentLocationState {
@@ -24,17 +29,24 @@ interface AssessmentLocationState {
 // Main component
 const Courses = () => {
   const clientId = Number(import.meta.env.VITE_CLIENT_ID) || 1;
-  const location = useLocation() as unknown as { state: AssessmentLocationState };
+  const location = useLocation() as unknown as {
+    state: AssessmentLocationState;
+  };
   // const navigate = useNavigate();
-  const [showAssessmentNotification, setShowAssessmentNotification] = useState(false);
+  const [showAssessmentNotification, setShowAssessmentNotification] =
+    useState(false);
   const [assessmentResults, setAssessmentResults] = useState({
     score: 0,
     correctAnswers: 0,
     totalQuestions: 0,
   } as { score: number; correctAnswers: number; totalQuestions: number } | null);
 
-  const { data: apiCourses, isLoading, error } = useQuery({
-    queryKey: ['all-courses'],
+  const {
+    data: apiCourses,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["all-courses"],
     queryFn: () => getAllCourse(clientId),
   });
 
@@ -47,7 +59,7 @@ const Courses = () => {
         totalQuestions: location.state.totalQuestions || 0,
       });
       setShowAssessmentNotification(true);
-      
+
       // Clear the state to prevent showing notification on refresh
       window.history.replaceState({}, document.title);
     }
@@ -55,6 +67,7 @@ const Courses = () => {
 
   // Adapt API data to include fields needed for filtering
   const courses = adaptCourses(apiCourses || []);
+  const [expandedCourseId, setExpandedCourseId] = useState<number | null>(null);
 
   const {
     searchQuery,
@@ -72,7 +85,7 @@ const Courses = () => {
     setSelectedRatings,
     toggleFilters,
     clearAllFilters,
-    filteredCourses
+    filteredCourses,
   } = useCourseFilters(courses);
 
   if (isLoading) {
@@ -87,7 +100,9 @@ const Courses = () => {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-center">
-          <h2 className="text-xl font-bold text-red-600 mb-2">Error loading courses</h2>
+          <h2 className="text-xl font-bold text-red-600 mb-2">
+            Error loading courses
+          </h2>
           <p className="text-gray-600">Please try again later.</p>
         </div>
       </div>
@@ -113,7 +128,9 @@ const Courses = () => {
           Our Courses & Assessments
         </h1>
         <p className="text-[#6C757D]  font-normal text-[14px] md:text-[16px]">
-          {hasNoCourses ? "No courses available at the moment" : "Here's the List of all our Courses and available Assessments"}
+          {hasNoCourses
+            ? "No courses available at the moment"
+            : "Here's the List of all our Courses and available Assessments"}
         </p>
       </div>
 
@@ -175,7 +192,19 @@ const Courses = () => {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {filteredCourses.map((course) => (
-                <CourseCard key={course.id} course={course} clientId={clientId} />
+                <>
+                  <CourseCard
+                    key={`regular-${course.id}`}
+                    course={course}
+                    clientId={clientId}
+                    isExpanded={expandedCourseId === course.id}
+                    onToggleExpand={() =>
+                      setExpandedCourseId((prev) =>
+                        prev === course.id ? null : course.id
+                      )
+                    }
+                  />
+                </>
               ))}
             </div>
           )}
@@ -189,7 +218,17 @@ const Courses = () => {
         ) : (
           <div className="grid grid-cols-1 gap-6">
             {filteredCourses.map((course) => (
-              <CourseCard key={course.id} course={course} clientId={clientId} />
+              <CourseCard
+                key={`regular-${course.id}`}
+                course={course}
+                clientId={clientId}
+                isExpanded={expandedCourseId === course.id}
+                onToggleExpand={() =>
+                  setExpandedCourseId((prev) =>
+                    prev === course.id ? null : course.id
+                  )
+                }
+              />
             ))}
           </div>
         )}
@@ -198,4 +237,4 @@ const Courses = () => {
   );
 };
 
-export default Courses; 
+export default Courses;
