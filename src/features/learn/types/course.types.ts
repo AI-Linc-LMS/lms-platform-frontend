@@ -58,11 +58,20 @@ export interface Course {
   price?: number;
   rating?: number;
   level?: string;
+  difficulty_level?: string;
+  duration_in_hours?: number;
   categories?: string[];
   liked_count?: number;
   is_liked_by_current_user?: boolean;
   is_free?: boolean;
   is_enrolled?: boolean;
+  benefits?: string[];
+  learning_outcomes?: string[];
+  thumbnail_url?: string;
+  cover_image_url?: string;
+  progress_percentage?: number; // 0 to 100
+  streak?: number; // Number of consecutive days user has engaged with the course
+  achievements?: string[]; // List of achievement badges earned in the course
   stats?: {
     video: { total: number };
     article: { total: number };
@@ -70,4 +79,4 @@ export interface Course {
     quiz: { total: number };
     assignment: { total: number };
   };
-} 
+}
