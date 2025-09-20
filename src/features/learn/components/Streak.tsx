@@ -1,10 +1,43 @@
 import { PieChart, Pie, Cell } from 'recharts';
+import {useEffect, useState} from "react";
+import {useQuery} from "@tanstack/react-query";
+import {getHoursSpentData} from "../../../services/dashboardApis.ts";
+import {HoursSpentData} from "../utils/interface.constant.ts";
+import {useSelector} from "react-redux";
+import {RootState} from "../../../redux/store.ts";
 
 const Streak = () => {
     const progress = 60;
-    const streak = 3;
+    const [streak, setStreak] = useState(0);
+    const clientInfo = useSelector((state: RootState) => state.clientInfo);
 
-    const data = [
+    const { data } = useQuery<HoursSpentData>({
+        queryKey: ["hoursSpentData", "30"],
+        queryFn: () => getHoursSpentData(clientInfo.data?.id, Number("30")),
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
+    });
+
+    useEffect(() => {
+        if (data) {
+            const calculateStreak = (hours: number[]): number => {
+                let currentStreak = 0;
+                for (let i = hours.length - 1; i >= 0; i--) {
+                    if (hours[i] > 0) {
+                        currentStreak++;
+                    } else {
+                        break;
+                    }
+                }
+                return currentStreak;
+            };
+            setStreak(calculateStreak(data.hours_spent));
+        }
+    }, [data]);
+
+
+    const pieData = [
         { name: 'Progress', value: progress },
         { name: 'Remaining', value: 100 - progress },
     ];
@@ -24,7 +57,7 @@ const Streak = () => {
             <div className="relative w-20 h-20">
                 <PieChart width={80} height={80}>
                     <Pie
-                        data={data}
+                        data={pieData}
                         cx="50%"
                         cy="50%"
                         innerRadius={28}
