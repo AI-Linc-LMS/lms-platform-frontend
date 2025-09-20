@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import {useSelector} from "react-redux";
+import {RootState} from "../redux/store.ts";
 
-// Use client name from Vite env (fallback to default)
-const CLIENT_NAME: string = import.meta.env.VITE_CLIENT_NAME ?? "AiLinc";
 if (import.meta.env.DEV) {
   // Quick debug to verify env value during development
    
@@ -29,6 +29,7 @@ export const PWASplashScreen: React.FC<Props>
   const [progress, setProgress] = useState(0);
   const rafRef = useRef<number | null>(null);
   const startRef = useRef<number | null>(null);
+  const clientInfo = useSelector((state:RootState) => state.clientInfo);
 
   const shouldShow = useMemo(() => {
     try {
@@ -95,10 +96,10 @@ export const PWASplashScreen: React.FC<Props>
       <div className="flex flex-col items-center gap-5 px-6">
         <div className="flex items-center gap-3">
           <img
-            src="/pwa-192x192.png"
+            src={clientInfo.data?.app_logo_url}
             width={56}
             height={56}
-            alt="AiLinc logo"
+            alt={clientInfo.data?.name}
             className="rounded-xl shadow-sm"
           />
           {/* <span className="text-2xl font-semibold tracking-tight">AiLinc</span> */}
@@ -130,7 +131,7 @@ export const PWASplashScreen: React.FC<Props>
             ? 'Loading components...'
             : progress < 90
             ? 'Almost ready...'
-            : `Welcome to ${CLIENT_NAME}!`}
+            : `Welcome to ${clientInfo.data?.name}!`}
         </div>
       </div>
     </div>
