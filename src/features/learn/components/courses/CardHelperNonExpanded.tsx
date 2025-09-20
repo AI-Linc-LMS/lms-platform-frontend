@@ -20,17 +20,7 @@ const StarRating = ({
       stars.push(
         <span
           key={i}
-          className={`${size} inline-block leading-none select-none`}
-          style={{
-            color: "#fbbf24",
-            textShadow:
-              "0 2px 4px rgba(0,0,0,0.3), 0 1px 8px rgba(251,191,36,0.4), 0 0 12px rgba(251,191,36,0.2)",
-            filter:
-              "drop-shadow(0 2px 3px rgba(0,0,0,0.2)) drop-shadow(0 0 6px rgba(251,191,36,0.3))",
-            transform: "perspective(10px) rotateX(5deg)",
-            display: "inline-block",
-            transition: "all 0.2s ease",
-          }}
+          className={`${size} inline-block leading-none select-none star-full`}
         >
           ⭐
         </span>
@@ -39,17 +29,7 @@ const StarRating = ({
       stars.push(
         <span
           key={i}
-          className={`${size} inline-block leading-none select-none`}
-          style={{
-            color: "#fbbf24",
-            textShadow:
-              "0 1px 3px rgba(0,0,0,0.2), 0 0 6px rgba(251,191,36,0.3)",
-            filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))",
-            opacity: 0.7,
-            transform: "perspective(10px) rotateX(5deg)",
-            display: "inline-block",
-            transition: "all 0.2s ease",
-          }}
+          className={`${size} inline-block leading-none select-none star-half`}
         >
           ⭐
         </span>
@@ -58,15 +38,7 @@ const StarRating = ({
       stars.push(
         <span
           key={i}
-          className={`${size} inline-block leading-none select-none`}
-          style={{
-            color: "#d1d5db",
-            textShadow: "0 1px 2px rgba(0,0,0,0.1)",
-            filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.1))",
-            transform: "perspective(10px) rotateX(5deg)",
-            display: "inline-block",
-            transition: "all 0.2s ease",
-          }}
+          className={`${size} inline-block leading-none select-none star-empty`}
         >
           ☆
         </span>
@@ -74,11 +46,7 @@ const StarRating = ({
     }
   }
 
-  return (
-    <div className="flex items-center gap-1" style={{ lineHeight: 1 }}>
-      {stars}
-    </div>
-  );
+  return <div className="flex items-center gap-1">{stars}</div>;
 };
 
 export default function CardHelper({
@@ -108,265 +76,124 @@ export default function CardHelper({
 }) {
   return (
     <>
-      <div
-        className="course-card-1"
-        data-card-id={`regular-${course.id}`}
-        key={`regular-${course.id}`}
-        style={{
-          maxWidth: "500px",
-        }}
-      >
-        {showSuccessToast && (
-          <div className="fixed top-4 right-4 z-50">
-            <div className="flex items-center gap-3 px-4 py-3 bg-green-600 text-white rounded-xl shadow-lg">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span className="text-sm font-medium">
-                Successfully enrolled!
-              </span>
-            </div>
-          </div>
-        )}
-
-        <div
-          style={{
-            background: "white",
-            borderRadius: "16px",
-            border: "1px solid #e3f2fd",
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
-          }}
-        >
-          {/* Card Header */}
-          <div
-            className="card-header"
-            style={{
-              padding: "20px 24px 12px 24px",
-              borderBottom: "1px solid #f3f4f6",
-            }}
-          >
-            <div
-              className="header-main"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: "8px",
-              }}
-            >
-              <h1
-                className="course-title"
-                style={{
-                  fontSize: "24px",
-                  fontWeight: "700",
-                  color: "#374151",
-                  margin: "0",
-                  lineHeight: "1.2",
-                }}
-              >
-                {course.title}
-              </h1>
-
-              <button
-                className={`expand-btn`}
-                onClick={toggleExpanded}
-                style={{
-                  background: "#f3f4f6",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "50%",
-                  width: "36px",
-                  height: "36px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  transition: "all 0.3s ease",
-                  color: "#6b7280",
-                }}
-              >
-                <svg
-                  style={{
-                    fontSize: "14px",
-                    transition: "transform 0.3s ease",
-                    transform: "rotate(0deg)",
-                  }}
-                  className="w-3.5 h-3.5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <div
-              className="course-by"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                flexWrap: "wrap",
-              }}
-            >
-              <div
-                className="company-logos"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  flexWrap: "wrap",
-                }}
-              >
-                <CompanyLogosSection />
-              </div>
-            </div>
-          </div>
-
-          {/* Minified Content - ALWAYS VISIBLE */}
-          <div
-            className="minified-content"
-            style={{
-              padding: "16px 24px 20px 24px",
-            }}
-          >
-            <div
-              className="quick-info"
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "16px",
-              }}
-            >
-              <div
-                className="quick-chips"
-                style={{
-                  display: "flex",
-                  gap: "6px",
-                }}
-              >
-                <div
-                  className="chip"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    padding: "6px 10px",
-                    background: "white",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "16px",
-                    fontSize: "12px",
-                    fontWeight: "500",
-                    color: "#374151",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {courseLevel}
-                </div>
-                <div
-                  className="chip"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    padding: "6px 10px",
-                    background: "white",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "16px",
-                    fontSize: "12px",
-                    fontWeight: "500",
-                    color: "#374151",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {courseDuration}
-                </div>
-                <div
-                  className="chip cost"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    padding: "6px 10px",
-                    background: "#fef3c7",
-                    border: "1px solid #fde68a",
-                    borderRadius: "16px",
-                    fontSize: "12px",
-                    fontWeight: "500",
-                    color: "#92400e",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  ${coursePrice}
-                </div>
-              </div>
-
-              <div
-                className="quick-rating"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
-              >
-                <div className="stars" style={{ fontSize: "12px" }}>
-                  <StarRating rating={courseRating} size="text-xs" />
-                </div>
-                <span
-                  className="rating-text"
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: "600",
-                    color: "#374151",
-                  }}
-                >
-                  {courseRating}/5
-                </span>
-              </div>
-            </div>
-
-            <div className="quick-actions" style={{ width: "100%" }}>
-              <button
-                onClick={handlePrimaryClick}
-                disabled={isEnrolling}
-                className="btn btn-primary"
-                style={{
-                  width: "100%",
-                  padding: "12px 20px",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "16px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                  textAlign: "center",
-                  marginBottom: "12px",
-                  background: "#10b981",
-                  color: "white",
-                }}
-              >
-                {isEnrolling
-                  ? "Processing…"
-                  : !isExpanded
-                  ? "View More"
-                  : `Enroll Now - $${coursePrice}`}
-              </button>
-            </div>
+      {/* Success Toast */}
+      {showSuccessToast && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className="flex items-center gap-3 px-4 py-3 bg-green-600 text-white rounded-xl shadow-lg">
+            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                fillRule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span className="text-sm font-medium">Successfully enrolled!</span>
           </div>
         </div>
+      )}
+
+      {/* CLEAN MINIMAL CARD - Based on your image */}
+      <div className="course-card w-full max-w-md bg-white rounded-2xl border border-gray-100 shadow-sm relative p-4">
+        {/* Expand Button - Top Right */}
+        <button
+          onClick={toggleExpanded}
+          className="absolute top-4 right-4 w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-all duration-300 text-gray-500"
+        >
+          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+
+        {/* Course Title */}
+        <h1 className="text-2xl font-bold text-gray-800 mb-4 pr-12">
+          {course.title}
+        </h1>
+
+        {/* Company Logos */}
+        <div className="mb-4">
+          <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">
+            Created and certified by
+          </p>
+          <div className="flex items-center gap-3">
+            <CompanyLogosSection />
+          </div>
+        </div>
+
+        {/* Course Info Pills */}
+        <div className="flex items-center gap-3 mb-4">
+          {/* Level */}
+          <div className="flex items-center gap-1 text-sm text-gray-600">
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
+            </svg>
+            {courseLevel}
+          </div>
+
+          {/* Duration */}
+          <div className="flex items-center gap-1 text-sm text-gray-600">
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12,6 12,12 16,14" />
+            </svg>
+            {courseDuration} hours
+          </div>
+
+          {/* Price */}
+          <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 rounded text-sm font-medium text-yellow-800">
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+              />
+            </svg>
+            ${coursePrice}
+          </div>
+        </div>
+
+        {/* Rating - Right Aligned */}
+        <div className="flex items-center justify-end mb-6">
+          <div className="flex items-center gap-2">
+            <StarRating rating={courseRating} size="text-sm" />
+            <span className="text-sm font-medium text-gray-700">
+              {courseRating}/5
+            </span>
+          </div>
+        </div>
+
+        {/* Action Button */}
+        <button
+          onClick={handlePrimaryClick}
+          disabled={isEnrolling}
+          className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium rounded-lg transition-all duration-200"
+        >
+          {isEnrolling ? "Processing…" : "View More"}
+        </button>
       </div>
     </>
   );
