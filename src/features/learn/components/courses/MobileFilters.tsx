@@ -129,7 +129,7 @@ const MobileFilters = ({
       >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           Filter By
-          <IconButton onClick={toggleFilters}>
+          <IconButton className='!p-0' onClick={toggleFilters}>
             <X />
           </IconButton>
         </DialogTitle>
