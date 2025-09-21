@@ -58,7 +58,7 @@ interface NavItemProps {
 
 const NavItem = ({ to, icon, label, isActive }: NavItemProps) => {
   const activeColor = '#1A5A7A';
-  const inactiveColor = '#255C79';
+  const inactiveColor = 'rgba(37,92,121,0.6)';
 
   return (
     <Link 
