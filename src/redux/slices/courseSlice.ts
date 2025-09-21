@@ -33,11 +33,11 @@ export interface Course {
   client: number;
   enrolled_students: number[];
   stats: {
-    video: { total: number };
-    article: { total: number };
-    coding_problem: { total: number };
-    quiz: { total: number };
-    assignment: { total: number };
+    video: { total: number, completed: number };
+    article: { total: number, completed: number };
+    coding_problem: { total: number, completed: number };
+    quiz: { total: number, completed: number };
+    assignment: { total: number, completed: number };
   };
 }
 
