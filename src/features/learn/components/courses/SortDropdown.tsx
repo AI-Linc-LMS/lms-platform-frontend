@@ -23,10 +23,10 @@ const SortDropdown = ({ selectedSort, setSelectedSort }: SortDropdownProps) => {
   ];
 
   return (
-    <div className="relative">
+    <div className="relative w-full h-full md:w-fit">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 px-3 py-2 border border-[#DEE2E6] rounded-lg bg-white text-[#343A40] text-sm"
+        className="flex w-full h-full items-center justify-center space-x-2 px-3 py-2 border border-[#DEE2E6] rounded-lg bg-white text-[#343A40] md:text-sm"
       >
         <SortIcon />
         <span>Sort</span>
