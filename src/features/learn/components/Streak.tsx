@@ -24,7 +24,7 @@ const Streak = () => {
             const calculateStreak = (hours: number[]): number => {
                 let currentStreak = 0;
                 for (let i = hours.length - 1; i >= 0; i--) {
-                    if (hours[i] > 0) {
+                    if (hours[i] > 0.5) {
                         currentStreak++;
                     } else {
                         break;
