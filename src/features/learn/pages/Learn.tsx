@@ -5,8 +5,6 @@ import BasedLearningCourses from "../components/based-learning/BasedLearningCour
 // import ContinueCourses from "../components/continue-learning/ContinueCourses";
 // import ContinueCoursesDetails from "../components/continue-learning/ContinueCoursesDetails";
 import WelcomeSection from "../components/WelcomeSection";
-import DailyProgress from "../components/DailyProgressTable";
-import StreakTable from "../components/StreakTable";
 import EnrolledCourses from "../components/courses/EnrolledCourses";
 import { RootState } from "../../../redux/store";
 import {useEffect} from "react";
@@ -69,8 +67,6 @@ const Learn = () => {
                 <div className="w-full space-y-6">
                     <div className="space-y-6">
                         <Leaderboard clientId={clientId} />
-                        <DailyProgress clientId={clientId} />
-                        <StreakTable clientId={clientId} />
                     </div>
                 </div>
             </div>
