@@ -15,12 +15,6 @@ const MobileNavBar = () => {
     <div className="md:hidden fixed bottom-0 left-0 w-full bg-white shadow-[0_-1px_10px_rgba(0,0,0,0.05)] z-50 rounded-t-2xl border-t border-gray-200">
       <div className="flex justify-around items-center pt-3 pb-2">
         <NavItem 
-          to="/"
-          icon={<LayoutDashboard size={22} strokeWidth={1.5} />}
-          label="Learn" 
-          isActive={isActive('/')}
-        />
-        <NavItem 
           to="/courses" 
           icon={<BookCopy size={22} strokeWidth={1.5} />} 
           label="Courses" 
@@ -32,6 +26,12 @@ const MobileNavBar = () => {
           label="Tests" 
           isActive={isActive('/assessments')}
         />
+          <NavItem
+              to="/"
+              icon={<LayoutDashboard size={22} strokeWidth={1.5} />}
+              label="Dashboard"
+              isActive={isActive('/')}
+          />
         <NavItem 
           to="/jobs" 
           icon={<Briefcase size={22} strokeWidth={1.5} />} 
