@@ -221,7 +221,7 @@ const ProfileSettings = () => {
           My Activity
         </h3>
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <div className="xl:col-span-2 border rounded-xl p-4 sm:p-6 shadow-sm">
+          <div className="xl:col-span-2 border border-gray-300 rounded-xl p-4 sm:p-6 shadow-sm">
             <TimeTrackingDashboard />
           </div>
           <div className="space-y-6">
