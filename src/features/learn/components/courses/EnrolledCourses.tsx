@@ -1,11 +1,9 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useDispatch, useSelector } from "react-redux";
 import { getEnrolledCourses } from "../../../../services/enrolled-courses-content/coursesApis";
 import { setCourses } from "../../../../redux/slices/courseSlice";
 import { RootState } from "../../../../redux/store";
-import leftArrow from "../../../../assets/dashboard_assets/leftArrow.png";
-import rightArrow from "../../../../assets/dashboard_assets/rightArrow.png";
 import { Course } from "../../types/final-course.types";
 import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import CourseCardV2 from "./course-card-v2/CourseCardV2";
@@ -103,6 +101,7 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
     (state: RootState) => state.courses.courses
   ) as unknown as Course[];
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["Courses"],
@@ -117,14 +116,36 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
     }
   }, [data, dispatch]);
 
-  const handleScroll = (direction: "left" | "right") => {
+  const handleCarouselScroll = () => {
+    const sc = scrollContainerRef.current;
+    if (!sc) return;
+    const scrollLeft = sc.scrollLeft;
+    const children = Array.from(sc.children) as HTMLElement[];
+
+    let activeDotIndex = 0;
+    let minDiff = Infinity;
+
+    children.forEach((child, index) => {
+      const diff = Math.abs(child.offsetLeft - scrollLeft);
+      if (diff < minDiff) {
+        minDiff = diff;
+        activeDotIndex = index;
+      }
+    });
+
+    setActiveIndex(activeDotIndex);
+  };
+
+  const handleDotClick = (index: number) => {
     const scrollContainer = scrollContainerRef.current;
-    if (scrollContainer) {
-      const cardWidth = scrollContainer.offsetWidth / 2; // 2 cards visible
-      scrollContainer.scrollBy({
-        left: direction === "left" ? -cardWidth : cardWidth,
-        behavior: "smooth",
-      });
+    if (scrollContainer && scrollContainer.children.length > index) {
+      const cardElement = scrollContainer.children[index] as HTMLDivElement;
+      if (cardElement) {
+        scrollContainer.scrollTo({
+          left: cardElement.offsetLeft,
+          behavior: "smooth",
+        });
+      }
     }
   };
 
@@ -147,50 +168,45 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
               : "Here is a list of enrolled courses"}
           </p>
         </div>
-        {!hasNoCourses && (
-          <div className="bottom-3 right-4 flex justify-end space-x-3">
-            <button
-              onClick={() => handleScroll("left")}
-              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-[#12293A] shadow cursor-pointer transition-all duration-200 hover:scale-95"
-            >
-              <img
-                src={leftArrow}
-                alt="Previous"
-                className="w-3 h-3 md:w-4 md:h-4"
-              />
-            </button>
-            <button
-              onClick={() => handleScroll("right")}
-              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-[#12293A] shadow cursor-pointer transition-all duration-200 hover:scale-95"
-            >
-              <img
-                src={rightArrow}
-                alt="Next"
-                className="w-3 h-3 md:w-4 md:h-4"
-              />
-            </button>
-          </div>
-        )}
       </div>
 
       {hasNoCourses ? (
         <EmptyCoursesState />
       ) : (
-        <div
-          ref={scrollContainerRef}
-          className={`flex overflow-x-auto overflow-y-visible scroll-smooth space-x-4 transition-all duration-300 md:pt-8 pt-3 ${className}`}
-          style={{ scrollSnapType: "x mandatory" }}
-        >
-          {Courses.map((course: Course) => (
-            <div
-              key={course.id}
-              className="flex-shrink-0 w-full md:w-1/2 scroll-snap-align-start transition-transform duration-300 overflow-visible"
-              style={{ scrollSnapAlign: "start" }}
-            >
-              <CourseCardV2 course={course} enrolled={true} />
+        <>
+          <div
+            ref={scrollContainerRef}
+            onScroll={handleCarouselScroll}
+            className={`flex overflow-x-auto overflow-y-visible scroll-smooth space-x-4 transition-all duration-300 md:pt-8 pt-3 ${className}`}
+            style={{ scrollSnapType: "x mandatory" }}
+          >
+            {Courses.map((course: Course) => (
+              <div
+                key={course.id}
+                className="flex-shrink-0 w-full md:w-1/2 scroll-snap-align-start transition-transform duration-300 overflow-visible"
+                style={{ scrollSnapAlign: "start" }}
+              >
+                <CourseCardV2 course={course} enrolled={true} />
+              </div>
+            ))}
+          </div>
+          {!hasNoCourses && (
+            <div className="flex justify-center items-center space-x-3 pt-4">
+              {Courses.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleDotClick(index)}
+                  className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                    activeIndex === index
+                      ? "bg-gray-400 scale-125"
+                      : "bg-gray-300"
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );
