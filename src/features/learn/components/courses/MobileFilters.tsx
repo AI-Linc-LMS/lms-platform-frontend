@@ -1,9 +1,17 @@
-
-import { FilterIcon } from './CourseIcons';
+import React from 'react';
 import { SearchIcon } from './CourseIcons';
 import FilterCategory from './FilterCategory';
 import SortDropdown from './SortDropdown';
 import { FilterOption } from './FilterOptions';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Slide,
+} from "@mui/material";
+import { TransitionProps } from "@mui/material/transitions";
+import {FilterIcon, X} from "lucide-react";
 
 interface MobileFiltersProps {
   isFilterOpen: boolean;
@@ -26,6 +34,15 @@ interface MobileFiltersProps {
   priceOptions: FilterOption[];
   ratingOptions: FilterOption[];
 }
+
+const Transition = React.forwardRef(function Transition(
+  props: TransitionProps & {
+    children: React.ReactElement<any, any>;
+  },
+  ref: React.Ref<unknown>,
+) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
 
 const MobileFilters = ({
   isFilterOpen,
@@ -50,35 +67,79 @@ const MobileFilters = ({
 }: MobileFiltersProps) => {
   return (
     <div className="md:hidden">
-      {/* Filters Button - Mobile UI */}
-      <div className="mb-4">
-        <button
-          className="flex items-center justify-between w-full p-3 bg-white border border-[#DEE2E6] rounded-lg text-[#343A40] shadow-sm"
-          onClick={toggleFilters}
-        >
-          <div className="flex items-center space-x-2">
-            <FilterIcon />
-            <span className="font-medium">Filters</span>
+      {/* Search Input - Mobile */}
+      <div className="mb-4 w-full">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <SearchIcon />
           </div>
-          <svg
-            className={`w-4 h-4 transition-transform duration-300 ${isFilterOpen ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-          </svg>
-        </button>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by courses"
+            className="w-full py-3 pl-10 pr-4 border border-[#DEE2E6] rounded-lg text-[#495057] focus:outline-none focus:ring-2 focus:ring-[#17627A] focus:border-transparent"
+          />
+        </div>
       </div>
 
-      {/* Filter Panel - Collapsible for Mobile */}
-      <div className={`${isFilterOpen ? 'max-h-[1500px] opacity-100 mb-6' : 'max-h-0 opacity-0 overflow-hidden'} transition-all duration-500 ease-in-out`}>
-        <div className="bg-white rounded-xl p-4 border border-[#DEE2E6]">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-[#343A40]">Filter By</h2>
+      <div className="flex items-stretch gap-4 mb-6">
+        {/* Filters Button - Mobile UI */}
+        <div className="flex-1">
+          <button
+            className="flex items-center justify-between w-full h-full p-3 bg-white border border-[#DEE2E6] rounded-lg text-[#343A40]"
+            onClick={toggleFilters}
+          >
+            <div className="flex items-center space-x-2">
+              <FilterIcon size={18} />
+              <span className="font-medium">Filters</span>
+            </div>
+            <svg
+              className={`w-4 h-4 transition-transform duration-300 ${isFilterOpen ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+
+        {/* Sort Dropdown - Mobile */}
+        <div className="flex-1">
+          <SortDropdown selectedSort={sortBy} setSelectedSort={setSortBy} />
+        </div>
+      </div>
+
+      <Dialog
+        open={isFilterOpen}
+        onClose={toggleFilters}
+        fullWidth
+        TransitionComponent={Transition}
+        PaperProps={{
+          sx: {
+            position: 'fixed',
+            bottom: 0,
+            m: 0,
+            width: '100%',
+            maxWidth: '100%',
+          }
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          Filter By
+          <IconButton onClick={toggleFilters}>
+            <X />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <div className="flex items-center justify-end mb-4">
             <button
-              onClick={clearAllFilters}
+              onClick={() => {
+                clearAllFilters();
+                toggleFilters(); // Close dialog after clearing
+              }}
               className="text-sm text-[#17627A] hover:underline"
             >
               Clear All
@@ -116,31 +177,10 @@ const MobileFilters = ({
             selectedOptions={selectedRatings}
             setSelectedOptions={setSelectedRatings}
           />
-        </div>
-      </div>
-
-      {/* Search Input - Mobile */}
-      <div className="mb-4 w-full">
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <SearchIcon />
-          </div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by courses"
-            className="w-full py-3 pl-10 pr-4 border border-[#DEE2E6] rounded-lg text-[#495057] focus:outline-none focus:ring-2 focus:ring-[#17627A] focus:border-transparent"
-          />
-        </div>
-      </div>
-
-      {/* Sort Dropdown - Mobile */}
-      <div className="mb-6">
-        <SortDropdown selectedSort={sortBy} setSelectedSort={setSortBy} />
-      </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
-export default MobileFilters; 
+export default MobileFilters;
