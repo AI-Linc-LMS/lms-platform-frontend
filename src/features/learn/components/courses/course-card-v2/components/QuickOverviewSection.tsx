@@ -17,10 +17,10 @@ export const QuickOverviewSection: React.FC<QuickOverviewSectionProps> = ({
   const badges = course.achievements?.length ?? 0;
 
   return (
-    <div className="flex items-center gap-5 mb-4 p-4 bg-[#f8fafc] rounded-lg border border-[#e2e8f0]">
-      {/* Progress Summary */}
-      <div className="flex items-center gap-3">
-        <div className="relative w-[50px] h-[50px] rounded-full bg-[#e2e8f0] flex items-center justify-center">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 md:gap-5 mb-3 sm:mb-4 p-3 sm:p-4 bg-[#f8fafc] rounded-lg border border-[#e2e8f0] overflow-hidden">
+      {/* Progress Summary - Mobile Optimized */}
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        <div className="relative w-[40px] h-[40px] sm:w-[45px] sm:h-[45px] md:w-[50px] md:h-[50px] rounded-full bg-[#e2e8f0] flex items-center justify-center flex-shrink-0">
           <div
             className="absolute top-0 left-0 w-full h-full rounded-full flex items-center justify-center"
             style={{
@@ -31,48 +31,59 @@ export const QuickOverviewSection: React.FC<QuickOverviewSectionProps> = ({
               }deg)`,
             }}
           >
-            <div className="absolute w-[35px] h-[35px] bg-white rounded-full"></div>
+            <div className="absolute w-[28px] h-[28px] sm:w-[32px] sm:h-[32px] md:w-[35px] md:h-[35px] bg-white rounded-full"></div>
           </div>
-          <span className="relative z-10 text-xs font-bold text-[#374151]">
+          <span className="relative z-10 text-[10px] sm:text-xs font-bold text-[#374151]">
             {progressPercentage ? calculateProgress(course) : 0}%
           </span>
         </div>
-        <div className="flex flex-col gap-0.5">
-          <span className="text-xs font-semibold text-[#374151]">
+        <div className="flex flex-col gap-0.5 min-w-0">
+          <span className="text-xs sm:text-sm font-semibold text-[#374151]">
             Course Progress
           </span>
-          <span className="text-[11px] text-[#6b7280]">
+          <span className="text-[10px] sm:text-[11px] text-[#6b7280] truncate">
             {videosWatched}/{totalVideos} videos
           </span>
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="flex gap-4 flex-1 justify-center">
-        <div className="flex flex-col items-center gap-1 p-2 bg-white rounded-md border border-[#e2e8f0] min-w-[60px]">
-          <Flame className="w-4 h-4 text-[#10b981]" />
-          <span className="text-base font-bold text-[#374151] leading-none">
+      {/* Quick Stats - Mobile Optimized */}
+      <div className="flex gap-2 sm:gap-3 md:gap-4 flex-1 justify-center sm:justify-end">
+        {/* Day Streak */}
+        <div className="flex flex-col items-center gap-1 p-1.5 sm:p-2 bg-white rounded-lg border border-[#e2e8f0] min-w-[50px] sm:min-w-[58px] md:min-w-[60px] shadow-sm">
+          <div className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center mb-0.5">
+            <Flame className="w-3 h-3 sm:w-4 sm:h-4 text-[#f59e0b]" />
+          </div>
+          <span className="text-sm sm:text-base font-bold text-[#374151] leading-none">
             {dayStreak}
           </span>
-          <span className="text-[10px] text-[#6b7280] font-medium text-center">
+          <span className="text-[9px] sm:text-[10px] text-[#6b7280] font-medium text-center leading-tight">
             Day Streak
           </span>
         </div>
-        <div className="flex flex-col items-center gap-1 p-2 bg-white rounded-md border border-[#e2e8f0] min-w-[60px]">
-          <Trophy className="w-4 h-4 text-[#10b981]" />
-          <span className="text-base font-bold text-[#374151] leading-none">
+
+        {/* Badges */}
+        <div className="flex flex-col items-center gap-1 p-1.5 sm:p-2 bg-white rounded-lg border border-[#e2e8f0] min-w-[50px] sm:min-w-[58px] md:min-w-[60px] shadow-sm">
+          <div className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center mb-0.5">
+            <Trophy className="w-3 h-3 sm:w-4 sm:h-4 text-[#f59e0b]" />
+          </div>
+          <span className="text-sm sm:text-base font-bold text-[#374151] leading-none">
             {badges}
           </span>
-          <span className="text-[10px] text-[#6b7280] font-medium text-center">
+          <span className="text-[9px] sm:text-[10px] text-[#6b7280] font-medium text-center leading-tight">
             Badges
           </span>
         </div>
-        <div className="flex flex-col items-center gap-1 p-2 bg-white rounded-md border border-[#e2e8f0] min-w-[60px]">
-          <Play className="w-4 h-4 text-[#10b981]" />
-          <span className="text-base font-bold text-[#374151] leading-none">
+
+        {/* Videos */}
+        <div className="flex flex-col items-center gap-1 p-1.5 sm:p-2 bg-white rounded-lg border border-[#e2e8f0] min-w-[50px] sm:min-w-[58px] md:min-w-[60px] shadow-sm">
+          <div className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center mb-0.5">
+            <Play className="w-3 h-3 sm:w-4 sm:h-4 text-[#10b981]" />
+          </div>
+          <span className="text-sm sm:text-base font-bold text-[#374151] leading-none">
             {videosWatched}
           </span>
-          <span className="text-[10px] text-[#6b7280] font-medium text-center">
+          <span className="text-[9px] sm:text-[10px] text-[#6b7280] font-medium text-center leading-tight">
             Videos
           </span>
         </div>
