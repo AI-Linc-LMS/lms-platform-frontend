@@ -7,9 +7,10 @@ import {useSelector} from "react-redux";
 import {RootState} from "../../../redux/store.ts";
 
 const Streak = () => {
-    const progress = 60;
+    const [progress, setProgress] = useState<number>(0);
     const [streak, setStreak] = useState(0);
     const clientInfo = useSelector((state: RootState) => state.clientInfo);
+    const courses = useSelector((state: RootState) => state.courses)
 
     const { data } = useQuery<HoursSpentData>({
         queryKey: ["hoursSpentData", "30"],
@@ -18,6 +19,17 @@ const Streak = () => {
         refetchOnMount: false,
         refetchOnReconnect: false,
     });
+
+    useEffect(() => {
+        let completedHours = 0;
+        let totalHours = 0;
+        for(const single of courses.courses) {
+            totalHours += single.stats.video.total;
+            completedHours += single.stats.video.completed;
+        }
+        if(totalHours == 0) totalHours = 1
+        setProgress(Number(completedHours / totalHours));
+    }, [courses]);
 
     useEffect(() => {
         if (data) {
