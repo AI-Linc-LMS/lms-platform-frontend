@@ -6,6 +6,24 @@ import { Job } from "../types/jobs.types";
 import { mockJobs } from "../data/mockJobs";
 import JobApplicationModal from "../components/JobApplicationModal";
 import AssessmentInvitationModal from "../components/AssessmentInvitationModal";
+import { Filter, X } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Slide,
+} from "@mui/material";
+import { TransitionProps } from "@mui/material/transitions";
+
+const Transition = React.forwardRef(function Transition(
+  props: TransitionProps & {
+    children: React.ReactElement<any, any>;
+  },
+  ref: React.Ref<unknown>,
+) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
 
 const Jobs: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +40,7 @@ const Jobs: React.FC = () => {
   // Fixed: Set initial visible jobs to show all available jobs
   const [visibleJobsCount, setVisibleJobsCount] = useState(12);
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
 
   const handleSearch = () => {
     // Optional: Add search analytics or validation here
@@ -138,7 +157,7 @@ const Jobs: React.FC = () => {
     <div className="min-h-screen bg-[#F8F9FA]">
       <div>
         <div className="bg-gradient-to-br from-[#255C79] to-[#17627A] text-white rounded-2xl">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-16 lg:py-20">
             <div className="text-center">
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">
                 Find Your Dream Job
@@ -180,12 +199,20 @@ const Jobs: React.FC = () => {
                     />
                   </div>
 
-                  <button
-                    onClick={handleSearch}
-                    className="px-6 sm:px-8 py-3 sm:py-4 bg-[#255C79] text-white rounded-xl hover:bg-[#1E4A63] transition-colors font-semibold text-base sm:text-lg whitespace-nowrap"
-                  >
-                    Search Jobs
-                  </button>
+                    <div className="flex gap-2 items-center">
+                        <button
+                            onClick={handleSearch}
+                            className="px-6 w-full sm:px-8 py-3 sm:py-4 bg-[#255C79] text-white rounded-xl hover:bg-[#1E4A63] transition-colors font-semibold text-base sm:text-lg whitespace-nowrap"
+                        >
+                            Search Jobs
+                        </button>
+                        <button
+                            onClick={() => setIsFilterDialogOpen(true)}
+                            className="px-6 w-full flex md:hidden gap-2 justify-center items-center text-[#1E4A63] sm:px-8 py-3 sm:py-4 bg-gray-100 rounded-xl hover:bg-[#1E4A63] transition-colors font-semibold text-base sm:text-lg whitespace-nowrap">
+                            <Filter size={18}/> Filters
+                        </button>
+                    </div>
+
                 </div>
               </div>
             </div>
@@ -210,7 +237,7 @@ const Jobs: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
-            <div className="lg:col-span-1">
+            <div className="hidden md:block lg:col-span-1">
               <div className="sticky top-6">
                 <JobFilters
                   jobType={jobTypeFilter}
@@ -333,6 +360,41 @@ const Jobs: React.FC = () => {
           }}
         />
       )}
+
+      <Dialog
+        open={isFilterDialogOpen}
+        onClose={() => setIsFilterDialogOpen(false)}
+        fullWidth
+        TransitionComponent={Transition}
+        PaperProps={{
+            sx: {
+                position: 'fixed',
+                bottom: 0,
+                m: 0,
+                width: '100%',
+                maxWidth: '100%',
+            }
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            Filters
+            <IconButton className="!p-0" onClick={() => setIsFilterDialogOpen(false)}>
+                <X />
+            </IconButton>
+        </DialogTitle>
+        <DialogContent className="px-2">
+            <JobFilters
+                jobType={jobTypeFilter}
+                onJobTypeChange={setJobTypeFilter}
+                experience={experienceFilter}
+                onExperienceChange={setExperienceFilter}
+                salary={salaryFilter}
+                onSalaryChange={setSalaryFilter}
+                remote={remoteFilter}
+                onRemoteChange={setRemoteFilter}
+            />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
