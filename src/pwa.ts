@@ -35,7 +35,6 @@ export class PWAManager {
   private hasUpdate: boolean = false;
   private updateDismissed: boolean = false;
   private isOfflineState: boolean = !navigator.onLine;
-  private offlineCheckInterval: number | undefined;
   // Reload behavior guards
   private hadControllerAtLoad: boolean = false;
   private shouldReloadOnControllerChange: boolean = false;
@@ -45,7 +44,7 @@ export class PWAManager {
     this.setupInstallPrompt();
     this.setupOnlineOfflineDetection();
     this.checkOnlineStatus(); // Initial check
-    this.offlineCheckInterval = window.setInterval(() => this.checkOnlineStatus(), 30000); // Check every 30 seconds
+    window.setInterval(() => this.checkOnlineStatus(), 30000); // Check every 30 seconds
     window.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
         this.checkOnlineStatus();
