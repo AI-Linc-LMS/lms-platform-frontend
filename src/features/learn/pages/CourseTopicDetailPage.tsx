@@ -128,7 +128,7 @@ const CourseTopicDetailPage: React.FC = () => {
     }
   }, [isMobile]);
 
-  const clientId = import.meta.env.VITE_CLIENT_ID;
+  const clientId = Number(import.meta.env.VITE_CLIENT_ID);
   // Fetch submodule data
   const {
     data: submoduleData,
