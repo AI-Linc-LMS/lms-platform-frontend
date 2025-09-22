@@ -379,7 +379,7 @@ const RoadmapPage = () => {
           alt="Ai Linc"
           className="w-6 h-6 sm:w-8 sm:h-8 mr-2"
         /> */}
-        {/* <p className="font-bold text-center text-[#264D64] text-lg sm:text-xl lg:text-2xl">
+        {/* <p className="font-bold text-center text-[var(--secondary-700)] text-lg sm:text-xl lg:text-2xl">
           {clientName}
         </p> */}
       </div>
@@ -418,10 +418,10 @@ const RoadmapPage = () => {
 
           {/* Content */}
           <div className="flex flex-col items-center justify-center relative z-10 px-2 sm:px-4">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-[#264D64] mb-2 mt-6 sm:mt-8 lg:mt-10 font-serif text-center">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-[var(--secondary-700)] mb-2 mt-6 sm:mt-8 lg:mt-10 font-serif text-center">
               Congratulations
             </h1>
-            <p className="text-sm sm:text-base lg:text-lg text-black text-center max-w-md mb-4 sm:mb-6 font-sans px-2">
+            <p className="text-sm sm:text-base lg:text-lg text-[var(--font-dark)] text-center max-w-md mb-4 sm:mb-6 font-sans px-2">
               Your performance in the assessment has qualified you for an
               exclusive opportunity.
             </p>
@@ -580,7 +580,7 @@ export default RoadmapPage;
 // --- UpskillingRoadmapSection ---
 export const UpskillingRoadmapSection: React.FC = () => (
   <div className="w-full flex flex-col items-center justify-center bg-gradient-to-b from-[#f8fcfc] to-white mt-6 sm:mt-8 lg:mt-10 px-4 sm:px-6 lg:px-0">
-    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#264D64] text-center mb-3 sm:mb-4 leading-tight px-2">
+    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[var(--secondary-700)] text-center mb-3 sm:mb-4 leading-tight px-2">
       Upskilling Roadmap After Your
       <br className="hidden sm:block" />
       Assessment Report

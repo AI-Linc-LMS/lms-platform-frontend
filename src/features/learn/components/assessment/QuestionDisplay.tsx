@@ -28,7 +28,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
         <span className="text-xs sm:text-sm text-gray-500">
           Question {currentQuestionIndex + 1} of {totalQuestions}
         </span>
-        <span className="text-xs bg-blue-100 text-[#255C79] px-2 py-1 rounded">
+        <span className="text-xs bg-blue-100 text-[var(--default-primary)] px-2 py-1 rounded">
           {currentQuestion?.difficulty_level || ""}
         </span>
       </div>
@@ -45,12 +45,12 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
               onClick={() => handleOptionSelect(optionLetter)}
               className={`cursor-pointer border rounded-lg p-3 sm:p-4 transition ${
                 isSelected
-                  ? "border-[#255C79] bg-blue-50"
+                  ? "border-[var(--default-primary)] bg-blue-50"
                   : "bg-white border-gray-200 hover:border-gray-300"
               }`}
             >
               <div className="flex items-center">
-                <span className="font-medium mr-2 sm:mr-3 text-[#255C79]">
+                <span className="font-medium mr-2 sm:mr-3 text-[var(--default-primary)]">
                   {optionLetter}.
                 </span>
                 <span className="text-gray-800 text-sm sm:text-base">
@@ -65,4 +65,4 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   );
 };
 
-export default QuestionDisplay; 
+export default QuestionDisplay;

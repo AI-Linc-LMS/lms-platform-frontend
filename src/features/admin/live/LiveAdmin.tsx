@@ -23,13 +23,13 @@ const LiveAdmin = () => {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold text-[#255C79] mb-4">
+      <h1 className="text-2xl font-bold text-[var(--default-primary)] mb-4">
         Live Admin Dashboard
       </h1>
 
       <button
         onClick={() => setIsModalOpen(true)}
-        className="bg-[#255C79] hover:bg-[#1E4A63] text-white py-2 px-6 rounded-lg mb-6"
+        className="bg-[var(--default-primary)] hover:bg-[#1E4A63] text-white py-2 px-6 rounded-lg mb-6"
       >
         ➕ Create New Live Session
       </button>

@@ -146,7 +146,6 @@ const QuizCard: React.FC<QuizCardProps> = ({
     return () => clearInterval(interval);
   }, [data?.duration_in_minutes, isVisible]);
 
-
   // Fetch past submissions after quiz is completed
   useEffect(() => {
     if (quizCompleted || alreadyCompleted) {
@@ -349,9 +348,15 @@ const QuizCard: React.FC<QuizCardProps> = ({
 
   const finishQuiz = async () => {
     // Calculate total score when quiz is completed
-    const response = await submitContent(clientId, courseId, contentId, "Quiz", {
-      userAnswers,
-    });
+    const response = await submitContent(
+      clientId,
+      courseId,
+      contentId,
+      "Quiz",
+      {
+        userAnswers,
+      }
+    );
     ////console.log("response", response);
     if (response === 201) {
       setQuizCompleted(true);
@@ -383,7 +388,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
       return "bg-white border-gray-300 text-gray-600";
     }
     if (index === currentQuestionIndex && !isReviewing) {
-      return "bg-blue-50 border-[#007B9F] text-[#255C79]";
+      return "bg-blue-50 border-[var(--secondary-400)] text-[var(--default-primary)]";
     }
     // Show correct/incorrect colors only after quiz is completed
     if (quizCompleted) {
@@ -461,7 +466,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
       <div className="flex w-full">
         {/* Left Sidebar: Question Numbers */}
         <div className="w-1/3 min-w-[120px] bg-white rounded-lg md:mr-8">
-          <h3 className="text-2xl font-semibold mb-4 text-[#255C79]">
+          <h3 className="text-2xl font-semibold mb-4 text-[var(--default-primary)]">
             Your Quiz Review
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -476,7 +481,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
                 btnClass = "bg-gray-100 border-gray-300 text-gray-400";
               }
               if (isCurrent) {
-                btnClass += " ring-2 ring-[#255C79]";
+                btnClass += " ring-2 ring-[var(--default-primary)]";
               }
               return (
                 <button
@@ -496,7 +501,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
             <span className="text-sm text-gray-500">
               Question {currentQuestionIndex + 1}
             </span>
-            <span className="text-xs bg-blue-100 text-[#255C79] px-2 py-1 rounded">
+            <span className="text-xs bg-blue-100 text-[var(--default-primary)] px-2 py-1 rounded">
               {currentQuestion.difficulty_level}
             </span>
           </div>
@@ -563,7 +568,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
           <div className="flex justify-between mt-6">
             <button
               onClick={handleBack}
-              className="px-3 md:px-4 py-2 border border-[#255C79] text-[#255C79] rounded-md text-xs md:text-sm font-medium hover:bg-blue-50"
+              className="px-3 md:px-4 py-2 border border-[var(--default-primary)] text-[var(--default-primary)] rounded-md text-xs md:text-sm font-medium hover:bg-blue-50"
             >
               Back
             </button>
@@ -575,7 +580,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
                   setIsReviewing(false);
                 }
               }}
-              className="px-3 md:px-4 py-2 bg-[#255C79] text-white rounded-md text-xs md:text-sm font-medium hover:bg-[#1a4a5f]"
+              className="px-3 md:px-4 py-2 bg-[var(--default-primary)] text-white rounded-md text-xs md:text-sm font-medium hover:bg-[#1a4a5f]"
             >
               {currentQuestionIndex < mcqs.length - 1 ? "Next" : "Done"}
             </button>
@@ -618,7 +623,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
               </span>
             </div>
             <button
-              className="md:px-28 py-3 bg-[#255C79] text-white rounded-lg font-semibold text-base hover:bg-[#1a4a5f] transition"
+              className="md:px-28 py-3 bg-[var(--default-primary)] text-white rounded-lg font-semibold text-base hover:bg-[#1a4a5f] transition"
               onClick={handleRetryQuiz}
             >
               Retry the Quiz
@@ -648,7 +653,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
               <h2 className="text-2xl font-bold text-white mb-2 ">
                 Quiz Submitted Successfully
               </h2>
-              <button className="mt-4 px-6 py-2 bg-white text-[#255C79] rounded-md font-medium text-sm md:text-base hover:bg-[#1a4a5f]">
+              <button className="mt-4 px-6 py-2 bg-white text-[var(--default-primary)] rounded-md font-medium text-sm md:text-base hover:bg-[#1a4a5f]">
                 View Overall Results
               </button>
             </div>
@@ -673,13 +678,13 @@ const QuizCard: React.FC<QuizCardProps> = ({
 
             {/*left Content */}
             <div className="relative z-10 flex flex-col justify-between h-full">
-              <div className="text-3xl font-semibold text-[#12293A] mt-1">
+              <div className="text-3xl font-semibold text-[var(--secondary-500)] mt-1">
                 Your Score
               </div>
 
               <div className="md:text-8xl font-bold text-[#2A8CB0]">
                 {selectedAttemptScore}
-                <span className="text-5xl text-[#12293A]">
+                <span className="text-5xl text-[var(--secondary-500)]">
                   {" "}
                   out of {selectedAttemptTotal}
                 </span>{" "}
@@ -696,13 +701,13 @@ const QuizCard: React.FC<QuizCardProps> = ({
           </div>
 
           {/* Next Challenge Section */}
-          <div className="flex flex-row justify-between bg-[#D7EFF6] rounded-lg p-6 shadow">
+          <div className="flex flex-row justify-between bg-[var(--primary-50)] rounded-lg p-6 shadow">
             <div className="flex flex-col justify-between">
-              <div className="md:text-3xl font-semibold text-[#12293A]">
+              <div className="md:text-3xl font-semibold text-[var(--secondary-500)]">
                 Ready for Your Next Challenge?
               </div>
               <button
-                className="px-6 py-4 bg-[#255C79] text-white rounded-md font-medium text-sm md:text-base hover:bg-[#1a4a5f]"
+                className="px-6 py-4 bg-[var(--default-primary)] text-white rounded-md font-medium text-sm md:text-base hover:bg-[#1a4a5f]"
                 onClick={onStartNextQuiz}
               >
                 Start Next Quiz
@@ -731,7 +736,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
                 className={`border rounded-lg px-6 py-3 text-left transition font-semibold shadow-sm
                   ${
                     idx === selectedAttemptIndex
-                      ? "border-blue-400 bg-blue-50 text-[#12293A] ring-2 ring-blue-200"
+                      ? "border-blue-400 bg-blue-50 text-[var(--secondary-500)] ring-2 ring-blue-200"
                       : "border-gray-200 bg-white text-gray-500 hover:border-blue-300"
                   }
                 `}
@@ -804,7 +809,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
         }`}
       >
         <div className="mb-4">
-          <h2 className="text-lg font-semibold text-[#255C79] mb-1">
+          <h2 className="text-lg font-semibold text-[var(--default-primary)] mb-1">
             {data.content_title}
           </h2>
           <div className="text-xs text-gray-500 flex flex-wrap gap-2 mb-3">
@@ -820,12 +825,12 @@ const QuizCard: React.FC<QuizCardProps> = ({
           <span className="text-xs md:text-sm font-medium text-gray-700">
             Question {currentQuestionIndex + 1}
           </span>
-          <span className="text-xs bg-blue-100 text-[#255C79] px-2 py-1 rounded">
+          <span className="text-xs bg-blue-100 text-[var(--default-primary)] px-2 py-1 rounded">
             {currentQuestion.difficulty_level}
           </span>
         </div>
 
-        <h3 className="text-base md:text-lg font-semibold mb-4 md:mb-6 text-[#255C79]">
+        <h3 className="text-base md:text-lg font-semibold mb-4 md:mb-6 text-[var(--default-primary)]">
           {currentQuestion.question_text}
         </h3>
 
@@ -844,7 +849,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
                 onClick={() => handleOptionSelect(optionLetter)}
                 className={`cursor-pointer border rounded-lg p-3 md:p-4 transition text-sm md:text-base ${
                   isSelected
-                    ? "border-[#255C79] bg-blue-50"
+                    ? "border-[var(--default-primary)] bg-blue-50"
                     : "bg-white border-gray-200"
                 }`}
               >
@@ -859,7 +864,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
           {currentQuestionIndex > 0 && (
             <button
               onClick={handleBack}
-              className="px-3 md:px-4 py-2 border border-[#255C79] text-[#255C79] rounded-md text-xs md:text-sm font-medium hover:bg-blue-50"
+              className="px-3 md:px-4 py-2 border border-[var(--default-primary)] text-[var(--default-primary)] rounded-md text-xs md:text-sm font-medium hover:bg-blue-50"
             >
               Back
             </button>
@@ -872,7 +877,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
               className={`px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium ml-auto ${
                 selectedOption === null
                   ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                  : "bg-[#255C79] text-white hover:bg-[#1a4a5f]"
+                  : "bg-[var(--default-primary)] text-white hover:bg-[#1a4a5f]"
               }`}
             >
               Next
@@ -894,7 +899,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
                 className={`px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium ml-auto ${
                   selectedOption === null
                     ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                    : "bg-[#255C79] text-white hover:bg-[#1a4a5f]"
+                    : "bg-[var(--default-primary)] text-white hover:bg-[#1a4a5f]"
                 }`}
               >
                 Finish Quiz

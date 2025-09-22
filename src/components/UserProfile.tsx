@@ -191,7 +191,7 @@ const ProfileSettings = () => {
     return (
       <div className="p-4 sm:p-6 rounded-lg w-full max-w-7xl mx-auto">
         <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-16 w-16 sm:h-32 sm:w-32 border-b-2 border-[#255C79]"></div>
+          <div className="animate-spin rounded-full h-16 w-16 sm:h-32 sm:w-32 border-b-2 border-[var(--default-primary)]"></div>
         </div>
       </div>
     );
@@ -240,7 +240,7 @@ const ProfileSettings = () => {
           <div className="flex justify-center sm:justify-end">
             <button
               onClick={() => (editable ? handleSave() : setEditable(true))}
-              className="bg-[#255C79] text-white px-4 sm:px-5 py-2 rounded-lg flex items-center gap-2 text-sm sm:text-base"
+              className="bg-[var(--default-primary)] text-white px-4 sm:px-5 py-2 rounded-lg flex items-center gap-2 text-sm sm:text-base"
               disabled={isSaving}
             >
               {isSaving ? (
@@ -292,7 +292,7 @@ const ProfileSettings = () => {
               onChange={handleChange}
               readOnly={!editable}
               className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${
-                editable ? "border-[#255C79]" : "border-gray-300"
+                editable ? "border-[var(--default-primary)]" : "border-gray-300"
               } focus:outline-none`}
             />
           </div>
@@ -308,7 +308,7 @@ const ProfileSettings = () => {
               onChange={handleChange}
               readOnly={!editable}
               className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${
-                editable ? "border-[#255C79]" : "border-gray-300"
+                editable ? "border-[var(--default-primary)]" : "border-gray-300"
               } focus:outline-none`}
             />
           </div>
@@ -356,7 +356,7 @@ const ProfileSettings = () => {
               onChange={handleChange}
               readOnly={!editable}
               className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${
-                editable ? "border-[#255C79]" : "border-gray-300"
+                editable ? "border-[var(--default-primary)]" : "border-gray-300"
               } focus:outline-none`}
             />
           </div>
@@ -372,7 +372,7 @@ const ProfileSettings = () => {
               onChange={handleChange}
               readOnly={!editable}
               className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${
-                editable ? "border-[#255C79]" : "border-gray-300"
+                editable ? "border-[var(--default-primary)]" : "border-gray-300"
               } focus:outline-none`}
             />
           </div>
@@ -388,7 +388,7 @@ const ProfileSettings = () => {
               readOnly={!editable}
               rows={3}
               className={`w-full border rounded px-3 py-2 text-sm sm:text-base resize-none ${
-                editable ? "border-[#255C79]" : "border-gray-300"
+                editable ? "border-[var(--default-primary)]" : "border-gray-300"
               } focus:outline-none`}
             />
           </div>
@@ -405,7 +405,7 @@ const ProfileSettings = () => {
               readOnly={!editable}
               placeholder="https://linkedin.com/in/yourprofile"
               className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${
-                editable ? "border-[#255C79]" : "border-gray-300"
+                editable ? "border-[var(--default-primary)]" : "border-gray-300"
               } focus:outline-none`}
             />
           </div>
@@ -422,7 +422,7 @@ const ProfileSettings = () => {
               readOnly={!editable}
               placeholder="https://github.com/yourusername"
               className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${
-                editable ? "border-[#255C79]" : "border-gray-300"
+                editable ? "border-[var(--default-primary)]" : "border-gray-300"
               } focus:outline-none`}
             />
           </div>
@@ -474,7 +474,7 @@ const ProfileSettings = () => {
         <div className="flex justify-center sm:justify-start">
           <button
             onClick={() => Logout()}
-            className="bg-[#255C79] text-white px-6 py-2 rounded-lg text-sm sm:text-base w-full sm:w-auto"
+            className="bg-[var(--default-primary)] text-white px-6 py-2 rounded-lg text-sm sm:text-base w-full sm:w-auto"
           >
             Logout
           </button>

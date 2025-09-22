@@ -9,7 +9,7 @@ const FloatingAIButton: React.FC<FloatingAIButtonProps> = ({ onClick }) => {
     <div className="fixed bottom-6 right-6">
       <button
         onClick={onClick}
-        className="bg-[#255C79] text-white px-4 py-2 rounded-full flex items-center shadow-lg cursor-pointer"
+        className="bg-[var(--default-primary)] text-white px-4 py-2 rounded-full flex items-center shadow-lg cursor-pointer"
       >
         <span className="mr-2">Got a question? Ask AI</span>
         <svg

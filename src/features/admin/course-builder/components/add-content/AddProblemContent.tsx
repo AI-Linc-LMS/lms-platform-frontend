@@ -41,7 +41,7 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [fontSizeDropdownOpen, setFontSizeDropdownOpen] = useState(false);
   const [fontSize, setFontSize] = useState<number>(14);
-  const [textColor, setTextColor] = useState("#2D3748");
+  const [textColor, setTextColor] = useState("var(--netural-600)");
   const [showColorPicker, setShowColorPicker] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
   const languageDropdownRef = useRef<HTMLDivElement>(null);
@@ -119,8 +119,11 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
       uploadContent(clientId, "coding-problems", data),
 
     onSuccess: () => {
-      success("Problem Saved", "Coding problem content has been successfully uploaded!");
-      
+      success(
+        "Problem Saved",
+        "Coding problem content has been successfully uploaded!"
+      );
+
       // Invalidate all content-related queries to refresh the UI
       queryClient.invalidateQueries({
         predicate: (query) => {
@@ -133,17 +136,23 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
           );
         },
       });
-      
+
       onBack();
     },
     onError: (error: Error) => {
-      showError("Upload Failed", error.message || "Failed to save problem content");
+      showError(
+        "Upload Failed",
+        error.message || "Failed to save problem content"
+      );
     },
   });
 
   const handleSave = () => {
     if (testCaseError) {
-      showError("Validation Error", "Please fix the test cases format before saving");
+      showError(
+        "Validation Error",
+        "Please fix the test cases format before saving"
+      );
       return;
     }
 
@@ -171,15 +180,15 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
   };
 
   const colorOptions = [
-    "#2D3748",
-    "#E53E3E",
-    "#DD6B20",
+    "var(--netural-600)",
+    "var(--accent-red)",
+    "var(--accent-orange)",
     "#D69E2E",
-    "#38A169",
-    "#319795",
+    "var(--accent-green)",
+    "var(--accent-teal)",
     "#3182CE",
-    "#805AD5",
-    "#D53F8C",
+    "var(--accent-purple)",
+    "var(--accent-pink)",
     "#000000",
   ];
   const fontSizeOptions = [8, 10, 12, 14, 16, 18, 20, 24, 28, 32];
@@ -315,7 +324,7 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
               <button
                 type="button"
                 onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                className="w-full mt-1 flex items-center justify-between border border-gray-300 rounded-md px-3 py-2 text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[#255C79]"
+                className="w-full mt-1 flex items-center justify-between border border-gray-300 rounded-md px-3 py-2 text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[var(--default-primary)]"
               >
                 <span className="text-gray-700">
                   {languages.length > 0
@@ -358,7 +367,7 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
                         type="checkbox"
                         checked={languages.includes(lang)}
                         onChange={() => {}}
-                        className="h-4 w-4 text-[#255C79] focus:ring-[#255C79] border-gray-300 rounded"
+                        className="h-4 w-4 text-[var(--default-primary)] focus:ring-[var(--default-primary)] border-gray-300 rounded"
                       />
                       <span className="ml-2 text-sm text-gray-700">{lang}</span>
                     </div>
@@ -371,7 +380,7 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
                 {languages.map((lang) => (
                   <span
                     key={lang}
-                    className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-[#D7EFF6] text-[#255C79]"
+                    className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-[var(--primary-50)] text-[var(--default-primary)]"
                   >
                     {lang}
                     <button
@@ -379,7 +388,7 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
                       onClick={() =>
                         setLanguages(languages.filter((l) => l !== lang))
                       }
-                      className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full hover:bg-[#255C79] hover:text-white focus:outline-none"
+                      className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full hover:bg-[var(--default-primary)] hover:text-white focus:outline-none"
                     >
                       <span className="sr-only">Remove {lang}</span>
                       <svg
@@ -417,7 +426,7 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
           {/* Question Editor */}
           <div className="flex-1">
             <div className="border rounded-lg overflow-hidden">
-              <div className="bg-[#D7EFF6] px-4 py-2 border-b flex items-center justify-between">
+              <div className="bg-[var(--primary-50)] px-4 py-2 border-b flex items-center justify-between">
                 <div
                   className="flex items-center relative"
                   ref={fontSizeDropdownRef}
@@ -463,7 +472,7 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
                 </div>
                 <div className="flex items-center gap-4">
                   <button
-                    className="text-[#2D3748] font-bold cursor-pointer hover:bg-gray-200 p-1 rounded"
+                    className="text-[var(--netural-600)] font-bold cursor-pointer hover:bg-gray-200 p-1 rounded"
                     onClick={() => execCommand("formatBlock", "h1")}
                   >
                     T
@@ -682,7 +691,7 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
           {/* Test Cases Section */}
           <div className="w-1/3 min-w-[300px]">
             <div className="border rounded-lg overflow-hidden">
-              <div className="bg-[#D7EFF6] px-4 py-2 border-b">
+              <div className="bg-[var(--primary-50)] px-4 py-2 border-b">
                 <h3 className="text-sm font-medium text-gray-700">
                   Test Cases
                 </h3>
@@ -712,7 +721,7 @@ const AddProblemContent: React.FC<AddProblemContentProps> = ({
         <div className="flex justify-end">
           <button
             onClick={handleSave}
-            className="px-6 py-2 bg-[#255C79] text-white rounded-xl transition"
+            className="px-6 py-2 bg-[var(--default-primary)] text-white rounded-xl transition"
           >
             Save Content
           </button>

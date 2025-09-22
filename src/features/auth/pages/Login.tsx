@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
-import {RootState, useAppSelector} from "../../../redux/store";
+import { RootState, useAppSelector } from "../../../redux/store";
 import GoogleLoginButton from "../../../commonComponents/common-buttons/google-login-button/GoogleLoginButton";
 import logimg from "../../../assets/login-placeholder/login-picture.png";
-import {useSelector} from "react-redux";
+import { useSelector } from "react-redux";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -18,10 +18,10 @@ const Login: React.FC = () => {
     e.preventDefault();
     login({ email, password });
   };
-    const clientInfo = useSelector((state: RootState) => state.clientInfo)
+  const clientInfo = useSelector((state: RootState) => state.clientInfo);
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#F8F9FA] relative">
+    <div className="flex flex-col min-h-screen bg-[var(--netural-50)] relative">
       <div className="flex flex-1">
         {/* Background Image for Mobile */}
         <div className="absolute inset-0 md:hidden">
@@ -33,7 +33,7 @@ const Login: React.FC = () => {
         </div>
 
         {/* Left Section - Background Image (desktop only) */}
-        <div className="hidden md:block md:w-1/2 h-full bg-gradient-to-r from-[#D7EFF6] to-[#E9F7FC]">
+        <div className="hidden md:block md:w-1/2 h-full bg-gradient-to-r from-[var(--primary-50)] to-[#E9F7FC]">
           <img
             src={logimg}
             alt="Office workspace"
@@ -86,7 +86,7 @@ const Login: React.FC = () => {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="block w-full h-14 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79]"
+                      className="block w-full h-14 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--default-primary)] focus:border-[var(--default-primary)]"
                       placeholder="example@email.com"
                       disabled={isLoading}
                     />
@@ -103,7 +103,7 @@ const Login: React.FC = () => {
                     </label>
                     <Link
                       to="/forgot-password"
-                      className="text-sm font-medium text-[#255C79]"
+                      className="text-sm font-medium text-[var(--default-primary)]"
                     >
                       Forgot?
                     </Link>
@@ -117,7 +117,7 @@ const Login: React.FC = () => {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="block w-full h-14 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79]"
+                      className="block w-full h-14 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--default-primary)] focus:border-[var(--default-primary)]"
                       placeholder="Enter Your Password"
                       disabled={isLoading}
                     />
@@ -171,7 +171,7 @@ const Login: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className={`w-full h-14 rounded-lg text-white py-4 px-6 bg-[#255C79] text-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:bg-[#1E4A63] hover:scale-95`}
+                  className={`w-full h-14 rounded-lg text-white py-4 px-6 bg-[var(--default-primary)] text-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:bg-[#1E4A63] hover:scale-95`}
                 >
                   {isLoading ? "Logging in..." : "Login now"}
                 </button>
@@ -185,7 +185,10 @@ const Login: React.FC = () => {
 
             <div className="text-center text-sm">
               <span className="text-gray-500">Don't have an account? </span>
-              <Link to="/signup" className="font-medium text-[#255C79]">
+              <Link
+                to="/signup"
+                className="font-medium text-[var(--default-primary)]"
+              >
                 Sign up
               </Link>
             </div>

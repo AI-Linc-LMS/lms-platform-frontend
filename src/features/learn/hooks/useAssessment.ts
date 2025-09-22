@@ -6,7 +6,10 @@ import {
   submitFinalAssessment,
   updateAfterEachQuestion,
 } from "../../../services/assesment/assesmentApis";
-import { getReferralCode, clearStoredReferralCode } from "../../../utils/referralUtils";
+import {
+  getReferralCode,
+  clearStoredReferralCode,
+} from "../../../utils/referralUtils";
 
 export interface Question {
   id: number;
@@ -43,10 +46,10 @@ export const useAssessment = (assessmentId?: string) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const currentAssessmentId = assessmentId || "ai-linc-scholarship-test";
   const [searchParams] = useSearchParams();
-  
+
   // Capture referral code from URL parameters or localStorage
   const referralCode = getReferralCode(searchParams);
-  
+
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [userAnswers, setUserAnswers] = useState<QuizSectionResponse>({
@@ -77,7 +80,12 @@ export const useAssessment = (assessmentId?: string) => {
 
   const finalSubmitMutation = useMutation({
     mutationFn: (answers: QuizSectionResponse) =>
-      submitFinalAssessment(clientId, finalAssessmentId, answers, referralCode || undefined),
+      submitFinalAssessment(
+        clientId,
+        finalAssessmentId,
+        answers,
+        referralCode || undefined
+      ),
     onSuccess: (data) => {
       //console.log("Final assessment submitted successfully:", data);
       if (referralCode) {
@@ -93,12 +101,17 @@ export const useAssessment = (assessmentId?: string) => {
         });
       }
       setIsCompleted(true);
-    }
+    },
   });
 
   const updateAnswerMutation = useMutation({
     mutationFn: (answers: QuizSectionResponse) =>
-      updateAfterEachQuestion(clientId, finalAssessmentId, answers, referralCode || undefined)
+      updateAfterEachQuestion(
+        clientId,
+        finalAssessmentId,
+        answers,
+        referralCode || undefined
+      ),
   });
 
   // Check if assessment is already submitted
@@ -223,7 +236,7 @@ export const useAssessment = (assessmentId?: string) => {
   const handleOptionSelect = (option: string) => {
     setSelectedOption(option);
     updateAnswerMutation.mutate(userAnswers);
-    
+
     setUserAnswers((prev) => {
       if (!questions || !questionsData[currentQuestionIndex]) return prev;
       try {
@@ -282,10 +295,9 @@ export const useAssessment = (assessmentId?: string) => {
       if (!question) return "bg-white border-gray-300 text-gray-600";
 
       const answer = userAnswers.quizSectionId[0][sectionId][question.id];
-  
 
       if (index === currentQuestionIndex) {
-        return "bg-blue-50 border-[#007B9F] text-[#255C79]";
+        return "bg-blue-50 border-[var(--secondary-400)] text-[var(--default-primary)]";
       }
       if (answer && answer !== "") {
         return "bg-[#2A8CB0] border-[#2A8CB0] text-white";

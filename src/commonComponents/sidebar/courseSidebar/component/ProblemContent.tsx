@@ -7,7 +7,7 @@ interface ProblemItem {
   id: string;
   title: string;
   marks: number;
-  accuracy: number; 
+  accuracy: number;
   submissions: number;
   status: string;
 }
@@ -48,7 +48,9 @@ const ProblemContent: React.FC<ProblemContentProps> = ({
                 <div>
                   <h3
                     className={`text-sm font-medium ${
-                      isSelected ? "text-[#007B9F]" : "text-gray-800"
+                      isSelected
+                        ? "text-[var(--secondary-400)]"
+                        : "text-gray-800"
                     }`}
                   >
                     {problem.title}
@@ -58,13 +60,17 @@ const ProblemContent: React.FC<ProblemContentProps> = ({
                     <span>|</span>
                     <span>{problem.accuracy.toFixed(2)}% Accuracy</span>
                     <span>|</span>
-                    <span>{problem.submissions.toLocaleString()} Submissions</span>
+                    <span>
+                      {problem.submissions.toLocaleString()} Submissions
+                    </span>
                   </p>
                 </div>
               </div>
 
               <img
-                src={problem.status === "complete" ? completeTickIcon : tickIcon}
+                src={
+                  problem.status === "complete" ? completeTickIcon : tickIcon
+                }
                 alt="Status"
                 className="w-5 h-5"
               />

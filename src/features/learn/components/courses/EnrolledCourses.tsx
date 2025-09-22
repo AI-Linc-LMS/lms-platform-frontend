@@ -80,7 +80,7 @@ const EmptyCoursesState = () => {
       <h3 className="text-xl font-bold text-[#343A40] mb-2">
         No enrolled courses found
       </h3>
-      <p className="text-[#6C757D] text-center max-w-md mb-8  text-[14px] md:text-[16px]">
+      <p className="text-[var(--netural-300)] text-center max-w-md mb-8  text-[14px] md:text-[16px]">
         You haven't enrolled in any courses yet. Browse our catalog to find
         courses that match your interests and start your learning journey.
       </p>
@@ -141,7 +141,7 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
           <h1 className="text-[#343A40] font-bold text-[18px] md:text-[22px] ">
             Enrolled Courses
           </h1>
-          <p className="text-[#6C757D]  font-normal text-[14px] md:text-[16px]">
+          <p className="text-[var(--netural-300)]  font-normal text-[14px] md:text-[16px]">
             {hasNoCourses
               ? "You haven't enrolled in any courses yet"
               : "Here is a list of enrolled courses"}
@@ -151,7 +151,7 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
           <div className="bottom-3 right-4 flex justify-end space-x-3">
             <button
               onClick={() => handleScroll("left")}
-              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-[#12293A] shadow cursor-pointer transition-all duration-200 hover:scale-95"
+              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-[var(--secondary-500)] shadow cursor-pointer transition-all duration-200 hover:scale-95"
             >
               <img
                 src={leftArrow}
@@ -161,7 +161,7 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
             </button>
             <button
               onClick={() => handleScroll("right")}
-              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-[#12293A] shadow cursor-pointer transition-all duration-200 hover:scale-95"
+              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-[var(--secondary-500)] shadow cursor-pointer transition-all duration-200 hover:scale-95"
             >
               <img
                 src={rightArrow}

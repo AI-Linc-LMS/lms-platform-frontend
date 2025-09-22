@@ -314,7 +314,7 @@ const CommunityPage: React.FC = () => {
             <div className="flex items-center justify-between h-14 sm:h-16">
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-600 rounded-md flex items-center justify-center">
-                  <Users className="text-white" size={16} />
+                  <Users className="text-[var(--font-light)]" size={16} />
                 </div>
                 <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
                   Community
@@ -344,7 +344,7 @@ const CommunityPage: React.FC = () => {
             <div className="flex items-center justify-between h-14 sm:h-16">
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-600 rounded-md flex items-center justify-center">
-                  <Users className="text-white" size={16} />
+                  <Users className="text-[var(--font-light)]" size={16} />
                 </div>
                 <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
                   Community
@@ -386,7 +386,7 @@ const CommunityPage: React.FC = () => {
           <div className="bg-white rounded-xl p-6 sm:p-8 max-w-md w-full shadow-2xl mx-4 transform animate-in fade-in zoom-in duration-300">
             <div className="text-center">
               <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Users size={32} className="text-white" />
+                <Users size={32} className="text-[var(--font-light)]" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-3">
                 Coming Soon!
@@ -455,7 +455,7 @@ const CommunityPage: React.FC = () => {
           <div className="flex items-center justify-between h-14 sm:h-16">
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-600 rounded-md flex items-center justify-center">
-                <Users className="text-white" size={16} />
+                <Users className="text-[var(--font-light)]" size={16} />
               </div>
               <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
                 Community

@@ -27,11 +27,11 @@ const dummyData = Array.from({ length: 20 }, (_, i) => {
 
 const colors: { [key: string]: string } = {
   Articles: "#234256",
-  Videos: "#255C79",
+  Videos: "var(--default-primary)",
   Problems: "#2A8CB0",
-  Quiz: "#63B6D3",
-  Subjective: "#63B6D3",
-  Development: "#D7EFF6",
+  Quiz: "var(----primary-300)",
+  Subjective: "var(----primary-300)",
+  Development: "var(--primary-50)",
 };
 
 const StudentDailyActivityChart = () => {
@@ -53,8 +53,8 @@ const StudentDailyActivityChart = () => {
   };
 
   return (
-    <div className="rounded-xl p-4 shadow-md w-full ring-1 ring-[#B9E4F2] ring-offset-1 max-w-[700px] max-h-[430px]">
-      <h2 className="text-xl font-bold mb-4 text-[#255C79]">
+    <div className="rounded-xl p-4 shadow-md w-full ring-1 ring-[var(--primary-100)] ring-offset-1 max-w-[700px] max-h-[430px]">
+      <h2 className="text-xl font-bold mb-4 text-[var(--default-primary)]">
         Student Daily Activity →
       </h2>
       <div className="mt-8">

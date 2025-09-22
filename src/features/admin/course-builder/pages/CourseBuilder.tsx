@@ -301,7 +301,6 @@ const AdminDashboard: React.FC = () => {
     );
   }
 
-
   if (!isSuperAdmin) {
     return <AccessDenied />;
   }
@@ -334,16 +333,25 @@ const AdminDashboard: React.FC = () => {
                   <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                   <span className="text-sm text-gray-600">
                     <span className="font-semibold text-blue-600">
-                      {coursesData.filter((course: Course) => !course.published).length}
-                    </span> Drafts
+                      {
+                        coursesData.filter(
+                          (course: Course) => !course.published
+                        ).length
+                      }
+                    </span>{" "}
+                    Drafts
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                   <span className="text-sm text-gray-600">
                     <span className="font-semibold text-green-600">
-                      {coursesData.filter((course: Course) => course.published).length}
-                    </span> Published
+                      {
+                        coursesData.filter((course: Course) => course.published)
+                          .length
+                      }
+                    </span>{" "}
+                    Published
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -351,7 +359,8 @@ const AdminDashboard: React.FC = () => {
                   <span className="text-sm text-gray-600">
                     <span className="font-semibold text-gray-600">
                       {coursesData.length}
-                    </span> Total
+                    </span>{" "}
+                    Total
                   </span>
                 </div>
               </div>
@@ -407,7 +416,7 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             <button
-              className="bg-[#17627A] text-white px-4 py-2 rounded-md flex items-center whitespace-nowrap hover:bg-[#124F65] transition-colors"
+              className="bg-[#17627A] text-white px-4 py-2 rounded-md flex items-center whitespace-nowrap hover:bg-[var(--primary-800)] transition-colors"
               onClick={() => setIsModalOpen(true)}
             >
               <span className="mr-1">+</span> Add New Course
@@ -421,44 +430,88 @@ const AdminDashboard: React.FC = () => {
             <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-blue-600">Draft Courses</p>
+                  <p className="text-sm font-medium text-blue-600">
+                    Draft Courses
+                  </p>
                   <p className="text-2xl font-bold text-blue-800">
-                    {coursesData.filter((course: Course) => !course.published).length}
+                    {
+                      coursesData.filter((course: Course) => !course.published)
+                        .length
+                    }
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-blue-200 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  <svg
+                    className="w-6 h-6 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
                   </svg>
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-green-600">Published Courses</p>
+                  <p className="text-sm font-medium text-green-600">
+                    Published Courses
+                  </p>
                   <p className="text-2xl font-bold text-green-800">
-                    {coursesData.filter((course: Course) => course.published).length}
+                    {
+                      coursesData.filter((course: Course) => course.published)
+                        .length
+                    }
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg
+                    className="w-6 h-6 text-green-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Courses</p>
-                  <p className="text-2xl font-bold text-gray-800">{coursesData.length}</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Courses
+                  </p>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {coursesData.length}
+                  </p>
                 </div>
                 <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  <svg
+                    className="w-6 h-6 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                    />
                   </svg>
                 </div>
               </div>
@@ -513,7 +566,7 @@ const AdminDashboard: React.FC = () => {
             </p>
             <button
               onClick={clearSearch}
-              className="text-[#17627A] hover:text-[#124F65] font-medium transition-colors"
+              className="text-[#17627A] hover:text-[var(--primary-800)] font-medium transition-colors"
             >
               Clear search and view all courses
             </button>
@@ -630,7 +683,7 @@ const AdminDashboard: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full bg-[#17627A] text-white py-3 rounded-md font-medium hover:bg-[#124F65] transition-colors"
+                className="w-full bg-[#17627A] text-white py-3 rounded-md font-medium hover:bg-[var(--primary-800)] transition-colors"
               >
                 Create Course
               </button>
@@ -785,7 +838,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEditClick }) => {
 
         <div className="mt-auto pt-4">
           <button
-            className="w-full bg-[#D7EFF6] text-[#264D64] border border-[#80C9E0] py-3 rounded-md flex items-center justify-center hover:bg-[#C4E5F0] transition-colors"
+            className="w-full bg-[var(--primary-50)] text-[var(--secondary-700)] border border-[#80C9E0] py-3 rounded-md flex items-center justify-center hover:bg-[#C4E5F0] transition-colors"
             onClick={onEditClick}
           >
             <svg

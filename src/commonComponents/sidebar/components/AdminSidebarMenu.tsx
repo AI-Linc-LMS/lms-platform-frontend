@@ -34,7 +34,7 @@ const AdminSidebarMenu = ({ isExpanded }: AdminSidebarMenuProps) => {
           to="/admin/payment-links"
           className={`flex items-center w-full px-4 text-base transition-colors ${
             isActive
-              ? 'text-[#255C79] bg-[#E5EEF2] font-medium'
+              ? 'text-[var(--default-primary)] bg-[#E5EEF2] font-medium'
               : 'text-[#536066] hover:bg-[#E5EEF2]/50 font-normal'
           }`}
         >
@@ -42,7 +42,7 @@ const AdminSidebarMenu = ({ isExpanded }: AdminSidebarMenuProps) => {
             <FiLink 
               className={`w-[18px] h-[18px] min-w-[16px] ${
                 isActive 
-                  ? 'stroke-[#255C79] stroke-[1.5]' 
+                  ? 'stroke-[var(--default-primary)] stroke-[1.5]' 
                   : 'stroke-[#536066] stroke-1'
               }`}
             />

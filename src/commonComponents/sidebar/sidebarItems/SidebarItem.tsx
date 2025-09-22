@@ -16,19 +16,25 @@ const SidebarItem = ({
         {isExpanded ? (
           <div
             className={`flex relative font-medium w-full h-[56px] transition-all duration-300 ease-in-out items-center justify-start hover-element rounded-2xl ${
-              isActive ? "bg-[#12293A]" : ""
+              isActive ? "bg-[var(--secondary-500)]" : ""
             }`}
           >
             <div className="flex flex-row items-center px-2 gap-4">
               <div
                 className={`w-[20px] h-[20px] flex items-center justify-center ${
-                  isActive ? "text-white" : "text-black"
+                  isActive
+                    ? "text-[var(--font-light)]"
+                    : "text-[var(--font-dark)]"
                 }`}
               >
                 {linkInfo.icon}
               </div>
               <span
-                className={`text-lg ${isActive ? "text-white" : "text-black"}`}
+                className={`text-lg ${
+                  isActive
+                    ? "text-[var(--font-light)]"
+                    : "text-[var(--font-dark)]"
+                }`}
               >
                 {linkInfo.title}
               </span>
@@ -37,12 +43,14 @@ const SidebarItem = ({
         ) : (
           <div
             className={`flex items-center justify-center w-full h-[56px] transition-all duration-300 ease-in-out hover-element rounded-2xl ${
-              isActive ? "bg-[#12293A]" : ""
+              isActive ? "bg-[var(--secondary-500)]" : ""
             }`}
           >
             <div
               className={`w-[20px] h-[20px] flex items-center justify-center ${
-                isActive ? "text-white" : "text-black"
+                isActive
+                  ? "text-[var(--font-light)]"
+                  : "text-[var(--font-dark)]"
               }`}
             >
               {linkInfo.icon}
@@ -60,4 +68,3 @@ const SidebarItem = ({
 };
 
 export default SidebarItem;
-

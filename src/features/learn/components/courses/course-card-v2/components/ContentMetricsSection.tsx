@@ -61,7 +61,7 @@ export const ContentMetricsSection: React.FC<ContentMetricsSectionProps> = ({
 }) => {
   return (
     <div className="mb-4">
-      <div className="text-xs font-semibold text-[#6b7280] mb-2 uppercase tracking-[0.5px]">
+      <div className="text-xs font-semibold text-[var(--font-secondary)] mb-2 uppercase tracking-[0.5px]">
         Content
       </div>
       <div className="grid grid-cols-5 gap-2">
@@ -76,8 +76,8 @@ export const ContentMetricsSection: React.FC<ContentMetricsSectionProps> = ({
               className="bg-white border border-[#e5e7eb] rounded-lg p-3 text-center flex flex-col items-center gap-1.5 transition-all duration-200 cursor-pointer hover:border-[#10b981] hover:-translate-y-1 hover:shadow-[0_2px_8px_rgba(16,185,129,0.1)] relative group"
               data-tooltip={tooltip}
             >
-              <IconComponent className="w-5 h-5 text-[#6b7280]" />
-              <span className="text-xs font-medium text-[#9ca3af] leading-none">
+              <IconComponent className="w-5 h-5 text-[var(--font-secondary)]" />
+              <span className="text-xs font-medium text-[var(--font-tertiary)] leading-none">
                 {value}
               </span>
               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 bg-[#374151] text-white px-2.5 py-1.5 rounded-md text-[11px] font-medium whitespace-nowrap opacity-0 invisible transition-all duration-200 z-[1000] mb-2 group-hover:opacity-100 group-hover:visible">

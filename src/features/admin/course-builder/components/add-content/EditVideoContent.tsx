@@ -237,7 +237,7 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
     return (
       <div className="w-full space-y-6">
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#255C79]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--default-primary)]"></div>
           <span className="ml-2 text-gray-600">Loading video data...</span>
         </div>
       </div>
@@ -350,7 +350,9 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
           {/* Upload Box */}
           <div className="border border-gray-300 rounded-lg flex flex-col items-center justify-center py-10 text-center">
             <div className="bg-blue-100 w-12 h-12 rounded-full mb-2 flex items-center justify-center">
-              <span className="text-2xl font-bold text-[#255C79]">+</span>
+              <span className="text-2xl font-bold text-[var(--default-primary)]">
+                +
+              </span>
             </div>
             <p className="text-sm font-medium">Drag or Upload the file</p>
             <p className="text-xs text-gray-400">File Size Limit: 1GB</p>
@@ -368,7 +370,7 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
             <button
               onClick={handleSave}
               disabled={updateMutation.isPending}
-              className="px-6 py-2 text-sm font-medium text-white bg-[#255C79] border border-transparent rounded-lg hover:bg-[#1e4a61] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#255C79] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-2 text-sm font-medium text-white bg-[var(--default-primary)] border border-transparent rounded-lg hover:bg-[#1e4a61] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--default-primary)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {updateMutation.isPending ? (
                 <div className="flex items-center">

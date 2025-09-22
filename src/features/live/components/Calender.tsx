@@ -104,12 +104,18 @@ const Calendar: React.FC<CalendarProps> = ({ events }) => {
             className={`lg:h-14 h-10 flex items-center justify-center rounded-lg transition-all cursor-pointer relative group
             ${!isCurrentMonth ? "text-gray-400" : ""}
             ${isToday ? "border-2 border-blue-500 font-semibold" : ""}
-            ${isToday && event ? "border-2 border-green-800 bg-green-500 text-white font-semibold" : ""}
-            ${isBeforeToday && event ? "border-2 border-black bg-gray-200 text-black" : ""}
             ${
-              isAfterToday && event
-                ? "bg-blue-500 text-white font-medium"
+              isToday && event
+                ? "border-2 border-green-800 bg-green-500 text-white font-semibold"
                 : ""
+            }
+            ${
+              isBeforeToday && event
+                ? "border-2 border-black bg-gray-200 text-[var(--font-dark)]"
+                : ""
+            }
+            ${
+              isAfterToday && event ? "bg-blue-500 text-white font-medium" : ""
             }`}
           >
             {format(day, "d")}

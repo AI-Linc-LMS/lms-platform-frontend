@@ -55,23 +55,23 @@ const InstructionPage: React.FC = () => {
   // Early return if no assessment ID - component will redirect
   if (!currentAssessmentId) {
     return (
-      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#255C79]"></div>
+      <div className="min-h-screen bg-[var(--netural-50)] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--default-primary)]"></div>
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#255C79]"></div>
+      <div className="min-h-screen bg-[var(--netural-50)] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--default-primary)]"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--netural-50)] flex items-center justify-center">
         <div className="bg-white rounded-3xl p-6 shadow-sm max-w-md mx-auto">
           <div className="text-center">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -92,10 +92,10 @@ const InstructionPage: React.FC = () => {
             <h2 className="text-xl font-bold text-[#343A40] mb-2">
               Error Loading Assessment
             </h2>
-            <p className="text-[#6C757D] mb-4">{error.message}</p>
+            <p className="text-[var(--netural-300)] mb-4">{error.message}</p>
             <button
               onClick={() => navigate("/assessments")}
-              className="bg-[#255C79] text-white px-6 py-2 rounded-xl font-medium hover:bg-[#1a4a5f] transition-colors"
+              className="bg-[var(--default-primary)] text-white px-6 py-2 rounded-xl font-medium hover:bg-[#1a4a5f] transition-colors"
             >
               View All Assessments
             </button>

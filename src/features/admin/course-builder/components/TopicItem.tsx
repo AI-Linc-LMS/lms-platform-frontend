@@ -39,10 +39,10 @@ export const TopicItem: React.FC<TopicItemProps> = ({
   const clientId = Number(import.meta.env.VITE_CLIENT_ID);
   const queryClient = useQueryClient();
   const { success, error: showError } = useToast();
-  
+
   // Add state for collapsible functionality
   const [isExpanded, setIsExpanded] = useState(false); // Default to collapsed for cleaner view
-  
+
   const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("videos");
   const [selectedSubtopicId, setSelectedSubtopicId] = useState<number | null>(
@@ -178,7 +178,7 @@ export const TopicItem: React.FC<TopicItemProps> = ({
           <h4 className="text-[#17627A] font-medium mb-1">Add Subtopics</h4>
           <button
             onClick={() => onAddSubtopic(topic.id)}
-            className="bg-[#17627A] text-white px-4 py-1 rounded-md mt-2 text-sm hover:bg-[#124F65] transition-colors"
+            className="bg-[#17627A] text-white px-4 py-1 rounded-md mt-2 text-sm hover:bg-[var(--primary-800)] transition-colors"
           >
             Add Subtopics
           </button>
@@ -265,7 +265,7 @@ export const TopicItem: React.FC<TopicItemProps> = ({
                   />
                 </svg>
               </button>
-              
+
               <h3 className="text-lg font-semibold">{topic.title}</h3>
               <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-md">
                 Week {topic.week}
@@ -288,7 +288,8 @@ export const TopicItem: React.FC<TopicItemProps> = ({
               </button>
             </div>
             <p className="text-sm text-gray-500 mt-1 ml-9">
-              Marks: - | {topic.subtopics.length} subtopic{topic.subtopics.length !== 1 ? 's' : ''}
+              Marks: - | {topic.subtopics.length} subtopic
+              {topic.subtopics.length !== 1 ? "s" : ""}
             </p>
           </div>
           <div className="flex gap-2">
@@ -313,7 +314,7 @@ export const TopicItem: React.FC<TopicItemProps> = ({
             </button>
             <button
               onClick={() => onAddSubtopic(topic.id)}
-              className="bg-[#17627A] text-white px-3 py-1 rounded-md flex items-center hover:bg-[#124F65] transition-colors"
+              className="bg-[#17627A] text-white px-3 py-1 rounded-md flex items-center hover:bg-[var(--primary-800)] transition-colors"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -340,9 +341,7 @@ export const TopicItem: React.FC<TopicItemProps> = ({
             isExpanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
           }`}
         >
-          <div className="ml-9">
-            {renderSubtopics()}
-          </div>
+          <div className="ml-9">{renderSubtopics()}</div>
         </div>
       </div>
       {/* Bottom Sheet for Add Content */}
@@ -405,11 +404,9 @@ const SubtopicContentList: React.FC<{
     enabled: !!submoduleId,
   });
 
-
   // Delete content mutation - COMPLETELY REWRITTEN
   const deleteContentMutation = useMutation({
     mutationFn: ({ contentId }: { contentId: number }) => {
-
       return deleteSubmoduleContent(clientId, courseId, submoduleId, contentId);
     },
     onSuccess: () => {
@@ -429,7 +426,6 @@ const SubtopicContentList: React.FC<{
   });
 
   const handleDeleteContent = (contentId: number, contentType: string) => {
-    
     const contentExists = contents.find((c) => c.id === contentId);
     //console.log("Content to delete exists:", contentExists);
 
@@ -467,7 +463,6 @@ const SubtopicContentList: React.FC<{
     //console.log("Content to edit exists:", contentExists);
 
     if (!contentExists) {
-      
       showError(
         "Content Not Found",
         `Content with ID ${contentId} not found. Please refresh the page and try again.`

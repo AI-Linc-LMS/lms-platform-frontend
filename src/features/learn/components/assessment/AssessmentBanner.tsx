@@ -2,7 +2,10 @@ import React from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getAssessmentStatus } from "../../../../services/assesment/assesmentApis";
 import { useQuery } from "@tanstack/react-query";
-import { addReferralCodeToUrl, getReferralCode } from "../../../../utils/referralUtils";
+import {
+  addReferralCodeToUrl,
+  getReferralCode,
+} from "../../../../utils/referralUtils";
 
 interface AssessmentBannerProps {
   assessmentId?: string;
@@ -13,7 +16,7 @@ interface AssessmentBannerProps {
 const AssessmentBanner: React.FC<AssessmentBannerProps> = ({
   assessmentId = "ai-linc-scholarship-test-2",
   title = "Take the Free Placement Assessment",
-  description = "Get added to the placement pool or get a scholarship to become eligible"
+  description = "Get added to the placement pool or get a scholarship to become eligible",
 }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -70,10 +73,10 @@ const AssessmentBanner: React.FC<AssessmentBannerProps> = ({
     <div className="bg-gradient-to-r from-[#B8E6F0] to-[#E0F4F8] rounded-2xl p-6 md:p-8 mb-8 relative overflow-hidden">
       <div className="flex flex-col md:flex-row items-center justify-between relative z-10">
         <div className="flex-1 mb-6 md:mb-0 md:pr-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-[#255C79] mb-3">
+          <h2 className="text-2xl md:text-3xl font-bold text-[var(--default-primary)] mb-3">
             {title}
           </h2>
-          <p className="text-[#255C79] text-base md:text-lg font-medium">
+          <p className="text-[var(--default-primary)] text-base md:text-lg font-medium">
             {description}
           </p>
         </div>
@@ -85,7 +88,7 @@ const AssessmentBanner: React.FC<AssessmentBannerProps> = ({
                 ? "bg-green-600"
                 : data?.status === "in_progress"
                 ? "bg-yellow-600"
-                : "bg-[#255C79]"
+                : "bg-[var(--default-primary)]"
             } text-white px-8 py-4 rounded-xl text-base font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105`}
           >
             {data?.status === "submitted"

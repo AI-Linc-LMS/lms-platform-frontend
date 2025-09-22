@@ -15,9 +15,9 @@ const AddDevelopmentContent: React.FC<AddDevelopmentContentProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const [fontSizeDropdownOpen, setFontSizeDropdownOpen] = useState(false);
   const [fontSize, setFontSize] = useState<number>(14);
-  const [textColor, setTextColor] = useState("#2D3748");
+  const [textColor, setTextColor] = useState("var(--netural-600)");
   const [showColorPicker, setShowColorPicker] = useState(false);
-  
+
   const [, setStatement] = useState("");
   const [showPlaceholder, setShowPlaceholder] = useState(true);
   const fontSizeDropdownRef = useRef<HTMLDivElement>(null);
@@ -30,15 +30,15 @@ const AddDevelopmentContent: React.FC<AddDevelopmentContentProps> = ({
   };
 
   const colorOptions = [
-    "#2D3748",
-    "#E53E3E",
-    "#DD6B20",
+    "var(--netural-600)",
+    "var(--accent-red)",
+    "var(--accent-orange)",
     "#D69E2E",
-    "#38A169",
-    "#319795",
+    "var(--accent-green)",
+    "var(--accent-teal)",
     "#3182CE",
-    "#805AD5",
-    "#D53F8C",
+    "var(--accent-purple)",
+    "var(--accent-pink)",
     "#000000",
   ];
   const fontSizeOptions = [8, 10, 12, 14, 16, 18, 20, 24, 28, 32];
@@ -178,7 +178,7 @@ const AddDevelopmentContent: React.FC<AddDevelopmentContentProps> = ({
         </div>
         {/* Text Editor */}
         <div className="border rounded-lg overflow-hidden mt-3">
-          <div className="bg-[#D7EFF6] px-4 py-2 border-b flex items-center justify-between">
+          <div className="bg-[var(--primary-50)] px-4 py-2 border-b flex items-center justify-between">
             <div
               className="flex items-center relative"
               ref={fontSizeDropdownRef}
@@ -222,7 +222,7 @@ const AddDevelopmentContent: React.FC<AddDevelopmentContentProps> = ({
             </div>
             <div className="flex items-center gap-4">
               <button
-                className="text-[#2D3748] font-bold cursor-pointer hover:bg-gray-200 p-1 rounded"
+                className="text-[var(--netural-600)] font-bold cursor-pointer hover:bg-gray-200 p-1 rounded"
                 onClick={() => execCommand("formatBlock", "h1")}
               >
                 T
@@ -440,7 +440,7 @@ const AddDevelopmentContent: React.FC<AddDevelopmentContentProps> = ({
         <div style={{ textAlign: "right" }}>
           <button
             onClick={handleSave}
-            className="px-6 py-2 bg-[#255C79] text-white rounded-xl transition"
+            className="px-6 py-2 bg-[var(--default-primary)] text-white rounded-xl transition"
           >
             Save Content
           </button>

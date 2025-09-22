@@ -1,6 +1,9 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getLeaderboardData, LeaderboardItem } from "../../../services/dashboardApis";
+import {
+  getLeaderboardData,
+  LeaderboardItem,
+} from "../../../services/dashboardApis";
 
 interface LeaderboardResponse {
   leaderboard: LeaderboardItem[];
@@ -8,13 +11,17 @@ interface LeaderboardResponse {
 
 const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
   const { data, isLoading, error } = useQuery<LeaderboardItem[]>({
-    queryKey: ['leaderboard', clientId],
+    queryKey: ["leaderboard", clientId],
     queryFn: async () => {
       const response = await getLeaderboardData(clientId);
       // Handle both array and object with leaderboard property
       if (Array.isArray(response)) {
         return response;
-      } else if (response && typeof response === 'object' && 'leaderboard' in response) {
+      } else if (
+        response &&
+        typeof response === "object" &&
+        "leaderboard" in response
+      ) {
         return (response as LeaderboardResponse).leaderboard;
       }
       return [];
@@ -24,16 +31,16 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
   // Filter out specific backend users that should not be displayed
   const filteredData = data?.filter((item: LeaderboardItem) => {
     const namesToExclude = [
-      'shubham lal', 
-      'balbir', 
-      'balbir yadav -[iitb]',
-      'ailinc dev', 
-      'ai-linc dev',
-      'ailinc admin',
-      'ai linc',
-      'daksh rajput',
-      'Soumic Sarkar',
-      'i learning'
+      "shubham lal",
+      "balbir",
+      "balbir yadav -[iitb]",
+      "ailinc dev",
+      "ai-linc dev",
+      "ailinc admin",
+      "ai linc",
+      "daksh rajput",
+      "Soumic Sarkar",
+      "i learning",
     ];
     return !namesToExclude.includes(item.name.toLowerCase());
   });
@@ -45,12 +52,12 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
           Track Your Progress
         </h2>
 
-        {(!filteredData || filteredData.length === 0) ? (
-          <p className="text-[14px] text-[#495057] mb-8">
+        {!filteredData || filteredData.length === 0 ? (
+          <p className="text-[14px] text-[var(--netural-400)] mb-8">
             No leaderboard data available
           </p>
         ) : (
-          <p className="text-[14px] text-[#495057] mb-8">
+          <p className="text-[14px] text-[var(--netural-400)] mb-8">
             Keep grinding and stay top on our leaderboard
           </p>
         )}
@@ -111,9 +118,9 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
               />
             </svg>
           </div>
-          <p className="text-sm text-[#6C757D]">
-            As you complete modules you will move top of the leaderboard and earn
-            exciting rewards.
+          <p className="text-sm text-[var(--netural-300)]">
+            As you complete modules you will move top of the leaderboard and
+            earn exciting rewards.
           </p>
         </div>
       </div>
@@ -125,7 +132,7 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
       <h2 className="text-xl font-semibold text-[#343A40] mb-3">
         Track Your Progress
       </h2>
-      <p className="text-[14px] text-[#495057] mb-8">
+      <p className="text-[14px] text-[var(--netural-400)] mb-8">
         Keep grinding and stay top on our leaderboard
       </p>
 
@@ -157,7 +164,9 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
                 <tr
                   key={index}
                   className={`group relative transition-all duration-300 hover:bg-[#E9F7FA] ${
-                    isCurrentUser ? "bg-blue-100 text-[#264D64]" : ""
+                    isCurrentUser
+                      ? "bg-blue-100 text-[var(--secondary-700)]"
+                      : ""
                   }`}
                 >
                   <td
@@ -216,7 +225,7 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
             />
           </svg>
         </div>
-        <p className="text-sm text-[#6C757D]">
+        <p className="text-sm text-[var(--netural-300)]">
           As you complete modules you will move top of the leaderboard and earn
           exciting rewards.
         </p>

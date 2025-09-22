@@ -21,37 +21,42 @@ type PerformanceReportProps = {
   clientId: number;
   assessmentId: string;
   // Payment callback functions
-  onPaymentSuccess?: (result: PaymentResult, type: 'seat-booking' | 'course-payment') => void;
+  onPaymentSuccess?: (
+    result: PaymentResult,
+    type: "seat-booking" | "course-payment"
+  ) => void;
   onPaymentError?: (error: string) => void;
-  showToast?: (type: "success" | "error" | "warning" | "loading", title: string, message: string) => void;
+  showToast?: (
+    type: "success" | "error" | "warning" | "loading",
+    title: string,
+    message: string
+  ) => void;
 };
-const clientName = import.meta.env.VITE_CLIENT_NAME ;
-const PerformanceReport = ({ 
-  data, 
-  // redeemData,
-  // // isFlagshipSeatBooked = false,
-  // isFlagshipCoursePaid = false,
-  // assessmentDate,
-  // clientId,
-  // assessmentId,
-  // onPaymentSuccess,
-  // onPaymentError,
-  // showToast
-}: PerformanceReportProps) => {
+const clientName = import.meta.env.VITE_CLIENT_NAME;
+const PerformanceReport = ({
+  data,
+}: // redeemData,
+// // isFlagshipSeatBooked = false,
+// isFlagshipCoursePaid = false,
+// assessmentDate,
+// clientId,
+// assessmentId,
+// onPaymentSuccess,
+// onPaymentError,
+// showToast
+PerformanceReportProps) => {
   return (
     <div className="px-2 sm:px-4">
       <div className="flex flex-col items-center mb-3 sm:mb-4">
-        <span className="text-black text-sm sm:text-lg font-semibold mb-1">
+        <span className="text-[var(--font-dark)] text-sm sm:text-lg font-semibold mb-1">
           ✨ AI Generated ✨
         </span>
-        <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-[#264D64] text-center mb-4 sm:mb-6 lg:mb-8 px-2">
+        <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-[var(--secondary-700)] text-center mb-4 sm:mb-6 lg:mb-8 px-2">
           {clientName} Student Performance Report
         </h2>
-        
-       
       </div>
-       {/* Only show ScholarshipCountdown if not already purchased */}
-       {/* {!isFlagshipCoursePaid && (
+      {/* Only show ScholarshipCountdown if not already purchased */}
+      {/* {!isFlagshipCoursePaid && (
           <div className="w-full  mb-6">
             <ScholarshipCountdown
               assessmentDate={assessmentDate}
@@ -68,7 +73,7 @@ const PerformanceReport = ({
             />
           </div>
         )} */}
-      
+
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8 justify-between items-center">
         {data.map((metric: Metric, idx: number) => {
           const isPlacementReadiness = metric.label === "Placement Readiness";

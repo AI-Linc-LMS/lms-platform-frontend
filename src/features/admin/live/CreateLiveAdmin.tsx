@@ -121,13 +121,13 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
 
   return (
     <div className="bg-white p-6 rounded-xl w-full max-w-2xl">
-      <h2 className="text-xl font-bold text-[#255C79] mb-4">
+      <h2 className="text-xl font-bold text-[var(--default-primary)] mb-4">
         {isEditMode ? "Edit Live Session" : "Create Upcoming Session"}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Topic Name */}
         <div>
-          <label className="block text-sm font-medium text-[#255C79] mb-1">
+          <label className="block text-sm font-medium text-[var(--default-primary)] mb-1">
             Title
           </label>
           <input
@@ -136,13 +136,13 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
             value={form.topic_name}
             onChange={handleChange}
             required
-            className="w-full border border-[#B9E4F2] rounded-lg px-4 py-2"
+            className="w-full border border-[var(--primary-100)] rounded-lg px-4 py-2"
           />
         </div>
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-[#255C79] mb-1">
+          <label className="block text-sm font-medium text-[var(--default-primary)] mb-1">
             Description
           </label>
           <textarea
@@ -151,14 +151,14 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
             onChange={handleChange}
             required
             rows={3}
-            className="w-full border border-[#B9E4F2] rounded-lg px-4 py-2"
+            className="w-full border border-[var(--primary-100)] rounded-lg px-4 py-2"
           />
         </div>
 
         {/* Trainer & DateTime */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-[#255C79] mb-1">
+            <label className="block text-sm font-medium text-[var(--default-primary)] mb-1">
               Trainer
             </label>
             <div className="space-y-2">
@@ -167,7 +167,7 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
                 name="instructor"
                 value={form.instructor}
                 onChange={handleChange}
-                className="w-full border border-[#B9E4F2] rounded-lg px-4 py-2"
+                className="w-full border border-[var(--primary-100)] rounded-lg px-4 py-2"
               >
                 <option value="">Select a Trainer</option>
                 {Object.values(Trainers).map((trainer) => (
@@ -191,12 +191,12 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
                 value={form.instructor}
                 onChange={handleChange}
                 placeholder="Enter trainer name manually"
-                className="w-full border border-[#B9E4F2] rounded-lg px-4 py-2"
+                className="w-full border border-[var(--primary-100)] rounded-lg px-4 py-2"
               />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#255C79] mb-1">
+            <label className="block text-sm font-medium text-[var(--default-primary)] mb-1">
               Scheduled Time
             </label>
             <input
@@ -205,7 +205,7 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
               value={form.class_datetime}
               onChange={handleChange}
               required
-              className="w-full border border-[#B9E4F2] rounded-lg px-4 py-2"
+              className="w-full border border-[var(--primary-100)] rounded-lg px-4 py-2"
             />
           </div>
         </div>
@@ -213,7 +213,7 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
         {/* Duration & Join Link */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-[#255C79] mb-1">
+            <label className="block text-sm font-medium text-[var(--default-primary)] mb-1">
               Duration (minutes)
             </label>
             <input
@@ -223,11 +223,11 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
               onChange={handleChange}
               min={1}
               required
-              className="w-full border border-[#B9E4F2] rounded-lg px-4 py-2"
+              className="w-full border border-[var(--primary-100)] rounded-lg px-4 py-2"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#255C79] mb-1">
+            <label className="block text-sm font-medium text-[var(--default-primary)] mb-1">
               Meeting Link
             </label>
             <input
@@ -236,14 +236,14 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
               value={form.join_link}
               onChange={handleChange}
               required
-              className="w-full border border-[#B9E4F2] rounded-lg px-4 py-2"
+              className="w-full border border-[var(--primary-100)] rounded-lg px-4 py-2"
             />
           </div>
         </div>
 
         {/* Recording Link */}
         <div>
-          <label className="block text-sm font-medium text-[#255C79] mb-1">
+          <label className="block text-sm font-medium text-[var(--default-primary)] mb-1">
             Recording Link (optional)
           </label>
           <input
@@ -251,7 +251,7 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
             name="recording_link"
             value={form.recording_link || ""}
             onChange={handleChange}
-            className="w-full border border-[#B9E4F2] rounded-lg px-4 py-2"
+            className="w-full border border-[var(--primary-100)] rounded-lg px-4 py-2"
           />
         </div>
 
@@ -266,7 +266,7 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
           </button>
           <button
             type="submit"
-            className="bg-[#255C79] hover:bg-[#1E4A63] text-white font-medium py-2 px-4 rounded"
+            className="bg-[var(--default-primary)] hover:bg-[#1E4A63] text-white font-medium py-2 px-4 rounded"
           >
             {isEditMode ? "Update" : "Create"}
           </button>
@@ -275,7 +275,8 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
       <PermissionDeniedModal
         isOpen={permissionDeniedOpen}
         onClose={() => setPermissionDeniedOpen(false)}
-      />+
+      />
+      +
     </div>
   );
 };

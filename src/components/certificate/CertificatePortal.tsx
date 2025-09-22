@@ -30,7 +30,7 @@ const CertificatePortal: React.FC = () => {
     window.addEventListener("resize", checkIfMobile);
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
-  
+
   const clientId = import.meta.env.VITE_CLIENT_ID;
   // Fetch certificates from API
   const {
@@ -193,7 +193,7 @@ const CertificatePortal: React.FC = () => {
                 placeholder="Search certificates by name or type..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79] text-sm sm:text-base"
+                className="w-full pl-10 pr-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--default-primary)] focus:border-[var(--default-primary)] text-sm sm:text-base"
               />
               <svg
                 className="absolute left-3 top-2.5 sm:top-3.5 h-4 w-4 sm:h-5 sm:w-5 text-gray-400"
@@ -327,7 +327,7 @@ const CertificatePortal: React.FC = () => {
                   <button
                     onClick={() => handleViewCertificate(certificate)}
                     disabled={isDownloading}
-                    className="w-full bg-[#255C79] text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-[#1E4A63] hover:scale-105 hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2 transform active:scale-95 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-[var(--default-primary)] text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-[#1E4A63] hover:scale-105 hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2 transform active:scale-95 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isDownloading && isMobile ? (
                       <svg
@@ -395,7 +395,7 @@ const CertificatePortal: React.FC = () => {
                   <div>
                     <button
                       onClick={() => setShowPreview(false)}
-                      className="flex items-center justify-center w-10 h-10 sm:w-auto sm:h-10 sm:px-4 text-sm rounded-xl text-white bg-[#255C79] font-medium transition-all duration-200 hover:bg-[#1E4A63] hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
+                      className="flex items-center justify-center w-10 h-10 sm:w-auto sm:h-10 sm:px-4 text-sm rounded-xl text-white bg-[var(--default-primary)] font-medium transition-all duration-200 hover:bg-[#1E4A63] hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
                     >
                       <svg
                         className="w-5 h-5 sm:w-4 sm:h-4"
@@ -428,7 +428,7 @@ const CertificatePortal: React.FC = () => {
                         }
                       }}
                       disabled={isDownloading}
-                      className="flex items-center justify-center w-10 h-10 sm:w-auto sm:h-10 text-sm rounded-xl text-white bg-[#255C79] font-medium transition-all duration-200 hover:bg-[#1E4A63] hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
+                      className="flex items-center justify-center w-10 h-10 sm:w-auto sm:h-10 text-sm rounded-xl text-white bg-[var(--default-primary)] font-medium transition-all duration-200 hover:bg-[#1E4A63] hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
                     >
                       {isDownloading ? (
                         <>

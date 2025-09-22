@@ -1,5 +1,3 @@
-
-
 interface FilterOption {
   id: string;
   label: string;
@@ -16,7 +14,7 @@ const FilterCategory = ({
   title,
   options,
   selectedOptions,
-  setSelectedOptions
+  setSelectedOptions,
 }: FilterCategoryProps) => {
   return (
     <div className="mb-5">
@@ -32,12 +30,17 @@ const FilterCategory = ({
                 if (e.target.checked) {
                   setSelectedOptions([...selectedOptions, option.id]);
                 } else {
-                  setSelectedOptions(selectedOptions.filter(id => id !== option.id));
+                  setSelectedOptions(
+                    selectedOptions.filter((id) => id !== option.id)
+                  );
                 }
               }}
               className="w-4 h-4 text-[#17627A] bg-gray-100 border-gray-300 rounded focus:ring-[#17627A] focus:ring-2"
             />
-            <label htmlFor={option.id} className="ml-2 text-sm font-medium text-[#495057]">
+            <label
+              htmlFor={option.id}
+              className="ml-2 text-sm font-medium text-[var(--netural-400)]"
+            >
               {option.label}
             </label>
           </div>
@@ -47,4 +50,4 @@ const FilterCategory = ({
   );
 };
 
-export default FilterCategory; 
+export default FilterCategory;

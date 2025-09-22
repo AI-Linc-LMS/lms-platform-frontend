@@ -88,7 +88,10 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
     const currentQuestion = questions[activeIndex];
 
     if (!isQuestionValid(currentQuestion)) {
-      showError("Validation Error", "Please complete the current question before adding a new one.");
+      showError(
+        "Validation Error",
+        "Please complete the current question before adding a new one."
+      );
       return;
     }
 
@@ -123,12 +126,12 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
       uploadContent(clientId, "mcqs", data),
     onSuccess: () => {
       success("Question Saved", "Question has been successfully saved!");
-      
+
       // Invalidate MCQ queries to refresh the question list
       queryClient.invalidateQueries({
         queryKey: ["content", clientId, "mcqs"],
       });
-      
+
       setQuestions([defaultQuestion()]);
       setActiveIndex(0);
     },
@@ -141,7 +144,7 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
     mutationFn: (data: QuizData) => uploadContent(clientId, "quizzes", data),
     onSuccess: () => {
       success("Quiz Saved", "Quiz content has been successfully uploaded!");
-      
+
       // Invalidate all content-related queries to refresh the UI
       queryClient.invalidateQueries({
         predicate: (query) => {
@@ -154,17 +157,23 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
           );
         },
       });
-      
+
       onBack();
     },
     onError: (error: Error) => {
-      showError("Upload Failed", error.message || "Failed to save quiz content");
+      showError(
+        "Upload Failed",
+        error.message || "Failed to save quiz content"
+      );
     },
   });
 
   const handleSaveQuestion = () => {
     if (!isQuestionValid(questions[activeIndex])) {
-      showError("Validation Error", "Please fill in all fields for the question.");
+      showError(
+        "Validation Error",
+        "Please fill in all fields for the question."
+      );
       return;
     }
 
@@ -178,7 +187,10 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
     }
 
     if (selectedQuestions.length === 0) {
-      showError("Validation Error", "Please select at least one question for the quiz");
+      showError(
+        "Validation Error",
+        "Please select at least one question for the quiz"
+      );
       return;
     }
 
@@ -218,7 +230,7 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
           onClick={() => setMode("select")}
           className={`px-4 py-2 rounded-md ${
             mode === "select"
-              ? "bg-[#255C79] text-white"
+              ? "bg-[var(--default-primary)] text-white"
               : "bg-gray-100 text-gray-700"
           }`}
         >
@@ -228,7 +240,7 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
           onClick={() => setMode("create")}
           className={`px-4 py-2 rounded-md ${
             mode === "create"
-              ? "bg-[#255C79] text-white"
+              ? "bg-[var(--default-primary)] text-white"
               : "bg-gray-100 text-gray-700"
           }`}
         >
@@ -250,7 +262,7 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
                       key={idx}
                       className={`w-15 h-10 rounded bg-white border ${
                         activeIndex === idx
-                          ? "border-[#255C79] text-[#255C79] font-bold"
+                          ? "border-[var(--default-primary)] text-[var(--default-primary)] font-bold"
                           : "border-gray-300 text-gray-700"
                       } flex items-center justify-center`}
                       onClick={() => setActiveIndex(idx)}
@@ -260,7 +272,7 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
                   ))}
                 </div>
                 <button
-                  className="mt-4 px-3 py-1 border border-[#255C79] text-[#255C79] rounded flex items-center gap-1 text-sm hover:bg-[#255C79] hover:text-white"
+                  className="mt-4 px-3 py-1 border border-[var(--default-primary)] text-[var(--default-primary)] rounded flex items-center gap-1 text-sm hover:bg-[var(--default-primary)] hover:text-white"
                   onClick={handleAddQuestion}
                 >
                   + Add Question
@@ -371,7 +383,7 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
                 <div className="flex justify-end">
                   <button
                     onClick={handleSaveQuestion}
-                    className="px-6 py-2 bg-[#255C79] text-white rounded-xl transition"
+                    className="px-6 py-2 bg-[var(--default-primary)] text-white rounded-xl transition"
                   >
                     Save Question
                   </button>
@@ -453,7 +465,7 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
                       key={question.id}
                       className={`p-3 border rounded-md cursor-pointer ${
                         selectedQuestions.includes(question.id)
-                          ? "border-[#255C79] bg-blue-50"
+                          ? "border-[var(--default-primary)] bg-blue-50"
                           : "border-gray-200"
                       }`}
                       onClick={() => toggleQuestionSelection(question.id)}
@@ -481,7 +493,7 @@ const AddQuizContent: React.FC<AddQuizContentProps> = ({
             <div className="flex justify-end">
               <button
                 onClick={handleSaveQuiz}
-                className="px-6 py-2 bg-[#255C79] text-white rounded-xl transition"
+                className="px-6 py-2 bg-[var(--default-primary)] text-white rounded-xl transition"
               >
                 Save Quiz
               </button>

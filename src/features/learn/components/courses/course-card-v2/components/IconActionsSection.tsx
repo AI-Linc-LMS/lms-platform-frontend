@@ -84,7 +84,7 @@ export const IconActionsSection: React.FC<IconActionsSectionProps> = ({
           return (
             <button
               key={action.id}
-              className={`w-10 h-10 rounded-full border border-[#e2e8f0] bg-[#f8fafc] flex items-center justify-center cursor-pointer transition-all duration-200 text-[#6b7280] relative hover:-translate-y-0.5 group ${hoverClasses}`}
+              className={`w-10 h-10 rounded-full border border-[#e2e8f0] bg-[#f8fafc] flex items-center justify-center cursor-pointer transition-all duration-200 text-[var(--font-secondary)] relative hover:-translate-y-0.5 group ${hoverClasses}`}
               onClick={action.onClick}
               aria-label={action.tooltip}
             >

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Job } from '../types/jobs.types';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Job } from "../types/jobs.types";
 
 interface JobCardProps {
   job: Job;
@@ -12,14 +12,14 @@ interface JobCardProps {
   className?: string;
 }
 
-const JobCard: React.FC<JobCardProps> = ({ 
-  job, 
-  featured = false, 
+const JobCard: React.FC<JobCardProps> = ({
+  job,
+  featured = false,
   onClick,
   // onBookmark,
 
   onApply,
-  className = ''
+  className = "",
 }) => {
   const navigate = useNavigate();
   // const [internalBookmarked, setInternalBookmarked] = useState(false);
@@ -32,8 +32,8 @@ const JobCard: React.FC<JobCardProps> = ({
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 1) return '1 day ago';
+
+    if (diffDays === 1) return "1 day ago";
     if (diffDays < 7) return `${diffDays} days ago`;
     if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
     return `${Math.ceil(diffDays / 30)} months ago`;
@@ -43,9 +43,9 @@ const JobCard: React.FC<JobCardProps> = ({
   //   switch (experience) {
   //     case 'Entry Level': return 'bg-[#28A745] text-white';
   //     case 'Mid Level': return 'bg-[#FFC107] text-white';
-  //     case 'Senior Level': return 'bg-[#255C79] text-white';
+  //     case 'Senior Level': return 'bg-[var(--default-primary)] text-white';
   //     case 'Executive': return 'bg-[#6F42C1] text-white';
-  //     default: return 'bg-[#6C757D] text-white';
+  //     default: return 'bg-[var(--netural-300)] text-white';
   //   }
   // };
 
@@ -56,7 +56,7 @@ const JobCard: React.FC<JobCardProps> = ({
   //     case 'Contract': return 'bg-[#DC3545] text-white';
   //     case 'Internship': return 'bg-[#20C997] text-white';
   //     case 'Freelance': return 'bg-[#6F42C1] text-white';
-  //     default: return 'bg-[#6C757D] text-white';
+  //     default: return 'bg-[var(--netural-300)] text-white';
   //   }
   // };
 
@@ -87,11 +87,11 @@ const JobCard: React.FC<JobCardProps> = ({
   // };
 
   return (
-    <div 
+    <div
       className={`bg-white rounded-2xl border transition-all duration-200 hover:shadow-lg hover:-translate-y-1 cursor-pointer ${
-        featured 
-          ? 'border-[#255C79] shadow-md ring-2 ring-[#255C79] ring-opacity-10' 
-          : 'border-[#DEE2E6] hover:border-[#255C79]'
+        featured
+          ? "border-[var(--default-primary)] shadow-md ring-2 ring-[var(--default-primary)] ring-opacity-10"
+          : "border-[#DEE2E6] hover:border-[var(--default-primary)]"
       } ${className}`}
       onClick={handleViewDetails}
     >
@@ -100,18 +100,18 @@ const JobCard: React.FC<JobCardProps> = ({
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-start gap-3 sm:gap-4 flex-1">
             {/* Company Logo */}
-            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl overflow-hidden flex-shrink-0 bg-[#F8F9FA] flex items-center justify-center">
-              <img 
-                src={job.companyLogo} 
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl overflow-hidden flex-shrink-0 bg-[var(--netural-50)] flex items-center justify-center">
+              <img
+                src={job.companyLogo}
                 alt={`${job.company} logo`}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  target.nextElementSibling?.classList.remove('hidden');
+                  target.style.display = "none";
+                  target.nextElementSibling?.classList.remove("hidden");
                 }}
               />
-              <div className="hidden text-[#6C757D] font-semibold text-base sm:text-lg">
+              <div className="hidden text-[var(--netural-300)] font-semibold text-base sm:text-lg">
                 {job.company.charAt(0).toUpperCase()}
               </div>
             </div>
@@ -123,20 +123,47 @@ const JobCard: React.FC<JobCardProps> = ({
                   <h3 className="text-lg sm:text-xl font-bold text-[#343A40] mb-1 leading-tight">
                     {job.title}
                   </h3>
-                  <p className="text-[#255C79] font-semibold mb-2 text-sm sm:text-base">{job.company}</p>
-                  
+                  <p className="text-[var(--default-primary)] font-semibold mb-2 text-sm sm:text-base">
+                    {job.company}
+                  </p>
+
                   {/* Location and Date */}
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-[#6C757D] text-xs sm:text-sm mb-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-[var(--netural-300)] text-xs sm:text-sm mb-3">
                     <div className="flex items-center gap-1">
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <svg
+                        className="w-3 h-3 sm:w-4 sm:h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
                       </svg>
                       <span>{job.location}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-3 h-3 sm:w-4 sm:h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                       <span>{formatDate(job.postedDate)}</span>
                     </div>
@@ -144,10 +171,14 @@ const JobCard: React.FC<JobCardProps> = ({
 
                   {/* Tags */}
                   <div className="flex flex-wrap gap-1 sm:gap-2 mb-3">
-                    <span className={`px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium {getJobTypeColor(job.type)}`}>
+                    <span
+                      className={`px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium {getJobTypeColor(job.type)}`}
+                    >
                       {job.type}
                     </span>
-                    <span className={`px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium {getExperienceColor(job.experienceLevel)}`}>
+                    <span
+                      className={`px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium {getExperienceColor(job.experienceLevel)}`}
+                    >
                       {job.experienceLevel}
                     </span>
                     {job.remote && (
@@ -161,16 +192,18 @@ const JobCard: React.FC<JobCardProps> = ({
                       </span>
                     )}
                     {/* Skill Tags - Show fewer on mobile */}
-                    {job.tags.slice(0, window.innerWidth < 640 ? 2 : 3).map((tag, index) => (
-                      <span 
-                        key={index}
-                        className="px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium bg-[#17627A] text-white"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                    {job.tags
+                      .slice(0, window.innerWidth < 640 ? 2 : 3)
+                      .map((tag, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium bg-[#17627A] text-white"
+                        >
+                          {tag}
+                        </span>
+                      ))}
                     {job.tags.length > (window.innerWidth < 640 ? 2 : 3) && (
-                      <span className="px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium bg-[#6C757D] text-white">
+                      <span className="px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium bg-[var(--netural-300)] text-white">
                         +{job.tags.length - (window.innerWidth < 640 ? 2 : 3)}
                       </span>
                     )}
@@ -185,8 +218,8 @@ const JobCard: React.FC<JobCardProps> = ({
                   }}
                   className={`p-2 rounded-lg transition-colors ${
                     isBookmarked 
-                      ? 'bg-[#255C79] text-white' 
-                      : 'bg-[#F8F9FA] text-[#6C757D] hover:bg-[#E9ECEF]'
+                      ? 'bg-[var(--default-primary)] text-white' 
+                      : 'bg-[var(--netural-50)] text-[var(--netural-300)] hover:bg-[#E9ECEF]'
                   }`}
                 >
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill={isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
@@ -205,20 +238,21 @@ const JobCard: React.FC<JobCardProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
             </svg> */}
             <span className="text-[#28A745] font-bold text-base sm:text-lg">
-              {job.salary ? `₹${job.salary.min.toLocaleString()} - ₹${job.salary.max.toLocaleString()}` : 'Salary not specified'}
+              {job.salary
+                ? `₹${job.salary.min.toLocaleString()} - ₹${job.salary.max.toLocaleString()}`
+                : "Salary not specified"}
             </span>
           </div>
         </div>
 
         {/* Description */}
         <div className="mb-4">
-          <p className="text-[#495057] leading-relaxed text-sm sm:text-base">
-            {showFullDescription 
-              ? job.description 
-              : job.description.length > 120 
-                ? `${job.description.slice(0, 120)}...` 
-                : job.description
-            }
+          <p className="text-[var(--netural-400)] leading-relaxed text-sm sm:text-base">
+            {showFullDescription
+              ? job.description
+              : job.description.length > 120
+              ? `${job.description.slice(0, 120)}...`
+              : job.description}
           </p>
           {job.description.length > 120 && (
             <button
@@ -226,9 +260,9 @@ const JobCard: React.FC<JobCardProps> = ({
                 e.stopPropagation();
                 setShowFullDescription(!showFullDescription);
               }}
-              className="text-[#255C79] font-medium text-xs sm:text-sm mt-2 hover:underline"
+              className="text-[var(--default-primary)] font-medium text-xs sm:text-sm mt-2 hover:underline"
             >
-              {showFullDescription ? 'Show Less' : 'Read More'}
+              {showFullDescription ? "Show Less" : "Read More"}
             </button>
           )}
         </div>
@@ -236,30 +270,33 @@ const JobCard: React.FC<JobCardProps> = ({
         {/* Requirements Preview */}
         <div className="mb-4">
           <div className="flex flex-wrap gap-1 sm:gap-2">
-            {job.requirements.slice(0, window.innerWidth < 640 ? 2 : 3).map((req, index) => (
-              <span 
-                key={index}
-                className="px-2 py-1 sm:px-3 sm:py-1 bg-[#F8F9FA] text-[#495057] rounded-lg text-xs sm:text-sm border border-[#DEE2E6]"
-              >
-                {req.length > 20 ? `${req.slice(0, 20)}...` : req}
-              </span>
-            ))}
+            {job.requirements
+              .slice(0, window.innerWidth < 640 ? 2 : 3)
+              .map((req, index) => (
+                <span
+                  key={index}
+                  className="px-2 py-1 sm:px-3 sm:py-1 bg-[var(--netural-50)] text-[var(--netural-400)] rounded-lg text-xs sm:text-sm border border-[#DEE2E6]"
+                >
+                  {req.length > 20 ? `${req.slice(0, 20)}...` : req}
+                </span>
+              ))}
             {job.requirements.length > (window.innerWidth < 640 ? 2 : 3) && (
-              <span className="px-2 py-1 sm:px-3 sm:py-1 bg-[#F8F9FA] text-[#6C757D] rounded-lg text-xs sm:text-sm border border-[#DEE2E6]">
-                +{job.requirements.length - (window.innerWidth < 640 ? 2 : 3)} more
+              <span className="px-2 py-1 sm:px-3 sm:py-1 bg-[var(--netural-50)] text-[var(--netural-300)] rounded-lg text-xs sm:text-sm border border-[#DEE2E6]">
+                +{job.requirements.length - (window.innerWidth < 640 ? 2 : 3)}{" "}
+                more
               </span>
             )}
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t border-[#F8F9FA]">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t border-[var(--netural-50)]">
           <button
             onClick={(e) => {
               e.stopPropagation();
               handleApplyNow();
             }}
-            className="flex-1 px-4 py-2 sm:py-3 bg-[#255C79] text-white rounded-lg hover:bg-[#1E4A63] transition-colors font-medium text-sm sm:text-base"
+            className="flex-1 px-4 py-2 sm:py-3 bg-[var(--default-primary)] text-white rounded-lg hover:bg-[#1E4A63] transition-colors font-medium text-sm sm:text-base"
           >
             Apply Now
           </button>
@@ -268,7 +305,7 @@ const JobCard: React.FC<JobCardProps> = ({
               e.stopPropagation();
               handleViewDetails();
             }}
-            className="flex-1 px-4 py-2 sm:py-3 border border-[#255C79] text-[#255C79] rounded-lg hover:bg-[#255C79] hover:text-white transition-colors font-medium text-sm sm:text-base"
+            className="flex-1 px-4 py-2 sm:py-3 border border-[var(--default-primary)] text-[var(--default-primary)] rounded-lg hover:bg-[var(--default-primary)] hover:text-white transition-colors font-medium text-sm sm:text-base"
           >
             View Details
           </button>
@@ -278,4 +315,4 @@ const JobCard: React.FC<JobCardProps> = ({
   );
 };
 
-export default JobCard; 
+export default JobCard;

@@ -84,9 +84,9 @@ const TimeSpentGraph = ({
   }
 
   return (
-    <div className="rounded-2xl bg-white p-4 md:p-6 w-full max-w-[600px] max-h-[370px] ring-1 ring-[#B9E4F2] ring-offset-1">
+    <div className="rounded-2xl bg-white p-4 md:p-6 w-full max-w-[600px] max-h-[370px] ring-1 ring-[var(--primary-100)] ring-offset-1">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold mb-4 text-[#255C79]">
+        <h2 className="text-xl font-bold mb-4 text-[var(--default-primary)]">
           Total Time Spent by Students →
         </h2>
         <div className="flex items-center gap-2">
@@ -204,13 +204,13 @@ const TimeSpentGraph = ({
               stroke="#8CD3E8"
               strokeWidth={3}
               dot={{
-                fill: "#255C79",
+                fill: "var(--default-primary)",
                 strokeWidth: 2,
                 r: 4,
               }}
               activeDot={{
                 r: 5,
-                fill: "#255C79",
+                fill: "var(--default-primary)",
                 strokeWidth: 2,
               }}
             />

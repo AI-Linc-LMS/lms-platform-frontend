@@ -54,7 +54,7 @@ const RecommendedLearningAll = () => {
           <h1 className="text-[#343A40] font-bold text-2xl ">
             Based On Your Learning
           </h1>
-          <p className="text-[#6C757D]  font-normal text-lg">
+          <p className="text-[var(--netural-300)]  font-normal text-lg">
             Courses recommended based on your learning history
           </p>
         </div>

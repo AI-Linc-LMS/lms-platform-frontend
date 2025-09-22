@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { pastSubmissions } from '../../../../../../services/enrolled-courses-content/courseContentApis';
-import Editor from '@monaco-editor/react';
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { pastSubmissions } from "../../../../../../services/enrolled-courses-content/courseContentApis";
+import Editor from "@monaco-editor/react";
 
 interface SubmissionsProps {
   contentId: number;
@@ -21,7 +21,7 @@ interface SubmissionHistoryItem {
     passed: number;
     failed: number;
     total_test_cases: number;
-  }
+  };
   created_at: string;
   result: string;
 }
@@ -38,26 +38,40 @@ const DEFAULT_SUBMISSION: SubmissionHistoryItem = {
     source_code: "// No code available",
     passed: 0,
     failed: 0,
-    total_test_cases: 0
+    total_test_cases: 0,
   },
   created_at: new Date().toISOString(),
-  result: "Pending"
+  result: "Pending",
 };
 
-const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTheme }) => {
-  const [selectedSubmissionCode, setSelectedSubmissionCode] = useState<string | null>(null);
-  const [viewingSubmissionId, setViewingSubmissionId] = useState<number | null>(null);
+const Submissions: React.FC<SubmissionsProps> = ({
+  contentId,
+  courseId,
+  isDarkTheme,
+}) => {
+  const [selectedSubmissionCode, setSelectedSubmissionCode] = useState<
+    string | null
+  >(null);
+  const [viewingSubmissionId, setViewingSubmissionId] = useState<number | null>(
+    null
+  );
   const clientId = import.meta.env.VITE_CLIENT_ID;
-  
-  const { data: submissionHistory, isLoading: isLoadingHistory, error: historyError } = useQuery({
-    queryKey: ['submissions', courseId, contentId],
+
+  const {
+    data: submissionHistory,
+    isLoading: isLoadingHistory,
+    error: historyError,
+  } = useQuery({
+    queryKey: ["submissions", courseId, contentId],
     queryFn: () => pastSubmissions(clientId, courseId, contentId),
     retry: 2, // Retry failed requests twice
     staleTime: 30000, // Consider data fresh for 30 seconds
   });
 
   // Function to get language name - use backend language_name if available, otherwise fallback to mapping
-  const getLanguageName = (customDimension: SubmissionHistoryItem['custom_dimension']) => {
+  const getLanguageName = (
+    customDimension: SubmissionHistoryItem["custom_dimension"]
+  ) => {
     // First try to use the language_name from backend if available
     if (customDimension?.language_name) {
       return customDimension.language_name;
@@ -66,36 +80,50 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
     // Fallback to language ID mapping
     const languageId = customDimension?.language_id;
     switch (languageId) {
-      case 63: return "JavaScript";
-      case 74: return "TypeScript";
-      case 71: return "Python";
-      case 62: return "Java";
-      case 54: return "C++";
-      default: return "Unknown";
+      case 63:
+        return "JavaScript";
+      case 74:
+        return "TypeScript";
+      case 71:
+        return "Python";
+      case 62:
+        return "Java";
+      case 54:
+        return "C++";
+      default:
+        return "Unknown";
     }
   };
 
   // Function to get Monaco Editor language for syntax highlighting
-  const getMonacoLanguage = (customDimension: SubmissionHistoryItem['custom_dimension']) => {
+  const getMonacoLanguage = (
+    customDimension: SubmissionHistoryItem["custom_dimension"]
+  ) => {
     // Use language_name from backend if available
     if (customDimension?.language_name) {
       const langName = customDimension.language_name.toLowerCase();
-      if (langName.includes('python')) return 'python';
-      if (langName.includes('java')) return 'java';
-      if (langName.includes('c++') || langName.includes('cpp')) return 'cpp';
-      if (langName.includes('javascript')) return 'javascript';
-      if (langName.includes('typescript')) return 'typescript';
+      if (langName.includes("python")) return "python";
+      if (langName.includes("java")) return "java";
+      if (langName.includes("c++") || langName.includes("cpp")) return "cpp";
+      if (langName.includes("javascript")) return "javascript";
+      if (langName.includes("typescript")) return "typescript";
     }
 
     // Fallback to language ID mapping
     const languageId = customDimension?.language_id;
     switch (languageId) {
-      case 63: return "javascript";
-      case 74: return "typescript";
-      case 71: return "python";
-      case 62: return "java";
-      case 54: return "cpp";
-      default: return "plaintext";
+      case 63:
+        return "javascript";
+      case 74:
+        return "typescript";
+      case 71:
+        return "python";
+      case 62:
+        return "java";
+      case 54:
+        return "cpp";
+      default:
+        return "plaintext";
     }
   };
 
@@ -103,14 +131,14 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case "accepted":
-        return "text-[#5FA564]";
+        return "text-[var(--success-500)]";
       case "pending":
         return "text-yellow-500";
       case "wrong answer":
-        return "text-[#EA4335]";
+        return "text-[var(--error-500)]";
       case "error":
       case "failed":
-        return "text-[#EA4335]";
+        return "text-[var(--error-500)]";
       default:
         return "text-gray-500";
     }
@@ -119,10 +147,10 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
   // Function to format date safely
   const formatDate = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleString('en-US', {
-        month: 'short',
-        day: '2-digit',
-        year: 'numeric'
+      return new Date(dateString).toLocaleString("en-US", {
+        month: "short",
+        day: "2-digit",
+        year: "numeric",
       });
     } catch {
       return "Invalid Date";
@@ -144,18 +172,37 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
   return (
     <div className="submission-history">
       {selectedSubmissionCode !== null && (
-        <div className={`fixed inset-0 flex items-center justify-center z-50 ${isDarkTheme ? "bg-black bg-opacity-70" : "bg-black bg-opacity-50"}`}>
-          <div className={`${isDarkTheme ? "bg-gray-800" : "bg-white"} p-6 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] flex flex-col`}>
+        <div
+          className={`fixed inset-0 flex items-center justify-center z-50 ${
+            isDarkTheme ? "bg-black bg-opacity-70" : "bg-black bg-opacity-50"
+          }`}
+        >
+          <div
+            className={`${
+              isDarkTheme ? "bg-gray-800" : "bg-white"
+            } p-6 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] flex flex-col`}
+          >
             <div className="flex justify-between items-center mb-4">
-              <h3 className={`text-xl font-bold ${isDarkTheme ? "text-white" : "text-gray-800"}`}>
-                Submission Code - {submissionHistory?.find((s: SubmissionHistoryItem) => s.id === viewingSubmissionId)?.custom_dimension?.status || "Unknown"}
+              <h3
+                className={`text-xl font-bold ${
+                  isDarkTheme ? "text-[var(--font-light)]" : "text-gray-800"
+                }`}
+              >
+                Submission Code -{" "}
+                {submissionHistory?.find(
+                  (s: SubmissionHistoryItem) => s.id === viewingSubmissionId
+                )?.custom_dimension?.status || "Unknown"}
               </h3>
               <button
                 onClick={() => {
                   setSelectedSubmissionCode(null);
                   setViewingSubmissionId(null);
                 }}
-                className={`${isDarkTheme ? "text-gray-300 hover:text-white" : "text-gray-500 hover:text-gray-700"} text-2xl`}
+                className={`${
+                  isDarkTheme
+                    ? "text-gray-300 hover:text-white"
+                    : "text-gray-500 hover:text-gray-700"
+                } text-2xl`}
               >
                 &times;
               </button>
@@ -163,7 +210,11 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
             <div className="flex-grow overflow-auto">
               <Editor
                 height="60vh"
-                language={getMonacoLanguage(submissionHistory?.find((s: SubmissionHistoryItem) => s.id === viewingSubmissionId)?.custom_dimension)}
+                language={getMonacoLanguage(
+                  submissionHistory?.find(
+                    (s: SubmissionHistoryItem) => s.id === viewingSubmissionId
+                  )?.custom_dimension
+                )}
                 value={selectedSubmissionCode}
                 theme={isDarkTheme ? "vs-dark" : "light"}
                 options={{
@@ -188,65 +239,142 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
       ) : historyError ? (
         <div className="text-center py-8">
           <div className="text-red-500 mb-2">Failed to load submissions</div>
-          <p className="text-gray-500 text-sm">Please try refreshing the page or contact support if the problem persists.</p>
+          <p className="text-gray-500 text-sm">
+            Please try refreshing the page or contact support if the problem
+            persists.
+          </p>
         </div>
       ) : !submissionHistory || submissionHistory.length === 0 ? (
         <div className="text-center py-8">
           <p className="text-gray-500 mb-2">No submissions found</p>
-          <p className="text-gray-400 text-sm">Start by submitting your first solution!</p>
+          <p className="text-gray-400 text-sm">
+            Start by submitting your first solution!
+          </p>
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full border-collapse">
             <thead>
-              <tr className={`text-sm font-extralight border-b ${isDarkTheme ? "border-gray-700" : "border-gray-200"}`}>
-                <th className={`text-left py-3 px-4 capitalize w-16 ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}></th>
-                <th className={`text-left py-3 px-4 capitalize font-extralight ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Status</th>
-                <th className={`text-left py-3 px-4 capitalize font-extralight ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Language</th>
-                <th className={`text-left py-3 px-4 capitalize font-extralight ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Runtime</th>
-                <th className={`text-left py-3 px-4 capitalize font-extralight ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>Memory</th>
+              <tr
+                className={`text-sm font-extralight border-b ${
+                  isDarkTheme ? "border-gray-700" : "border-gray-200"
+                }`}
+              >
+                <th
+                  className={`text-left py-3 px-4 capitalize w-16 ${
+                    isDarkTheme ? "text-gray-300" : "text-gray-500"
+                  }`}
+                ></th>
+                <th
+                  className={`text-left py-3 px-4 capitalize font-extralight ${
+                    isDarkTheme ? "text-gray-300" : "text-gray-500"
+                  }`}
+                >
+                  Status
+                </th>
+                <th
+                  className={`text-left py-3 px-4 capitalize font-extralight ${
+                    isDarkTheme ? "text-gray-300" : "text-gray-500"
+                  }`}
+                >
+                  Language
+                </th>
+                <th
+                  className={`text-left py-3 px-4 capitalize font-extralight ${
+                    isDarkTheme ? "text-gray-300" : "text-gray-500"
+                  }`}
+                >
+                  Runtime
+                </th>
+                <th
+                  className={`text-left py-3 px-4 capitalize font-extralight ${
+                    isDarkTheme ? "text-gray-300" : "text-gray-500"
+                  }`}
+                >
+                  Memory
+                </th>
               </tr>
             </thead>
             <tbody>
-              {submissionHistory.map((submission: SubmissionHistoryItem, index: number) => {
-                const safeSubmission = { ...DEFAULT_SUBMISSION, ...submission };
-                const customDimension = safeSubmission.custom_dimension || DEFAULT_SUBMISSION.custom_dimension;
+              {submissionHistory.map(
+                (submission: SubmissionHistoryItem, index: number) => {
+                  const safeSubmission = {
+                    ...DEFAULT_SUBMISSION,
+                    ...submission,
+                  };
+                  const customDimension =
+                    safeSubmission.custom_dimension ||
+                    DEFAULT_SUBMISSION.custom_dimension;
 
-                return (
-                  <tr key={submission.id} className={`text-xs ${isDarkTheme ? "border-b border-gray-700 hover:bg-gray-800" : "border-b border-gray-200 hover:bg-gray-100"}`}>
-                    <td className={`py-4 px-4 text-center font-medium ${isDarkTheme ? "text-white" : "text-gray-500"}`}>{submissionHistory.length - index}</td>
-                    <td className="py-4 px-4">
-                      <div className="flex flex-col"
-                        onClick={() => {
-                          setSelectedSubmissionCode(customDimension.source_code);
-                          setViewingSubmissionId(submission.id);
-                        }}>
+                  return (
+                    <tr
+                      key={submission.id}
+                      className={`text-xs ${
+                        isDarkTheme
+                          ? "border-b border-gray-700 hover:bg-gray-800"
+                          : "border-b border-gray-200 hover:bg-gray-100"
+                      }`}
+                    >
+                      <td
+                        className={`py-4 px-4 text-center font-medium ${
+                          isDarkTheme
+                            ? "text-[var(--font-light)]"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        {submissionHistory.length - index}
+                      </td>
+                      <td className="py-4 px-4">
+                        <div
+                          className="flex flex-col"
+                          onClick={() => {
+                            setSelectedSubmissionCode(
+                              customDimension.source_code
+                            );
+                            setViewingSubmissionId(submission.id);
+                          }}
+                        >
+                          <span
+                            className={`cursor-pointer font-semibold rounded-full ${getStatusColor(
+                              customDimension.status
+                            )}`}
+                          >
+                            {customDimension.status || "Unknown"}
+                          </span>
+                          <span className="text-gray-500">
+                            {formatDate(safeSubmission.created_at)}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
                         <span
-                          className={`cursor-pointer font-semibold rounded-full ${getStatusColor(customDimension.status)}`}>
-                          {customDimension.status || "Unknown"}
+                          className={`rounded px-2 py-1 ${
+                            isDarkTheme
+                              ? "bg-[var(--primary-50)] text-[var(--secondary-700)]"
+                              : "bg-[var(--primary-50)] text-[var(--secondary-700)]"
+                          }`}
+                        >
+                          {getLanguageName(customDimension)}
                         </span>
-                        <span className="text-gray-500">
-                          {formatDate(safeSubmission.created_at)}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className={`rounded px-2 py-1 ${isDarkTheme
-                        ? "bg-[#D7EFF6] text-[#264D64]"
-                        : "bg-[#D7EFF6] text-[#264D64]"
-                        }`}>
-                        {getLanguageName(customDimension)}
-                      </span>
-                    </td>
-                    <td className={`py-4 px-4 ${isDarkTheme ? "text-gray-300" : ""}`}>
-                      {formatTime(customDimension.time)}
-                    </td>
-                    <td className={`py-4 px-4 ${isDarkTheme ? "text-gray-300" : ""}`}>
-                      {formatMemory(customDimension.memory)}
-                    </td>
-                  </tr>
-                );
-              })}
+                      </td>
+                      <td
+                        className={`py-4 px-4 ${
+                          isDarkTheme ? "text-gray-300" : ""
+                        }`}
+                      >
+                        {formatTime(customDimension.time)}
+                      </td>
+                      <td
+                        className={`py-4 px-4 ${
+                          isDarkTheme ? "text-gray-300" : ""
+                        }`}
+                      >
+                        {formatMemory(customDimension.memory)}
+                      </td>
+                    </tr>
+                  );
+                }
+              )}
             </tbody>
           </table>
         </div>
@@ -255,4 +383,4 @@ const Submissions: React.FC<SubmissionsProps> = ({ contentId, courseId, isDarkTh
   );
 };
 
-export default Submissions; 
+export default Submissions;

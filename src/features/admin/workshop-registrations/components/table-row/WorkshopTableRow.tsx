@@ -445,7 +445,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
       {/* Global Tooltip */}
       {tooltipData.show && (
         <div
-          className="fixed z-[9999] px-3 py-2 bg-white text-black text-sm rounded-lg shadow-lg max-w-sm whitespace-pre-wrap break-words border border-gray-300"
+          className="fixed z-[9999] px-3 py-2 bg-white text-[var(--font-dark)] text-sm rounded-lg shadow-lg max-w-sm whitespace-pre-wrap break-words border border-gray-300"
           style={{
             left: tooltipData.x,
             top: tooltipData.y,
@@ -457,7 +457,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
         </div>
       )}
       {/* Modals */}
-      
+
       <EditModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -553,7 +553,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
           Array.isArray(entry.payment_history) ? entry.payment_history : []
         }
       />
-      
+
       <EditFollowUpDateModal
         isOpen={followUpDateModalOpen}
         field={fieldForDateEdit}

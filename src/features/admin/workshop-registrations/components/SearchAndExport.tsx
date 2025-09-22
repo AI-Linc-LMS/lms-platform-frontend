@@ -318,7 +318,7 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
             {isSuperAdmin && (
               <button
                 onClick={onExport}
-                className="flex items-center gap-2 bg-[#5FA564] text-white px-4 py-2 rounded text-sm max-w-[120px]"
+                className="flex items-center gap-2 bg-[var(--success-500)] text-white px-4 py-2 rounded text-sm max-w-[120px]"
                 title="Export to Excel"
               >
                 <svg

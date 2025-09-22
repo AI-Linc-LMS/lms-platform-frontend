@@ -88,14 +88,14 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
             ></div>
           </div>
           <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-[#6b7280]">
+            <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-[var(--font-secondary)]">
               <PlayCircle className="w-2 h-2 sm:w-[10px] sm:h-[10px] text-[#10b981] flex-shrink-0" />
               <span className="truncate">
                 {course.stats?.video?.completed || 0}/
                 {course.stats?.video?.total || 0} videos watched
               </span>
             </div>
-            <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-[#6b7280]">
+            <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-[var(--font-secondary)]">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="w-2 h-2 sm:w-[10px] sm:h-[10px] text-[#10b981] flex-shrink-0"
@@ -207,7 +207,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
                 className={`w-4 h-4 sm:w-5 sm:h-5 rounded flex items-center justify-center text-[9px] sm:text-[10px] font-semibold flex-shrink-0 ${
                   index < (course?.streak ?? 0)
                     ? "bg-[#10b981] text-white"
-                    : "bg-[#f3f4f6] text-[#6b7280]"
+                    : "bg-[#f3f4f6] text-[var(--font-secondary)]"
                 }`}
               >
                 {day}
@@ -245,7 +245,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
                   />
                 </div>
               ))}
-              <span className="ml-2 text-xs text-[#6b7280] truncate">
+              <span className="ml-2 text-xs text-[var(--font-secondary)] truncate">
                 {course.instructors[0]?.name || "Expert Instructor"}
               </span>
             </div>
@@ -267,7 +267,7 @@ export const InstructorSection = ({ course }: { course: Course }) => {
     <div>
       {course.instructors && course.instructors.length > 0 && (
         <div className="mb-3 overflow-hidden">
-          <h3 className="text-[#495057] font-semibold text-xs mb-2">
+          <h3 className="text-[var(--netural-400)] font-semibold text-xs mb-2">
             Instructors:
           </h3>
           <div className="flex items-center gap-2">
@@ -286,10 +286,12 @@ export const InstructorSection = ({ course }: { course: Course }) => {
               ))}
             </div>
             <div className="text-xs min-w-0">
-              <p className="font-medium text-[#495057] truncate">
+              <p className="font-medium text-[var(--netural-400)] truncate">
                 {course.instructors[0]?.name || "Expert Instructor"}
               </p>
-              <p className="text-[#6C757D] text-xs">Lead instructor</p>
+              <p className="text-[var(--netural-300)] text-xs">
+                Lead instructor
+              </p>
             </div>
           </div>
         </div>
@@ -312,7 +314,7 @@ export const NextLessionSection = ({ course }: { course: Course }) => {
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 bg-green-600 rounded-full flex-shrink-0"></div>
             <div className="min-w-0">
-              <p className="text-[#495057] font-medium text-xs truncate">
+              <p className="text-[var(--netural-400)] font-medium text-xs truncate">
                 {course.next_lesson.title}
               </p>
               <p className="text-green-600 text-xs truncate">
@@ -332,7 +334,7 @@ export const WhatsIncludedSection = ({ course }: { course: Course }) => {
     <div>
       {course?.whats_included && course.whats_included.length > 0 && (
         <div className="mb-3 overflow-hidden">
-          <div className="bg-[#F8F9FA] rounded-md p-2">
+          <div className="bg-[var(--netural-50)] rounded-md p-2">
             <div className="flex items-center gap-1.5 mb-2">
               <svg
                 className="w-3 h-3 text-[#FF6B35] flex-shrink-0"
@@ -345,7 +347,7 @@ export const WhatsIncludedSection = ({ course }: { course: Course }) => {
                   clipRule="evenodd"
                 />
               </svg>
-              <span className="font-semibold text-xs text-[#495057]">
+              <span className="font-semibold text-xs text-[var(--netural-400)]">
                 What's Included:
               </span>
             </div>
@@ -353,7 +355,9 @@ export const WhatsIncludedSection = ({ course }: { course: Course }) => {
               {course.whats_included.map((item, index) => (
                 <div className="flex items-center gap-1.5" key={index}>
                   <FileText className="w-3 h-3 text-blue-500 flex-shrink-0" />
-                  <span className="text-[#495057] truncate">{item}</span>
+                  <span className="text-[var(--netural-400)] truncate">
+                    {item}
+                  </span>
                 </div>
               ))}
             </div>

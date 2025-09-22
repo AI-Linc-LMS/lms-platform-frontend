@@ -3,7 +3,9 @@ import { useLocation } from "react-router-dom";
 
 const AssessmentsIconController: React.FC = () => {
   const location = useLocation();
-  const isActive = location.pathname === "/assessments" || location.pathname.startsWith("/assessment");
+  const isActive =
+    location.pathname === "/assessments" ||
+    location.pathname.startsWith("/assessment");
 
   return (
     <svg
@@ -25,7 +27,7 @@ const AssessmentsIconController: React.FC = () => {
         strokeWidth="1.5"
         fill={isActive ? "#EFF9FC" : "none"}
       />
-      
+
       {/* Header section */}
       <rect
         x="4"
@@ -37,7 +39,7 @@ const AssessmentsIconController: React.FC = () => {
         fill={isActive ? "#255C79" : "#E9ECEF"}
         opacity="0.3"
       />
-      
+
       {/* Quiz/Assessment lines */}
       <line
         x1="7"
@@ -66,7 +68,7 @@ const AssessmentsIconController: React.FC = () => {
         strokeWidth="1.5"
         strokeLinecap="round"
       />
-      
+
       {/* Checkmark or assessment indicator */}
       <circle
         cx="16.5"

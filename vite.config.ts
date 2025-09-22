@@ -45,8 +45,8 @@ export default defineConfig({
         name: "AiLinc - AI Learning Platform",
         short_name: "AiLinc",
         description: "AI-powered learning and assessment platform",
-        theme_color: "#ffffff",
-        background_color: "#ffffff",
+        theme_color: "var(--font-light)",
+        background_color: "var(--font-light)",
         display: "standalone",
         orientation: "portrait",
         scope: "/",
@@ -63,11 +63,21 @@ export default defineConfig({
           { src: "pwa-192x192.png", sizes: "180x180", type: "image/png" },
           { src: "pwa-192x192.png", sizes: "167x167", type: "image/png" },
           // Maskable icons for Android
-          { src: "pwa-192x192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
-          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+          {
+            src: "pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "maskable",
+          },
+          {
+            src: "pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
           // SVG for scalability
           { src: "pwa-192x192.svg", sizes: "192x192", type: "image/svg+xml" },
-          { src: "pwa-512x512.svg", sizes: "512x512", type: "image/svg+xml" }
+          { src: "pwa-512x512.svg", sizes: "512x512", type: "image/svg+xml" },
         ],
         // screenshots: displayed in installation prompts (Chrome) and store listings
         // to showcase app UI in different form factors.
@@ -76,15 +86,15 @@ export default defineConfig({
             src: "screenshot/desktop-view.png",
             sizes: "1280x720",
             type: "image/png",
-            form_factor: "wide"
+            form_factor: "wide",
           },
           {
             src: "screenshot/mobile-view.png",
             sizes: "390x844",
             type: "image/png",
-            form_factor: "narrow"
-          }
-        ]
+            form_factor: "narrow",
+          },
+        ],
       },
       injectManifest: {
         // Precache static assets; exclude HTML to avoid stale index.html

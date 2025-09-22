@@ -1,9 +1,8 @@
-
-import { FilterIcon } from './CourseIcons';
-import { SearchIcon } from './CourseIcons';
-import FilterCategory from './FilterCategory';
-import SortDropdown from './SortDropdown';
-import { FilterOption } from './FilterOptions';
+import { FilterIcon } from "./CourseIcons";
+import { SearchIcon } from "./CourseIcons";
+import FilterCategory from "./FilterCategory";
+import SortDropdown from "./SortDropdown";
+import { FilterOption } from "./FilterOptions";
 
 interface MobileFiltersProps {
   isFilterOpen: boolean;
@@ -46,7 +45,7 @@ const MobileFilters = ({
   categoryOptions,
   levelOptions,
   priceOptions,
-  ratingOptions
+  ratingOptions,
 }: MobileFiltersProps) => {
   return (
     <div className="md:hidden">
@@ -61,19 +60,32 @@ const MobileFilters = ({
             <span className="font-medium">Filters</span>
           </div>
           <svg
-            className={`w-4 h-4 transition-transform duration-300 ${isFilterOpen ? 'rotate-180' : ''}`}
+            className={`w-4 h-4 transition-transform duration-300 ${
+              isFilterOpen ? "rotate-180" : ""
+            }`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
             xmlns="http://www.w3.org/2000/svg"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M19 9l-7 7-7-7"
+            ></path>
           </svg>
         </button>
       </div>
 
       {/* Filter Panel - Collapsible for Mobile */}
-      <div className={`${isFilterOpen ? 'max-h-[1500px] opacity-100 mb-6' : 'max-h-0 opacity-0 overflow-hidden'} transition-all duration-500 ease-in-out`}>
+      <div
+        className={`${
+          isFilterOpen
+            ? "max-h-[1500px] opacity-100 mb-6"
+            : "max-h-0 opacity-0 overflow-hidden"
+        } transition-all duration-500 ease-in-out`}
+      >
         <div className="bg-white rounded-xl p-4 border border-[#DEE2E6]">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-[#343A40]">Filter By</h2>
@@ -130,7 +142,7 @@ const MobileFilters = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by courses"
-            className="w-full py-3 pl-10 pr-4 border border-[#DEE2E6] rounded-lg text-[#495057] focus:outline-none focus:ring-2 focus:ring-[#17627A] focus:border-transparent"
+            className="w-full py-3 pl-10 pr-4 border border-[#DEE2E6] rounded-lg text-[var(--netural-400)] focus:outline-none focus:ring-2 focus:ring-[#17627A] focus:border-transparent"
           />
         </div>
       </div>
@@ -143,4 +155,4 @@ const MobileFilters = ({
   );
 };
 
-export default MobileFilters; 
+export default MobileFilters;

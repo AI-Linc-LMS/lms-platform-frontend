@@ -42,7 +42,7 @@ const NavigationButtons: React.FC<NavigationButtonsProps> = ({
           className={`w-full sm:w-auto px-4 py-2 rounded-md font-medium transition ${
             currentQuestionIndex === 0
               ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-              : "border border-[#255C79] text-[#255C79] hover:bg-blue-50"
+              : "border border-[var(--default-primary)] text-[var(--default-primary)] hover:bg-blue-50"
           }`}
         >
           Previous
@@ -50,7 +50,7 @@ const NavigationButtons: React.FC<NavigationButtonsProps> = ({
         <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={handleNext}
-            className={`w-full sm:w-auto px-6 py-2 rounded-md font-medium transition ${"bg-[#255C79] text-white hover:bg-[#1a4a5f]"}`}
+            className={`w-full sm:w-auto px-6 py-2 rounded-md font-medium transition ${"bg-[var(--default-primary)] text-white hover:bg-[#1a4a5f]"}`}
           >
             Next
           </button>

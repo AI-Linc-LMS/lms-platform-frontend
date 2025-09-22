@@ -48,7 +48,10 @@ const ProgramCard: React.FC<{
 }> = ({ redeemData, clientId, assessmentId }) => (
   <div className="w-full flex flex-col gap-6 sm:gap-8 my-6 sm:my-8 lg:my-10 px-2 sm:px-4 lg:px-0">
     {/* Nanodegree Card */}
-    <div className="cursor-pointer" onClick={() => window.open("https://ailinc.com/nanodegree")}>
+    <div
+      className="cursor-pointer"
+      onClick={() => window.open("https://ailinc.com/nanodegree")}
+    >
       <div className="flex flex-col lg:flex-row items-center bg-gradient-to-br from-[#f8fcfc] to-[#eafff6] rounded-2xl sm:rounded-3xl px-4 sm:px-6 lg:px-8 shadow-sm border border-gray-200">
         <div className="flex-1 min-w-[280px] sm:min-w-[300px]">
           <div className="">
@@ -56,7 +59,7 @@ const ProgramCard: React.FC<{
               Your Learning Hub
             </span>
           </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#264D64] mb-3 sm:mb-4">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[var(--secondary-700)] mb-3 sm:mb-4">
             AI Linc Nanodegree Program
           </h2>
           <ul className="space-y-1 sm:space-y-2 mb-4 sm:mb-6">
@@ -92,7 +95,7 @@ const ProgramCard: React.FC<{
             </li>
           </ul>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-3 sm:mt-4 text-xs sm:text-sm">
-            <button className="bg-[#255C79] text-white px-3 sm:px-4 py-2 rounded-full font-semibold flex items-center gap-2 shadow hover:bg-[#1a4a5f] transition-colors">
+            <button className="bg-[var(--default-primary)] text-white px-3 sm:px-4 py-2 rounded-full font-semibold flex items-center gap-2 shadow hover:bg-[#1a4a5f] transition-colors">
               🚀 21-Day No-Code Product Builder
             </button>
             <button className="bg-[#0e7490] text-white px-3 sm:px-4 py-2 rounded-full font-semibold flex items-center gap-2 shadow hover:bg-[#155e75] transition-colors">
@@ -113,7 +116,10 @@ const ProgramCard: React.FC<{
     </div>
 
     {/* Career Launchpad Card */}
-    <div className="cursor-pointer" onClick={() => window.open("https://ailinc.com/flagship-course")}>
+    <div
+      className="cursor-pointer"
+      onClick={() => window.open("https://ailinc.com/flagship-course")}
+    >
       <div className="flex flex-col lg:flex-row items-center bg-gradient-to-br from-[#fffbe6] to-[#fffde6] rounded-2xl sm:rounded-3xl px-4 sm:px-6 lg:px-8 shadow-sm border border-gray-200">
         <div className="flex-1 min-w-[280px] sm:min-w-[300px]">
           <div className="flex items-center gap-2 mb-2">
@@ -121,7 +127,7 @@ const ProgramCard: React.FC<{
               Mentorship · Referrals · Career-Ready
             </span>
           </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#264D64] mb-3 sm:mb-4">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[var(--secondary-700)] mb-3 sm:mb-4">
             AI Linc Flagship Career Launchpad
           </h2>
           <div className="mb-2">
@@ -134,7 +140,8 @@ const ProgramCard: React.FC<{
               <span role="img" aria-label="referrals">
                 🌐
               </span>{" "}
-              Get 3 year referral programs to Top Companies (Google, Amazon, etc.)
+              Get 3 year referral programs to Top Companies (Google, Amazon,
+              etc.)
             </li>
             <li className="flex items-center gap-2 text-gray-800 text-sm sm:text-base">
               <span role="img" aria-label="resume">

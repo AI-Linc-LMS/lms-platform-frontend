@@ -65,7 +65,7 @@ const NotFound = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#F8F9FA]">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[var(--netural-50)]">
       <div className="flex items-center space-x-2 mb-8">
         <div className="text-6xl font-mono text-[#1A5A7A]">{"{"}</div>
         <div
@@ -92,7 +92,7 @@ const NotFound = () => {
       <div className="flex flex-col sm:flex-row gap-4 mt-4">
         <button
           onClick={handleGoHome}
-          className="px-6 py-3 bg-[#255C79] rounded-xl text-white hover:bg-[#1E4A63] transition-all duration-300 shadow-lg hover:shadow-[#1A5A7A]/30 flex items-center justify-center hover:scale-95 font-mono"
+          className="px-6 py-3 bg-[var(--default-primary)] rounded-xl text-white hover:bg-[#1E4A63] transition-all duration-300 shadow-lg hover:shadow-[#1A5A7A]/30 flex items-center justify-center hover:scale-95 font-mono"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -107,7 +107,7 @@ const NotFound = () => {
 
         <button
           onClick={handleGoBack}
-          className="px-6 py-3 bg-[#E9ECEF] text-[#343A40] rounded-xl hover:bg-[#DDE2E6] transition-all duration-300 flex items-center justify-center hover:scale-95 font-mono"
+          className="px-6 py-3 bg-[#E9ECEF] text-[#343A40] rounded-xl hover:bg-[var(--netural-200)] transition-all duration-300 flex items-center justify-center hover:scale-95 font-mono"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -282,7 +282,6 @@ function AppContent() {
       //console.log("Current session stats:");
       //console.log("Total time spent:", totalTimeSpent, "seconds");
       //console.log("Session history:", activityHistory);
-
       // In the future, this is where you would sync with backend
       // syncUserActivity(userId, totalTimeSpent, activityHistory);
     }, 60000); // Log every minute

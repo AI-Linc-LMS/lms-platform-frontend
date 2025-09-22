@@ -1,11 +1,11 @@
-import React from 'react';
+import React from "react";
 
 interface PrimaryButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
   className?: string;
   disabled?: boolean;
-  type?: 'button' | 'submit' | 'reset';
+  type?: "button" | "submit" | "reset";
 }
 
 const PrimaryButton: React.FC<PrimaryButtonProps> = ({
@@ -13,14 +13,14 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   onClick,
   className = "",
   disabled = false,
-  type = 'button',
+  type = "button",
 }) => {
   return (
     <button
       onClick={onClick}
       type={type}
       disabled={disabled}
-      className={`w-full h-14 rounded-xl text-white py-4 px-6 text-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-[#255C79] hover:bg-[#1E4A63] hover:scale-95 ${className}`}
+      className={`w-full h-14 rounded-xl text-white py-4 px-6 text-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-[var(--default-primary)] hover:bg-[#1E4A63] hover:scale-95 ${className}`}
     >
       {children}
     </button>

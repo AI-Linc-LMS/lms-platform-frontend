@@ -39,7 +39,7 @@ const EmptyContinueState = () => {
       <h3 className="text-xl font-bold text-[#343A40] mb-2">
         No courses in progress
       </h3>
-      <p className="text-[#6C757D] text-center max-w-md mb-8 text-[14px] md:text-[16px]">
+      <p className="text-[var(--netural-300)] text-center max-w-md mb-8 text-[14px] md:text-[16px]">
         You haven't started any courses yet. Explore our catalog to find a
         course that interests you and begin your learning journey.
       </p>
@@ -102,7 +102,7 @@ const ContinueCoursesDetails = ({ clientId }: { clientId: number }) => {
         {[1, 2, 3, 4].map((index) => (
           <div
             key={index}
-            className="w-full border-[#80C9E0] rounded-[16px] md:rounded-[22px] border-[1px] bg-[#F8F9FA] p-4 flex flex-col min-h-[280px] md:min-h-[300px] animate-pulse"
+            className="w-full border-[#80C9E0] rounded-[16px] md:rounded-[22px] border-[1px] bg-[var(--netural-50)] p-4 flex flex-col min-h-[280px] md:min-h-[300px] animate-pulse"
           >
             <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
             <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>

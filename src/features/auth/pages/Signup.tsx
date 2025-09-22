@@ -4,8 +4,8 @@ import PrimaryButton from "../../../commonComponents/common-buttons/primary-butt
 import GoogleSignupButton from "../../../commonComponents/common-buttons/google-login-button/GoogleSignupButton";
 import { signup } from "../../../services/authApis";
 import { useToast } from "../../../contexts/ToastContext";
-import {useSelector} from "react-redux";
-import {RootState} from "../../../redux/store.ts";
+import { useSelector } from "react-redux";
+import { RootState } from "../../../redux/store.ts";
 
 export interface SignupFormData {
   first_name: string;
@@ -110,27 +110,31 @@ const Signup: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const clientInfo = useSelector((state: RootState) => state.clientInfo)
+  const clientInfo = useSelector((state: RootState) => state.clientInfo);
 
   // Filter countries based on search term
-  const filteredCountries = countries.filter(country =>
-    country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
-    country.dialCode.includes(countrySearch) ||
-    country.code.toLowerCase().includes(countrySearch.toLowerCase())
+  const filteredCountries = countries.filter(
+    (country) =>
+      country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+      country.dialCode.includes(countrySearch) ||
+      country.code.toLowerCase().includes(countrySearch.toLowerCase())
   );
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setShowCountryDropdown(false);
         setCountrySearch("");
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -401,9 +405,9 @@ const Signup: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#F8F9FA]">
+    <div className="flex min-h-screen bg-[var(--netural-50)]">
       {/* Left Section - Background Image */}
-      <div className="hidden md:block md:w-1/2 bg-gradient-to-r from-[#D7EFF6] to-[#E9F7FC]">
+      <div className="hidden md:block md:w-1/2 bg-gradient-to-r from-[var(--primary-50)] to-[#E9F7FC]">
         <img
           src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=1170"
           alt="Office workspace"
@@ -415,18 +419,18 @@ const Signup: React.FC = () => {
       <div className="w-full md:w-1/2 flex items-center justify-center px-4 sm:px-4 lg:px-6">
         <div className="w-full max-w-lg space-y-4">
           <div className="text-center">
-              <div className="flex flex-col justify-center items-center">
-                  {clientInfo.data?.app_logo_url && (
-                      <img
-                          src={clientInfo.data?.app_logo_url}
-                          alt={`${clientInfo.data?.name}`}
-                          className="h-10 mx-auto"
-                      />
-                  )}
-                  <span className="text-2xl font-bold bg-gradient-to-r from-[#0BC5EA] to-[#6B46C1] bg-clip-text text-transparent">
-                  {clientInfo.data?.name}
-                </span>
-              </div>
+            <div className="flex flex-col justify-center items-center">
+              {clientInfo.data?.app_logo_url && (
+                <img
+                  src={clientInfo.data?.app_logo_url}
+                  alt={`${clientInfo.data?.name}`}
+                  className="h-10 mx-auto"
+                />
+              )}
+              <span className="text-2xl font-bold bg-gradient-to-r from-[#0BC5EA] to-[#6B46C1] bg-clip-text text-transparent">
+                {clientInfo.data?.name}
+              </span>
+            </div>
             <h2 className="text-2xl font-bold text-gray-900">
               Create an account
             </h2>
@@ -451,8 +455,9 @@ const Signup: React.FC = () => {
                       required
                       value={formData.first_name}
                       onChange={handleChange}
-                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("first_name") ? "border-red-500" : ""
-                        }`}
+                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[var(--default-primary)] focus:border-[var(--default-primary)] ${
+                        getFieldError("first_name") ? "border-red-500" : ""
+                      }`}
                       placeholder="John"
                     />
                   </div>
@@ -479,8 +484,9 @@ const Signup: React.FC = () => {
                       required
                       value={formData.last_name}
                       onChange={handleChange}
-                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("last_name") ? "border-red-500" : ""
-                        }`}
+                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[var(--default-primary)] focus:border-[var(--default-primary)] ${
+                        getFieldError("last_name") ? "border-red-500" : ""
+                      }`}
                       placeholder="Doe"
                     />
                   </div>
@@ -508,8 +514,9 @@ const Signup: React.FC = () => {
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("email") ? "border-red-500" : ""
-                      }`}
+                    className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[var(--default-primary)] focus:border-[var(--default-primary)] ${
+                      getFieldError("email") ? "border-red-500" : ""
+                    }`}
                     placeholder="example@email.com"
                   />
                 </div>
@@ -534,13 +541,20 @@ const Signup: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleCountryDropdownToggle}
-                      className={`h-12 px-3 border border-r-0 rounded-l-xl bg-white flex items-center gap-2 text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("phone") ? "border-red-500" : "border-gray-300"
-                        }`}
+                      className={`h-12 px-3 border border-r-0 rounded-l-xl bg-white flex items-center gap-2 text-gray-900 focus:outline-none focus:ring-1 focus:ring-[var(--default-primary)] focus:border-[var(--default-primary)] ${
+                        getFieldError("phone")
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      }`}
                     >
                       <span className="text-lg">{selectedCountry.flag}</span>
-                      <span className="text-sm font-medium">{selectedCountry.dialCode}</span>
+                      <span className="text-sm font-medium">
+                        {selectedCountry.dialCode}
+                      </span>
                       <svg
-                        className={`w-4 h-4 text-gray-400 transition-transform ${showCountryDropdown ? 'rotate-180' : ''}`}
+                        className={`w-4 h-4 text-gray-400 transition-transform ${
+                          showCountryDropdown ? "rotate-180" : ""
+                        }`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -566,7 +580,7 @@ const Signup: React.FC = () => {
                               value={countrySearch}
                               onChange={(e) => setCountrySearch(e.target.value)}
                               placeholder="Search countries..."
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79]"
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--default-primary)] focus:border-[var(--default-primary)]"
                             />
                             <svg
                               className="absolute right-3 top-2.5 w-4 h-4 text-gray-400"
@@ -592,8 +606,11 @@ const Signup: React.FC = () => {
                                 key={country.code}
                                 type="button"
                                 onClick={() => handleCountrySelect(country)}
-                                className={`w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 last:border-b-0 ${selectedCountry.code === country.code ? 'bg-blue-50' : ''
-                                  }`}
+                                className={`w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 last:border-b-0 ${
+                                  selectedCountry.code === country.code
+                                    ? "bg-blue-50"
+                                    : ""
+                                }`}
                               >
                                 <span className="text-lg">{country.flag}</span>
                                 <div className="flex-1 min-w-0">
@@ -605,8 +622,16 @@ const Signup: React.FC = () => {
                                   </div>
                                 </div>
                                 {selectedCountry.code === country.code && (
-                                  <svg className="w-4 h-4 text-[#255C79]" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  <svg
+                                    className="w-4 h-4 text-[var(--default-primary)]"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                      clipRule="evenodd"
+                                    />
                                   </svg>
                                 )}
                               </button>
@@ -630,8 +655,11 @@ const Signup: React.FC = () => {
                     required
                     value={formData.phone}
                     onChange={handleChange}
-                    className={`block flex-1 h-12 px-4 py-3 border border-l-0 rounded-r-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("phone") ? "border-red-500" : "border-gray-300"
-                      }`}
+                    className={`block flex-1 h-12 px-4 py-3 border border-l-0 rounded-r-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[var(--default-primary)] focus:border-[var(--default-primary)] ${
+                      getFieldError("phone")
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    }`}
                     placeholder="9453234567"
                     maxLength={15}
                   />
@@ -660,8 +688,9 @@ const Signup: React.FC = () => {
                       required
                       value={formData.password}
                       onChange={handleChange}
-                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("password") ? "border-red-500" : ""
-                        }`}
+                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[var(--default-primary)] focus:border-[var(--default-primary)] ${
+                        getFieldError("password") ? "border-red-500" : ""
+                      }`}
                       placeholder="Create a password"
                     />
                     <button
@@ -764,10 +793,11 @@ const Signup: React.FC = () => {
                       required
                       value={formData.confirm_password}
                       onChange={handleChange}
-                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#255C79] focus:border-[#255C79] ${getFieldError("confirm_password")
+                      className={`block w-full h-12 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-1 focus:ring-[var(--default-primary)] focus:border-[var(--default-primary)] ${
+                        getFieldError("confirm_password")
                           ? "border-red-500"
                           : ""
-                        }`}
+                      }`}
                       placeholder="Confirm your password"
                     />
                   </div>
@@ -793,7 +823,10 @@ const Signup: React.FC = () => {
 
             <div className="text-center text-sm">
               <span className="text-gray-500">Already have an account? </span>
-              <Link to="/login" className="font-medium text-[#255C79]">
+              <Link
+                to="/login"
+                className="font-medium text-[var(--default-primary)]"
+              >
                 Login
               </Link>
             </div>

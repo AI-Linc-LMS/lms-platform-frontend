@@ -31,7 +31,7 @@ export const NextLessonSection: React.FC<NextLessonSectionProps> = ({
             <h4 className="text-[13px] font-semibold text-[#374151] m-0 mb-0.5">
               {nextLesson.title}
             </h4>
-            <p className="text-[11px] text-[#6b7280] m-0 leading-[1.3]">
+            <p className="text-[11px] text-[var(--font-secondary)] m-0 leading-[1.3]">
               {nextLesson.description ||
                 "Learn to create interactive dashboards with multiple data sources"}
             </p>

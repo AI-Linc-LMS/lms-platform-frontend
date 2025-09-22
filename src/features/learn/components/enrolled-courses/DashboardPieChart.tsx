@@ -19,8 +19,15 @@ interface ApiResponse {
   [key: string]: number; // For any other fields that might be present
 }
 
-const DashboardPieChart = ({  data, isLoading, error }: { data: ApiResponse | null; isLoading: boolean; error: Error | null }) => {
-
+const DashboardPieChart = ({
+  data,
+  isLoading,
+  error,
+}: {
+  data: ApiResponse | null;
+  isLoading: boolean;
+  error: Error | null;
+}) => {
   const processApiData = (apiData: ApiResponse): DashboardData => {
     // Extract progress values from API response
     const {
@@ -34,12 +41,17 @@ const DashboardPieChart = ({  data, isLoading, error }: { data: ApiResponse | nu
     return {
       totalCompletion: total_progress,
       categories: [
-        { name: "Article", value: article_progress, color: "#3875F9", ring: 0 },
+        {
+          name: "Article",
+          value: article_progress,
+          color: "var(--accent-blue)",
+          ring: 0,
+        },
         { name: "Video", value: video_progress, color: "#EED21B", ring: 1 },
         {
           name: "Problems",
           value: coding_problem_progress,
-          color: "#417845",
+          color: "var(--secondary-200)",
           ring: 2,
         },
         { name: "Quiz", value: quiz_progress, color: "#2A8CB0", ring: 3 },
@@ -62,9 +74,9 @@ const DashboardPieChart = ({  data, isLoading, error }: { data: ApiResponse | nu
   const defaultData = {
     totalCompletion: 25,
     categories: [
-      { name: "Article", value: 19, color: "#3875F9", ring: 0 },
+      { name: "Article", value: 19, color: "var(--accent-blue)", ring: 0 },
       { name: "Video", value: 22, color: "#EED21B", ring: 1 },
-      { name: "Problems", value: 5, color: "#417845", ring: 2 },
+      { name: "Problems", value: 5, color: "var(--secondary-200)", ring: 2 },
       { name: "Quiz", value: 9, color: "#2A8CB0", ring: 3 },
     ],
   };
@@ -207,7 +219,7 @@ const DashboardPieChart = ({  data, isLoading, error }: { data: ApiResponse | nu
         <h1 className="font-sans text-base md:text-[18px] text-[#343A40]">
           Dashboard
         </h1>
-        <p className="text-[#495057] font-normal text-xs md:text-[12px]">
+        <p className="text-[var(--netural-400)] font-normal text-xs md:text-[12px]">
           A simple overview of your status.
         </p>
 
@@ -246,12 +258,12 @@ const DashboardPieChart = ({  data, isLoading, error }: { data: ApiResponse | nu
                 fillRule="evenodd"
                 clipRule="evenodd"
                 d="M15.5 8C15.5 12.1421 12.1421 15.5 8 15.5C3.85786 15.5 0.5 12.1421 0.5 8C0.5 3.85786 3.85786 0.5 8 0.5C12.1421 0.5 15.5 3.85786 15.5 8ZM8 12.3125C8.31065 12.3125 8.5625 12.0606 8.5625 11.75V7.25C8.5625 6.93935 8.31065 6.6875 8 6.6875C7.68935 6.6875 7.4375 6.93935 7.4375 7.25V11.75C7.4375 12.0606 7.68935 12.3125 8 12.3125ZM8 4.25C8.41423 4.25 8.75 4.58579 8.75 5C8.75 5.41421 8.41423 5.75 8 5.75C7.58577 5.75 7.25 5.41421 7.25 5C7.25 4.58579 7.58577 4.25 8 4.25Z"
-                fill="#6C757D"
+                fill="var(--netural-300)"
               />
             </svg>
           </div>
           <div>
-            <p className="text-[10px] font-medium text-[#6C757D]">
+            <p className="text-[10px] font-medium text-[var(--netural-300)]">
               Check out this awesome visual that shows exactly how far you've
               come in your course! It's like a fun map of your progress!
             </p>

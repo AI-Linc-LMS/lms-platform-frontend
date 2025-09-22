@@ -19,7 +19,7 @@ const CourseEnrollmentCTA: React.FC<CourseEnrollmentCTAProps> = ({
       </button>
       <button
         onClick={onDecline}
-        className="w-full sm:w-[200px] px-6 py-3 text-lg font-medium text-[#333333] bg-[#e9e9e9] rounded-xl hover:bg-[#d8d8d8] transition-colors duration-200"
+        className="w-full sm:w-[200px] px-6 py-3 text-lg font-medium text-[var(--font-primary)] bg-[#e9e9e9] rounded-xl hover:bg-[#d8d8d8] transition-colors duration-200"
       >
         Not Interested
       </button>

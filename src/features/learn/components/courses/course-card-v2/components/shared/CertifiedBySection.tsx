@@ -42,7 +42,7 @@ export const CertifiedBySection: React.FC<CertifiedBySectionProps> = ({
 }) => {
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <span className="text-[11px] text-[#9ca3af] font-normal uppercase tracking-[0.5px]">
+      <span className="text-[11px] text-[var(--font-tertiary)] font-normal uppercase tracking-[0.5px]">
         Created and certified by
       </span>
       <div className="flex items-center gap-2 flex-wrap">
@@ -63,7 +63,7 @@ export const CertifiedBySection: React.FC<CertifiedBySectionProps> = ({
                   className="w-4 h-4 object-contain"
                 />
               ) : (
-                <div className="w-4 h-4 rounded-sm bg-[#6B7280] flex items-center justify-center text-white text-[8px] font-bold">
+                <div className="w-4 h-4 rounded-sm bg-[var(--font-secondary)] flex items-center justify-center text-white text-[8px] font-bold">
                   {companyName.charAt(0).toUpperCase()}
                 </div>
               )}

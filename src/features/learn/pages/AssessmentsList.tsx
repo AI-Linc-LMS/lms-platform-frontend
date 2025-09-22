@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   getAllAssessments,
   AssessmentListItem,
@@ -18,7 +18,6 @@ import {
 const AssessmentsList: React.FC = () => {
   const navigate = useNavigate();
   const clientId = import.meta.env.VITE_CLIENT_ID;
-
 
   const {
     data: assessments,
@@ -43,10 +42,10 @@ const AssessmentsList: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-[#F8FAFC] via-[#EFF9FC] to-[#E0F4F8] flex items-center justify-center">
         <div className="text-center">
           <div className="relative">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#80C9E0] border-t-[#255C79] mx-auto"></div>
-            <div className="absolute inset-0 rounded-full h-16 w-16 border-4 border-transparent border-t-[#255C79] animate-pulse mx-auto"></div>
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#80C9E0] border-t-[var(--default-primary)] mx-auto"></div>
+            <div className="absolute inset-0 rounded-full h-16 w-16 border-4 border-transparent border-t-[var(--default-primary)] animate-pulse mx-auto"></div>
           </div>
-          <p className="mt-4 text-[#255C79] font-medium">
+          <p className="mt-4 text-[var(--default-primary)] font-medium">
             Loading assessments...
           </p>
         </div>
@@ -82,7 +81,7 @@ const AssessmentsList: React.FC = () => {
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="bg-gradient-to-r from-[#255C79] to-[#2C5F7F] text-white px-8 py-3 rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+              className="bg-gradient-to-r from-[var(--default-primary)] to-[#2C5F7F] text-white px-8 py-3 rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-200"
             >
               Try Again
             </button>
@@ -96,12 +95,12 @@ const AssessmentsList: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-[#F8FAFC] via-[#EFF9FC] to-[#E0F4F8]">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-[#255C79]/5 to-[#2C5F7F]/5"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[var(--default-primary)]/5 to-[#2C5F7F]/5"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12">
           {/* Back Button */}
           <button
             onClick={() => navigate("/courses")}
-            className="inline-flex items-center gap-2 mb-8 px-4 py-2 text-[#255C79] hover:text-[#2C5F7F] transition-colors group"
+            className="inline-flex items-center gap-2 mb-8 px-4 py-2 text-[var(--default-primary)] hover:text-[#2C5F7F] transition-colors group"
           >
             <FiArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span className="font-medium">Back to Courses</span>
@@ -109,13 +108,13 @@ const AssessmentsList: React.FC = () => {
 
           <div className="text-center">
             <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-[#80C9E0]/30 mb-6">
-              <FiAward className="w-4 h-4 text-[#255C79]" />
-              <span className="text-sm font-medium text-[#255C79]">
+              <FiAward className="w-4 h-4 text-[var(--default-primary)]" />
+              <span className="text-sm font-medium text-[var(--default-primary)]">
                 Skill Assessment Center
               </span>
             </div>
 
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-[#255C79] to-[#2C5F7F] bg-clip-text text-transparent mb-6">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-[var(--default-primary)] to-[#2C5F7F] bg-clip-text text-transparent mb-6">
               Test Your Expertise
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
@@ -165,7 +164,7 @@ const AssessmentsList: React.FC = () => {
                 }}
               >
                 {/* Gradient Overlay */}
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#255C79] to-[#2C5F7F]"></div>
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[var(--default-primary)] to-[#2C5F7F]"></div>
 
                 {/* Status Badge - Repositioned to avoid overlap */}
                 <div className="flex justify-end mb-4">
@@ -187,7 +186,7 @@ const AssessmentsList: React.FC = () => {
 
                 {/* Assessment Header */}
                 <div className="mb-6">
-                  <h3 className="text-2xl font-bold text-gray-800 mb-3 group-hover:text-[#255C79] transition-colors">
+                  <h3 className="text-2xl font-bold text-gray-800 mb-3 group-hover:text-[var(--default-primary)] transition-colors">
                     {assessment.title}
                   </h3>
                   {assessment.description && (
@@ -229,7 +228,7 @@ const AssessmentsList: React.FC = () => {
                     disabled={!assessment.is_active}
                     className={`w-full py-4 px-6 rounded-2xl font-semibold transition-all duration-300 flex items-center justify-center gap-3 text-lg ${
                       assessment.is_active
-                        ? "bg-gradient-to-r from-[#255C79] to-[#2C5F7F] text-white hover:shadow-xl hover:shadow-[#255C79]/25 transform hover:scale-105"
+                        ? "bg-gradient-to-r from-[var(--default-primary)] to-[#2C5F7F] text-white hover:shadow-xl hover:shadow-[var(--default-primary)]/25 transform hover:scale-105"
                         : "bg-gray-100 text-gray-400 cursor-not-allowed"
                     }`}
                   >
@@ -241,7 +240,7 @@ const AssessmentsList: React.FC = () => {
                 </div>
 
                 {/* Decorative Elements */}
-                <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-gradient-to-br from-[#255C79]/5 to-[#2C5F7F]/5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-gradient-to-br from-[var(--default-primary)]/5 to-[#2C5F7F]/5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
               </div>
             ))}
           </div>
@@ -272,7 +271,7 @@ const AssessmentsList: React.FC = () => {
               </p>
               <button
                 onClick={() => navigate("/courses")}
-                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#255C79] to-[#2C5F7F] text-white rounded-2xl font-semibold hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[var(--default-primary)] to-[#2C5F7F] text-white rounded-2xl font-semibold hover:shadow-xl transform hover:scale-105 transition-all duration-200"
               >
                 Explore Courses Instead
               </button>

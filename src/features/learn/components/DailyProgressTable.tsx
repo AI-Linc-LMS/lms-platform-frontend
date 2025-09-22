@@ -1,13 +1,20 @@
 import React from "react";
 import light from "../../../assets/dashboard_assets/light.png";
 import { useQuery } from "@tanstack/react-query";
-import { getDailyLeaderboard, getUserDailyTimeSpentData, LeaderboardData } from "../../../services/dashboardApis";
+import {
+  getDailyLeaderboard,
+  getUserDailyTimeSpentData,
+  LeaderboardData,
+} from "../../../services/dashboardApis";
 
 const goalMinutes = 30; // Default goal
 
 const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
-  
-  const { data: leaderboardData, isLoading: isLeaderboardLoading, error: leaderboardError } = useQuery({
+  const {
+    data: leaderboardData,
+    isLoading: isLeaderboardLoading,
+    error: leaderboardError,
+  } = useQuery({
     queryKey: ["dailyLeaderboard", clientId],
     queryFn: () => getDailyLeaderboard(clientId),
     refetchOnWindowFocus: false,
@@ -15,7 +22,11 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
     refetchOnReconnect: false,
   });
 
-  const { data: dailyTimeSpentData, isLoading: isTimeSpentLoading, error: timeSpentError } = useQuery({
+  const {
+    data: dailyTimeSpentData,
+    isLoading: isTimeSpentLoading,
+    error: timeSpentError,
+  } = useQuery({
     queryKey: ["userTimeSpent", clientId],
     queryFn: () => getUserDailyTimeSpentData(clientId),
     refetchOnWindowFocus: false,
@@ -23,22 +34,23 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
     refetchOnReconnect: false,
   });
 
-
   const leaderboardArray = leaderboardData?.leaderboard || [];
-  const timeSpent = dailyTimeSpentData?.timespent ?? 0; 
+  const timeSpent = dailyTimeSpentData?.timespent ?? 0;
 
   // Map leaderboard data to table format
-  const tableData = leaderboardArray.map((item: LeaderboardData, idx: number) => ({
-    standing: `#${idx + 1}`,
-    name: item.name,
-    time:
-      item.progress.hours > 0
-        ? `${item.progress.hours}hr ${item.progress.minutes}min`
-        : `${item.progress.minutes}min`,
-  }));
+  const tableData = leaderboardArray.map(
+    (item: LeaderboardData, idx: number) => ({
+      standing: `#${idx + 1}`,
+      name: item.name,
+      time:
+        item.progress.hours > 0
+          ? `${item.progress.hours}hr ${item.progress.minutes}min`
+          : `${item.progress.minutes}min`,
+    })
+  );
 
   // Calculate progress percentage for the progress bar
-  const progressMinutes = timeSpent; 
+  const progressMinutes = timeSpent;
   const progressPercent = Math.min((progressMinutes / goalMinutes) * 100, 100);
 
   if (
@@ -55,12 +67,12 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
           Daily Progress
         </h2>
 
-        {(!leaderboardArray || leaderboardArray.length === 0) ? (
-          <p className="text-[14px] text-[#495057] mb-8">
+        {!leaderboardArray || leaderboardArray.length === 0 ? (
+          <p className="text-[14px] text-[var(--netural-400)] mb-8">
             No daily progress data available
           </p>
         ) : (
-          <p className="text-[14px] text-[#495057] mb-8">
+          <p className="text-[14px] text-[var(--netural-400)] mb-8">
             Keep track of your daily learning ⚡
           </p>
         )}
@@ -116,7 +128,7 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
       <h2 className="text-xl font-semibold text-[#343A40] mb-3">
         Daily Progress
       </h2>
-      <p className="text-[14px] text-[#495057] mb-8">
+      <p className="text-[14px] text-[var(--netural-400)] mb-8">
         Keep track of your daily learning ⚡
       </p>
 
@@ -172,13 +184,15 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
       </div>
 
       <div className="flex justify-end items-center mb-1 text-green-700 font-semibold">
-        <span className="text-[13px] text-[#5FA564]">+ {progressMinutes} mins</span>
+        <span className="text-[13px] text-[var(--success-500)]">
+          + {progressMinutes} mins
+        </span>
       </div>
 
       {/* Animated Progress Bar */}
       <div className="relative h-8 rounded-full bg-gray-200 overflow-hidden">
         <div
-          className="absolute left-0 top-0 h-full bg-[#5FA564] transition-all duration-[1500ms] ease-in-out"
+          className="absolute left-0 top-0 h-full bg-[var(--success-500)] transition-all duration-[1500ms] ease-in-out"
           style={{ width: `${progressPercent}%` }}
         />
         <span
@@ -211,7 +225,7 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
             />
           </svg>
         </div>
-        <p className="text-sm text-[#6C757D]">
+        <p className="text-sm text-[var(--netural-300)]">
           Log in every day and snag yourself a shiny +1 Streak point! Don't miss
           out on the fun—keep those streaks rolling!
         </p>

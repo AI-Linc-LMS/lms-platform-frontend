@@ -1,7 +1,5 @@
 import React, { useState } from "react";
-import {
-  LiveSession
-} from "../../../services/live/liveServicesApis";
+import { LiveSession } from "../../../services/live/liveServicesApis";
 
 interface PastRecordingsProps {
   pastLiveSessions: LiveSession[];
@@ -9,7 +7,7 @@ interface PastRecordingsProps {
 }
 
 const PastRecordings: React.FC<PastRecordingsProps> = ({
-  pastLiveSessions
+  pastLiveSessions,
 }) => {
   const [filterDate, setFilterDate] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -57,7 +55,7 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({
               placeholder="Search sessions..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79]"
+              className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--default-primary)] focus:border-[var(--default-primary)]"
             />
             <svg
               className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
@@ -78,7 +76,7 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({
             type="date"
             value={filterDate}
             onChange={(e) => setFilterDate(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79]"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--default-primary)] focus:border-[var(--default-primary)]"
           />
         </div>
       </div>
@@ -116,7 +114,7 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({
                 <h3 className="font-bold text-[#343A40] text-lg mb-2 line-clamp-2">
                   {recording.topic_name}
                 </h3>
-                <p className="text-[#6C757D] text-sm mb-4 line-clamp-2">
+                <p className="text-[var(--netural-300)] text-sm mb-4 line-clamp-2">
                   {recording.description}
                 </p>
 
@@ -125,30 +123,32 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({
                     <p className="font-medium text-[#343A40]">
                       {recording.instructor}
                     </p>
-                    <p className="text-[#6C757D]">
+                    <p className="text-[var(--netural-300)]">
                       {formatDate(recording.class_datetime)}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex flex-row justify-between">
-                  {recording?.recording_link && <div className="flex justify-end">
-                    <button
-                      onClick={() =>
-                        handleWatchRecording(recording?.recording_link || "")
-                      }
-                      className="bg-[#255C79] hover:bg-[#1E4A63] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-95"
-                    >
-                      Watch Recording
-                    </button>
-                  </div>}
+                  {recording?.recording_link && (
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() =>
+                          handleWatchRecording(recording?.recording_link || "")
+                        }
+                        className="bg-[var(--default-primary)] hover:bg-[#1E4A63] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-95"
+                      >
+                        Watch Recording
+                      </button>
+                    </div>
+                  )}
                   {!recording?.recording_link && (
                     <div className="flex justify-end">
                       <button
                         onClick={() =>
                           handleWatchRecording(recording?.recording_link || "")
                         }
-                        className="bg-[#255C79] hover:bg-[#1E4A63] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-95"
+                        className="bg-[var(--default-primary)] hover:bg-[#1E4A63] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-95"
                       >
                         Recording Coming Soon
                       </button>

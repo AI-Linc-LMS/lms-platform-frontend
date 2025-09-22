@@ -10,11 +10,17 @@ interface ReferralAnalyticsProps {
   }>;
 }
 
-const ReferralAnalytics: React.FC<ReferralAnalyticsProps> = ({ assessmentData }) => {
+const ReferralAnalytics: React.FC<ReferralAnalyticsProps> = ({
+  assessmentData,
+}) => {
   const analytics = useMemo(() => {
-    const referralSubmissions = assessmentData.filter(entry => entry?.referral_code);
-    const directSubmissions = assessmentData.filter(entry => !entry?.referral_code);
-    
+    const referralSubmissions = assessmentData.filter(
+      (entry) => entry?.referral_code
+    );
+    const directSubmissions = assessmentData.filter(
+      (entry) => !entry?.referral_code
+    );
+
     // Group by referral code
     const referralGroups = referralSubmissions.reduce((acc, entry) => {
       const code = entry.referral_code!;
@@ -26,25 +32,30 @@ const ReferralAnalytics: React.FC<ReferralAnalyticsProps> = ({ assessmentData })
     }, {} as Record<string, typeof referralSubmissions>);
 
     // Calculate stats for each referral code
-    const referralStats = Object.entries(referralGroups).map(([code, submissions]) => {
-      const avgScore = submissions.reduce((sum, entry) => {
-        const score = parseFloat(entry.score) || 0;
-        return sum + score;
-      }, 0) / submissions.length;
+    const referralStats = Object.entries(referralGroups)
+      .map(([code, submissions]) => {
+        const avgScore =
+          submissions.reduce((sum, entry) => {
+            const score = parseFloat(entry.score) || 0;
+            return sum + score;
+          }, 0) / submissions.length;
 
-      const avgScholarship = submissions.reduce((sum, entry) => {
-        const scholarship = parseFloat(entry.offered_scholarship_percentage) || 0;
-        return sum + scholarship;
-      }, 0) / submissions.length;
+        const avgScholarship =
+          submissions.reduce((sum, entry) => {
+            const scholarship =
+              parseFloat(entry.offered_scholarship_percentage) || 0;
+            return sum + scholarship;
+          }, 0) / submissions.length;
 
-      return {
-        code,
-        count: submissions.length,
-        avgScore: Math.round(avgScore * 100) / 100,
-        avgScholarship: Math.round(avgScholarship * 100) / 100,
-        submissions
-      };
-    }).sort((a, b) => b.count - a.count); // Sort by count descending
+        return {
+          code,
+          count: submissions.length,
+          avgScore: Math.round(avgScore * 100) / 100,
+          avgScholarship: Math.round(avgScholarship * 100) / 100,
+          submissions,
+        };
+      })
+      .sort((a, b) => b.count - a.count); // Sort by count descending
 
     return {
       totalSubmissions: assessmentData.length,
@@ -53,15 +64,19 @@ const ReferralAnalytics: React.FC<ReferralAnalyticsProps> = ({ assessmentData })
       referralRate: (referralSubmissions.length / assessmentData.length) * 100,
       uniqueReferralCodes: Object.keys(referralGroups).length,
       topReferralCodes: referralStats.slice(0, 5),
-      referralStats
+      referralStats,
     };
   }, [assessmentData]);
 
   if (assessmentData.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Referral Analytics</h3>
-        <p className="text-gray-500">No assessment data available for analysis.</p>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          Referral Analytics
+        </h3>
+        <p className="text-gray-500">
+          No assessment data available for analysis.
+        </p>
       </div>
     );
   }
@@ -69,8 +84,10 @@ const ReferralAnalytics: React.FC<ReferralAnalyticsProps> = ({ assessmentData })
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-center gap-2 mb-6">
-        <FiBarChart className="w-5 h-5 text-[#255C79]" />
-        <h3 className="text-lg font-semibold text-gray-900">Referral Analytics</h3>
+        <FiBarChart className="w-5 h-5 text-[var(--default-primary)]" />
+        <h3 className="text-lg font-semibold text-gray-900">
+          Referral Analytics
+        </h3>
       </div>
 
       {/* Key Metrics */}
@@ -134,11 +151,17 @@ const ReferralAnalytics: React.FC<ReferralAnalyticsProps> = ({ assessmentData })
                   <tr key={stat.code} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${
-                          index === 0 ? 'bg-yellow-500' : 
-                          index === 1 ? 'bg-gray-400' : 
-                          index === 2 ? 'bg-orange-500' : 'bg-blue-500'
-                        }`}>
+                        <span
+                          className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                            index === 0
+                              ? "bg-yellow-500"
+                              : index === 1
+                              ? "bg-gray-400"
+                              : index === 2
+                              ? "bg-orange-500"
+                              : "bg-blue-500"
+                          }`}
+                        >
                           {index + 1}
                         </span>
                         <span className="font-mono text-blue-600 font-medium">
@@ -152,11 +175,15 @@ const ReferralAnalytics: React.FC<ReferralAnalyticsProps> = ({ assessmentData })
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        stat.avgScore >= 80 ? 'bg-green-100 text-green-800' :
-                        stat.avgScore >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          stat.avgScore >= 80
+                            ? "bg-green-100 text-green-800"
+                            : stat.avgScore >= 60
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
                         {stat.avgScore.toFixed(1)}
                       </span>
                     </td>
@@ -186,4 +213,4 @@ const ReferralAnalytics: React.FC<ReferralAnalyticsProps> = ({ assessmentData })
   );
 };
 
-export default ReferralAnalytics; 
+export default ReferralAnalytics;

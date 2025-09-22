@@ -1,6 +1,12 @@
-import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, MessageCircle, Info, Send } from 'lucide-react';
-import RichTextEditor from './RichTextEditor';
+import React, { useState } from "react";
+import {
+  ChevronDown,
+  ChevronUp,
+  MessageCircle,
+  Info,
+  Send,
+} from "lucide-react";
+import RichTextEditor from "./RichTextEditor";
 
 interface CommentFormProps {
   onSubmit: (content: string) => Promise<void>;
@@ -8,7 +14,7 @@ interface CommentFormProps {
 
 const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
   const [showForm, setShowForm] = useState(false);
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -17,10 +23,10 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
     try {
       setIsSubmitting(true);
       await onSubmit(content);
-      setContent('');
+      setContent("");
       setShowForm(false);
     } catch (error) {
-      console.error('Failed to submit comment:', error);
+      console.error("Failed to submit comment:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -36,11 +42,15 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
         >
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-blue-600 rounded-md flex items-center justify-center">
-              <MessageCircle className="text-white" size={18} />
+              <MessageCircle className="text-[var(--font-light)]" size={18} />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900">Your Comment</h3>
-              <p className="text-sm text-gray-500">Share your knowledge with the community</p>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+                Your Comment
+              </h3>
+              <p className="text-sm text-gray-500">
+                Share your knowledge with the community
+              </p>
             </div>
           </div>
           {showForm ? <ChevronUp size={20} /> : <ChevronDown size={20} />}

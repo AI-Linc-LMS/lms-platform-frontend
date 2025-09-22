@@ -13,11 +13,11 @@ export interface FilterCriteria {
   searchTerm: string;
 }
 
-const FilterModal: React.FC<FilterModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  onApplyFilters, 
-  currentFilters 
+const FilterModal: React.FC<FilterModalProps> = ({
+  isOpen,
+  onClose,
+  onApplyFilters,
+  currentFilters,
 }) => {
   const [filters, setFilters] = useState<FilterCriteria>(currentFilters);
 
@@ -28,15 +28,15 @@ const FilterModal: React.FC<FilterModalProps> = ({
     "Back-End Development",
     "Data Science",
     "Machine Learning",
-    "DevOps"
+    "DevOps",
   ];
 
   const handleCourseToggle = (course: string) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       courses: prev.courses.includes(course)
-        ? prev.courses.filter(c => c !== course)
-        : [...prev.courses, course]
+        ? prev.courses.filter((c) => c !== course)
+        : [...prev.courses, course],
     }));
   };
 
@@ -48,7 +48,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
   const handleClear = () => {
     const clearedFilters: FilterCriteria = {
       courses: [],
-      searchTerm: ""
+      searchTerm: "",
     };
     setFilters(clearedFilters);
     onApplyFilters(clearedFilters);
@@ -61,7 +61,9 @@ const FilterModal: React.FC<FilterModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Filter Students</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            Filter Students
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -77,12 +79,15 @@ const FilterModal: React.FC<FilterModalProps> = ({
             </label>
             <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-lg p-3">
               {availableCourses.map((course) => (
-                <label key={course} className="flex items-center space-x-2 cursor-pointer">
+                <label
+                  key={course}
+                  className="flex items-center space-x-2 cursor-pointer"
+                >
                   <input
                     type="checkbox"
                     checked={filters.courses.includes(course)}
                     onChange={() => handleCourseToggle(course)}
-                    className="rounded border-gray-300 text-[#255C79] focus:ring-[#255C79]"
+                    className="rounded border-gray-300 text-[var(--default-primary)] focus:ring-[var(--default-primary)]"
                   />
                   <span className="text-sm text-gray-700">{course}</span>
                 </label>
@@ -90,21 +95,27 @@ const FilterModal: React.FC<FilterModalProps> = ({
             </div>
             {filters.courses.length > 0 && (
               <p className="text-xs text-gray-500 mt-2">
-                {filters.courses.length} course{filters.courses.length !== 1 ? 's' : ''} selected
+                {filters.courses.length} course
+                {filters.courses.length !== 1 ? "s" : ""} selected
               </p>
             )}
           </div>
 
           <div>
-            <label htmlFor="filterSearch" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="filterSearch"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Search Term
             </label>
             <input
               type="text"
               id="filterSearch"
               value={filters.searchTerm}
-              onChange={(e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none"
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, searchTerm: e.target.value }))
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--default-primary)] focus:border-transparent outline-none"
               placeholder="Search by name or email..."
             />
           </div>
@@ -126,7 +137,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
             </button>
             <button
               onClick={handleApply}
-              className="px-4 py-2 bg-[#255C79] text-white rounded-lg hover:bg-[#1E4A63] transition-colors"
+              className="px-4 py-2 bg-[var(--default-primary)] text-white rounded-lg hover:bg-[#1E4A63] transition-colors"
             >
               Apply Filters
             </button>
@@ -137,4 +148,4 @@ const FilterModal: React.FC<FilterModalProps> = ({
   );
 };
 
-export default FilterModal; 
+export default FilterModal;

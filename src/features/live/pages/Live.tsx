@@ -101,14 +101,14 @@ const Live: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[var(--netural-50)] py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-[#343A40] mb-4">
             Live Classes
           </h1>
-          <p className="text-lg text-[#6C757D] max-w-2xl mx-auto">
+          <p className="text-lg text-[var(--netural-300)] max-w-2xl mx-auto">
             Join live sessions with industry experts and access our library of
             recorded classes
           </p>

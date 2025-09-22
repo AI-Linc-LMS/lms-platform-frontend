@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { SortIcon } from './CourseIcons';
+import { useState } from "react";
+import { SortIcon } from "./CourseIcons";
 
 interface SortOption {
   value: string;
@@ -15,11 +15,11 @@ const SortDropdown = ({ selectedSort, setSelectedSort }: SortDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const sortOptions: SortOption[] = [
-    { value: 'most_popular', label: 'Most Popular' },
-    { value: 'highest_rated', label: 'Highest Rated' },
-    { value: 'newest', label: 'Newest / Recently Added' },
-    { value: 'price_low_high', label: 'Price - Low to High' },
-    { value: 'price_high_low', label: 'Price - High to Low' }
+    { value: "most_popular", label: "Most Popular" },
+    { value: "highest_rated", label: "Highest Rated" },
+    { value: "newest", label: "Newest / Recently Added" },
+    { value: "price_low_high", label: "Price - Low to High" },
+    { value: "price_high_low", label: "Price - High to Low" },
   ];
 
   return (
@@ -37,15 +37,30 @@ const SortDropdown = ({ selectedSort, setSelectedSort }: SortDropdownProps) => {
           {sortOptions.map((option) => (
             <div
               key={option.value}
-              className={`px-4 py-2 text-sm cursor-pointer hover:bg-[#F8F9FA] flex items-center ${selectedSort === option.value ? 'text-[#343A40] font-medium' : 'text-[#495057]'}`}
+              className={`px-4 py-2 text-sm cursor-pointer hover:bg-[var(--netural-50)] flex items-center ${
+                selectedSort === option.value
+                  ? "text-[#343A40] font-medium"
+                  : "text-[var(--netural-400)]"
+              }`}
               onClick={() => {
                 setSelectedSort(option.value);
                 setIsOpen(false);
               }}
             >
               {selectedSort === option.value && (
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  ></path>
                 </svg>
               )}
               {option.label}
@@ -57,4 +72,4 @@ const SortDropdown = ({ selectedSort, setSelectedSort }: SortDropdownProps) => {
   );
 };
 
-export default SortDropdown; 
+export default SortDropdown;

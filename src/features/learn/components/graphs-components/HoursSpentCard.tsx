@@ -23,10 +23,7 @@ interface HoursSpentData {
   units: string;
 }
 
-const HoursSpentCard = ({
-  timeRange,
-  setTimeRange,
-}: HoursSpentCardProps) => {
+const HoursSpentCard = ({ timeRange, setTimeRange }: HoursSpentCardProps) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
 
   const { data, isLoading, error } = useQuery<HoursSpentData>({
@@ -37,16 +34,14 @@ const HoursSpentCard = ({
     refetchOnReconnect: false,
   });
 
-
   // Transform API data into chart format
   const chartData = useMemo(() => {
     if (!data) return [];
     return data.date_range.map((date, index) => ({
       day: date,
-      hours: data.hours_spent[index]
+      hours: data.hours_spent[index],
     }));
   }, [data]);
-
 
   // Calculate max hours for Y-axis
   const maxHours = useMemo(() => {
@@ -66,7 +61,7 @@ const HoursSpentCard = ({
   // Format date for X-axis
   const formatDate = (date: string) => {
     try {
-      return format(parseISO(date), 'MMM dd');
+      return format(parseISO(date), "MMM dd");
     } catch {
       return date;
     }
@@ -81,10 +76,15 @@ const HoursSpentCard = ({
   }
 
   // Create empty data for error state
-  const emptyData = Array(7).fill(0).map((_, index) => ({
-    day: format(new Date(Date.now() - (6 - index) * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
-    hours: 0
-  }));
+  const emptyData = Array(7)
+    .fill(0)
+    .map((_, index) => ({
+      day: format(
+        new Date(Date.now() - (6 - index) * 24 * 60 * 60 * 1000),
+        "yyyy-MM-dd"
+      ),
+      hours: 0,
+    }));
 
   return (
     <div className="flex flex-col w-full max-w-full md:max-w-[650px]">
@@ -94,11 +94,7 @@ const HoursSpentCard = ({
           <p className="text-gray-500 text-md">Total hours spent</p>
         </div>
         <div className="flex items-center gap-4 mt-2 md:mt-0">
-          {error && (
-            <div className="text-sm">
-              Error loading data
-            </div>
-          )}
+          {error && <div className="text-sm">Error loading data</div>}
           <div className="relative">
             <select
               value={timeRange}
@@ -130,7 +126,11 @@ const HoursSpentCard = ({
           >
             <defs>
               <linearGradient id="hoursFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="20%" stopColor="#417845" stopOpacity={3.0} />
+                <stop
+                  offset="20%"
+                  stopColor="var(--secondary-200)"
+                  stopOpacity={3.0}
+                />
                 <stop offset="95%" stopColor="#F4F9F5" stopOpacity={0.1} />
               </linearGradient>
             </defs>
@@ -139,7 +139,7 @@ const HoursSpentCard = ({
               dataKey="day"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#6B7280", fontSize: 10 }}
+              tick={{ fill: "var(--font-secondary)", fontSize: 10 }}
               tickFormatter={formatDate}
               tickMargin={10}
             />
@@ -148,8 +148,12 @@ const HoursSpentCard = ({
               domain={[0, error ? 24 : maxHours]}
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#6B7280", fontSize: 10 }}
-              ticks={[0, error ? 12 : Math.floor(maxHours / 2), error ? 24 : maxHours]}
+              tick={{ fill: "var(--font-secondary)", fontSize: 10 }}
+              ticks={[
+                0,
+                error ? 12 : Math.floor(maxHours / 2),
+                error ? 24 : maxHours,
+              ]}
               tickMargin={5}
             />
 
@@ -157,12 +161,12 @@ const HoursSpentCard = ({
             <Area
               type="linear"
               dataKey="hours"
-              stroke="#417845"
+              stroke="var(--secondary-200)"
               strokeWidth={3}
               fill="url(#hoursFill)"
               activeDot={{
                 r: 6,
-                fill: "#417845",
+                fill: "var(--secondary-200)",
                 strokeWidth: 2,
                 stroke: "#fff",
               }}

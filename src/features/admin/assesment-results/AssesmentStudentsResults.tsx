@@ -130,7 +130,6 @@ const AssesmentStudentResults = () => {
     }
   };
 
-
   return (
     <div className="p-4 md:p-6 bg-gray-50 min-h-screen">
       <h1 className="text-xl md:text-2xl font-bold mb-6">Assessment Results</h1>
@@ -139,7 +138,7 @@ const AssesmentStudentResults = () => {
       {/* <div className="mb-6">
         <button
           onClick={() => setShowReferralGenerator(!showReferralGenerator)}
-          className="flex items-center gap-2 bg-[#255C79] text-white px-4 py-2 rounded-lg hover:bg-[#1E4A63] transition-colors font-medium"
+          className="flex items-center gap-2 bg-[var(--default-primary)] text-white px-4 py-2 rounded-lg hover:bg-[#1E4A63] transition-colors font-medium"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -207,7 +206,7 @@ const AssesmentStudentResults = () => {
         />
         {/* <button
           onClick={handleExport}
-          className="flex items-center gap-2 bg-[#5FA564] text-white px-4 py-2 rounded text-sm max-w-[120px]"
+          className="flex items-center gap-2 bg-[var(--success-500)] text-white px-4 py-2 rounded text-sm max-w-[120px]"
           title="Export to Excel"
         >
           <svg

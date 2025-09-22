@@ -14,7 +14,7 @@ const AddRecordingLinkModal: React.FC<AddRecordingLinkModalProps> = ({
   onSave,
 }) => {
   const [link, setLink] = useState(recordingLink || "");
-  
+
   useEffect(() => {
     if (isOpen) setLink(recordingLink || ""); // reset input on open
   }, [isOpen, recordingLink]);
@@ -38,7 +38,7 @@ const AddRecordingLinkModal: React.FC<AddRecordingLinkModalProps> = ({
           placeholder="https://zoom.us/..."
           value={link}
           onChange={(e) => setLink(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#255C79]"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--default-primary)]"
         />
         <div className="mt-6 flex justify-end space-x-3">
           <button
@@ -49,7 +49,7 @@ const AddRecordingLinkModal: React.FC<AddRecordingLinkModalProps> = ({
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-2 bg-[#255C79] text-white rounded-lg hover:bg-[#1E4A63]"
+            className="px-4 py-2 bg-[var(--default-primary)] text-white rounded-lg hover:bg-[#1E4A63]"
           >
             Save
           </button>

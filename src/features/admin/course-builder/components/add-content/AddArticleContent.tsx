@@ -32,7 +32,7 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const [fontSizeDropdownOpen, setFontSizeDropdownOpen] = useState(false);
   const [fontSize, setFontSize] = useState<number>(14);
-  const [textColor, setTextColor] = useState("#2D3748");
+  const [textColor, setTextColor] = useState("var(--netural-600)");
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [answer, setAnswer] = useState("");
   const [showPlaceholder, setShowPlaceholder] = useState(true);
@@ -44,7 +44,7 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
       uploadContent(clientId, "articles", data),
     onSuccess: () => {
       success("Article Uploaded", "Article content uploaded successfully!");
-      
+
       // Invalidate all content-related queries to refresh the UI
       queryClient.invalidateQueries({
         predicate: (query) => {
@@ -57,7 +57,7 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
           );
         },
       });
-      
+
       onBack();
     },
     onError: (error: Error) => {
@@ -96,15 +96,15 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
   };
 
   const colorOptions = [
-    "#2D3748", // Default dark gray/blue
-    "#E53E3E", // Red
-    "#DD6B20", // Orange
+    "var(--netural-600)", // Default dark gray/blue
+    "var(--accent-red)", // Red
+    "var(--accent-orange)", // Orange
     "#D69E2E", // Yellow
-    "#38A169", // Green
-    "#319795", // Teal
+    "var(--accent-green)", // Green
+    "var(--accent-teal)", // Teal
     "#3182CE", // Blue
-    "#805AD5", // Purple
-    "#D53F8C", // Pink
+    "var(--accent-purple)", // Purple
+    "var(--accent-pink)", // Pink
     "#000000", // Black
   ];
 
@@ -271,7 +271,7 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
 
         {/* Text Editor */}
         <div className="border rounded-lg overflow-hidden mt-3">
-          <div className="bg-[#D7EFF6] px-4 py-2 border-b flex items-center justify-between">
+          <div className="bg-[var(--primary-50)] px-4 py-2 border-b flex items-center justify-between">
             <div
               className="flex items-center relative"
               ref={fontSizeDropdownRef}
@@ -317,7 +317,7 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
 
             <div className="flex items-center gap-4">
               <button
-                className="text-[#2D3748] font-bold cursor-pointer hover:bg-gray-200 p-1 rounded"
+                className="text-[var(--netural-600)] font-bold cursor-pointer hover:bg-gray-200 p-1 rounded"
                 onClick={() => execCommand("formatBlock", "h1")}
               >
                 T
@@ -540,7 +540,7 @@ const AddArticleContent: React.FC<AddArticleContentProps> = ({
         <div style={{ textAlign: "right" }}>
           <button
             onClick={handleSave}
-            className="px-6 py-2 bg-[#255C79] text-white rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2 bg-[var(--default-primary)] text-white rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={uploadMutation.isPending}
           >
             {uploadMutation.isPending ? "Saving..." : "Save Content"}

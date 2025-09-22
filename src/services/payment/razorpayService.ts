@@ -18,15 +18,15 @@ export interface PaymentConfig {
 }
 
 export enum PaymentType {
-  COURSE = 'course',
-  SUBSCRIPTION = 'subscription',
-  CERTIFICATION = 'certification',
-  PREMIUM_FEATURE = 'premium_feature',
-  CONSULTATION = 'consultation',
-  ASSESSMENT = 'assessment',
-  WORKSHOP = 'workshop',
-  PREBOOKING = 'PREBOOKING',
-  PARTIAL_PAYMENT = 'PARTIAL_PAYMENT'
+  COURSE = "course",
+  SUBSCRIPTION = "subscription",
+  CERTIFICATION = "certification",
+  PREMIUM_FEATURE = "premium_feature",
+  CONSULTATION = "consultation",
+  ASSESSMENT = "assessment",
+  WORKSHOP = "workshop",
+  PREBOOKING = "PREBOOKING",
+  PARTIAL_PAYMENT = "PARTIAL_PAYMENT",
 }
 
 export interface CreateOrderResponse {
@@ -128,36 +128,44 @@ export class RazorpayService {
   /**
    * Create payment order based on payment type
    */
-  public async createOrder(config: PaymentConfig): Promise<CreateOrderResponse> {
-    const { createOrder } = await import('./paymentGatewayApis');
-    
+  public async createOrder(
+    config: PaymentConfig
+  ): Promise<CreateOrderResponse> {
+    const { createOrder } = await import("./paymentGatewayApis");
+
     try {
       // Include type_id in metadata for the API call
       const enhancedMetadata = {
         ...config.metadata,
         type_id: config.type_id,
         // Add specific metadata keys based on payment type
-        ...(config.type === PaymentType.ASSESSMENT && { assessmentId: config.type_id }),
-        ...(config.type === PaymentType.WORKSHOP && { workshopId: config.type_id }),
+        ...(config.type === PaymentType.ASSESSMENT && {
+          assessmentId: config.type_id,
+        }),
+        ...(config.type === PaymentType.WORKSHOP && {
+          workshopId: config.type_id,
+        }),
       };
 
       // Pass payment type and enhanced metadata to createOrder API
       const orderData = await createOrder(
-        config.clientId, 
-        config.amount, 
-        config.type, 
+        config.clientId,
+        config.amount,
+        config.type,
         enhancedMetadata
       );
-      
+
       if (!orderData || !orderData.order_id || !orderData.key) {
-        throw new Error("Failed to create payment order. Invalid response from server.");
+        throw new Error(
+          "Failed to create payment order. Invalid response from server."
+        );
       }
 
       return orderData;
     } catch (error) {
       throw new Error(
-        error instanceof Error 
-          ? error.message 
+        error instanceof Error
+          ? error.message
           : "Failed to create payment order"
       );
     }
@@ -172,23 +180,21 @@ export class RazorpayService {
     paymentType: PaymentType,
     typeId?: string
   ): Promise<PaymentVerificationResponse> {
-    const { verifyPayment } = await import('./paymentGatewayApis');
-    
+    const { verifyPayment } = await import("./paymentGatewayApis");
+
     try {
       // Include payment type and type_id in verification request
       const verificationData = {
         ...paymentData,
         payment_type: paymentType,
-        type_id: typeId
+        type_id: typeId,
       };
-      
+
       const verifyRes = await verifyPayment(clientId, verificationData);
       return verifyRes;
     } catch (error) {
       throw new Error(
-        error instanceof Error 
-          ? error.message 
-          : "Payment verification failed"
+        error instanceof Error ? error.message : "Payment verification failed"
       );
     }
   }
@@ -225,7 +231,9 @@ export class RazorpayService {
               !response.razorpay_payment_id ||
               !response.razorpay_signature
             ) {
-              throw new Error("Invalid payment response received from Razorpay");
+              throw new Error(
+                "Invalid payment response received from Razorpay"
+              );
             }
 
             const paymentVerifyData: VerifyPaymentRequest = {
@@ -235,7 +243,12 @@ export class RazorpayService {
             };
 
             // Verify payment
-            const verifyRes = await this.verifyPayment(config.clientId, paymentVerifyData, config.type, config.type_id);
+            const verifyRes = await this.verifyPayment(
+              config.clientId,
+              paymentVerifyData,
+              config.type,
+              config.type_id
+            );
 
             if (verifyRes.status === 200) {
               const result: PaymentResult = {
@@ -251,7 +264,10 @@ export class RazorpayService {
               throw new Error("Payment verification failed");
             }
           } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : "Payment verification failed";
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : "Payment verification failed";
             onFailure(errorMessage);
           }
         },
@@ -268,15 +284,20 @@ export class RazorpayService {
           contact: config.prefill?.contact || "",
         },
         theme: {
-          color: config.theme?.color || "#255C79",
+          color: config.theme?.color || "var(--default-primary)",
         },
         notes: config.metadata || {},
       };
 
-      const rzp = new (window as unknown as { Razorpay: new (options: RazorpayOptions) => { open: () => void } }).Razorpay(options);
+      const rzp = new (
+        window as unknown as {
+          Razorpay: new (options: RazorpayOptions) => { open: () => void };
+        }
+      ).Razorpay(options);
       rzp.open();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to initialize payment";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to initialize payment";
       onFailure(errorMessage);
     }
   }
@@ -297,15 +318,22 @@ export class RazorpayService {
 
       // Create order
       const orderData = await this.createOrder(config);
-      
+
       if (onOrderCreated) {
         onOrderCreated(orderData);
       }
 
       // Initiate payment
-      await this.initiatePayment(config, orderData, onSuccess, onFailure, onDismiss);
+      await this.initiatePayment(
+        config,
+        orderData,
+        onSuccess,
+        onFailure,
+        onDismiss
+      );
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Payment processing failed";
+      const errorMessage =
+        error instanceof Error ? error.message : "Payment processing failed";
       onFailure(errorMessage);
     }
   }
@@ -348,55 +376,55 @@ export class RazorpayService {
         name: "AI-LINC Platform",
         description: "Course Access Payment",
         currency: "INR",
-        theme: { color: "#255C79" },
+        theme: { color: "var(--default-primary)" },
       },
       [PaymentType.SUBSCRIPTION]: {
         name: "AI-LINC Platform",
         description: "Subscription Payment",
         currency: "INR",
-        theme: { color: "#255C79" },
+        theme: { color: "var(--default-primary)" },
       },
       [PaymentType.CERTIFICATION]: {
         name: "AI-LINC Platform",
         description: "Certification Fee",
         currency: "INR",
-        theme: { color: "#255C79" },
+        theme: { color: "var(--default-primary)" },
       },
       [PaymentType.PREMIUM_FEATURE]: {
         name: "AI-LINC Platform",
         description: "Premium Feature Access",
         currency: "INR",
-        theme: { color: "#255C79" },
+        theme: { color: "var(--default-primary)" },
       },
       [PaymentType.CONSULTATION]: {
         name: "AI-LINC Platform",
         description: "Consultation Fee",
         currency: "INR",
-        theme: { color: "#255C79" },
+        theme: { color: "var(--default-primary)" },
       },
       [PaymentType.ASSESSMENT]: {
         name: "AI-LINC Platform",
         description: "Assessment Fee",
         currency: "INR",
-        theme: { color: "#255C79" },
+        theme: { color: "var(--default-primary)" },
       },
       [PaymentType.WORKSHOP]: {
         name: "AI-LINC Platform",
         description: "Workshop Registration Fee",
         currency: "INR",
-        theme: { color: "#255C79" },
+        theme: { color: "var(--default-primary)" },
       },
       [PaymentType.PREBOOKING]: {
         name: "AI-LINC Platform",
         description: "Prebooking Fee",
         currency: "INR",
-        theme: { color: "#255C79" },
+        theme: { color: "var(--default-primary)" },
       },
       [PaymentType.PARTIAL_PAYMENT]: {
         name: "AI-LINC Platform",
         description: "Partial Payment",
         currency: "INR",
-        theme: { color: "#255C79" },
+        theme: { color: "var(--default-primary)" },
       },
     };
 
@@ -404,4 +432,4 @@ export class RazorpayService {
   }
 }
 
-export default RazorpayService; 
+export default RazorpayService;

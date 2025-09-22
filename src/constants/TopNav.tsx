@@ -6,7 +6,7 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useRole } from "../hooks/useRole";
 import { logout } from "../redux/slices/userSlice";
 import { handleMobileNavigation } from "../utils/authRedirectUtils";
-import {RootState} from "../redux/store.ts";
+import { RootState } from "../redux/store.ts";
 
 interface UserState {
   profile_picture?: string;
@@ -103,7 +103,9 @@ const TopNav: React.FC = () => {
   // Show notification only ONCE per user when landing on home path
   useEffect(() => {
     if (location.pathname === "/") {
-      const hasSeenCommunityModal = localStorage.getItem("hasSeenCommunityModal");
+      const hasSeenCommunityModal = localStorage.getItem(
+        "hasSeenCommunityModal"
+      );
       if (!hasSeenCommunityModal) {
         triggerNotification();
         localStorage.setItem("hasSeenCommunityModal", "true");
@@ -118,20 +120,19 @@ const TopNav: React.FC = () => {
 
   return (
     <div className="w-full bg-white shadow flex justify-between md:justify-end items-center px-4 py-2">
-        
-        <div className="md:hidden">
+      <div className="md:hidden">
         <img
           src={clientInfo.data?.app_logo_url}
           alt={clientInfo.data?.name}
           className="h-8 w-auto cursor-pointer"
-          onClick={() => navigate('/')}
+          onClick={() => navigate("/")}
         />
-        </div>
-        <div className="flex items-center gap-3 md:gap-5">
-            {(isAdminOrInstructor || isSuperAdmin) && (
-                <Link
-                    to="/admin/dashboard"
-            className="bg-[#17627A] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#124F65] transition-colors"
+      </div>
+      <div className="flex items-center gap-3 md:gap-5">
+        {(isAdminOrInstructor || isSuperAdmin) && (
+          <Link
+            to="/admin/dashboard"
+            className="bg-[#17627A] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[var(--primary-800)] transition-colors"
           >
             Admin
           </Link>
@@ -143,7 +144,11 @@ const TopNav: React.FC = () => {
             aria-label="Notifications"
             role="button"
           >
-            <img src={bellIcon} alt="Notifications" className="w-4 md:w-7 h-auto" />
+            <img
+              src={bellIcon}
+              alt="Notifications"
+              className="w-4 md:w-7 h-auto"
+            />
           </div>
 
           {isNotificationVisible && (
@@ -187,7 +192,7 @@ const TopNav: React.FC = () => {
                 <div className="mt-3">
                   <Link
                     to="/community"
-                    className="inline-block text-sm text-white bg-[#17627A] hover:bg-[#124F65] px-3 py-1 rounded"
+                    className="inline-block text-sm text-white bg-[#17627A] hover:bg-[var(--primary-800)] px-3 py-1 rounded"
                     onClick={hideNotification}
                   >
                     Go to Community

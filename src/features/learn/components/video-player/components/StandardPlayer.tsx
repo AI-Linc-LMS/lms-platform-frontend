@@ -601,7 +601,7 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
                   onClick={() => setVideoSize("small")}
                   className={`text-xs px-2 py-1 rounded-md cursor-pointer ${
                     videoSize === "small"
-                      ? "bg-white text-black"
+                      ? "bg-white text-[var(--font-dark)]"
                       : "text-white hover:bg-gray-700"
                   }`}
                 >
@@ -611,7 +611,7 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
                   onClick={() => setVideoSize("medium")}
                   className={`text-xs px-2 py-1 rounded-md cursor-pointer ${
                     videoSize === "medium"
-                      ? "bg-white text-black"
+                      ? "bg-white text-[var(--font-dark)]"
                       : "text-white hover:bg-gray-700"
                   }`}
                 >
@@ -621,7 +621,7 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
                   onClick={() => setVideoSize("large")}
                   className={`text-xs px-2 py-1 rounded-md cursor-pointer ${
                     videoSize === "large"
-                      ? "bg-white text-black"
+                      ? "bg-white text-[var(--font-dark)]"
                       : "text-white hover:bg-gray-700"
                   }`}
                 >

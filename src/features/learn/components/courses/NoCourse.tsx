@@ -16,12 +16,12 @@ const NoCourse = () => {
             Ready to Start Learning?
           </h1>
           <p className="text-gray-200 text-lg mb-8">
-            Your personal dashboard is empty. Discover exciting courses and begin
-            your journey to new skills!
+            Your personal dashboard is empty. Discover exciting courses and
+            begin your journey to new skills!
           </p>
         </div>
         <button
-          className="w-full flex items-center justify-center sm:w-auto bg-white text-[#255C79] font-bold py-4 px-12 rounded-xl shadow-lg transform transition-transform cursor-pointer mb-4"
+          className="w-full flex items-center justify-center sm:w-auto bg-white text-[var(--default-primary)] font-bold py-4 px-12 rounded-xl shadow-lg transform transition-transform cursor-pointer mb-4"
           onClick={() => navigate("/courses")}
         >
           Explore Courses{" "}
@@ -49,11 +49,11 @@ const NoCourse = () => {
               Ready to Start Learning?
             </h1>
             <p className="text-xl text-gray-600 mb-10">
-              Your personal dashboard is empty. Discover exciting courses and begin
-              your journey to new skills!
+              Your personal dashboard is empty. Discover exciting courses and
+              begin your journey to new skills!
             </p>
             <button
-              className="group flex items-center justify-center w-auto bg-[#255C79] text-white font-bold py-4 px-12 rounded-xl shadow-lg transform transition-transform cursor-pointer hover:scale-105"
+              className="group flex items-center justify-center w-auto bg-[var(--default-primary)] text-white font-bold py-4 px-12 rounded-xl shadow-lg transform transition-transform cursor-pointer hover:scale-105"
               onClick={() => navigate("/courses")}
             >
               Explore Courses{" "}

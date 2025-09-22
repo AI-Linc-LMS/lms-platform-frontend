@@ -27,7 +27,7 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
             <h1 className="text-[#343A40] font-bold text-[18px] md:text-[22px]">
               Based On Your Learning
             </h1>
-            <p className="text-[#6C757D] font-normal text-[14px] md:text-[18px]">
+            <p className="text-[var(--netural-300)] font-normal text-[14px] md:text-[18px]">
               Based on your learnings we think your might like this courses
               below.
             </p>
@@ -99,7 +99,7 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
             <h1 className="text-[#343A40] font-bold text-[18px] md:text-[22px]">
               Based On Your Learning
             </h1>
-            <p className="text-[#6C757D] font-normal text-[14px] md:text-[18px]">
+            <p className="text-[var(--netural-300)] font-normal text-[14px] md:text-[18px]">
               Based on your learnings we think your might like this courses
               below.
             </p>
@@ -159,7 +159,7 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
           <h1 className="text-[#343A40] font-bold text-[18px] md:text-[22px]">
             Based On Your Learning
           </h1>
-          <p className="text-[#6C757D] font-normal text-[14px] md:text-[18px]">
+          <p className="text-[var(--netural-300)] font-normal text-[14px] md:text-[18px]">
             Based on your learnings we think your might like this courses below.
           </p>
         </div>

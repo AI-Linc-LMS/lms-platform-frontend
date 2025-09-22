@@ -28,7 +28,7 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
           </div>
           <button
             onClick={onCollapse}
-            className="bg-[#f3f4f6] border border-[#e5e7eb] rounded-full w-9 h-9 flex items-center justify-center cursor-pointer transition-all duration-300 text-[#6b7280] hover:bg-[#e5e7eb] hover:scale-105"
+            className="bg-[#f3f4f6] border border-[#e5e7eb] rounded-full w-9 h-9 flex items-center justify-center cursor-pointer transition-all duration-300 text-[var(--font-secondary)] hover:bg-[#e5e7eb] hover:scale-105"
             aria-label="Collapse course card"
           >
             <ChevronUp className="w-4 h-4" />
