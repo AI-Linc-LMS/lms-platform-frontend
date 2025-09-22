@@ -72,12 +72,12 @@ const CourseTopicDetailPage: React.FC = () => {
   const [isSwitchingTopic, setIsSwitchingTopic] = useState(false);
 
   //console.log("activeSidebarLabel", activeSidebarLabel);
-  
+
   // Effect to clear all cached content when switching topics/submodules
   useEffect(() => {
     if (courseId && submoduleId) {
       setIsSwitchingTopic(true);
-      
+
       // Clear all content-related queries when switching to a new topic
       queryClient.removeQueries({
         predicate: (query) => {
@@ -95,7 +95,7 @@ const CourseTopicDetailPage: React.FC = () => {
           );
         },
       });
-      
+
       // Also clear cache more aggressively
       queryClient.invalidateQueries();
       queryClient.refetchQueries();
@@ -128,6 +128,7 @@ const CourseTopicDetailPage: React.FC = () => {
     }
   }, [isMobile]);
 
+  const clientId = import.meta.env.VITE_CLIENT_ID;
   // Fetch submodule data
   const {
     data: submoduleData,
@@ -137,7 +138,7 @@ const CourseTopicDetailPage: React.FC = () => {
     queryKey: ["submodule", courseId, submoduleId],
     queryFn: () =>
       getSubmoduleById(
-        1,
+        clientId,
         parseInt(courseId || "0"),
         parseInt(submoduleId || "0")
       ),
@@ -341,13 +342,13 @@ const CourseTopicDetailPage: React.FC = () => {
     const nextIndex = currentContentIndex + 1;
     if (nextIndex < submoduleData.data.length) {
       setCurrentContentIndex(nextIndex);
-      
+
       // Get the next content item
       const nextContentItem = submoduleData.data[nextIndex];
-      
+
       // Update the selected content ID for sidebar highlighting
       setSelectedContentId(nextContentItem.id);
-      
+
       // Update the appropriate selected ID based on the content type
       switch (nextContentItem.content_type) {
         case "VideoTutorial":
@@ -412,23 +413,36 @@ const CourseTopicDetailPage: React.FC = () => {
 
     if (firstContent) {
       // Clear cache for the previous content when switching content types
-      if (selectedContentId && selectedContentId !== firstContent.id && courseId) {
+      if (
+        selectedContentId &&
+        selectedContentId !== firstContent.id &&
+        courseId
+      ) {
         const queryKeyMap = {
           VideoTutorial: "video",
-          CodingProblem: "problem", 
+          CodingProblem: "problem",
           Development: "development",
           Assignment: "assignment",
           Article: "article",
-          Quiz: "quiz"
+          Quiz: "quiz",
         };
-        
+
         // Find the previous content type to clear its cache
-        const previousContent = submoduleData?.data?.find(content => content.id === selectedContentId);
+        const previousContent = submoduleData?.data?.find(
+          (content) => content.id === selectedContentId
+        );
         if (previousContent) {
-          const previousQueryType = queryKeyMap[previousContent.content_type as keyof typeof queryKeyMap];
+          const previousQueryType =
+            queryKeyMap[
+              previousContent.content_type as keyof typeof queryKeyMap
+            ];
           if (previousQueryType) {
             queryClient.removeQueries({
-              queryKey: [previousQueryType, parseInt(courseId), selectedContentId]
+              queryKey: [
+                previousQueryType,
+                parseInt(courseId),
+                selectedContentId,
+              ],
             });
           }
         }
@@ -488,20 +502,27 @@ const CourseTopicDetailPage: React.FC = () => {
     if (selectedContentId && selectedContentId !== contentId && courseId) {
       const queryKeyMap = {
         VideoTutorial: "video",
-        CodingProblem: "problem", 
+        CodingProblem: "problem",
         Development: "development",
         Assignment: "assignment",
         Article: "article",
-        Quiz: "quiz"
+        Quiz: "quiz",
       };
-      
+
       // Find the previous content type to clear its cache
-      const previousContent = submoduleData?.data?.find(content => content.id === selectedContentId);
+      const previousContent = submoduleData?.data?.find(
+        (content) => content.id === selectedContentId
+      );
       if (previousContent) {
-        const previousQueryType = queryKeyMap[previousContent.content_type as keyof typeof queryKeyMap];
+        const previousQueryType =
+          queryKeyMap[previousContent.content_type as keyof typeof queryKeyMap];
         if (previousQueryType) {
           queryClient.removeQueries({
-            queryKey: [previousQueryType, parseInt(courseId), selectedContentId]
+            queryKey: [
+              previousQueryType,
+              parseInt(courseId),
+              selectedContentId,
+            ],
           });
         }
       }
@@ -906,8 +927,11 @@ const CourseTopicDetailPage: React.FC = () => {
                 initialJs=""
                 difficulty="Medium"
                 onSubmit={(html, css, js) => {
-                  
-                  console.log("Submitted development project:", { html, css, js });
+                  console.log("Submitted development project:", {
+                    html,
+                    css,
+                    js,
+                  });
                 }}
               />
             )}
