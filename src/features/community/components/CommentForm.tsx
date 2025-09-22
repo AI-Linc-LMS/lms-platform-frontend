@@ -67,6 +67,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
             onChange={setContent}
             placeholder="Share your knowledge with code examples and images..."
             height="h-64 sm:h-96"
+            darkMode={false}
           />
 
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-4 gap-3 sm:gap-4">
