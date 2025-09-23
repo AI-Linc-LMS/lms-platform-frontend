@@ -1,12 +1,8 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
 import CoursesIcon from './CoursesIcon';
 
 const CoursesIconController: React.FC = () => {
-  const location = useLocation();
-  const isActive = location.pathname === '/courses' || location.pathname.startsWith('/courses') || location.pathname.startsWith('/admin/courses');
-  
-  return <CoursesIcon isActive={isActive} />;
+  return <CoursesIcon />;
 };
 
-export default CoursesIconController; 
+export default CoursesIconController;
