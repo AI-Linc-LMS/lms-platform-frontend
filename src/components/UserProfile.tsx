@@ -8,6 +8,9 @@ import { handleMobileNavigation } from "../utils/authRedirectUtils";
 import { getUser, updateUser } from "../services/userApis";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "../contexts/ToastContext";
+import TimeTrackingDashboard from "../features/learn/components/graphs-components/TimeTrackingDashboard";
+import DailyProgress from "../features/learn/components/DailyProgressTable";
+import StreakTable from "../features/learn/components/StreakTable";
 
 interface UserData {
   first_name: string;
@@ -212,14 +215,30 @@ const ProfileSettings = () => {
 
   return (
     <div className="p-4 sm:p-6 rounded-lg w-full max-w-7xl mx-auto">
-      <h2 className="text-xl sm:text-2xl font-bold mb-4 px-2">
-        Profile Settings
-      </h2>
 
-      <div className="border-1 border-gray-300 shadow-sm rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6 min-h-screen">
-        <div className="text-lg sm:text-xl font-bold text-[#257195]">
-          My Profile
+      <div className="mb-6">
+        <h3 className="text-lg sm:text-xl font-bold text-[#257195] mb-4">
+          My Activity
+        </h3>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className="xl:col-span-2 border border-gray-300 rounded-xl p-4 sm:p-6 shadow-sm">
+            <TimeTrackingDashboard />
+          </div>
+          <div className="space-y-6">
+            <div className="border border-gray-300 rounded-xl p-4 sm:p-6 shadow-sm">
+              <DailyProgress clientId={parseInt(clientId, 10)} />
+            </div>
+            <div className="border border-gray-300 rounded-xl p-4 sm:p-6 shadow-sm">
+              <StreakTable clientId={parseInt(clientId, 10)} />
+            </div>
+          </div>
         </div>
+      </div>
+
+        <h3 className="text-lg sm:text-xl font-bold text-[#257195] mb-4">
+            My Profile
+        </h3>
+      <div className="border border-gray-300 shadow-sm rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
 
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
