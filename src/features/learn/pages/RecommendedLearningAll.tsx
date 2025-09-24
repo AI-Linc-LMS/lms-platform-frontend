@@ -20,7 +20,7 @@ const RecommendedLearningAll = () => {
   });
 
   // Map backend data to UI props
-  const mappedCourses = courses.slice(0, 5);
+  const mappedCourses = courses && courses?.slice(0, 5);
 
   if (isLoading) {
     return (

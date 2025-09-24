@@ -1,5 +1,5 @@
 import React from "react";
-import { Play, List, FolderOpen, MessageCircle, Award } from "lucide-react";
+import { List, FolderOpen, MessageCircle, Award } from "lucide-react";
 
 interface ActionButton {
   id: string;
