@@ -1,8 +1,8 @@
-import React from 'react';
-import { SearchIcon } from './CourseIcons';
-import FilterCategory from './FilterCategory';
-import SortDropdown from './SortDropdown';
-import { FilterOption } from './FilterOptions';
+import React from "react";
+import { SearchIcon } from "./CourseIcons";
+import FilterCategory from "./FilterCategory";
+import SortDropdown from "./SortDropdown";
+import { FilterOption } from "./FilterOptions";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
   Slide,
 } from "@mui/material";
 import { TransitionProps } from "@mui/material/transitions";
-import {FilterIcon, X} from "lucide-react";
+import { FilterIcon, X } from "lucide-react";
 
 interface MobileFiltersProps {
   isFilterOpen: boolean;
@@ -39,7 +39,7 @@ const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
     children: React.ReactElement<any, any>;
   },
-  ref: React.Ref<unknown>,
+  ref: React.Ref<unknown>
 ) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
@@ -63,7 +63,7 @@ const MobileFilters = ({
   categoryOptions,
   levelOptions,
   priceOptions,
-  ratingOptions
+  ratingOptions,
 }: MobileFiltersProps) => {
   return (
     <div className="md:hidden">
@@ -78,7 +78,7 @@ const MobileFilters = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by courses"
-            className="w-full py-3 pl-10 pr-4 border border-[#DEE2E6] rounded-lg text-[#495057] focus:outline-none focus:ring-2 focus:ring-[#17627A] focus:border-transparent"
+            className="w-full py-3 pl-10 pr-4 border border-[#DEE2E6] rounded-lg text-[var(--neutral-400)] focus:outline-none focus:ring-2 focus:ring-[#17627A] focus:border-transparent"
           />
         </div>
       </div>
@@ -87,7 +87,7 @@ const MobileFilters = ({
         {/* Filters Button - Mobile UI */}
         <div className="flex-1">
           <button
-            className="flex items-center justify-between w-full h-full p-3 bg-white border border-[#DEE2E6] rounded-lg text-[#343A40]"
+            className="flex items-center justify-between w-full h-full p-3 bg-white border border-[#DEE2E6] rounded-lg text-[var(--neutral-500)]"
             onClick={toggleFilters}
           >
             <div className="flex items-center space-x-2">
@@ -95,13 +95,20 @@ const MobileFilters = ({
               <span className="font-medium">Filters</span>
             </div>
             <svg
-              className={`w-4 h-4 transition-transform duration-300 ${isFilterOpen ? 'rotate-180' : ''}`}
+              className={`w-4 h-4 transition-transform duration-300 ${
+                isFilterOpen ? "rotate-180" : ""
+              }`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M19 9l-7 7-7-7"
+              ></path>
             </svg>
           </button>
         </div>
@@ -119,17 +126,23 @@ const MobileFilters = ({
         TransitionComponent={Transition}
         PaperProps={{
           sx: {
-            position: 'fixed',
+            position: "fixed",
             bottom: 0,
             m: 0,
-            width: '100%',
-            maxWidth: '100%',
-          }
+            width: "100%",
+            maxWidth: "100%",
+          },
         }}
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <DialogTitle
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           Filter By
-          <IconButton className='!p-0' onClick={toggleFilters}>
+          <IconButton className="!p-0" onClick={toggleFilters}>
             <X />
           </IconButton>
         </DialogTitle>

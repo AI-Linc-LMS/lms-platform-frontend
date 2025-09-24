@@ -49,13 +49,13 @@ const EnrolledCollapsedCard: React.FC<EnrolledCollapsedCardProps> = ({
           </h1>
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <div className="flex flex-col items-end gap-1">
-              <span className="bg-[#10b981] text-white px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.5px]">
+              <span className="bg-[#10b981] text-[var(--font-light)] px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.5px]">
                 Active
               </span>
             </div>
             <button
               onClick={onExpand}
-              className="bg-[#f3f4f6] border border-[#e5e7eb] rounded-full w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 flex items-center justify-center cursor-pointer transition-all duration-300 text-[#6b7280] hover:bg-[#e5e7eb] hover:scale-105"
+              className="bg-[#f3f4f6] border border-[#e5e7eb] rounded-full w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 flex items-center justify-center cursor-pointer transition-all duration-300 text-[var(--font-secondary)] hover:bg-[#e5e7eb] hover:scale-105"
               aria-label="Expand course card"
             >
               <svg
@@ -107,7 +107,7 @@ const EnrolledCollapsedCard: React.FC<EnrolledCollapsedCardProps> = ({
               <span className="text-xs sm:text-sm font-semibold text-[#374151]">
                 Course Progress
               </span>
-              <span className="text-[10px] sm:text-[11px] text-[#6b7280]">
+              <span className="text-[10px] sm:text-[11px] text-[var(--font-secondary)]">
                 {course.stats?.video?.completed ?? 0}/
                 {course.stats?.video?.total ?? 0} videos
               </span>
@@ -122,7 +122,7 @@ const EnrolledCollapsedCard: React.FC<EnrolledCollapsedCardProps> = ({
               <span className="text-sm sm:text-base font-bold text-[#374151] leading-none">
                 {course.streak ?? 0}
               </span>
-              <span className="text-[9px] sm:text-[10px] text-[#6b7280] font-medium text-center">
+              <span className="text-[9px] sm:text-[10px] text-[var(--font-secondary)] font-medium text-center">
                 Day Streak
               </span>
             </div>
@@ -133,7 +133,7 @@ const EnrolledCollapsedCard: React.FC<EnrolledCollapsedCardProps> = ({
               <span className="text-sm sm:text-base font-bold text-[#374151] leading-none">
                 {course.badges ?? 0}
               </span>
-              <span className="text-[9px] sm:text-[10px] text-[#6b7280] font-medium text-center">
+              <span className="text-[9px] sm:text-[10px] text-[var(--font-secondary)] font-medium text-center">
                 Badges
               </span>
             </div>
@@ -144,7 +144,7 @@ const EnrolledCollapsedCard: React.FC<EnrolledCollapsedCardProps> = ({
               <span className="text-sm sm:text-base font-bold text-[#374151] leading-none">
                 {course.stats?.video?.completed ?? 0}
               </span>
-              <span className="text-[9px] sm:text-[10px] text-[#6b7280] font-medium text-center">
+              <span className="text-[9px] sm:text-[10px] text-[var(--font-secondary)] font-medium text-center">
                 Videos
               </span>
             </div>

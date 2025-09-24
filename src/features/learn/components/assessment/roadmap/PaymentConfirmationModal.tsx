@@ -12,7 +12,11 @@ interface PaymentConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  programType: 'nanodegree' | 'nanodegree-course' | 'flagship' | 'flagship-course';
+  programType:
+    | "nanodegree"
+    | "nanodegree-course"
+    | "flagship"
+    | "flagship-course";
   purchasedData: {
     percentage_scholarship: number;
     total_amount: number;
@@ -121,8 +125,8 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
                   🎉 Scholarship Applied!
                 </h3>
                 <p className="text-green-700 text-sm">
-                  You've earned a {purchasedData.percentage_scholarship}% discount based on
-                  your assessment performance
+                  You've earned a {purchasedData.percentage_scholarship}%
+                  discount based on your assessment performance
                 </p>
               </div>
             </div>
@@ -131,14 +135,18 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
 
         {/* Program Details */}
         <div className="p-6">
-          <div className={`border-2 ${program.color === 'blue' ? 'border-blue-500 bg-blue-50' : 'border-yellow-500 bg-yellow-50'} rounded-lg p-6 mb-6`}>
+          <div
+            className={`border-2 ${
+              program.color === "blue"
+                ? "border-blue-500 bg-blue-50"
+                : "border-yellow-500 bg-yellow-50"
+            } rounded-lg p-6 mb-6`}
+          >
             <div className="text-center mb-4">
               <h3 className="font-semibold text-xl text-gray-900 mb-2">
                 {program.title}
               </h3>
-              <p className="text-gray-600 text-sm">
-                {program.subtitle}
-              </p>
+              <p className="text-gray-600 text-sm">{program.subtitle}</p>
               <p className="text-gray-700 text-sm mt-2">
                 {program.description}
               </p>
@@ -149,7 +157,8 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
               {purchasedData.seat_booking_amount ? (
                 <div>
                   <div className="text-sm text-gray-600 mb-2">
-                    Seat Booking Amount: {currency}{purchasedData.seat_booking_amount}
+                    Seat Booking Amount: {currency}
+                    {purchasedData.seat_booking_amount}
                   </div>
                   <div className="text-4xl font-bold text-gray-900 mb-2">
                     {currency}
@@ -160,7 +169,10 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
                   </div>
                   <div className="text-sm text-green-600 font-semibold">
                     Total Course Value: {currency}
-                    {(purchasedData.seat_booking_amount + purchasedData.payable_amount).toLocaleString()}
+                    {(
+                      purchasedData.seat_booking_amount +
+                      purchasedData.payable_amount
+                    ).toLocaleString()}
                   </div>
                 </div>
               ) : (
@@ -180,7 +192,10 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
                   </div>
                   <div className="text-lg text-green-600 font-semibold">
                     You Save {currency}
-                    {(purchasedData.total_amount - purchasedData.payable_amount).toLocaleString()} with scholarship!
+                    {(
+                      purchasedData.total_amount - purchasedData.payable_amount
+                    ).toLocaleString()}{" "}
+                    with scholarship!
                   </div>
                 </>
               )}
@@ -230,15 +245,16 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
             </button>
             <button
               onClick={onConfirm}
-              className={`flex-1 px-6 py-3 text-white rounded-lg transition-colors font-medium ${
-                program.color === 'blue' 
-                  ? 'bg-blue-600 hover:bg-blue-700' 
-                  : 'bg-yellow-600 hover:bg-yellow-700'
+              className={`flex-1 px-6 py-3 text-[var(--font-light)] rounded-lg transition-colors font-medium ${
+                program.color === "blue"
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-yellow-600 hover:bg-yellow-700"
               }`}
             >
               Proceed to Payment
               <span className="ml-2">
-                {currency}{purchasedData.payable_amount.toLocaleString()}
+                {currency}
+                {purchasedData.payable_amount.toLocaleString()}
               </span>
             </button>
           </div>
@@ -246,7 +262,8 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
           {/* Additional Info */}
           <div className="mt-4 text-center">
             <p className="text-xs text-gray-500">
-              Secure payment via Razorpay • 7-day money-back guarantee • No hidden fees
+              Secure payment via Razorpay • 7-day money-back guarantee • No
+              hidden fees
             </p>
           </div>
         </div>
@@ -255,4 +272,4 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
   );
 };
 
-export default PaymentConfirmationModal; 
+export default PaymentConfirmationModal;

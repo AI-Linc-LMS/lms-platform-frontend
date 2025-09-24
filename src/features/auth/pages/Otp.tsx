@@ -164,7 +164,7 @@ function Otp() {
   return (
     <div className="min-h-screen bg-primary text-primary flex flex-col lg:flex-row justify-center page-transition">
       {/* Image Section */}
-      <div className="hidden md:block md:w-1/2 bg-gradient-to-r from-[#D7EFF6] to-[#E9F7FC]">
+      <div className="hidden md:block md:w-1/2 bg-gradient-to-r from-[var(--primary-50)] to-[#E9F7FC]">
         <img
           src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=1170"
           alt="Office workspace"
@@ -185,7 +185,7 @@ function Otp() {
             </p>
             <button
               onClick={() => navigate("/signup")}
-              className="px-6 py-3 bg-[#255C79] text-white rounded-xl hover:bg-[#1E4A63] transition-all duration-200"
+              className="px-6 py-3 bg-[var(--primary-500)] text-[var(--font-light)] rounded-xl hover:bg-[var(--primary-600)] transition-all duration-200"
             >
               Go to Signup
             </button>
@@ -194,8 +194,10 @@ function Otp() {
           <>
             <p className="text-secondary text-center mb-4">
               We have sent an OTP to{" "}
-              <span className="font-semibold text-[#255C79]">{email}</span>.
-              Please enter the code below to verify your account.
+              <span className="font-semibold text-[var(--primary-500)]">
+                {email}
+              </span>
+              . Please enter the code below to verify your account.
             </p>
 
             <h1 className="text-2xl font-semibold mb-4">Enter OTP</h1>
@@ -221,7 +223,7 @@ function Otp() {
               {/* Back Button - Custom styling */}
               <button
                 onClick={() => navigate("/signup")}
-                className="w-auto h-10 px-6 text-sm rounded-xl text-[#343A40] bg-[#E9ECEF] font-medium transition-all duration-200 hover:bg-[#DDE2E6] hover:scale-95"
+                className="w-auto h-10 px-6 text-sm rounded-xl text-[var(--neutral-500)] bg-[var(--neutral-100)] font-medium transition-all duration-200 hover:bg-[var(--neutral-200)] hover:scale-95"
               >
                 Back
               </button>
@@ -230,7 +232,7 @@ function Otp() {
               <button
                 onClick={handleVerify}
                 disabled={otp.some((digit) => digit === "") || loading}
-                className="w-auto h-10 px-6 text-sm rounded-xl text-white bg-[#255C79] font-medium transition-all duration-200 hover:bg-[#1E4A63] hover:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-auto h-10 px-6 text-sm rounded-xl text-[var(--font-light)] bg-[var(--primary-500)] font-medium transition-all duration-200 hover:bg-[var(--primary-600)] hover:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Verifying..." : "Verify"}
               </button>
@@ -245,7 +247,7 @@ function Otp() {
                 className={`font-medium ${
                   isResendDisabled || resendLoading
                     ? "text-gray-400 cursor-not-allowed"
-                    : "text-black hover:underline"
+                    : "text-[var(--font-dark)] hover:underline"
                 }`}
               >
                 {resendLoading ? "Sending..." : "Resend OTP"}

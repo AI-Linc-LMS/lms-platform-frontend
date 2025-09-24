@@ -17,9 +17,16 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
   const navigate = useNavigate();
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
-  const { data: redeemData, isLoading, error } = useQuery({
+  const {
+    data: redeemData,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["assessment-results", clientId, assessmentId],
-    queryFn: () => assessmentId ? redeemScholarship(clientId, assessmentId) : Promise.reject(new Error("No assessment ID")),
+    queryFn: () =>
+      assessmentId
+        ? redeemScholarship(clientId, assessmentId)
+        : Promise.reject(new Error("No assessment ID")),
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     staleTime: 0,
@@ -29,16 +36,16 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
 
   const onCloseErrorModal = () => {
     navigate("/courses");
-  }
+  };
 
   // Check if already purchased based on backend data
   // txn_status "VERIFIED" means the transaction is verified and payment is completed
   // Also check for "PAID" and "COMPLETED" for backward compatibility
-  const isPurchased = 
-    redeemData?.txn_status === "VERIFIED" || 
-    redeemData?.txn_status === "PAID" || 
+  const isPurchased =
+    redeemData?.txn_status === "VERIFIED" ||
+    redeemData?.txn_status === "PAID" ||
     redeemData?.txn_status === "COMPLETED";
-  
+
   // TODO: Backend should provide a clear field like 'is_course_purchased' or 'payment_completed'
   // Currently txn_status "VERIFIED" only means scholarship eligibility is verified
 
@@ -65,9 +72,11 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
   }
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-screen">
-      <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
-    </div>
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
+      </div>
+    );
   }
   if (error && !isPaymentModalOpen) {
     return (
@@ -85,7 +94,7 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
             </p>
             <button
               onClick={onCloseErrorModal}
-              className="bg-[#255C79] text-white px-4 py-2 rounded-lg hover:bg-[#1e4a61] transition-colors"
+              className="bg-[var(--primary-500)] text-[var(--font-light)] px-4 py-2 rounded-lg hover:bg-[#1e4a61] transition-colors"
             >
               Close
             </button>
@@ -103,36 +112,40 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
             {/* Left Panel - Score Display */}
             <div className="flex-1 bg-gradient-to-br from-[#B8E6F0] to-[#E0F4F8] rounded-2xl p-6 sm:p-8 relative overflow-hidden mb-4 md:mb-0">
               <div className="relative z-10">
-                <p className="text-[#255C79] text-base sm:text-lg mb-2">
+                <p className="text-[var(--primary-500)] text-base sm:text-lg mb-2">
                   You have scored
                 </p>
                 <div className="flex items-baseline mb-4">
-                  <span className="text-5xl sm:text-6xl md:text-7xl font-bold text-[#255C79]">
+                  <span className="text-5xl sm:text-6xl md:text-7xl font-bold text-[var(--primary-500)]">
                     {redeemData?.score}
                   </span>
-                  <span className="text-2xl sm:text-3xl md:text-4xl text-[#255C79] ml-2">
+                  <span className="text-2xl sm:text-3xl md:text-4xl text-[var(--primary-500)] ml-2">
                     /30
                   </span>
                 </div>
-                <div className="flex flex-col gap-2 text-[#255C79]">
-                  <span className="text-xl sm:text-2xl font-bold">Great effort! 🎉</span>
+                <div className="flex flex-col gap-2 text-[var(--primary-500)]">
+                  <span className="text-xl sm:text-2xl font-bold">
+                    Great effort! 🎉
+                  </span>
                   <p className="text-base sm:text-lg font-medium">
-                    Based on your score, our hiring or counseling team will get in touch with you
+                    Based on your score, our hiring or counseling team will get
+                    in touch with you
                   </p>
                 </div>
-
               </div>
               {/* Decorative elements */}
               <div className="absolute top-0 right-0 w-20 sm:w-32 h-20 sm:h-32 bg-white/10 rounded-full -translate-y-8 sm:-translate-y-16 translate-x-8 sm:translate-x-16"></div>
               <div className="absolute bottom-0 left-0 w-16 sm:w-24 h-16 sm:h-24 bg-white/10 rounded-full translate-y-6 sm:translate-y-12 -translate-x-6 sm:-translate-x-12"></div>
             </div>
             {/* Right Panel - Scholarship Eligibility */}
-            <div className="w-full md:w-80 bg-gradient-to-br from-[#255C79] to-[#1a4a5f] rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden">
+            <div className="w-full md:w-80 bg-gradient-to-br from-[var(--primary-500)] to-[#1a4a5f] rounded-2xl p-6 sm:p-8 text-[var(--font-light)] relative overflow-hidden">
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-xl sm:text-2xl">👋</span>
                   <p className="text-base sm:text-lg">
-                    {isPurchased ? "Congratulations! You have" : "Hey, You are eligible for a"}
+                    {isPurchased
+                      ? "Congratulations! You have"
+                      : "Hey, You are eligible for a"}
                   </p>
                 </div>
                 <div className="text-center mb-6">
@@ -145,14 +158,14 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                 </div>
 
                 {isPurchased ? (
-                  <div className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-lg font-semibold flex items-center justify-center gap-2 cursor-default shadow-lg">
+                  <div className="w-full bg-gradient-to-r from-green-500 to-green-600 text-[var(--font-light)] py-3 px-6 rounded-lg font-semibold flex items-center justify-center gap-2 cursor-default shadow-lg">
                     <FiCheck className="h-5 w-5" />
                     <span>Purchased</span>
                   </div>
                 ) : (
                   <button
                     onClick={handleRedeemNow}
-                    className="w-full bg-white text-[#255C79] py-3 px-6 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-200 flex items-center justify-center gap-2"
+                    className="w-full bg-white text-[var(--primary-500)] py-3 px-6 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-200 flex items-center justify-center gap-2"
                   >
                     <FiShoppingCart className="h-5 w-5" />
                     <span>Redeem Now</span>
@@ -168,7 +181,8 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
           <div className="mt-6 sm:mt-8 text-center">
             {isPurchased ? (
               <p className="text-green-600 text-xs sm:text-sm font-medium">
-                🎉 Congratulations! Your course access will be activated within 7 days.
+                🎉 Congratulations! Your course access will be activated within
+                7 days.
               </p>
             ) : (
               <p className="text-gray-600 text-xs sm:text-sm">
@@ -176,7 +190,10 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
               </p>
             )}
             <p className="text-gray-600 text-xs sm:text-sm mt-2">
-              To know about the placement program vist: <a href="https://ailinc.com/" className="underline">www.ailinc.com</a>
+              To know about the placement program vist:{" "}
+              <a href="https://ailinc.com/" className="underline">
+                www.ailinc.com
+              </a>
             </p>
           </div>
         </div>
@@ -194,4 +211,4 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
   );
 };
 
-export default AssessmentResults; 
+export default AssessmentResults;

@@ -5,7 +5,7 @@ import {
   AssessmentHeader,
   QuestionNavigation,
   QuestionDisplay,
-  NavigationButtons
+  NavigationButtons,
 } from "../components/assessment";
 import ReferralCodeDisplay from "../components/assessment/ReferralCodeDisplay";
 
@@ -67,25 +67,22 @@ const ShortAssessment: React.FC = () => {
   // Early return if no assessment ID - component will redirect
   if (!currentAssessmentId) {
     return (
-      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#255C79]"></div>
+      <div className="min-h-screen bg-[var(--neutral-50)] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--primary-500)]"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] p-4">
+    <div className="min-h-screen bg-[var(--neutral-50)] p-4">
       <div className="max-w-7xl mx-auto">
-        <AssessmentHeader 
-          timeRemaining={timeRemaining} 
-          assessmentId={currentAssessmentId} 
+        <AssessmentHeader
+          timeRemaining={timeRemaining}
+          assessmentId={currentAssessmentId}
         />
-        
+
         {/* Display referral code if present */}
-        <ReferralCodeDisplay 
-          referralCode={referralCode} 
-          className="mb-4"
-        />
+        <ReferralCodeDisplay referralCode={referralCode} className="mb-4" />
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
           <div className="lg:col-span-1">

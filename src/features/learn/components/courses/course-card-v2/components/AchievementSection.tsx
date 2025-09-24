@@ -80,12 +80,16 @@ export const AchievementSection: React.FC = () => {
             >
               <IconComponent
                 className={`w-6 h-6 ${
-                  achievement.earned ? "text-[#1d4ed8]" : "text-[#9ca3af]"
+                  achievement.earned
+                    ? "text-[#1d4ed8]"
+                    : "text-[var(--font-tertiary)]"
                 }`}
               />
               <span
                 className={`text-[11px] font-medium uppercase tracking-[0.3px] ${
-                  achievement.earned ? "text-[#1e40af]" : "text-[#6b7280]"
+                  achievement.earned
+                    ? "text-[#1e40af]"
+                    : "text-[var(--font-secondary)]"
                 }`}
               >
                 {achievement.label}

@@ -106,7 +106,7 @@ const Dashboard = () => {
         <div className="flex flex-col gap-4">
           <button
             onClick={handleBackToMain}
-            className="w-fit flex items-center gap-2 px-4 py-2 bg-[#255C79] text-white rounded-lg hover:bg-[#1E4A63] transition-colors duration-200 shadow-md hover:shadow-lg"
+            className="w-fit flex items-center gap-2 px-4 py-2 bg-[var(--primary-500)] text-[var(--font-light)] rounded-lg hover:bg-[var(--primary-600)] transition-colors duration-200 shadow-md hover:shadow-lg"
           >
             <svg
               width="20"
@@ -134,11 +134,11 @@ const Dashboard = () => {
         </div>
       </div>
       <div className="flex items-center justify-between mb-4">
-        <select className=" rounded-lg p-2 border border-[#B9E4F2] text-xs text-gray-700 w-1/10">
+        <select className=" rounded-lg p-2 border border-[var(--primary-100)] text-xs text-gray-700 w-1/10">
           <option value="1">Select Courses</option>
         </select>
 
-        <div className="flex items-center text-[#255C79] text-sm gap-2">
+        <div className="flex items-center text-[var(--primary-500)] text-sm gap-2">
           <p>Weekly</p>|<p>Monthly</p>|<p>Yearly</p>
         </div>
       </div>
@@ -146,20 +146,20 @@ const Dashboard = () => {
         {metrics.map((metric, idx) => (
           <div
             key={idx}
-            className="flex-1 bg-white rounded-lg shadow p-4 flex items-center justify-between ring-1 ring-[#B9E4F2] ring-offset-1"
+            className="flex-1 bg-white rounded-lg shadow p-4 flex items-center justify-between ring-1 ring-[var(--primary-100)] ring-offset-1"
           >
             <div>
-              <div className="text-xs text-[#255C79] flex items-center gap-1 mb-2">
+              <div className="text-xs text-[var(--primary-500)] flex items-center gap-1 mb-2">
                 {metric.label}
                 <span className="ml-1 text-gray-400 cursor-pointer">
                   <img src={i} alt="i" className="w-4 h-4" />
                 </span>
               </div>
-              <div className="text-3xl font-bold text-[#255C79]">
+              <div className="text-3xl font-bold text-[var(--primary-500)]">
                 {metric.value}
               </div>
             </div>
-            <div className="bg-[#D7EFF6] rounded-full p-4 flex items-center justify-center border border-[#255C79]">
+            <div className="bg-[var(--primary-50)] rounded-full p-4 flex items-center justify-center border border-[var(--primary-500)]">
               <img src={metric.Icon} alt={metric.label} />
             </div>
           </div>

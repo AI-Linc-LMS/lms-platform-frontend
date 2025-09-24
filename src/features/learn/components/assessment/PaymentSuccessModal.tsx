@@ -219,7 +219,7 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
             }`}
           >
             <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto relative">
-              <FiCheck className="h-12 w-12 text-white" />
+              <FiCheck className="h-12 w-12 text-[var(--font-light)]" />
               {/* Pulse rings */}
               <div className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-20"></div>
               <div className="absolute inset-2 rounded-full bg-green-400 animate-ping opacity-30 animation-delay-150"></div>
@@ -254,7 +254,9 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
                 </p>
               </button>
             )}
-            <p className="font-normal text-gray-400 text-[12px]">Once download please close this modal </p>
+            <p className="font-normal text-gray-400 text-[12px]">
+              Once download please close this modal{" "}
+            </p>
 
             {/* Achievement Badge */}
             <div className="inline-flex items-center bg-emerald-50 text-emerald-800 px-6 py-3 rounded-lg font-medium shadow-md border-l-4 border-emerald-500">
@@ -265,7 +267,7 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
               {/* {paymentType === "assessment" && onDownloadCertificate && (
                 <button 
                   onClick={handleDownloadCertificate}
-                  className="ml-4 bg-red-500 text-white px-3 py-1 rounded text-xs hover:bg-red-600 transition-colors"
+                  className="ml-4 bg-red-500 text-[var(--font-light)] px-3 py-1 rounded text-xs hover:bg-red-600 transition-colors"
                 >
                   Download
                 </button>
@@ -388,7 +390,7 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
             {content.buttonText && (
               <button
                 onClick={handleContinue}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
+                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-[var(--font-light)] py-4 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
               >
                 {content.buttonText}
               </button>

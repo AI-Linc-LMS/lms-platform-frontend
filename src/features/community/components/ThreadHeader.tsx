@@ -73,13 +73,13 @@ const ThreadHeader: React.FC<ThreadHeaderProps> = ({
                   <button
                     onClick={() => onEditThread(thread)}
                     className="p-1.5  text-blue-600 bg-blue-50 hover:text-blue-900 hover:bg-blue-100 rounded-md transition-colors"
-                    >
+                  >
                     <Edit2 size={12} className="sm:w-3.5 sm:h-3.5" />
                   </button>
                   <button
                     onClick={() => onDeleteThread(thread.id)}
-                   className="p-1.5 text-red-600 bg-red-50 hover:text-red-900 hover:bg-red-100 rounded-md transition-colors"
-                    >
+                    className="p-1.5 text-red-600 bg-red-50 hover:text-red-900 hover:bg-red-100 rounded-md transition-colors"
+                  >
                     <Trash2 size={12} className="sm:w-3.5 sm:h-3.5" />
                   </button>
                 </div>
@@ -114,7 +114,7 @@ const ThreadHeader: React.FC<ThreadHeaderProps> = ({
                   />
                 ) : (
                   <div
-                    className={`w-10 h-10 sm:w-12 sm:h-12 ${authorAvatar.color} rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base`}
+                    className={`w-10 h-10 sm:w-12 sm:h-12 ${authorAvatar.color} rounded-full flex items-center justify-center text-[var(--font-light)] font-bold text-sm sm:text-base`}
                   >
                     {authorAvatar.initials}
                   </div>
@@ -161,7 +161,7 @@ const ThreadHeader: React.FC<ThreadHeaderProps> = ({
                           />
                         ) : (
                           <div
-                            className={`w-6 h-6 sm:w-8 sm:h-8 ${participantData.color} rounded-full border-2 border-white flex items-center justify-center text-white text-xs sm:text-sm font-medium`}
+                            className={`w-6 h-6 sm:w-8 sm:h-8 ${participantData.color} rounded-full border-2 border-white flex items-center justify-center text-[var(--font-light)] text-xs sm:text-sm font-medium`}
                             title={participantName}
                           >
                             {participantData.initials}

@@ -24,7 +24,8 @@ export interface CourseModule {
   instructors?: Instructor[]; // Add this line
 }
 
-export interface Instructor { // Add this interface
+export interface Instructor {
+  // Add this interface
   id: string;
   name: string;
   bio?: string;
@@ -56,7 +57,7 @@ interface CollapsibleCourseModuleProps {
 //     website: "https://emilyrodriguez.com"
 //   } as Instructor,
 //   {
-//     id: "2", 
+//     id: "2",
 //     name: "Alex Chen",
 //     bio: "Full-stack developer and tech educator with expertise in modern web technologies. Passionate about making complex concepts accessible.",
 //     linkedin_profile: "https://www.linkedin.com/in/alexchen",
@@ -149,7 +150,7 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
               <div className="mt-1 md:mt-2 w-full max-w-xs">
                 <div className="bg-gray-200 rounded-full h-2.5">
                   <div
-                    className="bg-[#5FA564] h-2.5 rounded-full"
+                    className="bg-[var(--success-500)] h-2.5 rounded-full"
                     style={{ width: `${week.completed}%` }}
                   ></div>
                 </div>
@@ -171,7 +172,7 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
                 >
                   <path
                     d="M15 7L8 1L1 7"
-                    stroke="#343A40"
+                    stroke="var(--neutral-500)"
                     strokeWidth="1.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -189,7 +190,7 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
                 >
                   <path
                     d="M15 1L8 7L1 1"
-                    stroke="#343A40"
+                    stroke="var(--neutral-500)"
                     strokeWidth="1.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -202,10 +203,11 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
 
         {/* Collapsible Content */}
         <div
-          className={`transition-all duration-500 ease-in-out transform origin-top overflow-hidden ${isOpen
+          className={`transition-all duration-500 ease-in-out transform origin-top overflow-hidden ${
+            isOpen
               ? "max-h-[2000px] opacity-100 scale-100"
               : "max-h-0 opacity-0 scale-98"
-            }`}
+          }`}
         >
           <div className="px-3 md:px-4 pb-3 md:pb-4">
             {modulesWithoutInstructors.map((module) => (
@@ -227,7 +229,7 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
 
                   {!module.isLocked && !module.started && (
                     <button
-                      className="px-4 py-2 bg-[#D7EFF6] rounded-xl border border-[#80C9E0] text-[#264D64] cursor-pointer"
+                      className="px-4 py-2 bg-[var(--primary-50)] rounded-xl border border-[var(--primary-200)] text-[var(--secondary-700)] cursor-pointer"
                       onClick={() => navigateToTopicDetail(week.id, module.id)}
                     >
                       Start Now
@@ -236,7 +238,7 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
 
                   {!module.isLocked && module.started && (
                     <button
-                      className="px-4 py-2 bg-[#255C79] text-white rounded-xl cursor-pointer"
+                      className="px-4 py-2 bg-[var(--primary-500)] text-[var(--font-light)] rounded-xl cursor-pointer"
                       onClick={() => navigateToTopicDetail(week.id, module.id)}
                     >
                       Continue learning
@@ -266,7 +268,7 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
                         <g mask="url(#mask0_644_1539)">
                           <path
                             d="M4.5 16.5C4.0875 16.5 3.73438 16.3531 3.44063 16.0594C3.14688 15.7656 3 15.4125 3 15V7.5C3 7.0875 3.14688 6.73438 3.44063 6.44063C3.73438 6.14687 4.0875 6 4.5 6H5.25V4.5C5.25 3.4625 5.61563 2.57812 6.34688 1.84687C7.07812 1.11562 7.9625 0.75 9 0.75C10.0375 0.75 10.9219 1.11562 11.6531 1.84687C12.3844 2.57812 12.75 3.4625 12.75 4.5V6H13.5C13.9125 6 14.2656 6.14687 14.5594 6.44063C14.8531 6.73438 15 7.0875 15 7.5V15C15 15.4125 14.8531 15.7656 14.5594 16.0594C14.2656 16.3531 13.9125 16.5 13.5 16.5H4.5ZM9 12.75C9.4125 12.75 9.76563 12.6031 10.0594 12.3094C10.3531 12.0156 10.5 11.6625 10.5 11.25C10.5 10.8375 10.3531 10.4844 10.0594 10.1906C9.76563 9.89688 9.4125 9.75 9 9.75C8.5875 9.75 8.23438 9.89688 7.94063 10.1906C7.64687 10.4844 7.5 10.8375 7.5 11.25C7.5 11.6625 7.64687 12.0156 7.94063 12.3094C8.23438 12.6031 8.5875 12.75 9 12.75ZM6.75 6H11.25V4.5C11.25 3.875 11.0312 3.34375 10.5938 2.90625C10.1562 2.46875 9.625 2.25 9 2.25C8.375 2.25 7.84375 2.46875 7.40625 2.90625C6.96875 3.34375 6.75 3.875 6.75 4.5V6Z"
-                            fill="#6C757D"
+                            fill="var(--neutral-300)"
                           />
                         </g>
                       </svg>

@@ -221,7 +221,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
           email: user.email || "",
         },
         theme: {
-          color: "#255C79",
+          color: "var(--primary-500)",
         },
       };
 
@@ -321,7 +321,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
           {/* Primary Action Button */}
           <button
             onClick={isFree ? handlePrimaryClick : handlePayment}
-            className={`px-5 py-3 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[#10b981] text-white hover:bg-[#059669] hover:-translate-y-0.5 ${"w-full"} ${className}`}
+            className={`px-5 py-3 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[#10b981] text-[var(--font-light)] hover:bg-[#059669] hover:-translate-y-0.5 ${"w-full"} ${className}`}
           >
             {`Enroll Now - ${isFree ? "Free" : `₹${formattedPrice}`}`}
           </button>
@@ -369,7 +369,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
             (badge, index) => (
               <div
                 key={index}
-                className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full text-xs font-semibold whitespace-nowrap"
+                className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-[var(--font-light)] rounded-full text-xs font-semibold whitespace-nowrap"
               >
                 {badge}
               </div>
@@ -392,7 +392,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
             {["DE", "TC", "AC"].map((initials, index) => (
               <div
                 key={index}
-                className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-semibold text-white ${
+                className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-semibold text-[var(--font-light)] ${
                   index === 0
                     ? "bg-blue-500 ml-0"
                     : index === 1

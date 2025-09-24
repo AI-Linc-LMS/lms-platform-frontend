@@ -15,16 +15,16 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
   if (isLoading || error || !leaderboard || leaderboard.length === 0) {
     return (
       <div className="flex flex-col transition-all duration-300 p-4 rounded-3xl lg:min-w-[270px] xl:min-w-[350px]">
-        <h2 className="text-xl font-semibold text-[#343A40] mb-3">
+        <h2 className="text-xl font-semibold text-[var(--neutral-500)] mb-3">
           Student Ranking
         </h2>
 
         {!leaderboard || leaderboard.length === 0 ? (
-          <p className="text-[14px] text-[#495057] mb-8">
+          <p className="text-[14px] text-[var(--neutral-400)] mb-8">
             No leaderboard leaderboard available
           </p>
         ) : (
-          <p className="text-[14px] text-[#495057] mb-8">
+          <p className="text-[14px] text-[var(--neutral-400)] mb-8">
             Keep grinding and stay top on our leaderboard
           </p>
         )}
@@ -83,7 +83,7 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
               />
             </svg>
           </div>
-          <p className="text-[13px] text-[#6C757D]">
+          <p className="text-[13px] text-[var(--neutral-300)]">
             As you complete modules you will move top of the leaderboard and
             earn exciting rewards.
           </p>
@@ -92,10 +92,9 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
     );
   }
 
-
   return (
     <div className="flex flex-col transition-all duration-300 px-4">
-      <h2 className="text-xl font-semibold text-[#255C79] mb-3">
+      <h2 className="text-xl font-semibold text-[var(--primary-500)] mb-3">
         Student Ranking
       </h2>
 
@@ -103,16 +102,16 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
         <table className="text-center border-collapse min-h-[450px] w-full">
           <thead className="bg-gray-100">
             <tr>
-              <th className="border-b border-r border-gray-300 bg-[#D7EFF6]  h-[50px] text-xs text-black">
+              <th className="border-b border-r border-gray-300 bg-[var(--primary-50)]  h-[50px] text-xs text-[var(--font-dark)]">
                 Standing
               </th>
-              <th className="border-b border-r border-gray-300 bg-[#D7EFF6] h-[50px] text-xs text-black">
+              <th className="border-b border-r border-gray-300 bg-[var(--primary-50)] h-[50px] text-xs text-[var(--font-dark)]">
                 Name
               </th>
-              <th className="border-b border-r border-gray-300 bg-[#D7EFF6] h-[50px] text-xs text-black">
+              <th className="border-b border-r border-gray-300 bg-[var(--primary-50)] h-[50px] text-xs text-[var(--font-dark)]">
                 Course
               </th>
-              <th className="border-b border-gray-300 bg-[#D7EFF6] h-[50px] text-xs text-black">
+              <th className="border-b border-gray-300 bg-[var(--primary-50)] h-[50px] text-xs text-[var(--font-dark)]">
                 Marks
               </th>
             </tr>

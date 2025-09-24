@@ -62,7 +62,7 @@
 //               </div>
 //               <button
 //                 onClick={() => setShowModal(true)}
-//                 className="px-6 py-3 bg-[#1F4F68] text-white font-medium rounded-lg hover:bg-[#163a4f] transition-colors duration-200"
+//                 className="px-6 py-3 bg-[#1F4F68] text-[var(--font-light)] font-medium rounded-lg hover:bg-[#163a4f] transition-colors duration-200"
 //               >
 //                 Enroll in Course
 //               </button>

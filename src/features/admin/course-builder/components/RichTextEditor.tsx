@@ -13,7 +13,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value,
   onChange,
   placeholder = "Enter description...",
-  disabled = false
+  disabled = false,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const fontSizeDropdownRef = useRef<HTMLDivElement>(null);
@@ -21,21 +21,21 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   const [showPlaceholder, setShowPlaceholder] = useState(true);
   const [fontSize, setFontSize] = useState(14);
-  const [textColor, setTextColor] = useState("#2D3748");
+  const [textColor, setTextColor] = useState("var(--neutral-600)");
   const [fontSizeDropdownOpen, setFontSizeDropdownOpen] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
   const colorOptions = [
-    "#2D3748", // Default dark gray/blue
-    "#E53E3E", // Red
-    "#DD6B20", // Orange
+    "var(--neutral-600)", // Default dark gray/blue
+    "var(--accent-red)", // Red
+    "var(--accent-orange)", // Orange
     "#D69E2E", // Yellow
-    "#38A169", // Green
-    "#319795", // Teal
+    "var(--accent-green)", // Green
+    "var(--accent-teal)", // Teal
     "#3182CE", // Blue
-    "#805AD5", // Purple
-    "#D53F8C", // Pink
+    "var(--accent-purple)", // Purple
+    "var(--accent-pink)", // Pink
     "#000000", // Black
   ];
 
@@ -186,7 +186,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   return (
     <div className="space-y-2">
-
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 p-2 border border-gray-300 rounded-t bg-gray-50">
         {/* Font Size Dropdown */}
@@ -216,7 +215,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           </button>
 
           {fontSizeDropdownOpen && !disabled && (
-            <div className={`absolute top-full left-0 mt-1 bg-white shadow-lg rounded-md border z-10 min max-h-40 overflow-y-auto`}>
+            <div
+              className={`absolute top-full left-0 mt-1 bg-white shadow-lg rounded-md border z-10 min max-h-40 overflow-y-auto`}
+            >
               {fontSizeOptions.map((size) => (
                 <button
                   key={size}

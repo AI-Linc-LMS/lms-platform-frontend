@@ -14,13 +14,13 @@ const CourseCard: React.FC<CourseData> = ({
   onContinue,
 }) => {
   return (
-    <div className="w-full border-[#80C9E0] rounded-[16px] md:rounded-[22px] border-[1px] bg-[#F8F9FA] p-4 flex flex-col gap-3 min-h-[280px] md:min-h-[300px]">
+    <div className="w-full border-[var(--primary-200)] rounded-[16px] md:rounded-[22px] border-[1px] bg-[var(--neutral-50)] p-4 flex flex-col gap-3 min-h-[280px] md:min-h-[300px]">
       <div className="flex flex-col sm:flex-row justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <h1 className="font-bold text-[#343A40] text-[16px] md:text-[18px] line-clamp-1">
+          <h1 className="font-bold text-[var(--neutral-500)] text-[16px] md:text-[18px] line-clamp-1">
             {title}
           </h1>
-          <p className="font-sans font-normal text-[13px] text-[#495057] line-clamp-1">
+          <p className="font-sans font-normal text-[13px] text-[var(--neutral-400)] line-clamp-1">
             {description}
           </p>
         </div>
@@ -44,7 +44,10 @@ const CourseCard: React.FC<CourseData> = ({
       </div>
 
       <div className="mt-auto pt-2 w-full">
-        <PrimaryButton onClick={onContinue} className="text-[13px] md:text-[15px] py-2 w-full ">
+        <PrimaryButton
+          onClick={onContinue}
+          className="text-[13px] md:text-[15px] py-2 w-full "
+        >
           Continue
         </PrimaryButton>
       </div>
@@ -52,4 +55,4 @@ const CourseCard: React.FC<CourseData> = ({
   );
 };
 
-export default CourseCard; 
+export default CourseCard;

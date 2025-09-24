@@ -330,7 +330,7 @@ const CourseDetailPage: React.FC = () => {
             </button>
             <button
               onClick={() => setIsTopicModalOpen(true)}
-              className="bg-[#17627A] text-white px-4 py-2 rounded-md flex items-center hover:bg-[#124F65] transition-colors"
+              className="bg-[#17627A] text-[var(--font-light)] px-4 py-2 rounded-md flex items-center hover:bg-[var(--primary-800)] transition-colors"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -350,7 +350,7 @@ const CourseDetailPage: React.FC = () => {
             </button>
             <div className="flex justify-end">
               <button
-                className="px-4 py-2 bg-[#17627A] hover:bg-[#124F65] text-white rounded-md transition"
+                className="px-4 py-2 bg-[#17627A] hover:bg-[var(--primary-800)] text-[var(--font-light)] rounded-md transition"
                 onClick={handlePublish}
               >
                 {courseDetails?.published ? "Published" : "Publish"}
@@ -416,7 +416,7 @@ const CourseDetailPage: React.FC = () => {
               </p>
               <button
                 onClick={() => setIsTopicModalOpen(true)}
-                className="bg-[#17627A] text-white px-4 py-2 rounded-md flex items-center hover:bg-[#124F65] transition-colors"
+                className="bg-[#17627A] text-[var(--font-light)] px-4 py-2 rounded-md flex items-center hover:bg-[var(--primary-800)] transition-colors"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

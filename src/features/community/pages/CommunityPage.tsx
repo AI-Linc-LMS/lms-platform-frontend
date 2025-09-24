@@ -314,7 +314,7 @@ const CommunityPage: React.FC = () => {
             <div className="flex items-center justify-between h-14 sm:h-16">
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-600 rounded-md flex items-center justify-center">
-                  <Users className="text-white" size={16} />
+                  <Users className="text-[var(--font-light)]" size={16} />
                 </div>
                 <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
                   Community
@@ -344,7 +344,7 @@ const CommunityPage: React.FC = () => {
             <div className="flex items-center justify-between h-14 sm:h-16">
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-600 rounded-md flex items-center justify-center">
-                  <Users className="text-white" size={16} />
+                  <Users className="text-[var(--font-light)]" size={16} />
                 </div>
                 <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
                   Community
@@ -366,7 +366,7 @@ const CommunityPage: React.FC = () => {
               </p>
               <button
                 onClick={() => refetch()}
-                className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 mx-auto"
+                className="bg-blue-600 text-[var(--font-light)] px-6 py-3 rounded-md hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 mx-auto"
               >
                 <RefreshCw size={18} />
                 Try Again
@@ -386,7 +386,7 @@ const CommunityPage: React.FC = () => {
           <div className="bg-white rounded-xl p-6 sm:p-8 max-w-md w-full shadow-2xl mx-4 transform animate-in fade-in zoom-in duration-300">
             <div className="text-center">
               <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Users size={32} className="text-white" />
+                <Users size={32} className="text-[var(--font-light)]" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-3">
                 Coming Soon!
@@ -401,7 +401,7 @@ const CommunityPage: React.FC = () => {
                   setShowComingSoonPopup(false);
                   navigate("/");
                 }}
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105"
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-[var(--font-light)] px-6 py-3 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 Continue to Dashboard
               </button>
@@ -433,7 +433,7 @@ const CommunityPage: React.FC = () => {
                     }
                     setShowDeleteConfirm(null);
                   }}
-                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors font-medium"
+                  className="flex-1 bg-red-600 text-[var(--font-light)] px-4 py-2 rounded-md hover:bg-red-700 transition-colors font-medium"
                 >
                   Delete
                 </button>
@@ -455,7 +455,7 @@ const CommunityPage: React.FC = () => {
           <div className="flex items-center justify-between h-14 sm:h-16">
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-600 rounded-md flex items-center justify-center">
-                <Users className="text-white" size={16} />
+                <Users className="text-[var(--font-light)]" size={16} />
               </div>
               <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
                 Community
@@ -472,7 +472,7 @@ const CommunityPage: React.FC = () => {
 
               <button
                 onClick={() => setShowNewThreadForm(true)}
-                className="bg-blue-600 text-white px-3 py-2 sm:px-4 rounded-md hover:bg-blue-700 transition-colors font-medium flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
+                className="bg-blue-600 text-[var(--font-light)] px-3 py-2 sm:px-4 rounded-md hover:bg-blue-700 transition-colors font-medium flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
               >
                 <Plus size={16} />
                 <span className="hidden xs:inline">New</span>
@@ -630,7 +630,7 @@ const CommunityPage: React.FC = () => {
                       createThreadMutation.isPending ||
                       updateThreadMutation.isPending
                     }
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="bg-blue-600 text-[var(--font-light)] px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {createThreadMutation.isPending ||
                     updateThreadMutation.isPending ? (
@@ -739,7 +739,7 @@ const CommunityPage: React.FC = () => {
                 {!searchTerm && !selectedTag && (
                   <button
                     onClick={() => setShowNewThreadForm(true)}
-                    className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 mx-auto"
+                    className="bg-blue-600 text-[var(--font-light)] px-6 py-3 rounded-md hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 mx-auto"
                   >
                     <Plus size={18} />
                     Create First Thread
@@ -810,7 +810,7 @@ const CommunityPage: React.FC = () => {
                         onClick={() => setCurrentPage(page)}
                         className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                           currentPage === page
-                            ? "bg-blue-600 text-white"
+                            ? "bg-blue-600 text-[var(--font-light)]"
                             : "text-gray-700 hover:bg-gray-100"
                         }`}
                       >

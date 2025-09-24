@@ -329,13 +329,13 @@ const PhoneVerificationPage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center p-3 sm:p-4">
+    <div className="min-h-screen bg-[var(--neutral-50)] flex items-center justify-center p-3 sm:p-4">
       <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-lg max-w-md w-full mx-auto">
         <div className="text-center mb-6 sm:mb-8">
           {/* Icon */}
           <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#E8F4F8] rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
             <svg
-              className="w-8 h-8 sm:w-10 sm:h-10 text-[#255C79]"
+              className="w-8 h-8 sm:w-10 sm:h-10 text-[var(--primary-500)]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -366,7 +366,7 @@ const PhoneVerificationPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="relative flex items-center justify-between w-full sm:w-auto px-3 py-3 border border-gray-300 rounded-xl sm:rounded-l-xl sm:rounded-r-none bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79] transition-colors"
+                  className="relative flex items-center justify-between w-full sm:w-auto px-3 py-3 border border-gray-300 rounded-xl sm:rounded-l-xl sm:rounded-r-none bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[var(--primary-500)] focus:border-[var(--primary-500)] transition-colors"
                 >
                   <div className="flex items-center">
                     <span className="mr-2 text-lg">
@@ -418,7 +418,7 @@ const PhoneVerificationPage: React.FC = () => {
                           placeholder="Search countries..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79] outline-none text-sm"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary-500)] focus:border-[var(--primary-500)] outline-none text-sm"
                         />
                       </div>
                     </div>
@@ -457,7 +457,7 @@ const PhoneVerificationPage: React.FC = () => {
                 value={phoneNumber}
                 onChange={handlePhoneChange}
                 placeholder="Enter phone number"
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl sm:rounded-r-xl sm:rounded-l-none sm:border-l-0 focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79] outline-none transition-colors"
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl sm:rounded-r-xl sm:rounded-l-none sm:border-l-0 focus:ring-2 focus:ring-[var(--primary-500)] focus:border-[var(--primary-500)] outline-none transition-colors"
                 maxLength={15}
               />
             </div>
@@ -474,7 +474,7 @@ const PhoneVerificationPage: React.FC = () => {
             disabled={!isPhoneValid || startAssessmentMutation.isPending}
             className={`w-full py-3 sm:py-4 px-6 rounded-xl font-semibold text-base sm:text-lg transition-colors ${
               isPhoneValid && !startAssessmentMutation.isPending
-                ? "bg-[#255C79] text-white hover:bg-[#1a4a5f] active:bg-[#0f3a4f]"
+                ? "bg-[var(--primary-500)] text-[var(--font-light)] hover:bg-[#1a4a5f] active:bg-[#0f3a4f]"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
           >
