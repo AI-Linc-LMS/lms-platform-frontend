@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
 import { VideoIcon } from "../../../../../commonComponents/icons/learnIcons/CourseIcons";
@@ -8,6 +8,19 @@ import {
 } from "./EnrolledExpandedCard";
 import { formatPrice } from "./utils/courseDataUtils";
 import { CompanyLogosSection } from "./components";
+import {
+  PaymentType,
+  RazorpayOptions,
+  RazorpayResponse,
+  VerifyPaymentRequest,
+} from "../../../../../services/payment/razorpayService";
+
+import { UserState } from "../../assessment/types/assessmentTypes";
+import { useSelector } from "react-redux";
+import {
+  createOrder,
+  verifyPayment,
+} from "../../../../../services/payment/paymentGatewayApis";
 
 // Enhanced 3D Star Rating Component
 const StarRating = ({
@@ -98,6 +111,8 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
     navigate(`/courses/${course.id}`);
   };
 
+  const clientId = Number(import.meta.env.VITE_CLIENT_ID) || 1;
+
   const handleIconAction = (action: string) => {
     const showNotification = (
       message: string,
@@ -158,6 +173,143 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
     videos: course?.stats?.video?.total || 247,
     articles: course?.stats?.article?.total || 45,
     problems: course?.stats?.coding_problem?.total || 23,
+  };
+  const user = useSelector((state: { user: UserState }) => state.user);
+
+  const [, setPaymentResult] = useState<{
+    paymentId?: string;
+    orderId?: string;
+    amount: number;
+  } | null>(null);
+
+  const loadRazorpayScript = () =>
+    new Promise<boolean>((resolve, reject) => {
+      try {
+        // Check if Razorpay is already loaded
+        if (window.Razorpay) {
+          resolve(true);
+          return;
+        }
+
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.onload = () => resolve(true);
+        script.onerror = () =>
+          reject(new Error("Failed to load Razorpay script"));
+        document.body.appendChild(script);
+      } catch {
+        reject(new Error("Failed to initialize Razorpay script"));
+      }
+    });
+
+  const handlePayment = async () => {
+    try {
+      // Validate input parameters
+      if (!clientId || clientId <= 0) {
+        throw new Error("Invalid client ID provided");
+      }
+
+      if (!course.price || Number(course.price) <= 0) {
+        throw new Error("Invalid course price provided");
+      }
+
+      const res = await loadRazorpayScript();
+      if (!res) {
+        throw new Error(
+          "Razorpay SDK failed to load. Please check your internet connection."
+        );
+      }
+
+      // 1. Create order from backend - IMPORTANT: Specify COURSE payment type
+      const orderData = await createOrder(
+        clientId,
+        Number(course.price),
+        PaymentType.COURSE, // Explicitly specify this is a COURSE payment
+        {
+          type_id: course.id.toString(), // Pass course ID for reference
+        }
+      );
+
+      if (!orderData || !orderData.order_id || !orderData.key) {
+        throw new Error(
+          "Failed to create payment order. Invalid response from server."
+        );
+      }
+
+      // 2. Launch Razorpay
+      const options: RazorpayOptions = {
+        key: orderData.key,
+        amount: Number(course.price),
+        currency: orderData.currency || "INR",
+        name: "AI-LINC Platform",
+        description: "Course Access Payment",
+        order_id: orderData.order_id,
+        handler: async function (response: RazorpayResponse) {
+          try {
+            // Validate Razorpay response
+            if (
+              !response.razorpay_order_id ||
+              !response.razorpay_payment_id ||
+              !response.razorpay_signature
+            ) {
+              throw new Error(
+                "Invalid payment response received from Razorpay"
+              );
+            }
+
+            const paymentResult: VerifyPaymentRequest = {
+              order_id: response.razorpay_order_id,
+              payment_id: response.razorpay_payment_id,
+              signature: response.razorpay_signature,
+            };
+
+            // 3. Verify signature
+            const verifyRes = await verifyPayment(clientId, paymentResult);
+
+            // Check if verification was successful based on the response message
+            if (verifyRes.status === 200) {
+              // Set payment result for success modal
+              setPaymentResult({
+                paymentId: response.razorpay_payment_id,
+                orderId: response.razorpay_order_id,
+                amount: Number(course.price),
+              });
+
+              // Wait a moment to show completion, then show success modal
+              setTimeout(() => {
+                try {
+                  navigate(`/courses/${course?.id}`);
+                } catch (error) {
+                  //console.error("Error showing success modal:", error);
+                }
+              }, 900);
+            }
+          } catch (error) {
+            //console.error("Payment verification error:", error);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            try {
+              navigate(`/courses`);
+            } catch (error) {}
+          },
+        },
+        prefill: {
+          name: user.full_name || "User",
+          email: user.email || "",
+        },
+        theme: {
+          color: "#255C79",
+        },
+      };
+
+      // Type assertion to handle Razorpay on window object
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      //console.error("Payment error:", error);
+    }
   };
 
   return (
@@ -247,7 +399,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
         <div className="flex items-center ">
           {/* Primary Action Button */}
           <button
-            onClick={handlePrimaryClick}
+            onClick={isFree ? handlePrimaryClick : handlePayment}
             className={`px-5 py-3 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[#10b981] text-white hover:bg-[#059669] hover:-translate-y-0.5 ${"w-full"} ${className}`}
           >
             {`Enroll Now - ${isFree ? "Free" : `${formattedPrice}`}`}
