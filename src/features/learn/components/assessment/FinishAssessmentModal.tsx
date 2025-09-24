@@ -120,7 +120,7 @@ const FinishAssessmentModal: React.FC<FinishAssessmentModalProps> = ({
             </button>
             <button
               onClick={onConfirm}
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+              className="flex-1 px-4 py-2 bg-green-600 text-[var(--font-light)] rounded-lg hover:bg-green-700 transition-colors font-medium"
             >
               Submit Assessment
             </button>

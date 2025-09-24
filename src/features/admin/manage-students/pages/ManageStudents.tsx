@@ -139,7 +139,7 @@ const ManageStudents = () => {
           <div className="flex flex-col gap-4">
             {/* <button
               onClick={handleBackToMain}
-              className="w-fit flex items-center gap-2 px-4 py-2 bg-[#255C79] text-white rounded-lg hover:bg-[#1E4A63] transition-colors duration-200 shadow-md hover:shadow-lg"
+              className="w-fit flex items-center gap-2 px-4 py-2 bg-[var(--primary-500)] text-[var(--font-light)] rounded-lg hover:bg-[var(--primary-600)] transition-colors duration-200 shadow-md hover:shadow-lg"
             >
               <svg 
                 width="20" 
@@ -177,7 +177,7 @@ const ManageStudents = () => {
                 placeholder="Search by Name, Email"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none"
               />
             </div>
 
@@ -187,21 +187,21 @@ const ManageStudents = () => {
                 onClick={() => setIsFilterModalOpen(true)}
                 className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
                   hasActiveFilters
-                    ? "border-[#255C79] bg-[#255C79] text-white"
+                    ? "border-[var(--primary-500)] bg-[var(--primary-500)] text-[var(--font-light)]"
                     : "border-gray-300 hover:bg-gray-50"
                 }`}
               >
                 <FiFilter className="w-4 h-4" />
                 Filter
                 {hasActiveFilters && (
-                  <span className="bg-white text-[#255C79] text-xs px-1.5 py-0.5 rounded-full font-medium">
+                  <span className="bg-white text-[var(--primary-500)] text-xs px-1.5 py-0.5 rounded-full font-medium">
                     {filters.courses.length}
                   </span>
                 )}
               </button>
               <button
                 onClick={handleAddStudent}
-                className="flex items-center gap-2 px-4 py-2 bg-[#255C79] text-white rounded-lg hover:bg-[#1E4A63] transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-[var(--primary-500)] text-[var(--font-light)] rounded-lg hover:bg-[var(--primary-600)] transition-colors"
               >
                 <span className="text-lg">+</span>
                 Add Student
@@ -217,7 +217,7 @@ const ManageStudents = () => {
                 {filters.courses.map((course) => (
                   <span
                     key={course}
-                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#255C79] text-white"
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--primary-500)] text-[var(--font-light)]"
                   >
                     {course}
                     <button
@@ -228,7 +228,7 @@ const ManageStudents = () => {
                         };
                         setFilters(newFilters);
                       }}
-                      className="ml-1 text-white hover:text-gray-200"
+                      className="ml-1 text-[var(--font-light)] hover:text-gray-200"
                     >
                       ×
                     </button>

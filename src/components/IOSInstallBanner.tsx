@@ -1,6 +1,6 @@
-import React from 'react';
-import { Smartphone, X } from 'lucide-react';
-import { useIOSPWAInstall } from '../hooks/useIOSPWAInstall';
+import React from "react";
+import { Smartphone, X } from "lucide-react";
+import { useIOSPWAInstall } from "../hooks/useIOSPWAInstall";
 
 export const IOSInstallBanner: React.FC = () => {
   const { isIOS, isInstalled, showPrompt, dismissPrompt } = useIOSPWAInstall();
@@ -8,7 +8,7 @@ export const IOSInstallBanner: React.FC = () => {
   if (!isIOS || isInstalled) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 bg-blue-600 text-white z-[9998] px-4 py-3 shadow-lg">
+    <div className="fixed top-0 left-0 right-0 bg-blue-600 text-[var(--font-light)] z-[9998] px-4 py-3 shadow-lg">
       <div className="flex items-center justify-between max-w-sm mx-auto">
         <div className="flex items-center space-x-3">
           <Smartphone className="w-5 h-5 flex-shrink-0" />

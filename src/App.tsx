@@ -65,24 +65,28 @@ const NotFound = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#F8F9FA]">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[var(--neutral-50)]">
       <div className="flex items-center space-x-2 mb-8">
-        <div className="text-6xl font-mono text-[#1A5A7A]">{"{"}</div>
+        <div className="text-6xl font-mono text-[var(--primary-700)]">
+          {"{"}
+        </div>
         <div
-          className={`text-9xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#1A5A7A] to-[#9F55FF] ${
+          className={`text-9xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[var(--primary-700)] to-[#9F55FF] ${
             animateNumber ? "animate-bounce" : ""
           }`}
         >
           404
         </div>
-        <div className="text-6xl font-mono text-[#1A5A7A]">{"}"}</div>
+        <div className="text-6xl font-mono text-[var(--primary-700)]">
+          {"}"}
+        </div>
       </div>
 
       <div className="text-center max-w-md mb-8">
-        <div className="font-mono text-[#1A5A7A] text-xl">
+        <div className="font-mono text-[var(--primary-700)] text-xl">
           <span className="text-[#9F55FF]">error</span>:{" "}
-          <span className="text-[#343A40]">Page</span>.
-          <span className="text-[#1A5A7A]">NotFound</span>()
+          <span className="text-[var(--neutral-500)]">Page</span>.
+          <span className="text-[var(--primary-700)]">NotFound</span>()
         </div>
         <p className="text-gray-600 mt-4 font-mono">
           // The requested resource could not be located
@@ -92,7 +96,7 @@ const NotFound = () => {
       <div className="flex flex-col sm:flex-row gap-4 mt-4">
         <button
           onClick={handleGoHome}
-          className="px-6 py-3 bg-[#255C79] rounded-xl text-white hover:bg-[#1E4A63] transition-all duration-300 shadow-lg hover:shadow-[#1A5A7A]/30 flex items-center justify-center hover:scale-95 font-mono"
+          className="px-6 py-3 bg-[var(--primary-500)] rounded-xl text-[var(--font-light)] hover:bg-[var(--primary-600)] transition-all duration-300 shadow-lg hover:shadow-[var(--primary-700)]/30 flex items-center justify-center hover:scale-95 font-mono"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -107,7 +111,7 @@ const NotFound = () => {
 
         <button
           onClick={handleGoBack}
-          className="px-6 py-3 bg-[#E9ECEF] text-[#343A40] rounded-xl hover:bg-[#DDE2E6] transition-all duration-300 flex items-center justify-center hover:scale-95 font-mono"
+          className="px-6 py-3 bg-[var(--neutral-100)] text-[var(--neutral-500)] rounded-xl hover:bg-[var(--neutral-200)] transition-all duration-300 flex items-center justify-center hover:scale-95 font-mono"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -282,7 +286,6 @@ function AppContent() {
       //console.log("Current session stats:");
       //console.log("Total time spent:", totalTimeSpent, "seconds");
       //console.log("Session history:", activityHistory);
-
       // In the future, this is where you would sync with backend
       // syncUserActivity(userId, totalTimeSpent, activityHistory);
     }, 60000); // Log every minute

@@ -129,7 +129,7 @@ const EmailJobStatusModal: React.FC<EmailJobStatusModalProps> = ({
           )}
           {jobStatus && jobStatus.status !== "COMPLETED" && (
             <button
-              className=" w-1/2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 font-medium"
+              className=" w-1/2 px-4 py-2 bg-blue-500 text-[var(--font-light)] rounded hover:bg-blue-600 font-medium"
               onClick={onRefresh}
               disabled={isRefreshing || isResending}
             >
@@ -138,7 +138,7 @@ const EmailJobStatusModal: React.FC<EmailJobStatusModalProps> = ({
           )}
           {jobStatus && jobStatus.status === "COMPLETED" && (
             <button
-              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 font-medium"
+              className="px-4 py-2 bg-green-500 text-[var(--font-light)] rounded hover:bg-green-600 font-medium"
               onClick={onClose}
             >
               OK
@@ -146,7 +146,7 @@ const EmailJobStatusModal: React.FC<EmailJobStatusModalProps> = ({
           )}
           {jobStatus && failed > 0 && (
             <button
-              className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 font-medium"
+              className="px-4 py-2 bg-orange-500 text-[var(--font-light)] rounded hover:bg-orange-600 font-medium"
               onClick={onResend}
               disabled={isResending || isRefreshing}
             >

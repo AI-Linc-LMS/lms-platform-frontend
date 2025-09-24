@@ -1,6 +1,6 @@
-import React, { useRef, useEffect } from 'react';
-import { useSubtopicForm } from '../hooks/useSubtopicForm';
-import { Subtopic } from '../types/course';
+import React, { useRef, useEffect } from "react";
+import { useSubtopicForm } from "../hooks/useSubtopicForm";
+import { Subtopic } from "../types/course";
 
 interface AddSubtopicModalProps {
   isOpen: boolean;
@@ -8,23 +8,31 @@ interface AddSubtopicModalProps {
   onSubmit: (subtopic: Subtopic) => void;
 }
 
-export const AddSubtopicModal: React.FC<AddSubtopicModalProps> = ({ isOpen, onClose, onSubmit }) => {
+export const AddSubtopicModal: React.FC<AddSubtopicModalProps> = ({
+  isOpen,
+  onClose,
+  onSubmit,
+}) => {
   const modalRef = useRef<HTMLDivElement>(null);
-  const { formData, handleInputChange, handleSubmit } = useSubtopicForm(onSubmit);
+  const { formData, handleInputChange, handleSubmit } =
+    useSubtopicForm(onSubmit);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+      if (
+        modalRef.current &&
+        !modalRef.current.contains(event.target as Node)
+      ) {
         onClose();
       }
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
-    
+
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen, onClose]);
 
@@ -32,10 +40,13 @@ export const AddSubtopicModal: React.FC<AddSubtopicModalProps> = ({ isOpen, onCl
 
   return (
     <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50">
-      <div ref={modalRef} className="bg-white rounded-lg w-full max-w-md shadow-xl border border-blue-200">
+      <div
+        ref={modalRef}
+        className="bg-white rounded-lg w-full max-w-md shadow-xl border border-blue-200"
+      >
         <div className="p-6 pb-3">
           <h2 className="text-2xl font-bold mb-6">Add Subtopic</h2>
-          
+
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <label className="block text-gray-700 text-lg font-medium mb-2">
@@ -66,9 +77,9 @@ export const AddSubtopicModal: React.FC<AddSubtopicModalProps> = ({ isOpen, onCl
               />
             </div>
 
-            <button 
+            <button
               type="submit"
-              className="w-full bg-[#17627A] text-white py-4 rounded-md font-medium hover:bg-[#124F65] transition-colors text-lg"
+              className="w-full bg-[#17627A] text-[var(--font-light)] py-4 rounded-md font-medium hover:bg-[var(--primary-800)] transition-colors text-lg"
             >
               Add Subtopic
             </button>
@@ -77,4 +88,4 @@ export const AddSubtopicModal: React.FC<AddSubtopicModalProps> = ({ isOpen, onCl
       </div>
     </div>
   );
-}; 
+};

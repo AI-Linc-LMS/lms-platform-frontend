@@ -1,4 +1,4 @@
-import React, {  } from 'react';
+import React from "react";
 
 interface JobFiltersProps {
   jobType: string;
@@ -23,48 +23,58 @@ const JobFilters: React.FC<JobFiltersProps> = ({
 }) => {
   // const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  const jobTypes = ['Full-time', 'Part-time', 'Contract',  'Internship'];
-  const experienceLevels = ['Entry Level', 'Mid Level', 'Senior Level'];
+  const jobTypes = ["Full-time", "Part-time", "Contract", "Internship"];
+  const experienceLevels = ["Entry Level", "Mid Level", "Senior Level"];
   const salaryRanges = [
-    { label: 'Any', min: 0, max: 10000000 },
-    { label: '₹30k - ₹50k', min: 30000, max: 50000 },
-    { label: '₹50k - ₹80k', min: 50000, max: 80000 },
-    { label: '₹80k - ₹1.2L', min: 80000, max: 120000 },
-    { label: '₹1.2L - ₹2L', min: 120000, max: 200000 },
-    { label: '₹2L - ₹5L', min: 200000, max: 500000 },
-    { label: '₹5L - ₹10L', min: 500000, max: 1000000 },
-    { label: '₹10L - ₹25L', min: 1000000, max: 2500000 },
-    { label: '₹25L - ₹50L', min: 2500000, max: 5000000 },
-    { label: '₹50L+', min: 5000000, max: 10000000 }
+    { label: "Any", min: 0, max: 10000000 },
+    { label: "₹30k - ₹50k", min: 30000, max: 50000 },
+    { label: "₹50k - ₹80k", min: 50000, max: 80000 },
+    { label: "₹80k - ₹1.2L", min: 80000, max: 120000 },
+    { label: "₹1.2L - ₹2L", min: 120000, max: 200000 },
+    { label: "₹2L - ₹5L", min: 200000, max: 500000 },
+    { label: "₹5L - ₹10L", min: 500000, max: 1000000 },
+    { label: "₹10L - ₹25L", min: 1000000, max: 2500000 },
+    { label: "₹25L - ₹50L", min: 2500000, max: 5000000 },
+    { label: "₹50L+", min: 5000000, max: 10000000 },
   ];
 
   const handleClearAllFilters = () => {
     // Reset all filters to their default state
-    onJobTypeChange('');  // Reset to 'All Types'
-    onExperienceChange('');  // Reset to 'All Levels'
-    onSalaryChange({ min: 0, max: 10000000 });  // Reset to 'Any'
-    onRemoteChange(false);  // Uncheck remote work
-     // Close advanced filters
+    onJobTypeChange(""); // Reset to 'All Types'
+    onExperienceChange(""); // Reset to 'All Levels'
+    onSalaryChange({ min: 0, max: 10000000 }); // Reset to 'Any'
+    onRemoteChange(false); // Uncheck remote work
+    // Close advanced filters
   };
 
-  const hasActiveFilters = jobType || experience || remote || salary.min > 0 || salary.max < 10000000;
+  const hasActiveFilters =
+    jobType || experience || remote || salary.min > 0 || salary.max < 10000000;
 
   return (
     <div className="bg-white rounded-2xl border border-[#DEE2E6] p-4 sm:p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4 sm:mb-6">
         <div className="flex items-center gap-2">
-          <h3 className="text-lg sm:text-xl font-bold text-[#343A40]">Filters</h3>
+          <h3 className="text-lg sm:text-xl font-bold text-[var(--neutral-500)]">
+            Filters
+          </h3>
           {hasActiveFilters && (
-            <span className="bg-[#255C79] text-white text-xs px-2 py-1 rounded-full">
-              {[jobType, experience, remote, salary.min > 0 || salary.max < 10000000].filter(Boolean).length}
+            <span className="bg-[var(--primary-500)] text-[var(--font-light)] text-xs px-2 py-1 rounded-full">
+              {
+                [
+                  jobType,
+                  experience,
+                  remote,
+                  salary.min > 0 || salary.max < 10000000,
+                ].filter(Boolean).length
+              }
             </span>
           )}
         </div>
         {hasActiveFilters && (
           <button
             onClick={handleClearAllFilters}
-            className="text-[#6C757D] hover:text-[#255C79] text-sm font-medium"
+            className="text-[var(--neutral-300)] hover:text-[var(--primary-500)] text-sm font-medium"
           >
             Clear all
           </button>
@@ -78,15 +88,17 @@ const JobFilters: React.FC<JobFiltersProps> = ({
             type="checkbox"
             checked={remote}
             onChange={(e) => onRemoteChange(e.target.checked)}
-            className="w-4 h-4 text-[#255C79] border-[#DEE2E6] rounded focus:ring-[#255C79] focus:ring-2"
+            className="w-4 h-4 text-[var(--primary-500)] border-[#DEE2E6] rounded focus:ring-[var(--primary-500)] focus:ring-2"
           />
-          <span className="text-sm font-medium text-[#343A40]">Remote work only</span>
+          <span className="text-sm font-medium text-[var(--neutral-500)]">
+            Remote work only
+          </span>
         </label>
       </div>
 
       {/* Job Type */}
       <div className="mb-4 sm:mb-6">
-        <label className="block text-sm font-medium text-[#343A40] mb-3">
+        <label className="block text-sm font-medium text-[var(--neutral-500)] mb-3">
           Job Type
         </label>
         <div className="space-y-2">
@@ -95,23 +107,26 @@ const JobFilters: React.FC<JobFiltersProps> = ({
               type="radio"
               name="jobType"
               value=""
-              checked={jobType === ''}
+              checked={jobType === ""}
               onChange={(e) => onJobTypeChange(e.target.value)}
-              className="w-4 h-4 text-[#255C79] border-[#DEE2E6] focus:ring-[#255C79] focus:ring-2"
+              className="w-4 h-4 text-[var(--primary-500)] border-[#DEE2E6] focus:ring-[var(--primary-500)] focus:ring-2"
             />
-            <span className="text-sm text-[#343A40]">All Types</span>
+            <span className="text-sm text-[var(--neutral-500)]">All Types</span>
           </label>
           {jobTypes.map((type) => (
-            <label key={type} className="flex items-center gap-3 cursor-pointer">
+            <label
+              key={type}
+              className="flex items-center gap-3 cursor-pointer"
+            >
               <input
                 type="radio"
                 name="jobType"
                 value={type}
                 checked={jobType === type}
                 onChange={(e) => onJobTypeChange(e.target.value)}
-                className="w-4 h-4 text-[#255C79] border-[#DEE2E6] focus:ring-[#255C79] focus:ring-2"
+                className="w-4 h-4 text-[var(--primary-500)] border-[#DEE2E6] focus:ring-[var(--primary-500)] focus:ring-2"
               />
-              <span className="text-sm text-[#343A40]">{type}</span>
+              <span className="text-sm text-[var(--neutral-500)]">{type}</span>
             </label>
           ))}
         </div>
@@ -119,7 +134,7 @@ const JobFilters: React.FC<JobFiltersProps> = ({
 
       {/* Experience Level */}
       <div className="mb-4 sm:mb-6">
-        <label className="block text-sm font-medium text-[#343A40] mb-3">
+        <label className="block text-sm font-medium text-[var(--neutral-500)] mb-3">
           Experience Level
         </label>
         <div className="space-y-2">
@@ -128,23 +143,28 @@ const JobFilters: React.FC<JobFiltersProps> = ({
               type="radio"
               name="experience"
               value=""
-              checked={experience === ''}
+              checked={experience === ""}
               onChange={(e) => onExperienceChange(e.target.value)}
-              className="w-4 h-4 text-[#255C79] border-[#DEE2E6] focus:ring-[#255C79] focus:ring-2"
+              className="w-4 h-4 text-[var(--primary-500)] border-[#DEE2E6] focus:ring-[var(--primary-500)] focus:ring-2"
             />
-            <span className="text-sm text-[#343A40]">All Levels</span>
+            <span className="text-sm text-[var(--neutral-500)]">
+              All Levels
+            </span>
           </label>
           {experienceLevels.map((level) => (
-            <label key={level} className="flex items-center gap-3 cursor-pointer">
+            <label
+              key={level}
+              className="flex items-center gap-3 cursor-pointer"
+            >
               <input
                 type="radio"
                 name="experience"
                 value={level}
                 checked={experience === level}
                 onChange={(e) => onExperienceChange(e.target.value)}
-                className="w-4 h-4 text-[#255C79] border-[#DEE2E6] focus:ring-[#255C79] focus:ring-2"
+                className="w-4 h-4 text-[var(--primary-500)] border-[#DEE2E6] focus:ring-[var(--primary-500)] focus:ring-2"
               />
-              <span className="text-sm text-[#343A40]">{level}</span>
+              <span className="text-sm text-[var(--neutral-500)]">{level}</span>
             </label>
           ))}
         </div>
@@ -152,21 +172,28 @@ const JobFilters: React.FC<JobFiltersProps> = ({
 
       {/* Salary Range */}
       <div className="mb-4 sm:mb-6">
-        <label className="block text-sm font-medium text-[#343A40] mb-3">
+        <label className="block text-sm font-medium text-[var(--neutral-500)] mb-3">
           Salary Range
         </label>
         <div className="space-y-2">
           {salaryRanges.map((range) => (
-            <label key={range.label} className="flex items-center gap-3 cursor-pointer">
+            <label
+              key={range.label}
+              className="flex items-center gap-3 cursor-pointer"
+            >
               <input
                 type="radio"
                 name="salary"
                 value={`${range.min}-${range.max}`}
                 checked={salary.min === range.min && salary.max === range.max}
-                onChange={() => onSalaryChange({ min: range.min, max: range.max })}
-                className="w-4 h-4 text-[#255C79] border-[#DEE2E6] focus:ring-[#255C79] focus:ring-2"
+                onChange={() =>
+                  onSalaryChange({ min: range.min, max: range.max })
+                }
+                className="w-4 h-4 text-[var(--primary-500)] border-[#DEE2E6] focus:ring-[var(--primary-500)] focus:ring-2"
               />
-              <span className="text-sm text-[#343A40]">{range.label}</span>
+              <span className="text-sm text-[var(--neutral-500)]">
+                {range.label}
+              </span>
             </label>
           ))}
         </div>
@@ -175,7 +202,7 @@ const JobFilters: React.FC<JobFiltersProps> = ({
       {/* Advanced Filters Toggle */}
       {/* <button
         onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-        className="w-full flex items-center justify-between p-3 bg-[#F8F9FA] rounded-lg text-[#495057] hover:bg-[#E9ECEF] transition-colors"
+        className="w-full flex items-center justify-between p-3 bg-[var(--neutral-50)] rounded-lg text-[var(--neutral-400)] hover:bg-[var(--neutral-100)] transition-colors"
       >
         <span className="text-sm font-medium">Advanced Filters</span>
         <svg 
@@ -190,29 +217,29 @@ const JobFilters: React.FC<JobFiltersProps> = ({
 
       {/* Advanced Filters Content */}
       {/* {showAdvancedFilters && (
-        <div className="mt-4 pt-4 border-t border-[#F8F9FA] space-y-4">
+        <div className="mt-4 pt-4 border-t border-[var(--neutral-50)] space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[#343A40] mb-3">
+            <label className="block text-sm font-medium text-[var(--neutral-500)] mb-3">
               Custom Salary Range
             </label>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-[#6C757D] mb-1">Min ($)</label>
+                <label className="block text-xs text-[var(--neutral-300)] mb-1">Min ($)</label>
                 <input
                   type="number"
                   value={salary.min}
                   onChange={(e) => onSalaryChange({ ...salary, min: Number(e.target.value) })}
-                  className="w-full px-3 py-2 border border-[#DEE2E6] rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent text-sm"
+                  className="w-full px-3 py-2 border border-[#DEE2E6] rounded-lg focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent text-sm"
                   placeholder="0"
                 />
               </div>
               <div>
-                <label className="block text-xs text-[#6C757D] mb-1">Max ($)</label>
+                <label className="block text-xs text-[var(--neutral-300)] mb-1">Max ($)</label>
                 <input
                   type="number"
                   value={salary.max}
                   onChange={(e) => onSalaryChange({ ...salary, max: Number(e.target.value) })}
-                  className="w-full px-3 py-2 border border-[#DEE2E6] rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent text-sm"
+                  className="w-full px-3 py-2 border border-[#DEE2E6] rounded-lg focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent text-sm"
                   placeholder="200000"
                 />
               </div>
@@ -220,7 +247,7 @@ const JobFilters: React.FC<JobFiltersProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#343A40] mb-3">
+            <label className="block text-sm font-medium text-[var(--neutral-500)] mb-3">
               Date Posted
             </label>
             <div className="space-y-2">
@@ -236,9 +263,9 @@ const JobFilters: React.FC<JobFiltersProps> = ({
                     name="datePosted"
                     value={option.value}
                     defaultChecked={option.value === 'any'}
-                    className="w-4 h-4 text-[#255C79] border-[#DEE2E6] focus:ring-[#255C79] focus:ring-2"
+                    className="w-4 h-4 text-[var(--primary-500)] border-[#DEE2E6] focus:ring-[var(--primary-500)] focus:ring-2"
                   />
-                  <span className="text-sm text-[#343A40]">{option.label}</span>
+                  <span className="text-sm text-[var(--neutral-500)]">{option.label}</span>
                 </label>
               ))}
             </div>
@@ -248,9 +275,9 @@ const JobFilters: React.FC<JobFiltersProps> = ({
 
       {/* Apply Filters Button (Mobile) */}
       <div className="mt-6 lg:hidden">
-        <button 
+        <button
           onClick={handleClearAllFilters}
-          className="w-full px-4 py-3 bg-[#255C79] text-white rounded-lg hover:bg-[#1E4A63] transition-colors font-medium"
+          className="w-full px-4 py-3 bg-[var(--primary-500)] text-[var(--font-light)] rounded-lg hover:bg-[var(--primary-600)] transition-colors font-medium"
         >
           Clear All Filters
         </button>
@@ -259,4 +286,4 @@ const JobFilters: React.FC<JobFiltersProps> = ({
   );
 };
 
-export default JobFilters; 
+export default JobFilters;

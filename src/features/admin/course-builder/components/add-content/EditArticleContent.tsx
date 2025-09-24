@@ -32,7 +32,7 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const [fontSizeDropdownOpen, setFontSizeDropdownOpen] = useState(false);
   const [fontSize, setFontSize] = useState<number>(14);
-  const [textColor, setTextColor] = useState("#2D3748");
+  const [textColor, setTextColor] = useState("var(--neutral-600)");
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [answer, setAnswer] = useState("");
   const [showPlaceholder, setShowPlaceholder] = useState(true);
@@ -109,7 +109,7 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
     onSuccess: () => {
       //console.log("✅ Article updated successfully!");
       success("Article Updated", "Article content updated successfully!");
-      
+
       // Invalidate all relevant queries to refresh the UI
       queryClient.invalidateQueries({
         predicate: (query) => {
@@ -119,14 +119,14 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
             queryKey.includes("submodule") ||
             queryKey.includes("course-modules") ||
             queryKey.includes("articles") ||
-            (queryKey.includes("submodule-content-detail") && 
-             queryKey.includes(clientId) && 
-             queryKey.includes(courseId) && 
-             queryKey.includes(submoduleId))
+            (queryKey.includes("submodule-content-detail") &&
+              queryKey.includes(clientId) &&
+              queryKey.includes(courseId) &&
+              queryKey.includes(submoduleId))
           );
         },
       });
-      
+
       if (onSuccess) {
         onSuccess();
       }
@@ -163,7 +163,6 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
       return;
     }
 
-
     const contentData: ArticleContentUpdateData = {
       title: title.trim(),
       content: answer.trim(),
@@ -174,15 +173,15 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
   };
 
   const colorOptions = [
-    "#2D3748", // Default dark gray/blue
-    "#E53E3E", // Red
-    "#DD6B20", // Orange
+    "var(--neutral-600)", // Default dark gray/blue
+    "var(--accent-red)", // Red
+    "var(--accent-orange)", // Orange
     "#D69E2E", // Yellow
-    "#38A169", // Green
-    "#319795", // Teal
+    "var(--accent-green)", // Green
+    "var(--accent-teal)", // Teal
     "#3182CE", // Blue
-    "#805AD5", // Purple
-    "#D53F8C", // Pink
+    "var(--accent-purple)", // Purple
+    "var(--accent-pink)", // Pink
     "#000000", // Black
   ];
 
@@ -268,7 +267,7 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
     return (
       <div className="w-full space-y-6">
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#255C79]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--primary-500)]"></div>
           <span className="ml-2 text-gray-600">Loading article data...</span>
         </div>
       </div>
@@ -518,7 +517,7 @@ const EditArticleContent: React.FC<EditArticleContentProps> = ({
           <button
             onClick={handleSave}
             disabled={updateMutation.isPending}
-            className="px-6 py-2 text-sm font-medium text-white bg-[#255C79] border border-transparent rounded-lg hover:bg-[#1e4a61] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#255C79] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-6 py-2 text-sm font-medium text-[var(--font-light)] bg-[var(--primary-500)] border border-transparent rounded-lg hover:bg-[#1e4a61] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary-500)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {updateMutation.isPending ? (
               <div className="flex items-center">

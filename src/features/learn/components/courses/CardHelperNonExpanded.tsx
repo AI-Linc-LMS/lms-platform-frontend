@@ -77,7 +77,7 @@ export default function CardHelper({
       {/* Success Toast */}
       {showSuccessToast && (
         <div className="fixed top-4 right-4 z-50">
-          <div className="flex items-center gap-3 px-4 py-3 bg-green-600 text-white rounded-xl shadow-lg">
+          <div className="flex items-center gap-3 px-4 py-3 bg-green-600 text-[var(--font-light)] rounded-xl shadow-lg">
             <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path
                 fillRule="evenodd"
@@ -188,7 +188,7 @@ export default function CardHelper({
         <button
           onClick={handlePrimaryClick}
           disabled={isEnrolling}
-          className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium rounded-lg transition-all duration-200"
+          className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-[var(--font-light)] font-medium rounded-lg transition-all duration-200"
         >
           {isEnrolling ? "Processing…" : "View More"}
         </button>

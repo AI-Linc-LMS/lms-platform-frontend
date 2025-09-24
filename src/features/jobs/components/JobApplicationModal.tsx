@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Job } from '../types/jobs.types';
-import { applyToJob, getUserProfile, saveUserProfile } from '../../../api/jobsApiService';
+import React, { useState, useEffect } from "react";
+import { Job } from "../types/jobs.types";
+import {
+  applyToJob,
+  getUserProfile,
+  saveUserProfile,
+} from "../../../api/jobsApiService";
 
 interface JobApplicationModalProps {
   job: Job;
@@ -13,16 +17,16 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
   job,
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
 }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    linkedinProfile: '',
-    portfolioUrl: '',
-    coverLetter: '',
-    resume: ''
+    name: "",
+    email: "",
+    phone: "",
+    linkedinProfile: "",
+    portfolioUrl: "",
+    coverLetter: "",
+    resume: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,23 +36,25 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
   useEffect(() => {
     const profile = getUserProfile();
     if (profile) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        name: profile.name || '',
-        email: profile.email || '',
-        phone: profile.phone || '',
-        linkedinProfile: profile.linkedinProfile || '',
-        portfolioUrl: profile.portfolioUrl || '',
-        resume: profile.resume || ''
+        name: profile.name || "",
+        email: profile.email || "",
+        phone: profile.phone || "",
+        linkedinProfile: profile.linkedinProfile || "",
+        portfolioUrl: profile.portfolioUrl || "",
+        resume: profile.resume || "",
       }));
     }
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -60,7 +66,7 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
     try {
       // Validate required fields
       if (!formData.name || !formData.email) {
-        throw new Error('Name and email are required');
+        throw new Error("Name and email are required");
       }
 
       // Save profile if requested
@@ -71,7 +77,7 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
           phone: formData.phone,
           linkedinProfile: formData.linkedinProfile,
           portfolioUrl: formData.portfolioUrl,
-          resume: formData.resume
+          resume: formData.resume,
         });
       }
 
@@ -83,17 +89,19 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
         linkedinProfile: formData.linkedinProfile,
         portfolioUrl: formData.portfolioUrl,
         coverLetter: formData.coverLetter,
-        resume: formData.resume
+        resume: formData.resume,
       });
 
       if (success) {
         onSuccess();
         onClose();
       } else {
-        setError('You have already applied to this job');
+        setError("You have already applied to this job");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit application');
+      setError(
+        err instanceof Error ? err.message : "Failed to submit application"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -108,7 +116,9 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
           {/* Header */}
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Apply for Job</h2>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Apply for Job
+              </h2>
               <p className="text-gray-600 mt-1">
                 {job.title} at {job.company}
               </p>
@@ -117,8 +127,18 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -126,19 +146,22 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
           {/* Job Summary */}
           <div className="bg-gray-50 p-4 rounded-lg mb-6">
             <div className="flex items-center gap-3 mb-2">
-              <img 
-                src={job.companyLogo} 
-                alt={job.company} 
+              <img
+                src={job.companyLogo}
+                alt={job.company}
                 className="w-10 h-10 rounded-lg"
               />
               <div>
                 <h3 className="font-semibold text-gray-900">{job.title}</h3>
-                <p className="text-sm text-gray-600">{job.company} • {job.location}</p>
+                <p className="text-sm text-gray-600">
+                  {job.company} • {job.location}
+                </p>
               </div>
             </div>
             {job.salary && (
               <p className="text-sm text-green-600 font-medium">
-                ${job.salary.min.toLocaleString()} - ${job.salary.max.toLocaleString()} {job.salary.currency}
+                ${job.salary.min.toLocaleString()} - $
+                {job.salary.max.toLocaleString()} {job.salary.currency}
               </p>
             )}
           </div>
@@ -257,7 +280,10 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
                 onChange={(e) => setSaveProfile(e.target.checked)}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
-              <label htmlFor="saveProfile" className="ml-2 block text-sm text-gray-700">
+              <label
+                htmlFor="saveProfile"
+                className="ml-2 block text-sm text-gray-700"
+              >
                 Save this information for future applications
               </label>
             </div>
@@ -281,20 +307,25 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 px-4 py-2 bg-blue-600 text-[var(--font-light)] rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isSubmitting ? 'Submitting...' : 'Submit Application'}
+                {isSubmitting ? "Submitting..." : "Submit Application"}
               </button>
             </div>
           </form>
 
           {/* Application Info */}
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-2">What happens next?</h4>
+            <h4 className="font-medium text-blue-900 mb-2">
+              What happens next?
+            </h4>
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• Your application will be saved locally</li>
               <li>• You can track your application status in your dashboard</li>
-              <li>• For real applications, you'll be redirected to the company's application page</li>
+              <li>
+                • For real applications, you'll be redirected to the company's
+                application page
+              </li>
               <li>• Consider following up with the company directly</li>
             </ul>
           </div>
@@ -304,4 +335,4 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
   );
 };
 
-export default JobApplicationModal; 
+export default JobApplicationModal;

@@ -49,7 +49,9 @@ const SubjectiveContent = ({
                 <div className="flex-1">
                   <h3
                     className={`text-sm font-medium ${
-                      isSelected ? "text-[#007B9F]" : "text-gray-800"
+                      isSelected
+                        ? "text-[var(--secondary-400)]"
+                        : "text-gray-800"
                     } mb-1`}
                   >
                     {item.title}
@@ -75,4 +77,4 @@ const SubjectiveContent = ({
   );
 };
 
-export default SubjectiveContent; 
+export default SubjectiveContent;

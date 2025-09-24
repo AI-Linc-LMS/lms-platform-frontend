@@ -95,13 +95,13 @@ const StatBlock = ({
   const displayCount = typeof count === "object" ? 0 : Number(count) || 0;
 
   return (
-    <div className="bg-[#F8F9FA] hover:bg-[#E9ECEF] rounded-xl p-2 md:p-3 flex flex-col items-center justify-center relative group transition-all duration-200 overflow-visible touch-manipulation">
+    <div className="bg-[var(--neutral-50)] hover:bg-[var(--neutral-100)] rounded-xl p-2 md:p-3 flex flex-col items-center justify-center relative group transition-all duration-200 overflow-visible touch-manipulation">
       {icon}
       {/* Enhanced tooltip with count and label */}
-      <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-[#343A40] text-white text-xs rounded-lg pointer-events-none transition-opacity duration-200 z-[99999] whitespace-nowrap shadow-lg">
+      <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-[var(--neutral-500)] text-[var(--font-light)] text-xs rounded-lg pointer-events-none transition-opacity duration-200 z-[99999] whitespace-nowrap shadow-lg">
         <div className="font-semibold">{label}</div>
         <div className="text-xs text-gray-300 mt-1">Count: {displayCount}</div>
-        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#343A40]"></div>
+        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[var(--neutral-500)]"></div>
       </div>
     </div>
   );
@@ -156,7 +156,7 @@ export default function CardHelperExpanded({
       >
         {showSuccessToast && (
           <div className="fixed top-4 right-4 z-50">
-            <div className="flex items-center gap-3 px-4 py-3 bg-green-600 text-white rounded-xl shadow-lg">
+            <div className="flex items-center gap-3 px-4 py-3 bg-green-600 text-[var(--font-light)] rounded-xl shadow-lg">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5"
@@ -220,7 +220,7 @@ export default function CardHelperExpanded({
                 justifyContent: "center",
                 cursor: "pointer",
                 transition: "all 0.3s ease",
-                color: "#6b7280",
+                color: "var(--font-secondary)",
               }}
             >
               <svg
@@ -444,7 +444,7 @@ export default function CardHelperExpanded({
                     style={{
                       fontSize: "13px",
                       lineHeight: "1.4",
-                      color: "#6b7280",
+                      color: "var(--font-secondary)",
                       marginBottom: "8px",
                       paddingLeft: "16px",
                       position: "relative",
@@ -499,7 +499,12 @@ export default function CardHelperExpanded({
                   }}
                 >
                   {chip.icon && (
-                    <span style={{ fontSize: "10px", color: "#6b7280" }}>
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        color: "var(--font-secondary)",
+                      }}
+                    >
                       {chip.icon}
                     </span>
                   )}
@@ -620,7 +625,7 @@ export default function CardHelperExpanded({
               <p
                 style={{
                   fontSize: "12px",
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                   fontWeight: "500",
                   lineHeight: "1.4",
                 }}
@@ -705,7 +710,7 @@ export default function CardHelperExpanded({
                   justifyContent: "center",
                   cursor: "pointer",
                   transition: "all 0.3s ease",
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                   position: "relative",
                 }}
               >
@@ -716,7 +721,7 @@ export default function CardHelperExpanded({
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
-                  style={{ color: "#6b7280" }}
+                  style={{ color: "var(--font-secondary)" }}
                 >
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                   <polyline points="14,2 14,8 20,8" />
@@ -739,7 +744,7 @@ export default function CardHelperExpanded({
                   justifyContent: "center",
                   cursor: "pointer",
                   transition: "all 0.3s ease",
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                 }}
               >
                 <svg
@@ -767,7 +772,7 @@ export default function CardHelperExpanded({
                   justifyContent: "center",
                   cursor: "pointer",
                   transition: "all 0.3s ease",
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                 }}
               >
                 <svg
@@ -797,7 +802,7 @@ export default function CardHelperExpanded({
                   justifyContent: "center",
                   cursor: "pointer",
                   transition: "all 0.3s ease",
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                 }}
               >
                 <svg

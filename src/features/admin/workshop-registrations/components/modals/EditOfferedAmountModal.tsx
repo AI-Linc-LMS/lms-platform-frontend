@@ -60,14 +60,20 @@ export const EditOfferedAmountModal: React.FC<EditOfferedAmountModalProps> = ({
           <FiX className="w-5 h-5" />
         </button>
 
-        <h2 id="edit-offered-amount-modal-title" className="text-lg font-bold mb-4">
-          {field === "offered_amount" ? "Edit Offered Amount" : "Edit Sales Done By"}
+        <h2
+          id="edit-offered-amount-modal-title"
+          className="text-lg font-bold mb-4"
+        >
+          {field === "offered_amount"
+            ? "Edit Offered Amount"
+            : "Edit Sales Done By"}
         </h2>
 
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-semibold mb-2">
-              {field === "offered_amount" ? "Offered Amount" : "Sales Done By"} <span className="text-red-500">*</span>
+              {field === "offered_amount" ? "Offered Amount" : "Sales Done By"}{" "}
+              <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -76,7 +82,11 @@ export const EditOfferedAmountModal: React.FC<EditOfferedAmountModalProps> = ({
                 setInputValue(e.target.value);
                 onOfferedAmountChange(e.target.value); // optional external sync
               }}
-              placeholder={field === "offered_amount" ? "Enter offered amount" : "Enter sales done by"}
+              placeholder={
+                field === "offered_amount"
+                  ? "Enter offered amount"
+                  : "Enter sales done by"
+              }
               className="w-full p-3 border rounded-md text-base bg-gray-50 border-gray-300 focus:border-blue-500 focus:outline-none"
               required
             />
@@ -91,7 +101,7 @@ export const EditOfferedAmountModal: React.FC<EditOfferedAmountModalProps> = ({
             Cancel
           </button>
           <button
-            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 font-semibold"
+            className="px-4 py-2 rounded bg-blue-600 text-[var(--font-light)] hover:bg-blue-700 font-semibold"
             onClick={handleSave}
           >
             Save

@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
-import {RootState, useAppSelector} from "../../../redux/store";
+import { RootState, useAppSelector } from "../../../redux/store";
 import GoogleLoginButton from "../../../commonComponents/common-buttons/google-login-button/GoogleLoginButton";
 import logimg from "../../../assets/login-placeholder/login-picture.png";
-import {useSelector} from "react-redux";
+import { useSelector } from "react-redux";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -18,10 +18,10 @@ const Login: React.FC = () => {
     e.preventDefault();
     login({ email, password });
   };
-    const clientInfo = useSelector((state: RootState) => state.clientInfo)
+  const clientInfo = useSelector((state: RootState) => state.clientInfo);
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#F8F9FA] relative">
+    <div className="flex flex-col min-h-screen bg-[var(--neutral-50)] relative">
       <div className="flex flex-1">
         {/* Background Image for Mobile */}
         <div className="absolute inset-0 md:hidden">
@@ -33,7 +33,7 @@ const Login: React.FC = () => {
         </div>
 
         {/* Left Section - Background Image (desktop only) */}
-        <div className="hidden md:block md:w-1/2 h-full bg-gradient-to-r from-[#D7EFF6] to-[#E9F7FC]">
+        <div className="hidden md:block md:w-1/2 h-full bg-gradient-to-r from-[var(--primary-50)] to-[#E9F7FC]">
           <img
             src={logimg}
             alt="Office workspace"
@@ -86,7 +86,7 @@ const Login: React.FC = () => {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="block w-full h-14 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79]"
+                      className="block w-full h-14 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--primary-500)] focus:border-[var(--primary-500)]"
                       placeholder="example@email.com"
                       disabled={isLoading}
                     />
@@ -103,7 +103,7 @@ const Login: React.FC = () => {
                     </label>
                     <Link
                       to="/forgot-password"
-                      className="text-sm font-medium text-[#255C79]"
+                      className="text-sm font-medium text-[var(--primary-500)]"
                     >
                       Forgot?
                     </Link>
@@ -117,7 +117,7 @@ const Login: React.FC = () => {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="block w-full h-14 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79]"
+                      className="block w-full h-14 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--primary-500)] focus:border-[var(--primary-500)]"
                       placeholder="Enter Your Password"
                       disabled={isLoading}
                     />
@@ -171,7 +171,7 @@ const Login: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className={`w-full h-14 rounded-lg text-white py-4 px-6 bg-[#255C79] text-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:bg-[#1E4A63] hover:scale-95`}
+                  className={`w-full h-14 rounded-lg text-[var(--font-light)] py-4 px-6 bg-[var(--primary-500)] text-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:bg-[var(--primary-600)] hover:scale-95`}
                 >
                   {isLoading ? "Logging in..." : "Login now"}
                 </button>
@@ -185,7 +185,10 @@ const Login: React.FC = () => {
 
             <div className="text-center text-sm">
               <span className="text-gray-500">Don't have an account? </span>
-              <Link to="/signup" className="font-medium text-[#255C79]">
+              <Link
+                to="/signup"
+                className="font-medium text-[var(--primary-500)]"
+              >
                 Sign up
               </Link>
             </div>
@@ -194,7 +197,7 @@ const Login: React.FC = () => {
       </div>
 
       {/* Footer - Hidden on mobile, visible on desktop */}
-      <footer className="hidden md:block w-full bg-gray-900 text-white py-6 relative z-10 border-t border-gray-700">
+      <footer className="hidden md:block w-full bg-gray-900 text-[var(--font-light)] py-6 relative z-10 border-t border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             {/* Company Info */}
@@ -212,7 +215,7 @@ const Login: React.FC = () => {
 
             {/* Quick Links */}
             <div className="text-center">
-              <h3 className="font-semibold text-white mb-3 text-sm">
+              <h3 className="font-semibold text-[var(--font-light)] mb-3 text-sm">
                 Quick Links
               </h3>
               <div className="space-y-2">
@@ -220,7 +223,7 @@ const Login: React.FC = () => {
                   href="https://ailinc.com/about"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block text-gray-400 hover:text-white transition-colors duration-200 text-sm"
+                  className="block text-gray-400 hover:text-[var(--font-light)] transition-colors duration-200 text-sm"
                 >
                   About Us
                 </a>
@@ -228,7 +231,7 @@ const Login: React.FC = () => {
                   href="https://ailinc.com/support"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block text-gray-400 hover:text-white transition-colors duration-200 text-sm"
+                  className="block text-gray-400 hover:text-[var(--font-light)] transition-colors duration-200 text-sm"
                 >
                   Support
                 </a>
@@ -237,7 +240,7 @@ const Login: React.FC = () => {
 
             {/* Contact Info */}
             <div className="text-center md:text-right">
-              <h3 className="font-semibold text-white mb-3 text-sm">
+              <h3 className="font-semibold text-[var(--font-light)] mb-3 text-sm">
                 Get in Touch
               </h3>
               <div className="space-y-2 text-sm text-gray-400">
@@ -258,7 +261,7 @@ const Login: React.FC = () => {
                   href="https://ailinc.com/terms"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-white transition-colors duration-200"
+                  className="text-gray-400 hover:text-[var(--font-light)] transition-colors duration-200"
                 >
                   Terms
                 </a>
@@ -266,7 +269,7 @@ const Login: React.FC = () => {
                   href="https://ailinc.com/privacy"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-white transition-colors duration-200"
+                  className="text-gray-400 hover:text-[var(--font-light)] transition-colors duration-200"
                 >
                   Privacy
                 </a>
@@ -274,7 +277,7 @@ const Login: React.FC = () => {
                   href="https://ailinc.com/refund"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-white transition-colors duration-200"
+                  className="text-gray-400 hover:text-[var(--font-light)] transition-colors duration-200"
                 >
                   Refunds
                 </a>
@@ -282,7 +285,7 @@ const Login: React.FC = () => {
                   href="https://ailinc.com/shipping"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-white transition-colors duration-200"
+                  className="text-gray-400 hover:text-[var(--font-light)] transition-colors duration-200"
                 >
                   Shipping
                 </a>
@@ -290,7 +293,7 @@ const Login: React.FC = () => {
                   href="https://ailinc.com/contact-us"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-white transition-colors duration-200"
+                  className="text-gray-400 hover:text-[var(--font-light)] transition-colors duration-200"
                 >
                   Contact
                 </a>

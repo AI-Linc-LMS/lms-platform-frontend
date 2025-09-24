@@ -48,7 +48,7 @@ export const getStatusBadgeClass = (
 ) => {
   if (type === "true/false") {
     if (status === "true" || status === "paid" || status === "attempted") {
-      return "bg-green-500 text-white";
+      return "bg-green-500 text-[var(--font-light)]";
     }
     if (
       status === "no" ||
@@ -61,10 +61,10 @@ export const getStatusBadgeClass = (
   }
   if (type === "payment") {
     if (status === "true" || status === "paid") {
-      return "bg-green-500 text-white";
+      return "bg-green-500 text-[var(--font-light)]";
     }
     if (status === "partially_paid") {
-      return "bg-orange-500 text-white";
+      return "bg-orange-500 text-[var(--font-light)]";
     }
     if (status === "false" || status === "not_paid" || status === "no") {
       return "bg-yellow-100 text-yellow-800";

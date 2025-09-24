@@ -13,9 +13,9 @@ const ForgotPassword: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#F8F9FA]">
+    <div className="flex min-h-screen bg-[var(--neutral-50)]">
       {/* Left Section - Background Image */}
-      <div className="hidden md:block md:w-1/2 bg-gradient-to-r from-[#D7EFF6] to-[#E9F7FC]">
+      <div className="hidden md:block md:w-1/2 bg-gradient-to-r from-[var(--primary-50)] to-[#E9F7FC]">
         <img
           src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=1170"
           alt="Office workspace"
@@ -83,7 +83,7 @@ const ForgotPassword: React.FC = () => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="block w-full h-14 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79]"
+                    className="block w-full h-14 px-4 py-3 border rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--primary-500)] focus:border-[var(--primary-500)]"
                     placeholder="example@email.com"
                   />
                 </div>
@@ -127,7 +127,7 @@ const ForgotPassword: React.FC = () => {
 
           <div className="text-center text-sm">
             <span className="text-gray-500">Remember your password? </span>
-            <Link to="/login" className="font-medium text-[#255C79]">
+            <Link to="/login" className="font-medium text-[var(--primary-500)]">
               Back to login
             </Link>
           </div>

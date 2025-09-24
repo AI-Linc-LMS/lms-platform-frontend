@@ -20,7 +20,7 @@ const RecommendedLearningAll = () => {
   });
 
   // Map backend data to UI props
-  const mappedCourses = courses.slice(0, 5);
+  const mappedCourses = courses && courses?.slice(0, 5);
 
   if (isLoading) {
     return (
@@ -51,10 +51,10 @@ const RecommendedLearningAll = () => {
           <BackArrowIcon width={24} height={24} />
         </button>
         <div>
-          <h1 className="text-[#343A40] font-bold text-2xl ">
+          <h1 className="text-[var(--neutral-500)] font-bold text-2xl ">
             Based On Your Learning
           </h1>
-          <p className="text-[#6C757D]  font-normal text-lg">
+          <p className="text-[var(--neutral-300)]  font-normal text-lg">
             Courses recommended based on your learning history
           </p>
         </div>
@@ -71,7 +71,7 @@ const RecommendedLearningAll = () => {
           </p>
           <button
             onClick={() => navigate("/courses")}
-            className="bg-[#17627A] text-white py-2 px-6 rounded-lg transition-all duration-200 hover:bg-[#12536A]"
+            className="bg-[#17627A] text-[var(--font-light)] py-2 px-6 rounded-lg transition-all duration-200 hover:bg-[#12536A]"
           >
             Browse Courses
           </button>

@@ -249,7 +249,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
           <div className="flex items-center ml-2">
             <button
               onClick={handlePrev}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-[#12293A] shadow cursor-pointer"
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--secondary-500)] shadow cursor-pointer"
             >
               <img src={leftArrow} alt="Previous" className="w-3 h-3" />
             </button>
@@ -259,7 +259,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
               className={`w-8 h-8 flex items-center justify-center rounded-full ml-2 ${
                 monthOffset === 0
                   ? "bg-gray-200 cursor-not-allowed"
-                  : "bg-[#12293A]"
+                  : "bg-[var(--secondary-500)]"
               } shadow`}
             >
               <img src={rightArrow} alt="Next" className="w-3 h-3" />
@@ -287,10 +287,10 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
       <div className="flex items-center justify-end m-2 md:m-4 text-xs md:text-sm text-gray-500">
         <span>Less</span>
         <div className="flex mx-2">
-          <div className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5 rounded-sm bg-[#CDE5CE] mx-0.5" />
+          <div className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5 rounded-sm bg-[var(--secondary-100)] mx-0.5" />
           <div className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5 rounded-sm bg-[#A6CFA9] mx-0.5" />
           <div className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5 rounded-sm bg-[#77B17B] mx-0.5" />
-          <div className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5 rounded-sm bg-[#417845] mx-0.5" />
+          <div className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5 rounded-sm bg-[var(--secondary-200)] mx-0.5" />
           <div className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5 rounded-sm bg-[#2E4D31] mx-0.5" />
         </div>
         <span>More</span>
@@ -300,7 +300,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
         <div className="bottom-3 right-4 flex justify-end space-x-3">
           <button
             onClick={handlePrev}
-            className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-[#12293A] shadow cursor-pointer"
+            className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-[var(--secondary-500)] shadow cursor-pointer"
           >
             <img
               src={leftArrow}
@@ -314,7 +314,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
             className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full ${
               monthOffset === 0
                 ? "bg-gray-200 cursor-not-allowed"
-                : "bg-[#12293A]"
+                : "bg-[var(--secondary-500)]"
             } shadow`}
           >
             <img

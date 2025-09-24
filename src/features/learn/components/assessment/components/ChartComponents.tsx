@@ -139,7 +139,7 @@ export const ScoreArc: React.FC<ScoreArcProps> = ({ score, max }) => {
 
   return (
     <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 flex-1 min-w-[200px] sm:min-w-[220px] max-w-[270px] min-h-[200px] sm:min-h-[240px] flex flex-col relative w-full">
-      <span className="text-base sm:text-lg font-bold text-black mb-2 w-full text-left">
+      <span className="text-base sm:text-lg font-bold text-[var(--font-dark)] mb-2 w-full text-left">
         Score
       </span>
       <div className="flex flex-col items-center justify-center w-full h-full">
@@ -192,7 +192,7 @@ export const ScoreArc: React.FC<ScoreArcProps> = ({ score, max }) => {
           </svg>
           {/* Centered score value, smaller */}
           <div className="absolute left-1/2 top-[72%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center">
-            <span className="text-2xl lg:text-3xl font-extrabold text-black leading-none">
+            <span className="text-2xl lg:text-3xl font-extrabold text-[var(--font-dark)] leading-none">
               {score}
             </span>
             <span className="text-xs sm:text-sm text-gray-500 font-semibold leading-none">

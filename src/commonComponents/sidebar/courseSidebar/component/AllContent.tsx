@@ -6,7 +6,13 @@ import quizIcon from "../../../../assets/course_sidebar_assets/quiz/defaultQuizI
 import tickIcon from "../../../../assets/course_sidebar_assets/tickIcon.png";
 import completeTickIcon from "../../../../assets/course_sidebar_assets/completeTickIcon.png";
 
-export type ContentType = "Article" | "VideoTutorial" | "CodingProblem" | "Quiz" | "Assignment" | "Development";
+export type ContentType =
+  | "Article"
+  | "VideoTutorial"
+  | "CodingProblem"
+  | "Quiz"
+  | "Assignment"
+  | "Development";
 
 export interface ContentItem {
   id: number;
@@ -26,7 +32,13 @@ interface AllContentProps {
 }
 
 // CircularProgress component for video content
-const CircularProgress = ({ progress, isComplete }: { progress: number, isComplete: boolean }) => {
+const CircularProgress = ({
+  progress,
+  isComplete,
+}: {
+  progress: number;
+  isComplete: boolean;
+}) => {
   const size = 26;
   const strokeWidth = 2.5;
   const radius = (size - strokeWidth) / 2;
@@ -36,7 +48,7 @@ const CircularProgress = ({ progress, isComplete }: { progress: number, isComple
   if (isComplete) {
     return (
       <div
-        className="w-[18px] h-[18px] rounded-full bg-[#5FA564] flex items-center justify-center"
+        className="w-[18px] h-[18px] rounded-full bg-[var(--success-500)] flex items-center justify-center"
         style={{ aspectRatio: "1 / 1", minWidth: "18px", minHeight: "18px" }}
       >
         <svg
@@ -55,13 +67,17 @@ const CircularProgress = ({ progress, isComplete }: { progress: number, isComple
           />
         </svg>
       </div>
-
     );
   }
 
   return (
     <div className="relative">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="transform -rotate-90"
+      >
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -94,13 +110,22 @@ const CircularProgress = ({ progress, isComplete }: { progress: number, isComple
   );
 };
 
-const AllContent = ({ contents, onContentClick, selectedContentId, activeLabel }: AllContentProps) => {
+const AllContent = ({
+  contents,
+  onContentClick,
+  selectedContentId,
+  activeLabel,
+}: AllContentProps) => {
   const sortedContents = [...contents].sort((a, b) => a.order - b.order);
   const isFirstRender = useRef(true);
 
   // Select first content only when All tab is first opened
   useEffect(() => {
-    if (sortedContents.length > 0 && activeLabel === "All" && isFirstRender.current) {
+    if (
+      sortedContents.length > 0 &&
+      activeLabel === "All" &&
+      isFirstRender.current
+    ) {
       // Only auto-select if no content is currently selected
       if (!selectedContentId) {
         const firstContent = sortedContents[0];
@@ -133,7 +158,8 @@ const AllContent = ({ contents, onContentClick, selectedContentId, activeLabel }
         All ({contents.length})
       </h2>
       <p className="text-sm text-gray-500 mb-4">
-        A comprehensive detailed studies curated by our top mentors only for you.
+        A comprehensive detailed studies curated by our top mentors only for
+        you.
       </p>
 
       <div className="flex flex-col gap-2">
@@ -141,8 +167,11 @@ const AllContent = ({ contents, onContentClick, selectedContentId, activeLabel }
           <div
             key={item.id}
             onClick={() => onContentClick(item.id, item.content_type)}
-            className={`border border-gray-300 rounded-lg p-2 flex justify-between items-center hover:shadow transition cursor-pointer ${selectedContentId === item.id ? 'border-[#255C79] bg-blue-50' : ''
-              }`}
+            className={`border border-gray-300 rounded-lg p-2 flex justify-between items-center hover:shadow transition cursor-pointer ${
+              selectedContentId === item.id
+                ? "border-[var(--primary-500)] bg-blue-50"
+                : ""
+            }`}
           >
             <div className="flex items-start gap-3">
               <img
@@ -165,7 +194,11 @@ const AllContent = ({ contents, onContentClick, selectedContentId, activeLabel }
             <div className="flex items-center justify-center w-5 h-5">
               {item.content_type === "VideoTutorial" ? (
                 <CircularProgress
-                  progress={item.status === "complete" ? 100 : (item.progress_percentage || 0)}
+                  progress={
+                    item.status === "complete"
+                      ? 100
+                      : item.progress_percentage || 0
+                  }
                   isComplete={item.status === "complete"}
                 />
               ) : (

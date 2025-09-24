@@ -14,9 +14,9 @@ const formatTime = (seconds: number): string => {
     .padStart(2, "0")}`;
 };
 
-const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({ 
-  timeRemaining, 
-  assessmentId = "ai-linc-scholarship-test" 
+const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
+  timeRemaining,
+  assessmentId = "ai-linc-scholarship-test",
 }) => {
   const navigate = useNavigate();
 
@@ -34,7 +34,7 @@ const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
         <button
           onClick={handleBackClick}
-          className="flex items-center text-[#255C79] hover:text-[#1a4a5f] mb-2 sm:mb-0"
+          className="flex items-center text-[var(--primary-500)] hover:text-[#1a4a5f] mb-2 sm:mb-0"
         >
           <svg
             className="w-5 h-5 mr-2"
@@ -60,10 +60,8 @@ const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
           </p>
         </div>
         <div className="text-left sm:text-right w-full sm:w-auto">
-          <div className="text-xs sm:text-sm text-gray-500">
-            Time Remaining
-          </div>
-          <div className="text-base sm:text-lg font-semibold text-[#255C79]">
+          <div className="text-xs sm:text-sm text-gray-500">Time Remaining</div>
+          <div className="text-base sm:text-lg font-semibold text-[var(--primary-500)]">
             {formatTime(timeRemaining)}
           </div>
         </div>
@@ -72,4 +70,4 @@ const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
   );
 };
 
-export default AssessmentHeader; 
+export default AssessmentHeader;
