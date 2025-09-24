@@ -3,6 +3,8 @@
 @tailwind utilities;
 @import "tailwindcss";
 
+
+
 /*Lato Font*/
 @font-face {
     font-family: 'Lato';
@@ -150,7 +152,7 @@ body {
   top: 0px;
   left: 0px;
   z-index: -1;
-  background: #D7EFF6;
+  background: var(--primary-50);
   /* clip-path: polygon(
     0 0,
     100% 0,
@@ -471,4 +473,73 @@ body {
 .course-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+
+:root {
+  /* Primary Colors */
+  --primary-50: #D7EFF6;
+  --primary-100: #B9E4F2;
+  --primary-200: #80C9E0;
+  --primary-300: #63B6D3;
+  --primary-400: #2A8CB0;
+  --primary-500: #255C79;
+  --primary-600: #1E4A63;
+  --primary-700: #1A5A7A;
+  --primary-800: #124F65;
+  --primary-900: #0F2B46;
+
+  /* Secondary Colors */
+  --secondary-50: #E6F8F6;
+  --secondary-100: #CDE5CE;
+  --secondary-200: #417845;
+  --secondary-300: #AE0606;
+  --secondary-400: #007B9F;
+  --secondary-500: #12293A;
+  --secondary-600: #1a3a4f;
+  --secondary-700: #264D64;
+
+  /* Accent Colors */
+  --accent-yellow: #facc15;
+  --accent-blue: #3875F9;
+  --accent-green: #38A169;
+  --accent-red: #E53E3E;
+  --accent-orange: #DD6B20;
+  --accent-teal: #319795;
+  --accent-purple: #805AD5;
+  --accent-pink: #D53F8C;
+
+  /* Neutral Colors */
+  --neutral-50: #F8F9FA;
+  --neutral-100: #E9ECEF;
+  --neutral-200: #DDE2E6;
+  --neutral-300: #6C757D;
+  --neutral-400: #495057;
+  --neutral-500: #343A40;
+  --neutral-600: #2D3748;
+  --neutral-700: #1E1E1E;
+  --neutral-800: #1A1A1A;
+
+  /* Success Colors */
+  --success-50: #E6F8F6;
+  --success-100: #CDE5CE;
+  --success-500: #5FA564;
+
+  /* Warning Colors */
+  --warning-100: #FFF8E6;
+  --warning-500: #FFB800;
+
+  /* Error Colors */
+  --error-100: #FFE6E6;
+  --error-500: #EA4335;
+  --error-600: #AE0606;
+
+  /* Font Colors */
+  --font-primary: #333333;
+  --font-secondary: #6B7280;
+  --font-tertiary: #9CA3AF;
+  --font-light: #000000;
+  --font-dark:#FFFFFF;
+
+  --default-primary:#255C79;
 }

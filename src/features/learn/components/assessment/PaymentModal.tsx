@@ -299,7 +299,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           email: user.email || "",
         },
         theme: {
-          color: "#255C79",
+          color: "var(--primary-500)",
         },
       };
 
@@ -397,7 +397,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
             {/* Course Purchase Card */}
             <div className="p-6">
-              <div className="border-2 border-[#255C79] bg-blue-50 rounded-lg p-6 mb-6">
+              <div className="border-2 border-[var(--primary-500)] bg-blue-50 rounded-lg p-6 mb-6">
                 <div className="text-center mb-4">
                   <h3 className="font-semibold text-xl text-gray-900 mb-2">
                     Complete Course Access
@@ -469,7 +469,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 </button>
                 <button
                   onClick={handlePayment}
-                  className="flex-1 px-6 py-3 bg-[#255C79] text-white rounded-lg hover:bg-[#1e4a61] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-6 py-3 bg-[var(--primary-500)] text-[var(--font-light)] rounded-lg hover:bg-[#1e4a61] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {currency}
                   {coursePrice.toLocaleString()}

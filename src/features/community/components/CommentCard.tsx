@@ -87,7 +87,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
                   <button
                     onClick={handleSaveEdit}
-                    className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-green-700 transition-colors font-medium text-sm sm:text-base"
+                    className="bg-green-600 text-[var(--font-light)] px-3 sm:px-4 py-2 rounded-md hover:bg-green-700 transition-colors font-medium text-sm sm:text-base"
                   >
                     Save
                   </button>
@@ -117,7 +117,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
                       />
                     ) : (
                       <div
-                        className={`w-8 h-8 sm:w-10 sm:h-10 ${commentAuthorAvatar.color} rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm`}
+                        className={`w-8 h-8 sm:w-10 sm:h-10 ${commentAuthorAvatar.color} rounded-full flex items-center justify-center text-[var(--font-light)] font-bold text-xs sm:text-sm`}
                       >
                         {commentAuthorAvatar.initials}
                       </div>
@@ -203,7 +203,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
                             setReplyContent("");
                             setShowCommentForm(false);
                           }}
-                          className="bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm flex items-center gap-1.5"
+                          className="bg-blue-600 text-[var(--font-light)] px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm flex items-center gap-1.5"
                         >
                           <MessageCircle size={14} />
                           Reply

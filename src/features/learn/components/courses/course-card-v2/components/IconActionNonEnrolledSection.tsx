@@ -1,5 +1,5 @@
 import React from "react";
-import { Play, List, FolderOpen, MessageCircle, Award } from "lucide-react";
+import { List, FolderOpen, MessageCircle, Award } from "lucide-react";
 
 interface ActionButton {
   id: string;
@@ -16,20 +16,15 @@ interface IconActionsSectionProps {
   onViewCertificate?: () => void;
 }
 
-export const IconActionsSection: React.FC<IconActionsSectionProps> = ({
-  onContinueLearning,
+export const IconActionsNonEnrolledSection: React.FC<
+  IconActionsSectionProps
+> = ({
   onViewSyllabus,
   onViewResources,
   onViewDiscussions,
   onViewCertificate,
 }) => {
   const actions: ActionButton[] = [
-    {
-      id: "continue",
-      icon: Play,
-      tooltip: "Continue Learning",
-      onClick: onContinueLearning,
-    },
     {
       id: "syllabus",
       icon: List,

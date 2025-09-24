@@ -443,7 +443,7 @@ const ThreadDetailPage: React.FC = () => {
           </p>
           <button
             onClick={() => navigate("/community")}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all font-semibold"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 text-[var(--font-light)] px-6 py-3 rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all font-semibold"
           >
             Back to Community
           </button>
@@ -476,7 +476,7 @@ const ThreadDetailPage: React.FC = () => {
           </p>
           <button
             onClick={handleBackToCommunity}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all font-semibold"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 text-[var(--font-light)] px-6 py-3 rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all font-semibold"
           >
             Back to Community
           </button>
@@ -499,7 +499,7 @@ const ThreadDetailPage: React.FC = () => {
           </p>
           <button
             onClick={handleBackToCommunity}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all font-semibold"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 text-[var(--font-light)] px-6 py-3 rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all font-semibold"
           >
             Back to Community
           </button>
@@ -543,7 +543,7 @@ const ThreadDetailPage: React.FC = () => {
                       handleDeleteComment(showDeleteConfirm.id);
                     }
                   }}
-                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors font-medium"
+                  className="flex-1 bg-red-600 text-[var(--font-light)] px-4 py-2 rounded-md hover:bg-red-700 transition-colors font-medium"
                 >
                   Delete
                 </button>
@@ -675,7 +675,7 @@ const ThreadDetailPage: React.FC = () => {
               <button
                 onClick={handleSaveThreadEdit}
                 disabled={updateThreadMutation.isPending}
-                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-green-600 text-[var(--font-light)] px-4 py-2 rounded-md hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {updateThreadMutation.isPending ? "Saving..." : "Save Changes"}
               </button>
@@ -725,7 +725,7 @@ const ThreadDetailPage: React.FC = () => {
                 </p>
                 <button
                   onClick={() => refetchComments()}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium"
+                  className="bg-blue-600 text-[var(--font-light)] px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium"
                 >
                   Retry
                 </button>

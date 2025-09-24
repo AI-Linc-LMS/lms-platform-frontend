@@ -6,12 +6,15 @@ interface AdminSidebarProps {
   toggleSidebar: () => void;
 }
 
-const AdminSidebar: React.FC<AdminSidebarProps> = ({ isExpanded, toggleSidebar }) => {
+const AdminSidebar: React.FC<AdminSidebarProps> = ({
+  isExpanded,
+  toggleSidebar,
+}) => {
   return (
     <div
       className={`side-navigation top-0 left-0 h-[calc(100vh-2px)] ${
         isExpanded ? "w-[220px]" : "w-[80px]"
-      } rounded-lg text-black px-0 flex flex-col items-center py-4 transition-all duration-300 ease-in-out`}
+      } rounded-lg text-[var(--font-dark)] px-0 flex flex-col items-center py-4 transition-all duration-300 ease-in-out`}
     >
       <SidebarLogo isExpanded={isExpanded} onClickArrow={toggleSidebar} />
       <nav className="flex w-full flex-col">
@@ -21,4 +24,4 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isExpanded, toggleSidebar }
   );
 };
 
-export default AdminSidebar; 
+export default AdminSidebar;

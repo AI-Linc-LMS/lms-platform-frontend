@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
-import CodeMirror from '@uiw/react-codemirror';
-import { html as htmlLang } from '@codemirror/lang-html';
-import { css as cssLang } from '@codemirror/lang-css';
-import { javascript } from '@codemirror/lang-javascript';
-import { oneDark } from '@codemirror/theme-one-dark';
-import './DevelopmentCard.css';
+import CodeMirror from "@uiw/react-codemirror";
+import { html as htmlLang } from "@codemirror/lang-html";
+import { css as cssLang } from "@codemirror/lang-css";
+import { javascript } from "@codemirror/lang-javascript";
+import { oneDark } from "@codemirror/theme-one-dark";
+import "./DevelopmentCard.css";
 
 interface DevelopmentCardProps {
   projectId: string;
@@ -55,7 +55,9 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
       onSubmit(html, css, js);
       setError(null);
     } catch (err) {
-      setError(`Error submitting: ${err instanceof Error ? err.message : String(err)}`);
+      setError(
+        `Error submitting: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
   };
 
@@ -82,7 +84,7 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
         URL.revokeObjectURL(previewUrl);
       }
 
-      const blob = new Blob([content], { type: 'text/html' });
+      const blob = new Blob([content], { type: "text/html" });
       const url = URL.createObjectURL(blob);
 
       // Set the preview URL and open preview
@@ -90,10 +92,14 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
       setIsPreviewOpen(true);
 
       // Open in a new tab/window
-      window.open(url, '_blank');
+      window.open(url, "_blank");
       setError(null);
     } catch (err) {
-      setError(`Error creating preview: ${err instanceof Error ? err.message : String(err)}`);
+      setError(
+        `Error creating preview: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
     }
   };
 
@@ -121,7 +127,11 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
         iframeRef.current.contentWindow.document.close();
         setError(null);
       } catch (err) {
-        setError(`Error updating preview: ${err instanceof Error ? err.message : String(err)}`);
+        setError(
+          `Error updating preview: ${
+            err instanceof Error ? err.message : String(err)
+          }`
+        );
       }
     }
   };
@@ -169,10 +179,10 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
   // Used to handle key commands
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // Implement common keyboard shortcuts
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    if ((e.ctrlKey || e.metaKey) && e.key === "s") {
       e.preventDefault();
       handleSubmit();
-    } else if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+    } else if ((e.ctrlKey || e.metaKey) && e.key === "p") {
       e.preventDefault();
       openPreview();
     }
@@ -181,11 +191,11 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
   // Get the correct language extension based on the active tab
   const getLanguageExtension = () => {
     switch (activeTab) {
-      case 'html':
+      case "html":
         return htmlLang();
-      case 'css':
+      case "css":
         return cssLang();
-      case 'js':
+      case "js":
         return javascript();
       default:
         return htmlLang();
@@ -195,11 +205,11 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
   // Get the current code based on the active tab
   const getCurrentCode = () => {
     switch (activeTab) {
-      case 'html':
+      case "html":
         return html;
-      case 'css':
+      case "css":
         return css;
-      case 'js':
+      case "js":
         return js;
       default:
         return html;
@@ -209,13 +219,13 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
   // Handle code change based on the active tab
   const handleCodeChange = (value: string) => {
     switch (activeTab) {
-      case 'html':
+      case "html":
         setHtml(value);
         break;
-      case 'css':
+      case "css":
         setCss(value);
         break;
-      case 'js':
+      case "js":
         setJs(value);
         break;
     }
@@ -229,11 +239,18 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
     >
       <div className="header mb-4 md:mb-6">
         <div className="flex flex-col md:flex-row md:justify-between md:items-start">
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-2 md:mb-0">{title}</h1>
-          <span className={`px-3 py-1 text-xs md:text-sm rounded-full mb-2 md:mb-0 self-start md:self-auto ${difficulty === "Easy" ? "bg-green-100 text-green-800" :
-              difficulty === "Medium" ? "bg-yellow-100 text-yellow-800" :
-                "bg-red-100 text-red-800"
-            }`}>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-2 md:mb-0">
+            {title}
+          </h1>
+          <span
+            className={`px-3 py-1 text-xs md:text-sm rounded-full mb-2 md:mb-0 self-start md:self-auto ${
+              difficulty === "Easy"
+                ? "bg-green-100 text-green-800"
+                : difficulty === "Medium"
+                ? "bg-yellow-100 text-yellow-800"
+                : "bg-red-100 text-red-800"
+            }`}
+          >
             {difficulty}
           </span>
         </div>
@@ -262,7 +279,9 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
 
         {showHint && (
           <div className="mt-2 p-2 md:p-3 bg-blue-50 border border-blue-200 rounded-md">
-            <h3 className="text-xs md:text-sm font-medium text-blue-800 mb-1">Hint:</h3>
+            <h3 className="text-xs md:text-sm font-medium text-blue-800 mb-1">
+              Hint:
+            </h3>
             <pre className="text-xs text-blue-700 whitespace-pre-wrap font-mono overflow-x-auto">
               {getHint()}
             </pre>
@@ -279,19 +298,31 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
       <div className="editor-container border border-gray-200 rounded-lg">
         <div className="editor-tabs flex flex-wrap border-b border-gray-200">
           <button
-            className={`px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm font-medium ${activeTab === "html" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
+            className={`px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm font-medium ${
+              activeTab === "html"
+                ? "border-b-2 border-blue-500 text-blue-600"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
             onClick={() => setActiveTab("html")}
           >
             HTML
           </button>
           <button
-            className={`px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm font-medium ${activeTab === "css" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
+            className={`px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm font-medium ${
+              activeTab === "css"
+                ? "border-b-2 border-blue-500 text-blue-600"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
             onClick={() => setActiveTab("css")}
           >
             CSS
           </button>
           <button
-            className={`px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm font-medium ${activeTab === "js" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
+            className={`px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm font-medium ${
+              activeTab === "js"
+                ? "border-b-2 border-blue-500 text-blue-600"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
             onClick={() => setActiveTab("js")}
           >
             JS
@@ -299,7 +330,9 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
 
           <div className="ml-auto flex items-center pr-2 md:pr-4">
             <div className="flex items-center">
-              <span className="text-xs md:text-sm text-gray-600 mr-1 md:mr-2">Theme</span>
+              <span className="text-xs md:text-sm text-gray-600 mr-1 md:mr-2">
+                Theme
+              </span>
               <div className="relative inline-block w-8 md:w-10 align-middle select-none">
                 <input
                   type="checkbox"
@@ -310,7 +343,9 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
                 />
                 <label
                   htmlFor="theme-toggle"
-                  className={`toggle-label block overflow-hidden h-4 md:h-5 rounded-full cursor-pointer ${!isLightTheme ? "bg-blue-500" : "bg-gray-300"}`}
+                  className={`toggle-label block overflow-hidden h-4 md:h-5 rounded-full cursor-pointer ${
+                    !isLightTheme ? "bg-blue-500" : "bg-gray-300"
+                  }`}
                 ></label>
               </div>
               <span className="ml-1 md:ml-2 text-xs md:text-sm text-gray-600">
@@ -357,7 +392,7 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
         <div className="flex flex-col md:flex-row gap-2">
           <button
             onClick={openPreview}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-md text-xs md:text-sm font-medium flex items-center justify-center md:justify-start cursor-pointer"
+            className="bg-blue-500 hover:bg-blue-600 text-[var(--font-light)] px-3 md:px-4 py-1.5 md:py-2 rounded-md text-xs md:text-sm font-medium flex items-center justify-center md:justify-start cursor-pointer"
           >
             <span className="mr-1">▶</span> Preview in New Tab
           </button>
@@ -370,7 +405,7 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
                 setTimeout(updateLivePreview, 0);
               }
             }}
-            className="bg-gray-500 hover:bg-gray-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-md text-xs md:text-sm font-medium cursor-pointer"
+            className="bg-gray-500 hover:bg-gray-600 text-[var(--font-light)] px-3 md:px-4 py-1.5 md:py-2 rounded-md text-xs md:text-sm font-medium cursor-pointer"
           >
             {isPreviewOpen ? "Hide Preview" : "Show Preview"}
           </button>
@@ -378,7 +413,7 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
 
         <button
           onClick={handleSubmit}
-          className="bg-green-500 hover:bg-green-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-md text-xs md:text-sm font-medium cursor-pointer"
+          className="bg-green-500 hover:bg-green-600 text-[var(--font-light)] px-3 md:px-4 py-1.5 md:py-2 rounded-md text-xs md:text-sm font-medium cursor-pointer"
         >
           Submit
         </button>
@@ -414,4 +449,4 @@ const CodeMirrorDevelopmentCard: React.FC<DevelopmentCardProps> = ({
   );
 };
 
-export default CodeMirrorDevelopmentCard; 
+export default CodeMirrorDevelopmentCard;

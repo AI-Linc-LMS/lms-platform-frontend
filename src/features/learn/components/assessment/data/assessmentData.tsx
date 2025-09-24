@@ -28,9 +28,15 @@ export const performanceReportFallbackData = [
     label: "Test Duration",
     value: 25,
     unit: "mins",
-    color: "#facc15",
+    color: "var(--accent-yellow)",
     icon: (
-      <svg width="24" height="24" fill="none" stroke="#facc15" strokeWidth="2">
+      <svg
+        width="24"
+        height="24"
+        fill="none"
+        stroke="var(--accent-yellow)"
+        strokeWidth="2"
+      >
         <circle cx="12" cy="12" r="10" />
         <path d="M12 8v4l2 2" />
       </svg>
@@ -40,9 +46,15 @@ export const performanceReportFallbackData = [
     label: "Placement Readiness",
     value: 3,
     unit: "",
-    color: "#facc15",
+    color: "var(--accent-yellow)",
     icon: (
-      <svg width="24" height="24" fill="none" stroke="#facc15" strokeWidth="2">
+      <svg
+        width="24"
+        height="24"
+        fill="none"
+        stroke="var(--accent-yellow)"
+        strokeWidth="2"
+      >
         <polygon points="12,2 15,10 24,10 17,15 19,24 12,19 5,24 7,15 0,10 9,10" />
       </svg>
     ),
@@ -84,11 +96,11 @@ export const accuracyBarFallbackData = [
 
 // Rating bars fallback data
 export const ratingBarFallbackData = [
-  { label: "Problem Solving", value: 75, color: "#facc15" },
-  { label: "Technical Skills", value: 65, color: "#facc15" },
-  { label: "Critical Thinking", value: 80, color: "#facc15" },
-  { label: "Time Management", value: 70, color: "#facc15" },
-  { label: "Communication", value: 85, color: "#facc15" },
+  { label: "Problem Solving", value: 75, color: "var(--accent-yellow)" },
+  { label: "Technical Skills", value: 65, color: "var(--accent-yellow)" },
+  { label: "Critical Thinking", value: 80, color: "var(--accent-yellow)" },
+  { label: "Time Management", value: 70, color: "var(--accent-yellow)" },
+  { label: "Communication", value: 85, color: "var(--accent-yellow)" },
 ];
 
 // Skills fallback data

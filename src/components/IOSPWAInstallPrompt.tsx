@@ -1,20 +1,16 @@
-import React from 'react';
-import { X, Share, Plus, Smartphone } from 'lucide-react';
-import { useIOSPWAInstall } from '../hooks/useIOSPWAInstall';
+import React from "react";
+import { X, Share, Plus, Smartphone } from "lucide-react";
+import { useIOSPWAInstall } from "../hooks/useIOSPWAInstall";
 
 interface IOSPWAInstallPromptProps {
   appName?: string;
 }
 
 export const IOSPWAInstallPrompt: React.FC<IOSPWAInstallPromptProps> = ({
-  appName = 'AiLinc'
+  appName = "AiLinc",
 }) => {
-  const { 
-    isVisible, 
-    dismissPrompt, 
-    dismissPermanently,
-    isIOS 
-  } = useIOSPWAInstall();
+  const { isVisible, dismissPrompt, dismissPermanently, isIOS } =
+    useIOSPWAInstall();
 
   if (!isVisible || !isIOS) return null;
 
@@ -51,7 +47,8 @@ export const IOSPWAInstallPrompt: React.FC<IOSPWAInstallPromptProps> = ({
           <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
             <div className="text-center">
               <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
-                Install our app for the best experience! Get quick access from your home screen.
+                Install our app for the best experience! Get quick access from
+                your home screen.
               </p>
             </div>
 
@@ -60,10 +57,10 @@ export const IOSPWAInstallPrompt: React.FC<IOSPWAInstallPromptProps> = ({
               <div className="text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3">
                 Follow these steps:
               </div>
-              
+
               {/* Step 1 */}
               <div className="flex items-start space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-500 text-[var(--font-light)] rounded-full flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0">
                   1
                 </div>
                 <div className="flex-1 min-w-0">
@@ -83,7 +80,7 @@ export const IOSPWAInstallPrompt: React.FC<IOSPWAInstallPromptProps> = ({
 
               {/* Step 2 */}
               <div className="flex items-start space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-500 text-[var(--font-light)] rounded-full flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0">
                   2
                 </div>
                 <div className="flex-1 min-w-0">
@@ -103,7 +100,7 @@ export const IOSPWAInstallPrompt: React.FC<IOSPWAInstallPromptProps> = ({
 
               {/* Step 3 */}
               <div className="flex items-start space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-500 text-[var(--font-light)] rounded-full flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0">
                   3
                 </div>
                 <div className="flex-1 min-w-0">
@@ -137,7 +134,7 @@ export const IOSPWAInstallPrompt: React.FC<IOSPWAInstallPromptProps> = ({
           <div className="p-4 sm:p-6 border-t border-gray-100 space-y-2 sm:space-y-3 pb-safe">
             <button
               onClick={dismissPrompt}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors touch-manipulation min-h-[44px]"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-[var(--font-light)] font-medium py-3 px-4 rounded-lg transition-colors touch-manipulation min-h-[44px]"
             >
               Got it!
             </button>

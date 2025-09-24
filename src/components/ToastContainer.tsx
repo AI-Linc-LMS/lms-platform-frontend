@@ -1,18 +1,18 @@
-import React from 'react';
-import { useToast, Toast, ToastType } from '../contexts/ToastContext';
+import React from "react";
+import { useToast, Toast, ToastType } from "../contexts/ToastContext";
 
 const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
   const { removeToast } = useToast();
 
   const getToastStyles = (type: ToastType) => {
     switch (type) {
-      case 'success':
+      case "success":
         return {
-          bg: 'bg-green-50',
-          border: 'border-green-200',
-          icon: 'text-green-600',
-          title: 'text-green-800',
-          message: 'text-green-700',
+          bg: "bg-green-50",
+          border: "border-green-200",
+          icon: "text-green-600",
+          title: "text-green-800",
+          message: "text-green-700",
           iconPath: (
             <path
               fillRule="evenodd"
@@ -21,13 +21,13 @@ const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
             />
           ),
         };
-      case 'error':
+      case "error":
         return {
-          bg: 'bg-red-50',
-          border: 'border-red-200',
-          icon: 'text-red-600',
-          title: 'text-red-800',
-          message: 'text-red-700',
+          bg: "bg-red-50",
+          border: "border-red-200",
+          icon: "text-red-600",
+          title: "text-red-800",
+          message: "text-red-700",
           iconPath: (
             <path
               fillRule="evenodd"
@@ -36,13 +36,13 @@ const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
             />
           ),
         };
-      case 'warning':
+      case "warning":
         return {
-          bg: 'bg-yellow-50',
-          border: 'border-yellow-200',
-          icon: 'text-yellow-600',
-          title: 'text-yellow-800',
-          message: 'text-yellow-700',
+          bg: "bg-yellow-50",
+          border: "border-yellow-200",
+          icon: "text-yellow-600",
+          title: "text-yellow-800",
+          message: "text-yellow-700",
           iconPath: (
             <path
               fillRule="evenodd"
@@ -51,13 +51,13 @@ const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
             />
           ),
         };
-      case 'info':
+      case "info":
         return {
-          bg: 'bg-blue-50',
-          border: 'border-blue-200',
-          icon: 'text-[#17627A]',
-          title: 'text-[#17627A]',
-          message: 'text-[#124F65]',
+          bg: "bg-blue-50",
+          border: "border-blue-200",
+          icon: "text-[#17627A]",
+          title: "text-[#17627A]",
+          message: "text-[var(--primary-800)]",
           iconPath: (
             <path
               fillRule="evenodd"
@@ -68,11 +68,11 @@ const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
         };
       default:
         return {
-          bg: 'bg-gray-50',
-          border: 'border-gray-200',
-          icon: 'text-gray-600',
-          title: 'text-gray-800',
-          message: 'text-gray-700',
+          bg: "bg-gray-50",
+          border: "border-gray-200",
+          icon: "text-gray-600",
+          title: "text-gray-800",
+          message: "text-gray-700",
           iconPath: (
             <path
               fillRule="evenodd"
@@ -105,9 +105,7 @@ const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
             {toast.title}
           </h3>
           {toast.message && (
-            <p className={`mt-1 text-sm ${styles.message}`}>
-              {toast.message}
-            </p>
+            <p className={`mt-1 text-sm ${styles.message}`}>{toast.message}</p>
           )}
         </div>
         <div className="ml-4 flex-shrink-0 flex">
@@ -142,4 +140,4 @@ export const ToastContainer: React.FC = () => {
       ))}
     </div>
   );
-}; 
+};

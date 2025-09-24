@@ -153,7 +153,7 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
                     />
                   ) : (
                     <div
-                      className={`w-6 h-6 sm:w-8 sm:h-8 ${authorAvatar.color} rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium`}
+                      className={`w-6 h-6 sm:w-8 sm:h-8 ${authorAvatar.color} rounded-full flex items-center justify-center text-[var(--font-light)] text-xs sm:text-sm font-medium`}
                     >
                       {authorAvatar.initials}
                     </div>
@@ -196,7 +196,7 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
                             />
                           ) : (
                             <div
-                              className={`w-6 h-6 sm:w-7 sm:h-7 ${participantAvatar.color} rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-medium`}
+                              className={`w-6 h-6 sm:w-7 sm:h-7 ${participantAvatar.color} rounded-full border-2 border-white flex items-center justify-center text-[var(--font-light)] text-xs font-medium`}
                             >
                               {participantAvatar.initials}
                             </div>

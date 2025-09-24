@@ -64,8 +64,8 @@ const Comments: React.FC<CommentsProps> = ({
           placeholder="Add a comment..."
           className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-[border-gray-300] focus:border-transparent resize-none ${
             isDarkTheme
-              ? "bg-gray-800 text-white border-gray-600"
-              : "bg-white text-black border-gray-300"
+              ? "bg-gray-800 text-[var(--font-light)] border-gray-600"
+              : "bg-white text-[var(--font-dark)] border-gray-300"
           }`}
           rows={3}
         />
@@ -73,7 +73,7 @@ const Comments: React.FC<CommentsProps> = ({
           <button
             type="submit"
             disabled={!newComment.trim() || createCommentMutation.isPending}
-            className="px-4 py-2 bg-[#255C79] text-white rounded-lg hover:bg-[#1e4a61] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-[var(--primary-500)] text-[var(--font-light)] rounded-lg hover:bg-[#1e4a61] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {createCommentMutation.isPending ? "Posting..." : "Post Comment"}
           </button>
@@ -137,7 +137,9 @@ const Comments: React.FC<CommentsProps> = ({
                       <div className="flex flex-wrap items-center gap-2">
                         <span
                           className={`font-semibold text-sm ${
-                            isDarkTheme ? "text-white" : "text-gray-500"
+                            isDarkTheme
+                              ? "text-[var(--font-light)]"
+                              : "text-gray-500"
                           } truncate`}
                         >
                           {comment.user_profile?.user_name || "Anonymous User"}
@@ -150,7 +152,9 @@ const Comments: React.FC<CommentsProps> = ({
                       </div>
                       <span
                         className={`text-xs ${
-                          isDarkTheme ? "text-white" : "text-gray-500"
+                          isDarkTheme
+                            ? "text-[var(--font-light)]"
+                            : "text-gray-500"
                         } whitespace-nowrap`}
                       >
                         {new Date(comment.created_at).toLocaleString("en-GB", {
@@ -165,7 +169,9 @@ const Comments: React.FC<CommentsProps> = ({
                     </div>
                     <p
                       className={`mt-1 text-sm ${
-                        isDarkTheme ? "text-white" : "text-gray-500"
+                        isDarkTheme
+                          ? "text-[var(--font-light)]"
+                          : "text-gray-500"
                       } break-words`}
                     >
                       {comment.text}
@@ -214,7 +220,7 @@ const Comments: React.FC<CommentsProps> = ({
             <div className="flex justify-center mt-4">
               <button
                 onClick={() => setVisibleComments((prev) => prev + 5)}
-                className="w-full sm:w-auto px-4 py-2 text-sm text-[#255C79] hover:text-[#1e4a61] font-medium flex items-center justify-center rounded-lg border border-[#255C79] hover:bg-gray-50"
+                className="w-full sm:w-auto px-4 py-2 text-sm text-[var(--primary-500)] hover:text-[#1e4a61] font-medium flex items-center justify-center rounded-lg border border-[var(--primary-500)] hover:bg-gray-50"
               >
                 <span>See more comments</span>
                 <svg

@@ -57,7 +57,7 @@ export const ColumnVisibilityDropdown: React.FC<
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none"
+        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none"
       >
         <FiEye className="w-4 h-4" />
         <span className="text-sm font-medium">
@@ -112,7 +112,7 @@ export const ColumnVisibilityDropdown: React.FC<
                     type="checkbox"
                     checked={isVisible}
                     onChange={() => toggleColumn(column.key)}
-                    className="w-4 h-4 text-[#255C79] border-gray-300 rounded focus:ring-[#255C79]"
+                    className="w-4 h-4 text-[var(--primary-500)] border-gray-300 rounded focus:ring-[var(--primary-500)]"
                   />
                   <div className="flex items-center gap-2 flex-1">
                     {isVisible ? (

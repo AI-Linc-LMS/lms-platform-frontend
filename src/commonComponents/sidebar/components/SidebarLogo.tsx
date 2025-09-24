@@ -1,6 +1,6 @@
 import ArrowIcon from "../../icons/sidebarIcons/ArrowIcon";
-import {useSelector} from "react-redux";
-import {RootState} from "../../../redux/store.ts";
+import { useSelector } from "react-redux";
+import { RootState } from "../../../redux/store.ts";
 
 interface SidebarLogoPartProps {
   isExpanded: boolean;
@@ -11,7 +11,7 @@ const SidebarLogoPart = ({
   isExpanded,
   onClickArrow,
 }: SidebarLogoPartProps) => {
-  const clientInfo = useSelector((state: RootState) => state.clientInfo)
+  const clientInfo = useSelector((state: RootState) => state.clientInfo);
   return (
     <div className="relative text-neutral-900 overflow-visible w-full text-center items-center h-14 border-b-[0.5px] border-[#D3D3D318] font-bold">
       {clientInfo.data?.app_logo_url && (
@@ -37,7 +37,7 @@ const SidebarLogoPart = ({
       <div
         className={`${
           isExpanded ? "" : "rotate-180"
-        } absolute w-[52px] h-[52px] grid place-items-center rounded-[12px] transition-transform duration-300 right-[-37px] bottom-[-12px] bg-[#D7EFF6]  cursor-pointer pr-[3px]`}
+        } absolute w-[52px] h-[52px] grid place-items-center rounded-[12px] transition-transform duration-300 right-[-37px] bottom-[-12px] bg-[var(--primary-50)]  cursor-pointer pr-[3px]`}
         onClick={onClickArrow}
       >
         <ArrowIcon />

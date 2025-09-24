@@ -166,7 +166,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
         <div className="mt-auto">
           <button
             onClick={onExpand}
-            className={`px-5 py-3 mt-7.5 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[#10b981] text-white hover:bg-[#059669] hover:-translate-y-0.5 ${"w-full"} ${className}`}
+            className={`px-5 py-3 mt-7.5 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[#10b981] text-[var(--font-light)] hover:bg-[#059669] hover:-translate-y-0.5 ${"w-full"} ${className}`}
           >
             View More
           </button>

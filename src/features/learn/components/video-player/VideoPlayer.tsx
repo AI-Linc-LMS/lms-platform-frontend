@@ -234,7 +234,7 @@ export function VideoPlayer({
   if (!hasValidUrl) {
     return (
       <div className={`${sizeClasses[videoSize]}`}>
-        <div className="bg-gray-800 aspect-video flex items-center justify-center text-white">
+        <div className="bg-gray-800 aspect-video flex items-center justify-center text-[var(--font-light)]">
           <div className="text-center">
             <p className="text-xl font-medium mb-2">
               {title || "Video Placeholder"}
@@ -250,7 +250,7 @@ export function VideoPlayer({
   const showLoading = isLoading || !isProgressLoaded;
 
   // If debugging is needed, add this somewhere in the JSX:
-  // <div className="text-xs text-white bg-black bg-opacity-50 p-1 absolute bottom-0 left-0">
+  // <div className="text-xs text-[var(--font-light)] bg-black bg-opacity-50 p-1 absolute bottom-0 left-0">
   //   ID: {effectiveVideoId.slice(0, 10)}... | Progress: {savedProgress.toFixed(1)}%
   // </div>
 

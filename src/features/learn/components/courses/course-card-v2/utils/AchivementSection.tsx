@@ -84,7 +84,6 @@ const ACHIEVEMENT_MAPPER = {
 };
 
 export const AchievementSection = ({ course }: { course: Course }) => {
-  
   const userAchievements = course.achievements || [];
   const totalPossibleAchievements = Object.keys(ACHIEVEMENT_MAPPER).length;
 
@@ -112,7 +111,9 @@ export const AchievementSection = ({ course }: { course: Course }) => {
   return (
     <div className="mb-3">
       <div className="flex items-center justify-between my-2">
-        <h3 className="text-[#495057] font-semibold text-xs">Achievements</h3>
+        <h3 className="text-[var(--neutral-400)] font-semibold text-xs">
+          Achievements
+        </h3>
         <span className="text-blue-600 text-xs">
           {userAchievements.length}/{totalPossibleAchievements}
         </span>

@@ -7,7 +7,10 @@ interface EditFollowUpDateModalProps {
   onClose: () => void;
   entry: WorkshopRegistrationData;
   field: "follow_up_date" | "meeting_scheduled_at" | "next_payment_date";
-  onSave: (date: string, field: "follow_up_date" | "meeting_scheduled_at" | "next_payment_date") => void;
+  onSave: (
+    date: string,
+    field: "follow_up_date" | "meeting_scheduled_at" | "next_payment_date"
+  ) => void;
 }
 
 export const EditFollowUpDateModal: React.FC<EditFollowUpDateModalProps> = ({
@@ -116,7 +119,12 @@ export const EditFollowUpDateModal: React.FC<EditFollowUpDateModalProps> = ({
           id="edit-follow-up-date-modal-title"
           className="text-xl font-bold mb-4 text-gray-800"
         >
-          Edit {field === "follow_up_date" ? "Follow-up Date" : field === "meeting_scheduled_at" ? "Meeting Scheduled Date" : "Next Payment Date"}
+          Edit{" "}
+          {field === "follow_up_date"
+            ? "Follow-up Date"
+            : field === "meeting_scheduled_at"
+            ? "Meeting Scheduled Date"
+            : "Next Payment Date"}
         </h2>
 
         <div className="mb-4">
@@ -135,7 +143,12 @@ export const EditFollowUpDateModal: React.FC<EditFollowUpDateModalProps> = ({
 
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium text-gray-700">
-            Select {field === "follow_up_date" ? "Follow-up Date" : field === "meeting_scheduled_at" ? "Meeting Scheduled Date" : "Next Payment Date"}
+            Select{" "}
+            {field === "follow_up_date"
+              ? "Follow-up Date"
+              : field === "meeting_scheduled_at"
+              ? "Meeting Scheduled Date"
+              : "Next Payment Date"}
           </label>
           <input
             type="date"
@@ -147,7 +160,12 @@ export const EditFollowUpDateModal: React.FC<EditFollowUpDateModalProps> = ({
 
         <div className="flex flex-col gap-2 mt-4">
           <label className="text-sm font-medium text-gray-700">
-            Select {field === "follow_up_date" ? "Follow-up Time" : field === "meeting_scheduled_at" ? "Meeting Scheduled Time" : "Next Payment Time"}
+            Select{" "}
+            {field === "follow_up_date"
+              ? "Follow-up Time"
+              : field === "meeting_scheduled_at"
+              ? "Meeting Scheduled Time"
+              : "Next Payment Time"}
           </label>
           <div className="flex gap-2 items-center">
             <input
@@ -176,7 +194,7 @@ export const EditFollowUpDateModal: React.FC<EditFollowUpDateModalProps> = ({
             Cancel
           </button>
           <button
-            className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 font-medium transition-colors"
+            className="px-4 py-2 rounded-md bg-blue-600 text-[var(--font-light)] hover:bg-blue-700 font-medium transition-colors"
             onClick={handleSave}
           >
             Save Changes

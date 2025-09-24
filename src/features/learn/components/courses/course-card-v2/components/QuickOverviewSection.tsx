@@ -41,7 +41,7 @@ export const QuickOverviewSection: React.FC<QuickOverviewSectionProps> = ({
           <span className="text-xs sm:text-sm font-semibold text-[#374151]">
             Course Progress
           </span>
-          <span className="text-[10px] sm:text-[11px] text-[#6b7280] truncate">
+          <span className="text-[10px] sm:text-[11px] text-[var(--font-secondary)] truncate">
             {videosWatched}/{totalVideos} videos
           </span>
         </div>
@@ -57,7 +57,7 @@ export const QuickOverviewSection: React.FC<QuickOverviewSectionProps> = ({
           <span className="text-sm sm:text-base font-bold text-[#374151] leading-none">
             {dayStreak}
           </span>
-          <span className="text-[9px] sm:text-[10px] text-[#6b7280] font-medium text-center leading-tight">
+          <span className="text-[9px] sm:text-[10px] text-[var(--font-secondary)] font-medium text-center leading-tight">
             Day Streak
           </span>
         </div>
@@ -70,7 +70,7 @@ export const QuickOverviewSection: React.FC<QuickOverviewSectionProps> = ({
           <span className="text-sm sm:text-base font-bold text-[#374151] leading-none">
             {badges}
           </span>
-          <span className="text-[9px] sm:text-[10px] text-[#6b7280] font-medium text-center leading-tight">
+          <span className="text-[9px] sm:text-[10px] text-[var(--font-secondary)] font-medium text-center leading-tight">
             Badges
           </span>
         </div>
@@ -83,7 +83,7 @@ export const QuickOverviewSection: React.FC<QuickOverviewSectionProps> = ({
           <span className="text-sm sm:text-base font-bold text-[#374151] leading-none">
             {videosWatched}
           </span>
-          <span className="text-[9px] sm:text-[10px] text-[#6b7280] font-medium text-center leading-tight">
+          <span className="text-[9px] sm:text-[10px] text-[var(--font-secondary)] font-medium text-center leading-tight">
             Videos
           </span>
         </div>

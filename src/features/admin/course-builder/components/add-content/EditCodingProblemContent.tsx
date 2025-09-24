@@ -123,7 +123,7 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
         "Coding Problem Updated",
         "Coding problem content updated successfully!"
       );
-      
+
       // Invalidate relevant queries to refresh the UI
       queryClient.invalidateQueries({
         predicate: (query) => {
@@ -140,7 +140,7 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
           );
         },
       });
-      
+
       if (onSuccess) {
         onSuccess();
       }
@@ -250,7 +250,7 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
     return (
       <div className="w-full space-y-6">
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#255C79]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--primary-500)]"></div>
           <span className="ml-2 text-gray-600">
             Loading coding problem data...
           </span>
@@ -330,7 +330,7 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
             <h3 className="text-lg font-medium text-gray-800">Test Cases</h3>
             <button
               onClick={addTestCase}
-              className="px-3 py-1 text-sm bg-[#255C79] text-white rounded hover:bg-[#1e4a61] disabled:opacity-50"
+              className="px-3 py-1 text-sm bg-[var(--primary-500)] text-[var(--font-light)] rounded hover:bg-[#1e4a61] disabled:opacity-50"
               disabled={updateMutation.isPending}
             >
               Add Test Case
@@ -354,7 +354,7 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
                       onChange={(e) =>
                         updateTestCase(index, "is_hidden", e.target.checked)
                       }
-                      className="text-[#255C79] focus:ring-[#255C79]"
+                      className="text-[var(--primary-500)] focus:ring-[var(--primary-500)]"
                       disabled={updateMutation.isPending}
                     />
                     Hidden
@@ -420,7 +420,7 @@ const EditCodingProblemContent: React.FC<EditCodingProblemContentProps> = ({
           <button
             onClick={handleSave}
             disabled={updateMutation.isPending}
-            className="px-6 py-2 text-sm font-medium text-white bg-[#255C79] border border-transparent rounded-lg hover:bg-[#1e4a61] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#255C79] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-6 py-2 text-sm font-medium text-[var(--font-light)] bg-[var(--primary-500)] border border-transparent rounded-lg hover:bg-[#1e4a61] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary-500)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {updateMutation.isPending ? (
               <div className="flex items-center">

@@ -25,7 +25,7 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
     onSuccess: () => {
       setIsSuccess(true); // Show success modal
       setCountdown(3); // Reset countdown to 3
-    }
+    },
   });
 
   // Handle countdown and auto-close
@@ -98,7 +98,8 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
               Issue Reported Successfully!
             </h2>
             <p className="text-gray-600 mb-4">
-              Your issue has been reported and our team will get back to you soon.
+              Your issue has been reported and our team will get back to you
+              soon.
             </p>
             <div className="text-sm text-gray-500">
               This window will close automatically in {countdown} seconds...
@@ -189,7 +190,7 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
                     !subject.trim() ||
                     !description.trim()
                   }
-                  className="flex-1 px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 px-4 py-2 text-[var(--font-light)] bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {reportMutation.isPending ? "Submitting..." : "Submit Report"}
                 </button>

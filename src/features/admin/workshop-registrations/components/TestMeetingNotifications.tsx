@@ -66,21 +66,21 @@ export const TestMeetingNotifications: React.FC<
         <div className="flex flex-wrap gap-2">
           <button
             onClick={handleTest10MinNotification}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors text-sm"
+            className="px-4 py-2 bg-green-500 text-[var(--font-light)] rounded hover:bg-green-600 transition-colors text-sm"
           >
             Test 10-Min Warning (Green)
           </button>
 
           <button
             onClick={handleTestNowNotification}
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-sm"
+            className="px-4 py-2 bg-red-500 text-[var(--font-light)] rounded hover:bg-red-600 transition-colors text-sm"
           >
             Test Now Alert (Red)
           </button>
 
           <button
             onClick={handleTestFollowUpNotification}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
+            className="px-4 py-2 bg-blue-500 text-[var(--font-light)] rounded hover:bg-blue-600 transition-colors text-sm"
           >
             Test Follow-up (Green)
           </button>
@@ -88,7 +88,7 @@ export const TestMeetingNotifications: React.FC<
           {onDebugMeetings && (
             <button
               onClick={onDebugMeetings}
-              className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-sm"
+              className="px-4 py-2 bg-purple-500 text-[var(--font-light)] rounded hover:bg-purple-600 transition-colors text-sm"
             >
               Debug Real Meetings
             </button>

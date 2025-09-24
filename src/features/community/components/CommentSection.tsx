@@ -85,7 +85,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({
                 <button
                   onClick={handleSubmitComment}
                   disabled={!newComment.trim()}
-                  className="bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium text-sm flex items-center justify-center gap-1.5"
+                  className="bg-blue-600 text-[var(--font-light)] px-3 py-1.5 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium text-sm flex items-center justify-center gap-1.5"
                 >
                   <MessageCircle size={14} />
                   Add Comment
@@ -122,7 +122,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({
                     />
                   ) : (
                     <div
-                      className={`w-6 h-6 ${commentAuthorAvatar.color} rounded-full flex items-center justify-center text-white text-xs font-medium`}
+                      className={`w-6 h-6 ${commentAuthorAvatar.color} rounded-full flex items-center justify-center text-[var(--font-light)] text-xs font-medium`}
                     >
                       {commentAuthorAvatar.initials}
                     </div>

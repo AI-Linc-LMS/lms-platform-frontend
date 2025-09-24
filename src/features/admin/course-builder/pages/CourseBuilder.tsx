@@ -48,7 +48,7 @@ interface CourseFormData {
 
 const CourseCardSkeleton: React.FC = () => {
   return (
-    <div className="bg-white rounded-lg border border-[#80C9E0] overflow-hidden max-w-[500px] animate-pulse">
+    <div className="bg-white rounded-lg border border-[var(--primary-200)] overflow-hidden max-w-[500px] animate-pulse">
       <div className="p-6">
         <div className="flex justify-between items-center mb-4">
           <div className="h-6 bg-gray-200 rounded w-3/4"></div>
@@ -301,7 +301,6 @@ const AdminDashboard: React.FC = () => {
     );
   }
 
-
   if (!isSuperAdmin) {
     return <AccessDenied />;
   }
@@ -334,16 +333,25 @@ const AdminDashboard: React.FC = () => {
                   <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                   <span className="text-sm text-gray-600">
                     <span className="font-semibold text-blue-600">
-                      {coursesData.filter((course: Course) => !course.published).length}
-                    </span> Drafts
+                      {
+                        coursesData.filter(
+                          (course: Course) => !course.published
+                        ).length
+                      }
+                    </span>{" "}
+                    Drafts
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                   <span className="text-sm text-gray-600">
                     <span className="font-semibold text-green-600">
-                      {coursesData.filter((course: Course) => course.published).length}
-                    </span> Published
+                      {
+                        coursesData.filter((course: Course) => course.published)
+                          .length
+                      }
+                    </span>{" "}
+                    Published
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -351,7 +359,8 @@ const AdminDashboard: React.FC = () => {
                   <span className="text-sm text-gray-600">
                     <span className="font-semibold text-gray-600">
                       {coursesData.length}
-                    </span> Total
+                    </span>{" "}
+                    Total
                   </span>
                 </div>
               </div>
@@ -407,7 +416,7 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             <button
-              className="bg-[#17627A] text-white px-4 py-2 rounded-md flex items-center whitespace-nowrap hover:bg-[#124F65] transition-colors"
+              className="bg-[#17627A] text-[var(--font-light)] px-4 py-2 rounded-md flex items-center whitespace-nowrap hover:bg-[var(--primary-800)] transition-colors"
               onClick={() => setIsModalOpen(true)}
             >
               <span className="mr-1">+</span> Add New Course
@@ -421,44 +430,88 @@ const AdminDashboard: React.FC = () => {
             <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-blue-600">Draft Courses</p>
+                  <p className="text-sm font-medium text-blue-600">
+                    Draft Courses
+                  </p>
                   <p className="text-2xl font-bold text-blue-800">
-                    {coursesData.filter((course: Course) => !course.published).length}
+                    {
+                      coursesData.filter((course: Course) => !course.published)
+                        .length
+                    }
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-blue-200 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  <svg
+                    className="w-6 h-6 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
                   </svg>
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-green-600">Published Courses</p>
+                  <p className="text-sm font-medium text-green-600">
+                    Published Courses
+                  </p>
                   <p className="text-2xl font-bold text-green-800">
-                    {coursesData.filter((course: Course) => course.published).length}
+                    {
+                      coursesData.filter((course: Course) => course.published)
+                        .length
+                    }
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg
+                    className="w-6 h-6 text-green-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Courses</p>
-                  <p className="text-2xl font-bold text-gray-800">{coursesData.length}</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Courses
+                  </p>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {coursesData.length}
+                  </p>
                 </div>
                 <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  <svg
+                    className="w-6 h-6 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                    />
                   </svg>
                 </div>
               </div>
@@ -513,7 +566,7 @@ const AdminDashboard: React.FC = () => {
             </p>
             <button
               onClick={clearSearch}
-              className="text-[#17627A] hover:text-[#124F65] font-medium transition-colors"
+              className="text-[#17627A] hover:text-[var(--primary-800)] font-medium transition-colors"
             >
               Clear search and view all courses
             </button>
@@ -630,7 +683,7 @@ const AdminDashboard: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full bg-[#17627A] text-white py-3 rounded-md font-medium hover:bg-[#124F65] transition-colors"
+                className="w-full bg-[#17627A] text-[var(--font-light)] py-3 rounded-md font-medium hover:bg-[var(--primary-800)] transition-colors"
               >
                 Create Course
               </button>
@@ -649,7 +702,7 @@ interface CourseCardProps {
 
 const CourseCard: React.FC<CourseCardProps> = ({ course, onEditClick }) => {
   return (
-    <div className="bg-white rounded-lg border border-[#80C9E0] overflow-hidden max-w-[500px] flex flex-col h-full">
+    <div className="bg-white rounded-lg border border-[var(--primary-200)] overflow-hidden max-w-[500px] flex flex-col h-full">
       <div className="p-6 flex flex-col flex-1">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold">{course.title}</h3>
@@ -684,9 +737,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEditClick }) => {
             <span className="text-sm font-medium">
               {course.enrolled_students?.total || 0}
             </span>
-            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[#343A40] text-white text-xs rounded pointer-events-none transition-opacity duration-200">
+            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[var(--neutral-500)] text-[var(--font-light)] text-xs rounded pointer-events-none transition-opacity duration-200">
               Students
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#343A40]"></div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[var(--neutral-500)]"></div>
             </div>
           </div>
           <div className="bg-gray-50 hover:bg-gray-100 rounded-lg p-2 flex flex-col items-center justify-center relative group transition-all duration-200">
@@ -698,9 +751,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEditClick }) => {
             <span className="text-sm font-medium">
               {course.stats?.article?.total || 0}
             </span>
-            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[#343A40] text-white text-xs rounded pointer-events-none transition-opacity duration-200">
+            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[var(--neutral-500)] text-[var(--font-light)] text-xs rounded pointer-events-none transition-opacity duration-200">
               Articles
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#343A40]"></div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[var(--neutral-500)]"></div>
             </div>
           </div>
           <div className="bg-gray-50 hover:bg-gray-100 rounded-lg p-2 flex flex-col items-center justify-center relative group transition-all duration-200">
@@ -712,9 +765,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEditClick }) => {
             <span className="text-sm font-medium">
               {course.stats?.quiz?.total || 0}
             </span>
-            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[#343A40] text-white text-xs rounded pointer-events-none transition-opacity duration-200">
+            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[var(--neutral-500)] text-[var(--font-light)] text-xs rounded pointer-events-none transition-opacity duration-200">
               Quizzes
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#343A40]"></div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[var(--neutral-500)]"></div>
             </div>
           </div>
           <div className="bg-gray-50 hover:bg-gray-100 rounded-lg p-2 flex flex-col items-center justify-center relative group transition-all duration-200">
@@ -726,9 +779,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEditClick }) => {
             <span className="text-sm font-medium">
               {course.stats?.assignment?.total || 0}
             </span>
-            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[#343A40] text-white text-xs rounded pointer-events-none transition-opacity duration-200">
+            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[var(--neutral-500)] text-[var(--font-light)] text-xs rounded pointer-events-none transition-opacity duration-200">
               Assignments
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#343A40]"></div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[var(--neutral-500)]"></div>
             </div>
           </div>
           <div className="bg-gray-50 hover:bg-gray-100 rounded-lg p-2 flex flex-col items-center justify-center relative group transition-all duration-200">
@@ -740,9 +793,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEditClick }) => {
             <span className="text-sm font-medium">
               {course.stats?.coding_problem?.total || 0}
             </span>
-            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[#343A40] text-white text-xs rounded pointer-events-none transition-opacity duration-200">
+            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[var(--neutral-500)] text-[var(--font-light)] text-xs rounded pointer-events-none transition-opacity duration-200">
               Coding Problems
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#343A40]"></div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[var(--neutral-500)]"></div>
             </div>
           </div>
           <div className="bg-gray-50 hover:bg-gray-100 rounded-lg p-2 flex flex-col items-center justify-center relative group transition-all duration-200">
@@ -754,9 +807,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEditClick }) => {
             <span className="text-sm font-medium">
               {course.stats?.video?.total || 0}
             </span>
-            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[#343A40] text-white text-xs rounded pointer-events-none transition-opacity duration-200">
+            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[var(--neutral-500)] text-[var(--font-light)] text-xs rounded pointer-events-none transition-opacity duration-200">
               Videos
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#343A40]"></div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[var(--neutral-500)]"></div>
             </div>
           </div>
         </div>
@@ -785,7 +838,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEditClick }) => {
 
         <div className="mt-auto pt-4">
           <button
-            className="w-full bg-[#D7EFF6] text-[#264D64] border border-[#80C9E0] py-3 rounded-md flex items-center justify-center hover:bg-[#C4E5F0] transition-colors"
+            className="w-full bg-[var(--primary-50)] text-[var(--secondary-700)] border border-[var(--primary-200)] py-3 rounded-md flex items-center justify-center hover:bg-[#C4E5F0] transition-colors"
             onClick={onEditClick}
           >
             <svg

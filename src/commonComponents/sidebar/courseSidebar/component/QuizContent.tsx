@@ -77,7 +77,9 @@ const QuizContent: React.FC<QuizContentProps> = ({
                 <div>
                   <h3
                     className={`text-sm font-medium ${
-                      isSelected ? "text-[#007B9F]" : "text-gray-800"
+                      isSelected
+                        ? "text-[var(--secondary-400)]"
+                        : "text-gray-800"
                     }`}
                   >
                     {isSelected && quizzes ? quiz.title : quiz.title}
