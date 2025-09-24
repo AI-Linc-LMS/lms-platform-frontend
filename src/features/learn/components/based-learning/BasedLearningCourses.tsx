@@ -150,7 +150,7 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
   // Map backend data to UI props
 
   // Only display up to 4 courses in the dashboard
-  const displayedCourses = courses.slice(0, 4);
+  const displayedCourses = courses && courses?.slice(0, 4);
 
   return (
     <div>
