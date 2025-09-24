@@ -230,7 +230,7 @@ Priya Sharma,priya.sharma@example.com`;
           </div>
           <button
             onClick={onViewHistory}
-            className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+            className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-[var(--font-light)] px-4 py-2 rounded-lg font-medium transition-colors text-sm"
           >
             <svg
               className="w-4 h-4"
@@ -249,7 +249,7 @@ Priya Sharma,priya.sharma@example.com`;
           </button>
           <button
             onClick={downloadSampleCSV}
-            className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+            className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-[var(--font-light)] px-4 py-2 rounded-lg font-medium transition-colors text-sm"
           >
             <svg
               className="w-4 h-4"
@@ -410,7 +410,7 @@ Priya Sharma,priya.sharma@example.com`;
               !emailTemplate.email_body ||
               isLoading
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-green-500 hover:bg-green-600 text-white"
+                : "bg-green-500 hover:bg-green-600 text-[var(--font-light)]"
             }`}
           >
             {isLoading ? "Sending..." : "Send Bulk Emails"}

@@ -1,6 +1,5 @@
-
-import { SearchIcon } from './CourseIcons';
-import SortDropdown from './SortDropdown';
+import { SearchIcon } from "./CourseIcons";
+import SortDropdown from "./SortDropdown";
 
 interface DesktopSearchProps {
   searchQuery: string;
@@ -13,7 +12,7 @@ const DesktopSearch = ({
   searchQuery,
   setSearchQuery,
   sortBy,
-  setSortBy
+  setSortBy,
 }: DesktopSearchProps) => {
   return (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -26,7 +25,7 @@ const DesktopSearch = ({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search by courses"
-          className="w-full py-2 pl-10 pr-4 border border-[#DEE2E6] rounded-lg text-[#495057] focus:outline-none focus:ring-2 focus:ring-[#17627A] focus:border-transparent"
+          className="w-full py-2 pl-10 pr-4 border border-[#DEE2E6] rounded-lg text-[var(--neutral-400)] focus:outline-none focus:ring-2 focus:ring-[#17627A] focus:border-transparent"
         />
       </div>
 
@@ -35,4 +34,4 @@ const DesktopSearch = ({
   );
 };
 
-export default DesktopSearch; 
+export default DesktopSearch;

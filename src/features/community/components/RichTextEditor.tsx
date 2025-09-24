@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import {
   Bold,
   Italic,
@@ -11,8 +11,8 @@ import {
   Redo,
   Undo,
   ImageIcon,
-  Link
-} from 'lucide-react';
+  Link,
+} from "lucide-react";
 
 interface RichTextEditorProps {
   value: string;
@@ -21,11 +21,11 @@ interface RichTextEditorProps {
   height?: string;
 }
 
-const RichTextEditor: React.FC<RichTextEditorProps> = ({ 
-  value, 
-  onChange, 
-  placeholder = "Start typing...", 
-  height = "h-32" 
+const RichTextEditor: React.FC<RichTextEditorProps> = ({
+  value,
+  onChange,
+  placeholder = "Start typing...",
+  height = "h-32",
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -48,7 +48,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         if (result && editorRef.current) {
           const img = `<img src="${result}" alt="Uploaded image" style="max-width: 100%; height: auto; margin: 10px 0; border-radius: 4px;" />`;
           editorRef.current.focus();
-          document.execCommand('insertHTML', false, img);
+          document.execCommand("insertHTML", false, img);
           onChange(editorRef.current.innerHTML);
         }
       };
@@ -57,27 +57,31 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   };
 
   const insertCodeBlock = () => {
-    const language = prompt('Enter programming language (optional):') || '';
-    const code = prompt('Enter your code:');
+    const language = prompt("Enter programming language (optional):") || "";
+    const code = prompt("Enter your code:");
     if (code && editorRef.current) {
-      const codeBlock = `<div style="margin: 10px 0;"><div style="background: #f8f9fa; padding: 8px 12px; border-radius: 4px 4px 0 0; border-bottom: 1px solid #e9ecef; font-size: 12px; color: #6c757d; font-weight: 500;">${language || 'Code'}</div><pre style="background: #f8f9fa; padding: 12px; margin: 0; border-radius: 0 0 4px 4px; overflow-x: auto; border: 1px solid #e9ecef; border-top: none;"><code style="font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-size: 14px; color: #212529; line-height: 1.4;">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre></div>`;
+      const codeBlock = `<div style="margin: 10px 0;"><div style="background: var(--neutral-50); padding: 8px 12px; border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--neutral-100); font-size: 12px; color: var(--neutral-300); font-weight: 500;">${
+        language || "Code"
+      }</div><pre style="background: var(--neutral-50); padding: 12px; margin: 0; border-radius: 0 0 4px 4px; overflow-x: auto; border: 1px solid var(--neutral-100); border-top: none;"><code style="font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-size: 14px; color: #212529; line-height: 1.4;">${code
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")}</code></pre></div>`;
       editorRef.current.focus();
-      document.execCommand('insertHTML', false, codeBlock);
+      document.execCommand("insertHTML", false, codeBlock);
       onChange(editorRef.current.innerHTML);
     }
   };
 
   const insertLink = () => {
-    const url = prompt('Enter URL:');
+    const url = prompt("Enter URL:");
     if (url) {
-      handleCommand('createLink', url);
+      handleCommand("createLink", url);
     }
   };
 
   const handleInput = () => {
     if (editorRef.current && !isComposing) {
       const content = editorRef.current.innerHTML;
-      onChange(content === '<br>' ? '' : content);
+      onChange(content === "<br>" ? "" : content);
     }
   };
 
@@ -88,40 +92,49 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      document.execCommand('insertParagraph', false);
+    if (e.key === "Enter" && !e.shiftKey) {
+      document.execCommand("insertParagraph", false);
       e.preventDefault();
     }
   };
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const text = e.clipboardData.getData('text/html') || e.clipboardData.getData('text/plain');
+    const text =
+      e.clipboardData.getData("text/html") ||
+      e.clipboardData.getData("text/plain");
 
     if (text) {
-      const content = e.clipboardData.types.includes('text/html')
+      const content = e.clipboardData.types.includes("text/html")
         ? text
-        : `<p>${text.replace(/\n/g, '</p><p>')}</p>`;
+        : `<p>${text.replace(/\n/g, "</p><p>")}</p>`;
 
-      document.execCommand('insertHTML', false, content);
+      document.execCommand("insertHTML", false, content);
       handleInput();
     }
   };
 
   useEffect(() => {
-    if (editorRef.current && !editorRef.current.contains(document.activeElement)) {
-      editorRef.current.innerHTML = value || '';
+    if (
+      editorRef.current &&
+      !editorRef.current.contains(document.activeElement)
+    ) {
+      editorRef.current.innerHTML = value || "";
     }
   }, [value]);
 
   return (
     <div className="border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
       {/* Toolbar */}
-      <div className={`border-b border-gray-200 p-2 ${showToolbar ? 'block' : 'hidden sm:block'}`}>
+      <div
+        className={`border-b border-gray-200 p-2 ${
+          showToolbar ? "block" : "hidden sm:block"
+        }`}
+      >
         <div className="flex flex-wrap gap-1">
           <button
             type="button"
-            onClick={() => handleCommand('bold')}
+            onClick={() => handleCommand("bold")}
             className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
             title="Bold"
           >
@@ -129,7 +142,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => handleCommand('italic')}
+            onClick={() => handleCommand("italic")}
             className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
             title="Italic"
           >
@@ -146,7 +159,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <div className="w-px bg-gray-300 mx-1"></div>
           <button
             type="button"
-            onClick={() => handleCommand('insertUnorderedList')}
+            onClick={() => handleCommand("insertUnorderedList")}
             className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
             title="Bullet List"
           >
@@ -154,7 +167,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => handleCommand('insertOrderedList')}
+            onClick={() => handleCommand("insertOrderedList")}
             className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
             title="Numbered List"
           >
@@ -162,7 +175,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => handleCommand('formatBlock', 'blockquote')}
+            onClick={() => handleCommand("formatBlock", "blockquote")}
             className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
             title="Quote"
           >
@@ -188,7 +201,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <div className="w-px bg-gray-300 mx-1"></div>
           <button
             type="button"
-            onClick={() => handleCommand('undo')}
+            onClick={() => handleCommand("undo")}
             className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
             title="Undo"
           >
@@ -196,7 +209,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => handleCommand('redo')}
+            onClick={() => handleCommand("redo")}
             className="p-2 hover:bg-gray-100 rounded text-gray-600 hover:text-gray-800"
             title="Redo"
           >
@@ -212,7 +225,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           onClick={() => setShowToolbar(!showToolbar)}
           className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800"
         >
-          {showToolbar ? 'Hide' : 'Show'} formatting tools
+          {showToolbar ? "Hide" : "Show"} formatting tools
           {showToolbar ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
       </div>
@@ -222,13 +235,13 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         ref={editorRef}
         contentEditable
         className={`w-full px-3 py-2 ${height} focus:outline-none overflow-y-auto text-sm sm:text-base`}
-        style={{ minHeight: '80px' }}
+        style={{ minHeight: "80px" }}
         onInput={handleInput}
         onCompositionStart={handleCompositionStart}
         onCompositionEnd={handleCompositionEnd}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
-        data-placeholder={!value ? placeholder : ''}
+        data-placeholder={!value ? placeholder : ""}
         suppressContentEditableWarning={true}
       />
 
@@ -241,11 +254,12 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         className="hidden"
       />
 
-      <style dangerouslySetInnerHTML={{
-        __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         [contenteditable]:empty:before {
           content: attr(data-placeholder);
-          color: #9ca3af;
+          color: var(--font-tertiary);
           pointer-events: none;
         }
         [contenteditable] {
@@ -257,7 +271,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           padding-left: 16px;
           margin: 16px 0;
           font-style: italic;
-          color: #6b7280;
+          color: var(--font-secondary);
         }
         [contenteditable] ul, [contenteditable] ol {
           padding-left: 20px;
@@ -294,8 +308,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           display: inline-block;
           min-width: 1px;
         }
-        `
-      }} />
+        `,
+        }}
+      />
     </div>
   );
 };

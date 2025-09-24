@@ -50,10 +50,10 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
           {tabList.map((tab) => (
             <button
               key={tab.key}
-              className={`flex items-center gap-1 px-4 py-1 rounded-md border text-xs transition-colors text-[#255C79] bg-[#D7EFF6] 
+              className={`flex items-center gap-1 px-4 py-1 rounded-md border text-xs transition-colors text-[var(--primary-500)] bg-[var(--primary-50)] 
                                 ${
                                   activeTab === tab.key
-                                    ? "border-[#255C79]"
+                                    ? "border-[var(--primary-500)]"
                                     : "border-blue-100 bg-[#F4FDFF]"
                                 }`}
               onClick={() => setActiveTab(tab.key)}

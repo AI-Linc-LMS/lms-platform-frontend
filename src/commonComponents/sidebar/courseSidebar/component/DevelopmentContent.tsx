@@ -67,7 +67,7 @@ const DevelopmentContent: React.FC<DevelopmentContentProps> = ({
                 </div>
               </div>
             </div>
-            
+
             <p className="text-sm text-gray-600 mb-3 line-clamp-2">
               {project.description}
             </p>
@@ -85,15 +85,15 @@ const DevelopmentContent: React.FC<DevelopmentContentProps> = ({
                   ></div>
                 </div>
               </div>
-                <button 
-                className="h-[30px] ml-4 px-3 py-1 text-xs bg-[#255C79] hover:bg-[#344b5a] text-white rounded-md transition transform hover:scale-105 cursor-pointer"
+              <button
+                className="h-[30px] ml-4 px-3 py-1 text-xs bg-[var(--primary-500)] hover:bg-[#344b5a] text-[var(--font-light)] rounded-md transition transform hover:scale-105 cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
                   onProjectSelect(project.id);
                 }}
-                >
-                {selectedProjectId === project.id ? 'Continue' : 'Start'}
-                </button>
+              >
+                {selectedProjectId === project.id ? "Continue" : "Start"}
+              </button>
             </div>
           </div>
         ))}
@@ -102,4 +102,4 @@ const DevelopmentContent: React.FC<DevelopmentContentProps> = ({
   );
 };
 
-export default DevelopmentContent; 
+export default DevelopmentContent;

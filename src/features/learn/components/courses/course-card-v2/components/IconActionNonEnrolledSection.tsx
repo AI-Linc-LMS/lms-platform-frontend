@@ -16,20 +16,15 @@ interface IconActionsSectionProps {
   onViewCertificate?: () => void;
 }
 
-export const IconActionsSection: React.FC<IconActionsSectionProps> = ({
-  onContinueLearning,
+export const IconActionsNonEnrolledSection: React.FC<
+  IconActionsSectionProps
+> = ({
   onViewSyllabus,
   onViewResources,
   onViewDiscussions,
   onViewCertificate,
 }) => {
   const actions: ActionButton[] = [
-    {
-      id: "continue",
-      icon: Play,
-      tooltip: "Continue Learning",
-      onClick: onContinueLearning,
-    },
     {
       id: "syllabus",
       icon: List,

@@ -79,12 +79,12 @@ export const IconActionsNotEnrolledSection: React.FC<
           return (
             <button
               key={action.id}
-              className={`w-10 h-10 rounded-full border border-[#e2e8f0] bg-[#f8fafc] flex items-center justify-center cursor-pointer transition-all duration-200 text-[#6b7280] relative hover:-translate-y-0.5 group ${hoverClasses}`}
+              className={`w-10 h-10 rounded-full border border-[#e2e8f0] bg-[#f8fafc] flex items-center justify-center cursor-pointer transition-all duration-200 text-[var(--font-secondary)] relative hover:-translate-y-0.5 group ${hoverClasses}`}
               onClick={action.onClick}
               aria-label={action.tooltip}
             >
               <IconComponent className="w-4 h-4" />
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 bg-[#374151] text-white px-3 py-2 rounded-md text-xs font-medium whitespace-nowrap opacity-0 invisible transition-all duration-200 z-[1000] mb-2 min-w-max text-center group-hover:opacity-100 group-hover:visible">
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 bg-[#374151] text-[var(--font-light)] px-3 py-2 rounded-md text-xs font-medium whitespace-nowrap opacity-0 invisible transition-all duration-200 z-[1000] mb-2 min-w-max text-center group-hover:opacity-100 group-hover:visible">
                 {action.tooltip}
               </div>
             </button>

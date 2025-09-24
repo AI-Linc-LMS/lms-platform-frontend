@@ -1,28 +1,29 @@
-import React, { useState } from 'react';
-import { FiCopy, FiCheck } from 'react-icons/fi';
-import { generateEncodedPaymentLink } from '../../../utils/paymentLinkUtils';
-import { useSelector } from 'react-redux';
-import { UserState } from '../../learn/components/assessment/types/assessmentTypes';
-import AccessDenied from '../../../components/AccessDenied';
-import { useRole } from '../../../hooks/useRole';
-import PermissionDeniedModal from '../workshop-registrations/components/modals/PermissionDeniedModal';
+import React, { useState } from "react";
+import { FiCopy, FiCheck } from "react-icons/fi";
+import { generateEncodedPaymentLink } from "../../../utils/paymentLinkUtils";
+import { useSelector } from "react-redux";
+import { UserState } from "../../learn/components/assessment/types/assessmentTypes";
+import AccessDenied from "../../../components/AccessDenied";
+import { useRole } from "../../../hooks/useRole";
+import PermissionDeniedModal from "../workshop-registrations/components/modals/PermissionDeniedModal";
 
 const PaymentLinkGenerator: React.FC = () => {
-  const [amount, setAmount] = useState<string>('');
-  const [programType, setProgramType] = useState<'flagship-program' | 'nanodegree-program'>('flagship-program');
+  const [amount, setAmount] = useState<string>("");
+  const [programType, setProgramType] = useState<
+    "flagship-program" | "nanodegree-program"
+  >("flagship-program");
   const [copied, setCopied] = useState(false);
-  const [generatedLink, setGeneratedLink] = useState<string>('');
+  const [generatedLink, setGeneratedLink] = useState<string>("");
   const { isSuperAdmin, isAdminOrInstructor } = useRole();
   const user = useSelector((state: { user: UserState }) => state.user);
   const [permissionDeniedOpen, setPermissionDeniedOpen] = useState(false);
-
 
   const handleGenerateLink = () => {
     setPermissionDeniedOpen(true);
     return;
     const numericAmount = parseInt(amount, 10);
     if (isNaN(numericAmount) || numericAmount <= 0) {
-      alert('Please enter a valid amount');
+      alert("Please enter a valid amount");
       return;
     }
 
@@ -30,7 +31,7 @@ const PaymentLinkGenerator: React.FC = () => {
       amount: numericAmount,
       programType,
       timestamp: Date.now(),
-      generatedBy: user?.email || 'admin'
+      generatedBy: user?.email || "admin",
     });
 
     setGeneratedLink(link);
@@ -42,7 +43,7 @@ const PaymentLinkGenerator: React.FC = () => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy link:', error);
+      console.error("Failed to copy link:", error);
     }
   };
 
@@ -61,7 +62,11 @@ const PaymentLinkGenerator: React.FC = () => {
           </label>
           <select
             value={programType}
-            onChange={(e) => setProgramType(e.target.value as 'flagship-program' | 'nanodegree-program')}
+            onChange={(e) =>
+              setProgramType(
+                e.target.value as "flagship-program" | "nanodegree-program"
+              )
+            }
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="flagship-program">Flagship Career Launchpad</option>
@@ -85,7 +90,7 @@ const PaymentLinkGenerator: React.FC = () => {
 
         <button
           onClick={handleGenerateLink}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+          className="w-full bg-blue-600 text-[var(--font-light)] py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
         >
           Generate Link
         </button>
@@ -101,11 +106,12 @@ const PaymentLinkGenerator: React.FC = () => {
               </div>
               <button
                 onClick={handleCopy}
-                className={`flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${copied
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                  }`}
-                title={copied ? 'Copied!' : 'Copy URL'}
+                className={`flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  copied
+                    ? "bg-green-100 text-green-700"
+                    : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                }`}
+                title={copied ? "Copied!" : "Copy URL"}
               >
                 {copied ? (
                   <>
@@ -121,7 +127,8 @@ const PaymentLinkGenerator: React.FC = () => {
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              This link will expire in 30 minutes. Share it with the student to complete the payment.
+              This link will expire in 30 minutes. Share it with the student to
+              complete the payment.
             </p>
           </div>
         )}
@@ -135,4 +142,4 @@ const PaymentLinkGenerator: React.FC = () => {
   );
 };
 
-export default PaymentLinkGenerator; 
+export default PaymentLinkGenerator;

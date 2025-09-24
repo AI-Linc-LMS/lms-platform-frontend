@@ -107,7 +107,9 @@ const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
                 <button
                   onClick={() => {
                     // Remove all emails
-                    selectedRecipients.forEach((email) => onRemoveEmail(email.email));
+                    selectedRecipients.forEach((email) =>
+                      onRemoveEmail(email.email)
+                    );
                   }}
                   className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
                 >
@@ -132,8 +134,8 @@ const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
                               {recipient.name}
                             </span>
                             <span className="text-xs text-gray-400">
-                          #{index + 1}
-                        </span>
+                              #{index + 1}
+                            </span>
                           </div>
                           <span className="text-xs text-gray-500">
                             {recipient.email}
@@ -232,7 +234,7 @@ const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
               className={`px-6 py-2 rounded-md font-medium transition-colors flex items-center gap-2 ${
                 selectedRecipients.length === 0
                   ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-green-600 hover:bg-green-700 text-white"
+                  : "bg-green-600 hover:bg-green-700 text-[var(--font-light)]"
               }`}
             >
               <FiMail className="w-4 h-4" />

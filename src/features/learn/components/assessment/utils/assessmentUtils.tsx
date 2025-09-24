@@ -41,13 +41,13 @@ export const transformToPerformanceReportData = (stats?: AssessmentStats) => {
       label: "Test Duration",
       value: stats.time_taken_minutes ?? 0,
       unit: "mins",
-      color: "#facc15",
+      color: "var(--accent-yellow)",
       icon: (
         <svg
           width="24"
           height="24"
           fill="none"
-          stroke="#facc15"
+          stroke="var(--accent-yellow)"
           strokeWidth="2"
         >
           <circle cx="12" cy="12" r="10" />
@@ -59,13 +59,13 @@ export const transformToPerformanceReportData = (stats?: AssessmentStats) => {
       label: "Placement Readiness",
       value: stats.placement_readiness ?? 0,
       unit: "",
-      color: "#facc15",
+      color: "var(--accent-yellow)",
       icon: (
         <svg
           width="24"
           height="24"
           fill="none"
-          stroke="#facc15"
+          stroke="var(--accent-yellow)"
           strokeWidth="2"
         >
           <polygon points="12,2 15,10 24,10 17,15 19,24 12,19 5,24 7,15 0,10 9,10" />
@@ -136,7 +136,7 @@ export const transformToRatingBarData = (stats?: AssessmentStats) => {
   ).map(([label, val]) => ({
     label,
     value: (val.rating_out_of_5 ?? 0) * 20, // convert to percent for bar
-    color: "#facc15",
+    color: "var(--accent-yellow)",
   }));
 };
 

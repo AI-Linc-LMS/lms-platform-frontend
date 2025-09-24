@@ -1,16 +1,16 @@
 interface LoadingSpinnerProps {
-  size?: 'small' | 'medium' | 'large';
+  size?: "small" | "medium" | "large";
   color?: string;
 }
 
-const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
-  size = 'medium', 
-  color = '#2A8CB0' 
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
+  size = "medium",
+  color = "var(--primary-400)",
 }) => {
   const sizeMap = {
-    small: 'w-6 h-6',
-    medium: 'w-10 h-10',
-    large: 'w-16 h-16'
+    small: "w-6 h-6",
+    medium: "w-10 h-10",
+    large: "w-16 h-16",
   };
 
   const sizeClass = sizeMap[size];
@@ -25,4 +25,4 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   );
 };
 
-export default LoadingSpinner; 
+export default LoadingSpinner;

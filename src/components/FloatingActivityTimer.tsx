@@ -10,8 +10,15 @@ import {
   clearActivityDebugEvents,
   simulateDailyReset,
 } from "../utils/activityDebugger";
-import { getSessionId, getDeviceInfo, getDeviceId } from "../utils/deviceIdentifier";
-import { getCurrentUserId, getAuthenticatedUserId } from "../utils/userIdHelper";
+import {
+  getSessionId,
+  getDeviceInfo,
+  getDeviceId,
+} from "../utils/deviceIdentifier";
+import {
+  getCurrentUserId,
+  getAuthenticatedUserId,
+} from "../utils/userIdHelper";
 import {
   getHistoricalActivity,
   getNextResetTime,
@@ -199,13 +206,13 @@ const FloatingActivityTimer: React.FC = () => {
 
     // Create clean API payload with total accumulated time (Today's Total)
     const activityData = {
-      "time_spent_seconds": totalTimeInSeconds, // This is Today's Total (11m 24s in your example)
+      time_spent_seconds: totalTimeInSeconds, // This is Today's Total (11m 24s in your example)
       // "session_id": sessionId,
       // "account_id": getAuthenticatedUserId(), // User's account ID (same across all devices)
-      "session_id": getCurrentUserId(), // Keep for backward compatibility
+      session_id: getCurrentUserId(), // Keep for backward compatibility
       // "device_id": getDeviceId(), // Unique device/browser identifier
-      "date": new Date().toISOString().split('T')[0], // YYYY-MM-DD format
-      "device_type": deviceInfo?.deviceType || "unknown",
+      date: new Date().toISOString().split("T")[0], // YYYY-MM-DD format
+      device_type: deviceInfo?.deviceType || "unknown",
       // "timestamp": Date.now()
     };
 
@@ -442,37 +449,44 @@ const FloatingActivityTimer: React.FC = () => {
           <button
             onClick={() => {
               // Test the actual visibility API
-              console.log('🔍 Testing visibility change...');
-              console.log('Current visibility state:', document.visibilityState);
-              console.log('Current active status:', isActive);
-              
+              console.log("🔍 Testing visibility change...");
+              console.log(
+                "Current visibility state:",
+                document.visibilityState
+              );
+              console.log("Current active status:", isActive);
+
               // Simulate visibility change by dispatching the actual event
               const currentState = document.visibilityState;
-              const newState = currentState === 'visible' ? 'hidden' : 'visible';
-              
+              const newState =
+                currentState === "visible" ? "hidden" : "visible";
+
               // Temporarily override the visibilityState property
-              Object.defineProperty(document, 'visibilityState', {
+              Object.defineProperty(document, "visibilityState", {
                 writable: true,
                 configurable: true,
-                value: newState
+                value: newState,
               });
-              
+
               // Dispatch the real visibility change event
-              const event = new Event('visibilitychange');
+              const event = new Event("visibilitychange");
               document.dispatchEvent(event);
-              
-              console.log('✅ Dispatched visibilitychange event');
-              console.log('New visibility state:', document.visibilityState);
-              
+
+              console.log("✅ Dispatched visibilitychange event");
+              console.log("New visibility state:", document.visibilityState);
+
               // Restore the original state after 3 seconds for testing
               setTimeout(() => {
-                Object.defineProperty(document, 'visibilityState', {
+                Object.defineProperty(document, "visibilityState", {
                   writable: true,
                   configurable: true,
-                  value: currentState
+                  value: currentState,
                 });
-                document.dispatchEvent(new Event('visibilitychange'));
-                console.log('🔄 Restored original visibility state:', document.visibilityState);
+                document.dispatchEvent(new Event("visibilitychange"));
+                console.log(
+                  "🔄 Restored original visibility state:",
+                  document.visibilityState
+                );
               }, 3000);
             }}
             className="bg-green-100 hover:bg-green-200 text-green-800 px-2 py-1 rounded text-xs"
@@ -547,7 +561,7 @@ const FloatingActivityTimer: React.FC = () => {
   if (isMinimized) {
     return (
       <div
-        className="fixed bottom-4 right-4 bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg cursor-pointer z-50 hover:bg-blue-600 transition-all"
+        className="fixed bottom-4 right-4 bg-blue-500 text-[var(--font-light)] rounded-full w-10 h-10 flex items-center justify-center shadow-lg cursor-pointer z-50 hover:bg-blue-600 transition-all"
         onClick={() => setIsMinimized(false)}
       >
         <svg
@@ -571,7 +585,7 @@ const FloatingActivityTimer: React.FC = () => {
       } bg-white rounded-lg shadow-lg overflow-hidden z-50 transition-all duration-300 border border-gray-200`}
     >
       {/* Header */}
-      <div className="bg-blue-500 text-white px-3 py-2 flex justify-between items-center">
+      <div className="bg-blue-500 text-[var(--font-light)] px-3 py-2 flex justify-between items-center">
         <div className="flex items-center">
           <div
             className={`w-2 h-2 rounded-full mr-2 ${
@@ -602,7 +616,7 @@ const FloatingActivityTimer: React.FC = () => {
         <div className="flex">
           <button
             onClick={() => setShowDebugging(!showDebugging)}
-            className="text-white hover:text-blue-100 p-1"
+            className="text-[var(--font-light)] hover:text-blue-100 p-1"
             title="Debug"
           >
             <svg
@@ -617,7 +631,7 @@ const FloatingActivityTimer: React.FC = () => {
           </button>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-white hover:text-blue-100 p-1"
+            className="text-[var(--font-light)] hover:text-blue-100 p-1"
             title="Toggle Expand"
           >
             {isExpanded ? (
@@ -650,7 +664,7 @@ const FloatingActivityTimer: React.FC = () => {
           </button>
           <button
             onClick={() => setIsMinimized(true)}
-            className="text-white hover:text-blue-100 p-1"
+            className="text-[var(--font-light)] hover:text-blue-100 p-1"
             title="Minimize"
           >
             <svg

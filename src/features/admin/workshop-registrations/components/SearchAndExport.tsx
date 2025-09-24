@@ -196,7 +196,7 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
             {hasActiveFilters && (
               <button
                 onClick={onClearAllFilters}
-                className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded text-sm hover:bg-gray-700 transition-colors"
+                className="flex items-center gap-2 bg-gray-600 text-[var(--font-light)] px-4 py-2 rounded text-sm hover:bg-gray-700 transition-colors"
               >
                 <FiX className="w-4 h-4" />
                 Clear All Filters
@@ -209,7 +209,7 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
               <div className="relative">
                 <button
                   onClick={() => setShowFreezeDropdown(!showFreezeDropdown)}
-                  className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded text-sm hover:bg-purple-700 transition-colors"
+                  className="flex items-center gap-2 bg-purple-600 text-[var(--font-light)] px-4 py-2 rounded text-sm hover:bg-purple-700 transition-colors"
                   title="Freeze Columns"
                 >
                   <FiLock className="w-4 h-4" />
@@ -283,8 +283,8 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
                 onClick={onToggleSelection}
                 className={`flex items-center gap-2 px-4 py-2 rounded text-sm transition-colors ${
                   showSelection
-                    ? "bg-blue-600 text-white hover:bg-blue-700"
-                    : "bg-gray-600 text-white hover:bg-gray-700"
+                    ? "bg-blue-600 text-[var(--font-light)] hover:bg-blue-700"
+                    : "bg-gray-600 text-[var(--font-light)] hover:bg-gray-700"
                 }`}
                 title={
                   showSelection ? "Exit Selection Mode" : "Enter Selection Mode"
@@ -306,7 +306,7 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
               selectedCount > 0 && (
                 <button
                   onClick={onSendEmail}
-                  className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700 transition-colors"
+                  className="flex items-center gap-2 bg-green-600 text-[var(--font-light)] px-4 py-2 rounded text-sm hover:bg-green-700 transition-colors"
                   title={`Send Email to ${selectedCount} selected recipients`}
                 >
                   <FiMail className="w-4 h-4" />
@@ -318,12 +318,12 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
             {isSuperAdmin && (
               <button
                 onClick={onExport}
-                className="flex items-center gap-2 bg-[#5FA564] text-white px-4 py-2 rounded text-sm max-w-[120px]"
+                className="flex items-center gap-2 bg-[var(--success-500)] text-[var(--font-light)] px-4 py-2 rounded text-sm max-w-[120px]"
                 title="Export to Excel"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="w-5 h-5 text-white"
+                  className="w-5 h-5 text-[var(--font-light)]"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -335,7 +335,7 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
                     d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
                   />
                 </svg>
-                <span className="inline text-white">Export</span>
+                <span className="inline text-[var(--font-light)]">Export</span>
               </button>
             )}
           </div>
@@ -348,8 +348,8 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
               className={`flex items-center gap-2 
             ${
               hasActiveSorts()
-                ? "bg-blue-600 text-white hover:bg-blue-700"
-                : "bg-gray-600 text-white hover:bg-gray-700"
+                ? "bg-blue-600 text-[var(--font-light)] hover:bg-blue-700"
+                : "bg-gray-600 text-[var(--font-light)] hover:bg-gray-700"
             }
             px-4 py-2 rounded text-sm transition-colors`}
               title={`Multi-Sort Active: ${sortConfigs.length} field${
@@ -457,7 +457,7 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
                             onClick={() => handleSortAsc(field.key)}
                             className={`px-2 py-1 text-xs rounded ${
                               currentSort?.direction === "asc"
-                                ? "bg-blue-600 text-white"
+                                ? "bg-blue-600 text-[var(--font-light)]"
                                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                             }`}
                             title={`Sort ${field.label} Ascending`}
@@ -468,7 +468,7 @@ export const SearchAndExport: React.FC<SearchAndExportProps> = ({
                             onClick={() => handleSortDesc(field.key)}
                             className={`px-2 py-1 text-xs rounded ${
                               currentSort?.direction === "desc"
-                                ? "bg-blue-600 text-white"
+                                ? "bg-blue-600 text-[var(--font-light)]"
                                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                             }`}
                             title={`Sort ${field.label} Descending`}

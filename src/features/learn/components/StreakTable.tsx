@@ -60,16 +60,18 @@ const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
     const isActive = activeDays.includes(day);
 
     if (isFuture) {
-      dayStyles[day] = "bg-gray-200 text-black";
+      dayStyles[day] = "bg-gray-200 text-[var(--font-dark)]";
     } else if (!isActive && !missedDayFound) {
       missedDayFound = true;
-      dayStyles[day] = "border-2 border-[#AE0606] text-[#AE0606]";
+      dayStyles[day] =
+        "border-2 border-[var(--secondsary-300)] text-[var(--secondsary-300)]";
     } else if (isActive && !missedDayFound) {
-      dayStyles[day] = "bg-[#417845] text-white";
+      dayStyles[day] = "bg-[var(--secondary-200)] text-[var(--font-light)]";
     } else if (isActive && missedDayFound) {
-      dayStyles[day] = "bg-[#CDE5CE] text-black";
+      dayStyles[day] = "bg-[var(--secondary-100)] text-[var(--font-dark)]";
     } else {
-      dayStyles[day] = "border-2 border-[#AE0606] text-[#AE0606]";
+      dayStyles[day] =
+        "border-2 border-[var(--secondsary-300)] text-[var(--secondsary-300)]";
     }
   }
 
@@ -90,7 +92,7 @@ const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
         </h2>
 
         {!data || !data.streak || Object.keys(data.streak).length === 0 ? (
-          <p className="text-[14px] text-[#495057] mb-8">
+          <p className="text-[14px] text-[var(--neutral-400)] mb-8">
             No Streak data available
           </p>
         ) : (
@@ -119,33 +121,35 @@ const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
         Study everyday to build your streak 💪
       </p>
       <div className="rounded-xl bg-white p-4">
-          <div className="grid grid-cols-5 gap-4">
-              {days.map((day) => {
-                  const tooltipText = dayStyles[day].includes("border-[#AE0606]")
-                      ? "Missed day"
-                      : dayStyles[day].includes("bg-[#CDE5CE]")
-                          ? "Past streak"
-                          : dayStyles[day].includes("bg-[#417845]")
-                              ? "Current streak"
-                              : "";
+        <div className="grid grid-cols-5 gap-4">
+          {days.map((day) => {
+            const tooltipText = dayStyles[day].includes(
+              "border-[var(--secondsary-300)]"
+            )
+              ? "Missed day"
+              : dayStyles[day].includes("bg-[var(--secondary-100)]")
+              ? "Past streak"
+              : dayStyles[day].includes("bg-[var(--secondary-200)]")
+              ? "Current streak"
+              : "";
 
-                  return (
-                      <div className="flex justify-center items-center w-full h-full">
-                          <div
-                              key={day}
-                              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm ${dayStyles[day]} group transition-transform duration-300 hover:scale-110`}
-                          >
-                              {tooltipText && (
-                                  <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 bg-gray-100 text-black text-xs rounded-xl px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                      {tooltipText}
-                                  </div>
-                              )}
-                              {day}
-                          </div>
-                      </div>
-                  );
-              })}
-          </div>
+            return (
+              <div className="flex justify-center items-center w-full h-full">
+                <div
+                  key={day}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm ${dayStyles[day]} group transition-transform duration-300 hover:scale-110`}
+                >
+                  {tooltipText && (
+                    <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 bg-gray-100 text-[var(--font-dark)] text-xs rounded-xl px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      {tooltipText}
+                    </div>
+                  )}
+                  {day}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

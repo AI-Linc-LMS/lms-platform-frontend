@@ -157,13 +157,13 @@ const EmailJobsHistoryModal: React.FC<EmailJobsHistoryModalProps> = ({
                           setSelectedJob(job);
                           setShowEmailBodyModal(true);
                         }}
-                        className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+                        className="px-3 py-1 bg-blue-500 text-[var(--font-light)] rounded text-sm hover:bg-blue-600 transition-colors"
                       >
                         View email
                       </button>
                       <button
                         onClick={() => onViewStatus(job.task_id)}
-                        className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+                        className="px-3 py-1 bg-blue-500 text-[var(--font-light)] rounded text-sm hover:bg-blue-600 transition-colors"
                       >
                         View Details
                       </button>
@@ -192,7 +192,7 @@ const EmailJobsHistoryModal: React.FC<EmailJobsHistoryModalProps> = ({
           </button>
           <button
             onClick={onCreateNewJob}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors font-medium"
+            className="px-4 py-2 bg-blue-500 text-[var(--font-light)] rounded hover:bg-blue-600 transition-colors font-medium"
           >
             Create New Job
           </button>

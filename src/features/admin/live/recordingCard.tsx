@@ -65,7 +65,7 @@ const RecordingCard: React.FC<RecordingCardProps> = ({
   return (
     <div>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <h2 className="text-2xl font-bold text-[#343A40] mb-4 md:mb-0">
+        <h2 className="text-2xl font-bold text-[var(--neutral-500)] mb-4 md:mb-0">
           Past Sessions
         </h2>
 
@@ -76,7 +76,7 @@ const RecordingCard: React.FC<RecordingCardProps> = ({
               placeholder="Search sessions..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79]"
+              className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary-500)] focus:border-[var(--primary-500)]"
             />
             <svg
               className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
@@ -97,7 +97,7 @@ const RecordingCard: React.FC<RecordingCardProps> = ({
             type="date"
             value={filterDate}
             onChange={(e) => setFilterDate(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#255C79] focus:border-[#255C79]"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary-500)] focus:border-[var(--primary-500)]"
           />
         </div>
       </div>
@@ -129,22 +129,22 @@ const RecordingCard: React.FC<RecordingCardProps> = ({
           {filteredRecordings.map((recording) => (
             <div
               key={recording.id}
-              className="bg-white rounded-2xl shadow-lg overflow-hidden border border-[#80C9E0] hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+              className="bg-white rounded-2xl shadow-lg overflow-hidden border border-[var(--primary-200)] hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
             >
               <div className="p-6">
-                <h3 className="font-bold text-[#343A40] text-lg mb-2 line-clamp-2">
+                <h3 className="font-bold text-[var(--neutral-500)] text-lg mb-2 line-clamp-2">
                   {recording.topic_name}
                 </h3>
-                <p className="text-[#6C757D] text-sm mb-4 line-clamp-2">
+                <p className="text-[var(--neutral-300)] text-sm mb-4 line-clamp-2">
                   {recording.description}
                 </p>
 
                 <div className="flex items-center space-x-3 mb-4">
                   <div className="text-sm">
-                    <p className="font-medium text-[#343A40]">
+                    <p className="font-medium text-[var(--neutral-500)]">
                       {recording.instructor}
                     </p>
-                    <p className="text-[#6C757D]">
+                    <p className="text-[var(--neutral-300)]">
                       {formatDate(recording.class_datetime)}
                     </p>
                   </div>
@@ -155,7 +155,7 @@ const RecordingCard: React.FC<RecordingCardProps> = ({
                     <div className="flex justify-end">
                       <button
                         onClick={() => handleAddRecordingLink(recording)}
-                        className="bg-[#255C79] hover:bg-[#1E4A63] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-95"
+                        className="bg-[var(--primary-500)] hover:bg-[var(--primary-600)] text-[var(--font-light)] px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-95"
                       >
                         {!recording?.recording_link
                           ? "Add Link"
@@ -169,7 +169,7 @@ const RecordingCard: React.FC<RecordingCardProps> = ({
                         onClick={() =>
                           handleWatchRecording(recording?.recording_link || "")
                         }
-                        className="bg-[#255C79] hover:bg-[#1E4A63] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-95"
+                        className="bg-[var(--primary-500)] hover:bg-[var(--primary-600)] text-[var(--font-light)] px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-95"
                       >
                         Watch Recording
                       </button>
@@ -181,7 +181,7 @@ const RecordingCard: React.FC<RecordingCardProps> = ({
                         onClick={() =>
                           handleWatchRecording(recording?.recording_link || "")
                         }
-                        className="bg-[#255C79] hover:bg-[#1E4A63] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-95"
+                        className="bg-[var(--primary-500)] hover:bg-[var(--primary-600)] text-[var(--font-light)] px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-95"
                       >
                         Recording Coming Soon
                       </button>

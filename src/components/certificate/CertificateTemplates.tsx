@@ -95,7 +95,7 @@ const CertificateTemplates = forwardRef<
       <div
         ref={certificateRef}
         data-certificate-ref="true"
-        className="w-full max-w-[800px] h-[500px] text-white p-4 sm:p-6 md:p-8 lg:p-12 box-border relative rounded-lg shadow-lg bg-cover bg-center"
+        className="w-full max-w-[800px] h-[500px] text-[var(--font-light)] p-4 sm:p-6 md:p-8 lg:p-12 box-border relative rounded-lg shadow-lg bg-cover bg-center"
         style={{
           backgroundImage: `url(${microsoftStartupBg})`,
           aspectRatio: "8/5",
@@ -134,9 +134,7 @@ const CertificateTemplates = forwardRef<
             NO CODE DEVELOPMENT BOOTCAMP USING AGENTIC/GENERATIVE AI
           </div>
 
-          <div className="text-lg text-center">
-            Issued on {issuedDate}
-          </div>
+          <div className="text-lg text-center">Issued on {issuedDate}</div>
         </div>
       </div>
     </div>

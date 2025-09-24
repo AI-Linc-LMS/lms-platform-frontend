@@ -367,7 +367,7 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
       seekWarningEl.className =
         "absolute bottom-16 left-0 right-0 text-center z-30";
       seekWarningEl.innerHTML = `
-        <div class="inline-block bg-black bg-opacity-80 text-white text-sm px-4 py-2 rounded-full">
+        <div class="inline-block bg-black bg-opacity-80 text-[var(--font-light)] text-sm px-4 py-2 rounded-full">
           ${seekDisabledMessage}
         </div>
       `;
@@ -404,7 +404,7 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
 
       {/* First time viewing indicator */}
       {isFirstWatch && (
-        <div className="absolute top-3 left-3 z-10 bg-yellow-600 text-white px-3 py-1 text-xs rounded-full">
+        <div className="absolute top-3 left-3 z-10 bg-yellow-600 text-[var(--font-light)] px-3 py-1 text-xs rounded-full">
           First Viewing
         </div>
       )}
@@ -413,7 +413,7 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
       {showContinuePrompt && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 z-20">
           <div className="bg-gray-800 p-6 rounded-lg max-w-md text-center">
-            <h3 className="text-white text-lg font-semibold mb-4">
+            <h3 className="text-[var(--font-light)] text-lg font-semibold mb-4">
               Continue Watching?
             </h3>
             <p className="text-gray-200 mb-4">
@@ -422,13 +422,13 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
             </p>
             <div className="flex justify-center space-x-4">
               <button
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+                className="bg-blue-600 hover:bg-blue-700 text-[var(--font-light)] px-4 py-2 rounded-md"
                 onClick={() => applyProgressAndStartPlayback(savedProgress)}
               >
                 Continue
               </button>
               <button
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md"
+                className="bg-gray-600 hover:bg-gray-700 text-[var(--font-light)] px-4 py-2 rounded-md"
                 onClick={() => {
                   setShowContinuePrompt(false);
                   setHasAppliedSavedProgress(true);
@@ -484,7 +484,7 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
             className="absolute top-0 left-0 right-0 text-center"
             style={{ transform: "translateY(-100%)" }}
           >
-            <div className="inline-block bg-black bg-opacity-80 text-white text-sm px-4 py-2 rounded-full">
+            <div className="inline-block bg-black bg-opacity-80 text-[var(--font-light)] text-sm px-4 py-2 rounded-full">
               {seekDisabledMessage}
             </div>
           </div>
@@ -494,7 +494,10 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
           {/* Left Controls */}
           <div className="flex space-x-2 md:space-x-4 items-center">
             {/* Play/Pause Button */}
-            <button className="text-white cursor-pointer" onClick={togglePlay}>
+            <button
+              className="text-[var(--font-light)] cursor-pointer"
+              onClick={togglePlay}
+            >
               {isPlaying ? (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -538,7 +541,7 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
             {!isMobile && (
               <div className="relative">
                 <button
-                  className="text-white cursor-pointer"
+                  className="text-[var(--font-light)] cursor-pointer"
                   onClick={() => setShowVolumeControl(!showVolumeControl)}
                   onMouseEnter={() => setShowVolumeControl(true)}
                   onMouseLeave={() => setShowVolumeControl(false)}
@@ -580,14 +583,14 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
             )}
 
             {/* Time Display */}
-            <div className="text-white text-xs md:text-sm">
+            <div className="text-[var(--font-light)] text-xs md:text-sm">
               {formatTime(currentTime)} / {formatTime(duration)}
             </div>
           </div>
 
           {/* Center - Title - Hidden on mobile */}
           {!isMobile && (
-            <div className="text-white text-sm flex-1 text-center truncate mx-2">
+            <div className="text-[var(--font-light)] text-sm flex-1 text-center truncate mx-2">
               {title}
             </div>
           )}
@@ -601,8 +604,8 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
                   onClick={() => setVideoSize("small")}
                   className={`text-xs px-2 py-1 rounded-md cursor-pointer ${
                     videoSize === "small"
-                      ? "bg-white text-black"
-                      : "text-white hover:bg-gray-700"
+                      ? "bg-white text-[var(--font-dark)]"
+                      : "text-[var(--font-light)] hover:bg-gray-700"
                   }`}
                 >
                   S
@@ -611,8 +614,8 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
                   onClick={() => setVideoSize("medium")}
                   className={`text-xs px-2 py-1 rounded-md cursor-pointer ${
                     videoSize === "medium"
-                      ? "bg-white text-black"
-                      : "text-white hover:bg-gray-700"
+                      ? "bg-white text-[var(--font-dark)]"
+                      : "text-[var(--font-light)] hover:bg-gray-700"
                   }`}
                 >
                   M
@@ -621,8 +624,8 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
                   onClick={() => setVideoSize("large")}
                   className={`text-xs px-2 py-1 rounded-md cursor-pointer ${
                     videoSize === "large"
-                      ? "bg-white text-black"
-                      : "text-white hover:bg-gray-700"
+                      ? "bg-white text-[var(--font-dark)]"
+                      : "text-[var(--font-light)] hover:bg-gray-700"
                   }`}
                 >
                   L
@@ -632,7 +635,7 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
 
             {/* Fullscreen Button */}
             <button
-              className="text-white cursor-pointer"
+              className="text-[var(--font-light)] cursor-pointer"
               onClick={() => videoRef.current?.requestFullscreen()}
             >
               <svg
