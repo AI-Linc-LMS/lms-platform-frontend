@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
-import { VideoIcon } from "../../../../../commonComponents/icons/learnIcons/CourseIcons";
 import {
   InstructorSection,
   WhatsIncludedSection,
@@ -21,6 +20,7 @@ import {
   createOrder,
   verifyPayment,
 } from "../../../../../services/payment/paymentGatewayApis";
+import { IconActionsNotEnrolledSection } from "./components/IconNotEnrolledActionSection";
 
 // Enhanced 3D Star Rating Component
 const StarRating = ({
@@ -70,30 +70,6 @@ const StarRating = ({
   return <div className="flex items-center gap-1">{stars}</div>;
 };
 
-// Stats block component for action buttons
-const StatBlock = ({
-  icon,
-  count,
-  label,
-}: {
-  icon: React.ReactNode;
-  count: number;
-  label: string;
-}) => {
-  const displayCount = typeof count === "object" ? 0 : Number(count) || 0;
-
-  return (
-    <div className="bg-gray-50 hover:bg-gray-100 rounded-xl p-2 md:p-3 flex flex-col items-center justify-center relative group transition-all duration-200 overflow-visible touch-manipulation">
-      {icon}
-      <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg pointer-events-none transition-opacity duration-200 z-50 whitespace-nowrap shadow-lg">
-        <div className="font-semibold">{label}</div>
-        <div className="text-xs text-gray-300 mt-1">Count: {displayCount}</div>
-        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-      </div>
-    </div>
-  );
-};
-
 interface NotEnrolledExpandedCardProps {
   course: Course;
   className?: string;
@@ -113,67 +89,12 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
 
   const clientId = Number(import.meta.env.VITE_CLIENT_ID) || 1;
 
-  const handleIconAction = (action: string) => {
-    const showNotification = (
-      message: string,
-      type: "success" | "error" | "info" = "info"
-    ) => {
-      const existingNotification = document.querySelector(".notification");
-      if (existingNotification) existingNotification.remove();
-
-      const notification = document.createElement("div");
-      notification.className = `notification notification-${type}`;
-      notification.textContent = message;
-
-      const bgColors = {
-        success: "#10b981",
-        error: "#ef4444",
-        info: "#3b82f6",
-      };
-      notification.style.cssText = `
-        position: fixed; top: 20px; right: 20px; left: 20px; margin: 0 auto;
-        max-width: 300px; padding: 16px 24px; border-radius: 8px; color: white; 
-        font-weight: 600; z-index: 1000; transform: translateY(-100%); 
-        transition: transform 0.3s ease; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        background: ${bgColors[type]}; text-align: center;
-      `;
-
-      document.body.appendChild(notification);
-      setTimeout(() => (notification.style.transform = "translateY(0)"), 100);
-      setTimeout(() => {
-        notification.style.transform = "translateY(-100%)";
-        setTimeout(() => notification.parentNode && notification.remove(), 300);
-      }, 4000);
-    };
-
-    switch (action) {
-      case "syllabus":
-        showNotification("Opening course syllabus...", "info");
-        break;
-      case "preview":
-        showNotification("Loading video preview...", "info");
-        break;
-      case "mentor":
-        showNotification("Connecting you with a mentor...", "info");
-        break;
-      case "certificate":
-        showNotification("Loading sample certificate...", "info");
-        break;
-    }
-  };
-
   const formattedPrice = formatPrice(course?.price || "0");
   const isFree = course?.is_free === true || formattedPrice === "0";
   const courseLevel = course?.difficulty_level;
   const courseDuration = course?.duration_in_hours;
   const courseRating = course?.rating || 4.8;
 
-  // Mock counts for demonstration
-  const totalCounts = {
-    videos: course?.stats?.video?.total || 247,
-    articles: course?.stats?.article?.total || 45,
-    problems: course?.stats?.coding_problem?.total || 23,
-  };
   const user = useSelector((state: { user: UserState }) => state.user);
 
   const [, setPaymentResult] = useState<{
@@ -402,7 +323,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
             onClick={isFree ? handlePrimaryClick : handlePayment}
             className={`px-5 py-3 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[#10b981] text-white hover:bg-[#059669] hover:-translate-y-0.5 ${"w-full"} ${className}`}
           >
-            {`Enroll Now - ${isFree ? "Free" : `${formattedPrice}`}`}
+            {`Enroll Now - ${isFree ? "Free" : `₹${formattedPrice}`}`}
           </button>
         </div>
       </div>
@@ -455,31 +376,6 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
             )
           )}
         </div>
-
-        {/* Course Tags */}
-        {course.tags && course.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {course.tags.slice(0, 6).map((tag, index) => (
-              <span
-                key={index}
-                className={`text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap flex-shrink-0 ${
-                  index % 3 === 0
-                    ? "bg-blue-50 text-blue-700"
-                    : index % 3 === 1
-                    ? "bg-green-50 text-green-700"
-                    : "bg-orange-50 text-orange-700"
-                }`}
-              >
-                {tag}
-              </span>
-            ))}
-            {course.tags.length > 6 && (
-              <span className="text-xs text-gray-500 px-2 py-1 bg-gray-100 rounded-full whitespace-nowrap">
-                +{course.tags.length - 6} more
-              </span>
-            )}
-          </div>
-        )}
 
         {/* Rating Section */}
         <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
@@ -548,86 +444,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
         <WhatsIncludedSection course={course} />
 
         {/* Action Buttons */}
-        <div className="flex justify-center items-center gap-3 pt-2">
-          <button
-            onClick={() => handleIconAction("syllabus")}
-            className="w-12 h-12 rounded-full border border-gray-200 bg-gray-50 flex items-center justify-center cursor-pointer transition-all duration-300 text-gray-500 hover:bg-gray-100 hover:scale-105 relative"
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14,2 14,8 20,8" />
-              <line x1="16" y1="13" x2="8" y2="13" />
-              <line x1="16" y1="17" x2="8" y2="17" />
-              <polyline points="10,9 9,9 8,9" />
-            </svg>
-          </button>
-
-          <button
-            onClick={() => handleIconAction("preview")}
-            className="w-12 h-12 rounded-full border border-gray-200 bg-gray-50 flex items-center justify-center cursor-pointer transition-all duration-300 text-gray-500 hover:bg-gray-100 hover:scale-105"
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <polygon points="5,3 19,12 5,21" />
-            </svg>
-          </button>
-
-          <button
-            onClick={() => handleIconAction("mentor")}
-            className="w-12 h-12 rounded-full border border-gray-200 bg-gray-50 flex items-center justify-center cursor-pointer transition-all duration-300 text-gray-500 hover:bg-gray-100 hover:scale-105"
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-              <path d="M16 11l-4 4-2-2" />
-            </svg>
-          </button>
-
-          <button
-            onClick={() => handleIconAction("certificate")}
-            className="w-12 h-12 rounded-full border border-gray-200 bg-gray-50 flex items-center justify-center cursor-pointer transition-all duration-300 text-gray-500 hover:bg-gray-100 hover:scale-105"
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-              <line x1="4" y1="22" x2="4" y2="15" />
-              <path d="M12 8l-2 2 2 2" />
-              <path d="M16 12l2-2-2-2" />
-            </svg>
-          </button>
-
-          <StatBlock
-            icon={<VideoIcon />}
-            count={totalCounts.videos}
-            label="Videos"
-          />
-        </div>
+        <IconActionsNotEnrolledSection />
       </div>
     </div>
   );
