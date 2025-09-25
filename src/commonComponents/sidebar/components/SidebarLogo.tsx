@@ -12,32 +12,43 @@ const SidebarLogoPart = ({
   onClickArrow,
 }: SidebarLogoPartProps) => {
   const clientInfo = useSelector((state: RootState) => state.clientInfo);
+
   return (
-    <div className="relative text-neutral-900 overflow-visible w-full text-center items-center h-14 border-b-[0.5px] border-[#D3D3D318] font-bold">
+    <div
+      className={`relative flex ${
+        isExpanded
+          ? "flex-row items-center gap-2 px-2"
+          : "flex-col items-center justify-center"
+      } text-neutral-900 w-full h-14 border-b border-[#D3D3D318] font-bold transition-all duration-300`}
+    >
       {clientInfo.data?.app_logo_url && (
         <img
-          src={clientInfo?.data?.app_logo_url}
-          alt={`${clientInfo?.data?.name} logo`}
-          className="h-full mx-auto"
+          src={clientInfo.data.app_logo_url}
+          alt={`${clientInfo.data.name} logo`}
+          className={`object-contain transition-all duration-300 ${
+            isExpanded ? "h-10 w-auto" : "h-8 w-8"
+          }`}
         />
       )}
+
       {clientInfo?.data?.name && (
         <h2
-          className={`font-bruno  font-bold bg-gradient-to-r from-[#0BC5EA] to-[#6B46C1] bg-clip-text text-transparent ${
-            isExpanded ? "text-base" : "text-sm"
+          className={`font-bruno font-bold bg-gradient-to-r from-[#0BC5EA] to-[#6B46C1] 
+          bg-clip-text text-transparent transition-all duration-300 ${
+            isExpanded ? "text-base" : "text-[10px] leading-tight text-center"
           }`}
         >
-          {clientInfo?.data?.name}
+          {clientInfo.data.name}
         </h2>
       )}
 
-      <h2
-        className={`text-[#9F55FF] ${isExpanded ? "text-base" : "text-xs"}`}
-      ></h2>
+      {/* Arrow toggle */}
       <div
         className={`${
           isExpanded ? "" : "rotate-180"
-        } absolute w-[52px] h-[52px] grid place-items-center rounded-[12px] transition-transform duration-300 right-[-37px] bottom-[-12px] bg-[var(--nav-background)]  cursor-pointer pr-[3px]`}
+        } absolute w-[52px] h-[52px] grid place-items-center rounded-[12px] 
+        transition-transform duration-300 right-[-37px] bottom-[-12px] 
+        bg-[var(--nav-background)] cursor-pointer pr-[3px]`}
         onClick={onClickArrow}
       >
         <ArrowIcon className="var(--font-dark-nav)" />
