@@ -55,23 +55,23 @@ const InstructionPage: React.FC = () => {
   // Early return if no assessment ID - component will redirect
   if (!currentAssessmentId) {
     return (
-      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#255C79]"></div>
+      <div className="min-h-screen bg-[var(--neutral-50)] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--primary-500)]"></div>
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#255C79]"></div>
+      <div className="min-h-screen bg-[var(--neutral-50)] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--primary-500)]"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--neutral-50)] flex items-center justify-center">
         <div className="bg-white rounded-3xl p-6 shadow-sm max-w-md mx-auto">
           <div className="text-center">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -89,13 +89,13 @@ const InstructionPage: React.FC = () => {
                 ></path>
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-[#343A40] mb-2">
+            <h2 className="text-xl font-bold text-[var(--neutral-500)] mb-2">
               Error Loading Assessment
             </h2>
-            <p className="text-[#6C757D] mb-4">{error.message}</p>
+            <p className="text-[var(--neutral-300)] mb-4">{error.message}</p>
             <button
               onClick={() => navigate("/assessments")}
-              className="bg-[#255C79] text-white px-6 py-2 rounded-xl font-medium hover:bg-[#1a4a5f] transition-colors"
+              className="bg-[var(--primary-500)] text-[var(--font-light)] px-6 py-2 rounded-xl font-medium hover:bg-[#1a4a5f] transition-colors"
             >
               View All Assessments
             </button>
@@ -190,7 +190,7 @@ const InstructionPage: React.FC = () => {
                       ].map((topic) => (
                         <span
                           key={topic}
-                          className="px-3 py-1 bg-[#EFF9FC] text-gray-700 rounded-full text-sm border border-[#80C9E0]"
+                          className="px-3 py-1 bg-[#EFF9FC] text-gray-700 rounded-full text-sm border border-[var(--primary-200)]"
                         >
                           {topic}
                         </span>
@@ -214,7 +214,7 @@ const InstructionPage: React.FC = () => {
                           });
                         }
                       }}
-                      className="w-full py-3 px-6 border-2 border-[#2C5F7F] text-[#2C5F7F] rounded-xl font-medium hover:bg-[#2C5F7F] hover:text-white transition-all duration-700 ease-in-out transform hover:scale-[1.02] active:scale-[0.98]"
+                      className="w-full py-3 px-6 border-2 border-[#2C5F7F] text-[#2C5F7F] rounded-xl font-medium hover:bg-[#2C5F7F] hover:text-[var(--font-light)] transition-all duration-700 ease-in-out transform hover:scale-[1.02] active:scale-[0.98]"
                     >
                       Why Take This Test?
                     </button>
@@ -222,21 +222,21 @@ const InstructionPage: React.FC = () => {
                     {assessmentData?.status === "submitted" ? (
                       <button
                         onClick={handleResumeAssessment}
-                        className="w-full py-3 px-6 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors"
+                        className="w-full py-3 px-6 bg-green-600 text-[var(--font-light)] rounded-xl font-medium hover:bg-green-700 transition-colors"
                       >
                         View Results
                       </button>
                     ) : assessmentData?.status === "in_progress" ? (
                       <button
                         onClick={handleResumeAssessment}
-                        className="w-full py-3 px-6 bg-[#2C5F7F] text-white rounded-xl font-medium hover:bg-[#1a4a5f] transition-colors"
+                        className="w-full py-3 px-6 bg-[#2C5F7F] text-[var(--font-light)] rounded-xl font-medium hover:bg-[#1a4a5f] transition-colors"
                       >
                         Resume Quiz
                       </button>
                     ) : (
                       <button
                         onClick={handleStartAssessment}
-                        className="w-full py-3 px-6 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors"
+                        className="w-full py-3 px-6 bg-green-600 text-[var(--font-light)] rounded-xl font-medium hover:bg-green-700 transition-colors"
                       >
                         Start Assessment
                       </button>
@@ -377,21 +377,21 @@ const InstructionPage: React.FC = () => {
               {assessmentData?.status === "submitted" ? (
                 <button
                   onClick={handleResumeAssessment}
-                  className="px-8 py-4 bg-green-600 text-white rounded-xl font-semibold text-lg hover:bg-green-700 transition-colors"
+                  className="px-8 py-4 bg-green-600 text-[var(--font-light)] rounded-xl font-semibold text-lg hover:bg-green-700 transition-colors"
                 >
                   View Results
                 </button>
               ) : assessmentData?.status === "in_progress" ? (
                 <button
                   onClick={handleResumeAssessment}
-                  className="px-8 py-4 bg-[#2C5F7F] text-white rounded-xl font-semibold text-lg hover:bg-[#1a4a5f] transition-colors"
+                  className="px-8 py-4 bg-[#2C5F7F] text-[var(--font-light)] rounded-xl font-semibold text-lg hover:bg-[#1a4a5f] transition-colors"
                 >
                   Resume Test
                 </button>
               ) : (
                 <button
                   onClick={handleStartAssessment}
-                  className="px-8 py-4 bg-green-600 text-white rounded-xl font-semibold text-lg hover:bg-green-700 transition-colors"
+                  className="px-8 py-4 bg-green-600 text-[var(--font-light)] rounded-xl font-semibold text-lg hover:bg-green-700 transition-colors"
                 >
                   Start Assessment
                 </button>

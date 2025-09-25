@@ -3,7 +3,9 @@ import { useLocation } from "react-router-dom";
 
 const AssessmentsIconController: React.FC = () => {
   const location = useLocation();
-  const isActive = location.pathname === "/assessments" || location.pathname.startsWith("/assessment");
+  const isActive =
+    location.pathname === "/assessments" ||
+    location.pathname.startsWith("/assessment");
 
   return (
     <svg
@@ -21,11 +23,10 @@ const AssessmentsIconController: React.FC = () => {
         height="18"
         rx="2"
         ry="2"
-        stroke={isActive ? "#255C79" : "#6C757D"}
         strokeWidth="1.5"
-        fill={isActive ? "#EFF9FC" : "none"}
+        stroke="currentColor"
       />
-      
+
       {/* Header section */}
       <rect
         x="4"
@@ -34,17 +35,17 @@ const AssessmentsIconController: React.FC = () => {
         height="5"
         rx="2"
         ry="2"
-        fill={isActive ? "#255C79" : "#E9ECEF"}
+        stroke="currentColor"
         opacity="0.3"
       />
-      
+
       {/* Quiz/Assessment lines */}
       <line
         x1="7"
         y1="11"
         x2="17"
         y2="11"
-        stroke={isActive ? "#255C79" : "#6C757D"}
+        stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
       />
@@ -53,7 +54,7 @@ const AssessmentsIconController: React.FC = () => {
         y1="14"
         x2="14"
         y2="14"
-        stroke={isActive ? "#255C79" : "#6C757D"}
+        stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
       />
@@ -62,17 +63,17 @@ const AssessmentsIconController: React.FC = () => {
         y1="17"
         x2="16"
         y2="17"
-        stroke={isActive ? "#255C79" : "#6C757D"}
+        stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
       />
-      
+
       {/* Checkmark or assessment indicator */}
       <circle
         cx="16.5"
         cy="6"
         r="2.5"
-        fill={isActive ? "#255C79" : "#6C757D"}
+        fill={isActive ? "var(--primary-500)" : "var(--neutral-300)"}
         opacity="0.8"
       />
       <path

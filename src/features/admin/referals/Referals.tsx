@@ -121,7 +121,7 @@ const Referals = () => {
   if (isLoading)
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#255C79]"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--primary-500)]"></div>
       </div>
     );
 
@@ -158,7 +158,7 @@ const Referals = () => {
               placeholder="Search by name, email, or referral code..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none"
             />
           </div>
 
@@ -166,7 +166,7 @@ const Referals = () => {
           <select
             value={selectedReferralType}
             onChange={(e) => setSelectedReferralType(e.target.value)}
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none"
+            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none"
           >
             <option value="workshop">Workshop Registration</option>
             <option value="assessment">Assessment</option>
@@ -174,7 +174,7 @@ const Referals = () => {
 
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 bg-[#255C79] text-white px-6 py-3 rounded-lg hover:bg-[#1E4A63] transition-colors font-medium"
+            className="flex items-center gap-2 bg-[var(--primary-500)] text-[var(--font-light)] px-6 py-3 rounded-lg hover:bg-[var(--primary-600)] transition-colors font-medium"
           >
             <FiPlus className="w-5 h-5" />
             Create Referral
@@ -499,7 +499,7 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, name: e.target.value }))
               }
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none ${
                 errors.name ? "border-red-500" : "border-gray-300"
               }`}
               placeholder="Enter full name"
@@ -524,7 +524,7 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, email: e.target.value }))
               }
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none ${
                 errors.email ? "border-red-500" : "border-gray-300"
               }`}
               placeholder="Enter email address"
@@ -552,7 +552,7 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
                   phone_number: e.target.value,
                 }))
               }
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none ${
                 errors.phone_number ? "border-red-500" : "border-gray-300"
               }`}
               placeholder="Enter phone number"
@@ -580,7 +580,7 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
                   referral_code: e.target.value,
                 }))
               }
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#255C79] focus:border-transparent outline-none ${
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none ${
                 errors.referral_code ? "border-red-500" : "border-gray-300"
               }`}
               placeholder="Enter referral code"
@@ -604,7 +604,7 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-[#255C79] text-white rounded-lg hover:bg-[#1E4A63] transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-[var(--primary-500)] text-[var(--font-light)] rounded-lg hover:bg-[var(--primary-600)] transition-colors disabled:opacity-50"
               disabled={isLoading}
             >
               {isLoading ? "Saving..." : referral ? "Update" : "Create"}
@@ -656,7 +656,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
             </button>
             <button
               onClick={onConfirm}
-              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-red-600 text-[var(--font-light)] rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
               disabled={isLoading}
             >
               {isLoading ? "Deleting..." : "Delete"}

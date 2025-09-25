@@ -8,6 +8,9 @@ import { handleMobileNavigation } from "../utils/authRedirectUtils";
 import { getUser, updateUser } from "../services/userApis";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "../contexts/ToastContext";
+import TimeTrackingDashboard from "../features/learn/components/graphs-components/TimeTrackingDashboard";
+import DailyProgress from "../features/learn/components/DailyProgressTable";
+import StreakTable from "../features/learn/components/StreakTable";
 
 interface UserData {
   first_name: string;
@@ -191,7 +194,7 @@ const ProfileSettings = () => {
     return (
       <div className="p-4 sm:p-6 rounded-lg w-full max-w-7xl mx-auto">
         <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-16 w-16 sm:h-32 sm:w-32 border-b-2 border-[#255C79]"></div>
+          <div className="animate-spin rounded-full h-16 w-16 sm:h-32 sm:w-32 border-b-2 border-[var(--primary-500)]"></div>
         </div>
       </div>
     );
@@ -212,15 +215,29 @@ const ProfileSettings = () => {
 
   return (
     <div className="p-4 sm:p-6 rounded-lg w-full max-w-7xl mx-auto">
-      <h2 className="text-xl sm:text-2xl font-bold mb-4 px-2">
-        Profile Settings
-      </h2>
-
-      <div className="border-1 border-gray-300 shadow-sm rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6 min-h-screen">
-        <div className="text-lg sm:text-xl font-bold text-[#257195]">
-          My Profile
+      <div className="mb-6">
+        <h3 className="text-lg sm:text-xl font-bold text-[#257195] mb-4">
+          My Activity
+        </h3>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className="xl:col-span-2 border border-gray-300 rounded-xl p-4 sm:p-6 shadow-sm">
+            <TimeTrackingDashboard />
+          </div>
+          <div className="space-y-6">
+            <div className="border border-gray-300 rounded-xl p-4 sm:p-6 shadow-sm">
+              <DailyProgress clientId={parseInt(clientId, 10)} />
+            </div>
+            <div className="border border-gray-300 rounded-xl p-4 sm:p-6 shadow-sm">
+              <StreakTable clientId={parseInt(clientId, 10)} />
+            </div>
+          </div>
         </div>
+      </div>
 
+      <h3 className="text-lg sm:text-xl font-bold text-[#257195] mb-4">
+        My Profile
+      </h3>
+      <div className="border border-gray-300 shadow-sm rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
             <img
@@ -240,12 +257,12 @@ const ProfileSettings = () => {
           <div className="flex justify-center sm:justify-end">
             <button
               onClick={() => (editable ? handleSave() : setEditable(true))}
-              className="bg-[#255C79] text-white px-4 sm:px-5 py-2 rounded-lg flex items-center gap-2 text-sm sm:text-base"
+              className="bg-[var(--primary-500)] text-[var(--font-light)] px-4 sm:px-5 py-2 rounded-lg flex items-center gap-2 text-sm sm:text-base"
               disabled={isSaving}
             >
               {isSaving ? (
                 <svg
-                  className="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-white"
+                  className="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-[var(--font-light)]"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -292,7 +309,7 @@ const ProfileSettings = () => {
               onChange={handleChange}
               readOnly={!editable}
               className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${
-                editable ? "border-[#255C79]" : "border-gray-300"
+                editable ? "border-[var(--primary-500)]" : "border-gray-300"
               } focus:outline-none`}
             />
           </div>
@@ -308,7 +325,7 @@ const ProfileSettings = () => {
               onChange={handleChange}
               readOnly={!editable}
               className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${
-                editable ? "border-[#255C79]" : "border-gray-300"
+                editable ? "border-[var(--primary-500)]" : "border-gray-300"
               } focus:outline-none`}
             />
           </div>
@@ -356,7 +373,7 @@ const ProfileSettings = () => {
               onChange={handleChange}
               readOnly={!editable}
               className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${
-                editable ? "border-[#255C79]" : "border-gray-300"
+                editable ? "border-[var(--primary-500)]" : "border-gray-300"
               } focus:outline-none`}
             />
           </div>
@@ -372,7 +389,7 @@ const ProfileSettings = () => {
               onChange={handleChange}
               readOnly={!editable}
               className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${
-                editable ? "border-[#255C79]" : "border-gray-300"
+                editable ? "border-[var(--primary-500)]" : "border-gray-300"
               } focus:outline-none`}
             />
           </div>
@@ -388,7 +405,7 @@ const ProfileSettings = () => {
               readOnly={!editable}
               rows={3}
               className={`w-full border rounded px-3 py-2 text-sm sm:text-base resize-none ${
-                editable ? "border-[#255C79]" : "border-gray-300"
+                editable ? "border-[var(--primary-500)]" : "border-gray-300"
               } focus:outline-none`}
             />
           </div>
@@ -405,7 +422,7 @@ const ProfileSettings = () => {
               readOnly={!editable}
               placeholder="https://linkedin.com/in/yourprofile"
               className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${
-                editable ? "border-[#255C79]" : "border-gray-300"
+                editable ? "border-[var(--primary-500)]" : "border-gray-300"
               } focus:outline-none`}
             />
           </div>
@@ -422,7 +439,7 @@ const ProfileSettings = () => {
               readOnly={!editable}
               placeholder="https://github.com/yourusername"
               className={`w-full border rounded px-3 py-2 text-sm sm:text-base ${
-                editable ? "border-[#255C79]" : "border-gray-300"
+                editable ? "border-[var(--primary-500)]" : "border-gray-300"
               } focus:outline-none`}
             />
           </div>
@@ -474,7 +491,7 @@ const ProfileSettings = () => {
         <div className="flex justify-center sm:justify-start">
           <button
             onClick={() => Logout()}
-            className="bg-[#255C79] text-white px-6 py-2 rounded-lg text-sm sm:text-base w-full sm:w-auto"
+            className="bg-[var(--primary-500)] text-[var(--font-light)] px-6 py-2 rounded-lg text-sm sm:text-base w-full sm:w-auto"
           >
             Logout
           </button>

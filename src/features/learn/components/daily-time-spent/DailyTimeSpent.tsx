@@ -63,7 +63,7 @@ export default function DailyTimeSpent() {
       <div className="relative mb-2">
         <div className="h-12 bg-green-500 rounded-full flex items-center justify-end px-4">
           <svg
-            className="w-6 h-6 text-white"
+            className="w-6 h-6 text-[var(--font-light)]"
             fill="currentColor"
             viewBox="0 0 20 20"
           >
@@ -79,7 +79,7 @@ export default function DailyTimeSpent() {
 
       {/* Info box */}
       <div className="bg-gray-200 rounded-xl p-6 flex">
-        <div className="w-8 h-8 rounded-full bg-gray-500 text-white flex items-center justify-center mr-4 flex-shrink-0">
+        <div className="w-8 h-8 rounded-full bg-gray-500 text-[var(--font-light)] flex items-center justify-center mr-4 flex-shrink-0">
           <span className="font-bold">i</span>
         </div>
         <p className="text-gray-600">

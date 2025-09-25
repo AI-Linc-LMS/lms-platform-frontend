@@ -5,7 +5,10 @@ import DashboardPieChart from "../components/enrolled-courses/DashboardPieChart"
 import BackToHomeButton from "../../../commonComponents/common-buttons/back-buttons/back-to-home-button/BackToHomeButton";
 import CourseContent from "../components/enrolled-courses/CourseContent";
 import EnrolledLeaderBoard from "../components/enrolled-courses/EnrolledLeader";
-import { getCourseById, getCourseDashboard } from "../../../services/enrolled-courses-content/courseContentApis";
+import {
+  getCourseById,
+  getCourseDashboard,
+} from "../../../services/enrolled-courses-content/courseContentApis";
 import { useQuery } from "@tanstack/react-query";
 
 const EnrolledCourseDetailPage: React.FC = () => {
@@ -22,11 +25,15 @@ const EnrolledCourseDetailPage: React.FC = () => {
     queryFn: () => getCourseById(clientId, parseInt(courseId!)),
   });
 
-  const { data, isLoading: isLoadingDashboard, error: errorDashboard } = useQuery({
+  const {
+    data,
+    isLoading: isLoadingDashboard,
+    error: errorDashboard,
+  } = useQuery({
     queryKey: ["DashboardPieChart", courseId],
     queryFn: () => getCourseDashboard(clientId, parseInt(courseId!)),
     refetchOnWindowFocus: true,
-    refetchOnMount: true
+    refetchOnMount: true,
   });
 
   //console.log("course", course);
@@ -55,9 +62,9 @@ const EnrolledCourseDetailPage: React.FC = () => {
       <>
         <BackToHomeButton />
         <div className="p-4 flex items-center justify-center">
-          <div className="w-full max-w-md rounded-3xl border border-[#80C9E0] bg-white p-8 shadow-xl">
+          <div className="w-full max-w-md rounded-3xl border border-[var(--primary-200)] bg-white p-8 shadow-xl">
             <div className="text-center">
-              <div className="w-16 h-16 bg-[#2A8CB0] rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-[var(--primary-400)] rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="32"
@@ -87,8 +94,10 @@ const EnrolledCourseDetailPage: React.FC = () => {
                 </p>
               )}
 
-              <div className="rounded-xl p-4 mb-6 border border-[#80C9E0] bg-[#E9F7FA]">
-                <div className="text-3xl font-bold text-[#2A8CB0] mb-1">₹499</div>
+              <div className="rounded-xl p-4 mb-6 border border-[var(--primary-200)] bg-[#E9F7FA]">
+                <div className="text-3xl font-bold text-[var(--primary-400)] mb-1">
+                  ₹499
+                </div>
                 <div className="text-sm text-gray-600">
                   Secure your learning seat today
                 </div>
@@ -237,7 +246,7 @@ const EnrolledCourseDetailPage: React.FC = () => {
               <CourseContent course={course} isLoading={true} error={null} />
             </div>
             <div className="flex flex-col gap-4 w-full md:w-auto">
-              <div className="w-full rounded-3xl bg-[#EFF9FC] border border-[#80C9E0] p-3 md:p-4 shadow-sm animate-pulse">
+              <div className="w-full rounded-3xl bg-[#EFF9FC] border border-[var(--primary-200)] p-3 md:p-4 shadow-sm animate-pulse">
                 <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
                 <div className="h-4 bg-gray-200 rounded w-1/2 mb-6"></div>
                 <div className="flex flex-col md:flex-row items-center justify-center gap-4">
@@ -304,7 +313,11 @@ const EnrolledCourseDetailPage: React.FC = () => {
           <CourseContent course={course} isLoading={isLoading} error={error} />
         </div>
         <div className="flex flex-col gap-4 w-full md:w-auto">
-          <DashboardPieChart data={data} isLoading={isLoadingDashboard} error={errorDashboard} />
+          <DashboardPieChart
+            data={data}
+            isLoading={isLoadingDashboard}
+            error={errorDashboard}
+          />
           <EnrolledLeaderBoard courseId={parseInt(courseId)} />
         </div>
       </div>

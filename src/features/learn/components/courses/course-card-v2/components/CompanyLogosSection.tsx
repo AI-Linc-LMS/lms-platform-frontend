@@ -35,7 +35,7 @@ export const CompanyLogosSection: React.FC<CompanyLogosProps> = ({
 }) => {
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <span className="text-[11px] text-[#9ca3af] font-normal uppercase tracking-[0.5px]">
+      <span className="text-[11px] text-[var(--font-tertiary)] font-normal uppercase tracking-[0.5px]">
         Created and certified by
       </span>
       <div className="flex items-center gap-2 flex-wrap">

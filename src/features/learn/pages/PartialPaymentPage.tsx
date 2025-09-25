@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { FiArrowLeft, FiShield, FiCheck, FiClock, FiAward } from "react-icons/fi";
+import {
+  FiArrowLeft,
+  FiShield,
+  FiCheck,
+  FiClock,
+  FiAward,
+} from "react-icons/fi";
 import { UserState } from "../components/assessment/types/assessmentTypes";
 import { usePartialPayment } from "../../../hooks/useRazorpayPayment";
 import { PaymentResult } from "../../../services/payment/razorpayService";
@@ -27,12 +33,12 @@ const PartialPaymentPage: React.FC = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const user = useSelector((state: { user: UserState }) => state.user);
-  
+
   // Get program type from URL path
-  const programType = location.pathname.includes("flagship-program") 
-    ? "flagship-program" 
-    : location.pathname.includes("nanodegree-program") 
-    ? "nanodegree-program" 
+  const programType = location.pathname.includes("flagship-program")
+    ? "flagship-program"
+    : location.pathname.includes("nanodegree-program")
+    ? "nanodegree-program"
     : null;
 
   // Get client ID from environment variables
@@ -91,7 +97,8 @@ const PartialPaymentPage: React.FC = () => {
     "flagship-program": {
       title: "AI-LINC Flagship Career Launchpad",
       subtitle: "7-day full access trial – 100% Refund",
-      description: "Premium program with MAANG mentorship and direct referrals. Complete our trial challenge for a full refund!",
+      description:
+        "Premium program with MAANG mentorship and direct referrals. Complete our trial challenge for a full refund!",
       features: [
         "Join for ₹499 – Pay a small token amount for a 7-day full access trial.",
         "Complete the Challenge – Attend at least 50% of live classes and submit 1 small AI projects during the trial week.",
@@ -107,12 +114,13 @@ const PartialPaymentPage: React.FC = () => {
         // "Certificate + career readiness report",
       ],
       color: "#f59e0b",
-      type_id: "flagship-course"
+      type_id: "flagship-course",
     },
     "nanodegree-program": {
       title: "AI-LINC Nanodegree Program",
       subtitle: "Career-Ready Training at Best Price",
-      description: "Structured learning with real-world experience at your own pace",
+      description:
+        "Structured learning with real-world experience at your own pace",
       features: [
         "100+ hours of expert video content",
         "AI-graded assignments & quizzes",
@@ -123,33 +131,49 @@ const PartialPaymentPage: React.FC = () => {
         "Certificate + career readiness report",
       ],
       color: "#2563eb",
-      type_id: "nanodegree"
+      type_id: "nanodegree",
     },
   };
 
   // Validate encoded data and show appropriate errors
   useEffect(() => {
     if (!programType) {
-      showToast("error", "Invalid Program", "Please select either flagship-program or nanodegree-program.");
+      showToast(
+        "error",
+        "Invalid Program",
+        "Please select either flagship-program or nanodegree-program."
+      );
       setTimeout(() => navigate("/"), 3000);
       return;
     }
 
     if (!encodedData) {
-      showToast("error", "Invalid Link", "This payment link appears to be invalid.");
+      showToast(
+        "error",
+        "Invalid Link",
+        "This payment link appears to be invalid."
+      );
       setTimeout(() => navigate("/"), 3000);
       return;
     }
 
     if (!decodedData) {
-      showToast("error", "Invalid or Expired Link", "This payment link is either invalid or has expired.");
+      showToast(
+        "error",
+        "Invalid or Expired Link",
+        "This payment link is either invalid or has expired."
+      );
       setTimeout(() => navigate("/"), 3000);
       return;
     }
 
     // Validate program type matches the encoded data
     if (decodedData.programType !== programType) {
-      showToast("error", "Invalid Program", "The program type in the URL does not match the payment link.");
+      showToast(
+        "error",
+        "Invalid Program",
+        "The program type in the URL does not match the payment link."
+      );
       setTimeout(() => navigate("/"), 3000);
       return;
     }
@@ -173,7 +197,9 @@ const PartialPaymentPage: React.FC = () => {
       showToast(
         "success",
         "Payment Successful!",
-        `Your partial payment for ${programConfigs[decodedData?.programType as ProgramType]?.title} has been processed successfully.`
+        `Your partial payment for ${
+          programConfigs[decodedData?.programType as ProgramType]?.title
+        } has been processed successfully.`
       );
     },
     onError: (error: string) => {
@@ -190,7 +216,11 @@ const PartialPaymentPage: React.FC = () => {
 
   const handlePayment = () => {
     if (!clientId || !decodedData || !programType) {
-      showToast("error", "Authentication Error", "Please log in to continue with payment.");
+      showToast(
+        "error",
+        "Authentication Error",
+        "Please log in to continue with payment."
+      );
       return;
     }
 
@@ -202,11 +232,17 @@ const PartialPaymentPage: React.FC = () => {
       },
       metadata: {
         payment_type: "COURSE",
-        type_id: programConfigs[decodedData.programType as ProgramType]?.type_id // This will be "flagship-course" or "nanodegree"
-      }
+        type_id:
+          programConfigs[decodedData.programType as ProgramType]?.type_id, // This will be "flagship-course" or "nanodegree"
+      },
     };
 
-    initiatePartialPayment(clientId, amount, programConfigs[decodedData.programType as ProgramType]?.type_id, paymentConfig);
+    initiatePartialPayment(
+      clientId,
+      amount,
+      programConfigs[decodedData.programType as ProgramType]?.type_id,
+      paymentConfig
+    );
   };
 
   const handleSuccessModalClose = () => {
@@ -221,11 +257,15 @@ const PartialPaymentPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Invalid Program</h2>
-          <p className="text-gray-600 mb-4">Please select either flagship-program or nanodegree-program.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Invalid Program
+          </h2>
+          <p className="text-gray-600 mb-4">
+            Please select either flagship-program or nanodegree-program.
+          </p>
           <button
             onClick={() => navigate("/")}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="bg-blue-600 text-[var(--font-light)] px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Go to Dashboard
           </button>
@@ -238,11 +278,15 @@ const PartialPaymentPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Invalid Payment Link</h2>
-          <p className="text-gray-600 mb-4">This payment link appears to be invalid.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Invalid Payment Link
+          </h2>
+          <p className="text-gray-600 mb-4">
+            This payment link appears to be invalid.
+          </p>
           <button
             onClick={() => navigate("/")}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="bg-blue-600 text-[var(--font-light)] px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Go to Dashboard
           </button>
@@ -255,11 +299,15 @@ const PartialPaymentPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Invalid or Expired Link</h2>
-          <p className="text-gray-600 mb-4">This payment link is either invalid or has expired.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Invalid or Expired Link
+          </h2>
+          <p className="text-gray-600 mb-4">
+            This payment link is either invalid or has expired.
+          </p>
           <button
             onClick={() => navigate("/")}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="bg-blue-600 text-[var(--font-light)] px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Go to Dashboard
           </button>
@@ -272,11 +320,13 @@ const PartialPaymentPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Invalid Payment Amount</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Invalid Payment Amount
+          </h2>
           <p className="text-gray-600 mb-4">The payment amount is invalid.</p>
           <button
             onClick={() => navigate("/")}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="bg-blue-600 text-[var(--font-light)] px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Go to Dashboard
           </button>
@@ -304,14 +354,26 @@ const PartialPaymentPage: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           {/* Program Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 sm:p-8">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-[var(--font-light)] p-4 sm:p-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold mb-2">{programConfigs[decodedData.programType as ProgramType]?.title}</h1>
-                <p className="text-blue-100 text-base sm:text-lg">{programConfigs[decodedData.programType as ProgramType]?.subtitle}</p>
+                <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+                  {
+                    programConfigs[decodedData.programType as ProgramType]
+                      ?.title
+                  }
+                </h1>
+                <p className="text-blue-100 text-base sm:text-lg">
+                  {
+                    programConfigs[decodedData.programType as ProgramType]
+                      ?.subtitle
+                  }
+                </p>
               </div>
               <div className="text-left sm:text-right">
-                <div className="text-3xl sm:text-4xl font-bold">₹{amount.toLocaleString()}</div>
+                <div className="text-3xl sm:text-4xl font-bold">
+                  ₹{amount.toLocaleString()}
+                </div>
                 {/* <div className="text-blue-100">Partial Payment</div> */}
               </div>
             </div>
@@ -322,15 +384,28 @@ const PartialPaymentPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
               {/* Left Column - Program Info */}
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Program Overview</h2>
-                <p className="text-gray-600 mb-4 sm:mb-6">{programConfigs[decodedData.programType as ProgramType]?.description}</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
+                  Program Overview
+                </h2>
+                <p className="text-gray-600 mb-4 sm:mb-6">
+                  {
+                    programConfigs[decodedData.programType as ProgramType]
+                      ?.description
+                  }
+                </p>
 
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">How it works:</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+                  How it works:
+                </h3>
                 <ul className="space-y-2 sm:space-y-3">
-                  {programConfigs[decodedData.programType as ProgramType]?.features.map((feature, index) => (
+                  {programConfigs[
+                    decodedData.programType as ProgramType
+                  ]?.features.map((feature, index) => (
                     <li key={index} className="flex items-start">
                       <FiCheck className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 mr-2 sm:mr-3 flex-shrink-0" />
-                      <span className="text-sm sm:text-base text-gray-700">{feature}</span>
+                      <span className="text-sm sm:text-base text-gray-700">
+                        {feature}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -338,12 +413,19 @@ const PartialPaymentPage: React.FC = () => {
 
               {/* Right Column - Payment Info */}
               <div className="bg-gray-50 rounded-xl p-4 sm:p-6">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Payment Summary</h3>
-                
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
+                  Payment Summary
+                </h3>
+
                 <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                   <div className="flex justify-between text-sm sm:text-base">
                     <span className="text-gray-600">Program:</span>
-                    <span className="font-medium">{programConfigs[decodedData.programType as ProgramType]?.title}</span>
+                    <span className="font-medium">
+                      {
+                        programConfigs[decodedData.programType as ProgramType]
+                          ?.title
+                      }
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm sm:text-base">
                     <span className="text-gray-600"></span>
@@ -351,7 +433,9 @@ const PartialPaymentPage: React.FC = () => {
                   </div>
                   <div className="flex justify-between text-base sm:text-lg font-semibold">
                     <span className="text-gray-900">Amount:</span>
-                    <span className="text-gray-900">₹{amount.toLocaleString()}</span>
+                    <span className="text-gray-900">
+                      ₹{amount.toLocaleString()}
+                    </span>
                   </div>
                 </div>
 
@@ -373,13 +457,16 @@ const PartialPaymentPage: React.FC = () => {
                 <button
                   onClick={handlePayment}
                   disabled={paymentState.isProcessing}
-                  className="w-full bg-blue-600 text-white py-3 px-4 sm:px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm sm:text-base"
+                  className="w-full bg-blue-600 text-[var(--font-light)] py-3 px-4 sm:px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm sm:text-base"
                 >
-                  {paymentState.isProcessing ? "Processing..." : `Pay ₹${amount.toLocaleString()}`}
+                  {paymentState.isProcessing
+                    ? "Processing..."
+                    : `Pay ₹${amount.toLocaleString()}`}
                 </button>
 
                 <p className="text-xs text-gray-500 text-center mt-3 sm:mt-4">
-                  By clicking "Pay", you agree to our Terms of Service and Privacy Policy
+                  By clicking "Pay", you agree to our Terms of Service and
+                  Privacy Policy
                 </p>
               </div>
             </div>
@@ -390,7 +477,13 @@ const PartialPaymentPage: React.FC = () => {
       {/* Payment Processing Modal */}
       <PaymentProcessingModal
         isOpen={paymentState.isProcessing}
-        step={paymentState.step as "creating" | "processing" | "verifying" | "complete"}
+        step={
+          paymentState.step as
+            | "creating"
+            | "processing"
+            | "verifying"
+            | "complete"
+        }
         onClose={() => {
           // Handle processing modal close if needed
         }}
@@ -418,4 +511,4 @@ const PartialPaymentPage: React.FC = () => {
   );
 };
 
-export default PartialPaymentPage; 
+export default PartialPaymentPage;

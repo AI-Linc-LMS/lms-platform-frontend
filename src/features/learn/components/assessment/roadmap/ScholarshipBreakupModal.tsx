@@ -43,26 +43,26 @@ const ScholarshipBreakupModal: React.FC<ScholarshipBreakupModalProps> = ({
     if (isOpen) {
       setIsAnimating(true);
       // Prevent body scroll when modal is open
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
       // Re-enable body scroll when modal closes
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     }
 
     // Handle ESC key press
     const handleEscapeKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         handleClose();
       }
     };
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEscapeKey);
+      document.addEventListener("keydown", handleEscapeKey);
     }
 
     return () => {
-      document.body.style.overflow = 'unset';
-      document.removeEventListener('keydown', handleEscapeKey);
+      document.body.style.overflow = "unset";
+      document.removeEventListener("keydown", handleEscapeKey);
     };
   }, [isOpen, handleClose]);
 
@@ -110,7 +110,7 @@ const ScholarshipBreakupModal: React.FC<ScholarshipBreakupModalProps> = ({
   return (
     <div
       className={`fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-end z-50 transition-all duration-300 ease-in-out ${
-        isAnimating ? 'opacity-100' : 'opacity-0'
+        isAnimating ? "opacity-100" : "opacity-0"
       }`}
       onClick={handleBackdropClick}
     >
@@ -119,7 +119,7 @@ const ScholarshipBreakupModal: React.FC<ScholarshipBreakupModalProps> = ({
           isAnimating ? "translate-x-0" : "translate-x-full"
         } overflow-y-auto`}
         style={{
-          maxWidth: 'min(640px, 100vw)',
+          maxWidth: "min(640px, 100vw)",
         }}
       >
         {/* Header */}
@@ -154,7 +154,11 @@ const ScholarshipBreakupModal: React.FC<ScholarshipBreakupModalProps> = ({
               <p className="text-green-700 text-sm sm:text-base">
                 You've saved{" "}
                 <span className="font-bold">
-                  ₹{(scholarshipData.total_amount - scholarshipData.payable_amount).toLocaleString()}
+                  ₹
+                  {(
+                    scholarshipData.total_amount -
+                    scholarshipData.payable_amount
+                  ).toLocaleString()}
                 </span>{" "}
                 with this scholarship
               </p>
@@ -168,7 +172,9 @@ const ScholarshipBreakupModal: React.FC<ScholarshipBreakupModalProps> = ({
               <div className="grid grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 font-semibold text-gray-700 text-sm sm:text-base">
                 <div className="col-span-5">Component</div>
                 <div className="col-span-3 text-center">Original Cost</div>
-                <div className="col-span-4 text-center">Scholarship Applied?</div>
+                <div className="col-span-4 text-center">
+                  Scholarship Applied?
+                </div>
               </div>
             </div>
 
@@ -227,7 +233,8 @@ const ScholarshipBreakupModal: React.FC<ScholarshipBreakupModalProps> = ({
                     Your Final Amount
                   </div>
                   <div className="text-xs sm:text-sm text-blue-700">
-                    After {scholarshipData.percentage_scholarship}% scholarship discount
+                    After {scholarshipData.percentage_scholarship}% scholarship
+                    discount
                   </div>
                 </div>
                 <div className="col-span-4 text-center">
@@ -242,7 +249,9 @@ const ScholarshipBreakupModal: React.FC<ScholarshipBreakupModalProps> = ({
           {/* Platform Fee Note */}
           <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-lg">
             <p className="text-xs sm:text-sm text-amber-800">
-              <span className="font-semibold">*Platform Fees:</span> We charge a platform fee to sustain the tools, mentorship, and real-world project ecosystem that power your learning experience.
+              <span className="font-semibold">*Platform Fees:</span> We charge a
+              platform fee to sustain the tools, mentorship, and real-world
+              project ecosystem that power your learning experience.
             </p>
           </div>
 
@@ -261,7 +270,8 @@ const ScholarshipBreakupModal: React.FC<ScholarshipBreakupModalProps> = ({
                     Merit-Based Discount
                   </h5>
                   <p className="text-xs sm:text-sm text-gray-600">
-                    Your scholarship percentage is based on your assessment performance and learning potential.
+                    Your scholarship percentage is based on your assessment
+                    performance and learning potential.
                   </p>
                 </div>
               </div>
@@ -274,7 +284,8 @@ const ScholarshipBreakupModal: React.FC<ScholarshipBreakupModalProps> = ({
                     Limited Time Offer
                   </h5>
                   <p className="text-xs sm:text-sm text-gray-600">
-                    This pricing is valid for the next 7 days only. Lock in your seat today!
+                    This pricing is valid for the next 7 days only. Lock in your
+                    seat today!
                   </p>
                 </div>
               </div>
@@ -287,7 +298,8 @@ const ScholarshipBreakupModal: React.FC<ScholarshipBreakupModalProps> = ({
                     Full Program Access
                   </h5>
                   <p className="text-xs sm:text-sm text-gray-600">
-                    Despite the discount, you get complete access to all program components and benefits.
+                    Despite the discount, you get complete access to all program
+                    components and benefits.
                   </p>
                 </div>
               </div>
@@ -302,7 +314,8 @@ const ScholarshipBreakupModal: React.FC<ScholarshipBreakupModalProps> = ({
                   Ready to claim your scholarship?
                 </h4>
                 <p className="text-gray-600 mb-4 text-sm sm:text-base">
-                  Book your seat now and start your journey with AI-LINC Flagship Career Launchpad
+                  Book your seat now and start your journey with AI-LINC
+                  Flagship Career Launchpad
                 </p>
               </>
             ) : null}
@@ -310,8 +323,8 @@ const ScholarshipBreakupModal: React.FC<ScholarshipBreakupModalProps> = ({
               onClick={handleClose}
               className={`w-full font-semibold py-2 sm:py-3 rounded-lg shadow transition-colors duration-200 mb-2 text-sm sm:text-base ${
                 isFlagshipPayment || isNanodegreePayment
-                  ? "bg-green-600 text-white"
-                  : "bg-[#14212B] text-white hover:bg-[#223344]"
+                  ? "bg-green-600 text-[var(--font-light)]"
+                  : "bg-[#14212B] text-[var(--font-light)] hover:bg-[#223344]"
               }`}
             >
               {isFlagshipPayment || isNanodegreePayment
@@ -325,4 +338,4 @@ const ScholarshipBreakupModal: React.FC<ScholarshipBreakupModalProps> = ({
   );
 };
 
-export default ScholarshipBreakupModal; 
+export default ScholarshipBreakupModal;

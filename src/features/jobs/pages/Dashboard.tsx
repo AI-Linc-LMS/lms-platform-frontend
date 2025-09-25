@@ -192,7 +192,7 @@ const Dashboard: React.FC = () => {
           href={job.applicationUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors text-center"
+          className="flex-1 px-4 py-2 bg-blue-600 text-[var(--font-light)] text-sm rounded-lg hover:bg-blue-700 transition-colors text-center"
         >
           View Job
         </a>
@@ -461,7 +461,7 @@ const Dashboard: React.FC = () => {
                             search.query
                           )}`;
                         }}
-                        className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                        className="px-4 py-2 bg-blue-600 text-[var(--font-light)] text-sm rounded-lg hover:bg-blue-700 transition-colors"
                       >
                         Run Search
                       </button>

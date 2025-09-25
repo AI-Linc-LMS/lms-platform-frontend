@@ -23,7 +23,13 @@ interface VideoContentProps {
   completionPercentage?: number;
 }
 
-const CircularProgress = ({ progress, isComplete }: { progress: number, isComplete: boolean }) => {
+const CircularProgress = ({
+  progress,
+  isComplete,
+}: {
+  progress: number;
+  isComplete: boolean;
+}) => {
   const size = 26;
   const strokeWidth = 2.5;
   const radius = (size - strokeWidth) / 2;
@@ -32,23 +38,34 @@ const CircularProgress = ({ progress, isComplete }: { progress: number, isComple
 
   if (isComplete) {
     return (
-      <div className="w-[26px] h-[26px] rounded-full bg-[#5FA564] flex items-center justify-center">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path 
-            d="M5 12l5 5L20 7" 
-            stroke="white" 
-            strokeWidth="2.5" 
-            strokeLinecap="round" 
+      <div className="w-[26px] h-[26px] rounded-full bg-[var(--success-500)] flex items-center justify-center">
+        <svg
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M5 12l5 5L20 7"
+            stroke="white"
+            strokeWidth="2.5"
+            strokeLinecap="round"
             strokeLinejoin="round"
           />
         </svg>
       </div>
     );
   }
-  
+
   return (
     <div className="relative">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="transform -rotate-90"
+      >
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -69,7 +86,7 @@ const CircularProgress = ({ progress, isComplete }: { progress: number, isComple
           strokeLinecap="round"
         />
       </svg>
-      
+
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="w-[18px] h-[18px] bg-white border border-gray-200 rounded-full flex items-center justify-center">
           <div className="text-[9px] font-medium text-gray-500">
@@ -96,13 +113,17 @@ const VideoContent: React.FC<VideoContentProps> = ({
     <div className="p-2">
       {/* Header */}
       <div className="flex gap-2 mb-3 items-center">
-        <span className="bg-gray-200 text-xs px-3 py-2 rounded-full font-medium">{week}</span>
+        <span className="bg-gray-200 text-xs px-3 py-2 rounded-full font-medium">
+          {week}
+        </span>
         <span className="bg-gray-100 text-sm px-5 py-2 rounded-full font-medium">
           {topicTitle}
         </span>
       </div>
 
-      <h2 className="text-[17px] font-bold text-gray-800 mb-3">Topic {topicNo}</h2>
+      <h2 className="text-[17px] font-bold text-gray-800 mb-3">
+        Topic {topicNo}
+      </h2>
       <span className="text-xs border border-gray-300 px-2 py-1 rounded-lg bg-gray-50 text-gray-600 mb-4 inline-block">
         {difficulty}
       </span>
@@ -114,7 +135,7 @@ const VideoContent: React.FC<VideoContentProps> = ({
       </div>
       <div className="w-full h-3 bg-gray-200 rounded-full mb-5">
         <div
-          className="h-full bg-[#5FA564] rounded-full transition-all"
+          className="h-full bg-[var(--success-500)] rounded-full transition-all"
           style={{ width: `${completionPercentage}%` }}
         />
       </div>
@@ -138,7 +159,9 @@ const VideoContent: React.FC<VideoContentProps> = ({
                 <div>
                   <h3
                     className={`text-sm font-medium ${
-                      isSelected ? "text-[#007B9F]" : "text-gray-800"
+                      isSelected
+                        ? "text-[var(--secondary-400)]"
+                        : "text-gray-800"
                     }`}
                   >
                     {video.title}
@@ -153,9 +176,9 @@ const VideoContent: React.FC<VideoContentProps> = ({
                 {video.completed ? (
                   <img src={completeTickIcon} alt="check" className="w-5 h-5" />
                 ) : (
-                  <CircularProgress 
-                    progress={video.progress || 0} 
-                    isComplete={false} 
+                  <CircularProgress
+                    progress={video.progress || 0}
+                    isComplete={false}
                   />
                 )}
               </div>

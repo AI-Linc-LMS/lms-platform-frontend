@@ -83,7 +83,6 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
       } else if (quizData.questions && Array.isArray(quizData.questions)) {
         setQuestions(quizData.questions);
       }
-
     }
   }, [quizData]);
 
@@ -107,7 +106,7 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
     onSuccess: () => {
       //console.log("✅ Quiz updated successfully!");
       success("Quiz Updated", "Quiz content updated successfully!");
-      
+
       // Invalidate all relevant queries to refresh the UI
       queryClient.invalidateQueries({
         predicate: (query) => {
@@ -117,14 +116,14 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
             queryKey.includes("submodule") ||
             queryKey.includes("course-modules") ||
             queryKey.includes("quizzes") ||
-            (queryKey.includes("submodule-content-detail") && 
-             queryKey.includes(clientId) && 
-             queryKey.includes(courseId) && 
-             queryKey.includes(submoduleId))
+            (queryKey.includes("submodule-content-detail") &&
+              queryKey.includes(clientId) &&
+              queryKey.includes(courseId) &&
+              queryKey.includes(submoduleId))
           );
         },
       });
-      
+
       if (onSuccess) {
         onSuccess();
       }
@@ -181,7 +180,6 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
         return;
       }
     }
-
 
     const contentData: QuizContentUpdateData = {
       title: title.trim(),
@@ -250,7 +248,7 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
     return (
       <div className="w-full space-y-6">
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#255C79]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--primary-500)]"></div>
           <span className="ml-2 text-gray-600">Loading quiz data...</span>
         </div>
       </div>
@@ -310,7 +308,7 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
             <h3 className="text-lg font-medium text-gray-800">Questions</h3>
             <button
               onClick={addQuestion}
-              className="px-3 py-1 text-sm bg-[#255C79] text-white rounded hover:bg-[#1e4a61] disabled:opacity-50"
+              className="px-3 py-1 text-sm bg-[var(--primary-500)] text-[var(--font-light)] rounded hover:bg-[#1e4a61] disabled:opacity-50"
               disabled={updateMutation.isPending}
             >
               Add Question
@@ -374,7 +372,7 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
                             option
                           )
                         }
-                        className="text-[#255C79] focus:ring-[#255C79]"
+                        className="text-[var(--primary-500)] focus:ring-[var(--primary-500)]"
                         disabled={
                           updateMutation.isPending || option.trim() === ""
                         }
@@ -429,7 +427,7 @@ const EditQuizContent: React.FC<EditQuizContentProps> = ({
           <button
             onClick={handleSave}
             disabled={updateMutation.isPending}
-            className="px-6 py-2 text-sm font-medium text-white bg-[#255C79] border border-transparent rounded-lg hover:bg-[#1e4a61] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#255C79] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-6 py-2 text-sm font-medium text-[var(--font-light)] bg-[var(--primary-500)] border border-transparent rounded-lg hover:bg-[#1e4a61] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary-500)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {updateMutation.isPending ? (
               <div className="flex items-center">
