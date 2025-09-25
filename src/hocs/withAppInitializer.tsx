@@ -26,245 +26,245 @@ const withAppInitializer = <P extends object>(
           if (result.is_active) {
             setResponse(result);
             /* Primary Colors */
-            if (result.themeDetails) {
+            if (result.theme_settings) {
               document.body.style.setProperty(
                 "--primary-50",
-                result.themeDetails.primary50
+                result.theme_settings.primary50
               );
               document.body.style.setProperty(
                 "--primary-100",
-                result.themeDetails.primary100
+                result.theme_settings.primary100
               );
               document.body.style.setProperty(
                 "--primary-200",
-                result.themeDetails.primary200
+                result.theme_settings.primary200
               );
               document.body.style.setProperty(
                 "--primary-300",
-                result.themeDetails.primary300
+                result.theme_settings.primary300
               );
               document.body.style.setProperty(
                 "--primary-400",
-                result.themeDetails.primary400
+                result.theme_settings.primary400
               );
               document.body.style.setProperty(
                 "--primary-500",
-                result.themeDetails.primary500
+                result.theme_settings.primary500
               );
 
               document.body.style.setProperty(
                 "--primary-600",
-                result.themeDetails.primary600
+                result.theme_settings.primary600
               );
               document.body.style.setProperty(
                 "--primary-700",
-                result.themeDetails.primary700
+                result.theme_settings.primary700
               );
               document.body.style.setProperty(
                 "--primary-800",
-                result.themeDetails.primary800
+                result.theme_settings.primary800
               );
               document.body.style.setProperty(
                 "--primary-900",
-                result.themeDetails.primary900
+                result.theme_settings.primary900
               );
 
               /* Secondary Colors */
               document.body.style.setProperty(
                 "--secondary-50",
-                result.themeDetails.secondary50
+                result.theme_settings.secondary50
               );
               document.body.style.setProperty(
                 "--secondary-100",
-                result.themeDetails.secondary100
+                result.theme_settings.secondary100
               );
               document.body.style.setProperty(
                 "--nav-background",
-                result.themeDetails.navBackground
+                result.theme_settings.navBackground
               );
               document.body.style.setProperty(
                 "--font-dark-nav",
-                result.themeDetails.fontDarkNav
+                result.theme_settings.fontDarkNav
               );
               document.body.style.setProperty(
                 "--font-light-nav",
-                result.themeDetails.fontLightNav
+                result.theme_settings.fontLightNav
               );
               document.body.style.setProperty(
                 "--secondary-200",
-                result.themeDetails.secondary200
+                result.theme_settings.secondary200
               );
               document.body.style.setProperty(
                 "--secondary-300",
-                result.themeDetails.secondary300
+                result.theme_settings.secondary300
               );
               document.body.style.setProperty(
                 "--secondary-400",
-                result.themeDetails.secondary400
+                result.theme_settings.secondary400
               );
               document.body.style.setProperty(
                 "--secondary-500",
-                result.themeDetails.secondary500
+                result.theme_settings.secondary500
               );
               document.body.style.setProperty(
                 "--nav-selected",
-                result.themeDetails.navSelected
+                result.theme_settings.navSelected
               );
               document.body.style.setProperty(
                 "--secondary-600",
-                result.themeDetails.secondary600
+                result.theme_settings.secondary600
               );
               document.body.style.setProperty(
                 "--secondary-700",
-                result.themeDetails.secondary700
+                result.theme_settings.secondary700
               );
 
               /* Accent Colors */
               document.body.style.setProperty(
                 "--accent-yellow",
-                result.themeDetails.accentYellow
+                result.theme_settings.accentYellow
               );
               document.body.style.setProperty(
                 "--accent-blue",
-                result.themeDetails.accentBlue
+                result.theme_settings.accentBlue
               );
               document.body.style.setProperty(
                 "--accent-green",
-                result.themeDetails.accentGreen
+                result.theme_settings.accentGreen
               );
               document.body.style.setProperty(
                 "--accent-red",
-                result.themeDetails.accentRed
+                result.theme_settings.accentRed
               );
               document.body.style.setProperty(
                 "--accent-orange",
-                result.themeDetails.accentOrange
+                result.theme_settings.accentOrange
               );
               document.body.style.setProperty(
                 "--accent-teal",
-                result.themeDetails.accentTeal
+                result.theme_settings.accentTeal
               );
               document.body.style.setProperty(
                 "--accent-purple",
-                result.themeDetails.accentPurple
+                result.theme_settings.accentPurple
               );
               document.body.style.setProperty(
                 "--accent-pink",
-                result.themeDetails.accentPink
+                result.theme_settings.accentPink
               );
 
               /* Neutral Colors */
               document.body.style.setProperty(
                 "--neutral-50",
-                result.themeDetails.neutral50
+                result.theme_settings.neutral50
               );
               document.body.style.setProperty(
                 "--neutral-100",
-                result.themeDetails.neutral100
+                result.theme_settings.neutral100
               );
               document.body.style.setProperty(
                 "--neutral-200",
-                result.themeDetails.neutral200
+                result.theme_settings.neutral200
               );
               document.body.style.setProperty(
                 "--neutral-300",
-                result.themeDetails.neutral300
+                result.theme_settings.neutral300
               );
               document.body.style.setProperty(
                 "--neutral-400",
-                result.themeDetails.neutral400
+                result.theme_settings.neutral400
               );
               document.body.style.setProperty(
                 "--neutral-500",
-                result.themeDetails.neutral500
+                result.theme_settings.neutral500
               );
               document.body.style.setProperty(
                 "--neutral-600",
-                result.themeDetails.neutral600
+                result.theme_settings.neutral600
               );
               document.body.style.setProperty(
                 "--neutral-700",
-                result.themeDetails.neutral700
+                result.theme_settings.neutral700
               );
               document.body.style.setProperty(
                 "--neutral-800",
-                result.themeDetails.neutral800
+                result.theme_settings.neutral800
               );
 
               /* Success Colors */
               document.body.style.setProperty(
                 "--success-50",
-                result.themeDetails.success50
+                result.theme_settings.success50
               );
               document.body.style.setProperty(
                 "--success-100",
-                result.themeDetails.success100
+                result.theme_settings.success100
               );
               document.body.style.setProperty(
                 "--success-500",
-                result.themeDetails.success500
+                result.theme_settings.success500
               );
 
               /* Warning Colors */
               document.body.style.setProperty(
                 "--warning-100",
-                result.themeDetails.warning100
+                result.theme_settings.warning100
               );
               document.body.style.setProperty(
                 "--warning-500",
-                result.themeDetails.warning500
+                result.theme_settings.warning500
               );
 
               /* Error Colors */
               document.body.style.setProperty(
                 "--error-100",
-                result.themeDetails.error100
+                result.theme_settings.error100
               );
               document.body.style.setProperty(
                 "--error-500",
-                result.themeDetails.error500
+                result.theme_settings.error500
               );
               document.body.style.setProperty(
                 "--error-600",
-                result.themeDetails.error600
+                result.theme_settings.error600
               );
 
               /* Font Colors */
               document.body.style.setProperty(
                 "--font-primary",
-                result.themeDetails.fontPrimary
+                result.theme_settings.fontPrimary
               );
               document.body.style.setProperty(
                 "--font-secondary",
-                result.themeDetails.fontSecondary
+                result.theme_settings.fontSecondary
               );
               document.body.style.setProperty(
                 "--font-tertiary",
-                result.themeDetails.fontTertiary
+                result.theme_settings.fontTertiary
               );
               document.body.style.setProperty(
                 "--font-light",
-                result.themeDetails.fontLight
+                result.theme_settings.fontLight
               );
 
               /* Font Family */
               document.body.style.setProperty(
                 "--font-family-primary",
-                result.themeDetails.fontFamilyPrimary
+                result.theme_settings.fontFamilyPrimary
               );
 
               /* Background (extra) */
               document.body.style.setProperty(
                 "--main-background",
-                result.themeDetails.backgroundColor
+                result.theme_settings.backgroundColor
               );
               document.body.style.setProperty(
                 "--default-primary",
-                result.themeDetails.defaultPrimary
+                result.theme_settings.defaultPrimary
               );
               document.body.style.setProperty(
                 "--font-dark",
-                result.themeDetails.fontDark
+                result.theme_settings.fontDark
               );
             }
           } else {

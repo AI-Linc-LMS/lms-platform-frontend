@@ -1,4 +1,4 @@
-const ArrowIcon = () => (
+const ArrowIcon = ({ className }: { className?: string }) => (
   <svg
     width="32"
     height="32"
@@ -8,14 +8,14 @@ const ArrowIcon = () => (
   >
     <path
       d="M17.2499 24.75L9.74988 16L17.2499 7.25"
-      stroke="var(--neutral-500)"
+      stroke={className}
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
     <path
       d="M22.2498 24.75L14.7498 16L22.2498 7.25"
-      stroke="var(--neutral-500)"
+      stroke={className}
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"

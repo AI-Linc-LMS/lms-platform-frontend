@@ -20,7 +20,7 @@ const SidebarItem = ({
             }`}
           >
             <div className="flex flex-row items-center px-2 gap-4">
-              <div
+              {/* <div
                 className={`w-[20px] h-[20px] flex items-center justify-center ${
                   isActive
                     ? "text-[var(--font-light-nav)]"
@@ -28,7 +28,7 @@ const SidebarItem = ({
                 }`}
               >
                 {linkInfo.icon}
-              </div>
+              </div> */}
               <span
                 className={`text-lg ${
                   isActive
@@ -43,7 +43,7 @@ const SidebarItem = ({
         ) : (
           <div
             className={`flex items-center justify-center w-full h-[56px] transition-all duration-300 ease-in-out hover-element rounded-2xl ${
-              isActive ? "bg-[var(--secondary-500)]" : ""
+              isActive ? "bg-[var(--nav-selected)]" : ""
             }`}
           >
             <div
