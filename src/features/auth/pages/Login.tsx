@@ -25,24 +25,11 @@ const Login: React.FC = () => {
       <div className="flex flex-1">
         {/* Background Image for Mobile */}
         <div className="absolute inset-0 md:hidden">
-          {!clientInfo?.data?.login_img_url ? (
-            <>
-              <img
-                src={logimg}
-                alt="Office workspace"
-                className="w-full h-full object-cover opacity-50"
-              />
-            </>
-          ) : (
-            <>
-              {" "}
-              <img
-                src={logimg}
-                alt="Office workspace"
-                className="w-full h-full object-cover opacity-50"
-              />
-            </>
-          )}
+          <img
+            src={clientInfo?.data?.login_img_url ?? logimg}
+            alt="Office workspace"
+            className="w-full h-full object-cover"
+          />
         </div>
 
         {/* Left Section - Background Image (desktop only) */}
