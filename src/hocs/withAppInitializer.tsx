@@ -15,6 +15,22 @@ const withAppInitializer = <P extends object>(
     const dispatch = useDispatch();
     const [isInactive, setIsInactive] = useState<boolean>(false);
 
+    function setFavicon(url: string) {
+      let link: HTMLLinkElement | null = document.querySelector(
+        "link[rel~='favicon']"
+      );
+
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "icon";
+        link.type = "image/png"; // or "image/x-icon"
+        document.head.appendChild(link);
+      }
+
+      // Add cache buster to force refresh
+      link.href = `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
+    }
+
     useEffect(() => {
       const initialize = async () => {
         try {
@@ -27,6 +43,8 @@ const withAppInitializer = <P extends object>(
             setResponse(result);
             /* Primary Colors */
             if (result.theme_settings) {
+              document.title = result.name || "AI Linc|App";
+              setFavicon(result.app_icon_url);
               document.body.style.setProperty(
                 "--primary-50",
                 result.theme_settings.primary50
