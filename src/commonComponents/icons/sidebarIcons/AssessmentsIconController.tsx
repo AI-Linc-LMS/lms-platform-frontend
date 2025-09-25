@@ -23,9 +23,8 @@ const AssessmentsIconController: React.FC = () => {
         height="18"
         rx="2"
         ry="2"
-        stroke={isActive ? "var(--primary-500)" : "var(--neutral-300)"}
         strokeWidth="1.5"
-        fill={isActive ? "#EFF9FC" : "none"}
+        stroke="currentColor"
       />
 
       {/* Header section */}
@@ -36,7 +35,7 @@ const AssessmentsIconController: React.FC = () => {
         height="5"
         rx="2"
         ry="2"
-        fill={isActive ? "var(--primary-500)" : "var(--neutral-100)"}
+        stroke="currentColor"
         opacity="0.3"
       />
 
@@ -46,7 +45,7 @@ const AssessmentsIconController: React.FC = () => {
         y1="11"
         x2="17"
         y2="11"
-        stroke={isActive ? "var(--primary-500)" : "var(--neutral-300)"}
+        stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
       />
@@ -55,7 +54,7 @@ const AssessmentsIconController: React.FC = () => {
         y1="14"
         x2="14"
         y2="14"
-        stroke={isActive ? "var(--primary-500)" : "var(--neutral-300)"}
+        stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
       />
@@ -64,7 +63,7 @@ const AssessmentsIconController: React.FC = () => {
         y1="17"
         x2="16"
         y2="17"
-        stroke={isActive ? "var(--primary-500)" : "var(--neutral-300)"}
+        stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
       />

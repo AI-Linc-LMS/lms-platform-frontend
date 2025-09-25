@@ -37,10 +37,10 @@ const SidebarLogoPart = ({
       <div
         className={`${
           isExpanded ? "" : "rotate-180"
-        } absolute w-[52px] h-[52px] grid place-items-center rounded-[12px] transition-transform duration-300 right-[-37px] bottom-[-12px] bg-[var(--primary-50)]  cursor-pointer pr-[3px]`}
+        } absolute w-[52px] h-[52px] grid place-items-center rounded-[12px] transition-transform duration-300 right-[-37px] bottom-[-12px] bg-[var(--nav-background)]  cursor-pointer pr-[3px]`}
         onClick={onClickArrow}
       >
-        <ArrowIcon />
+        <ArrowIcon className="var(--font-dark-nav)" />
       </div>
     </div>
   );

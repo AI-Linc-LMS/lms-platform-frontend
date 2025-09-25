@@ -12,7 +12,7 @@ const CommunityIcon: React.FC<CommunityIconProps> = ({
   // Debug logging to check if isActive is being passed correctly
   console.log("CommunityIcon isActive:", isActive);
 
-  const strokeColor = isActive ? "var(--font-light)" : "var(--neutral-400)";
+  const strokeColor = isActive ? "currentColor" : "currentColor";
 
   return (
     <svg
