@@ -42,8 +42,11 @@ const withAppInitializer = <P extends object>(
           if (result.is_active) {
             setResponse(result);
             /* Primary Colors */
-            if (result.theme_settings) {
-              document.title = result.name || "AI Linc|App";
+            document.title = result.name || "AI Linc|App";
+            if (
+              result.theme_settings &&
+              Object.keys(result.theme_settings).length > 0
+            ) {
               setFavicon(result.app_icon_url);
               document.body.style.setProperty(
                 "--primary-50",
