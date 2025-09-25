@@ -16,7 +16,7 @@ const SidebarItem = ({
         {isExpanded ? (
           <div
             className={`flex relative font-medium w-full h-[56px] transition-all duration-300 ease-in-out items-center justify-start hover-element rounded-2xl ${
-              isActive ? "bg-[var(--secondary-500)]" : ""
+              isActive ? "bg-[var(--nav-selected)]" : ""
             }`}
           >
             <div className="flex flex-row items-center px-2 gap-4">

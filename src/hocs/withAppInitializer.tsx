@@ -51,6 +51,7 @@ const withAppInitializer = <P extends object>(
                 "--primary-500",
                 result.themeDetails.primary500
               );
+
               document.body.style.setProperty(
                 "--primary-600",
                 result.themeDetails.primary600
@@ -92,6 +93,10 @@ const withAppInitializer = <P extends object>(
               document.body.style.setProperty(
                 "--secondary-500",
                 result.themeDetails.secondary500
+              );
+              document.body.style.setProperty(
+                "--nav-selected",
+                result.themeDetails.navSelected
               );
               document.body.style.setProperty(
                 "--secondary-600",
