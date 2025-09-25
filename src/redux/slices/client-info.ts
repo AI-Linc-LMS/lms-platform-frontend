@@ -40,7 +40,7 @@ export interface ClientData {
   app_icon_url: string;
   is_active: boolean;
   features: { id: number; name: string }[];
-  themeDetails: ThemeDetails;
+  theme_settings: ThemeDetails;
 }
 
 interface ThemeDetails {
