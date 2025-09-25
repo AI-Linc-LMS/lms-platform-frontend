@@ -46,13 +46,9 @@ const Login: React.FC = () => {
         </div>
 
         {/* Left Section - Background Image (desktop only) */}
-        <div className="hidden md:block md:w-1/2 h-full bg-gradient-to-r from-[var(--primary-50)] to-[#E9F7FC]">
+        <div className="hidden md:block md:w-1/2 h-screen bg-gradient-to-r from-[var(--primary-50)] to-[#E9F7FC]">
           <img
-            src={
-              clientInfo?.data?.login_img_url
-                ? clientInfo?.data?.login_img_url
-                : logimg
-            }
+            src={clientInfo?.data?.login_img_url ?? logimg}
             alt="Office workspace"
             className="w-full h-full object-cover"
           />
@@ -62,7 +58,7 @@ const Login: React.FC = () => {
         <div className="w-full md:w-1/2 flex items-center justify-center px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="w-full max-w-md space-y-8 bg-white md:bg-transparent p-6 rounded-3xl shadow-sm md:shadow-none">
             <div className="text-center">
-              <div className="flex flex-col justify-center items-center">
+              <div className={"flex flex-col justify-center items-center"}>
                 {clientInfo.data?.app_logo_url && (
                   <img
                     src={clientInfo.data?.app_logo_url}
