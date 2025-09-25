@@ -571,7 +571,7 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
 
       {/* First time viewing indicator */}
       {isFirstWatch && (
-        <div className="absolute top-3 left-3 z-10 bg-yellow-600 text-white px-3 py-1 text-xs rounded-full">
+        <div className="absolute top-3 left-3 z-10 bg-yellow-600 text-[var(--font-light)] px-3 py-1 text-xs rounded-full">
           First Viewing
         </div>
       )}
@@ -579,7 +579,7 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
       {/* Warning message when trying to seek ahead */}
       {showSeekWarning && (
         <div className="absolute bottom-16 left-0 right-0 text-center z-20">
-          <div className="inline-block bg-black bg-opacity-80 text-white text-sm px-4 py-2 rounded-full">
+          <div className="inline-block bg-black bg-opacity-80 text-[var(--font-light)] text-sm px-4 py-2 rounded-full">
             {seekDisabledMessage}
           </div>
         </div>
@@ -589,7 +589,7 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
       {showContinuePrompt && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 z-30">
           <div className="bg-gray-800 p-6 rounded-lg max-w-md text-center">
-            <h3 className="text-white text-lg font-semibold mb-4">
+            <h3 className="text-[var(--font-light)] text-lg font-semibold mb-4">
               Continue Watching?
             </h3>
             <p className="text-gray-200 mb-4">
@@ -598,13 +598,13 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
             </p>
             <div className="flex justify-center space-x-4">
               <button
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+                className="bg-blue-600 hover:bg-blue-700 text-[var(--font-light)] px-4 py-2 rounded-md"
                 onClick={() => applyProgressAndStartPlayback(savedProgress)}
               >
                 Continue
               </button>
               <button
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md"
+                className="bg-gray-600 hover:bg-gray-700 text-[var(--font-light)] px-4 py-2 rounded-md"
                 onClick={() => {
                   setShowContinuePrompt(false);
                   setHasAppliedSavedProgress(true);

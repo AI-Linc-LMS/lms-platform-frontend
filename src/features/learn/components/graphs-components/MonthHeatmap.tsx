@@ -33,8 +33,12 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
   setHoveredCell,
 }) => {
   const [isMobile, setIsMobile] = useState(false);
-  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
-  const [hoveredActivity, setHoveredActivity] = useState<ActivityData | null>(null);
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(
+    null
+  );
+  const [hoveredActivity, setHoveredActivity] = useState<ActivityData | null>(
+    null
+  );
   const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -46,7 +50,6 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
     window.addEventListener("resize", checkIfMobile);
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
-  
 
   const daysInMonth = useMemo(() => {
     const days: Date[] = [];
@@ -99,13 +102,13 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
                 <div
                   key={dateIndex}
                   className="relative"
-                  onMouseEnter={e => {
+                  onMouseEnter={(e) => {
                     setHoveredCell(dateStr);
                     setHoveredActivity(activity || null);
                     setHoveredDate(date);
                     setMousePos({ x: e.clientX, y: e.clientY });
                   }}
-                  onMouseMove={e => {
+                  onMouseMove={(e) => {
                     if (isHovered) setMousePos({ x: e.clientX, y: e.clientY });
                   }}
                   onMouseLeave={() => {
@@ -120,7 +123,9 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
                       activity
                         ? getActivityColor(activity.level)
                         : "bg-[#E9ECE9]"
-                    } ${isHovered ? "transform scale-110 shadow-md" : ""} ${isMobile ? "w-[10px] h-[10px]" : ""}`}
+                    } ${isHovered ? "transform scale-110 shadow-md" : ""} ${
+                      isMobile ? "w-[10px] h-[10px]" : ""
+                    }`}
                   />
                 </div>
               );
@@ -128,16 +133,21 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
           </div>
         ))}
       </div>
-      <div className="text-center md:text-end text-xs md:text-sm font-medium mb-1 md:mb-2">{monthName}</div>
-      {mousePos && hoveredActivity && hoveredDate && ReactDOM.createPortal(
-        <Tooltip
-          x={mousePos.x}
-          y={mousePos.y}
-          activity={hoveredActivity}
-          date={hoveredDate}
-        />,
-        document.body
-      )}
+      <div className="text-center md:text-end text-xs md:text-sm font-medium mb-1 md:mb-2">
+        {monthName}
+      </div>
+      {mousePos &&
+        hoveredActivity &&
+        hoveredDate &&
+        ReactDOM.createPortal(
+          <Tooltip
+            x={mousePos.x}
+            y={mousePos.y}
+            activity={hoveredActivity}
+            date={hoveredDate}
+          />,
+          document.body
+        )}
     </div>
   );
 };
@@ -145,17 +155,22 @@ const MonthHeatmap: React.FC<MonthHeatmapProps> = ({
 const getActivityColor = (level: number) => {
   const customColors = [
     "bg-[#E9ECE9]", // No activity
-    "bg-[#CDE5CE]", // Light green
+    "bg-[var(--secondary-100)]", // Light green
     "bg-[#A6CFA9]", // Medium light green
     "bg-[#77B17B]", // Medium green
-    "bg-[#417845]", // Dark green
+    "bg-[var(--secondary-200)]", // Dark green
     "bg-[#2E4D31]", // Very dark green
   ];
   return customColors[level] ?? "bg-[#E9ECE9]";
 };
 
 // Tooltip component for portal rendering
-const Tooltip: React.FC<{ x: number; y: number; activity: ActivityData; date: Date }> = ({ x, y, activity, date }) => {
+const Tooltip: React.FC<{
+  x: number;
+  y: number;
+  activity: ActivityData;
+  date: Date;
+}> = ({ x, y, activity, date }) => {
   // Tooltip size and padding
   const tooltipWidth = 120;
   const tooltipHeight = 80;

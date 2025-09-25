@@ -183,7 +183,7 @@ export const EditModal: React.FC<EditModalProps> = ({
             Cancel
           </button>
           <button
-            className="px-5 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 font-semibold"
+            className="px-5 py-2 rounded bg-blue-600 text-[var(--font-light)] hover:bg-blue-700 font-semibold"
             onClick={handleSave}
           >
             Save

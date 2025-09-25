@@ -49,11 +49,11 @@ const UpcomingSessionBanner: React.FC<UpcomingSessionBannerProps> = ({
     return (
       <div className="mb-12">
         <div className="flex flex-col justify-between lg:flex-row gap-4">
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-[#80C9E0] p-6 flex flex-col gap-8 w-full min-h-[300px] justify-center items-center text-center">
-            <p className="text-[#255C79] text-xl font-semibold">
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-[var(--primary-200)] p-6 flex flex-col gap-8 w-full min-h-[300px] justify-center items-center text-center">
+            <p className="text-[var(--primary-500)] text-xl font-semibold">
               🚀 Live sessions will be coming soon!
             </p>
-            <p className="text-[#6C757D] max-w-md">
+            <p className="text-[var(--neutral-300)] max-w-md">
               We’re preparing the next amazing session for you. Stay tuned and
               check back later for updates.
             </p>
@@ -70,28 +70,30 @@ const UpcomingSessionBanner: React.FC<UpcomingSessionBannerProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-2xl w-full shadow-lg overflow-hidden border border-[#80C9E0] p-6 flex flex-col gap-8">
+    <div className="bg-white rounded-2xl w-full shadow-lg overflow-hidden border border-[var(--primary-200)] p-6 flex flex-col gap-8">
       {/* Session Details */}
       <div className="flex-1 flex flex-col gap-4 justify-start lg:justify-center">
-        <h3 className="text-lg md:text-2xl font-bold lg:mb-2 text-[#255C79] flex items-center gap-2">
+        <h3 className="text-lg md:text-2xl font-bold lg:mb-2 text-[var(--primary-500)] flex items-center gap-2">
           🎤 {session.topic_name}
         </h3>
-        <p className="text-[#6C757D] text-sm lg:text-base lg:mb-2">
+        <p className="text-[var(--neutral-300)] text-sm lg:text-base lg:mb-2">
           {session.description}
         </p>
         <div className="flex flex-col lg:flex-row lg:gap-3 lg:mb-2">
-          <span className="inline-flex items-center gap-1 text-[#495057]">
+          <span className="inline-flex items-center gap-1 text-[var(--neutral-400)]">
             📅 {formatDate(session.class_datetime)}
           </span>
-          <span className="inline-flex items-center gap-1 text-[#495057]">
+          <span className="inline-flex items-center gap-1 text-[var(--neutral-400)]">
             ⏰ {formatTime(session.class_datetime)} (
             {formatDuration(session.duration_minutes)})
           </span>
         </div>
         <div className="flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:mb-2">
           <div className="flex items-center gap-1">
-            <span className="font-semibold text-[#343A40]">Trainer:</span>
-            <span className="text-[#255C79] font-medium">
+            <span className="font-semibold text-[var(--neutral-500)]">
+              Trainer:
+            </span>
+            <span className="text-[var(--primary-500)] font-medium">
               {session.instructor}
             </span>
           </div>

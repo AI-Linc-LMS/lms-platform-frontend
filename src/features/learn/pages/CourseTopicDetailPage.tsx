@@ -726,7 +726,7 @@ const CourseTopicDetailPage: React.FC = () => {
       <div className="flex flex-col items-center justify-center h-96">
         <p className="text-xl mb-4">Topic not found</p>
         <button
-          className="px-4 py-2 bg-[#255C79] text-white rounded-xl cursor-pointer"
+          className="px-4 py-2 bg-[var(--primary-500)] text-[var(--font-light)] rounded-xl cursor-pointer"
           onClick={() => navigate(-1)}
         >
           Back
@@ -820,7 +820,7 @@ const CourseTopicDetailPage: React.FC = () => {
         >
           {isMobile && (
             <div className="mb-4">
-              <h2 className="text-lg font-semibold text-[#255C79]">
+              <h2 className="text-lg font-semibold text-[var(--primary-500)]">
                 {currentContent.title}
               </h2>
               <div className="text-xs text-gray-500 flex items-center gap-2">
@@ -835,7 +835,7 @@ const CourseTopicDetailPage: React.FC = () => {
           {isMobile && (
             <button
               onClick={() => setIsSidebarContentOpen(true)}
-              className="fixed top-20 right-4 z-20 bg-[#255C79] text-white rounded-full shadow-md p-3 hover:bg-[#1a4057] transition"
+              className="fixed top-20 right-4 z-20 bg-[var(--primary-500)] text-[var(--font-light)] rounded-full shadow-md p-3 hover:bg-[#1a4057] transition"
               title="Open Course Contents"
             >
               <svg

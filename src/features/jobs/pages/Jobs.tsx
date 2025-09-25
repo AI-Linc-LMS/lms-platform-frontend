@@ -6,6 +6,24 @@ import { Job } from "../types/jobs.types";
 import { mockJobs } from "../data/mockJobs";
 import JobApplicationModal from "../components/JobApplicationModal";
 import AssessmentInvitationModal from "../components/AssessmentInvitationModal";
+import { Filter, X } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Slide,
+} from "@mui/material";
+import { TransitionProps } from "@mui/material/transitions";
+
+const Transition = React.forwardRef(function Transition(
+  props: TransitionProps & {
+    children: React.ReactElement<any, any>;
+  },
+  ref: React.Ref<unknown>
+) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
 
 const Jobs: React.FC = () => {
   const navigate = useNavigate();
@@ -14,7 +32,10 @@ const Jobs: React.FC = () => {
   const [jobTypeFilter, setJobTypeFilter] = useState("");
   const [experienceFilter, setExperienceFilter] = useState("");
   // Fixed: Increased max salary to accommodate all jobs including Microsoft and Amazon
-  const [salaryFilter, setSalaryFilter] = useState({ min: 0, max: 1_00_00_000 });
+  const [salaryFilter, setSalaryFilter] = useState({
+    min: 0,
+    max: 1_00_00_000,
+  });
   const [remoteFilter, setRemoteFilter] = useState(false);
   const [jobs] = useState<Job[]>(mockJobs);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -22,6 +43,7 @@ const Jobs: React.FC = () => {
   // Fixed: Set initial visible jobs to show all available jobs
   const [visibleJobsCount, setVisibleJobsCount] = useState(12);
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
 
   const handleSearch = () => {
     // Optional: Add search analytics or validation here
@@ -41,7 +63,7 @@ const Jobs: React.FC = () => {
   const handleLoadMore = () => {
     const remainingJobs = filteredJobs.length - visibleJobsCount;
     const jobsToLoad = Math.min(remainingJobs, 6); // Load 6 more jobs at a time
-    setVisibleJobsCount(prevCount => prevCount + jobsToLoad);
+    setVisibleJobsCount((prevCount) => prevCount + jobsToLoad);
   };
 
   const filteredJobs = useMemo(() => {
@@ -87,7 +109,8 @@ const Jobs: React.FC = () => {
         const filterMaxSalary = salaryFilter.max;
 
         // Check if there's any overlap between job salary range and filter range
-        const hasOverlap = jobMinSalary <= filterMaxSalary && jobMaxSalary >= filterMinSalary;
+        const hasOverlap =
+          jobMinSalary <= filterMaxSalary && jobMaxSalary >= filterMinSalary;
 
         if (!hasOverlap) {
           return false;
@@ -99,9 +122,11 @@ const Jobs: React.FC = () => {
 
     // Sort filtered jobs: job with id '1' first, then by most recent posted date
     return filtered.sort((a, b) => {
-      if (a.id === '1') return -1;
-      if (b.id === '1') return 1;
-      return new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime();
+      if (a.id === "1") return -1;
+      if (b.id === "1") return 1;
+      return (
+        new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
+      );
     });
   }, [
     jobs,
@@ -122,37 +147,48 @@ const Jobs: React.FC = () => {
     jobTypeFilter,
     experienceFilter,
     remoteFilter,
-    salaryFilter
+    salaryFilter,
   });
 
   const resetAllFilters = () => {
-    setSearchQuery('');
-    setLocationFilter('');
-    setJobTypeFilter('');
-    setExperienceFilter('');
+    setSearchQuery("");
+    setLocationFilter("");
+    setJobTypeFilter("");
+    setExperienceFilter("");
     setRemoteFilter(false);
     setSalaryFilter({ min: 0, max: 1_00_00_000 }); // Reset to accommodate all jobs
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA]">
+    <div className="min-h-screen bg-[var(--neutral-50)]">
       <div>
-        <div className="bg-gradient-to-br from-[#255C79] to-[#17627A] text-white rounded-2xl">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
+        <div className="bg-gradient-to-br from-[var(--primary-500)] to-[#17627A] text-[var(--font-light)] rounded-2xl">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-16 lg:py-20">
             <div className="text-center">
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">
                 Find Your Dream Job
               </h1>
               <p className="text-lg sm:text-xl lg:text-2xl mb-8 sm:mb-12 opacity-90 max-w-3xl mx-auto">
-                Discover thousands of job opportunities from top companies around the world
+                Discover thousands of job opportunities from top companies
+                around the world
               </p>
 
               <div className="max-w-4xl mx-auto">
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 bg-white rounded-2xl p-3 sm:p-4 shadow-xl">
                   <div className="flex-1 relative">
                     <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
-                      <svg className="w-5 h-5 text-[#6C757D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      <svg
+                        className="w-5 h-5 text-[var(--neutral-300)]"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
                       </svg>
                     </div>
                     <input
@@ -160,15 +196,30 @@ const Jobs: React.FC = () => {
                       placeholder="Job title, keywords, or company"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-3 sm:py-4 text-[#343A40] placeholder-[#6C757D] border-0 focus:ring-0 text-base sm:text-lg"
+                      className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-3 sm:py-4 text-[var(--neutral-500)] placeholder-[var(--neutral-300)] border-0 focus:ring-0 text-base sm:text-lg"
                     />
                   </div>
 
                   <div className="flex-1 relative">
                     <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
-                      <svg className="w-5 h-5 text-[#6C757D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <svg
+                        className="w-5 h-5 text-[var(--neutral-300)]"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
                       </svg>
                     </div>
                     <input
@@ -176,16 +227,24 @@ const Jobs: React.FC = () => {
                       placeholder="Location"
                       value={locationFilter}
                       onChange={(e) => setLocationFilter(e.target.value)}
-                      className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-3 sm:py-4 text-[#343A40] placeholder-[#6C757D] border-0 focus:ring-0 text-base sm:text-lg"
+                      className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-3 sm:py-4 text-[var(--neutral-500)] placeholder-[var(--neutral-300)] border-0 focus:ring-0 text-base sm:text-lg"
                     />
                   </div>
 
-                  <button
-                    onClick={handleSearch}
-                    className="px-6 sm:px-8 py-3 sm:py-4 bg-[#255C79] text-white rounded-xl hover:bg-[#1E4A63] transition-colors font-semibold text-base sm:text-lg whitespace-nowrap"
-                  >
-                    Search Jobs
-                  </button>
+                  <div className="flex gap-2 items-center">
+                    <button
+                      onClick={handleSearch}
+                      className="px-6 w-full sm:px-8 py-3 sm:py-4 bg-[var(--primary-500)] text-[var(--font-light)] rounded-xl hover:bg-[var(--primary-600)] transition-colors font-semibold text-base sm:text-lg whitespace-nowrap"
+                    >
+                      Search Jobs
+                    </button>
+                    <button
+                      onClick={() => setIsFilterDialogOpen(true)}
+                      className="px-6 w-full flex md:hidden gap-2 justify-center items-center text-[var(--primary-600)] sm:px-8 py-3 sm:py-4 bg-gray-100 rounded-xl hover:bg-[var(--primary-600)] transition-colors font-semibold text-base sm:text-lg whitespace-nowrap"
+                    >
+                      <Filter size={18} /> Filters
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -195,22 +254,23 @@ const Jobs: React.FC = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-[#343A40] mb-2">
+              <h2 className="text-2xl sm:text-3xl font-bold text-[var(--neutral-500)] mb-2">
                 Job Opportunities
               </h2>
-              <p className="text-[#6C757D] text-sm sm:text-base">
-                {`${filteredJobs.length} jobs found`} {searchQuery && `for "${searchQuery}"`}
+              <p className="text-[var(--neutral-300)] text-sm sm:text-base">
+                {`${filteredJobs.length} jobs found`}{" "}
+                {searchQuery && `for "${searchQuery}"`}
               </p>
             </div>
 
             {/* Debug info - remove in production */}
-            {/* <div className="text-xs text-[#6C757D] bg-yellow-100 px-2 py-1 rounded">
+            {/* <div className="text-xs text-[var(--neutral-300)] bg-yellow-100 px-2 py-1 rounded">
               Debug: Total: {jobs.length}, Filtered: {filteredJobs.length}, Visible: {Math.min(visibleJobsCount, filteredJobs.length)}
             </div> */}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
-            <div className="lg:col-span-1">
+            <div className="hidden md:block lg:col-span-1">
               <div className="sticky top-6">
                 <JobFilters
                   jobType={jobTypeFilter}
@@ -242,7 +302,7 @@ const Jobs: React.FC = () => {
                   <div className="mb-6">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-16 w-16 mx-auto text-[#6C757D] opacity-50"
+                      className="h-16 w-16 mx-auto text-[var(--neutral-300)] opacity-50"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -255,16 +315,16 @@ const Jobs: React.FC = () => {
                       />
                     </svg>
                   </div>
-                  <h3 className="text-lg sm:text-xl font-semibold text-[#343A40] mb-2">
+                  <h3 className="text-lg sm:text-xl font-semibold text-[var(--neutral-500)] mb-2">
                     No Jobs Found
                   </h3>
-                  <p className="text-[#6C757D] mb-4 text-sm sm:text-base max-w-md mx-auto px-4">
-                    We couldn't find any jobs matching your current search criteria.
-                    Try adjusting your filters or search terms.
+                  <p className="text-[var(--neutral-300)] mb-4 text-sm sm:text-base max-w-md mx-auto px-4">
+                    We couldn't find any jobs matching your current search
+                    criteria. Try adjusting your filters or search terms.
                   </p>
                   <button
                     onClick={resetAllFilters}
-                    className="mt-4 px-6 py-2 bg-[#255C79] text-white rounded-lg hover:bg-[#1E4A63] transition-colors"
+                    className="mt-4 px-6 py-2 bg-[var(--primary-500)] text-[var(--font-light)] rounded-lg hover:bg-[var(--primary-600)] transition-colors"
                   >
                     Reset All Filters
                   </button>
@@ -277,7 +337,11 @@ const Jobs: React.FC = () => {
                       job={job}
                       onClick={() => navigate(`/jobs/${job.id}`)}
                       onApply={handleApplyToJob}
-                      className={index === 0 ? 'border-2 border-[#255C79]' : ''}
+                      className={
+                        index === 0
+                          ? "border-2 border-[var(--primary-500)]"
+                          : ""
+                      }
                     />
                   ))}
 
@@ -285,7 +349,7 @@ const Jobs: React.FC = () => {
                     <div className="text-center mt-8 sm:mt-12">
                       <button
                         onClick={handleLoadMore}
-                        className="px-6 sm:px-8 py-3 sm:py-4 border-2 border-[#255C79] text-[#255C79] rounded-lg hover:bg-[#255C79] hover:text-white transition-colors font-medium flex items-center justify-center mx-auto"
+                        className="px-6 sm:px-8 py-3 sm:py-4 border-2 border-[var(--primary-500)] text-[var(--primary-500)] rounded-lg hover:bg-[var(--primary-500)] hover:text-[var(--font-light)] transition-colors font-medium flex items-center justify-center mx-auto"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -299,7 +363,8 @@ const Jobs: React.FC = () => {
                             clipRule="evenodd"
                           />
                         </svg>
-                        Load More Jobs ({filteredJobs.length - visibleJobsCount} remaining)
+                        Load More Jobs ({filteredJobs.length - visibleJobsCount}{" "}
+                        remaining)
                       </button>
                     </div>
                   )}
@@ -333,6 +398,50 @@ const Jobs: React.FC = () => {
           }}
         />
       )}
+
+      <Dialog
+        open={isFilterDialogOpen}
+        onClose={() => setIsFilterDialogOpen(false)}
+        fullWidth
+        TransitionComponent={Transition}
+        PaperProps={{
+          sx: {
+            position: "fixed",
+            bottom: 0,
+            m: 0,
+            width: "100%",
+            maxWidth: "100%",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          Filters
+          <IconButton
+            className="!p-0"
+            onClick={() => setIsFilterDialogOpen(false)}
+          >
+            <X />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent className="px-2">
+          <JobFilters
+            jobType={jobTypeFilter}
+            onJobTypeChange={setJobTypeFilter}
+            experience={experienceFilter}
+            onExperienceChange={setExperienceFilter}
+            salary={salaryFilter}
+            onSalaryChange={setSalaryFilter}
+            remote={remoteFilter}
+            onRemoteChange={setRemoteFilter}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

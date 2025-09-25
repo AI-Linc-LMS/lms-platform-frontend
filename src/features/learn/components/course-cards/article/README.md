@@ -5,6 +5,7 @@ This system allows articles to be rendered with completely dynamic layouts and s
 ## Overview
 
 The `ArticleCard` component now supports:
+
 - **Dynamic layouts** from backend configuration
 - **Predefined templates** for common layouts
 - **Custom styling** through CSS classes and inline styles
@@ -18,6 +19,7 @@ The `ArticleCard` component now supports:
 The backend can send layout configuration in several ways:
 
 #### Option A: Using Predefined Templates
+
 ```json
 {
   "id": 1,
@@ -37,6 +39,7 @@ The backend can send layout configuration in several ways:
 ```
 
 #### Option B: Custom Layout Configuration
+
 ```json
 {
   "id": 1,
@@ -60,7 +63,7 @@ The backend can send layout configuration in several ways:
         "showMarks": true,
         "titleClassName": "text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4",
         "metadataClassName": "flex justify-center items-center gap-6 text-lg text-gray-600",
-        "marksClassName": "inline-block bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 rounded-full font-bold text-lg shadow-lg"
+        "marksClassName": "inline-block bg-gradient-to-r from-yellow-400 to-orange-500 text-[var(--font-light)] px-4 py-2 rounded-full font-bold text-lg shadow-lg"
       },
       "content": {
         "className": "course-description prose prose-xl max-w-none text-gray-800",
@@ -68,7 +71,7 @@ The backend can send layout configuration in several ways:
       },
       "actions": {
         "className": "text-center",
-        "buttonClassName": "inline-flex items-center gap-3 px-10 py-4 rounded-full text-xl font-bold bg-gradient-to-r from-green-500 to-blue-600 text-white transition transform hover:scale-110 shadow-2xl",
+        "buttonClassName": "inline-flex items-center gap-3 px-10 py-4 rounded-full text-xl font-bold bg-gradient-to-r from-green-500 to-blue-600 text-[var(--font-light)] transition transform hover:scale-110 shadow-2xl",
         "buttonText": "🎉 Complete This Amazing Article!",
         "showIcon": true
       }
@@ -79,6 +82,7 @@ The backend can send layout configuration in several ways:
 ```
 
 #### Option C: Template + Customizations
+
 ```json
 {
   "id": 1,
@@ -98,34 +102,40 @@ The backend can send layout configuration in several ways:
 ## Available Templates
 
 ### 1. DEFAULT
+
 - Modern, clean layout
 - Standard spacing and typography
 - Suitable for most articles
 
 ### 2. COMPACT
+
 - Smaller spacing and fonts
 - Perfect for mobile or sidebar display
 - Condensed information layout
 
 ### 3. IMMERSIVE
+
 - Full-width, magazine-style layout
 - Large typography and spacing
 - Gradient backgrounds and shadows
 - Best for featured content
 
 ### 4. MINIMAL
+
 - Clean, distraction-free design
 - Minimal UI elements
 - Focus on content readability
 - No marks display, simple metadata
 
 ### 5. CARD
+
 - Card-based sectioned layout
 - Clear visual separation
 - Professional appearance
 - Good for structured content
 
 ### 6. DARK
+
 - Dark theme with light text
 - Gradient accents
 - Modern dark UI
@@ -134,6 +144,7 @@ The backend can send layout configuration in several ways:
 ## Layout Configuration Options
 
 ### Container
+
 ```typescript
 container?: {
   className?: string;        // CSS classes for main container
@@ -142,6 +153,7 @@ container?: {
 ```
 
 ### Header
+
 ```typescript
 header?: {
   className?: string;        // CSS classes for header section
@@ -156,6 +168,7 @@ header?: {
 ```
 
 ### Content
+
 ```typescript
 content?: {
   className?: string;        // CSS classes for content area
@@ -165,6 +178,7 @@ content?: {
 ```
 
 ### Actions
+
 ```typescript
 actions?: {
   className?: string;        // CSS classes for actions section
@@ -178,10 +192,11 @@ actions?: {
 ## Backend Implementation Examples
 
 ### Django/Python Example
+
 ```python
 def get_article_content(request, article_id):
     article = Article.objects.get(id=article_id)
-    
+
     # Determine layout based on article type or user preferences
     if article.is_featured:
         template = "IMMERSIVE"
@@ -189,7 +204,7 @@ def get_article_content(request, article_id):
         template = "DARK"
     else:
         template = "DEFAULT"
-    
+
     # Custom layout for special articles
     custom_layout = None
     if article.has_custom_layout:
@@ -198,7 +213,7 @@ def get_article_content(request, article_id):
                 "titleClassName": f"text-2xl font-bold text-{article.theme_color}-600"
             }
         }
-    
+
     return JsonResponse({
         "id": article.id,
         "content_title": article.title,
@@ -218,31 +233,32 @@ def get_article_content(request, article_id):
 ```
 
 ### Node.js/Express Example
+
 ```javascript
-app.get('/api/articles/:id', async (req, res) => {
+app.get("/api/articles/:id", async (req, res) => {
   const article = await Article.findById(req.params.id);
-  
+
   // Dynamic template selection
-  let template = 'DEFAULT';
-  if (article.category === 'featured') template = 'IMMERSIVE';
-  if (article.theme === 'dark') template = 'DARK';
-  if (article.type === 'quick-read') template = 'COMPACT';
-  
+  let template = "DEFAULT";
+  if (article.category === "featured") template = "IMMERSIVE";
+  if (article.theme === "dark") template = "DARK";
+  if (article.type === "quick-read") template = "COMPACT";
+
   // Custom layout modifications
   const layoutConfig = {
     header: {
       titleClassName: `text-2xl font-bold text-${article.brandColor}-600`,
-      showMarks: article.hasAssessment
+      showMarks: article.hasAssessment,
     },
     actions: {
-      buttonText: article.customButtonText || 'Mark as completed'
-    }
+      buttonText: article.customButtonText || "Mark as completed",
+    },
   };
-  
+
   res.json({
     id: article.id,
     content_title: article.title,
-    content_type: 'article',
+    content_type: "article",
     duration_in_minutes: article.readTime,
     details: {
       id: article.id,
@@ -251,9 +267,9 @@ app.get('/api/articles/:id', async (req, res) => {
       difficulty_level: article.difficulty,
       marks: article.points,
       template: template,
-      layout_config: layoutConfig
+      layout_config: layoutConfig,
     },
-    status: await getUserProgress(req.user.id, article.id)
+    status: await getUserProgress(req.user.id, article.id),
   });
 });
 ```
@@ -264,7 +280,7 @@ The frontend automatically handles the layout configuration:
 
 ```typescript
 // The component automatically detects and applies layouts
-<ArticleCard 
+<ArticleCard
   contentId={123}
   courseId={456}
   onMarkComplete={() => //console.log('Completed!')}
@@ -285,22 +301,20 @@ The frontend automatically handles the layout configuration:
 ### From Hardcoded to Dynamic
 
 **Before:**
+
 ```jsx
 // Fixed layout in JSX
 <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm">
-  <h1 className="text-2xl font-semibold text-gray-800">
-    {article.title}
-  </h1>
-  <div className="course-description">
-    {parseHtml(article.content)}
-  </div>
+  <h1 className="text-2xl font-semibold text-gray-800">{article.title}</h1>
+  <div className="course-description">{parseHtml(article.content)}</div>
 </div>
 ```
 
 **After:**
+
 ```jsx
 // Dynamic layout from backend
-<ArticleCard 
+<ArticleCard
   contentId={article.id}
   courseId={course.id}
   onMarkComplete={handleComplete}
@@ -321,4 +335,4 @@ The backend now controls all styling through the API response.
 - Layout configurations are cached with React Query
 - Templates are pre-defined and optimized
 - HTML parsing is done efficiently with `html-react-parser`
-- No runtime CSS generation 
+- No runtime CSS generation

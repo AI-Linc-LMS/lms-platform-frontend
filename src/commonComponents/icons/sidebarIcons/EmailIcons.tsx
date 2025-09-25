@@ -22,11 +22,11 @@ const EmailIcon: React.FC<EmailIconProps> = ({ isActive }) => {
           height="20"
           rx="3"
           fill="white"
-          stroke="#12293A"
+          stroke="var(--secondary-500)"
           strokeWidth="2"
         />
         {/* Envelope flap */}
-        <polygon points="6,11 21,24 36,11" fill="#12293A" />
+        <polygon points="6,11 21,24 36,11" fill="var(--secondary-500)" />
         {/* Envelope shadow */}
         <polygon points="6,31 21,18 36,31" fill="#E5EAF1" />
       </svg>
@@ -49,11 +49,11 @@ const EmailIcon: React.FC<EmailIconProps> = ({ isActive }) => {
         height="14"
         rx="2"
         fill="white"
-        stroke="#12293A"
+        stroke="var(--secondary-500)"
         strokeWidth="1.5"
       />
       {/* Envelope flap */}
-      <polygon points="4,7 14,17 24,7" fill="#12293A" />
+      <polygon points="4,7 14,17 24,7" fill="var(--secondary-500)" />
       {/* Envelope shadow */}
       <polygon points="4,21 14,10 24,21" fill="#E5EAF1" />
     </svg>

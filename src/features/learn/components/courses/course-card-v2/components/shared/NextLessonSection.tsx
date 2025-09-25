@@ -25,13 +25,13 @@ export const NextLessonSection: React.FC<NextLessonSectionProps> = ({
         </div>
         <div className="flex items-center gap-2.5">
           <div className="w-10 h-10 bg-[#10b981] rounded-lg flex items-center justify-center flex-shrink-0">
-            <i className="fas fa-play-circle text-lg text-white"></i>
+            <i className="fas fa-play-circle text-lg text-[var(--font-light)]"></i>
           </div>
           <div className="flex-1">
             <h4 className="text-[13px] font-semibold text-[#374151] m-0 mb-0.5">
               {nextLesson.title}
             </h4>
-            <p className="text-[11px] text-[#6b7280] m-0 leading-[1.3]">
+            <p className="text-[11px] text-[var(--font-secondary)] m-0 leading-[1.3]">
               {nextLesson.description ||
                 "Learn to create interactive dashboards with multiple data sources"}
             </p>

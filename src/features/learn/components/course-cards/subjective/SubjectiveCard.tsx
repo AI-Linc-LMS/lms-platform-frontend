@@ -33,7 +33,7 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({
   const [fontSize, setFontSize] = useState<number>(14);
   const editorRef = useRef<HTMLDivElement>(null);
   const [showPlaceholder, setShowPlaceholder] = useState(true);
-  const [textColor, setTextColor] = useState("#2D3748");
+  const [textColor, setTextColor] = useState("var(--neutral-600)");
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [fontSizeDropdownOpen, setFontSizeDropdownOpen] = useState(false);
 
@@ -42,15 +42,15 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({
 
   // Common colors for the color picker
   const colorOptions = [
-    "#2D3748", // Default dark gray/blue
-    "#E53E3E", // Red
-    "#DD6B20", // Orange
+    "var(--neutral-600)", // Default dark gray/blue
+    "var(--accent-red)", // Red
+    "var(--accent-orange)", // Orange
     "#D69E2E", // Yellow
-    "#38A169", // Green
-    "#319795", // Teal
+    "var(--accent-green)", // Green
+    "var(--accent-teal)", // Teal
     "#3182CE", // Blue
-    "#805AD5", // Purple
-    "#D53F8C", // Pink
+    "var(--accent-purple)", // Purple
+    "var(--accent-pink)", // Pink
     "#000000", // Black
   ];
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -197,9 +197,15 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({
 
   const handleSubmit = async () => {
     // Handle submission logic here
-    const response = await submitContent(clientId, courseId, contentId, "Assignment", {
-      answer,
-    });
+    const response = await submitContent(
+      clientId,
+      courseId,
+      contentId,
+      "Assignment",
+      {
+        answer,
+      }
+    );
     //console.log("response", response);
     if (response === 201) {
       //console.log('Submitted answer:', answer);
@@ -259,7 +265,7 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({
         <div className="mt-8">
           <h2 className="text-xl font-medium">Your Answer</h2>
           <div className="border rounded-lg overflow-hidden mt-3">
-            <div className="bg-[#D7EFF6] px-4 py-2 border-b flex items-center justify-between">
+            <div className="bg-[var(--primary-50)] px-4 py-2 border-b flex items-center justify-between">
               <div
                 className="flex items-center relative"
                 ref={fontSizeDropdownRef}
@@ -305,7 +311,7 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({
 
               <div className="flex items-center gap-4">
                 <button
-                  className="text-[#2D3748] font-bold cursor-pointer hover:bg-gray-200 p-1 rounded"
+                  className="text-[var(--neutral-600)] font-bold cursor-pointer hover:bg-gray-200 p-1 rounded"
                   onClick={() => execCommand("formatBlock", "h1")}
                 >
                   T
@@ -528,7 +534,7 @@ const SubjectiveCard: React.FC<SubjectiveCardProps> = ({
               className={`px-12 py-3 rounded-lg font-medium ${
                 !answer.trim()
                   ? "bg-gray-300 cursor-not-allowed"
-                  : "bg-[#255C79] text-white hover:bg-[#1a4a5f] transition-colors"
+                  : "bg-[var(--primary-500)] text-[var(--font-light)] hover:bg-[#1a4a5f] transition-colors"
               }`}
               onClick={handleSubmit}
               disabled={!answer.trim()}

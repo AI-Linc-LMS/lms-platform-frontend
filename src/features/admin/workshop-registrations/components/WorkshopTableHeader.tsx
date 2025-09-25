@@ -475,7 +475,7 @@ export const WorkshopTableHeader: React.FC<WorkshopTableHeaderProps> = ({
                     className={`p-1 rounded hover:bg-gray-400 ${
                       openFilter === config.column
                         ? "text-blue-600 bg-blue-200"
-                        : "text-black"
+                        : "text-[var(--font-dark)]"
                     }`}
                     onClick={() =>
                       onToggleFilter(

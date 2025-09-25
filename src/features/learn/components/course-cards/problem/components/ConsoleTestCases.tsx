@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 import testcaseIcon from "../../../../../../commonComponents/icons/enrolled-courses/problem/testcaseIcon.png";
 
 interface TestCase {
@@ -8,7 +8,7 @@ interface TestCase {
   sample_input: string;
   sample_output: string;
   userOutput?: string;
-  status?: 'passed' | 'failed' | 'running' | undefined;
+  status?: "passed" | "failed" | "running" | undefined;
   time?: string;
   memory?: number;
 }
@@ -16,7 +16,7 @@ interface TestCase {
 interface CustomTestCase {
   input: string;
   output?: string;
-  status?: 'passed' | 'failed' | 'running' | undefined;
+  status?: "passed" | "failed" | "running" | undefined;
   time?: string;
   memory?: number;
 }
@@ -44,14 +44,14 @@ const ConsoleTestCases: React.FC<ConsoleTestCasesProps> = ({
   isRunning,
   handleCustomRunCode,
   isDarkTheme,
-  startResizing
+  startResizing,
 }) => {
   const consoleRef = useRef<HTMLDivElement>(null);
 
   // Scroll to //console when test cases are running
   useEffect(() => {
     if (isRunning && consoleRef.current) {
-      consoleRef.current.scrollIntoView({ behavior: 'smooth' });
+      consoleRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [isRunning]);
 
@@ -72,36 +72,56 @@ const ConsoleTestCases: React.FC<ConsoleTestCasesProps> = ({
   );
 
   return (
-    <div className={`mb-10 ${isDarkTheme ? "bg-[#252526]" : ""}`} ref={consoleRef}>
-      <div className="console-resize-handle" onMouseDown={startResizing}>
-      </div>
+    <div
+      className={`mb-10 ${isDarkTheme ? "bg-[#252526]" : ""}`}
+      ref={consoleRef}
+    >
+      <div className="console-resize-handle" onMouseDown={startResizing}></div>
       <div className="flex items-center text-center gap-2 p-4 text-xl font-semibold">
         <img src={testcaseIcon} className="w-6 h-6 mt-1 font-bold" /> Testcase
       </div>
-      <div className={`border-1 mx-2 ${isDarkTheme ? "border-gray-600" : ""} rounded-xl`}>
+      <div
+        className={`border-1 mx-2 ${
+          isDarkTheme ? "border-gray-600" : ""
+        } rounded-xl`}
+      >
         {!testCases || testCases.length === 0 ? (
           <div className="p-4 text-gray-500 italic">Loading test cases...</div>
         ) : (
           <>
-            <div className={`flex space-x-4 ${isDarkTheme ? "bg-[#252526]" : "bg-gray-50"} rounded-t-xl `}>
+            <div
+              className={`flex space-x-4 ${
+                isDarkTheme ? "bg-[#252526]" : "bg-gray-50"
+              } rounded-t-xl `}
+            >
               {testCases.map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => setActiveTestCase(idx)}
-                  className={`px-4 py-2 rounded-t-xl ${activeTestCase === idx
-                    ? ` ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6] text-black border-gray-300"} font-semibold shadow-inner`
-                    : `text-gray-500 '}`
-                    }`}
+                  className={`px-4 py-2 rounded-t-xl ${
+                    activeTestCase === idx
+                      ? ` ${
+                          isDarkTheme
+                            ? "bg-gray-800 text-[var(--font-light)] border-gray-600"
+                            : "bg-[var(--primary-50)] text-[var(--font-dark)] border-gray-300"
+                        } font-semibold shadow-inner`
+                      : `text-gray-500 '}`
+                  }`}
                 >
                   Case {idx + 1}
                 </button>
               ))}
               <button
                 onClick={() => setActiveTestCase(-1)}
-                className={`px-4 py-2 rounded-t-md ${activeTestCase === -1
-                  ? `${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-[#D7EFF6] text-black border-gray-300"} font-semibold shadow-inner`
-                  : 'text-gray-500'
-                  }`}
+                className={`px-4 py-2 rounded-t-md ${
+                  activeTestCase === -1
+                    ? `${
+                        isDarkTheme
+                          ? "bg-gray-800 text-[var(--font-light)] border-gray-600"
+                          : "bg-[var(--primary-50)] text-[var(--font-dark)] border-gray-300"
+                      } font-semibold shadow-inner`
+                    : "text-gray-500"
+                }`}
               >
                 Custom Input +
               </button>
@@ -110,62 +130,79 @@ const ConsoleTestCases: React.FC<ConsoleTestCasesProps> = ({
             <div className="p-4">
               {activeTestCase >= 0 ? (
                 <>
-                  <h3 className="mb-2 font-medium">Case {activeTestCase + 1}</h3>
+                  <h3 className="mb-2 font-medium">
+                    Case {activeTestCase + 1}
+                  </h3>
 
                   <div className="text-sm text-gray-700 mb-1 ">
                     <strong>Input:</strong>
                   </div>
-                  <pre className={`p-2 mt-2 rounded text-sm ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-gray-200 text-black border-gray-300"}`}>
+                  <pre
+                    className={`p-2 mt-2 rounded text-sm ${
+                      isDarkTheme
+                        ? "bg-gray-800 text-[var(--font-light)] border-gray-600"
+                        : "bg-gray-200 text-[var(--font-dark)] border-gray-300"
+                    }`}
+                  >
                     {testCases[activeTestCase]?.sample_input}
                   </pre>
 
                   <div className="text-sm text-gray-700 mt-4 mb-1">
                     <strong>Expected Output:</strong>
                   </div>
-                  <pre className={`p-2 mt-2 rounded text-sm text-gray-800
-                    ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-gray-200 text-black border-gray-300"} `}>
+                  <pre
+                    className={`p-2 mt-2 rounded text-sm text-gray-800
+                    ${
+                      isDarkTheme
+                        ? "bg-gray-800 text-[var(--font-light)] border-gray-600"
+                        : "bg-gray-200 text-[var(--font-dark)] border-gray-300"
+                    } `}
+                  >
                     {testCases[activeTestCase]?.sample_output}
                   </pre>
-                  {testCases[activeTestCase]?.status === 'running' ? (
-                    renderTestCaseSkeleton()
-                  ) : testCases[activeTestCase]?.status && (
-                    <div>
-                      <div className="text-sm text-gray-700 mt-4 mb-1">
-                        <strong>Your Output:</strong>
-                      </div>
-                      <pre
-                        className={`p-2 mt-2 rounded text-sm ${testCases[activeTestCase]?.status === 'passed'
-                          ? 'text-green-600'
-                          : testCases[activeTestCase]?.status === 'failed'
-                            ? 'text-red-600'
-                            : 'text-yellow-600'
-                          }`}
-                      >
-                        {testCases[activeTestCase]?.userOutput || ' '}
-                      </pre>
-
-                      <div className="mt-2 font-medium">
-                        Status:{' '}
-                        <span
-                          className={`${testCases[activeTestCase]?.status === 'passed'
-                            ? 'text-green-700'
-                            : testCases[activeTestCase]?.status === 'failed'
-                              ? 'text-red-700'
-                              : 'text-yellow-600'
+                  {testCases[activeTestCase]?.status === "running"
+                    ? renderTestCaseSkeleton()
+                    : testCases[activeTestCase]?.status && (
+                        <div>
+                          <div className="text-sm text-gray-700 mt-4 mb-1">
+                            <strong>Your Output:</strong>
+                          </div>
+                          <pre
+                            className={`p-2 mt-2 rounded text-sm ${
+                              testCases[activeTestCase]?.status === "passed"
+                                ? "text-green-600"
+                                : testCases[activeTestCase]?.status === "failed"
+                                ? "text-red-600"
+                                : "text-yellow-600"
                             }`}
-                        >
-                          {testCases[activeTestCase]?.status || 'failed'}
-                        </span>
-                      </div>
+                          >
+                            {testCases[activeTestCase]?.userOutput || " "}
+                          </pre>
 
-                      {testCases[activeTestCase]?.time && (
-                        <div className="mt-1 text-sm text-gray-600">
-                          Time: {testCases[activeTestCase]?.time}s |
-                          Memory: {testCases[activeTestCase]?.memory} KB
+                          <div className="mt-2 font-medium">
+                            Status:{" "}
+                            <span
+                              className={`${
+                                testCases[activeTestCase]?.status === "passed"
+                                  ? "text-green-700"
+                                  : testCases[activeTestCase]?.status ===
+                                    "failed"
+                                  ? "text-red-700"
+                                  : "text-yellow-600"
+                              }`}
+                            >
+                              {testCases[activeTestCase]?.status || "failed"}
+                            </span>
+                          </div>
+
+                          {testCases[activeTestCase]?.time && (
+                            <div className="mt-1 text-sm text-gray-600">
+                              Time: {testCases[activeTestCase]?.time}s | Memory:{" "}
+                              {testCases[activeTestCase]?.memory} KB
+                            </div>
+                          )}
                         </div>
                       )}
-                    </div>
-                  )}
                 </>
               ) : (
                 <div>
@@ -174,7 +211,11 @@ const ConsoleTestCases: React.FC<ConsoleTestCasesProps> = ({
                     <strong>Input:</strong>
                   </div>
                   <textarea
-                    className={`p-2 mt-2 w-full h-24 rounded text-sm border ${isDarkTheme ? "bg-gray-800 text-white border-gray-600" : "bg-gray-100 text-black border-gray-300"}`}
+                    className={`p-2 mt-2 w-full h-24 rounded text-sm border ${
+                      isDarkTheme
+                        ? "bg-gray-800 text-[var(--font-light)] border-gray-600"
+                        : "bg-gray-100 text-[var(--font-dark)] border-gray-300"
+                    }`}
                     value={customInput}
                     onChange={(e) => setCustomInput(e.target.value)}
                     placeholder="Enter your custom input here..."
@@ -182,40 +223,43 @@ const ConsoleTestCases: React.FC<ConsoleTestCasesProps> = ({
 
                   <div className="mt-3">
                     <button
-                      className={`run-button md:text-xs xl:text-md bg-[#5FA564] px-4 py-2 rounded ${isRunning ? 'button-loading opacity-70' : ''}`}
+                      className={`run-button md:text-xs xl:text-md bg-[var(--success-500)] px-4 py-2 rounded ${
+                        isRunning ? "button-loading opacity-70" : ""
+                      }`}
                       onClick={handleCustomRunCode}
                       disabled={isRunning}
                     >
-                      {isRunning ? 'Running...' : 'Run with Custom Input'}
+                      {isRunning ? "Running..." : "Run with Custom Input"}
                     </button>
                   </div>
 
-                  {customTestCase.status === 'running' ? (
-                    renderTestCaseSkeleton()
-                  ) : customTestCase.output && (
-                    <>
-                      <div className="text-sm text-gray-700 mt-4 mb-1">
-                        <strong>Output:</strong>
-                      </div>
-                      <pre
-                        className={`bg-gray-100 p-2 mt-2 rounded text-sm ${customTestCase.status === 'passed'
-                          ? 'text-green-600'
-                          : customTestCase.status === 'failed'
-                            ? 'text-red-600'
-                            : 'text-yellow-600'
-                          }`}
-                      >
-                        {customTestCase.output}
-                      </pre>
+                  {customTestCase.status === "running"
+                    ? renderTestCaseSkeleton()
+                    : customTestCase.output && (
+                        <>
+                          <div className="text-sm text-gray-700 mt-4 mb-1">
+                            <strong>Output:</strong>
+                          </div>
+                          <pre
+                            className={`bg-gray-100 p-2 mt-2 rounded text-sm ${
+                              customTestCase.status === "passed"
+                                ? "text-green-600"
+                                : customTestCase.status === "failed"
+                                ? "text-red-600"
+                                : "text-yellow-600"
+                            }`}
+                          >
+                            {customTestCase.output}
+                          </pre>
 
-                      {customTestCase.time && (
-                        <div className="mt-1 text-sm text-gray-600">
-                          Time: {customTestCase.time}s |
-                          Memory: {customTestCase.memory} KB
-                        </div>
+                          {customTestCase.time && (
+                            <div className="mt-1 text-sm text-gray-600">
+                              Time: {customTestCase.time}s | Memory:{" "}
+                              {customTestCase.memory} KB
+                            </div>
+                          )}
+                        </>
                       )}
-                    </>
-                  )}
                 </div>
               )}
             </div>
@@ -226,4 +270,4 @@ const ConsoleTestCases: React.FC<ConsoleTestCasesProps> = ({
   );
 };
 
-export default ConsoleTestCases; 
+export default ConsoleTestCases;

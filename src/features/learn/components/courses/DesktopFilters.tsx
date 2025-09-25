@@ -1,6 +1,5 @@
-
-import FilterCategory from './FilterCategory';
-import { FilterOption } from './FilterOptions';
+import FilterCategory from "./FilterCategory";
+import { FilterOption } from "./FilterOptions";
 
 interface DesktopFiltersProps {
   selectedCategories: string[];
@@ -31,13 +30,13 @@ const DesktopFilters = ({
   categoryOptions,
   levelOptions,
   priceOptions,
-  ratingOptions
+  ratingOptions,
 }: DesktopFiltersProps) => {
   return (
     <div className="hidden md:block w-full md:w-1/4 lg:w-1/5">
       <div className="bg-white rounded-xl p-4 border border-[#DEE2E6]">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-[#343A40]">Filter By</h2>
+          <h2 className="font-bold text-[var(--neutral-500)]">Filter By</h2>
           <button
             onClick={clearAllFilters}
             className="text-sm text-[#17627A] hover:underline"
@@ -82,4 +81,4 @@ const DesktopFilters = ({
   );
 };
 
-export default DesktopFilters; 
+export default DesktopFilters;

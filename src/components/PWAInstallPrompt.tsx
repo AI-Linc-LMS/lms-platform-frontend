@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { usePWA } from '../hooks/usePWA';
-import { Download, X, Smartphone } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { usePWA } from "../hooks/usePWA";
+import { Download, X, Smartphone } from "lucide-react";
 
 export const PWAInstallPrompt: React.FC = () => {
   const { canInstall, isInstalling, install, dismissInstall } = usePWA();
@@ -36,20 +36,21 @@ export const PWAInstallPrompt: React.FC = () => {
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-[var(--font-light)]">
               Install AiLinc
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Install our app for a better experience! Quick access from your home screen.
+              Install our app for a better experience! Quick access from your
+              home screen.
             </p>
             <div className="flex space-x-2 mt-3">
               <button
                 onClick={handleInstall}
                 disabled={isInstalling}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium py-2 px-3 rounded-md transition-colors duration-200 flex items-center justify-center space-x-2"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-[var(--font-light)] text-sm font-medium py-2 px-3 rounded-md transition-colors duration-200 flex items-center justify-center space-x-2"
               >
                 <Download className="w-4 h-4" />
-                <span>{isInstalling ? 'Installing...' : 'Install'}</span>
+                <span>{isInstalling ? "Installing..." : "Install"}</span>
               </button>
               <button
                 onClick={handleDismiss}

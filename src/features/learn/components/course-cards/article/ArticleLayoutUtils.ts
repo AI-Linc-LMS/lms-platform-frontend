@@ -45,7 +45,7 @@ export const ARTICLE_LAYOUT_TEMPLATES = {
       titleClassName: "text-2xl font-semibold capitalize text-gray-800 mb-2",
       metadataClassName: "flex items-center gap-4 text-sm text-gray-500",
       marksClassName:
-        "text-lg text-semibold text-[#007B9F] bg-[#EFF9FC] px-2 py-1 rounded-md",
+        "text-lg text-semibold text-[var(--secondary-400)] bg-[#EFF9FC] px-2 py-1 rounded-md",
     },
     content: {
       className: "course-description prose prose-lg max-w-none",
@@ -54,7 +54,7 @@ export const ARTICLE_LAYOUT_TEMPLATES = {
     actions: {
       className: "flex justify-end mt-8",
       buttonClassName:
-        "flex items-center gap-2 px-6 py-6 rounded-3xl text-base font-medium bg-[#12293A] text-white transition hover:bg-[#1a3a4f]",
+        "flex items-center gap-2 px-6 py-6 rounded-3xl text-base font-medium bg-[var(--secondary-500)] text-[var(--font-light)] transition hover:bg-[var(--secondary-600)]",
       buttonText: "Mark as completed",
       showIcon: true,
     },
@@ -74,7 +74,7 @@ export const ARTICLE_LAYOUT_TEMPLATES = {
       titleClassName: "text-lg font-semibold text-gray-800",
       metadataClassName: "flex items-center gap-3 text-xs text-gray-500",
       marksClassName:
-        "text-sm font-medium text-[#007B9F] bg-[#EFF9FC] px-2 py-1 rounded self-start",
+        "text-sm font-medium text-[var(--secondary-400)] bg-[#EFF9FC] px-2 py-1 rounded self-start",
     },
     content: {
       className: "course-description text-sm leading-relaxed",
@@ -83,7 +83,7 @@ export const ARTICLE_LAYOUT_TEMPLATES = {
     actions: {
       className: "flex justify-center mt-6",
       buttonClassName:
-        "flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-medium bg-[#12293A] text-white transition",
+        "flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-medium bg-[var(--secondary-500)] text-[var(--font-light)] transition",
       buttonText: "Complete",
       showIcon: true,
     },
@@ -104,7 +104,7 @@ export const ARTICLE_LAYOUT_TEMPLATES = {
       titleClassName: "text-4xl font-bold text-gray-900 mb-4 leading-tight",
       metadataClassName: "flex items-center gap-6 text-base text-gray-600",
       marksClassName:
-        "text-xl font-semibold text-white bg-gradient-to-r from-[#007B9F] to-[#005a7a] px-4 py-2 rounded-lg shadow-lg",
+        "text-xl font-semibold text-[var(--font-light)] bg-gradient-to-r from-[var(--secondary-400)] to-[#005a7a] px-4 py-2 rounded-lg shadow-lg",
     },
     content: {
       className:
@@ -115,7 +115,7 @@ export const ARTICLE_LAYOUT_TEMPLATES = {
     actions: {
       className: "max-w-6xl mx-auto flex justify-center",
       buttonClassName:
-        "flex items-center gap-3 px-8 py-4 rounded-full text-lg font-semibold bg-gradient-to-r from-[#12293A] to-[#1a3a4f] text-white transition transform hover:scale-105 shadow-lg",
+        "flex items-center gap-3 px-8 py-4 rounded-full text-lg font-semibold bg-gradient-to-r from-[var(--secondary-500)] to-[var(--secondary-600)] text-[var(--font-light)] transition transform hover:scale-105 shadow-lg",
       buttonText: "Mark as Completed",
       showIcon: true,
     },
@@ -143,7 +143,7 @@ export const ARTICLE_LAYOUT_TEMPLATES = {
     actions: {
       className: "border-t border-gray-200 pt-6 flex justify-end",
       buttonClassName:
-        "text-[#007B9F] font-medium hover:text-[#005a7a] transition underline",
+        "text-[var(--secondary-400)] font-medium hover:text-[#005a7a] transition underline",
       buttonText: "Mark Complete",
       showIcon: false,
     },
@@ -163,7 +163,7 @@ export const ARTICLE_LAYOUT_TEMPLATES = {
       titleClassName: "text-2xl font-semibold text-gray-800 mb-2",
       metadataClassName: "flex items-center gap-4 text-sm text-gray-500",
       marksClassName:
-        "bg-[#007B9F] text-white px-3 py-1 rounded-full text-sm font-medium",
+        "bg-[var(--secondary-400)] text-[var(--font-light)] px-3 py-1 rounded-full text-sm font-medium",
     },
     content: {
       className: "course-description prose max-w-none",
@@ -173,7 +173,7 @@ export const ARTICLE_LAYOUT_TEMPLATES = {
       className:
         "bg-gray-50 rounded-b-xl border border-gray-200 border-t-0 p-6 flex justify-end",
       buttonClassName:
-        "flex items-center gap-2 px-6 py-3 rounded-lg text-base font-medium bg-[#12293A] text-white transition hover:bg-[#1a3a4f]",
+        "flex items-center gap-2 px-6 py-3 rounded-lg text-base font-medium bg-[var(--secondary-500)] text-[var(--font-light)] transition hover:bg-[var(--secondary-600)]",
       buttonText: "Complete Article",
       showIcon: true,
     },
@@ -191,7 +191,7 @@ export const ARTICLE_LAYOUT_TEMPLATES = {
       showTitle: true,
       showMetadata: true,
       showMarks: true,
-      titleClassName: "text-2xl font-semibold text-white mb-2",
+      titleClassName: "text-2xl font-semibold text-[var(--font-light)] mb-2",
       metadataClassName: "flex items-center gap-4 text-sm text-gray-400",
       marksClassName:
         "text-lg font-semibold text-[#00a8cc] bg-gray-800 px-3 py-1 rounded-md border border-gray-700",
@@ -204,7 +204,7 @@ export const ARTICLE_LAYOUT_TEMPLATES = {
     actions: {
       className: "flex justify-end mt-8",
       buttonClassName:
-        "flex items-center gap-2 px-6 py-6 rounded-3xl text-base font-medium bg-gradient-to-r from-[#007B9F] to-[#00a8cc] text-white transition hover:from-[#005a7a] hover:to-[#007B9F]",
+        "flex items-center gap-2 px-6 py-6 rounded-3xl text-base font-medium bg-gradient-to-r from-[var(--secondary-400)] to-[#00a8cc] text-[var(--font-light)] transition hover:from-[#005a7a] hover:to-[var(--secondary-400)]",
       buttonText: "Mark as completed",
       showIcon: true,
     },
@@ -277,7 +277,7 @@ export const BACKEND_LAYOUT_EXAMPLES = {
         metadataClassName:
           "flex justify-center items-center gap-6 text-lg text-gray-600",
         marksClassName:
-          "inline-block bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 rounded-full font-bold text-lg shadow-lg",
+          "inline-block bg-gradient-to-r from-yellow-400 to-orange-500 text-[var(--font-light)] px-4 py-2 rounded-full font-bold text-lg shadow-lg",
       },
       content: {
         className: "course-description prose prose-xl max-w-none text-gray-800",
@@ -286,7 +286,7 @@ export const BACKEND_LAYOUT_EXAMPLES = {
       actions: {
         className: "text-center",
         buttonClassName:
-          "inline-flex items-center gap-3 px-10 py-4 rounded-full text-xl font-bold bg-gradient-to-r from-green-500 to-blue-600 text-white transition transform hover:scale-110 shadow-2xl",
+          "inline-flex items-center gap-3 px-10 py-4 rounded-full text-xl font-bold bg-gradient-to-r from-green-500 to-blue-600 text-[var(--font-light)] transition transform hover:scale-110 shadow-2xl",
         buttonText: "🎉 Complete This Amazing Article!",
         showIcon: true,
       },
@@ -310,7 +310,7 @@ export const BACKEND_LAYOUT_EXAMPLES = {
         metadataClassName:
           "flex items-center gap-2 md:gap-4 text-xs md:text-sm text-gray-500",
         marksClassName:
-          "text-sm md:text-lg font-semibold text-[#007B9F] bg-[#EFF9FC] px-2 py-1 rounded-md self-start",
+          "text-sm md:text-lg font-semibold text-[var(--secondary-400)] bg-[#EFF9FC] px-2 py-1 rounded-md self-start",
       },
       content: {
         className: "course-description prose prose-sm md:prose-lg max-w-none",
@@ -319,7 +319,7 @@ export const BACKEND_LAYOUT_EXAMPLES = {
       actions: {
         className: "flex justify-center md:justify-end mt-6 md:mt-8",
         buttonClassName:
-          "flex items-center gap-2 px-4 py-3 md:px-6 md:py-6 rounded-2xl md:rounded-3xl text-sm md:text-base font-medium bg-[#12293A] text-white transition",
+          "flex items-center gap-2 px-4 py-3 md:px-6 md:py-6 rounded-2xl md:rounded-3xl text-sm md:text-base font-medium bg-[var(--secondary-500)] text-[var(--font-light)] transition",
         buttonText: "Mark as completed",
         showIcon: true,
       },

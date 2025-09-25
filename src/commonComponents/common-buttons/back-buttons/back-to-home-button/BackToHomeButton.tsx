@@ -8,7 +8,7 @@ const BackToHomeButton: React.FC = () => {
     <div className="flex items-center mb-6">
       <button
         onClick={() => navigate("/")}
-        className="h-[38px] w-[38px] bg-[#12293A] rounded-full text-[#255C79] flex items-center justify-center mr-2 cursor-pointer"
+        className="h-[38px] w-[38px] bg-[var(--secondary-500)] rounded-full text-[var(--primary-500)] flex items-center justify-center mr-2 cursor-pointer"
       >
         <svg
           width="16"
@@ -26,7 +26,7 @@ const BackToHomeButton: React.FC = () => {
           />
         </svg>
       </button>
-      <span className="font-normal text-[20px] text-[#12293A]">
+      <span className="font-normal text-[20px] text-[var(--secondary-500)]">
         Back to Home
       </span>
     </div>
