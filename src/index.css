@@ -152,7 +152,7 @@ body {
   top: 0px;
   left: 0px;
   z-index: -1;
-  background: var(--primary-50);
+  background: var(--nav-background);
   /* clip-path: polygon(
     0 0,
     100% 0,
@@ -478,6 +478,9 @@ body {
 
 :root {
   /* Primary Colors */
+    --nav-background: #D7EFF6;
+    --font-dark-nav: #0F2B46;
+    --font-light-nav: #FFFFFF;
   --primary-50: #D7EFF6;
   --primary-100: #B9E4F2;
   --primary-200: #80C9E0;
@@ -496,7 +499,7 @@ body {
   --secondary-300: #AE0606;
   --secondary-400: #007B9F;
   --secondary-500: #12293A;
-  --nav-selected: #12293A;
+  --nav-selected:  #12293A;
   --secondary-600: #1a3a4f;
   --secondary-700: #264D64;
 
