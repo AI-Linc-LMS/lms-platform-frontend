@@ -23,8 +23,8 @@ const SidebarItem = ({
               <div
                 className={`w-[20px] h-[20px] flex items-center justify-center ${
                   isActive
-                    ? "text-[var(--font-light)]"
-                    : "text-[var(--font-dark)]"
+                    ? "text-[var(--font-light-nav)]"
+                    : "text-[var(--font-dark-nav)]"
                 }`}
               >
                 {linkInfo.icon}
@@ -32,8 +32,8 @@ const SidebarItem = ({
               <span
                 className={`text-lg ${
                   isActive
-                    ? "text-[var(--font-light)]"
-                    : "text-[var(--font-dark)]"
+                    ? "text-[var(--font-light-nav)]"
+                    : "text-[var(--font-dark-nav)]"
                 }`}
               >
                 {linkInfo.title}
@@ -49,8 +49,8 @@ const SidebarItem = ({
             <div
               className={`w-[20px] h-[20px] flex items-center justify-center ${
                 isActive
-                  ? "text-[var(--font-light)]"
-                  : "text-[var(--font-dark)]"
+                  ? "text-[var(--font-light-nav)]"
+                  : "text-[var(--font-dark-nav)]"
               }`}
             >
               {linkInfo.icon}
