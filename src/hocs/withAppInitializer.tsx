@@ -79,6 +79,18 @@ const withAppInitializer = <P extends object>(
                 result.themeDetails.secondary100
               );
               document.body.style.setProperty(
+                "--nav-background",
+                result.themeDetails.navBackground
+              );
+              document.body.style.setProperty(
+                "--font-dark-nav",
+                result.themeDetails.fontDarkNav
+              );
+              document.body.style.setProperty(
+                "--font-light-nav",
+                result.themeDetails.fontLightNav
+              );
+              document.body.style.setProperty(
                 "--secondary-200",
                 result.themeDetails.secondary200
               );
