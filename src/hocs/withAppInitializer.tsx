@@ -47,7 +47,6 @@ const withAppInitializer = <P extends object>(
               result.theme_settings &&
               Object.keys(result.theme_settings).length > 0
             ) {
-              console.log("came here");
               setFavicon(result.app_icon_url);
               document.body.style.setProperty(
                 "--primary-50",
