@@ -106,6 +106,7 @@ interface ThemeDetails {
   fontSecondary: string;
   fontTertiary: string;
   fontLight: string;
+  navSelected: string;
 
   /* Dynamic Entry Points */
   primaryColor: string;
