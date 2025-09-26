@@ -53,9 +53,9 @@ const Login: React.FC = () => {
                     className="h-10 mx-auto"
                   />
                 )}
-                <span className="text-2xl font-bold bg-gradient-to-r from-[#0BC5EA] to-[#6B46C1] bg-clip-text text-transparent">
+                {/* <span className="text-2xl font-bold bg-gradient-to-r from-[#0BC5EA] to-[#6B46C1] bg-clip-text text-transparent">
                   {clientInfo.data?.name}
-                </span>
+                </span> */}
               </div>
               <h2 className="mt-6 text-3xl font-bold text-gray-900">
                 Login to your account
