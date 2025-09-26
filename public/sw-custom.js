@@ -7,8 +7,7 @@ importScripts(
   "https://storage.googleapis.com/workbox-cdn/releases/6.5.4/workbox-sw.js"
 );
 
-const { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } =
-  workbox.precaching;
+const { precacheAndRoute, cleanupOutdatedCaches } = workbox.precaching;
 const { registerRoute } = workbox.routing;
 const { StaleWhileRevalidate, CacheFirst, NetworkFirst } = workbox.strategies;
 const { ExpirationPlugin } = workbox.expiration;
@@ -69,10 +68,19 @@ self.addEventListener("message", (event) => {
    ROUTES
    ====================== */
 
-// ✅ SPA fallback for offline/slow network
+// ✅ SPA navigations: NetworkFirst for index.html with 5-minute cache
 registerRoute(
   ({ request }) => request.mode === "navigate",
-  createHandlerBoundToURL("/index.html")
+  new NetworkFirst({
+    cacheName: "html-cache",
+    networkTimeoutSeconds: 5,
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 5,
+        maxAgeSeconds: 5 * 60, // 5 minutes
+      }),
+    ],
+  })
 );
 
 // Google Fonts Stylesheets
