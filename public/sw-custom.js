@@ -24,12 +24,35 @@ async function clearRuntimeCaches() {
   );
 }
 
-// Clean up outdated precaches automatically (safe)
+// Clean up outdated precaches automatically
 cleanupOutdatedCaches();
 
-// Install new SW immediately
-self.addEventListener("install", () => {
+// ✅ Install new SW immediately
+self.addEventListener("install", (event) => {
+  console.log("🚀 Service Worker installed, skipping waiting...");
   self.skipWaiting();
+});
+
+// ✅ Activate and take control immediately
+self.addEventListener("activate", (event) => {
+  console.log("⚡ Activating new Service Worker...");
+  event.waitUntil(
+    (async () => {
+      await self.clients.claim();
+      console.log(
+        "✅ Service Worker activated and controlling clients immediately"
+      );
+
+      // Request runtime config right after activation
+      const clients = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      clients.forEach((client) => {
+        client.postMessage({ type: "REQUEST_PWA_CONFIG" });
+      });
+    })()
+  );
 });
 
 // Precache all static assets
@@ -49,10 +72,6 @@ self.addEventListener("message", (event) => {
   if (event.data?.type === "PWA_CONFIG") {
     pwaConfig = event.data.config || {};
     console.log("Service Worker: Updated PWA config:", pwaConfig);
-  }
-
-  if (event.data?.type === "SKIP_WAITING") {
-    self.skipWaiting();
   }
 
   if (event.data?.type === "CLEAR_CACHES") {
@@ -191,24 +210,4 @@ registerRoute(
   })
 );
 
-/* ======================
-   ACTIVATION
-   ====================== */
-self.addEventListener("activate", (event) => {
-  console.log("Service Worker activated with config:", pwaConfig);
-
-  event.waitUntil(
-    (async () => {
-      await self.clients.claim();
-      const clients = await self.clients.matchAll({
-        type: "window",
-        includeUncontrolled: true,
-      });
-      clients.forEach((client) => {
-        client.postMessage({ type: "REQUEST_PWA_CONFIG" });
-      });
-    })()
-  );
-});
-
-console.log("✅ Custom Service Worker loaded");
+console.log("✅ Custom Service Worker loaded with instant activation");
