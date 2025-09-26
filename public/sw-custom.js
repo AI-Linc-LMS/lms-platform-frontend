@@ -9,12 +9,13 @@ importScripts(
 
 const { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } =
   workbox.precaching;
-const { registerRoute, NavigationRoute } = workbox.routing;
+const { registerRoute } = workbox.routing;
 const { StaleWhileRevalidate, CacheFirst, NetworkFirst } = workbox.strategies;
 const { ExpirationPlugin } = workbox.expiration;
 
 const PRECACHE_PREFIX = "workbox-precache";
 
+// Utility to clear runtime caches (used only when triggered manually)
 async function clearRuntimeCaches() {
   const keys = await caches.keys();
   await Promise.all(
@@ -24,56 +25,54 @@ async function clearRuntimeCaches() {
   );
 }
 
-// Clean up outdated precaches
+// Clean up outdated precaches automatically (safe)
 cleanupOutdatedCaches();
 
-// Always activate updated SW immediately and take control of pages
+// Install new SW immediately
 self.addEventListener("install", () => {
-  // Ensure the new service worker activates immediately
   self.skipWaiting();
 });
 
-// Precache all static assets (handle dev where manifest may be undefined)
+// Precache all static assets
 try {
   precacheAndRoute(self.__WB_MANIFEST || []);
 } catch (e) {
   console.log("Workbox precacheAndRoute failed (likely dev):", e);
 }
 
-// Get configuration from session storage when available
+// Runtime config from app
 let pwaConfig = {};
 
-// Listen for messages from the main thread
+// Message listener for runtime updates
 self.addEventListener("message", (event) => {
   console.log("Service Worker: Received message:", event.data);
 
-  if (event.data && event.data.type === "PWA_CONFIG") {
-    pwaConfig = event.data.config;
+  if (event.data?.type === "PWA_CONFIG") {
+    pwaConfig = event.data.config || {};
     console.log("Service Worker: Updated PWA config:", pwaConfig);
-    console.log("Service Worker: Client ID is:", pwaConfig.clientId);
   }
 
-  if (event.data && event.data.type === "SKIP_WAITING") {
+  if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
 
-  if (event.data && event.data.type === "CLEAR_CACHES") {
+  if (event.data?.type === "CLEAR_CACHES") {
     event.waitUntil(
       clearRuntimeCaches().then(() => {
-        console.log("Service Worker: Runtime caches cleared");
+        console.log("Service Worker: Runtime caches cleared manually");
       })
     );
   }
 });
 
-// Navigation handling for SPA
-// Use NetworkFirst for navigations so index.html is always fetched fresh
+/* ======================
+   ROUTES
+   ====================== */
+
+// ✅ SPA fallback for offline/slow network
 registerRoute(
   ({ request }) => request.mode === "navigate",
-  new NetworkFirst({
-    cacheName: "html-cache",
-    networkTimeoutSeconds: 5,
-  })
+  createHandlerBoundToURL("/index.html")
 );
 
 // Google Fonts Stylesheets
@@ -85,7 +84,8 @@ registerRoute(
       new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: 7 * 24 * 60 * 60 }),
       {
         cacheKeyWillBeUsed: async ({ request }) => {
-          return `${request.url}?timestamp=${Math.floor(
+          // Bust cache daily
+          return `${request.url}?ts=${Math.floor(
             Date.now() / (1000 * 60 * 60 * 24)
           )}`;
         },
@@ -102,7 +102,7 @@ registerRoute(
     plugins: [
       new ExpirationPlugin({
         maxEntries: 20,
-        maxAgeSeconds: 60 * 24 * 60 * 60,
+        maxAgeSeconds: 60 * 24 * 60 * 60, // ~2 months
       }),
     ],
   })
@@ -125,7 +125,6 @@ registerRoute(
 // API calls with dynamic base URL support
 registerRoute(
   ({ url, request }) => {
-    // Check if it's an API call
     const isApiCall =
       url.pathname.startsWith("/api/") ||
       url.pathname.startsWith("/accounts/") ||
@@ -140,88 +139,42 @@ registerRoute(
       {
         requestWillFetch: async ({ request }) => {
           console.log("Service Worker: Intercepting request:", request.url);
-          console.log("Service Worker: Current pwaConfig:", pwaConfig);
-
           let clientId = pwaConfig.clientId;
-          console.log("Service Worker: Client ID from config:", clientId);
 
-          // If no client ID in config, try to get it from session storage
+          // Try to fetch clientId from main app if missing
           if (!clientId) {
-            console.log(
-              "Service Worker: No client ID in config, trying to get from main app..."
-            );
             try {
               const clients = await self.clients.matchAll();
-              console.log("Service Worker: Found clients:", clients.length);
               if (clients.length > 0) {
-                // Request client ID from the main app
                 const response = await new Promise((resolve) => {
-                  const messageChannel = new MessageChannel();
-                  messageChannel.port1.onmessage = (event) => {
-                    console.log(
-                      "Service Worker: Received response from main app:",
-                      event.data
-                    );
-                    resolve(event.data);
-                  };
-                  clients[0].postMessage({ type: "GET_CLIENT_ID" }, [
-                    messageChannel.port2,
-                  ]);
+                  const mc = new MessageChannel();
+                  mc.port1.onmessage = (event) => resolve(event.data);
+                  clients[0].postMessage({ type: "GET_CLIENT_ID" }, [mc.port2]);
                 });
-
-                if (response && response.clientId) {
+                if (response?.clientId) {
                   clientId = response.clientId;
                   pwaConfig.clientId = clientId;
-                  console.log(
-                    "Service Worker: Got client ID from main app:",
-                    clientId
-                  );
                 }
               }
-            } catch (error) {
-              console.log(
-                "Service Worker: Could not get client ID from main app:",
-                error
-              );
+            } catch (err) {
+              console.log("Service Worker: Could not get clientId:", err);
             }
           }
 
-          // If we have a client ID, ensure it's in the URL
+          // Rewrite request URL if needed
           if (clientId && request.url.includes("/accounts/clients/")) {
-            console.log(
-              "Service Worker: Rewriting URL with client ID:",
-              clientId
-            );
             const url = new URL(request.url);
-            const pathParts = url.pathname.split("/");
-            const clientIndex = pathParts.indexOf("clients");
-
+            const parts = url.pathname.split("/");
+            const idx = parts.indexOf("clients");
             if (
-              clientIndex > -1 &&
-              (pathParts[clientIndex + 1] === "undefined" ||
-                !pathParts[clientIndex + 1])
+              idx > -1 &&
+              (!parts[idx + 1] || parts[idx + 1] === "undefined")
             ) {
-              pathParts[clientIndex + 1] = clientId;
-              url.pathname = pathParts.join("/");
-
-              console.log("Service Worker: Original URL:", request.url);
-              console.log("Service Worker: Updated URL:", url.toString());
-
-              return new Request(url.toString(), {
-                method: request.method,
-                headers: request.headers,
-                body: request.body,
-                mode: request.mode,
-                credentials: request.credentials,
-                cache: request.cache,
-                redirect: request.redirect,
-                referrer: request.referrer,
-              });
+              parts[idx + 1] = clientId;
+              url.pathname = parts.join("/");
+              return new Request(url.toString(), request);
             }
-          } else {
-            console.log("Service Worker: No client ID or not a client API URL");
           }
-
           return request;
         },
       },
@@ -230,16 +183,15 @@ registerRoute(
   })
 );
 
-// Handle activation
+/* ======================
+   ACTIVATION
+   ====================== */
 self.addEventListener("activate", (event) => {
   console.log("Service Worker activated with config:", pwaConfig);
 
   event.waitUntil(
     (async () => {
-      // Clear all runtime caches to avoid stale data after updates
-      await clearRuntimeCaches();
       await self.clients.claim();
-      // Avoid forcing navigation on clients; rely on controllerchange in app to reload when desired
       const clients = await self.clients.matchAll({
         type: "window",
         includeUncontrolled: true,
@@ -251,4 +203,4 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-console.log("Custom Service Worker loaded");
+console.log("✅ Custom Service Worker loaded");
