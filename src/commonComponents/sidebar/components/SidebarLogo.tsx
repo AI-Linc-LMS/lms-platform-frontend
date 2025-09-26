@@ -17,7 +17,7 @@ const SidebarLogoPart = ({
     <div
       className={`relative flex ${
         isExpanded
-          ? "flex-row items-center gap-2 px-2"
+          ? "flex-col items-center gap-2 px-2"
           : "flex-col items-center justify-center"
       } text-neutral-900 w-full h-14 border-b border-[#D3D3D318] font-bold transition-all duration-300`}
     >
@@ -31,7 +31,7 @@ const SidebarLogoPart = ({
         />
       )}
 
-      {clientInfo?.data?.name && (
+      {/* {clientInfo?.data?.name && (
         <h2
           className={`font-bruno font-bold bg-gradient-to-r from-[#0BC5EA] to-[#6B46C1] 
           bg-clip-text text-transparent transition-all duration-300 ${
@@ -40,7 +40,7 @@ const SidebarLogoPart = ({
         >
           {clientInfo.data.name}
         </h2>
-      )}
+      )} */}
 
       {/* Arrow toggle */}
       <div
