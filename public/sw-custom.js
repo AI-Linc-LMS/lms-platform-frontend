@@ -27,35 +27,49 @@ async function clearRuntimeCaches() {
 // Clean up outdated precaches automatically
 cleanupOutdatedCaches();
 
-// ✅ Install new SW immediately
+// Install new SW immediately (ask browser to skip waiting)
 self.addEventListener("install", (event) => {
   console.log("🚀 Service Worker installed, skipping waiting...");
   self.skipWaiting();
 });
 
-// ✅ Activate and take control immediately
+// Activate and take control (claim). Also notify clients.
 self.addEventListener("activate", (event) => {
   console.log("⚡ Activating new Service Worker...");
   event.waitUntil(
     (async () => {
       await self.clients.claim();
       console.log(
-        "✅ Service Worker activated and controlling clients immediately"
+        "✅ Service Worker activated and controlling clients immediately (if browser allows)"
       );
 
-      // Request runtime config right after activation
-      const clients = await self.clients.matchAll({
-        type: "window",
-        includeUncontrolled: true,
-      });
-      clients.forEach((client) => {
-        client.postMessage({ type: "REQUEST_PWA_CONFIG" });
+      // Ask clients to send runtime config back, and notify that a new SW activated.
+      // Some browsers (Safari) will still require the page to reload to use the new SW,
+      // so we send a message so the client can reload or show a toast.
+      let clientsList;
+      try {
+        // includeUncontrolled may not exist on old browsers; try with options then fallback.
+        clientsList = await self.clients.matchAll({
+          type: "window",
+          includeUncontrolled: true,
+        });
+      } catch (e) {
+        clientsList = await self.clients.matchAll({ type: "window" });
+      }
+
+      clientsList.forEach((client) => {
+        try {
+          client.postMessage({ type: "REQUEST_PWA_CONFIG" });
+          client.postMessage({ type: "NEW_SW_ACTIVATED" });
+        } catch (err) {
+          // ignore per-client messaging errors
+        }
       });
     })()
   );
 });
 
-// Precache all static assets
+// Precache static assets (workbox manifest)
 try {
   precacheAndRoute(self.__WB_MANIFEST || []);
 } catch (e) {
@@ -65,21 +79,35 @@ try {
 // Runtime config from app
 let pwaConfig = {};
 
-// Message listener for runtime updates
+// Message listener for runtime updates + control messages from client
 self.addEventListener("message", (event) => {
-  console.log("Service Worker: Received message:", event.data);
+  const data = event.data || {};
+  console.log("Service Worker: Received message:", data);
 
-  if (event.data?.type === "PWA_CONFIG") {
-    pwaConfig = event.data.config || {};
+  // App sends PWA_CONFIG -> store it
+  if (data?.type === "PWA_CONFIG") {
+    pwaConfig = data.config || {};
     console.log("Service Worker: Updated PWA config:", pwaConfig);
+    return;
   }
 
-  if (event.data?.type === "CLEAR_CACHES") {
+  // Client requested the SW skip waiting (useful when registration.waiting exists)
+  if (data?.type === "SKIP_WAITING") {
+    console.log(
+      "Service Worker: Received SKIP_WAITING from client, calling skipWaiting()"
+    );
+    self.skipWaiting();
+    return;
+  }
+
+  // Clear runtime caches on demand
+  if (data?.type === "CLEAR_CACHES") {
     event.waitUntil(
       clearRuntimeCaches().then(() => {
         console.log("Service Worker: Runtime caches cleared manually");
       })
     );
+    return;
   }
 });
 
@@ -87,7 +115,7 @@ self.addEventListener("message", (event) => {
    ROUTES
    ====================== */
 
-// ✅ SPA navigations: NetworkFirst for index.html with 5-minute cache
+// SPA navigations: NetworkFirst for index.html with 5-minute cache
 registerRoute(
   ({ request }) => request.mode === "navigate",
   new NetworkFirst({
@@ -168,19 +196,24 @@ registerRoute(
           console.log("Service Worker: Intercepting request:", request.url);
           let clientId = pwaConfig.clientId;
 
-          // Try to fetch clientId from main app if missing
+          // Try to fetch clientId from main app if missing (message channel)
           if (!clientId) {
             try {
               const clients = await self.clients.matchAll();
               if (clients.length > 0) {
                 const response = await new Promise((resolve) => {
                   const mc = new MessageChannel();
-                  mc.port1.onmessage = (event) => resolve(event.data);
+                  mc.port1.onmessage = (ev) => resolve(ev.data);
+                  // send GET_CLIENT_ID and pass port2 so the client can reply on it
                   clients[0].postMessage({ type: "GET_CLIENT_ID" }, [mc.port2]);
                 });
                 if (response?.clientId) {
                   clientId = response.clientId;
                   pwaConfig.clientId = clientId;
+                  console.log(
+                    "Service Worker: got clientId via MessageChannel:",
+                    clientId
+                  );
                 }
               }
             } catch (err) {
@@ -188,7 +221,7 @@ registerRoute(
             }
           }
 
-          // Rewrite request URL if needed
+          // If we have a client ID, ensure it's in the URL
           if (clientId && request.url.includes("/accounts/clients/")) {
             const url = new URL(request.url);
             const parts = url.pathname.split("/");
@@ -202,6 +235,7 @@ registerRoute(
               return new Request(url.toString(), request);
             }
           }
+
           return request;
         },
       },
@@ -210,4 +244,6 @@ registerRoute(
   })
 );
 
-console.log("✅ Custom Service Worker loaded with instant activation");
+console.log(
+  "✅ Custom Service Worker loaded with enhanced cross-browser activation support"
+);
