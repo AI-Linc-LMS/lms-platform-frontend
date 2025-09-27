@@ -292,7 +292,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
             {courseDuration}
           </span>
           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-full text-xs font-medium text-yellow-800 whitespace-nowrap">
-            {`Enroll Now - ${isFree ? "Free" : `₹${formattedPrice}`}`}
+            {isFree ? "Free" : `₹${formattedPrice}`}
           </span>
 
           {/* Rating */}
