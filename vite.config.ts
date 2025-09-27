@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
+import { hash } from "./src/utils/hash-function";
 
 export default defineConfig({
   plugins: [
@@ -13,6 +14,7 @@ export default defineConfig({
       strategies: "injectManifest",
       srcDir: "public",
       filename: "sw-custom.js",
+
       devOptions: {
         // Disable SW in dev to avoid HMR conflicts/reloads
         enabled: false,
@@ -107,6 +109,9 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
+        entryFileNames: `[name]` + hash + `.js`,
+        chunkFileNames: `[name]` + hash + `.js`,
+        assetFileNames: `[name]` + hash + `.[ext]`,
         manualChunks: {
           react: ["react", "react-dom", "react-router-dom"],
           redux: ["redux", "react-redux", "@reduxjs/toolkit"],
