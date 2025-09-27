@@ -2,6 +2,7 @@
  * Custom Service Worker for PWA with Environment Variable Support
  */
 
+// Import workbox for precaching
 importScripts(
   "https://storage.googleapis.com/workbox-cdn/releases/6.5.4/workbox-sw.js"
 );
@@ -13,7 +14,7 @@ const { ExpirationPlugin } = workbox.expiration;
 
 const PRECACHE_PREFIX = "workbox-precache";
 
-// Utility to clear runtime caches
+// Utility to clear runtime caches (used only when triggered manually)
 async function clearRuntimeCaches() {
   const keys = await caches.keys();
   await Promise.all(
@@ -23,62 +24,90 @@ async function clearRuntimeCaches() {
   );
 }
 
-// Clean up outdated precaches
+// Clean up outdated precaches automatically
 cleanupOutdatedCaches();
 
-// 🚀 Install new SW immediately
+// Install new SW immediately (ask browser to skip waiting)
 self.addEventListener("install", (event) => {
   console.log("🚀 Service Worker installed, skipping waiting...");
   self.skipWaiting();
 });
 
-// ⚡ Activate and take control immediately
+// Activate and take control (claim). Also notify clients.
 self.addEventListener("activate", (event) => {
   console.log("⚡ Activating new Service Worker...");
   event.waitUntil(
     (async () => {
       await self.clients.claim();
-
-      // 🧹 Clear old HTML caches to prevent stale index.html
-      const keys = await caches.keys();
-      await Promise.all(
-        keys
-          .filter((k) => k.includes("html-cache"))
-          .map((k) => caches.delete(k))
+      console.log(
+        "✅ Service Worker activated and controlling clients immediately (if browser allows)"
       );
 
-      console.log("✅ Service Worker now controlling all clients");
+      // Ask clients to send runtime config back, and notify that a new SW activated.
+      // Some browsers (Safari) will still require the page to reload to use the new SW,
+      // so we send a message so the client can reload or show a toast.
+      let clientsList;
+      try {
+        // includeUncontrolled may not exist on old browsers; try with options then fallback.
+        clientsList = await self.clients.matchAll({
+          type: "window",
+          includeUncontrolled: true,
+        });
+      } catch (e) {
+        clientsList = await self.clients.matchAll({ type: "window" });
+      }
+
+      clientsList.forEach((client) => {
+        try {
+          client.postMessage({ type: "REQUEST_PWA_CONFIG" });
+          client.postMessage({ type: "NEW_SW_ACTIVATED" });
+        } catch (err) {
+          // ignore per-client messaging errors
+        }
+      });
     })()
   );
 });
 
-// ✅ Precache static assets (but exclude index.html!)
+// Precache static assets (workbox manifest)
 try {
-  precacheAndRoute(
-    (self.__WB_MANIFEST || []).filter(
-      (entry) => entry.url !== "index.html" && entry.url !== "/"
-    )
-  );
+  precacheAndRoute(self.__WB_MANIFEST || []);
 } catch (e) {
-  console.log("Workbox precache failed (likely dev):", e);
+  console.log("Workbox precacheAndRoute failed (likely dev):", e);
 }
 
 // Runtime config from app
 let pwaConfig = {};
 
-// 🔄 Message listener
+// Message listener for runtime updates + control messages from client
 self.addEventListener("message", (event) => {
-  if (event.data?.type === "PWA_CONFIG") {
-    pwaConfig = event.data.config || {};
+  const data = event.data || {};
+  console.log("Service Worker: Received message:", data);
+
+  // App sends PWA_CONFIG -> store it
+  if (data?.type === "PWA_CONFIG") {
+    pwaConfig = data.config || {};
     console.log("Service Worker: Updated PWA config:", pwaConfig);
+    return;
   }
 
-  if (event.data?.type === "CLEAR_CACHES") {
+  // Client requested the SW skip waiting (useful when registration.waiting exists)
+  if (data?.type === "SKIP_WAITING") {
+    console.log(
+      "Service Worker: Received SKIP_WAITING from client, calling skipWaiting()"
+    );
+    self.skipWaiting();
+    return;
+  }
+
+  // Clear runtime caches on demand
+  if (data?.type === "CLEAR_CACHES") {
     event.waitUntil(
       clearRuntimeCaches().then(() => {
         console.log("Service Worker: Runtime caches cleared manually");
       })
     );
+    return;
   }
 });
 
@@ -86,7 +115,7 @@ self.addEventListener("message", (event) => {
    ROUTES
    ====================== */
 
-// 🏠 SPA navigations → NetworkFirst + cache bust
+// SPA navigations: NetworkFirst for index.html with 5-minute cache
 registerRoute(
   ({ request }) => request.mode === "navigate",
   new NetworkFirst({
@@ -94,15 +123,9 @@ registerRoute(
     networkTimeoutSeconds: 5,
     plugins: [
       new ExpirationPlugin({
-        maxEntries: 1,
-        maxAgeSeconds: 60, // 1 minute only
+        maxEntries: 5,
+        maxAgeSeconds: 5 * 60, // 5 minutes
       }),
-      {
-        cacheKeyWillBeUsed: async ({ request }) => {
-          // Force cache-busting per deployment
-          return `${request.url}?v=${self.registration.scope}`;
-        },
-      },
     ],
   })
 );
@@ -114,6 +137,14 @@ registerRoute(
     cacheName: "google-fonts-stylesheets",
     plugins: [
       new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: 7 * 24 * 60 * 60 }),
+      {
+        cacheKeyWillBeUsed: async ({ request }) => {
+          // Bust cache daily
+          return `${request.url}?ts=${Math.floor(
+            Date.now() / (1000 * 60 * 60 * 24)
+          )}`;
+        },
+      },
     ],
   })
 );
@@ -146,7 +177,7 @@ registerRoute(
   })
 );
 
-// API calls
+// API calls with dynamic base URL support
 registerRoute(
   ({ url, request }) => {
     const isApiCall =
@@ -159,8 +190,60 @@ registerRoute(
   new NetworkFirst({
     cacheName: "api-cache",
     networkTimeoutSeconds: 10,
-    plugins: [new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 5 * 60 })],
+    plugins: [
+      {
+        requestWillFetch: async ({ request }) => {
+          console.log("Service Worker: Intercepting request:", request.url);
+          let clientId = pwaConfig.clientId;
+
+          // Try to fetch clientId from main app if missing (message channel)
+          if (!clientId) {
+            try {
+              const clients = await self.clients.matchAll();
+              if (clients.length > 0) {
+                const response = await new Promise((resolve) => {
+                  const mc = new MessageChannel();
+                  mc.port1.onmessage = (ev) => resolve(ev.data);
+                  // send GET_CLIENT_ID and pass port2 so the client can reply on it
+                  clients[0].postMessage({ type: "GET_CLIENT_ID" }, [mc.port2]);
+                });
+                if (response?.clientId) {
+                  clientId = response.clientId;
+                  pwaConfig.clientId = clientId;
+                  console.log(
+                    "Service Worker: got clientId via MessageChannel:",
+                    clientId
+                  );
+                }
+              }
+            } catch (err) {
+              console.log("Service Worker: Could not get clientId:", err);
+            }
+          }
+
+          // If we have a client ID, ensure it's in the URL
+          if (clientId && request.url.includes("/accounts/clients/")) {
+            const url = new URL(request.url);
+            const parts = url.pathname.split("/");
+            const idx = parts.indexOf("clients");
+            if (
+              idx > -1 &&
+              (!parts[idx + 1] || parts[idx + 1] === "undefined")
+            ) {
+              parts[idx + 1] = clientId;
+              url.pathname = parts.join("/");
+              return new Request(url.toString(), request);
+            }
+          }
+
+          return request;
+        },
+      },
+      new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 5 * 60 }),
+    ],
   })
 );
 
-console.log("✅ Custom SW loaded with Safari-safe instant activation");
+console.log(
+  "✅ Custom Service Worker loaded with enhanced cross-browser activation support"
+);
