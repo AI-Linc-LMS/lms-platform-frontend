@@ -78,8 +78,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
               Your Progress
             </span>
             <span className="text-xs sm:text-[13px] font-bold text-[#10b981]">
-               {/* MODIFIED: Use the new 'progressPercentage' variable here. */}
-
+              {/* MODIFIED: Use the new 'progressPercentage' variable here. */}
               {progressPercentage}%
             </span>
           </div>
