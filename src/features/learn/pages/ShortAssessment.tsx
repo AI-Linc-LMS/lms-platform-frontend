@@ -1,5 +1,8 @@
 import React, { useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
+// ADDED: Import the useQueryClient hook from TanStack Query.
+
+import { useQueryClient } from "@tanstack/react-query";
 import { useAssessment } from "../hooks/useAssessment";
 import {
   AssessmentHeader,
@@ -13,6 +16,9 @@ const ShortAssessment: React.FC = () => {
   const { assessmentId } = useParams<{ assessmentId?: string }>();
   const location = useLocation();
   const navigate = useNavigate();
+  // ADDED: Initialize the query client.
+
+  const queryClient = useQueryClient();
 
   // Get assessment ID from URL params or location state
   const currentAssessmentId = assessmentId || location.state?.assessmentId;
@@ -48,6 +54,26 @@ const ShortAssessment: React.FC = () => {
     getAnsweredCount,
     getRemainingCount,
   } = useAssessment(currentAssessmentId);
+
+  // ADDED: Create a new wrapper function for finishing the assessment.
+
+  const handleFinishAndRefetch = async () => {
+
+    // First, call the original function from the hook to submit the assessment.
+
+    await handleFinishAssessment();
+
+
+
+    // After completion, invalidate the ["Courses"] query.
+
+    // This tells React Query that the course data is stale and needs to be refetched.
+
+    console.log("Assessment finished. Triggering refresh of enrolled courses...");
+
+    queryClient.invalidateQueries({ queryKey: ["Courses"] });
+
+  };
 
   const currentQuestion = questionsData[currentQuestionIndex];
 
@@ -108,7 +134,8 @@ const ShortAssessment: React.FC = () => {
               currentQuestionIndex={currentQuestionIndex}
               handleBack={handleBack}
               handleNext={handleNext}
-              handleFinishAssessment={handleFinishAssessment}
+              // MODIFIED: Pass the new wrapper function to the Finish button.
+              handleFinishAssessment={handleFinishAndRefetch}
               answeredCount={getAnsweredCount()}
               totalQuestions={questionsData.length}
             />
