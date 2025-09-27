@@ -68,7 +68,6 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
   // const handlePrimaryClick = () => {
   //   navigate(`/courses/${course.id}`);
   // };
-  console.log(course, 71);
   const formattedPrice = formatPrice(course?.price || "0");
   const isFree = course?.is_free === true || formattedPrice === "0";
   const courseRating = course?.rating || 4.8;
