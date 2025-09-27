@@ -35,7 +35,7 @@ const EnrolledCollapsedCard: React.FC<EnrolledCollapsedCardProps> = ({
 
   return (
     <div
-      className={`course-card w-full bg-white rounded-2xl border border-blue-100 shadow-xl transition-all duration-300 ease-in-out relative overflow-hidden ${className}`}
+      className={`course-card w-full max-w-lg bg-white rounded-2xl border border-blue-100 shadow-xl transition-all duration-300 ease-in-out relative overflow-visible ${className}`}
     >
       {/* Enrolled Banner - Positioned within card boundaries */}
       <div className="absolute top-3 right-3 z-20">

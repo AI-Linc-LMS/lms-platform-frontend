@@ -48,24 +48,40 @@ export default defineConfig({
         name: "AiLinc - AI Learning Platform",
         short_name: "AiLinc",
         description: "AI-powered learning and assessment platform",
-        theme_color: "#ffffff",
-        background_color: "#ffffff",
+        start_url: "/login",
         display: "standalone",
-        orientation: "portrait",
+        background_color: "#ffffff",
+        theme_color: "#ffffff",
+        lang: "en",
         scope: "/",
-        start_url: "/",
+        orientation: "portrait",
         id: "/",
-        // icons: used by Android/Chrome and other browsers for the installed app icon
-        // and to generate the splash screen (with theme/background colors).
-        // PNG first for better Android splash screen compatibility, then SVG
         icons: [
-          { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
-          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png" },
-          // iOS specific sizes for better compatibility
-          { src: "pwa-192x192.png", sizes: "152x152", type: "image/png" },
-          { src: "pwa-192x192.png", sizes: "180x180", type: "image/png" },
-          { src: "pwa-192x192.png", sizes: "167x167", type: "image/png" },
-          // Maskable icons for Android
+          {
+            src: "pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: "pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
+          {
+            src: "pwa-192x192.png",
+            sizes: "152x152",
+            type: "image/png",
+          },
+          {
+            src: "pwa-192x192.png",
+            sizes: "180x180",
+            type: "image/png",
+          },
+          {
+            src: "pwa-192x192.png",
+            sizes: "167x167",
+            type: "image/png",
+          },
           {
             src: "pwa-192x192.png",
             sizes: "192x192",
@@ -78,12 +94,17 @@ export default defineConfig({
             type: "image/png",
             purpose: "maskable",
           },
-          // SVG for scalability
-          { src: "pwa-192x192.svg", sizes: "192x192", type: "image/svg+xml" },
-          { src: "pwa-512x512.svg", sizes: "512x512", type: "image/svg+xml" },
+          {
+            src: "pwa-192x192.svg",
+            sizes: "192x192",
+            type: "image/svg+xml",
+          },
+          {
+            src: "pwa-512x512.svg",
+            sizes: "512x512",
+            type: "image/svg+xml",
+          },
         ],
-        // screenshots: displayed in installation prompts (Chrome) and store listings
-        // to showcase app UI in different form factors.
         screenshots: [
           {
             src: "screenshot/desktop-view.png",
