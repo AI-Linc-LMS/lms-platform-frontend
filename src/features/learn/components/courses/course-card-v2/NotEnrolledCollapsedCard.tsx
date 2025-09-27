@@ -68,7 +68,6 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
   // const handlePrimaryClick = () => {
   //   navigate(`/courses/${course.id}`);
   // };
-  console.log(course, 71);
   const formattedPrice = formatPrice(course?.price || "0");
   const isFree = course?.is_free === true || formattedPrice === "0";
   const courseRating = course?.rating || 4.8;
@@ -77,7 +76,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
 
   return (
     <div
-      className={`course-card w-full max-w-lg bg-white h-[320px] rounded-2xl border border-blue-100 shadow-xl transition-all duration-300 ease-in-out relative overflow-visible ${className}`}
+      className={`course-card w-full max-w-lg bg-white lg:h-[350px] rounded-2xl border border-blue-100 shadow-xl transition-all duration-300 ease-in-out relative overflow-visible ${className}`}
     >
       {/* Card Header */}
       <div className="p-4 sm:p-6 pb-3 border-b border-gray-100">
@@ -137,22 +136,8 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
             {courseDuration}
           </span>
           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-full text-xs font-medium text-yellow-800 whitespace-nowrap">
-            <svg
-              className="w-3 h-3 text-yellow-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-              />
-            </svg>
-            {isFree ? "Free" : `${formattedPrice}`}
+            {isFree ? "Free" : `₹${formattedPrice}`}
           </span>
-
           {/* Rating */}
           <div className="flex items-center gap-2 ml-auto">
             <StarRating rating={courseRating} size="text-xs" />
