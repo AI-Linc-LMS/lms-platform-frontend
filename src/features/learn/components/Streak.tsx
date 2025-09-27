@@ -28,7 +28,7 @@ const Streak = () => {
       completedHours += single.stats.video.completed;
     }
     if (totalHours == 0) totalHours = 1;
-    setProgress(Number(completedHours / totalHours));
+    setProgress(Number(completedHours / totalHours)*100);
   }, [courses]);
 
   useEffect(() => {
@@ -65,7 +65,7 @@ const Streak = () => {
           Your Streak: <span className="font-bold">{streak} days</span>
         </p>
         <p className="text-gray-500 text-sm md:text-base text-wrap">
-          Overall Course Progress: {progress}% complete
+          Overall Course Progress: {progress.toFixed(2)}% complete
         </p>
       </div>
       <div className="relative w-20 h-20">
@@ -88,7 +88,7 @@ const Streak = () => {
           </Pie>
         </PieChart>
         <div className="absolute inset-0 flex items-center justify-center">
-          <p className="text-xl font-bold text-gray-800">{progress}%</p>
+          <p className="text-xl font-bold text-gray-800">{progress.toFixed(2)}%</p>
         </div>
       </div>
     </div>

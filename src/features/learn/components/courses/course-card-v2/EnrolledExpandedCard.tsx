@@ -2,7 +2,7 @@ import React from "react";
 import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
 import { FileText, PlayCircle, Play, Trophy } from "lucide-react";
-import { calculateProgress } from "./utils/courseDataUtils";
+import { calculateCourseProgress } from "../../../utils/progressUtils";
 import {
   AchievementSection,
   ContentMetricsSection,
@@ -27,6 +27,10 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
   onCollapse,
 }) => {
   const navigate = useNavigate();
+
+  // ADDED: Use the new utility to get the definitive progress percentage.
+
+  const progressPercentage = calculateCourseProgress(course);
 
   const handlePrimaryClick = () => {
     navigate(`/courses/${course.id}`);
@@ -74,16 +78,18 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
               Your Progress
             </span>
             <span className="text-xs sm:text-[13px] font-bold text-[#10b981]">
-              {course.progress_percentage ? calculateProgress(course) : 0}%
+               {/* MODIFIED: Use the new 'progressPercentage' variable here. */}
+
+              {progressPercentage}%
             </span>
           </div>
           <div className="w-full h-1.5 bg-[#e5e7eb] rounded-full overflow-hidden mb-2.5">
             <div
               className="h-full bg-gradient-to-r from-[#10b981] to-[#059669] rounded-full transition-all duration-300"
               style={{
-                width: `${
-                  course.progress_percentage ? calculateProgress(course) : 0
-                }%`,
+                // MODIFIED: And also here for the progress bar width.
+
+                width: `${progressPercentage}%`,
               }}
             ></div>
           </div>
