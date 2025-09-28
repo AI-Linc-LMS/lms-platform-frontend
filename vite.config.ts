@@ -10,13 +10,13 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       injectRegister: "auto",
-      registerType: "prompt", // ✅ safer: show update prompt instead of forcing
+      registerType: "prompt", // safer than autoUpdate
       strategies: "injectManifest",
       srcDir: "public",
       filename: "sw-custom.js",
 
       devOptions: {
-        enabled: false, // ✅ avoid SW in dev
+        enabled: false,
         type: "classic",
       },
 
@@ -40,6 +40,7 @@ export default defineConfig({
         "splash-828x1792.svg",
         "splash-750x1334.svg",
         "splash-640x1136.svg",
+        "offline.html", // ✅ offline fallback
       ],
 
       manifest: {
@@ -57,9 +58,6 @@ export default defineConfig({
         icons: [
           { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
           { src: "pwa-512x512.png", sizes: "512x512", type: "image/png" },
-          { src: "pwa-192x192.png", sizes: "152x152", type: "image/png" },
-          { src: "pwa-192x192.png", sizes: "180x180", type: "image/png" },
-          { src: "pwa-192x192.png", sizes: "167x167", type: "image/png" },
           {
             src: "pwa-192x192.png",
             sizes: "192x192",
@@ -75,25 +73,10 @@ export default defineConfig({
           { src: "pwa-192x192.svg", sizes: "192x192", type: "image/svg+xml" },
           { src: "pwa-512x512.svg", sizes: "512x512", type: "image/svg+xml" },
         ],
-        screenshots: [
-          {
-            src: "screenshot/desktop-view.png",
-            sizes: "1280x720",
-            type: "image/png",
-            form_factor: "wide",
-          },
-          {
-            src: "screenshot/mobile-view.png",
-            sizes: "390x844",
-            type: "image/png",
-            form_factor: "narrow",
-          },
-        ],
       },
 
       injectManifest: {
-        // ✅ include index.html + build files
-        globPatterns: ["**/*.{js,css,html,ico,svg,png,jpg,jpeg,webp,woff2}"],
+        globPatterns: ["**/*.{js,css,html,ico,svg,png,jpg,jpeg,webp,woff2}"], // ✅ include html
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
       },
     }),
@@ -104,25 +87,6 @@ export default defineConfig({
         entryFileNames: `[name]${hash}.js`,
         chunkFileNames: `[name]${hash}.js`,
         assetFileNames: `[name]${hash}.[ext]`,
-        manualChunks: {
-          react: ["react", "react-dom", "react-router-dom"],
-          redux: ["redux", "react-redux", "@reduxjs/toolkit"],
-          query: ["@tanstack/react-query"],
-          chart: ["chart.js", "react-chartjs-2", "recharts"],
-          icons: ["lucide-react", "react-icons"],
-          editor: [
-            "@monaco-editor/react",
-            "@uiw/react-codemirror",
-            "codemirror",
-          ],
-          utils: [
-            "date-fns",
-            "uuid",
-            "sanitize-html",
-            "prismjs",
-            "html-react-parser",
-          ],
-        },
       },
     },
     chunkSizeWarningLimit: 2000,
