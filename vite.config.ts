@@ -10,18 +10,16 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       injectRegister: "auto",
-      registerType: "autoUpdate",
+      registerType: "prompt", // ✅ safer: show update prompt instead of forcing
       strategies: "injectManifest",
       srcDir: "public",
       filename: "sw-custom.js",
 
       devOptions: {
-        // Disable SW in dev to avoid HMR conflicts/reloads
-        enabled: false,
+        enabled: false, // ✅ avoid SW in dev
         type: "classic",
       },
-      // includeAssets: static files in /public copied as-is to the build output
-      // and available to the service worker. Useful for favicons, mask icons, etc.
+
       includeAssets: [
         "pwa-192x192.png",
         "pwa-512x512.png",
@@ -33,7 +31,6 @@ export default defineConfig({
         "logo.png",
         "vittee.svg",
         "vittee_no_bg.svg",
-        // iOS splash screen images
         "splash-1290x2796.svg",
         "splash-1179x2556.svg",
         "splash-1284x2778.svg",
@@ -44,6 +41,7 @@ export default defineConfig({
         "splash-750x1334.svg",
         "splash-640x1136.svg",
       ],
+
       manifest: {
         name: "AiLinc - AI Learning Platform",
         short_name: "AiLinc",
@@ -57,31 +55,11 @@ export default defineConfig({
         orientation: "portrait",
         id: "/",
         icons: [
-          {
-            src: "pwa-192x192.png",
-            sizes: "192x192",
-            type: "image/png",
-          },
-          {
-            src: "pwa-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-          },
-          {
-            src: "pwa-192x192.png",
-            sizes: "152x152",
-            type: "image/png",
-          },
-          {
-            src: "pwa-192x192.png",
-            sizes: "180x180",
-            type: "image/png",
-          },
-          {
-            src: "pwa-192x192.png",
-            sizes: "167x167",
-            type: "image/png",
-          },
+          { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
+          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png" },
+          { src: "pwa-192x192.png", sizes: "152x152", type: "image/png" },
+          { src: "pwa-192x192.png", sizes: "180x180", type: "image/png" },
+          { src: "pwa-192x192.png", sizes: "167x167", type: "image/png" },
           {
             src: "pwa-192x192.png",
             sizes: "192x192",
@@ -94,16 +72,8 @@ export default defineConfig({
             type: "image/png",
             purpose: "maskable",
           },
-          {
-            src: "pwa-192x192.svg",
-            sizes: "192x192",
-            type: "image/svg+xml",
-          },
-          {
-            src: "pwa-512x512.svg",
-            sizes: "512x512",
-            type: "image/svg+xml",
-          },
+          { src: "pwa-192x192.svg", sizes: "192x192", type: "image/svg+xml" },
+          { src: "pwa-512x512.svg", sizes: "512x512", type: "image/svg+xml" },
         ],
         screenshots: [
           {
@@ -120,9 +90,10 @@ export default defineConfig({
           },
         ],
       },
+
       injectManifest: {
-        // Precache static assets; exclude HTML to avoid stale index.html
-        globPatterns: ["**/*.{ico,svg,png,jpg,jpeg,webp,woff2}"], // only static branding assets
+        // ✅ include index.html + build files
+        globPatterns: ["**/*.{js,css,html,ico,svg,png,jpg,jpeg,webp,woff2}"],
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
       },
     }),
@@ -130,9 +101,9 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        entryFileNames: `[name]` + hash + `.js`,
-        chunkFileNames: `[name]` + hash + `.js`,
-        assetFileNames: `[name]` + hash + `.[ext]`,
+        entryFileNames: `[name]${hash}.js`,
+        chunkFileNames: `[name]${hash}.js`,
+        assetFileNames: `[name]${hash}.[ext]`,
         manualChunks: {
           react: ["react", "react-dom", "react-router-dom"],
           redux: ["redux", "react-redux", "@reduxjs/toolkit"],
