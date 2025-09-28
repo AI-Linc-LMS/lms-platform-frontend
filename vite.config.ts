@@ -10,7 +10,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       injectRegister: "auto",
-      registerType: "prompt", // safer than autoUpdate
+      registerType: "autoUpdate", // safer than autoUpdate
       strategies: "injectManifest",
       srcDir: "public",
       filename: "sw-custom.js",
@@ -76,7 +76,7 @@ export default defineConfig({
       },
 
       injectManifest: {
-        globPatterns: ["**/*.{js,css,html,ico,svg,png,jpg,jpeg,webp,woff2}"], // ✅ include html
+        globPatterns: ["**/*.{js,css,html,png,svg,jpg,woff2}"],
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
       },
     }),
