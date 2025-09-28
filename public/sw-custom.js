@@ -1,74 +1,69 @@
+/**
+ * Custom Service Worker with Offline Fallback
+ */
+
+// Import workbox
 importScripts(
   "https://storage.googleapis.com/workbox-cdn/releases/6.5.4/workbox-sw.js"
 );
 
-const { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } =
+const { precacheAndRoute, cleanupOutdatedCaches, matchPrecache } =
   workbox.precaching;
 const { registerRoute, NavigationRoute } = workbox.routing;
 const { StaleWhileRevalidate, CacheFirst, NetworkFirst } = workbox.strategies;
 const { ExpirationPlugin } = workbox.expiration;
 
-const PRECACHE_PREFIX = "workbox-precache";
-
-async function clearRuntimeCaches() {
-  const keys = await caches.keys();
-  await Promise.all(
-    keys
-      .filter((key) => !key.startsWith(PRECACHE_PREFIX))
-      .map((key) => caches.delete(key))
-  );
-}
-
+/* ===========================
+   PRECACHE
+   =========================== */
+// Precache everything in __WB_MANIFEST + offline.html
+precacheAndRoute(self.__WB_MANIFEST || []);
 cleanupOutdatedCaches();
 
-self.addEventListener("install", () => self.skipWaiting());
+/* ===========================
+   INSTALL / ACTIVATE
+   =========================== */
+self.addEventListener("install", (event) => {
+  console.log("🚀 Service Worker installed, skipping waiting...");
+  self.skipWaiting();
+});
+
 self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    (async () => {
-      const keys = await caches.keys();
-      await Promise.all(
-        keys
-          .filter((key) => !key.startsWith(PRECACHE_PREFIX))
-          .map((key) => caches.delete(key))
-      );
-      await self.clients.claim();
-    })()
-  );
+  console.log("⚡ Activating new Service Worker...");
+  event.waitUntil(self.clients.claim());
 });
 
-// ✅ Precache assets (including offline.html)
-precacheAndRoute(self.__WB_MANIFEST);
-
-// Runtime config
-let pwaConfig = {};
-self.addEventListener("message", (event) => {
-  if (event.data?.type === "PWA_CONFIG") pwaConfig = event.data.config || {};
-  if (event.data?.type === "CLEAR_CACHES")
-    event.waitUntil(clearRuntimeCaches());
-});
-
-/* ======================
-   ROUTES
-   ====================== */
-
-// HTML navigations with offline fallback
-const networkFirstHandler = new NetworkFirst({
+/* ===========================
+   NAVIGATION HANDLING (SPA)
+   =========================== */
+const appShellHandler = new NetworkFirst({
   cacheName: "html-cache",
   networkTimeoutSeconds: 5,
-  plugins: [new ExpirationPlugin({ maxEntries: 5, maxAgeSeconds: 60 })],
+  plugins: [
+    new ExpirationPlugin({
+      maxEntries: 10,
+      maxAgeSeconds: 60 * 60, // 1h
+    }),
+  ],
 });
 
-const navigationRoute = new NavigationRoute(async ({ event }) => {
+// Catch failed navigations → show offline.html
+const navigationRoute = new NavigationRoute(async (options) => {
   try {
-    return await networkFirstHandler.handle({ event });
+    return await appShellHandler.handle(options);
   } catch (err) {
-    return caches.match("/offline.html"); // ✅ fallback
+    console.warn("⚠️ Navigation failed, serving offline.html");
+    return matchPrecache("/offline.html");
   }
 });
 
 registerRoute(navigationRoute);
 
-// Google Fonts
+/* ===========================
+   STATIC ASSETS
+   =========================== */
+
+// Google Fonts stylesheets
 registerRoute(
   /^https:\/\/fonts\.googleapis\.com\/.*/i,
   new StaleWhileRevalidate({
@@ -79,6 +74,7 @@ registerRoute(
   })
 );
 
+// Google Fonts webfonts
 registerRoute(
   /^https:\/\/fonts\.gstatic\.com\/.*/i,
   new CacheFirst({
@@ -106,15 +102,23 @@ registerRoute(
   })
 );
 
-// API calls
+// JS / CSS chunks
 registerRoute(
-  ({ url, request }) => {
-    const isApiCall =
-      url.pathname.startsWith("/api/") ||
-      url.pathname.startsWith("/accounts/") ||
-      url.hostname.includes("ailinc.com");
-    return request.method === "GET" && isApiCall;
-  },
+  /\.(?:js|css)$/i,
+  new StaleWhileRevalidate({
+    cacheName: "static-resources",
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 24 * 60 * 60 }),
+    ],
+  })
+);
+
+/* ===========================
+   API CALLS
+   =========================== */
+registerRoute(
+  ({ url, request }) =>
+    request.method === "GET" && url.pathname.startsWith("/api/"),
   new NetworkFirst({
     cacheName: "api-cache",
     networkTimeoutSeconds: 10,
@@ -122,4 +126,4 @@ registerRoute(
   })
 );
 
-console.log("✅ Service Worker with offline fallback loaded");
+console.log("✅ Custom Service Worker with offline.html loaded");
