@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Offline - AiLinc</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f8fafc;
+        color: #1f2937;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        text-align: center;
+        padding: 2rem;
+      }
+      .card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 2rem;
+        max-width: 400px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        color: #2563eb;
+      }
+      p {
+        margin-bottom: 1.5rem;
+      }
+      button {
+        background: #2563eb;
+        color: #fff;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+      button:hover {
+        background: #1d4ed8;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>You’re Offline</h1>
+      <p>
+        It looks like you’ve lost your internet connection.<br />
+        Please check your network and try again.
+      </p>
+      <button onclick="window.location.reload()">🔄 Retry</button>
+    </div>
+  </body>
+</html>
