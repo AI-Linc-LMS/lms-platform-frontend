@@ -1,17 +1,20 @@
 /**
- * Custom Service Worker with Offline Fallback
+ * Custom Service Worker with Local Workbox
  */
 
-// Import workbox
-importScripts(
-  "https://storage.googleapis.com/workbox-cdn/releases/6.5.4/workbox-sw.js"
-);
-
-const { precacheAndRoute, cleanupOutdatedCaches, matchPrecache } =
-  workbox.precaching;
-const { registerRoute, NavigationRoute } = workbox.routing;
-const { StaleWhileRevalidate, CacheFirst, NetworkFirst } = workbox.strategies;
-const { ExpirationPlugin } = workbox.expiration;
+// Import workbox modules locally instead of CDN
+import {
+  precacheAndRoute,
+  cleanupOutdatedCaches,
+  matchPrecache,
+} from "workbox-precaching";
+import { registerRoute, NavigationRoute } from "workbox-routing";
+import {
+  StaleWhileRevalidate,
+  CacheFirst,
+  NetworkFirst,
+} from "workbox-strategies";
+import { ExpirationPlugin } from "workbox-expiration";
 
 /* ===========================
    PRECACHE
@@ -24,12 +27,13 @@ cleanupOutdatedCaches();
    INSTALL / ACTIVATE
    =========================== */
 self.addEventListener("install", (event) => {
-  console.log("🚀 Service Worker installed, skipping waiting...");
-  self.skipWaiting();
+  console.log("🚀 Service Worker installed");
+  // Don't skip waiting to avoid conflicts
+  // self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
-  console.log("⚡ Activating new Service Worker...");
+  console.log("⚡ Service Worker activated");
   event.waitUntil(self.clients.claim());
 });
 
@@ -38,24 +42,30 @@ self.addEventListener("activate", (event) => {
    =========================== */
 const appShellHandler = new NetworkFirst({
   cacheName: "html-cache",
-  networkTimeoutSeconds: 5,
+  networkTimeoutSeconds: 3,
   plugins: [
     new ExpirationPlugin({
-      maxEntries: 10,
+      maxEntries: 5,
       maxAgeSeconds: 60 * 60, // 1h
     }),
   ],
 });
 
 // Catch failed navigations → show offline.html
-const navigationRoute = new NavigationRoute(async (options) => {
-  try {
-    return await appShellHandler.handle(options);
-  } catch (err) {
-    console.warn("⚠️ Navigation failed, serving offline.html");
-    return matchPrecache("/offline.html");
+const navigationRoute = new NavigationRoute(
+  async (options) => {
+    try {
+      return await appShellHandler.handle(options);
+    } catch (err) {
+      console.warn("⚠️ Navigation failed, serving offline.html");
+      return matchPrecache("/offline.html");
+    }
+  },
+  {
+    // Only apply to main navigation requests, not assets
+    allowlist: [/^(?!\/_)/],
   }
-});
+);
 
 registerRoute(navigationRoute);
 
@@ -69,7 +79,10 @@ registerRoute(
   new StaleWhileRevalidate({
     cacheName: "google-fonts-stylesheets",
     plugins: [
-      new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: 7 * 24 * 60 * 60 }),
+      new ExpirationPlugin({
+        maxEntries: 10,
+        maxAgeSeconds: 7 * 24 * 60 * 60,
+      }),
     ],
   })
 );
@@ -81,8 +94,8 @@ registerRoute(
     cacheName: "google-fonts-webfonts",
     plugins: [
       new ExpirationPlugin({
-        maxEntries: 20,
-        maxAgeSeconds: 60 * 24 * 60 * 60,
+        maxEntries: 10,
+        maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
       }),
     ],
   })
@@ -90,12 +103,12 @@ registerRoute(
 
 // Images
 registerRoute(
-  /\.(?:png|jpg|jpeg|gif|webp|svg)$/i,
+  /\.(?:png|jpg|jpeg|gif|webp|svg|ico)$/i,
   new StaleWhileRevalidate({
     cacheName: "image-cache",
     plugins: [
       new ExpirationPlugin({
-        maxEntries: 100,
+        maxEntries: 50,
         maxAgeSeconds: 7 * 24 * 60 * 60,
       }),
     ],
@@ -104,11 +117,14 @@ registerRoute(
 
 // JS / CSS chunks
 registerRoute(
-  /\.(?:js|css)$/i,
+  /\.(?:js|css|woff2?)$/i,
   new StaleWhileRevalidate({
     cacheName: "static-resources",
     plugins: [
-      new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 24 * 60 * 60 }),
+      new ExpirationPlugin({
+        maxEntries: 30,
+        maxAgeSeconds: 24 * 60 * 60,
+      }),
     ],
   })
 );
@@ -121,9 +137,14 @@ registerRoute(
     request.method === "GET" && url.pathname.startsWith("/api/"),
   new NetworkFirst({
     cacheName: "api-cache",
-    networkTimeoutSeconds: 10,
-    plugins: [new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 5 * 60 })],
+    networkTimeoutSeconds: 5,
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 20,
+        maxAgeSeconds: 5 * 60,
+      }),
+    ],
   })
 );
 
-console.log("✅ Custom Service Worker with offline.html loaded");
+console.log("✅ Custom Service Worker with local workbox loaded");
