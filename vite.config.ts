@@ -9,15 +9,30 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      // Critical: Use prompt instead of autoUpdate to avoid loops
       injectRegister: "auto",
-      registerType: "autoUpdate", // safer than autoUpdate
+      registerType: "prompt",
       strategies: "injectManifest",
       srcDir: "public",
       filename: "sw-custom.js",
 
       devOptions: {
-        enabled: false,
-        type: "classic",
+        enabled: false, // Keep disabled in dev to avoid conflicts
+        type: "module", // Use module type for development
+      },
+
+      // Workbox configuration for injectManifest
+      injectManifest: {
+        globPatterns: ["**/*.{js,css,html,png,svg,jpg,jpeg,gif,webp,woff2}"],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit
+        swDest: "dist/sw.js",
+        // Don't include these in precache
+        globIgnores: [
+          "**/node_modules/**/*",
+          "**/*.map",
+          "**/sw-custom.js",
+          "**/workbox-*.js",
+        ],
       },
 
       includeAssets: [
@@ -31,15 +46,7 @@ export default defineConfig({
         "logo.png",
         "vittee.svg",
         "vittee_no_bg.svg",
-        "splash-1290x2796.svg",
-        "splash-1179x2556.svg",
-        "splash-1284x2778.svg",
-        "splash-1170x2532.svg",
-        "splash-1125x2436.svg",
-        "splash-1242x2688.svg",
-        "splash-828x1792.svg",
-        "splash-750x1334.svg",
-        "splash-640x1136.svg",
+        "splash-*.svg",
         "offline.html", // ✅ offline fallback
       ],
 
@@ -56,8 +63,16 @@ export default defineConfig({
         orientation: "portrait",
         id: "/",
         icons: [
-          { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
-          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png" },
+          {
+            src: "pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: "pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
           {
             src: "pwa-192x192.png",
             sizes: "192x192",
@@ -70,14 +85,17 @@ export default defineConfig({
             type: "image/png",
             purpose: "maskable",
           },
-          { src: "pwa-192x192.svg", sizes: "192x192", type: "image/svg+xml" },
-          { src: "pwa-512x512.svg", sizes: "512x512", type: "image/svg+xml" },
+          {
+            src: "pwa-192x192.svg",
+            sizes: "192x192",
+            type: "image/svg+xml",
+          },
+          {
+            src: "pwa-512x512.svg",
+            sizes: "512x512",
+            type: "image/svg+xml",
+          },
         ],
-      },
-
-      injectManifest: {
-        globPatterns: ["**/*.{js,css,html,png,svg,jpg,woff2}"],
-        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
       },
     }),
   ],
