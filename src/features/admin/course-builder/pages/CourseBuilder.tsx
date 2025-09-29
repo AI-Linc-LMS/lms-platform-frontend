@@ -6,39 +6,11 @@ import {
   CourseData,
 } from "../../../../services/admin/courseApis";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import articleIcon from "../../../../commonComponents/icons/admin/content/ArticleIcon.png";
-import videoIcon from "../../../../commonComponents/icons/admin/content/VideosIcon.png";
-import quizIcon from "../../../../commonComponents/icons/admin/content/QuizIcon.png";
-import assignmentIcon from "../../../../commonComponents/icons/admin/content/SubjectiveIcon.png";
-import codingProblemIcon from "../../../../commonComponents/icons/admin/content/ProblemIcon.png";
 import { useToast } from "../../../../contexts/ToastContext";
 import AccessDenied from "../../../../components/AccessDenied";
 import { useRole } from "../../../../hooks/useRole";
-
-interface Course {
-  id: number;
-  title: string;
-  subtitle: string;
-  description: string;
-  difficulty_level: string;
-  language: string;
-  price: string;
-  is_free: boolean;
-  published: boolean;
-  enrolled_students: {
-    total: number;
-    students_profile_pic: string[];
-  };
-  stats: {
-    video: { total: number };
-    article: { total: number };
-    quiz: { total: number };
-    assignment: { total: number };
-    coding_problem: { total: number };
-  };
-  trusted_by: string[];
-  thumbnail: string | null;
-}
+import AdminCourseCard from "../components/AdminCourseCard";
+import { Course } from "../../../learn/types/final-course.types";
 
 interface CourseFormData {
   name: string;
@@ -574,7 +546,7 @@ const AdminDashboard: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCourses.map((course: Course) => (
-              <CourseCard
+              <AdminCourseCard
                 key={course.id}
                 course={course}
                 onEditClick={() => handleEditCourse(course.id)}
@@ -691,174 +663,6 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
-  );
-};
-
-interface CourseCardProps {
-  course: Course;
-  onEditClick: () => void;
-}
-
-const CourseCard: React.FC<CourseCardProps> = ({ course, onEditClick }) => {
-  return (
-    <div className="bg-white rounded-lg border border-[var(--primary-200)] overflow-hidden max-w-[500px] flex flex-col h-full">
-      <div className="p-6 flex flex-col flex-1">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold">{course.title}</h3>
-          <span
-            className={`${
-              course.published
-                ? "bg-green-50 text-green-800"
-                : "bg-blue-50 text-blue-800"
-            } text-sm px-3 py-1 rounded-full`}
-          >
-            {course.published ? "Published" : "Draft"}
-          </span>
-        </div>
-        <p className="text-gray-600 mb-8">
-          {course.description || "No description available"}
-        </p>
-
-        <div className="grid grid-cols-6 gap-2 mb-8">
-          <div className="bg-gray-50 hover:bg-gray-100 rounded-lg p-2 flex flex-col items-center justify-center relative group transition-all duration-200">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-gray-500 mb-1"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span className="text-sm font-medium">
-              {course.enrolled_students?.total || 0}
-            </span>
-            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[var(--neutral-500)] text-[var(--font-light)] text-xs rounded pointer-events-none transition-opacity duration-200">
-              Students
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[var(--neutral-500)]"></div>
-            </div>
-          </div>
-          <div className="bg-gray-50 hover:bg-gray-100 rounded-lg p-2 flex flex-col items-center justify-center relative group transition-all duration-200">
-            <img
-              src={articleIcon}
-              alt="Article"
-              className="h-5 w-5 text-gray-500 mb-1"
-            />
-            <span className="text-sm font-medium">
-              {course.stats?.article?.total || 0}
-            </span>
-            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[var(--neutral-500)] text-[var(--font-light)] text-xs rounded pointer-events-none transition-opacity duration-200">
-              Articles
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[var(--neutral-500)]"></div>
-            </div>
-          </div>
-          <div className="bg-gray-50 hover:bg-gray-100 rounded-lg p-2 flex flex-col items-center justify-center relative group transition-all duration-200">
-            <img
-              src={quizIcon}
-              alt="Quiz"
-              className="h-5 w-5 text-gray-500 mb-1"
-            />
-            <span className="text-sm font-medium">
-              {course.stats?.quiz?.total || 0}
-            </span>
-            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[var(--neutral-500)] text-[var(--font-light)] text-xs rounded pointer-events-none transition-opacity duration-200">
-              Quizzes
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[var(--neutral-500)]"></div>
-            </div>
-          </div>
-          <div className="bg-gray-50 hover:bg-gray-100 rounded-lg p-2 flex flex-col items-center justify-center relative group transition-all duration-200">
-            <img
-              src={assignmentIcon}
-              alt="Assignment"
-              className="h-5 w-5 text-gray-500 mb-1"
-            />
-            <span className="text-sm font-medium">
-              {course.stats?.assignment?.total || 0}
-            </span>
-            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[var(--neutral-500)] text-[var(--font-light)] text-xs rounded pointer-events-none transition-opacity duration-200">
-              Assignments
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[var(--neutral-500)]"></div>
-            </div>
-          </div>
-          <div className="bg-gray-50 hover:bg-gray-100 rounded-lg p-2 flex flex-col items-center justify-center relative group transition-all duration-200">
-            <img
-              src={codingProblemIcon}
-              alt="Coding Problem"
-              className="h-5 w-5 text-gray-500 mb-1"
-            />
-            <span className="text-sm font-medium">
-              {course.stats?.coding_problem?.total || 0}
-            </span>
-            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[var(--neutral-500)] text-[var(--font-light)] text-xs rounded pointer-events-none transition-opacity duration-200">
-              Coding Problems
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[var(--neutral-500)]"></div>
-            </div>
-          </div>
-          <div className="bg-gray-50 hover:bg-gray-100 rounded-lg p-2 flex flex-col items-center justify-center relative group transition-all duration-200">
-            <img
-              src={videoIcon}
-              alt="Video"
-              className="h-5 w-5 text-gray-500 mb-1"
-            />
-            <span className="text-sm font-medium">
-              {course.stats?.video?.total || 0}
-            </span>
-            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-[var(--neutral-500)] text-[var(--font-light)] text-xs rounded pointer-events-none transition-opacity duration-200">
-              Videos
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[var(--neutral-500)]"></div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-8">
-          <div className="text-sm text-gray-600 mb-2">Trusted by:</div>
-          <div className="flex space-x-2">
-            {course.trusted_by && course.trusted_by.length > 0 ? (
-              course.trusted_by.map((company, index) => (
-                <img
-                  key={index}
-                  src={company}
-                  alt={`Company ${index + 1}`}
-                  className="w-6 h-6 rounded-full"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = "https://via.placeholder.com/24";
-                  }}
-                />
-              ))
-            ) : (
-              <span className="text-gray-500 text-sm">No companies listed</span>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-auto pt-4">
-          <button
-            className="w-full bg-[var(--primary-50)] text-[var(--secondary-700)] border border-[var(--primary-200)] py-3 rounded-md flex items-center justify-center hover:bg-[#C4E5F0] transition-colors"
-            onClick={onEditClick}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-              />
-            </svg>
-            Edit Course
-          </button>
-        </div>
-      </div>
     </div>
   );
 };
