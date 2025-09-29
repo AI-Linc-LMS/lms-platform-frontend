@@ -14,7 +14,7 @@ export default defineConfig({
       registerType: "prompt",
       strategies: "injectManifest",
       srcDir: "public",
-      filename: "sw-custom.js",
+      filename: "sw-custom.js", // ✅ Source file name
 
       devOptions: {
         enabled: false, // Keep disabled in dev to avoid conflicts
@@ -25,7 +25,7 @@ export default defineConfig({
       injectManifest: {
         globPatterns: ["**/*.{js,css,html,png,svg,jpg,jpeg,gif,webp,woff2}"],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit
-        swDest: "dist/sw.js",
+        swDest: "dist/sw-custom.js", // ✅ Matches the filename
         // Don't include these in precache
         globIgnores: [
           "**/node_modules/**/*",
