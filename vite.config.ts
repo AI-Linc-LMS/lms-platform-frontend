@@ -11,11 +11,13 @@ export default defineConfig({
     VitePWA({
       // Critical: Use prompt instead of autoUpdate to avoid loops
       injectRegister: "auto",
-      registerType: "prompt",
+      registerType: "autoUpdate",
       strategies: "injectManifest",
       srcDir: "public",
       filename: "sw-custom.js", // ✅ Source file name
-
+      workbox: {
+        cleanupOutdatedCaches: true,
+      },
       devOptions: {
         enabled: false, // Keep disabled in dev to avoid conflicts
         type: "module", // Use module type for development
