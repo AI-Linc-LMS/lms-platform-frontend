@@ -122,7 +122,7 @@ const EnrolledCollapsedCard: React.FC<EnrolledCollapsedCardProps> = ({
             <div className="flex flex-col items-center gap-0.5 p-1.5 sm:p-2 md:p-2.5 bg-white rounded-md border border-[#e2e8f0] min-w-0">
               <i className="fas fa-fire text-xs sm:text-sm md:text-base text-[#10b981]"></i>
               <span className="text-xs sm:text-sm md:text-base font-bold text-[#374151] leading-none">
-                {course.streak ?? 0}
+                {course.streak_count ?? 0}
               </span>
               <span className="text-[7px] sm:text-[8px] md:text-[9px] text-[var(--font-secondary)] font-medium text-center leading-tight">
                 Day Streak

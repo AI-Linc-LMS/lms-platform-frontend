@@ -197,7 +197,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-base sm:text-lg font-bold text-[#92400e] leading-none">
-                {course.streak ?? 0}
+                {course.streak_count ?? 0}
               </span>
               <span className="text-[9px] sm:text-[10px] text-[#a16207] font-medium uppercase tracking-[0.3px]">
                 Day Streak
@@ -210,7 +210,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
               <div
                 key={index}
                 className={`w-4 h-4 sm:w-5 sm:h-5 rounded flex items-center justify-center text-[9px] sm:text-[10px] font-semibold flex-shrink-0 ${
-                  index < (course?.streak ?? 0)
+                  index < (course?.streak_count ?? 0)
                     ? "bg-[#10b981] text-[var(--font-light)]"
                     : "bg-[#f3f4f6] text-[var(--font-secondary)]"
                 }`}
