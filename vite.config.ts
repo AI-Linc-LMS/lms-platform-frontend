@@ -9,19 +9,32 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      // Critical: Use prompt instead of autoUpdate to avoid loops
       injectRegister: "auto",
-      registerType: "autoUpdate",
+      registerType: "prompt",
       strategies: "injectManifest",
       srcDir: "public",
-      filename: "sw-custom.js",
+      filename: "sw-custom.js", // ✅ Source file name
 
       devOptions: {
-        // Disable SW in dev to avoid HMR conflicts/reloads
-        enabled: false,
-        type: "classic",
+        enabled: false, // Keep disabled in dev to avoid conflicts
+        type: "module", // Use module type for development
       },
-      // includeAssets: static files in /public copied as-is to the build output
-      // and available to the service worker. Useful for favicons, mask icons, etc.
+
+      // Workbox configuration for injectManifest
+      injectManifest: {
+        globPatterns: ["**/*.{js,css,html,png,svg,jpg,jpeg,gif,webp,woff2}"],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit
+        swDest: "dist/sw-custom.js", // ✅ Matches the filename
+        // Don't include these in precache
+        globIgnores: [
+          "**/node_modules/**/*",
+          "**/*.map",
+          "**/sw-custom.js",
+          "**/workbox-*.js",
+        ],
+      },
+
       includeAssets: [
         "pwa-192x192.png",
         "pwa-512x512.png",
@@ -33,17 +46,10 @@ export default defineConfig({
         "logo.png",
         "vittee.svg",
         "vittee_no_bg.svg",
-        // iOS splash screen images
-        "splash-1290x2796.svg",
-        "splash-1179x2556.svg",
-        "splash-1284x2778.svg",
-        "splash-1170x2532.svg",
-        "splash-1125x2436.svg",
-        "splash-1242x2688.svg",
-        "splash-828x1792.svg",
-        "splash-750x1334.svg",
-        "splash-640x1136.svg",
+        "splash-*.svg",
+        "offline.html", // ✅ offline fallback
       ],
+
       manifest: {
         name: "AiLinc - AI Learning Platform",
         short_name: "AiLinc",
@@ -69,21 +75,6 @@ export default defineConfig({
           },
           {
             src: "pwa-192x192.png",
-            sizes: "152x152",
-            type: "image/png",
-          },
-          {
-            src: "pwa-192x192.png",
-            sizes: "180x180",
-            type: "image/png",
-          },
-          {
-            src: "pwa-192x192.png",
-            sizes: "167x167",
-            type: "image/png",
-          },
-          {
-            src: "pwa-192x192.png",
             sizes: "192x192",
             type: "image/png",
             purpose: "maskable",
@@ -105,53 +96,15 @@ export default defineConfig({
             type: "image/svg+xml",
           },
         ],
-        screenshots: [
-          {
-            src: "screenshot/desktop-view.png",
-            sizes: "1280x720",
-            type: "image/png",
-            form_factor: "wide",
-          },
-          {
-            src: "screenshot/mobile-view.png",
-            sizes: "390x844",
-            type: "image/png",
-            form_factor: "narrow",
-          },
-        ],
-      },
-      injectManifest: {
-        // Precache static assets; exclude HTML to avoid stale index.html
-        globPatterns: ["**/*.{ico,svg,png,jpg,jpeg,webp,woff2}"], // only static branding assets
-        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
       },
     }),
   ],
   build: {
     rollupOptions: {
       output: {
-        entryFileNames: `[name]` + hash + `.js`,
-        chunkFileNames: `[name]` + hash + `.js`,
-        assetFileNames: `[name]` + hash + `.[ext]`,
-        manualChunks: {
-          react: ["react", "react-dom", "react-router-dom"],
-          redux: ["redux", "react-redux", "@reduxjs/toolkit"],
-          query: ["@tanstack/react-query"],
-          chart: ["chart.js", "react-chartjs-2", "recharts"],
-          icons: ["lucide-react", "react-icons"],
-          editor: [
-            "@monaco-editor/react",
-            "@uiw/react-codemirror",
-            "codemirror",
-          ],
-          utils: [
-            "date-fns",
-            "uuid",
-            "sanitize-html",
-            "prismjs",
-            "html-react-parser",
-          ],
-        },
+        entryFileNames: `[name]${hash}.js`,
+        chunkFileNames: `[name]${hash}.js`,
+        assetFileNames: `[name]${hash}.[ext]`,
       },
     },
     chunkSizeWarningLimit: 2000,
