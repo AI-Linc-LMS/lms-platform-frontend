@@ -133,7 +133,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
               <circle cx="12" cy="12" r="10" />
               <polyline points="12,6 12,12 16,14" />
             </svg>
-            {courseDuration}
+            {courseDuration} hours
           </span>
           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-full text-xs font-medium text-yellow-800 whitespace-nowrap">
             {isFree ? "Free" : `₹${formattedPrice}`}
