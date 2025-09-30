@@ -14,6 +14,10 @@ import { UserActivityProvider } from "./contexts/UserActivityContext";
 import { initializePWA } from "./pwa";
 import theme from "./styles/theme.ts";
 
+import { registerSW } from "virtual:pwa-register";
+
+registerSW({ immediate: true });
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
