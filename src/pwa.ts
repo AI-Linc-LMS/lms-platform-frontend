@@ -42,6 +42,8 @@ export interface PWAMessages {
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+  title?: string;
+  message?: string;
 }
 
 export class PWAManager {
