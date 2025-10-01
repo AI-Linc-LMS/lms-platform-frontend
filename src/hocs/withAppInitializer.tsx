@@ -358,9 +358,12 @@ const withAppInitializer = <P extends object>(
             if (!link) {
               link = document.createElement("link");
               link.rel = "manifest";
+              link.id = "app-manifest";
               document.head.appendChild(link);
             }
             link.href = manifestURL;
+            link.id = "app-manifest";
+            document.head.appendChild(link);
 
             // ✅ Dispatch event for PWA manager
             window.dispatchEvent(
