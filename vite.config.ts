@@ -52,53 +52,7 @@ export default defineConfig({
         "offline.html", // ✅ offline fallback
       ],
 
-      manifest: {
-        name: "AiLinc - AI Learning Platform",
-        short_name: "AiLinc",
-        description: "AI-powered learning and assessment platform",
-        start_url: "/login",
-        display: "standalone",
-        background_color: "#ffffff",
-        theme_color: "#ffffff",
-        lang: "en",
-        scope: "/",
-        orientation: "portrait",
-        id: "/",
-        icons: [
-          {
-            src: "pwa-192x192.png",
-            sizes: "192x192",
-            type: "image/png",
-          },
-          {
-            src: "pwa-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-          },
-          {
-            src: "pwa-192x192.png",
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "maskable",
-          },
-          {
-            src: "pwa-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable",
-          },
-          {
-            src: "pwa-192x192.svg",
-            sizes: "192x192",
-            type: "image/svg+xml",
-          },
-          {
-            src: "pwa-512x512.svg",
-            sizes: "512x512",
-            type: "image/svg+xml",
-          },
-        ],
-      },
+      manifest: false,
     }),
   ],
   build: {

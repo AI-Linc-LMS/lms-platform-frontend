@@ -3,6 +3,7 @@ import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
 import { FileText, PlayCircle, Play, Trophy } from "lucide-react";
 import { calculateCourseProgress } from "../../../utils/progressUtils";
+import { getEffectiveWhatsIncluded, getEffectiveInstructors } from "./utils/courseDataUtils";
 import {
   AchievementSection,
   ContentMetricsSection,
@@ -268,31 +269,37 @@ export default EnrolledExpandedCard;
 
 // MOBILE OPTIMIZED: InstructorSection
 export const InstructorSection = ({ course }: { course: Course }) => {
+  const effectiveInstructors = getEffectiveInstructors(course);
+  
   return (
     <div>
-      {course.instructors && course.instructors.length > 0 && (
+      {effectiveInstructors && effectiveInstructors.length > 0 && (
         <div className="mb-3 overflow-hidden">
           <h3 className="text-[var(--neutral-400)] font-semibold text-xs mb-2">
             Instructors:
           </h3>
           <div className="flex items-center gap-2">
             <div className="flex -space-x-1 sm:-space-x-2">
-              {course.instructors.slice(0, 3).map((instructor, index) => (
+              {effectiveInstructors.slice(0, 3).map((instructor, index) => (
                 <div
-                  key={index}
+                  key={instructor.id || index}
                   className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-300 border-2 border-white overflow-hidden flex-shrink-0"
                 >
                   <img
-                    src={instructor.profile_pic_url}
+                    src={instructor.profile_pic_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(instructor.name)}&background=6366f1&color=fff`}
                     alt={instructor.name}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(instructor.name)}&background=6366f1&color=fff`;
+                    }}
                   />
                 </div>
               ))}
             </div>
             <div className="text-xs min-w-0">
               <p className="font-medium text-[var(--neutral-400)] truncate">
-                {course.instructors[0]?.name || "Expert Instructor"}
+                {effectiveInstructors[0]?.name || "Expert Instructor"}
               </p>
               <p className="text-[var(--neutral-300)] text-xs">
                 Lead instructor
@@ -335,9 +342,11 @@ export const NextLessionSection = ({ course }: { course: Course }) => {
 
 // MOBILE OPTIMIZED: WhatsIncludedSection
 export const WhatsIncludedSection = ({ course }: { course: Course }) => {
+  const effectiveWhatsIncluded = getEffectiveWhatsIncluded(course);
+  
   return (
     <div>
-      {course?.whats_included && course.whats_included.length > 0 && (
+      {effectiveWhatsIncluded && effectiveWhatsIncluded.length > 0 && (
         <div className="mb-3 overflow-hidden">
           <div className="bg-[var(--neutral-50)] rounded-md p-2">
             <div className="flex items-center gap-1.5 mb-2">
@@ -357,7 +366,7 @@ export const WhatsIncludedSection = ({ course }: { course: Course }) => {
               </span>
             </div>
             <div className="space-y-1 text-xs">
-              {course.whats_included.map((item, index) => (
+              {effectiveWhatsIncluded.map((item, index) => (
                 <div className="flex items-center gap-1.5" key={index}>
                   <FileText className="w-3 h-3 text-blue-500 flex-shrink-0" />
                   <span className="text-[var(--neutral-400)] truncate">
