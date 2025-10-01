@@ -1,6 +1,7 @@
 import { VideoIcon } from "lucide-react";
 import Course from "../../types/final-course.types";
 import { CompanyLogosSection } from "./course-card-v2/components";
+import { getEffectiveLearningObjectives } from "./course-card-v2/utils/courseDataUtils";
 
 // Enhanced 3D Star Rating Component
 const StarRating = ({
@@ -433,12 +434,7 @@ export default function CardHelperExpanded({
                   flex: "1",
                 }}
               >
-                {[
-                  "Learn to build dashboards recruiters love to see in resumes",
-                  "Master the most in-demand BI tool in just 20 hours",
-                  "Used by 90% of Fortune 500 companies",
-                  "Boost your analytics career with real-world Tableau skills",
-                ].map((outcome, index) => (
+                {getEffectiveLearningObjectives(course).map((outcome, index) => (
                   <li
                     key={index}
                     style={{

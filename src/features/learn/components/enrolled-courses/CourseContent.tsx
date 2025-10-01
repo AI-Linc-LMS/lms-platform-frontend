@@ -35,7 +35,7 @@ const InstructorsSection: React.FC = () => {
       bio: "Senior AI Engineer with extensive experience in building autonomous agents and intelligent product ecosystems.",
       linkedin_profile: "https://www.linkedin.com/in/shubhamlal/",
       profile_pic_url:
-        "https://media.licdn.com/dms/image/v2/D5603AQFkca3e8sWiJg/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1704275354618?e=1758153600&v=beta&t=KMRMCixWPfNmy9TXMKV81hAS6DBTGo120y38mU1FDjM",
+        "https://lh3.googleusercontent.com/a/ACg8ocJSPMwGcKIWqYE1LDeBo_N1Z5pYriaPsNJSwLFAbPQ4N9lmnNIs=s96-c",
       website: "https://shubhamlal.tech",
     },
     {
