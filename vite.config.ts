@@ -9,39 +9,32 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      // Critical: Use prompt instead of autoUpdate to avoid loops
       injectRegister: "auto",
       registerType: "autoUpdate",
       strategies: "injectManifest",
       srcDir: "public",
-      filename: "sw-custom.js",
+      filename: "sw-custom.js", // ✅ Source file name
+      workbox: {
+        cleanupOutdatedCaches: true,
+      },
+      devOptions: {
+        enabled: false, // Keep disabled in dev to avoid conflicts
+        type: "module", // Use module type for development
+      },
 
-      // ✅ DISABLE manifest generation - we'll create it dynamically
-      manifest: false,
-
-      // ✅ Don't inject manifest link - we'll do it dynamically
+      // Workbox configuration for injectManifest
       injectManifest: {
         globPatterns: ["**/*.{js,css,html,png,svg,jpg,jpeg,gif,webp,woff2}"],
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-        swDest: "dist/sw-custom.js",
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit
+        swDest: "dist/sw-custom.js", // ✅ Matches the filename
+        // Don't include these in precache
         globIgnores: [
           "**/node_modules/**/*",
           "**/*.map",
           "**/sw-custom.js",
           "**/workbox-*.js",
-          "**/manifest.webmanifest", // ✅ Don't cache manifest
-          "**/manifest.json", // ✅ Don't cache manifest
         ],
-      },
-
-      workbox: {
-        cleanupOutdatedCaches: true,
-        // ✅ Don't cache manifest files
-        navigateFallbackDenylist: [/^\/manifest/],
-      },
-
-      devOptions: {
-        enabled: false,
-        type: "module",
       },
 
       includeAssets: [
@@ -56,21 +49,57 @@ export default defineConfig({
         "vittee.svg",
         "vittee_no_bg.svg",
         "splash-*.svg",
-        "offline.html",
+        "offline.html", // ✅ offline fallback
       ],
-    }),
 
-    // ✅ Plugin to remove manifest link from HTML
-    {
-      name: "remove-manifest-link",
-      transformIndexHtml(html) {
-        return html.replace(
-          /<link\s+rel="manifest"\s+href="[^"]*"\s*\/?>/gi,
-          ""
-        );
+      manifest: {
+        name: "AiLinc - AI Learning Platform",
+        short_name: "AiLinc",
+        description: "AI-powered learning and assessment platform",
+        start_url: "/login",
+        display: "standalone",
+        background_color: "#ffffff",
+        theme_color: "#ffffff",
+        lang: "en",
+        scope: "/",
+        orientation: "portrait",
+        id: "/",
+        icons: [
+          {
+            src: "pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: "pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
+          {
+            src: "pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "maskable",
+          },
+          {
+            src: "pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+          {
+            src: "pwa-192x192.svg",
+            sizes: "192x192",
+            type: "image/svg+xml",
+          },
+          {
+            src: "pwa-512x512.svg",
+            sizes: "512x512",
+            type: "image/svg+xml",
+          },
+        ],
       },
-      enforce: "post",
-    },
+    }),
   ],
   build: {
     rollupOptions: {
