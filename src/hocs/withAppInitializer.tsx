@@ -319,17 +319,18 @@ const withAppInitializer = <P extends object>(
                 result.theme_settings.fontDark
               );
             }
+            const origin = window.location.origin;
 
             const manifest = {
               name: result.name,
               short_name: result.slug || result.name,
               description: "AI-powered learning and assessment platform",
-              start_url: "/login",
+              start_url: `${origin}/login`, // ✅ Absolute URL
               display: "standalone",
               background_color: "#ffffff",
               theme_color: "#ffffff",
               lang: "en",
-              scope: "/",
+              scope: `${origin}/`, // ✅ Absolute URL
               orientation: "portrait",
               id: "/",
               icons: [
