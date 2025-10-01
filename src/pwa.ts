@@ -1,19 +1,15 @@
 /**
- * PWA Service Worker Registration and Management - Complete with Custom Prompts
+ * PWA Service Worker Registration and Management - Complete Fixed Version
  */
 
 export interface PWAUpdateInfo {
   updateAvailable: boolean;
   registration?: ServiceWorkerRegistration;
-  title?: string;
-  message?: string;
 }
 
 export interface PWAInstallInfo {
   canInstall: boolean;
   promptEvent?: BeforeInstallPromptEvent;
-  title?: string;
-  message?: string;
 }
 
 export interface PWAConfig {
@@ -23,27 +19,10 @@ export interface PWAConfig {
   environment?: string;
 }
 
-export interface PWAMessages {
-  update?: {
-    title: string | undefined;
-    message: string | undefined;
-  };
-  install?: {
-    title: string | undefined;
-    message: string | undefined;
-  };
-  offline?: {
-    title: string | undefined;
-    message: string | undefined;
-  };
-}
-
 // Custom event interface for beforeinstallprompt
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-  title?: string;
-  message?: string;
 }
 
 export class PWAManager {
@@ -57,25 +36,7 @@ export class PWAManager {
   private updateDismissed: boolean = false;
   private isOfflineState: boolean = !navigator.onLine;
 
-  // ✅ Custom messages with defaults
-  private messages: PWAMessages = {
-    update: {
-      title: "Update Available",
-      message:
-        "A new version of the app is available. Update now for the latest features and improvements.",
-    },
-    install: {
-      title: "Install App",
-      message:
-        "Install this app on your device for a better experience and offline access.",
-    },
-    offline: {
-      title: "You're Offline",
-      message: "Some features may be limited while offline.",
-    },
-  };
-
-  // Enhanced reload guards with persistence
+  // ✅ Enhanced reload guards with persistence
   private static readonly RELOAD_GUARD_KEY = "pwa-reload-guard";
   private hadControllerAtLoad: boolean = false;
   private shouldReloadOnControllerChange: boolean = false;
@@ -88,33 +49,7 @@ export class PWAManager {
     this.setupPeriodicChecks();
   }
 
-  // ✅ Set custom messages
-  setMessages(messages: Partial<PWAMessages>): void {
-    this.messages = {
-      ...this.messages,
-      ...messages,
-      update: {
-        title: messages.update?.title ?? this.messages.update?.title,
-        message: messages.update?.message ?? this.messages.update?.message,
-      },
-      install: {
-        title: messages.install?.title ?? this.messages.install?.title,
-        message: messages.install?.message ?? this.messages.install?.message,
-      },
-      offline: {
-        title: messages.offline?.title ?? this.messages.offline?.title,
-        message: messages.offline?.message ?? this.messages.offline?.message,
-      },
-    };
-    console.log("✅ PWA messages updated");
-  }
-
-  // ✅ Get current messages
-  getMessages(): PWAMessages {
-    return { ...this.messages };
-  }
-
-  // Set PWA configuration
+  // ✅ Set PWA configuration
   setConfig(config: PWAConfig): void {
     this.config = { ...this.config, ...config };
     if (typeof window !== "undefined") {
@@ -130,15 +65,16 @@ export class PWAManager {
     this.sendConfigToServiceWorker();
   }
 
-  // Get PWA configuration
+  // ✅ Get PWA configuration
   getConfig(): PWAConfig {
     return { ...this.config };
   }
 
-  // Enhanced service worker registration with proper reload guards
+  // ✅ Enhanced service worker registration with proper reload guards
   async registerServiceWorker(): Promise<void> {
     if ("serviceWorker" in navigator) {
       try {
+        // ✅ Check if we just reloaded due to SW update
         const justReloaded = sessionStorage.getItem(
           PWAManager.RELOAD_GUARD_KEY
         );
@@ -157,6 +93,7 @@ export class PWAManager {
           }
         );
 
+        // ✅ Only check for updates if we didn't just reload
         if (!justReloaded) {
           try {
             await this.registration.update();
@@ -167,12 +104,18 @@ export class PWAManager {
 
         this.sendConfigToServiceWorker();
 
+        // ✅ Handle waiting service worker
         if (this.registration.waiting) {
           this.notifyUpdateAvailable();
         }
 
+        // ✅ Setup update detection
         this.setupUpdateHandlers();
+
+        // ✅ Setup controller change with proper guards
         this.setupControllerChangeHandler();
+
+        // ✅ Setup message handling
         this.setupMessageHandling();
       } catch (error) {
         console.error("Service Worker registration failed:", error);
@@ -180,7 +123,7 @@ export class PWAManager {
     }
   }
 
-  // Send configuration to service worker
+  // ✅ Send configuration to service worker
   private sendConfigToServiceWorker(): void {
     if (
       navigator.serviceWorker.controller &&
@@ -197,12 +140,14 @@ export class PWAManager {
     }
   }
 
-  // Get client ID from various storage sources
+  // ✅ Get client ID from various storage sources
   private getClientIdFromStorage(): string | null {
+    // Priority 1: Current config
     if (this.config.clientId) {
       return this.config.clientId;
     }
 
+    // Priority 2: Session storage
     try {
       const storedConfig = window.sessionStorage.getItem("pwa-config");
       if (storedConfig) {
@@ -215,6 +160,7 @@ export class PWAManager {
       console.warn("⚠️ Error parsing PWA config from sessionStorage:", error);
     }
 
+    // Priority 3: Local storage auth data
     try {
       const authData =
         window.localStorage.getItem("auth") ||
@@ -229,10 +175,11 @@ export class PWAManager {
       console.warn("⚠️ Error parsing auth data from localStorage:", error);
     }
 
+    // Priority 4: Environment variable
     return import.meta.env.VITE_CLIENT_ID || null;
   }
 
-  // Setup install prompt handling
+  // ✅ Setup install prompt handling
   private setupInstallPrompt(): void {
     window.addEventListener("beforeinstallprompt", (e) => {
       e.preventDefault();
@@ -247,7 +194,7 @@ export class PWAManager {
     });
   }
 
-  // Setup online/offline detection
+  // ✅ Setup online/offline detection
   private setupOnlineOfflineDetection(): void {
     window.addEventListener("online", () => {
       console.log("🌐 Back online");
@@ -260,7 +207,7 @@ export class PWAManager {
     });
   }
 
-  // Show install prompt
+  // ✅ Show install prompt
   async showInstallPrompt(): Promise<boolean> {
     if (!this.installPromptEvent) {
       console.warn("⚠️ No install prompt available");
@@ -269,8 +216,6 @@ export class PWAManager {
 
     try {
       await this.installPromptEvent.prompt();
-      this.installPromptEvent.title = this.messages.install?.title;
-      this.installPromptEvent.message = this.messages.install?.message;
       const choiceResult = await this.installPromptEvent.userChoice;
 
       if (choiceResult.outcome === "accepted") {
@@ -287,23 +232,25 @@ export class PWAManager {
     }
   }
 
-  // Check if app can be installed
+  // ✅ Check if app can be installed
   canInstall(): boolean {
     return this.installPromptEvent !== null;
   }
 
-  // Check if app is offline
+  // ✅ Check if app is offline
   isOffline(): boolean {
     return this.isOfflineState;
   }
 
-  // Safe controller change handler with multiple guards
+  // ✅ Safe controller change handler with multiple guards
   private setupControllerChangeHandler(): void {
+    // Use a closure to maintain state across potential reloads
     let hasReloaded = false;
 
     navigator.serviceWorker.addEventListener(
       "controllerchange",
       () => {
+        // ✅ Guard 1: Prevent multiple reloads in same session
         if (hasReloaded) {
           console.log(
             "🛡️ Reload already triggered, ignoring controller change"
@@ -311,11 +258,13 @@ export class PWAManager {
           return;
         }
 
+        // ✅ Guard 2: Check session storage guard
         if (sessionStorage.getItem(PWAManager.RELOAD_GUARD_KEY)) {
           console.log("🛡️ Reload guard active, ignoring controller change");
           return;
         }
 
+        // ✅ Guard 3: Only reload if we explicitly requested an update
         if (!this.shouldReloadOnControllerChange && !this.hadControllerAtLoad) {
           console.log("🛡️ No reload requested, ignoring controller change");
           return;
@@ -324,20 +273,22 @@ export class PWAManager {
         console.log("🔄 Controller changed, reloading page...");
         hasReloaded = true;
 
+        // ✅ Set session guard before reload
         sessionStorage.setItem(
           PWAManager.RELOAD_GUARD_KEY,
           Date.now().toString()
         );
 
+        // ✅ Small delay to ensure session storage is written
         setTimeout(() => {
           window.location.reload();
         }, 100);
       },
       { once: true }
-    );
+    ); // ✅ Critical: only fire once per registration
   }
 
-  // Setup update handlers with proper guards
+  // ✅ Setup update handlers with proper guards
   private setupUpdateHandlers(): void {
     if (!this.registration) return;
 
@@ -349,7 +300,9 @@ export class PWAManager {
         newWorker.addEventListener("statechange", () => {
           console.log(`🔄 Service worker state: ${newWorker.state}`);
 
+          // Only notify when worker is installed and waiting
           if (newWorker.state === "installed" && this.registration?.waiting) {
+            // ✅ Don't auto-activate, let user decide
             console.log("✨ New service worker installed and waiting");
             this.notifyUpdateAvailable();
           }
@@ -358,15 +311,17 @@ export class PWAManager {
     });
   }
 
-  // Enhanced periodic checks with backoff and guards
+  // ✅ Enhanced periodic checks with backoff and guards
   private setupPeriodicChecks(): void {
     const isDev =
       import.meta.env?.DEV === true || import.meta.env?.MODE === "development";
 
-    const intervalMs = isDev ? 60_000 : 30 * 60_000;
+    // ✅ Longer intervals to prevent excessive checking
+    const intervalMs = isDev ? 60_000 : 30 * 60_000; // 1m dev, 30m prod
     let consecutiveFailures = 0;
 
     const doUpdateCheck = async () => {
+      // ✅ Skip if update is pending or just reloaded
       if (
         this.hasUpdate ||
         sessionStorage.getItem(PWAManager.RELOAD_GUARD_KEY)
@@ -376,7 +331,7 @@ export class PWAManager {
 
       try {
         await this.registration?.update();
-        consecutiveFailures = 0;
+        consecutiveFailures = 0; // Reset on success
       } catch (error) {
         consecutiveFailures++;
         console.warn(
@@ -384,33 +339,39 @@ export class PWAManager {
           error
         );
 
+        // ✅ Exponential backoff on failures
         if (consecutiveFailures > 3) {
           console.log("⚠️ Multiple update check failures, pausing checks");
           if (this.updateCheckInterval) {
             clearInterval(this.updateCheckInterval);
+            // Resume checks after 10 minutes
             setTimeout(() => this.setupPeriodicChecks(), 10 * 60_000);
           }
         }
       }
     };
 
+    // ✅ Clear existing interval
     if (this.updateCheckInterval) {
       clearInterval(this.updateCheckInterval);
     }
 
     this.updateCheckInterval = window.setInterval(doUpdateCheck, intervalMs);
 
+    // ✅ Check on focus, but with throttling
     let lastFocusCheck = 0;
     window.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") {
         const now = Date.now();
         if (now - lastFocusCheck > 30_000) {
+          // Throttle to 30s
           lastFocusCheck = now;
           doUpdateCheck();
         }
       }
     });
 
+    // ✅ Check when coming back online
     window.addEventListener("online", () => {
       if (!this.hasUpdate) {
         doUpdateCheck();
@@ -418,7 +379,7 @@ export class PWAManager {
     });
   }
 
-  // Safe update service worker with proper flow
+  // ✅ Safe update service worker with proper flow
   async updateServiceWorker(): Promise<void> {
     if (!this.registration?.waiting) {
       console.log("⚠️ No waiting service worker found");
@@ -430,10 +391,13 @@ export class PWAManager {
     try {
       console.log("🔄 Activating new service worker...");
 
+      // ✅ Set flag BEFORE sending skip waiting
       this.shouldReloadOnControllerChange = true;
 
+      // ✅ Send skip waiting message
       this.registration.waiting.postMessage({ type: "SKIP_WAITING" });
 
+      // ✅ Fallback: if controller doesn't change within 5 seconds, reload manually
       setTimeout(() => {
         if (this.shouldReloadOnControllerChange) {
           console.log("🔄 Manual reload fallback triggered");
@@ -450,7 +414,7 @@ export class PWAManager {
     }
   }
 
-  // Clear all caches
+  // ✅ Clear all caches
   async clearAllCaches(): Promise<void> {
     if (navigator.serviceWorker.controller) {
       try {
@@ -464,7 +428,7 @@ export class PWAManager {
     }
   }
 
-  // Setup message handling
+  // ✅ Setup message handling
   private setupMessageHandling(): void {
     navigator.serviceWorker.addEventListener("message", (event) => {
       if (event.data?.type === "REQUEST_PWA_CONFIG") {
@@ -484,16 +448,15 @@ export class PWAManager {
     });
   }
 
-  // ✅ Subscribe to update notifications with custom messages
+  // ✅ Subscribe to update notifications
   onUpdateAvailable(callback: (info: PWAUpdateInfo) => void): () => void {
     this.updateCallbacks.push(callback);
 
+    // If an update is already known, notify new subscribers immediately
     if (this.hasUpdate && !this.updateDismissed) {
       const info: PWAUpdateInfo = {
         updateAvailable: true,
         registration: this.registration || undefined,
-        title: this.messages.update?.title,
-        message: this.messages.update?.message,
       };
       try {
         callback(info);
@@ -502,6 +465,7 @@ export class PWAManager {
       }
     }
 
+    // Return unsubscribe function
     return () => {
       const index = this.updateCallbacks.indexOf(callback);
       if (index > -1) {
@@ -510,17 +474,16 @@ export class PWAManager {
     };
   }
 
-  // ✅ Subscribe to install notifications with custom messages
+  // ✅ Subscribe to install notifications
   onInstallAvailable(callback: (info: PWAInstallInfo) => void): () => void {
     this.installCallbacks.push(callback);
 
+    // Notify immediately if install is available
     if (this.canInstall()) {
       try {
         callback({
           canInstall: true,
           promptEvent: this.installPromptEvent || undefined,
-          title: this.messages.install?.title,
-          message: this.messages.install?.message,
         });
       } catch (error) {
         console.error("❌ Install callback error:", error);
@@ -535,10 +498,11 @@ export class PWAManager {
     };
   }
 
-  // Subscribe to offline status changes
+  // ✅ Subscribe to offline status changes
   onOfflineStatusChange(callback: (isOffline: boolean) => void): () => void {
     this.offlineCallbacks.push(callback);
 
+    // Notify immediately with current status
     try {
       callback(this.isOfflineState);
     } catch (error) {
@@ -553,15 +517,13 @@ export class PWAManager {
     };
   }
 
-  // ✅ Notify update callbacks with custom messages
+  // ✅ Notify update callbacks
   private notifyUpdateAvailable(): void {
     this.hasUpdate = true;
     this.updateDismissed = false;
     const info: PWAUpdateInfo = {
       updateAvailable: true,
       registration: this.registration || undefined,
-      title: this.messages.update?.title,
-      message: this.messages.update?.message,
     };
 
     this.updateCallbacks.forEach((callback) => {
@@ -573,20 +535,18 @@ export class PWAManager {
     });
   }
 
-  // Mark update as dismissed
+  // ✅ Mark update as dismissed
   clearUpdateFlag(): void {
     this.hasUpdate = false;
     this.updateDismissed = true;
     console.log("✅ Update flag cleared");
   }
 
-  // ✅ Notify install callbacks with custom messages
+  // ✅ Notify install callbacks
   private notifyInstallAvailable(): void {
     const info: PWAInstallInfo = {
       canInstall: this.canInstall(),
       promptEvent: this.installPromptEvent || undefined,
-      title: this.messages.install?.title,
-      message: this.messages.install?.message,
     };
 
     this.installCallbacks.forEach((callback) => {
@@ -598,11 +558,11 @@ export class PWAManager {
     });
   }
 
-  // Check online status with fetch test
+  // ✅ Check online status with fetch test
   private async checkOnlineStatus(): Promise<void> {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
 
       const response = await fetch(`/vite.svg?_=${Date.now()}`, {
         method: "HEAD",
@@ -618,7 +578,7 @@ export class PWAManager {
     }
   }
 
-  // Notify offline status callbacks
+  // ✅ Notify offline status callbacks
   private notifyOnlineStatus(isOffline: boolean): void {
     if (this.isOfflineState === isOffline) return;
 
@@ -634,13 +594,11 @@ export class PWAManager {
     });
   }
 
-  // Enhanced notification with guards
+  // ✅ Enhanced notification with guards
   private notifyUpdateCallbacks(): void {
     const info: PWAUpdateInfo = {
       updateAvailable: this.hasUpdate && !this.updateDismissed,
       registration: this.registration || undefined,
-      title: this.messages.update?.title,
-      message: this.messages.update?.message,
     };
 
     this.updateCallbacks.forEach((callback) => {
@@ -652,20 +610,21 @@ export class PWAManager {
     });
   }
 
-  // Check if update is available
+  // ✅ Check if update is available
   isUpdateAvailable(): boolean {
     const waiting = !!this.registration?.waiting;
     const available = this.hasUpdate || waiting;
     return available && !this.updateDismissed;
   }
 
-  // Cleanup method
+  // ✅ Cleanup method
   destroy(): void {
     if (this.updateCheckInterval) {
       clearInterval(this.updateCheckInterval);
       this.updateCheckInterval = null;
     }
 
+    // Clear all callbacks
     this.updateCallbacks = [];
     this.installCallbacks = [];
     this.offlineCallbacks = [];
@@ -674,10 +633,10 @@ export class PWAManager {
   }
 }
 
-// Global instance
+// ✅ Global instance
 export const pwaManager = new PWAManager();
 
-// Initialization function
+// ✅ Initialization function
 export const initializePWA = async (config?: PWAConfig): Promise<void> => {
   if (config) {
     pwaManager.setConfig(config);
@@ -691,4 +650,5 @@ export const initializePWA = async (config?: PWAConfig): Promise<void> => {
   }
 };
 
+// ✅ Default export
 export default PWAManager;
