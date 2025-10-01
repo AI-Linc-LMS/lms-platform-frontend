@@ -7,6 +7,7 @@ export interface CourseData {
   description: string;
   slug: string; // Required field
   difficulty_level?: string; // Valid values: 'Easy', 'Medium', 'Hard'
+  rating?: number; // Course rating 0-5
   is_pro?: boolean;
   [key: string]: string | number | boolean | undefined; // More specific type for index signature
 }
