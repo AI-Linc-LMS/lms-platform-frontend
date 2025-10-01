@@ -269,6 +269,8 @@ export class PWAManager {
 
     try {
       await this.installPromptEvent.prompt();
+      this.installPromptEvent.title = this.messages.install?.title;
+      this.installPromptEvent.message = this.messages.install?.message;
       const choiceResult = await this.installPromptEvent.userChoice;
 
       if (choiceResult.outcome === "accepted") {
