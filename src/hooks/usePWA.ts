@@ -34,21 +34,23 @@ export const usePWA = (): PWAState => {
 
   // Handle install prompt
   const install = useCallback(async (): Promise<boolean> => {
-    if (!canInstall || isInstalling) return false;
-
-    // Check manifest link
-    const manifestLink = document.querySelector(
-      'link[rel="manifest"]'
-    ) as HTMLLinkElement;
-    if (!manifestLink || !manifestLink.href) {
-      console.warn("No manifest found to use for install.");
-    } else {
-      console.log("Using manifest:", manifestLink.href);
-      // Optionally you could refresh or cache-bust the manifest here
+    if (!canInstall || isInstalling) {
+      return false;
     }
 
     setIsInstalling(true);
     try {
+      const manifestLink = document.querySelector(
+        'link[rel="manifest"]'
+      ) as HTMLLinkElement;
+      if (!manifestLink || !manifestLink.href) {
+        console.warn("No manifest found to use for install.");
+      } else {
+        console.log("Using manifest:", manifestLink.href);
+        // Optionally you could refresh or cache-bust the manifest here
+      }
+
+      setIsInstalling(true);
       const result = await pwaManager.showInstallPrompt();
       if (result) {
         setCanInstall(false);
