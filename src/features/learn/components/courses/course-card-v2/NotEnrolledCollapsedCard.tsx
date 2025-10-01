@@ -1,7 +1,7 @@
 import React from "react";
 import { Course } from "../../../types/final-course.types";
 // import { useNavigate } from "react-router-dom";
-import { formatPrice } from "./utils/courseDataUtils";
+import { formatPrice, getEffectiveRating, getEffectiveDifficulty, getEffectiveDuration } from "./utils/courseDataUtils";
 import { CompanyLogosSection } from "./components";
 
 // Enhanced 3D Star Rating Component
@@ -70,9 +70,18 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
   // };
   const formattedPrice = formatPrice(course?.price || "0");
   const isFree = course?.is_free === true || formattedPrice === "0";
-  const courseRating = course?.rating || 4.8;
-  const courseLevel = course?.difficulty_level;
-  const courseDuration = course?.duration_in_hours;
+  const courseRating = (() => {
+    const effectiveRating = getEffectiveRating(course);
+    console.log(`[NotEnrolledCollapsed] Course ${course.id} (${course.title}): backend_rating=${course.rating}, effective=${effectiveRating}`);
+    return effectiveRating;
+  })();
+  
+  const courseDifficulty = (() => {
+    const effectiveDifficulty = getEffectiveDifficulty({ id: course.id, difficulty_level: course.difficulty_level });
+    console.log(`[NotEnrolledCollapsed] Course ${course.id} (${course.title}): backend_difficulty=${course.difficulty_level}, effective=${effectiveDifficulty}`);
+    return effectiveDifficulty;
+  })();
+  const courseDuration = getEffectiveDuration({ id: course.id, duration_in_hours: course.duration_in_hours });
 
   return (
     <div
@@ -106,7 +115,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
         </div>
 
         {/* Company Logos */}
-        <CompanyLogosSection />
+        <CompanyLogosSection course={course} />
       </div>
 
       {/* Content Section - Matching EnrolledCollapsedCard structure */}
@@ -121,7 +130,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
             >
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
-            {courseLevel}
+            {courseDifficulty}
           </span>
           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-full text-xs font-medium text-gray-700 whitespace-nowrap">
             <svg
@@ -133,7 +142,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
               <circle cx="12" cy="12" r="10" />
               <polyline points="12,6 12,12 16,14" />
             </svg>
-            {courseDuration}
+            {courseDuration} hours
           </span>
           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-full text-xs font-medium text-yellow-800 whitespace-nowrap">
             {isFree ? "Free" : `₹${formattedPrice}`}

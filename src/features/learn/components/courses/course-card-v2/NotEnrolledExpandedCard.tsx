@@ -3,9 +3,8 @@ import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
 import {
   InstructorSection,
-  WhatsIncludedSection,
 } from "./EnrolledExpandedCard";
-import { formatPrice } from "./utils/courseDataUtils";
+import { formatPrice, getEffectiveRating, getEffectiveDifficulty, getEffectiveStudentStats, getEffectiveJobPlacement, getEffectiveFeatures, getEffectiveCourseTags, getEffectiveRequirements, getEffectiveWhatsIncluded, getEffectiveLearningObjectives, getEffectiveDuration } from "./utils/courseDataUtils";
 import { CompanyLogosSection } from "./components";
 import {
   PaymentType,
@@ -91,9 +90,17 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
 
   const formattedPrice = formatPrice(course?.price || "0");
   const isFree = course?.is_free === true || formattedPrice === "0";
-  const courseLevel = course?.difficulty_level;
-  const courseDuration = course?.duration_in_hours;
-  const courseRating = course?.rating || 4.8;
+  const courseDuration = getEffectiveDuration({ id: course.id, duration_in_hours: course.duration_in_hours });
+  const courseRating = (() => {
+    const effectiveRating = getEffectiveRating(course);
+    console.log(`[NotEnrolledExpanded] Course ${course.id} (${course.title}): backend_rating=${course.rating}, effective=${effectiveRating}`);
+    return effectiveRating;
+  })();
+  const courseDifficulty = (() => {
+    const effectiveDifficulty = getEffectiveDifficulty({ id: course.id, difficulty_level: course.difficulty_level });
+    console.log(`[NotEnrolledExpanded] Course ${course.id} (${course.title}): backend_difficulty=${course.difficulty_level}, effective=${effectiveDifficulty}`);
+    return effectiveDifficulty;
+  })();
 
   const user = useSelector((state: { user: UserState }) => state.user);
 
@@ -200,20 +207,22 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
               setTimeout(() => {
                 try {
                   navigate(`/courses/${course?.id}`);
-                } catch (error) {
-                  //console.error("Error showing success modal:", error);
+                } catch (navigationError) {
+                  console.warn("Error navigating to course:", navigationError);
                 }
               }, 900);
             }
-          } catch (error) {
-            //console.error("Payment verification error:", error);
+          } catch (verificationError) {
+            console.warn("Payment verification error:", verificationError);
           }
         },
         modal: {
           ondismiss: function () {
             try {
               navigate(`/courses`);
-            } catch (error) {}
+            } catch (dismissError) {
+              console.warn("Error navigating on dismiss:", dismissError);
+            }
           },
         },
         prefill: {
@@ -228,8 +237,8 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
       // Type assertion to handle Razorpay on window object
       const rzp = new window.Razorpay(options);
       rzp.open();
-    } catch (error) {
-      //console.error("Payment error:", error);
+    } catch (paymentError) {
+      console.warn("Payment error:", paymentError);
     }
   };
 
@@ -263,7 +272,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
         </div>
 
         {/* Company Logos */}
-        <CompanyLogosSection />
+        <CompanyLogosSection course={course} />
       </div>
 
       {/* Course Info Pills */}
@@ -277,7 +286,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
             >
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
-            {courseLevel}
+            {courseDifficulty}
           </span>
           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-full text-xs font-medium text-gray-700 whitespace-nowrap">
             <svg
@@ -289,7 +298,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
               <circle cx="12" cy="12" r="10" />
               <polyline points="12,6 12,12 16,14" />
             </svg>
-            {courseDuration}
+            {courseDuration} hours
           </span>
           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-full text-xs font-medium text-yellow-800 whitespace-nowrap">
             {isFree ? "Free" : `₹${formattedPrice}`}
@@ -325,18 +334,13 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
           </p>
         </div>
 
-        {/* Course Outcomes */}
+        {/* Course Outcomes - Using Centralized Logic */}
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">
             What you'll learn:
           </h3>
           <ul className="space-y-2">
-            {[
-              "Learn to build dashboards recruiters love to see in resumes",
-              "Master the most in-demand BI tool in just 20 hours",
-              "Used by 90% of Fortune 500 companies",
-              "Boost your analytics career with real-world skills",
-            ].map((outcome, index) => (
+            {getEffectiveLearningObjectives(course).map((outcome, index) => (
               <li
                 key={index}
                 className="flex items-start gap-3 text-sm text-gray-600"
@@ -350,18 +354,16 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
           </ul>
         </div>
 
-        {/* Feature Badges */}
+        {/* Course Tags */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {["Career Boost", "Hands-On Projects", "Industry Certificate"].map(
-            (badge, index) => (
-              <div
-                key={index}
-                className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-[var(--font-light)] rounded-full text-xs font-semibold whitespace-nowrap"
-              >
-                {badge}
-              </div>
-            )
-          )}
+          {getEffectiveCourseTags(course).map((tag, index) => (
+            <div
+              key={index}
+              className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full text-xs font-semibold whitespace-nowrap"
+            >
+              {tag}
+            </div>
+          ))}
         </div>
 
         {/* Rating Section */}
@@ -369,7 +371,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
           <StarRating rating={courseRating} size="text-sm" />
           <span className="text-sm font-semibold text-gray-700">
             {courseRating}/5 rating from{" "}
-            {course.enrolled_students?.total || 500}+ learners
+            {getEffectiveStudentStats(course).totalLearners}+ learners
           </span>
         </div>
 
@@ -392,10 +394,10 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
             ))}
           </div>
           <p className="text-xs text-gray-600 font-medium leading-relaxed">
-            Join {course.enrolled_students?.total || 500}+ learners who landed
+            Join {getEffectiveJobPlacement(course).totalLearners}+ learners who landed
             jobs at
             <br />
-            Deloitte, TCS & Accenture with these skills
+            {getEffectiveJobPlacement(course).companies.join(', ')} with these skills
           </p>
         </div>
 
@@ -404,18 +406,13 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
           <InstructorSection course={course} />
         </div>
 
-        {/* What's Included */}
+        {/* What's Included - Using Centralized Logic */}
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h4 className="flex items-center gap-2 text-sm font-semibold text-blue-800 mb-3">
             🎁 What's Included:
           </h4>
           <ul className="space-y-2">
-            {[
-              "Real datasets & project templates",
-              "Free resume template for Data Analyst roles",
-              "Lifetime access to course materials",
-              "Certificate of completion",
-            ].map((item, index) => (
+            {getEffectiveWhatsIncluded(course).map((item, index) => (
               <li
                 key={index}
                 className="flex items-center gap-3 text-xs text-blue-800"
@@ -427,8 +424,25 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
           </ul>
         </div>
 
-        {/* What's Included from props */}
-        <WhatsIncludedSection course={course} />
+        {/* Course Features - Using Centralized Logic */}
+        <div className="mb-4">
+          <FeaturesSection course={course} />
+        </div>
+
+        {/* Course Requirements */}
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <h4 className="text-sm font-semibold text-yellow-800 mb-2">
+            📋 Requirements:
+          </h4>
+          <div className="space-y-2">
+            {getEffectiveRequirements(course).map((requirement, index) => (
+              <p key={index} className="text-xs text-yellow-800 leading-relaxed flex items-start gap-2">
+                <span className="text-yellow-600 mt-1">•</span>
+                <span>{requirement}</span>
+              </p>
+            ))}
+          </div>
+        </div>
 
         {/* Action Buttons */}
         <IconActionsNotEnrolledSection />
@@ -441,9 +455,11 @@ export default NotEnrolledExpandedCard;
 
 // Enhanced FeaturesSection
 export const FeaturesSection: React.FC<{ course: Course }> = ({ course }) => {
+  const effectiveFeatures = getEffectiveFeatures(course);
+  
   return (
     <div>
-      {course.features && course.features.length > 0 && (
+      {effectiveFeatures && effectiveFeatures.length > 0 && (
         <div className="mb-4 bg-white border border-gray-200 p-4 rounded-lg shadow-sm">
           <div className="flex items-center gap-2 mb-3">
             <svg
@@ -464,7 +480,7 @@ export const FeaturesSection: React.FC<{ course: Course }> = ({ course }) => {
             </h3>
           </div>
           <div className="space-y-2 text-sm">
-            {course.features.slice(0, 4).map((feature, index) => (
+            {effectiveFeatures.slice(0, 6).map((feature, index) => (
               <div className="flex items-start gap-2" key={index}>
                 <svg
                   className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5"
@@ -482,9 +498,9 @@ export const FeaturesSection: React.FC<{ course: Course }> = ({ course }) => {
                 <span className="text-gray-600 leading-relaxed">{feature}</span>
               </div>
             ))}
-            {course.features.length > 4 && (
+            {effectiveFeatures.length > 6 && (
               <div className="text-xs text-gray-500 mt-2 pl-6">
-                +{course.features.length - 4} more features
+                +{effectiveFeatures.length - 6} more features
               </div>
             )}
           </div>

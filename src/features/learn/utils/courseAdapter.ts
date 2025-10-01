@@ -1,4 +1,5 @@
 import { Course } from "../types/course.types";
+import { getEffectiveRating, getEffectiveDifficulty } from "../components/courses/course-card-v2/utils/courseDataUtils";
 
 interface ApiCourse {
   id: number;
@@ -24,13 +25,20 @@ export const adaptCourses = (courses: ApiCourse[]): Course[] => {
       ...(course as unknown as Course), // Safe cast since we're adding missing fields
       // Add sample data for demonstration if not present in API
       categories: course.categories || getDemoCategories(course.title),
-      level: course.level || getDemoLevel(course.id),
+      level: (() => {
+        const effectiveDifficulty = getEffectiveDifficulty({ id: course.id, difficulty_level: course.level });
+        console.log(`[CourseAdapter] Course ${course.id} (${course.title}): backend_difficulty=${course.level}, effective=${effectiveDifficulty}`);
+        return effectiveDifficulty;
+      })(),
       price:
         course.price !== undefined
           ? Number(course.price)
           : getDemoPrice(course.id),
-      rating:
-        course.rating !== undefined ? course.rating : getDemoRating(course.id),
+      rating: (() => {
+        const effectiveRating = getEffectiveRating({ id: course.id, rating: course.rating });
+        console.log(`[CourseAdapter] Course ${course.id} (${course.title}): backend_rating=${course.rating}, effective=${effectiveRating}`);
+        return effectiveRating;
+      })(),
     };
 
     return adaptedCourse;
@@ -159,18 +167,9 @@ function getDemoCategories(title: string): string[] {
   return categories;
 }
 
-function getDemoLevel(id: number): string {
-  // Use course ID to deterministically assign a level
-  const levels = ["beginner", "intermediate", "pro"];
-  return levels[id % 3];
-}
+// getDemoLevel function removed - using centralized difficulty logic from courseDataUtils
 
 function getDemoPrice(id: number): number {
   // Even IDs are free, odd IDs are paid
   return id % 2 === 0 ? 0 : 29.99 + (id % 5) * 10;
-}
-
-function getDemoRating(id: number): number {
-  // Generate a rating between 2.5 and 5.0
-  return 2.5 + (id % 6) * 0.5;
 }
