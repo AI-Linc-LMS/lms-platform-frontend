@@ -2,8 +2,6 @@
  * PWA Service Worker Registration and Management - Complete with Custom Prompts
  */
 
-import showInAppInstallPromotion from "./installApp";
-
 export interface PWAUpdateInfo {
   updateAvailable: boolean;
   registration?: ServiceWorkerRegistration;
@@ -236,20 +234,12 @@ export class PWAManager {
 
   // Setup install prompt handling
   private setupInstallPrompt(): void {
-    //eslint-disable-next-line
-    let deferredPrompt;
     window.addEventListener("beforeinstallprompt", (e) => {
-      // Prevents the default mini-infobar or install dialog from appearing on mobile
       e.preventDefault();
-      // Save the event because you'll need to trigger it later.
-      deferredPrompt = e;
-      // Show your customized install prompt for your PWA
-      // Your own UI doesn't have to be a single element, you
-      // can have buttons in different locations, or wait to prompt
-      // as part of a critical journey.
-      showInAppInstallPromotion();
+      this.installPromptEvent = e as BeforeInstallPromptEvent;
+      this.notifyInstallAvailable();
     });
-    console.log(deferredPrompt);
+
     window.addEventListener("appinstalled", () => {
       console.log("🎉 PWA installed successfully");
       this.installPromptEvent = null;
