@@ -9,9 +9,8 @@ export function showInAppInstallPromotion() {
   const handleInstall = async () => {
     console.log("📱 User clicked install button");
     const installed = await pwaManager.showInstallPrompt();
-    if (installed) {
-      setShowInstallPrompt(false);
-    }
+
+    setShowInstallPrompt(installed ? false : true);
   };
 
   const dismissInstall = () => {
