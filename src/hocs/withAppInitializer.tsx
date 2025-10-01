@@ -361,6 +361,13 @@ const withAppInitializer = <P extends object>(
               document.head.appendChild(link);
             }
             link.href = manifestURL;
+
+            // ✅ Dispatch event for PWA manager
+            window.dispatchEvent(
+              new CustomEvent("manifest-updated", {
+                detail: { manifest, url: manifestURL },
+              })
+            );
           } else {
             setIsInactive(true);
           }
