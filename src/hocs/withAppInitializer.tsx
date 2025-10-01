@@ -30,7 +30,7 @@ const withAppInitializer = <P extends object>(
       faviconSizes.forEach((size) => {
         const icon = document.createElement("link");
         icon.rel = "icon";
-        icon.sizes = size;
+        icon.setAttribute("sizes", size); // ✅ type-safe fix
         icon.type = url?.endsWith(".svg") ? "image/svg+xml" : "image/png";
         icon.href = cacheBuster;
         document.head.appendChild(icon);
@@ -46,7 +46,7 @@ const withAppInitializer = <P extends object>(
       appleSizes.forEach((size) => {
         const appleIcon = document.createElement("link");
         appleIcon.rel = "apple-touch-icon";
-        appleIcon.sizes = size;
+        appleIcon.setAttribute("sizes", size); // ✅ type-safe fix
         appleIcon.href = cacheBuster;
         document.head.appendChild(appleIcon);
       });
@@ -73,11 +73,12 @@ const withAppInitializer = <P extends object>(
             setResponse(result);
             /* Primary Colors */
             document.title = result.name || "AI Linc|App";
+
+            setAppIcons(result.app_icon_url);
             if (
               result.theme_settings &&
               Object.keys(result.theme_settings).length > 0
             ) {
-              setAppIcons(result.app_icon_url);
               document.body.style.setProperty(
                 "--primary-50",
                 result.theme_settings.primary50
