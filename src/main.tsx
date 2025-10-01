@@ -11,7 +11,7 @@ import withAppInitializer from "./hocs/withAppInitializer.tsx";
 const AppWithInitializer = withAppInitializer(App);
 import { store } from "./redux/store";
 import { UserActivityProvider } from "./contexts/UserActivityContext";
-import { initializePWA, pwaManager } from "./pwa";
+import { initializePWA } from "./pwa";
 import theme from "./styles/theme.ts";
 
 import { registerSW } from "virtual:pwa-register";
@@ -27,36 +27,10 @@ const queryClient = new QueryClient({
   },
 });
 
-// initializePWA({
-//   clientId: import.meta.env.VITE_CLIENT_ID,
-//   baseURL: import.meta.env.VITE_API_URL,
-//   environment: import.meta.env.MODE,
-// });
-
-// Initialize PWA with config
 initializePWA({
   clientId: import.meta.env.VITE_CLIENT_ID,
   baseURL: import.meta.env.VITE_API_URL,
   environment: import.meta.env.MODE,
-});
-
-// Set custom messages
-pwaManager.setMessages({
-  update: {
-    title: "🎉 New Features Available",
-    message:
-      "We've added exciting new features and performance improvements. Update now to try them out!",
-  },
-  install: {
-    title: "📱 Get the App",
-    message:
-      "Install our app for faster access, offline support, and a native app experience.",
-  },
-  offline: {
-    title: "⚠️ Connection Lost",
-    message:
-      "You're currently offline. Don't worry, your work is saved locally.",
-  },
 });
 
 createRoot(document.getElementById("root")!).render(
