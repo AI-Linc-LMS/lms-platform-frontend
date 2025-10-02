@@ -122,7 +122,7 @@ const TopNav: React.FC = () => {
     <div className="w-full bg-[var(--nav-background)] md:bg-white flex justify-between md:justify-end items-center px-4 py-4 mb-3 shadow-[0_1px_10px_rgba(0,0,0,0.05)] md:shadow border-b border-gray-200 md:border-b-0">
       <div className="md:hidden">
         <img
-          src={clientInfo.data?.app_logo_url}
+          src={clientInfo.data?.app_icon_url}
           alt={clientInfo.data?.name}
           className="h-8 w-auto cursor-pointer"
           onClick={() => navigate("/")}
