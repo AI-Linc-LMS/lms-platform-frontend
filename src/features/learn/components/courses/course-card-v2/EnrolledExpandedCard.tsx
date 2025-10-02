@@ -3,7 +3,7 @@ import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
 import { FileText, PlayCircle, Play, Trophy } from "lucide-react";
 import { calculateCourseProgress } from "../../../utils/progressUtils";
-import { getEffectiveWhatsIncluded, getEffectiveInstructors } from "./utils/courseDataUtils";
+import { getEffectiveWhatsIncluded } from "./utils/courseDataUtils";
 import {
   AchievementSection,
   ContentMetricsSection,
@@ -15,6 +15,7 @@ import {
   NextUpSection,
   NextLessonSection,
 } from "./components";
+import { format, subDays } from "date-fns";
 
 interface EnrolledExpandedCardProps {
   course: Course;
@@ -35,6 +36,40 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
 
   const handlePrimaryClick = () => {
     navigate(`/courses/${course.id}`);
+  };
+
+  const StreakTracker = ({ streak }: { streak: Record<string, boolean> }) => {
+    if (streak) {
+      // Get the last 7 days (ending today)
+      const last7Days = Array.from({ length: 7 })
+        .map((_, i) => subDays(new Date(), 6 - i)) // oldest to newest
+        .map((date) => ({
+          label: format(date, "EEEEE"), // "M", "T", "W", ...
+          date: format(date, "yyyy-MM-dd"), // match streak keys
+        }));
+
+      return (
+        <div className="flex gap-1 justify-center overflow-hidden">
+          {last7Days.map(({ label, date }) => {
+            const achieved = streak?.[date] ?? false;
+            return (
+              <div
+                key={date}
+                className={`w-4 h-4 sm:w-5 sm:h-5 rounded flex items-center justify-center text-[9px] sm:text-[10px] font-semibold flex-shrink-0
+              ${
+                achieved
+                  ? "bg-[#10b981] text-[var(--font-light)]"
+                  : "bg-[#f3f4f6] text-[var(--font-secondary)]"
+              }`}
+              >
+                {label}
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+    return null;
   };
 
   return (
@@ -169,7 +204,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
         </div>
 
         {/* Achievements Section */}
-        <AchievementSection />
+        <AchievementSection achievements={course.achievements} />
 
         {/* Next Lesson */}
         <NextLessonSection
@@ -198,7 +233,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-base sm:text-lg font-bold text-[#92400e] leading-none">
-                {course.streak ?? 0}
+                {course.streak_count ?? 0}
               </span>
               <span className="text-[9px] sm:text-[10px] text-[#a16207] font-medium uppercase tracking-[0.3px]">
                 Day Streak
@@ -206,20 +241,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
             </div>
           </div>
           {/* MOBILE OPTIMIZED: Week display */}
-          <div className="flex gap-1 justify-center overflow-hidden">
-            {["M", "T", "W", "T", "F", "S", "S"].map((day, index) => (
-              <div
-                key={index}
-                className={`w-4 h-4 sm:w-5 sm:h-5 rounded flex items-center justify-center text-[9px] sm:text-[10px] font-semibold flex-shrink-0 ${
-                  index < (course?.streak ?? 0)
-                    ? "bg-[#10b981] text-[var(--font-light)]"
-                    : "bg-[#f3f4f6] text-[var(--font-secondary)]"
-                }`}
-              >
-                {day}
-              </div>
-            ))}
-          </div>
+          <StreakTracker streak={course.streak || {}} />
         </div>
 
         {/* MOBILE OPTIMIZED: Instructors Section */}
@@ -268,49 +290,6 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
 export default EnrolledExpandedCard;
 
 // MOBILE OPTIMIZED: InstructorSection
-export const InstructorSection = ({ course }: { course: Course }) => {
-  const effectiveInstructors = getEffectiveInstructors(course);
-  
-  return (
-    <div>
-      {effectiveInstructors && effectiveInstructors.length > 0 && (
-        <div className="mb-3 overflow-hidden">
-          <h3 className="text-[var(--neutral-400)] font-semibold text-xs mb-2">
-            Instructors:
-          </h3>
-          <div className="flex items-center gap-2">
-            <div className="flex -space-x-1 sm:-space-x-2">
-              {effectiveInstructors.slice(0, 3).map((instructor, index) => (
-                <div
-                  key={instructor.id || index}
-                  className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-300 border-2 border-white overflow-hidden flex-shrink-0"
-                >
-                  <img
-                    src={instructor.profile_pic_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(instructor.name)}&background=6366f1&color=fff`}
-                    alt={instructor.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(instructor.name)}&background=6366f1&color=fff`;
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="text-xs min-w-0">
-              <p className="font-medium text-[var(--neutral-400)] truncate">
-                {effectiveInstructors[0]?.name || "Expert Instructor"}
-              </p>
-              <p className="text-[var(--neutral-300)] text-xs">
-                Lead instructor
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 // MOBILE OPTIMIZED: NextLessionSection
 export const NextLessionSection = ({ course }: { course: Course }) => {
@@ -343,7 +322,7 @@ export const NextLessionSection = ({ course }: { course: Course }) => {
 // MOBILE OPTIMIZED: WhatsIncludedSection
 export const WhatsIncludedSection = ({ course }: { course: Course }) => {
   const effectiveWhatsIncluded = getEffectiveWhatsIncluded(course);
-  
+
   return (
     <div>
       {effectiveWhatsIncluded && effectiveWhatsIncluded.length > 0 && (

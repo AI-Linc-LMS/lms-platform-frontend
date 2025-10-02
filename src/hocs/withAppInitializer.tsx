@@ -335,12 +335,12 @@ const withAppInitializer = <P extends object>(
               id: "/",
               icons: [
                 {
-                  src: result.app_icon_url || "/pwa-192x192.png",
+                  src: result.app_icon_url ||`${origin}/pwa-192x192.png`,
                   sizes: "192x192",
                   type: "image/png",
                 },
                 {
-                  src: result.app_icon_url || "/pwa-512x512.png",
+                  src: result.app_icon_url || `${origin}/pwa-512x512.png`,
                   sizes: "512x512",
                   type: "image/png",
                 },
