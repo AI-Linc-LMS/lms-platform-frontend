@@ -1,18 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
-import { pwaManager, PWAUpdateInfo, PWAInstallInfo } from '../pwa';
+import { useState, useEffect, useCallback } from "react";
+import { pwaManager, PWAUpdateInfo, PWAInstallInfo } from "../pwa";
 
 export interface PWAState {
   // Installation state
   canInstall: boolean;
   isInstalling: boolean;
-  
+
   // Update state
   updateAvailable: boolean;
   isUpdating: boolean;
-  
+
   // Offline state
   isOffline: boolean;
-  
+
   // Actions
   install: () => Promise<boolean>;
   update: () => Promise<void>;
@@ -26,7 +26,9 @@ export interface PWAState {
 export const usePWA = (): PWAState => {
   const [canInstall, setCanInstall] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
-  const [updateAvailable, setUpdateAvailable] = useState(() => pwaManager.isUpdateAvailable());
+  const [updateAvailable, setUpdateAvailable] = useState(() =>
+    pwaManager.isUpdateAvailable()
+  );
   const [isUpdating, setIsUpdating] = useState(false);
   const [isOffline, setIsOffline] = useState(() => pwaManager.isOffline());
 
@@ -38,13 +40,24 @@ export const usePWA = (): PWAState => {
 
     setIsInstalling(true);
     try {
+      const manifestLink = document.querySelector(
+        'link[rel="manifest"]'
+      ) as HTMLLinkElement;
+      if (!manifestLink || !manifestLink.href) {
+        console.warn("No manifest found to use for install.");
+      } else {
+        console.log("Using manifest:", manifestLink.href);
+        // Optionally you could refresh or cache-bust the manifest here
+      }
+
+      setIsInstalling(true);
       const result = await pwaManager.showInstallPrompt();
       if (result) {
         setCanInstall(false);
       }
       return result;
     } catch (error) {
-      console.error('Error during installation:', error);
+      console.error("Error during installation:", error);
       return false;
     } finally {
       setIsInstalling(false);
@@ -62,7 +75,7 @@ export const usePWA = (): PWAState => {
       await pwaManager.updateServiceWorker();
       // The page will reload automatically after update
     } catch (error) {
-      console.error('Error during update:', error);
+      console.error("Error during update:", error);
       setIsUpdating(false);
     }
   }, [updateAvailable, isUpdating]);
@@ -73,7 +86,9 @@ export const usePWA = (): PWAState => {
     // Persistently clear PWA-level update flag to avoid repeated prompts
     try {
       pwaManager.clearUpdateFlag?.();
-    } catch { /* no-op */ }
+    } catch {
+      /* no-op */
+    }
   }, []);
 
   // Dismiss install notification
@@ -84,21 +99,27 @@ export const usePWA = (): PWAState => {
   // Set up event listeners
   useEffect(() => {
     // Listen for install availability changes
-    const unsubscribeInstall = pwaManager.onInstallAvailable((info: PWAInstallInfo) => {
-      setCanInstall(info.canInstall);
-      setIsInstalling(false); // Reset installing state when install state changes
-    });
+    const unsubscribeInstall = pwaManager.onInstallAvailable(
+      (info: PWAInstallInfo) => {
+        setCanInstall(info.canInstall);
+        setIsInstalling(false); // Reset installing state when install state changes
+      }
+    );
 
     // Listen for update availability changes
-    const unsubscribeUpdate = pwaManager.onUpdateAvailable((info: PWAUpdateInfo) => {
-      setUpdateAvailable(info.updateAvailable);
-      setIsUpdating(false); // Reset updating state when update state changes
-    });
+    const unsubscribeUpdate = pwaManager.onUpdateAvailable(
+      (info: PWAUpdateInfo) => {
+        setUpdateAvailable(info.updateAvailable);
+        setIsUpdating(false); // Reset updating state when update state changes
+      }
+    );
 
     // Listen for offline status changes
-    const unsubscribeOffline = pwaManager.onOfflineStatusChange((offline: boolean) => {
-      setIsOffline(offline);
-    });
+    const unsubscribeOffline = pwaManager.onOfflineStatusChange(
+      (offline: boolean) => {
+        setIsOffline(offline);
+      }
+    );
 
     // Initial state check
     setCanInstall(pwaManager.canInstall());
@@ -169,7 +190,7 @@ export const usePWAInstall = () => {
       }
       return result;
     } catch (error) {
-      console.error('Error during installation:', error);
+      console.error("Error during installation:", error);
       return false;
     } finally {
       setIsInstalling(false);
@@ -177,10 +198,12 @@ export const usePWAInstall = () => {
   }, [canInstall, isInstalling]);
 
   useEffect(() => {
-    const unsubscribe = pwaManager.onInstallAvailable((info: PWAInstallInfo) => {
-      setCanInstall(info.canInstall);
-      setIsInstalling(false);
-    });
+    const unsubscribe = pwaManager.onInstallAvailable(
+      (info: PWAInstallInfo) => {
+        setCanInstall(info.canInstall);
+        setIsInstalling(false);
+      }
+    );
 
     setCanInstall(pwaManager.canInstall());
 

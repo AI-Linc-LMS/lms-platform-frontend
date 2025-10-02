@@ -21,6 +21,7 @@ interface Course {
   price: string;
   is_free: boolean;
   published: boolean;
+  rating?: number; // Course rating 0-5
   enrolled_students: {
     total: number;
     students_profile_pic: string[];
@@ -34,6 +35,17 @@ interface Course {
   };
   trusted_by: string[];
   thumbnail: string | null;
+  // Additional frontend fields
+  tags?: string[];
+  learning_objectives?: string;
+  requirements?: string;
+  whats_included?: string[];
+  features?: string[];
+  certificate_available?: boolean;
+  duration_in_hours?: number;
+  liked_by?: unknown[];
+  liked_count?: number;
+  is_liked_by_current_user?: boolean;
 }
 
 interface CourseFormData {

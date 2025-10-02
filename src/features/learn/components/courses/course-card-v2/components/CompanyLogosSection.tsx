@@ -1,45 +1,31 @@
 import React from "react";
-
-interface CompanyLogo {
-  name: string;
-  logoUrl: string;
-  alt: string;
-}
+import { CompanyLogo, getEffectiveCompanies } from "../utils/courseDataUtils";
 
 interface CompanyLogosProps {
+  course?: { id: number; companies?: string[] };
   companies?: CompanyLogo[];
 }
 
-const DEFAULT_COMPANIES: CompanyLogo[] = [
-  {
-    name: "Microsoft",
-    logoUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg",
-    alt: "Microsoft",
-  },
-  {
-    name: "IBM",
-    logoUrl: "https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg",
-    alt: "IBM",
-  },
-  {
-    name: "Cisco",
-    logoUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/0/08/Cisco_logo_blue_2016.svg",
-    alt: "Cisco",
-  },
-];
-
 export const CompanyLogosSection: React.FC<CompanyLogosProps> = ({
-  companies = DEFAULT_COMPANIES,
+  course,
+  companies,
 }) => {
+  // Use centralized logic to get effective companies
+  const effectiveCompanies = course 
+    ? (() => {
+        const companies = getEffectiveCompanies(course);
+        console.log(`[CompanyLogos] Course ${course.id}: effective_companies=${companies.map(c => c.name).join(', ')}`);
+        return companies;
+      })()
+    : companies || [];
+
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <span className="text-[11px] text-[var(--font-tertiary)] font-normal uppercase tracking-[0.5px]">
         Created and certified by
       </span>
       <div className="flex items-center gap-2 flex-wrap">
-        {companies.map((company) => (
+        {effectiveCompanies.map((company) => (
           <div
             key={company.name}
             className="flex items-center gap-1.5 px-2 py-1 bg-[#f8fafc] border border-[#e2e8f0] rounded-md text-[11px] font-semibold text-[#475569]"
