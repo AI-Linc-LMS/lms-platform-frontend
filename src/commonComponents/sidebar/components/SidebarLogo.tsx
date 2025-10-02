@@ -23,7 +23,11 @@ const SidebarLogoPart = ({
     >
       {clientInfo.data?.app_logo_url && (
         <img
-          src={clientInfo.data.app_logo_url}
+          src={
+            isExpanded
+              ? clientInfo.data.app_logo_url
+              : clientInfo.data.app_icon_url
+          }
           alt={`${clientInfo.data.name} logo`}
           className={`object-contain transition-all duration-300 ${
             isExpanded ? "h-10 w-auto" : "h-8 w-8"
