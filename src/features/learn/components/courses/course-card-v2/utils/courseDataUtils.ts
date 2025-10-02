@@ -1,18 +1,18 @@
 import { Course } from "../../../../types/final-course.types";
 
 // Storage utilities for cross-component persistence
-const RATING_STORAGE_KEY = 'course_ratings';
-const DIFFICULTY_STORAGE_KEY = 'course_difficulties';
-const COMPANIES_STORAGE_KEY = 'course_companies';
-const LEARNING_OBJECTIVES_STORAGE_KEY = 'course_learning_objectives';
-const STUDENT_STATS_STORAGE_KEY = 'course_student_stats';
-const JOB_PLACEMENT_STORAGE_KEY = 'course_job_placement';
-const WHATS_INCLUDED_STORAGE_KEY = 'course_whats_included';
-const COURSE_TAGS_STORAGE_KEY = 'course_tags';
-const COURSE_FEATURES_STORAGE_KEY = 'course_features';
-const COURSE_REQUIREMENTS_STORAGE_KEY = 'course_requirements';
-const COURSE_INSTRUCTORS_STORAGE_KEY = 'course_instructors';
-const COURSE_DURATION_STORAGE_KEY = 'course_duration_hours';
+const RATING_STORAGE_KEY = "course_ratings";
+const DIFFICULTY_STORAGE_KEY = "course_difficulties";
+const COMPANIES_STORAGE_KEY = "course_companies";
+const LEARNING_OBJECTIVES_STORAGE_KEY = "course_learning_objectives";
+const STUDENT_STATS_STORAGE_KEY = "course_student_stats";
+const JOB_PLACEMENT_STORAGE_KEY = "course_job_placement";
+const WHATS_INCLUDED_STORAGE_KEY = "course_whats_included";
+const COURSE_TAGS_STORAGE_KEY = "course_tags";
+const COURSE_FEATURES_STORAGE_KEY = "course_features";
+const COURSE_REQUIREMENTS_STORAGE_KEY = "course_requirements";
+const COURSE_INSTRUCTORS_STORAGE_KEY = "course_instructors";
+const COURSE_DURATION_STORAGE_KEY = "course_duration_hours";
 
 // Export storage keys for external access
 export { COURSE_TAGS_STORAGE_KEY };
@@ -26,7 +26,7 @@ export const getStoredRating = (courseId: number): number | null => {
       return ratings[courseId] || null;
     }
   } catch (error) {
-    console.warn('Error reading stored ratings:', error);
+    console.warn("Error reading stored ratings:", error);
   }
   return null;
 };
@@ -38,7 +38,7 @@ export const setStoredRating = (courseId: number, rating: number): void => {
     ratings[courseId] = rating;
     localStorage.setItem(RATING_STORAGE_KEY, JSON.stringify(ratings));
   } catch (error) {
-    console.warn('Error storing rating:', error);
+    console.warn("Error storing rating:", error);
   }
 };
 
@@ -51,23 +51,31 @@ export const getStoredDifficulty = (courseId: number): string | null => {
       return difficulties[courseId] || null;
     }
   } catch (error) {
-    console.warn('Error reading stored difficulties:', error);
+    console.warn("Error reading stored difficulties:", error);
   }
   return null;
 };
 
-export const setStoredDifficulty = (courseId: number, difficulty: string): void => {
+export const setStoredDifficulty = (
+  courseId: number,
+  difficulty: string
+): void => {
   try {
     const storedDifficulties = localStorage.getItem(DIFFICULTY_STORAGE_KEY);
-    const difficulties = storedDifficulties ? JSON.parse(storedDifficulties) : {};
+    const difficulties = storedDifficulties
+      ? JSON.parse(storedDifficulties)
+      : {};
     difficulties[courseId] = difficulty;
     localStorage.setItem(DIFFICULTY_STORAGE_KEY, JSON.stringify(difficulties));
   } catch (error) {
-    console.warn('Error storing difficulty:', error);
+    console.warn("Error storing difficulty:", error);
   }
 };
 
-export const getEffectiveRating = (course: { id: number; rating?: number }): number => {
+export const getEffectiveRating = (course: {
+  id: number;
+  rating?: number;
+}): number => {
   // Use backend rating first, then localStorage, then default to 4.8
   if (course.rating !== undefined && course.rating !== null) {
     return course.rating;
@@ -79,9 +87,15 @@ export const getEffectiveRating = (course: { id: number; rating?: number }): num
   return 4.8; // Default fallback
 };
 
-export const getEffectiveDifficulty = (course: { id: number; difficulty_level?: string }): string => {
+export const getEffectiveDifficulty = (course: {
+  id: number;
+  difficulty_level?: string;
+}): string => {
   // Use backend difficulty first, then localStorage, then default based on course ID
-  if (course.difficulty_level && ['Easy', 'Medium', 'Hard'].includes(course.difficulty_level)) {
+  if (
+    course.difficulty_level &&
+    ["Easy", "Medium", "Hard"].includes(course.difficulty_level)
+  ) {
     return course.difficulty_level;
   }
   const storedDifficulty = getStoredDifficulty(course.id);
@@ -89,7 +103,7 @@ export const getEffectiveDifficulty = (course: { id: number; difficulty_level?: 
     return storedDifficulty;
   }
   // Generate consistent default difficulty based on course ID
-  const difficultyOptions = ['Easy', 'Medium', 'Hard'];
+  const difficultyOptions = ["Easy", "Medium", "Hard"];
   return difficultyOptions[course.id % 3];
 };
 
@@ -102,7 +116,7 @@ export const getStoredDuration = (courseId: number): number | null => {
       return durations[courseId] || null;
     }
   } catch (error) {
-    console.warn('Error retrieving stored duration:', error);
+    console.warn("Error retrieving stored duration:", error);
   }
   return null;
 };
@@ -112,15 +126,25 @@ export const setStoredDuration = (courseId: number, duration: number): void => {
     const storedDurations = localStorage.getItem(COURSE_DURATION_STORAGE_KEY);
     const durations = storedDurations ? JSON.parse(storedDurations) : {};
     durations[courseId] = duration;
-    localStorage.setItem(COURSE_DURATION_STORAGE_KEY, JSON.stringify(durations));
+    localStorage.setItem(
+      COURSE_DURATION_STORAGE_KEY,
+      JSON.stringify(durations)
+    );
   } catch (error) {
-    console.warn('Error storing duration:', error);
+    console.warn("Error storing duration:", error);
   }
 };
 
-export const getEffectiveDuration = (course: { id: number; duration_in_hours?: number }): number => {
+export const getEffectiveDuration = (course: {
+  id: number;
+  duration_in_hours?: number;
+}): number => {
   // Use backend duration first, then localStorage, then generate default based on course ID
-  if (course.duration_in_hours !== undefined && course.duration_in_hours !== null && course.duration_in_hours > 0) {
+  if (
+    course.duration_in_hours !== undefined &&
+    course.duration_in_hours !== null &&
+    course.duration_in_hours > 0
+  ) {
     return course.duration_in_hours;
   }
   const storedDuration = getStoredDuration(course.id);
@@ -147,19 +171,22 @@ export const getStoredCompanies = (courseId: number): string[] | null => {
       return companies[courseId] || null;
     }
   } catch (error) {
-    console.warn('Error reading stored companies:', error);
+    console.warn("Error reading stored companies:", error);
   }
   return null;
 };
 
-export const setStoredCompanies = (courseId: number, companies: string[]): void => {
+export const setStoredCompanies = (
+  courseId: number,
+  companies: string[]
+): void => {
   try {
     const storedCompanies = localStorage.getItem(COMPANIES_STORAGE_KEY);
     const companiesData = storedCompanies ? JSON.parse(storedCompanies) : {};
     companiesData[courseId] = companies;
     localStorage.setItem(COMPANIES_STORAGE_KEY, JSON.stringify(companiesData));
   } catch (error) {
-    console.warn('Error storing companies:', error);
+    console.warn("Error storing companies:", error);
   }
 };
 
@@ -167,64 +194,74 @@ export const setStoredCompanies = (courseId: number, companies: string[]): void 
 export const COMPANY_DATABASE: Record<string, CompanyLogo> = {
   microsoft: {
     name: "Microsoft",
-    logoUrl: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg",
-    alt: "Microsoft"
+    logoUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg",
+    alt: "Microsoft",
   },
   ibm: {
-    name: "IBM", 
+    name: "IBM",
     logoUrl: "https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg",
-    alt: "IBM"
+    alt: "IBM",
   },
   cisco: {
     name: "Cisco",
-    logoUrl: "https://upload.wikimedia.org/wikipedia/commons/0/08/Cisco_logo_blue_2016.svg", 
-    alt: "Cisco"
+    logoUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/0/08/Cisco_logo_blue_2016.svg",
+    alt: "Cisco",
   },
   google: {
     name: "Google",
-    logoUrl: "https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg",
-    alt: "Google"
+    logoUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg",
+    alt: "Google",
   },
   amazon: {
     name: "Amazon",
-    logoUrl: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg",
-    alt: "Amazon"
+    logoUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg",
+    alt: "Amazon",
   },
   apple: {
-    name: "Apple", 
-    logoUrl: "https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg",
-    alt: "Apple"
+    name: "Apple",
+    logoUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg",
+    alt: "Apple",
   },
   meta: {
     name: "Meta",
-    logoUrl: "https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg",
-    alt: "Meta"
+    logoUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg",
+    alt: "Meta",
   },
   netflix: {
     name: "Netflix",
-    logoUrl: "https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg",
-    alt: "Netflix"
+    logoUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg",
+    alt: "Netflix",
   },
   tesla: {
     name: "Tesla",
-    logoUrl: "https://upload.wikimedia.org/wikipedia/commons/b/bb/Tesla_T_symbol.svg",
-    alt: "Tesla"
+    logoUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/b/bb/Tesla_T_symbol.svg",
+    alt: "Tesla",
   },
   oracle: {
     name: "Oracle",
-    logoUrl: "https://upload.wikimedia.org/wikipedia/commons/5/50/Oracle_logo.svg",
-    alt: "Oracle"
+    logoUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/5/50/Oracle_logo.svg",
+    alt: "Oracle",
   },
   salesforce: {
     name: "Salesforce",
-    logoUrl: "https://upload.wikimedia.org/wikipedia/commons/f/f9/Salesforce.com_logo.svg",
-    alt: "Salesforce"
-  }
+    logoUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/f/f9/Salesforce.com_logo.svg",
+    alt: "Salesforce",
+  },
 };
 
 // Get all available companies for admin selection
 export const getAllAvailableCompanies = (): string[] => {
-  return Object.keys(COMPANY_DATABASE).map(key => COMPANY_DATABASE[key].name);
+  return Object.keys(COMPANY_DATABASE).map((key) => COMPANY_DATABASE[key].name);
 };
 
 // Get company logo data by name
@@ -236,22 +273,31 @@ export const getCompanyByName = (name: string): CompanyLogo | null => {
 // Frontend companies (original default)
 const FRONTEND_DEFAULT_COMPANIES = ["Microsoft", "IBM", "Cisco"];
 
-export const getEffectiveCompanies = (course: { id: number; companies?: string[] }): CompanyLogo[] => {
+export const getEffectiveCompanies = (course: {
+  id: number;
+  companies?: string[];
+}): CompanyLogo[] => {
   // Priority: 1. Admin stored companies, 2. Backend companies, 3. Frontend default companies
-  
+
   // Check localStorage first (admin changes)
   const storedCompanies = getStoredCompanies(course.id);
   if (storedCompanies && storedCompanies.length > 0) {
-    return storedCompanies.map(name => getCompanyByName(name)).filter(Boolean) as CompanyLogo[];
+    return storedCompanies
+      .map((name) => getCompanyByName(name))
+      .filter(Boolean) as CompanyLogo[];
   }
-  
-  // Check backend companies if available 
+
+  // Check backend companies if available
   if (course.companies && course.companies.length > 0) {
-    return course.companies.map(name => getCompanyByName(name)).filter(Boolean) as CompanyLogo[];
+    return course.companies
+      .map((name) => getCompanyByName(name))
+      .filter(Boolean) as CompanyLogo[];
   }
-  
+
   // Use frontend default companies
-  return FRONTEND_DEFAULT_COMPANIES.map(name => getCompanyByName(name)).filter(Boolean) as CompanyLogo[];
+  return FRONTEND_DEFAULT_COMPANIES.map((name) =>
+    getCompanyByName(name)
+  ).filter(Boolean) as CompanyLogo[];
 };
 
 // Type utility to work with Course data
@@ -402,7 +448,9 @@ export const formatPrice = (price: string): string => {
 };
 
 // Learning Objectives utilities
-export const getStoredLearningObjectives = (courseId: number): string[] | null => {
+export const getStoredLearningObjectives = (
+  courseId: number
+): string[] | null => {
   try {
     const stored = localStorage.getItem(LEARNING_OBJECTIVES_STORAGE_KEY);
     if (stored) {
@@ -410,19 +458,22 @@ export const getStoredLearningObjectives = (courseId: number): string[] | null =
       return objectives[courseId] || null;
     }
   } catch (error) {
-    console.warn('Error reading stored learning objectives:', error);
+    console.warn("Error reading stored learning objectives:", error);
   }
   return null;
 };
 
-export const setStoredLearningObjectives = (courseId: number, objectives: string[]): void => {
+export const setStoredLearningObjectives = (
+  courseId: number,
+  objectives: string[]
+): void => {
   try {
     const stored = localStorage.getItem(LEARNING_OBJECTIVES_STORAGE_KEY);
     const data = stored ? JSON.parse(stored) : {};
     data[courseId] = objectives;
     localStorage.setItem(LEARNING_OBJECTIVES_STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
-    console.warn('Error storing learning objectives:', error);
+    console.warn("Error storing learning objectives:", error);
   }
 };
 
@@ -432,7 +483,9 @@ export interface StudentStats {
   totalLearners: number;
 }
 
-export const getStoredStudentStats = (courseId: number): StudentStats | null => {
+export const getStoredStudentStats = (
+  courseId: number
+): StudentStats | null => {
   try {
     const stored = localStorage.getItem(STUDENT_STATS_STORAGE_KEY);
     if (stored) {
@@ -440,19 +493,22 @@ export const getStoredStudentStats = (courseId: number): StudentStats | null => 
       return stats[courseId] || null;
     }
   } catch (error) {
-    console.warn('Error reading stored student stats:', error);
+    console.warn("Error reading stored student stats:", error);
   }
   return null;
 };
 
-export const setStoredStudentStats = (courseId: number, stats: StudentStats): void => {
+export const setStoredStudentStats = (
+  courseId: number,
+  stats: StudentStats
+): void => {
   try {
     const stored = localStorage.getItem(STUDENT_STATS_STORAGE_KEY);
     const data = stored ? JSON.parse(stored) : {};
     data[courseId] = stats;
     localStorage.setItem(STUDENT_STATS_STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
-    console.warn('Error storing student stats:', error);
+    console.warn("Error storing student stats:", error);
   }
 };
 
@@ -462,7 +518,9 @@ export interface JobPlacement {
   companies: string[];
 }
 
-export const getStoredJobPlacement = (courseId: number): JobPlacement | null => {
+export const getStoredJobPlacement = (
+  courseId: number
+): JobPlacement | null => {
   try {
     const stored = localStorage.getItem(JOB_PLACEMENT_STORAGE_KEY);
     if (stored) {
@@ -470,19 +528,22 @@ export const getStoredJobPlacement = (courseId: number): JobPlacement | null => 
       return placement[courseId] || null;
     }
   } catch (error) {
-    console.warn('Error reading stored job placement:', error);
+    console.warn("Error reading stored job placement:", error);
   }
   return null;
 };
 
-export const setStoredJobPlacement = (courseId: number, placement: JobPlacement): void => {
+export const setStoredJobPlacement = (
+  courseId: number,
+  placement: JobPlacement
+): void => {
   try {
     const stored = localStorage.getItem(JOB_PLACEMENT_STORAGE_KEY);
     const data = stored ? JSON.parse(stored) : {};
     data[courseId] = placement;
     localStorage.setItem(JOB_PLACEMENT_STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
-    console.warn('Error storing job placement:', error);
+    console.warn("Error storing job placement:", error);
   }
 };
 
@@ -495,19 +556,22 @@ export const getStoredWhatsIncluded = (courseId: number): string[] | null => {
       return included[courseId] || null;
     }
   } catch (error) {
-    console.warn('Error reading stored whats included:', error);
+    console.warn("Error reading stored whats included:", error);
   }
   return null;
 };
 
-export const setStoredWhatsIncluded = (courseId: number, items: string[]): void => {
+export const setStoredWhatsIncluded = (
+  courseId: number,
+  items: string[]
+): void => {
   try {
     const stored = localStorage.getItem(WHATS_INCLUDED_STORAGE_KEY);
     const data = stored ? JSON.parse(stored) : {};
     data[courseId] = items;
     localStorage.setItem(WHATS_INCLUDED_STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
-    console.warn('Error storing whats included:', error);
+    console.warn("Error storing whats included:", error);
   }
 };
 
@@ -526,80 +590,95 @@ interface EnrolledStudents {
 }
 
 // Effective value functions with fallbacks
-export const getEffectiveLearningObjectives = (course: { id: number; learning_objectives?: string; title?: string }): string[] => {
+export const getEffectiveLearningObjectives = (course: {
+  id: number;
+  learning_objectives?: string;
+  title?: string;
+}): string[] => {
   // Check localStorage first (admin changes)
   const stored = getStoredLearningObjectives(course.id);
   if (stored && stored.length > 0) {
     return stored;
   }
-  
+
   // Check backend data
   if (course.learning_objectives) {
-    return course.learning_objectives.split('\n').filter(obj => obj.trim());
+    return course.learning_objectives.split("\n").filter((obj) => obj.trim());
   }
-  
+
   // Generate default learning objectives
   const title = course.title?.toLowerCase() || "skills";
   const subject = title.split(" ")[0] || "skills";
-  
+
   return [
     `Learn to build ${subject} projects that recruiters love to see in resumes`,
     `Master the most in-demand ${subject} tools in the industry`,
     `Used by 90% of Fortune 500 companies for ${subject} development`,
-    `Boost your career with real-world ${subject} skills`
+    `Boost your career with real-world ${subject} skills`,
   ];
 };
 
-export const getEffectiveStudentStats = (course: { id: number; rating?: number; enrolled_students?: EnrolledStudents }): StudentStats => {
+export const getEffectiveStudentStats = (course: {
+  id: number;
+  rating?: number;
+  enrolled_students?: EnrolledStudents;
+}): StudentStats => {
   // Check localStorage first (admin changes)
   const stored = getStoredStudentStats(course.id);
   if (stored) {
     return stored;
   }
-  
+
   // Use backend data if available
   const rating = getEffectiveRating(course);
   const totalLearners = course.enrolled_students?.total || 500;
-  
+
   return { rating, totalLearners };
 };
 
-export const getEffectiveJobPlacement = (course: { id: number; enrolled_students?: EnrolledStudents }): JobPlacement => {
+export const getEffectiveJobPlacement = (course: {
+  id: number;
+  enrolled_students?: EnrolledStudents;
+}): JobPlacement => {
   // Check localStorage first (admin changes)
   const stored = getStoredJobPlacement(course.id);
   if (stored) {
     return stored;
   }
-  
+
   // Generate default job placement data
   const totalLearners = course.enrolled_students?.total || 500;
   const companies = ["Deloitte", "TCS", "Accenture"];
-  
+
   return { totalLearners, companies };
 };
 
-export const getEffectiveWhatsIncluded = (course: { id: number; whats_included?: string[]; stats?: CourseStats }): string[] => {
+export const getEffectiveWhatsIncluded = (course: {
+  id: number;
+  whats_included?: string[];
+  stats?: CourseStats;
+}): string[] => {
   // Check localStorage first (admin changes)
   const stored = getStoredWhatsIncluded(course.id);
   if (stored && stored.length > 0) {
     return stored;
   }
-  
+
   // Check backend data
   if (course.whats_included && course.whats_included.length > 0) {
     return course.whats_included;
   }
-  
+
   // Generate default what's included based on course stats
-  const stats = course.stats || { 
-    video: { total: 10 }, 
-    article: { total: 5 }, 
-    coding_problem: { total: 3 }, 
+  const stats = course.stats || {
+    video: { total: 10 },
+    article: { total: 5 },
+    coding_problem: { total: 3 },
     quiz: { total: 2 },
-    assignment: { total: 2 }
+    assignment: { total: 2 },
   };
   const items = [];
-  
+
   if (stats.video.total > 0) {
     items.push(`${stats.video.total}+ HD Video Lessons`);
   }
@@ -615,12 +694,17 @@ export const getEffectiveWhatsIncluded = (course: { id: number; whats_included?:
   if (stats.assignment && stats.assignment.total > 0) {
     items.push(`${stats.assignment.total} Practical Assignments`);
   }
-  
+
   // Add generic items if needed
   if (items.length < 3) {
-    items.push("Real datasets & project templates", "Free resume template", "Lifetime access to course materials", "Certificate of completion");
+    items.push(
+      "Real datasets & project templates",
+      "Free resume template",
+      "Lifetime access to course materials",
+      "Certificate of completion"
+    );
   }
-  
+
   return items.slice(0, 4);
 };
 
@@ -633,7 +717,7 @@ export const getStoredCourseTags = (courseId: number): string[] | null => {
       return tags[courseId] || null;
     }
   } catch (error) {
-    console.warn('Error reading stored course tags:', error);
+    console.warn("Error reading stored course tags:", error);
   }
   return null;
 };
@@ -645,51 +729,65 @@ export const setStoredCourseTags = (courseId: number, tags: string[]): void => {
     data[courseId] = tags;
     localStorage.setItem(COURSE_TAGS_STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
-    console.warn('Error storing course tags:', error);
+    console.warn("Error storing course tags:", error);
   }
 };
 
 // Default available tags for admin selection
 // Default available tags for admin selection (curated professional tags)
 export const DEFAULT_AVAILABLE_TAGS = [
-  'Beginner Friendly',
-  'Intermediate Level', 
-  'Advanced Level',
-  'Industry Certificate',
-  'Job Ready',
-  'Skills Development',
-  'Portfolio Building',
-  'Hands-On Projects',
-  'Real-World Applications',
-  'Career Boost',
-  'High Demand Skills',
-  'Practical Learning',
-  'Professional Growth',
-  'Programming',
-  'Software Development',
-  'Data Analysis',
-  'Business Intelligence',
-  'Design',
-  'User Experience',
-  'Marketing',
-  'Business Strategy'
-];export const getEffectiveCourseTags = (course: { id: number; tags?: string[]; title?: string; difficulty_level?: string }): string[] => {
+  "Beginner Friendly",
+  "Intermediate Level",
+  "Advanced Level",
+  "Industry Certificate",
+  "Job Ready",
+  "Skills Development",
+  "Portfolio Building",
+  "Hands-On Projects",
+  "Real-World Applications",
+  "Career Boost",
+  "High Demand Skills",
+  "Practical Learning",
+  "Professional Growth",
+  "Programming",
+  "Software Development",
+  "Data Analysis",
+  "Business Intelligence",
+  "Design",
+  "User Experience",
+  "Marketing",
+  "Business Strategy",
+];
+export const getEffectiveCourseTags = (course: {
+  id: number;
+  tags?: string[];
+  title?: string;
+  difficulty_level?: string;
+}): string[] => {
   // Check localStorage first (admin changes)
   const stored = getStoredCourseTags(course.id);
   if (stored && stored.length > 0) {
-    console.log(`🏷️ Using stored tags for course ${course.id} (${course.title}):`, stored);
+    console.log(
+      `🏷️ Using stored tags for course ${course.id} (${course.title}):`,
+      stored
+    );
     return stored;
   }
-  
+
   // Check backend tags if available
   if (course.tags && course.tags.length > 0) {
-    console.log(`📚 Using backend tags for course ${course.id} (${course.title}):`, course.tags);
+    console.log(
+      `📚 Using backend tags for course ${course.id} (${course.title}):`,
+      course.tags
+    );
     return course.tags;
   }
-  
+
   // Return empty array - no auto-generation of tags
   // All tags must be set through admin interface or backend
-  console.log(`⚠️ No tags found for course ${course.id} (${course.title}) - tags must be set via admin interface`);
+  console.log(
+    `⚠️ No tags found for course ${course.id} (${course.title}) - tags must be set via admin interface`
+  );
   return [];
 };
 
@@ -699,9 +797,9 @@ export const DEFAULT_AVAILABLE_TAGS = [
 export const clearAllStoredTags = (): void => {
   try {
     localStorage.removeItem(COURSE_TAGS_STORAGE_KEY);
-    console.log('🧹 Cleared all stored course tags from localStorage');
+    console.log("🧹 Cleared all stored course tags from localStorage");
   } catch (error) {
-    console.warn('Error clearing stored tags:', error);
+    console.warn("Error clearing stored tags:", error);
   }
 };
 
@@ -712,51 +810,65 @@ export const cleanUpHardcodedTags = (): void => {
     if (stored) {
       const data = JSON.parse(stored);
       const problematicTags = [
-        'data', 'science', 'complete', 'course',
-        'Career Boost', 'Hands-On Projects', 'Industry Certificate',
-        'Data Analysis', 'Business Intelligence', 'Programming', 
-        'Software Development', 'Design', 'User Experience',
-        'adsfdasfadf', // Specific problematic tag
-        'sql', 'SQL' // SQL related cleanup
+        "data",
+        "science",
+        "complete",
+        "course",
+        "Career Boost",
+        "Hands-On Projects",
+        "Industry Certificate",
+        "Data Analysis",
+        "Business Intelligence",
+        "Programming",
+        "Software Development",
+        "Design",
+        "User Experience",
+        "adsfdasfadf", // Specific problematic tag
+        "sql",
+        "SQL", // SQL related cleanup
       ];
-      
+
       let cleaned = false;
-      Object.keys(data).forEach(courseId => {
+      Object.keys(data).forEach((courseId) => {
         const originalTags = data[courseId] || [];
         const cleanedTags = originalTags.filter((tag: string) => {
           // Check for exact matches (case insensitive) and substring matches
-          const isProblematic = problematicTags.some(problematic => 
-            tag.toLowerCase() === problematic.toLowerCase() ||
-            tag.toLowerCase().includes(problematic.toLowerCase()) ||
-            tag === 'adsfdasfadf' || // Exact match for this specific tag
-            /^[a-z]{10,}$/.test(tag.toLowerCase()) // Random string pattern
+          const isProblematic = problematicTags.some(
+            (problematic) =>
+              tag.toLowerCase() === problematic.toLowerCase() ||
+              tag.toLowerCase().includes(problematic.toLowerCase()) ||
+              tag === "adsfdasfadf" || // Exact match for this specific tag
+              /^[a-z]{10,}$/.test(tag.toLowerCase()) // Random string pattern
           );
           return !isProblematic;
         });
-        
+
         if (cleanedTags.length !== originalTags.length) {
           data[courseId] = cleanedTags;
           cleaned = true;
-          console.log(`🧹 Cleaned tags for course ${courseId}:`, { before: originalTags, after: cleanedTags });
+          console.log(`🧹 Cleaned tags for course ${courseId}:`, {
+            before: originalTags,
+            after: cleanedTags,
+          });
         }
       });
-      
+
       if (cleaned) {
         localStorage.setItem(COURSE_TAGS_STORAGE_KEY, JSON.stringify(data));
-        console.log('✅ Cleaned up hardcoded tags from localStorage');
+        console.log("✅ Cleaned up hardcoded tags from localStorage");
       } else {
-        console.log('✨ No problematic tags found in localStorage');
+        console.log("✨ No problematic tags found in localStorage");
       }
     } else {
-      console.log('📂 No stored tags found in localStorage');
+      console.log("📂 No stored tags found in localStorage");
     }
   } catch (error) {
-    console.warn('Error cleaning up tags:', error);
+    console.warn("Error cleaning up tags:", error);
   }
 };
 
 // Run cleanup on module load to remove any existing problematic tags
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   // Only run in browser environment
   setTimeout(() => {
     cleanUpHardcodedTags();
@@ -774,41 +886,57 @@ export const getStoredFeatures = (courseId: number): string[] | null => {
       return features[courseId] || null;
     }
   } catch (error) {
-    console.warn('Error reading stored features:', error);
+    console.warn("Error reading stored features:", error);
   }
   return null;
 };
 
-export const setStoredFeatures = (courseId: number, features: string[]): void => {
+export const setStoredFeatures = (
+  courseId: number,
+  features: string[]
+): void => {
   try {
     const storedFeatures = localStorage.getItem(COURSE_FEATURES_STORAGE_KEY);
     const featuresData = storedFeatures ? JSON.parse(storedFeatures) : {};
     featuresData[courseId] = features;
-    localStorage.setItem(COURSE_FEATURES_STORAGE_KEY, JSON.stringify(featuresData));
+    localStorage.setItem(
+      COURSE_FEATURES_STORAGE_KEY,
+      JSON.stringify(featuresData)
+    );
     console.log(`💾 Stored features for course ${courseId}:`, features);
   } catch (error) {
-    console.warn('Error storing features:', error);
+    console.warn("Error storing features:", error);
   }
 };
 
 // Get effective course features (stored > backend > generated default)
-export const getEffectiveFeatures = (course: { id: number; features?: string[]; stats?: CourseStats }): string[] => {
+export const getEffectiveFeatures = (course: {
+  id: number;
+  features?: string[];
+  stats?: CourseStats;
+}): string[] => {
   const storedFeatures = getStoredFeatures(course.id);
-  
+
   if (storedFeatures) {
-    console.log(`🎯 Using stored features for course ${course.id}:`, storedFeatures);
+    console.log(
+      `🎯 Using stored features for course ${course.id}:`,
+      storedFeatures
+    );
     return storedFeatures;
   }
-  
+
   if (course.features && course.features.length > 0) {
-    console.log(`📚 Using backend features for course ${course.id}:`, course.features);
+    console.log(
+      `📚 Using backend features for course ${course.id}:`,
+      course.features
+    );
     return course.features;
   }
-  
+
   // Generate default features based on course stats
   const defaultFeatures = [];
   const stats = course.stats;
-  
+
   if (stats?.video?.total && stats.video.total > 0) {
     defaultFeatures.push(`${stats.video.total}+ HD Video Lessons`);
   }
@@ -824,12 +952,15 @@ export const getEffectiveFeatures = (course: { id: number; features?: string[]; 
   if (stats?.assignment?.total && stats.assignment.total > 0) {
     defaultFeatures.push(`${stats.assignment.total} Practical Projects`);
   }
-  
+
   defaultFeatures.push("Certificate of Completion");
   defaultFeatures.push("Lifetime Access");
   defaultFeatures.push("Mobile & Desktop Access");
-  
-  console.log(`🔄 Generated default features for course ${course.id}:`, defaultFeatures);
+
+  console.log(
+    `🔄 Generated default features for course ${course.id}:`,
+    defaultFeatures
+  );
   return defaultFeatures;
 };
 
@@ -838,49 +969,73 @@ export const getEffectiveFeatures = (course: { id: number; features?: string[]; 
 // Course Requirements storage utilities
 export const getStoredRequirements = (courseId: number): string[] | null => {
   try {
-    const storedRequirements = localStorage.getItem(COURSE_REQUIREMENTS_STORAGE_KEY);
+    const storedRequirements = localStorage.getItem(
+      COURSE_REQUIREMENTS_STORAGE_KEY
+    );
     if (storedRequirements) {
       const requirements = JSON.parse(storedRequirements);
       return requirements[courseId] || null;
     }
   } catch (error) {
-    console.warn('Error reading stored requirements:', error);
+    console.warn("Error reading stored requirements:", error);
   }
   return null;
 };
 
-export const setStoredRequirements = (courseId: number, requirements: string[]): void => {
+export const setStoredRequirements = (
+  courseId: number,
+  requirements: string[]
+): void => {
   try {
-    const storedRequirements = localStorage.getItem(COURSE_REQUIREMENTS_STORAGE_KEY);
-    const requirementsData = storedRequirements ? JSON.parse(storedRequirements) : {};
+    const storedRequirements = localStorage.getItem(
+      COURSE_REQUIREMENTS_STORAGE_KEY
+    );
+    const requirementsData = storedRequirements
+      ? JSON.parse(storedRequirements)
+      : {};
     requirementsData[courseId] = requirements;
-    localStorage.setItem(COURSE_REQUIREMENTS_STORAGE_KEY, JSON.stringify(requirementsData));
+    localStorage.setItem(
+      COURSE_REQUIREMENTS_STORAGE_KEY,
+      JSON.stringify(requirementsData)
+    );
     console.log(`💾 Stored requirements for course ${courseId}:`, requirements);
   } catch (error) {
-    console.warn('Error storing requirements:', error);
+    console.warn("Error storing requirements:", error);
   }
 };
 
 // Get effective course requirements (stored > backend > generated default)
-export const getEffectiveRequirements = (course: { id: number; requirements?: string; difficulty_level?: string }): string[] => {
+export const getEffectiveRequirements = (course: {
+  id: number;
+  requirements?: string;
+  difficulty_level?: string;
+}): string[] => {
   const storedRequirements = getStoredRequirements(course.id);
-  
+
   if (storedRequirements) {
-    console.log(`🎯 Using stored requirements for course ${course.id}:`, storedRequirements);
+    console.log(
+      `🎯 Using stored requirements for course ${course.id}:`,
+      storedRequirements
+    );
     return storedRequirements;
   }
-  
+
   if (course.requirements && course.requirements.trim()) {
-    const requirementsArray = course.requirements.split('\n').filter(req => req.trim());
+    const requirementsArray = course.requirements
+      .split("\n")
+      .filter((req) => req.trim());
     if (requirementsArray.length > 0) {
-      console.log(`📚 Using backend requirements for course ${course.id}:`, requirementsArray);
+      console.log(
+        `📚 Using backend requirements for course ${course.id}:`,
+        requirementsArray
+      );
       return requirementsArray;
     }
   }
-  
+
   // Generate default requirements based on difficulty
   const defaultRequirements = [];
-  
+
   if (course.difficulty_level === "Easy") {
     defaultRequirements.push("No prior experience required");
     defaultRequirements.push("Basic computer literacy");
@@ -898,8 +1053,11 @@ export const getEffectiveRequirements = (course: { id: number; requirements?: st
     defaultRequirements.push("Computer with internet access");
     defaultRequirements.push("Time to complete course materials");
   }
-  
-  console.log(`🔄 Generated default requirements for course ${course.id}:`, defaultRequirements);
+
+  console.log(
+    `🔄 Generated default requirements for course ${course.id}:`,
+    defaultRequirements
+  );
   return defaultRequirements;
 };
 
@@ -910,21 +1068,25 @@ export const forceRemoveSpecificTag = (tagToRemove: string): void => {
     if (stored) {
       const data = JSON.parse(stored);
       let cleaned = false;
-      
-      Object.keys(data).forEach(courseId => {
+
+      Object.keys(data).forEach((courseId) => {
         const originalTags = data[courseId] || [];
-        const cleanedTags = originalTags.filter((tag: string) => tag !== tagToRemove);
-        
+        const cleanedTags = originalTags.filter(
+          (tag: string) => tag !== tagToRemove
+        );
+
         if (cleanedTags.length !== originalTags.length) {
           data[courseId] = cleanedTags;
           cleaned = true;
           console.log(`🎯 Removed '${tagToRemove}' from course ${courseId}`);
         }
       });
-      
+
       if (cleaned) {
         localStorage.setItem(COURSE_TAGS_STORAGE_KEY, JSON.stringify(data));
-        console.log(`✅ Successfully removed '${tagToRemove}' from all courses`);
+        console.log(
+          `✅ Successfully removed '${tagToRemove}' from all courses`
+        );
       }
     }
   } catch (error) {
@@ -936,11 +1098,14 @@ export const forceRemoveSpecificTag = (tagToRemove: string): void => {
 cleanUpHardcodedTags();
 
 // Immediately remove the specific problematic tag
-forceRemoveSpecificTag('adsfdasfadf');
+forceRemoveSpecificTag("adsfdasfadf");
 
 // ============ INSTRUCTOR MANAGEMENT ============
 // Instructor storage functions
-export const setStoredInstructors = (courseId: number | string, instructors: Array<{id: number; name: string; profile_pic_url?: string}>) => {
+export const setStoredInstructors = (
+  courseId: number | string,
+  instructors: Array<{ id: number; name: string; profile_pic_url?: string }>
+) => {
   try {
     const stored = localStorage.getItem(COURSE_INSTRUCTORS_STORAGE_KEY);
     const data = stored ? JSON.parse(stored) : {};
@@ -948,19 +1113,41 @@ export const setStoredInstructors = (courseId: number | string, instructors: Arr
     localStorage.setItem(COURSE_INSTRUCTORS_STORAGE_KEY, JSON.stringify(data));
     console.log(`💾 Stored instructors for course ${courseId}:`, instructors);
   } catch (error) {
-    console.warn('Error storing instructors:', error);
+    console.warn("Error storing instructors:", error);
   }
 };
 
-export const getEffectiveInstructors = (course: { id: number | string; instructors?: Array<{id: number; name: string; profile_pic_url?: string}> }): Array<{id: number; name: string; profile_pic_url?: string}> => {
+export const getEffectiveInstructors = (course: {
+  id: number | string;
+  instructors?: Array<{
+    id?: number;
+    name?: string;
+    bio?: string;
+    profile_pic_url?: string;
+    linkedin_profile?: string;
+  }>;
+}): Array<{
+  id?: number;
+  name?: string;
+  bio?: string;
+  profile_pic_url?: string;
+  linkedin_profile?: string;
+}> => {
   try {
     // Function to normalize instructor images (handles specific instructor image corrections)
-    const normalizeInstructor = (instructor: {id: number; name: string; profile_pic_url?: string}) => {
+    const normalizeInstructor = (instructor: {
+      id?: number;
+      name?: string;
+      bio?: string;
+      profile_pic_url?: string;
+      linkedin_profile?: string;
+    }) => {
       // Ensure Shubham Lal always gets the correct image, regardless of API data
       if (instructor.name === "Shubham Lal") {
         return {
           ...instructor,
-          profile_pic_url: "https://lh3.googleusercontent.com/a/ACg8ocJSPMwGcKIWqYE1LDeBo_N1Z5pYriaPsNJSwLFAbPQ4N9lmnNIs=s96-c"
+          profile_pic_url:
+            "https://lh3.googleusercontent.com/a/ACg8ocJSPMwGcKIWqYE1LDeBo_N1Z5pYriaPsNJSwLFAbPQ4N9lmnNIs=s96-c",
         };
       }
       return instructor;
@@ -972,25 +1159,48 @@ export const getEffectiveInstructors = (course: { id: number | string; instructo
       const data = JSON.parse(stored);
       if (data[course.id] && Array.isArray(data[course.id])) {
         const normalizedInstructors = data[course.id].map(normalizeInstructor);
-        console.log(`📖 Using stored instructors for course ${course.id}:`, normalizedInstructors);
+        console.log(
+          `📖 Using stored instructors for course ${course.id}:`,
+          normalizedInstructors
+        );
         return normalizedInstructors;
       }
     }
-    
+
     // Fall back to course data
     const courseInstructors = course.instructors || [];
     if (courseInstructors.length > 0) {
       const normalizedInstructors = courseInstructors.map(normalizeInstructor);
-      console.log(`📖 Using course instructors for course ${course.id}:`, normalizedInstructors);
+      console.log(
+        `📖 Using course instructors for course ${course.id}:`,
+        normalizedInstructors
+      );
       return normalizedInstructors;
     }
-    
+
     // Default fallback
-    const defaultInstructors = [{ id: 1, name: "Shubham Lal", profile_pic_url: "https://lh3.googleusercontent.com/a/ACg8ocJSPMwGcKIWqYE1LDeBo_N1Z5pYriaPsNJSwLFAbPQ4N9lmnNIs=s96-c" }];
-    console.log(`📖 Using default instructors for course ${course.id}:`, defaultInstructors);
+    const defaultInstructors = [
+      {
+        id: 1,
+        name: "Shubham Lal",
+        profile_pic_url:
+          "https://lh3.googleusercontent.com/a/ACg8ocJSPMwGcKIWqYE1LDeBo_N1Z5pYriaPsNJSwLFAbPQ4N9lmnNIs=s96-c",
+      },
+    ];
+    console.log(
+      `📖 Using default instructors for course ${course.id}:`,
+      defaultInstructors
+    );
     return defaultInstructors;
   } catch (error) {
-    console.warn('Error getting effective instructors:', error);
-    return [{ id: 1, name: "Shubham Lal", profile_pic_url: "https://lh3.googleusercontent.com/a/ACg8ocJSPMwGcKIWqYE1LDeBo_N1Z5pYriaPsNJSwLFAbPQ4N9lmnNIs=s96-c" }];
+    console.warn("Error getting effective instructors:", error);
+    return [
+      {
+        id: 1,
+        name: "Shubham Lal",
+        profile_pic_url:
+          "https://lh3.googleusercontent.com/a/ACg8ocJSPMwGcKIWqYE1LDeBo_N1Z5pYriaPsNJSwLFAbPQ4N9lmnNIs=s96-c",
+      },
+    ];
   }
 };
