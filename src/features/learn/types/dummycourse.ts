@@ -1,5 +1,5 @@
 // Example dummy course object
-import { Course, Achievements } from "./final-course.types";
+import { Course } from "./final-course.types";
 
 export const dummyCourse: Course = {
   id: 101,
@@ -104,14 +104,9 @@ export const dummyCourse: Course = {
   tags: ["React", "Frontend", "Web Development"],
   rating: 4.7,
   trusted_by: ["Google", "Microsoft", "Amazon"],
-  certificate_available: ["Completion Certificate"],
-  achievements: [
-    Achievements.FIRST_STEP,
-    Achievements.QUIZ_MASTER,
-    Achievements.CERTIFIED,
-  ],
+  achievements: {},
   badges: 3,
-  streak: 7,
+  streak_count: 7,
   recent_activity: [
     "Completed 'Hooks Deep Dive'",
     "Passed Quiz: React Basics",
@@ -137,4 +132,11 @@ export const dummyCourse: Course = {
     "Access on mobile and TV",
     "Certificate of completion",
   ],
+  certificate_available: false,
+  streak: {
+    "2025-09-20": true,
+    "2025-09-21": true,
+    "2025-09-22": false,
+    "2025-09-23": true,
+  },
 };

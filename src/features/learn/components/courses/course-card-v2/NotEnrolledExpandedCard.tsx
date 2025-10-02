@@ -106,9 +106,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
   });
   const courseRating = (() => {
     const effectiveRating = getEffectiveRating(course);
-    console.log(
-      `[NotEnrolledExpanded] Course ${course.id} (${course.title}): backend_rating=${course.rating}, effective=${effectiveRating}`
-    );
+
     return effectiveRating;
   })();
   const courseDifficulty = (() => {
@@ -116,9 +114,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
       id: course.id,
       difficulty_level: course.difficulty_level,
     });
-    console.log(
-      `[NotEnrolledExpanded] Course ${course.id} (${course.title}): backend_difficulty=${course.difficulty_level}, effective=${effectiveDifficulty}`
-    );
+
     return effectiveDifficulty;
   })();
 
