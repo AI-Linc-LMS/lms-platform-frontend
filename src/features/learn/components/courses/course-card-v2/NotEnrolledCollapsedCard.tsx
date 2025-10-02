@@ -1,7 +1,12 @@
 import React from "react";
 import { Course } from "../../../types/final-course.types";
 // import { useNavigate } from "react-router-dom";
-import { formatPrice, getEffectiveRating, getEffectiveDifficulty, getEffectiveDuration } from "./utils/courseDataUtils";
+import {
+  formatPrice,
+  getEffectiveRating,
+  getEffectiveDifficulty,
+  getEffectiveDuration,
+} from "./utils/courseDataUtils";
 import { CompanyLogosSection } from "./components";
 
 // Enhanced 3D Star Rating Component
@@ -49,7 +54,7 @@ const StarRating = ({
     }
   }
 
-  return <div className="flex items-center gap-0">{stars}</div>;
+  return <div className="flex items-center gap-1">{stars}</div>;
 };
 
 interface NotEnrolledCollapsedCardProps {
@@ -72,23 +77,33 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
   const isFree = course?.is_free === true || formattedPrice === "0";
   const courseRating = (() => {
     const effectiveRating = getEffectiveRating(course);
-    console.log(`[NotEnrolledCollapsed] Course ${course.id} (${course.title}): backend_rating=${course.rating}, effective=${effectiveRating}`);
+    console.log(
+      `[NotEnrolledCollapsed] Course ${course.id} (${course.title}): backend_rating=${course.rating}, effective=${effectiveRating}`
+    );
     return effectiveRating;
   })();
-  
+
   const courseDifficulty = (() => {
-    const effectiveDifficulty = getEffectiveDifficulty({ id: course.id, difficulty_level: course.difficulty_level });
-    console.log(`[NotEnrolledCollapsed] Course ${course.id} (${course.title}): backend_difficulty=${course.difficulty_level}, effective=${effectiveDifficulty}`);
+    const effectiveDifficulty = getEffectiveDifficulty({
+      id: course.id,
+      difficulty_level: course.difficulty_level,
+    });
+    console.log(
+      `[NotEnrolledCollapsed] Course ${course.id} (${course.title}): backend_difficulty=${course.difficulty_level}, effective=${effectiveDifficulty}`
+    );
     return effectiveDifficulty;
   })();
-  const courseDuration = getEffectiveDuration({ id: course.id, duration_in_hours: course.duration_in_hours });
+  const courseDuration = getEffectiveDuration({
+    id: course.id,
+    duration_in_hours: course.duration_in_hours,
+  });
 
   return (
     <div
       className={`course-card w-full max-w-lg bg-white lg:h-[350px] rounded-2xl border border-blue-100 shadow-xl transition-all duration-300 ease-in-out relative overflow-visible ${className}`}
     >
       {/* Card Header */}
-      <div className="p-4 sm:p-6 pb-3 border-b border-gray-100">
+      <div className="p-4 sm:p-4 pb-3 border-b border-gray-100">
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-700 leading-tight pr-4 flex-1">
             {course.title}
@@ -116,6 +131,14 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
 
         {/* Company Logos */}
         <CompanyLogosSection course={course} />
+
+        {/* Rating */}
+        <div className="flex justify-end items-center gap-2 mt-3 mb-0 ml-auto">
+          <StarRating rating={courseRating} size="text-xs" />
+          <span className="text-xs font-semibold text-gray-700">
+            {courseRating}/5
+          </span>
+        </div>
       </div>
 
       {/* Content Section - Matching EnrolledCollapsedCard structure */}
@@ -147,13 +170,6 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-full text-xs font-medium text-yellow-800 whitespace-nowrap">
             {isFree ? "Free" : `₹${formattedPrice}`}
           </span>
-          {/* Rating */}
-          <div className="flex items-center gap-2 ml-auto">
-            <StarRating rating={courseRating} size="text-xs" />
-            <span className="text-xs font-semibold text-gray-700">
-              {courseRating}/5
-            </span>
-          </div>
         </div>
 
         {/* Action Button */}

@@ -1,10 +1,20 @@
 import React, { useState } from "react";
 import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
+
 import {
-  InstructorSection,
-} from "./EnrolledExpandedCard";
-import { formatPrice, getEffectiveRating, getEffectiveDifficulty, getEffectiveStudentStats, getEffectiveJobPlacement, getEffectiveFeatures, getEffectiveCourseTags, getEffectiveRequirements, getEffectiveWhatsIncluded, getEffectiveLearningObjectives, getEffectiveDuration } from "./utils/courseDataUtils";
+  formatPrice,
+  getEffectiveRating,
+  getEffectiveDifficulty,
+  getEffectiveStudentStats,
+  getEffectiveJobPlacement,
+  getEffectiveFeatures,
+  getEffectiveCourseTags,
+  getEffectiveRequirements,
+  getEffectiveWhatsIncluded,
+  getEffectiveLearningObjectives,
+  getEffectiveDuration,
+} from "./utils/courseDataUtils";
 import { CompanyLogosSection } from "./components";
 import {
   PaymentType,
@@ -90,15 +100,25 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
 
   const formattedPrice = formatPrice(course?.price || "0");
   const isFree = course?.is_free === true || formattedPrice === "0";
-  const courseDuration = getEffectiveDuration({ id: course.id, duration_in_hours: course.duration_in_hours });
+  const courseDuration = getEffectiveDuration({
+    id: course.id,
+    duration_in_hours: course.duration_in_hours,
+  });
   const courseRating = (() => {
     const effectiveRating = getEffectiveRating(course);
-    console.log(`[NotEnrolledExpanded] Course ${course.id} (${course.title}): backend_rating=${course.rating}, effective=${effectiveRating}`);
+    console.log(
+      `[NotEnrolledExpanded] Course ${course.id} (${course.title}): backend_rating=${course.rating}, effective=${effectiveRating}`
+    );
     return effectiveRating;
   })();
   const courseDifficulty = (() => {
-    const effectiveDifficulty = getEffectiveDifficulty({ id: course.id, difficulty_level: course.difficulty_level });
-    console.log(`[NotEnrolledExpanded] Course ${course.id} (${course.title}): backend_difficulty=${course.difficulty_level}, effective=${effectiveDifficulty}`);
+    const effectiveDifficulty = getEffectiveDifficulty({
+      id: course.id,
+      difficulty_level: course.difficulty_level,
+    });
+    console.log(
+      `[NotEnrolledExpanded] Course ${course.id} (${course.title}): backend_difficulty=${course.difficulty_level}, effective=${effectiveDifficulty}`
+    );
     return effectiveDifficulty;
   })();
 
@@ -247,7 +267,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
       className={`course-card w-full max-w-lg bg-white rounded-2xl border border-blue-100 shadow-xl transition-all duration-300 ease-in-out relative overflow-visible ${className}`}
     >
       {/* Card Header */}
-      <div className="p-4 sm:p-6 pb-3 border-b border-gray-100">
+      <div className="p-4 sm:p-4 pb-3 border-b border-gray-100">
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-700 leading-tight pr-4 flex-1">
             {course.title}
@@ -273,6 +293,13 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
 
         {/* Company Logos */}
         <CompanyLogosSection course={course} />
+
+        <div className="flex justify-end mt-3 mb-0 items-center gap-2 ml-auto">
+          <StarRating rating={courseRating} size="text-xs" />
+          <span className="text-xs font-semibold text-gray-700">
+            {courseRating}/5
+          </span>
+        </div>
       </div>
 
       {/* Course Info Pills */}
@@ -305,12 +332,6 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
           </span>
 
           {/* Rating */}
-          <div className="flex items-center gap-2 ml-auto">
-            <StarRating rating={courseRating} size="text-xs" />
-            <span className="text-xs font-semibold text-gray-700">
-              {courseRating}/5
-            </span>
-          </div>
         </div>
 
         <div className="flex items-center ">
@@ -394,17 +415,18 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
             ))}
           </div>
           <p className="text-xs text-gray-600 font-medium leading-relaxed">
-            Join {getEffectiveJobPlacement(course).totalLearners}+ learners who landed
-            jobs at
+            Join {getEffectiveJobPlacement(course).totalLearners}+ learners who
+            landed jobs at
             <br />
-            {getEffectiveJobPlacement(course).companies.join(', ')} with these skills
+            {getEffectiveJobPlacement(course).companies.join(", ")} with these
+            skills
           </p>
         </div>
 
         {/* Instructor Section */}
-        <div className="mb-4">
+        {/* <div className="mb-4">
           <InstructorSection course={course} />
-        </div>
+        </div> */}
 
         {/* What's Included - Using Centralized Logic */}
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -436,7 +458,10 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
           </h4>
           <div className="space-y-2">
             {getEffectiveRequirements(course).map((requirement, index) => (
-              <p key={index} className="text-xs text-yellow-800 leading-relaxed flex items-start gap-2">
+              <p
+                key={index}
+                className="text-xs text-yellow-800 leading-relaxed flex items-start gap-2"
+              >
                 <span className="text-yellow-600 mt-1">•</span>
                 <span>{requirement}</span>
               </p>
@@ -456,7 +481,7 @@ export default NotEnrolledExpandedCard;
 // Enhanced FeaturesSection
 export const FeaturesSection: React.FC<{ course: Course }> = ({ course }) => {
   const effectiveFeatures = getEffectiveFeatures(course);
-  
+
   return (
     <div>
       {effectiveFeatures && effectiveFeatures.length > 0 && (
