@@ -102,6 +102,7 @@ interface ThemeDetails {
   error100: string;
   error500: string;
   error600: string;
+  courseCta: string;
 
   /* Font Colors */
   fontPrimary: string;
