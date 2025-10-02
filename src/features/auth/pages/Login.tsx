@@ -50,7 +50,7 @@ const Login: React.FC = () => {
                   <img
                     src={clientInfo.data?.app_logo_url}
                     alt={`${clientInfo.data?.name}`}
-                    className="h-10 mx-auto"
+                    className="h-25 mx-auto"
                   />
                 )}
                 {/* <span className="text-2xl font-bold bg-gradient-to-r from-[#0BC5EA] to-[#6B46C1] bg-clip-text text-transparent">
