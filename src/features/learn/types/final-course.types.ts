@@ -12,7 +12,7 @@ export interface Course {
   is_free: boolean;
 
   // Course metadata (from backend)
-  difficulty_level: string; // "Medium", "Beginner", "Advanced"
+  difficulty_level: string; // "Easy", "Medium", "Advanced"
   duration_in_hours: number;
   language: string;
   subtitle?: string | null;
@@ -30,7 +30,7 @@ export interface Course {
   // Enrollment and students (from backend)
   enrolled_students: {
     total: number;
-    students_profile_pic?: string[]; // May not be in current backend response
+    students_profile_pic?: string[];
   };
 
   // Course statistics (from backend)
@@ -43,7 +43,7 @@ export interface Course {
       total: number;
       completed: number;
     };
-    coding_problem?: {
+    coding_problem: {
       total: number;
       completed: number;
     };
@@ -51,27 +51,28 @@ export interface Course {
       total: number;
       completed: number;
     };
-    assignment?: {
+    assignment: {
       total: number;
       completed: number;
     };
   };
 
   // Social features (from backend)
-  liked_by: unknown[]; // Array of users who liked
+  liked_by: unknown[];
 
   instructors: Array<{
-    id: number;
-    name: string;
-    bio: string;
+    id?: number; // backend may send empty objects []
+    name?: string;
+    bio?: string;
     profile_pic_url?: string;
     linkedin_profile?: string;
   }>;
 
   // Timestamps (from backend)
-  created_at: string; // "2025-08-09 13:59:56"
-  updated_at: string; // "2025-08-25 16:32:58"
+  created_at: string;
+  updated_at: string;
 
+  // Optional states (frontend-calculated or backend-extra)
   is_enrolled?: boolean;
   modules?: Array<{
     id: number;
@@ -95,14 +96,23 @@ export interface Course {
   liked_count?: number;
   last_accessed?: string;
 
-  //feilds to be added
+  // New/updated fields based on backend
   tags: string[];
   rating?: number;
   trusted_by: string[];
-  certificate_available?: string[];
-  achievements?: Achievements[];
+  certificate_available: boolean; // backend sends boolean not array
+  achievements: {
+    [key: string]: {
+      achieved: boolean;
+      info: string;
+    };
+  };
   badges?: number;
-  streak?: number | undefined;
+
+  // Updated streak handling
+  streak: Record<string, boolean>; // e.g. { "2025-09-23": false, ... }
+  streak_count: number;
+
   recent_activity?: string[];
   progress_percentage?: number;
   next_lesson?: {

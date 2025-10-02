@@ -82,19 +82,21 @@ const ACHIEVEMENT_MAPPER = {
     isLocked: true,
   },
 };
-
 export const AchievementSection = ({ course }: { course: Course }) => {
-  const userAchievements = course.achievements || [];
+  // course.achievements is an object { key: { achieved, info } }
+  const achievementsObj = course.achievements || {};
   const totalPossibleAchievements = Object.keys(ACHIEVEMENT_MAPPER).length;
 
-  // Create a Set for faster lookup of user achievements
-  const achievedSet = new Set(userAchievements);
+  // Extract achieved ones
+  const achievedKeys = Object.keys(achievementsObj).filter(
+    (key) => achievementsObj[key]?.achieved
+  );
 
-  // Generate achievement cards based on what's available in enum and user's achievements
+  // Generate achievement cards
   const achievementCards = Object.entries(ACHIEVEMENT_MAPPER).map(
     ([achievementKey, config]) => {
       const achievement = achievementKey as Achievements;
-      const isAchieved = achievedSet.has(achievement);
+      const isAchieved = achievementsObj[achievement]?.achieved ?? false;
       const isLocked = !isAchieved;
 
       return {
@@ -115,7 +117,7 @@ export const AchievementSection = ({ course }: { course: Course }) => {
           Achievements
         </h3>
         <span className="text-blue-600 text-xs">
-          {userAchievements.length}/{totalPossibleAchievements}
+          {achievedKeys.length}/{totalPossibleAchievements}
         </span>
       </div>
       <div className="grid grid-cols-5 gap-1.5">
