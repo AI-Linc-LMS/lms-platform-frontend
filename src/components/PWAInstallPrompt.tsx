@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { usePWA } from "../hooks/usePWA";
 import { Download, X, Smartphone } from "lucide-react";
+import { useSelector } from "react-redux";
+import { RootState } from "../redux/store";
 
 export const PWAInstallPrompt: React.FC = () => {
   const { canInstall, isInstalling, install, dismissInstall } = usePWA();
   const [isVisible, setIsVisible] = useState(false);
+
+  const clientInfo = useSelector((state: RootState) => state.clientInfo);
 
   useEffect(() => {
     if (canInstall) {
@@ -37,7 +41,7 @@ export const PWAInstallPrompt: React.FC = () => {
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-medium text-gray-900 dark:text-[var(--font-light)]">
-              Install AiLinc
+              Install {clientInfo?.data?.name}
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Install our app for a better experience! Quick access from your

@@ -1,9 +1,12 @@
 import React from "react";
 import { Smartphone, X } from "lucide-react";
 import { useIOSPWAInstall } from "../hooks/useIOSPWAInstall";
+import { useSelector } from "react-redux";
+import { RootState } from "../redux/store";
 
 export const IOSInstallBanner: React.FC = () => {
   const { isIOS, isInstalled, showPrompt, dismissPrompt } = useIOSPWAInstall();
+  const clientInfo = useSelector((state: RootState) => state.clientInfo);
 
   if (!isIOS || isInstalled) return null;
 
@@ -14,7 +17,7 @@ export const IOSInstallBanner: React.FC = () => {
           <Smartphone className="w-5 h-5 flex-shrink-0" />
           <div className="min-w-0">
             <p className="text-sm font-medium truncate">
-              Install AiLinc for better experience
+              Install {clientInfo?.data?.name} for better experience
             </p>
             <p className="text-xs opacity-90 truncate">
               Add to home screen for quick access

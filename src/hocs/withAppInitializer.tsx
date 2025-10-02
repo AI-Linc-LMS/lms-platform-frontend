@@ -15,20 +15,50 @@ const withAppInitializer = <P extends object>(
     const dispatch = useDispatch();
     const [isInactive, setIsInactive] = useState<boolean>(false);
 
-    function setFavicon(url: string) {
-      let link: HTMLLinkElement | null = document.querySelector(
-        "link[rel~='favicon']"
-      );
+    function setAppIcons(url: string) {
+      const cacheBuster = `${url}${
+        url?.includes("?") ? "&" : "?"
+      }v=${Date.now()}`;
 
-      if (!link) {
-        link = document.createElement("link");
-        link.rel = "icon";
-        link.type = "image/png"; // or "image/x-icon"
-        document.head.appendChild(link);
-      }
+      // --- Remove old favicons ---
+      document
+        .querySelectorAll("link[rel='icon']")
+        .forEach((el) => el.remove());
 
-      // Add cache buster to force refresh
-      link.href = `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
+      // --- Add standard favicons (192 & 512) ---
+      const faviconSizes = ["192x192", "512x512"];
+      faviconSizes.forEach((size) => {
+        const icon = document.createElement("link");
+        icon.rel = "icon";
+        icon.setAttribute("sizes", size); // ✅ type-safe fix
+        icon.type = url?.endsWith(".svg") ? "image/svg+xml" : "image/png";
+        icon.href = cacheBuster;
+        document.head.appendChild(icon);
+      });
+
+      // --- Remove old apple-touch-icons ---
+      document
+        .querySelectorAll("link[rel='apple-touch-icon']")
+        .forEach((el) => el.remove());
+
+      // --- Add multiple apple-touch-icons (for iOS) ---
+      const appleSizes = ["120x120", "152x152", "167x167", "180x180"];
+      appleSizes.forEach((size) => {
+        const appleIcon = document.createElement("link");
+        appleIcon.rel = "apple-touch-icon";
+        appleIcon.setAttribute("sizes", size); // ✅ type-safe fix
+        appleIcon.href = cacheBuster;
+        document.head.appendChild(appleIcon);
+      });
+
+      // --- Mask Icon (Safari pinned tabs) ---
+      document
+        .querySelectorAll("link[rel='mask-icon']")
+        .forEach((el) => el.remove());
+      const maskIcon = document.createElement("link");
+      maskIcon.rel = "mask-icon";
+      maskIcon.href = cacheBuster;
+      document.head.appendChild(maskIcon);
     }
 
     useEffect(() => {
@@ -43,11 +73,12 @@ const withAppInitializer = <P extends object>(
             setResponse(result);
             /* Primary Colors */
             document.title = result.name || "AI Linc|App";
+
+            setAppIcons(result.app_icon_url);
             if (
               result.theme_settings &&
               Object.keys(result.theme_settings).length > 0
             ) {
-              setFavicon(result.app_icon_url);
               document.body.style.setProperty(
                 "--primary-50",
                 result.theme_settings.primary50
@@ -288,6 +319,59 @@ const withAppInitializer = <P extends object>(
                 result.theme_settings.fontDark
               );
             }
+            const origin = window.location.origin;
+
+            const manifest = {
+              name: result.name,
+              short_name: result.slug || result.name,
+              description: "AI-powered learning and assessment platform",
+              start_url: `${origin}/login`, // ✅ Absolute URL
+              display: "standalone",
+              background_color: "#ffffff",
+              theme_color: "#ffffff",
+              lang: "en",
+              scope: `${origin}/`, // ✅ Absolute URL
+              orientation: "portrait",
+              id: "/",
+              icons: [
+                {
+                  src: result.app_icon_url ||`${origin}/pwa-192x192.png`,
+                  sizes: "192x192",
+                  type: "image/png",
+                },
+                {
+                  src: result.app_icon_url || `${origin}/pwa-512x512.png`,
+                  sizes: "512x512",
+                  type: "image/png",
+                },
+              ],
+            };
+
+            const stringManifest = JSON.stringify(manifest);
+            const blob = new Blob([stringManifest], {
+              type: "application/json",
+            });
+            const manifestURL = URL.createObjectURL(blob);
+
+            let link: HTMLLinkElement | null = document.querySelector(
+              'link[rel="manifest"]'
+            );
+            if (!link) {
+              link = document.createElement("link");
+              link.rel = "manifest";
+              link.id = "app-manifest";
+              document.head.appendChild(link);
+            }
+            link.href = manifestURL;
+            link.id = "app-manifest";
+            document.head.appendChild(link);
+
+            // ✅ Dispatch event for PWA manager
+            window.dispatchEvent(
+              new CustomEvent("manifest-updated", {
+                detail: { manifest, url: manifestURL },
+              })
+            );
           } else {
             setIsInactive(true);
           }

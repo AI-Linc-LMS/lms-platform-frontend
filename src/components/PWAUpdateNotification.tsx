@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { usePWA } from "../hooks/usePWA";
+import { useSelector } from "react-redux";
+import { RootState } from "../redux/store";
 import { RefreshCw, X, CheckCircle } from "lucide-react";
 
 export const PWAUpdateNotification: React.FC = () => {
   const { updateAvailable, isUpdating, update, dismissUpdate } = usePWA();
   const [isVisible, setIsVisible] = useState(false);
+  const clientInfo = useSelector((state: RootState) => state.clientInfo);
 
   useEffect(() => {
     if (updateAvailable) {
@@ -46,8 +49,8 @@ export const PWAUpdateNotification: React.FC = () => {
               Update Available
             </h3>
             <p className="text-sm text-slate-700 dark:text-slate-300 mt-1 leading-relaxed">
-              A new version of AiLinc is available. Update now for the latest
-              features and improvements.
+              A new version of {clientInfo?.data?.name} is available. Update now
+              for the latest features and improvements.
             </p>
             <div className="flex space-x-2 mt-3">
               <button

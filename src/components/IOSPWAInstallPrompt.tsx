@@ -1,6 +1,8 @@
 import React from "react";
 import { X, Share, Plus, Smartphone } from "lucide-react";
 import { useIOSPWAInstall } from "../hooks/useIOSPWAInstall";
+import { useSelector } from "react-redux";
+import { RootState } from "../redux/store";
 
 interface IOSPWAInstallPromptProps {
   appName?: string;
@@ -11,7 +13,7 @@ export const IOSPWAInstallPrompt: React.FC<IOSPWAInstallPromptProps> = ({
 }) => {
   const { isVisible, dismissPrompt, dismissPermanently, isIOS } =
     useIOSPWAInstall();
-
+  const clientInfo = useSelector((state: RootState) => state.clientInfo);
   if (!isVisible || !isIOS) return null;
 
   return (
@@ -28,7 +30,8 @@ export const IOSPWAInstallPrompt: React.FC<IOSPWAInstallPromptProps> = ({
               </div>
               <div>
                 <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                  Install {appName}
+                  Install{" "}
+                  {clientInfo?.data?.name ? clientInfo?.data?.name : appName}
                 </h3>
                 <p className="text-xs sm:text-sm text-gray-500">
                   Add to Home Screen
