@@ -2,7 +2,35 @@ import React, { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateCourse } from "../../../../services/admin/courseApis";
 import { useToast } from "../../../../contexts/ToastContext";
-import { setStoredRating, getEffectiveRating, setStoredDifficulty, getEffectiveDifficulty, setStoredCompanies, getEffectiveCompanies, getAllAvailableCompanies, setStoredLearningObjectives, getEffectiveLearningObjectives, setStoredStudentStats, getEffectiveStudentStats, setStoredJobPlacement, getEffectiveJobPlacement, setStoredWhatsIncluded, getEffectiveWhatsIncluded, setStoredCourseTags, getEffectiveCourseTags, DEFAULT_AVAILABLE_TAGS, setStoredFeatures, getEffectiveFeatures, setStoredRequirements, getEffectiveRequirements, cleanUpHardcodedTags, setStoredInstructors, getEffectiveInstructors, setStoredDuration, getEffectiveDuration } from "../../../learn/components/courses/course-card-v2/utils/courseDataUtils";
+import {
+  setStoredRating,
+  getEffectiveRating,
+  setStoredDifficulty,
+  getEffectiveDifficulty,
+  setStoredCompanies,
+  getEffectiveCompanies,
+  getAllAvailableCompanies,
+  setStoredLearningObjectives,
+  getEffectiveLearningObjectives,
+  setStoredStudentStats,
+  getEffectiveStudentStats,
+  setStoredJobPlacement,
+  getEffectiveJobPlacement,
+  setStoredWhatsIncluded,
+  getEffectiveWhatsIncluded,
+  setStoredCourseTags,
+  getEffectiveCourseTags,
+  DEFAULT_AVAILABLE_TAGS,
+  setStoredFeatures,
+  getEffectiveFeatures,
+  setStoredRequirements,
+  getEffectiveRequirements,
+  cleanUpHardcodedTags,
+  setStoredInstructors,
+  getEffectiveInstructors,
+  setStoredDuration,
+  getEffectiveDuration,
+} from "../../../learn/components/courses/course-card-v2/utils/courseDataUtils";
 
 interface Course {
   id: number;
@@ -109,8 +137,18 @@ const ContentMetricsSection: React.FC<{ course: Course }> = ({ course }) => {
     {
       id: "videos",
       icon: (
-        <svg className="w-5 h-5 text-[var(--font-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        <svg
+          className="w-5 h-5 text-[var(--font-secondary)]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+          />
         </svg>
       ),
       label: "Videos",
@@ -119,8 +157,18 @@ const ContentMetricsSection: React.FC<{ course: Course }> = ({ course }) => {
     {
       id: "articles",
       icon: (
-        <svg className="w-5 h-5 text-[var(--font-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        <svg
+          className="w-5 h-5 text-[var(--font-secondary)]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          />
         </svg>
       ),
       label: "Articles",
@@ -129,8 +177,18 @@ const ContentMetricsSection: React.FC<{ course: Course }> = ({ course }) => {
     {
       id: "quizzes",
       icon: (
-        <svg className="w-5 h-5 text-[var(--font-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg
+          className="w-5 h-5 text-[var(--font-secondary)]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
       ),
       label: "Quizzes",
@@ -139,8 +197,18 @@ const ContentMetricsSection: React.FC<{ course: Course }> = ({ course }) => {
     {
       id: "problems",
       icon: (
-        <svg className="w-5 h-5 text-[var(--font-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+        <svg
+          className="w-5 h-5 text-[var(--font-secondary)]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+          />
         </svg>
       ),
       label: "Problems",
@@ -149,8 +217,18 @@ const ContentMetricsSection: React.FC<{ course: Course }> = ({ course }) => {
     {
       id: "assignments",
       icon: (
-        <svg className="w-5 h-5 text-[var(--font-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        <svg
+          className="w-5 h-5 text-[var(--font-secondary)]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+          />
         </svg>
       ),
       label: "Subjective",
@@ -199,7 +277,8 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
   const [isEditingDifficulty, setIsEditingDifficulty] = useState(false);
   const [isEditingDuration, setIsEditingDuration] = useState(false);
   const [isEditingCompanies, setIsEditingCompanies] = useState(false);
-  const [isEditingLearningObjectives, setIsEditingLearningObjectives] = useState(false);
+  const [isEditingLearningObjectives, setIsEditingLearningObjectives] =
+    useState(false);
   const [isEditingStudentStats, setIsEditingStudentStats] = useState(false);
   const [isEditingJobPlacement, setIsEditingJobPlacement] = useState(false);
   const [isEditingWhatsIncluded, setIsEditingWhatsIncluded] = useState(false);
@@ -207,48 +286,142 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
   const [isEditingFeatures, setIsEditingFeatures] = useState(false);
   const [isEditingRequirements, setIsEditingRequirements] = useState(false);
   const [isEditingInstructors, setIsEditingInstructors] = useState(false);
-  
+
   const [tempTitle, setTempTitle] = useState(course.title);
   const [tempDescription, setTempDescription] = useState(course.description);
   // Initialize temp rating with centralized rating logic
-  const [tempRating, setTempRating] = useState(() => getEffectiveRating(course));
-  const [tempDifficulty, setTempDifficulty] = useState(() => getEffectiveDifficulty({ id: course.id, difficulty_level: course.difficulty_level }));
-  const [tempDuration, setTempDuration] = useState(() => getEffectiveDuration({ id: course.id, duration_in_hours: course.duration_in_hours }));
-  const [tempCompanies, setTempCompanies] = useState(() => getEffectiveCompanies({ id: course.id }).map(c => c.name));
-  const [tempLearningObjectives, setTempLearningObjectives] = useState(() => getEffectiveLearningObjectives({ id: course.id, learning_objectives: course.learning_objectives }));
-  const [tempStudentStats, setTempStudentStats] = useState(() => getEffectiveStudentStats({ id: course.id, rating: course.rating, enrolled_students: course.enrolled_students }));
-  const [tempJobPlacement, setTempJobPlacement] = useState(() => getEffectiveJobPlacement({ id: course.id, enrolled_students: course.enrolled_students }));
-  const [tempWhatsIncluded, setTempWhatsIncluded] = useState(() => getEffectiveWhatsIncluded({ id: course.id, whats_included: course.whats_included, stats: course.stats }));
-  const [tempTags, setTempTags] = useState(() => getEffectiveCourseTags({ id: course.id, tags: course.tags, title: course.title, difficulty_level: course.difficulty_level }));
-  const [tempFeatures, setTempFeatures] = useState(() => getEffectiveFeatures({ id: course.id, features: course.features, stats: course.stats }));
-  const [tempRequirements, setTempRequirements] = useState(() => getEffectiveRequirements({ id: course.id, requirements: course.requirements, difficulty_level: course.difficulty_level }));
-  const [tempInstructors, setTempInstructors] = useState<Array<{id: number; name: string; profile_pic_url?: string}>>([]);
+  const [tempRating, setTempRating] = useState(() =>
+    getEffectiveRating(course)
+  );
+  const [tempDifficulty, setTempDifficulty] = useState(() =>
+    getEffectiveDifficulty({
+      id: course.id,
+      difficulty_level: course.difficulty_level,
+    })
+  );
+  const [tempDuration, setTempDuration] = useState(() =>
+    getEffectiveDuration({
+      id: course.id,
+      duration_in_hours: course.duration_in_hours,
+    })
+  );
+  const [tempCompanies, setTempCompanies] = useState(() =>
+    getEffectiveCompanies({ id: course.id }).map((c) => c.name)
+  );
+  const [tempLearningObjectives, setTempLearningObjectives] = useState(() =>
+    getEffectiveLearningObjectives({
+      id: course.id,
+      learning_objectives: course.learning_objectives,
+    })
+  );
+  const [tempStudentStats, setTempStudentStats] = useState(() =>
+    getEffectiveStudentStats({
+      id: course.id,
+      rating: course.rating,
+      enrolled_students: course.enrolled_students,
+    })
+  );
+  const [tempJobPlacement, setTempJobPlacement] = useState(() =>
+    getEffectiveJobPlacement({
+      id: course.id,
+      enrolled_students: course.enrolled_students,
+    })
+  );
+  const [tempWhatsIncluded, setTempWhatsIncluded] = useState(() =>
+    getEffectiveWhatsIncluded({
+      id: course.id,
+      whats_included: course.whats_included,
+      stats: course.stats,
+    })
+  );
+  const [tempTags, setTempTags] = useState(() =>
+    getEffectiveCourseTags({
+      id: course.id,
+      tags: course.tags,
+      title: course.title,
+      difficulty_level: course.difficulty_level,
+    })
+  );
+  const [tempFeatures, setTempFeatures] = useState(() =>
+    getEffectiveFeatures({
+      id: course.id,
+      features: course.features,
+      stats: course.stats,
+    })
+  );
+  const [tempRequirements, setTempRequirements] = useState(() =>
+    getEffectiveRequirements({
+      id: course.id,
+      requirements: course.requirements,
+      difficulty_level: course.difficulty_level,
+    })
+  );
+  const [tempInstructors, setTempInstructors] = useState<
+    Array<{
+      id?: number | undefined;
+      name?: string | undefined;
+      bio?: string;
+      profile_pic_url?: string;
+      linkedin_profile?: string;
+    }>
+  >([]);
 
   // Default instructors pool
   const DEFAULT_INSTRUCTORS = [
-    { id: 1, name: "Shubham Lal", profile_pic_url: "https://lh3.googleusercontent.com/a/ACg8ocJSPMwGcKIWqYE1LDeBo_N1Z5pYriaPsNJSwLFAbPQ4N9lmnNIs=s96-c" },
-    { id: 2, name: "Dr. Sarah Johnson", profile_pic_url: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face" },
-    { id: 3, name: "Michael Chen", profile_pic_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face" },
-    { id: 4, name: "Emily Rodriguez", profile_pic_url: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face" },
-    { id: 5, name: "David Kumar", profile_pic_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face" },
-    { id: 6, name: "Lisa Thompson", profile_pic_url: "https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=150&h=150&fit=crop&crop=face" },
+    {
+      id: 1,
+      name: "Shubham Lal",
+      profile_pic_url:
+        "https://lh3.googleusercontent.com/a/ACg8ocJSPMwGcKIWqYE1LDeBo_N1Z5pYriaPsNJSwLFAbPQ4N9lmnNIs=s96-c",
+    },
+    {
+      id: 2,
+      name: "Dr. Sarah Johnson",
+      profile_pic_url:
+        "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
+    },
+    {
+      id: 3,
+      name: "Michael Chen",
+      profile_pic_url:
+        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+    },
+    {
+      id: 4,
+      name: "Emily Rodriguez",
+      profile_pic_url:
+        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
+    },
+    {
+      id: 5,
+      name: "David Kumar",
+      profile_pic_url:
+        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
+    },
+    {
+      id: 6,
+      name: "Lisa Thompson",
+      profile_pic_url:
+        "https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=150&h=150&fit=crop&crop=face",
+    },
   ];
-  
+
   // Additional what's included editing state
-  const [newWhatsIncludedItem, setNewWhatsIncludedItem] = useState('');
-  const [whatsIncludedError, setWhatsIncludedError] = useState('');
-  
+  const [newWhatsIncludedItem, setNewWhatsIncludedItem] = useState("");
+  const [whatsIncludedError, setWhatsIncludedError] = useState("");
+
   // Additional features editing state
-  const [newFeatureItem, setNewFeatureItem] = useState('');
-  const [featuresError, setFeaturesError] = useState('');
-  
+  const [newFeatureItem, setNewFeatureItem] = useState("");
+  const [featuresError, setFeaturesError] = useState("");
+
   // Additional requirements editing state
-  const [newRequirementItem, setNewRequirementItem] = useState('');
-  const [requirementsError, setRequirementsError] = useState('');
-  
+  const [newRequirementItem, setNewRequirementItem] = useState("");
+  const [requirementsError, setRequirementsError] = useState("");
+
   // Force refresh trigger for localStorage changes
   const [companiesRefreshKey, setCompaniesRefreshKey] = useState(0);
-  const [learningObjectivesRefreshKey, setLearningObjectivesRefreshKey] = useState(0);
+  const [learningObjectivesRefreshKey, setLearningObjectivesRefreshKey] =
+    useState(0);
   const [studentStatsRefreshKey, setStudentStatsRefreshKey] = useState(0);
   const [jobPlacementRefreshKey, setJobPlacementRefreshKey] = useState(0);
   const [whatsIncludedRefreshKey, setWhatsIncludedRefreshKey] = useState(0);
@@ -270,86 +443,114 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
     const baseSlug = title
       .toLowerCase()
       .trim()
-      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters but keep spaces and hyphens
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
-      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
-    
+      .replace(/[^a-z0-9\s-]/g, "") // Remove special characters but keep spaces and hyphens
+      .replace(/\s+/g, "-") // Replace spaces with hyphens
+      .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
+      .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
+
     // If the title hasn't really changed (just formatting/spacing), keep original slug
-    const normalizedOriginal = course.title.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const normalizedNew = title.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
+    const normalizedOriginal = course.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+    const normalizedNew = title.toLowerCase().replace(/[^a-z0-9]/g, "");
+
     if (originalSlug && normalizedOriginal === normalizedNew) {
-      console.log('Title change is just formatting, keeping original slug:', originalSlug);
+      console.log(
+        "Title change is just formatting, keeping original slug:",
+        originalSlug
+      );
       return originalSlug;
     }
-    
+
     // Ensure slug is not empty and is unique
-    let finalSlug = baseSlug || 'course';
-    
+    let finalSlug = baseSlug || "course";
+
     // Add timestamp if slug might conflict (when title changes significantly)
     if (finalSlug !== originalSlug && baseSlug.length > 0) {
       // Use a shorter timestamp to avoid overly long slugs
       const timestamp = Date.now().toString().slice(-6); // Last 6 digits
       finalSlug = `${baseSlug}-${timestamp}`;
     }
-    
-    console.log('Generated slug:', { title, originalSlug, finalSlug });
+
+    console.log("Generated slug:", { title, originalSlug, finalSlug });
     return finalSlug;
   };
 
   // Mutation for updating course
   const updateCourseMutation = useMutation({
-    mutationFn: (data: { title?: string; description?: string; rating?: number; difficulty_level?: string; duration_in_hours?: number }) => {
-      const currentSlug = course.slug || course.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    mutationFn: (data: {
+      title?: string;
+      description?: string;
+      rating?: number;
+      difficulty_level?: string;
+      duration_in_hours?: number;
+    }) => {
+      const currentSlug =
+        course.slug ||
+        course.title
+          .toLowerCase()
+          .replace(/\s+/g, "-")
+          .replace(/[^a-z0-9-]/g, "");
       const updateData = {
         title: data.title || course.title,
         description: data.description || course.description,
         slug: data.title ? generateSlug(data.title, currentSlug) : currentSlug,
         // Ensure rating and difficulty_level are included if provided
         ...(data.rating !== undefined && { rating: data.rating }),
-        ...(data.difficulty_level && { difficulty_level: data.difficulty_level }),
-        ...(data.duration_in_hours !== undefined && { duration_in_hours: data.duration_in_hours }),
+        ...(data.difficulty_level && {
+          difficulty_level: data.difficulty_level,
+        }),
+        ...(data.duration_in_hours !== undefined && {
+          duration_in_hours: data.duration_in_hours,
+        }),
       };
-      
-      console.log('Updating course with data:', updateData);
-      console.log('Original course data:', { 
-        id: course.id, 
-        title: course.title, 
-        rating: course.rating, 
-        difficulty_level: course.difficulty_level 
+
+      console.log("Updating course with data:", updateData);
+      console.log("Original course data:", {
+        id: course.id,
+        title: course.title,
+        rating: course.rating,
+        difficulty_level: course.difficulty_level,
       });
       return updateCourse(clientId, course.id, updateData);
     },
     onSuccess: (updatedCourse) => {
-      console.log('Course updated successfully:', updatedCourse);
+      console.log("Course updated successfully:", updatedCourse);
       // Invalidate admin dashboard courses
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.refetchQueries({ queryKey: ["courses"] });
-      
+
       // Invalidate ALL frontend course queries to update course cards v2
       queryClient.invalidateQueries({ queryKey: ["all-courses"] });
       queryClient.invalidateQueries({ queryKey: ["Courses"] }); // Enrolled courses
-      queryClient.invalidateQueries({ queryKey: ["course", course.id.toString()] });
-      queryClient.invalidateQueries({ queryKey: ["basedLearningCourses", clientId] });
-      queryClient.invalidateQueries({ queryKey: ["basedLearningCoursesAll", clientId] });
-      queryClient.invalidateQueries({ queryKey: ["continueCourses", clientId] });
+      queryClient.invalidateQueries({
+        queryKey: ["course", course.id.toString()],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["basedLearningCourses", clientId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["basedLearningCoursesAll", clientId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["continueCourses", clientId],
+      });
       queryClient.invalidateQueries({ queryKey: ["continueCourses"] });
       queryClient.invalidateQueries({ queryKey: ["enrolledCourses"] });
-      
+
       // Refetch the main frontend courses queries
       queryClient.refetchQueries({ queryKey: ["all-courses"] });
       queryClient.refetchQueries({ queryKey: ["Courses"] });
-      
+
       success("Course Updated", "Course has been successfully updated.");
     },
     onError: (error: Error) => {
-      console.error('Course update failed:', error);
+      console.error("Course update failed:", error);
       showError("Update Failed", error.message);
-      
+
       // Rollback optimistic updates by refetching
       queryClient.refetchQueries({ queryKey: ["courses"] });
-      
+
       // Reset temp values on error
       setTempTitle(course.title);
       setTempDescription(course.description);
@@ -369,7 +570,7 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
 
   const handleTitleSave = () => {
     const trimmedTitle = tempTitle.trim();
-    
+
     // Validation checks
     if (!trimmedTitle) {
       showError("Validation Error", "Course title cannot be empty.");
@@ -377,16 +578,22 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
       setIsEditingTitle(false);
       return;
     }
-    
+
     if (trimmedTitle.length < 3) {
-      showError("Validation Error", "Course title must be at least 3 characters long.");
+      showError(
+        "Validation Error",
+        "Course title must be at least 3 characters long."
+      );
       setTempTitle(course.title); // Reset to original
       setIsEditingTitle(false);
       return;
     }
-    
+
     if (trimmedTitle !== course.title) {
-      console.log('Saving title change:', { from: course.title, to: trimmedTitle });
+      console.log("Saving title change:", {
+        from: course.title,
+        to: trimmedTitle,
+      });
       updateCourseMutation.mutate({ title: trimmedTitle });
     }
     setIsEditingTitle(false);
@@ -407,17 +614,23 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
 
   const handleDescriptionSave = () => {
     const trimmedDescription = tempDescription.trim();
-    
+
     // Allow empty description, but if provided, it should be meaningful
     if (trimmedDescription && trimmedDescription.length < 10) {
-      showError("Validation Error", "Course description should be at least 10 characters if provided.");
+      showError(
+        "Validation Error",
+        "Course description should be at least 10 characters if provided."
+      );
       setTempDescription(course.description); // Reset to original
       setIsEditingDescription(false);
       return;
     }
-    
+
     if (trimmedDescription !== course.description) {
-      console.log('Saving description change:', { from: course.description, to: trimmedDescription });
+      console.log("Saving description change:", {
+        from: course.description,
+        to: trimmedDescription,
+      });
       updateCourseMutation.mutate({ description: trimmedDescription });
     }
     setIsEditingDescription(false);
@@ -438,31 +651,35 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
 
   const handleRatingSave = () => {
     const numericRating = isNaN(tempRating) ? 0 : tempRating;
-    
+
     if (numericRating < 0 || numericRating > 5) {
       showError("Validation Error", "Rating must be between 0 and 5.");
       setTempRating(courseRating);
       setIsEditingRating(false);
       return;
     }
-    
-    if (Math.abs(numericRating - courseRating) > 0.01) { // Allow for small floating point differences
-      console.log('Saving rating change:', { from: courseRating, to: numericRating });
-      
+
+    if (Math.abs(numericRating - courseRating) > 0.01) {
+      // Allow for small floating point differences
+      console.log("Saving rating change:", {
+        from: courseRating,
+        to: numericRating,
+      });
+
       // Store rating locally for immediate persistence
       setStoredRating(course.id, numericRating);
-      
+
       // Optimistic update: immediately update the UI
       queryClient.setQueryData(["courses"], (oldData: Course[]) => {
         if (!oldData) return oldData;
-        return oldData.map((c: Course) => 
+        return oldData.map((c: Course) =>
           c.id === course.id ? { ...c, rating: numericRating } : c
         );
       });
-      
+
       updateCourseMutation.mutate({ rating: numericRating });
     } else {
-      console.log('Rating unchanged, not saving');
+      console.log("Rating unchanged, not saving");
     }
     setIsEditingRating(false);
   };
@@ -482,22 +699,25 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
 
   const handleDifficultySave = () => {
     if (tempDifficulty !== courseDifficulty) {
-      console.log('Saving difficulty change:', { from: courseDifficulty, to: tempDifficulty });
-      
+      console.log("Saving difficulty change:", {
+        from: courseDifficulty,
+        to: tempDifficulty,
+      });
+
       // Store difficulty locally for immediate persistence
       setStoredDifficulty(course.id, tempDifficulty);
-      
+
       // Optimistic update: immediately update the UI
       queryClient.setQueryData(["courses"], (oldData: Course[]) => {
         if (!oldData) return oldData;
-        return oldData.map((c: Course) => 
+        return oldData.map((c: Course) =>
           c.id === course.id ? { ...c, difficulty_level: tempDifficulty } : c
         );
       });
-      
+
       updateCourseMutation.mutate({ difficulty_level: tempDifficulty });
     } else {
-      console.log('Difficulty unchanged, not saving');
+      console.log("Difficulty unchanged, not saving");
     }
     setIsEditingDifficulty(false);
   };
@@ -517,31 +737,42 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
 
   const handleDurationSave = () => {
     const numericDuration = Number(tempDuration);
-    const currentDuration = getEffectiveDuration({ id: course.id, duration_in_hours: course.duration_in_hours });
-    
+    const currentDuration = getEffectiveDuration({
+      id: course.id,
+      duration_in_hours: course.duration_in_hours,
+    });
+
     if (numericDuration !== currentDuration && numericDuration > 0) {
-      console.log('Saving duration change:', { from: currentDuration, to: numericDuration });
-      
+      console.log("Saving duration change:", {
+        from: currentDuration,
+        to: numericDuration,
+      });
+
       // Store duration locally for immediate persistence
       setStoredDuration(course.id, numericDuration);
-      
+
       // Optimistic update: immediately update the UI
       queryClient.setQueryData(["courses"], (oldData: Course[]) => {
         if (!oldData) return oldData;
-        return oldData.map((c: Course) => 
+        return oldData.map((c: Course) =>
           c.id === course.id ? { ...c, duration_in_hours: numericDuration } : c
         );
       });
-      
+
       updateCourseMutation.mutate({ duration_in_hours: numericDuration });
     } else {
-      console.log('Duration unchanged or invalid, not saving');
+      console.log("Duration unchanged or invalid, not saving");
     }
     setIsEditingDuration(false);
   };
 
   const handleDurationCancel = () => {
-    setTempDuration(getEffectiveDuration({ id: course.id, duration_in_hours: course.duration_in_hours }));
+    setTempDuration(
+      getEffectiveDuration({
+        id: course.id,
+        duration_in_hours: course.duration_in_hours,
+      })
+    );
     setIsEditingDuration(false);
   };
 
@@ -595,36 +826,47 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
   };
 
   const handleCompanySave = () => {
-    const currentCompanies = getEffectiveCompanies({ id: course.id }).map(c => c.name);
-    if (JSON.stringify(tempCompanies.sort()) !== JSON.stringify(currentCompanies.sort())) {
-      console.log('Saving companies change:', { from: currentCompanies, to: tempCompanies });
-      
+    const currentCompanies = getEffectiveCompanies({ id: course.id }).map(
+      (c) => c.name
+    );
+    if (
+      JSON.stringify(tempCompanies.sort()) !==
+      JSON.stringify(currentCompanies.sort())
+    ) {
+      console.log("Saving companies change:", {
+        from: currentCompanies,
+        to: tempCompanies,
+      });
+
       // Store companies locally for immediate persistence
       setStoredCompanies(course.id, tempCompanies);
-      
+
       // Force refresh of companies memo to reflect localStorage changes immediately
-      setCompaniesRefreshKey(prev => prev + 1);
-      
+      setCompaniesRefreshKey((prev) => prev + 1);
+
       // Optimistic update: immediately update the UI (no backend field yet, only localStorage)
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.invalidateQueries({ queryKey: ["all-courses"] });
-      
+
       // No backend mutation for companies yet - only localStorage persistence
-      success("Companies Updated", "Company selection has been updated and will be reflected in the frontend.");
+      success(
+        "Companies Updated",
+        "Company selection has been updated and will be reflected in the frontend."
+      );
     } else {
-      console.log('Companies unchanged, not saving');
+      console.log("Companies unchanged, not saving");
     }
     setIsEditingCompanies(false);
   };
 
   const handleCompanyCancel = () => {
-    setTempCompanies(courseCompanies.map(c => c.name));
+    setTempCompanies(courseCompanies.map((c) => c.name));
     setIsEditingCompanies(false);
   };
 
   const handleCompanyToggle = (companyName: string) => {
     if (tempCompanies.includes(companyName)) {
-      setTempCompanies(tempCompanies.filter(c => c !== companyName));
+      setTempCompanies(tempCompanies.filter((c) => c !== companyName));
     } else {
       setTempCompanies([...tempCompanies, companyName]);
     }
@@ -636,23 +878,35 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
   };
 
   const handleLearningObjectivesSave = () => {
-    const currentObjectives = getEffectiveLearningObjectives({ id: course.id, learning_objectives: course.learning_objectives });
-    if (JSON.stringify(tempLearningObjectives) !== JSON.stringify(currentObjectives)) {
-      console.log('Saving learning objectives change:', { from: currentObjectives, to: tempLearningObjectives });
-      
+    const currentObjectives = getEffectiveLearningObjectives({
+      id: course.id,
+      learning_objectives: course.learning_objectives,
+    });
+    if (
+      JSON.stringify(tempLearningObjectives) !==
+      JSON.stringify(currentObjectives)
+    ) {
+      console.log("Saving learning objectives change:", {
+        from: currentObjectives,
+        to: tempLearningObjectives,
+      });
+
       // Store learning objectives locally for immediate persistence
       setStoredLearningObjectives(course.id, tempLearningObjectives);
-      
+
       // Force refresh to reflect localStorage changes immediately
-      setLearningObjectivesRefreshKey(prev => prev + 1);
-      
+      setLearningObjectivesRefreshKey((prev) => prev + 1);
+
       // Query invalidation for frontend synchronization
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.invalidateQueries({ queryKey: ["all-courses"] });
-      
-      success("Learning Objectives Updated", "Learning objectives have been updated and will be reflected in the frontend.");
+
+      success(
+        "Learning Objectives Updated",
+        "Learning objectives have been updated and will be reflected in the frontend."
+      );
     } else {
-      console.log('Learning objectives unchanged, not saving');
+      console.log("Learning objectives unchanged, not saving");
     }
     setIsEditingLearningObjectives(false);
   };
@@ -663,11 +917,16 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
   };
 
   const handleLearningObjectiveAdd = () => {
-    setTempLearningObjectives([...tempLearningObjectives, "New learning objective"]);
+    setTempLearningObjectives([
+      ...tempLearningObjectives,
+      "New learning objective",
+    ]);
   };
 
   const handleLearningObjectiveDelete = (index: number) => {
-    setTempLearningObjectives(tempLearningObjectives.filter((_, i) => i !== index));
+    setTempLearningObjectives(
+      tempLearningObjectives.filter((_, i) => i !== index)
+    );
   };
 
   const handleLearningObjectiveChange = (index: number, value: string) => {
@@ -682,23 +941,33 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
   };
 
   const handleTagsSave = () => {
-    const currentTags = getEffectiveCourseTags({ id: course.id, tags: course.tags, title: course.title, difficulty_level: course.difficulty_level });
-    if (JSON.stringify(tempTags.sort()) !== JSON.stringify(currentTags.sort())) {
-      console.log('Saving tags change:', { from: currentTags, to: tempTags });
-      
+    const currentTags = getEffectiveCourseTags({
+      id: course.id,
+      tags: course.tags,
+      title: course.title,
+      difficulty_level: course.difficulty_level,
+    });
+    if (
+      JSON.stringify(tempTags.sort()) !== JSON.stringify(currentTags.sort())
+    ) {
+      console.log("Saving tags change:", { from: currentTags, to: tempTags });
+
       // Store tags locally for immediate persistence
       setStoredCourseTags(course.id, tempTags);
-      
+
       // Force refresh to reflect localStorage changes immediately
-      setTagsRefreshKey(prev => prev + 1);
-      
+      setTagsRefreshKey((prev) => prev + 1);
+
       // Query invalidation for frontend synchronization
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.invalidateQueries({ queryKey: ["all-courses"] });
-      
-      success("Course Tags Updated", "Course tags have been updated and will be reflected in the frontend.");
+
+      success(
+        "Course Tags Updated",
+        "Course tags have been updated and will be reflected in the frontend."
+      );
     } else {
-      console.log('Tags unchanged, not saving');
+      console.log("Tags unchanged, not saving");
     }
     setIsEditingTags(false);
   };
@@ -710,35 +979,45 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
 
   const handleTagToggle = (tag: string) => {
     if (tempTags.includes(tag)) {
-      setTempTags(tempTags.filter(t => t !== tag));
+      setTempTags(tempTags.filter((t) => t !== tag));
     } else {
       setTempTags([...tempTags, tag]);
     }
   };
 
-  // Handle student stats editing  
+  // Handle student stats editing
   const handleStudentStatsEdit = () => {
     setIsEditingStudentStats(true);
   };
 
   const handleStudentStatsSave = () => {
-    const currentStats = getEffectiveStudentStats({ id: course.id, rating: course.rating, enrolled_students: course.enrolled_students });
+    const currentStats = getEffectiveStudentStats({
+      id: course.id,
+      rating: course.rating,
+      enrolled_students: course.enrolled_students,
+    });
     if (JSON.stringify(tempStudentStats) !== JSON.stringify(currentStats)) {
-      console.log('Saving student stats change:', { from: currentStats, to: tempStudentStats });
-      
+      console.log("Saving student stats change:", {
+        from: currentStats,
+        to: tempStudentStats,
+      });
+
       // Store student stats locally for immediate persistence
       setStoredStudentStats(course.id, tempStudentStats);
-      
+
       // Force refresh to reflect localStorage changes immediately
-      setStudentStatsRefreshKey(prev => prev + 1);
-      
+      setStudentStatsRefreshKey((prev) => prev + 1);
+
       // Query invalidation for frontend synchronization
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.invalidateQueries({ queryKey: ["all-courses"] });
-      
-      success("Student Stats Updated", "Student rating statistics have been updated and will be reflected in the frontend.");
+
+      success(
+        "Student Stats Updated",
+        "Student rating statistics have been updated and will be reflected in the frontend."
+      );
     } else {
-      console.log('Student stats unchanged, not saving');
+      console.log("Student stats unchanged, not saving");
     }
     setIsEditingStudentStats(false);
   };
@@ -754,23 +1033,32 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
   };
 
   const handleJobPlacementSave = () => {
-    const currentPlacement = getEffectiveJobPlacement({ id: course.id, enrolled_students: course.enrolled_students });
+    const currentPlacement = getEffectiveJobPlacement({
+      id: course.id,
+      enrolled_students: course.enrolled_students,
+    });
     if (JSON.stringify(tempJobPlacement) !== JSON.stringify(currentPlacement)) {
-      console.log('Saving job placement change:', { from: currentPlacement, to: tempJobPlacement });
-      
+      console.log("Saving job placement change:", {
+        from: currentPlacement,
+        to: tempJobPlacement,
+      });
+
       // Store job placement locally for immediate persistence
       setStoredJobPlacement(course.id, tempJobPlacement);
-      
+
       // Force refresh to reflect localStorage changes immediately
-      setJobPlacementRefreshKey(prev => prev + 1);
-      
+      setJobPlacementRefreshKey((prev) => prev + 1);
+
       // Query invalidation for frontend synchronization
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.invalidateQueries({ queryKey: ["all-courses"] });
-      
-      success("Job Placement Updated", "Job placement information has been updated and will be reflected in the frontend.");
+
+      success(
+        "Job Placement Updated",
+        "Job placement information has been updated and will be reflected in the frontend."
+      );
     } else {
-      console.log('Job placement unchanged, not saving');
+      console.log("Job placement unchanged, not saving");
     }
     setIsEditingJobPlacement(false);
   };
@@ -783,48 +1071,56 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
   // Handle what's included save
   const handleWhatsIncludedSave = () => {
     if (whatsIncludedError) return;
-    
-    console.log('🗂️ Admin: Saving what\'s included for course:', course.id, tempWhatsIncluded);
-    
+
+    console.log(
+      "🗂️ Admin: Saving what's included for course:",
+      course.id,
+      tempWhatsIncluded
+    );
+
     try {
       setStoredWhatsIncluded(course.id, tempWhatsIncluded);
       setIsEditingWhatsIncluded(false);
-      setWhatsIncludedRefreshKey(prev => prev + 1);
-      
+      setWhatsIncludedRefreshKey((prev) => prev + 1);
+
       // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ['course', course.id] });
-      queryClient.invalidateQueries({ queryKey: ['courses'] });
-      
-      console.log('✅ Admin: What\'s included saved successfully');
+      queryClient.invalidateQueries({ queryKey: ["course", course.id] });
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+
+      console.log("✅ Admin: What's included saved successfully");
     } catch (error) {
-      console.error('❌ Admin: Failed to save what\'s included:', error);
+      console.error("❌ Admin: Failed to save what's included:", error);
     }
   };
 
   // Handle what's included cancel
   const handleWhatsIncludedCancel = () => {
-    const currentWhatsIncluded = getEffectiveWhatsIncluded({ id: course.id, whats_included: course.whats_included, stats: course.stats });
+    const currentWhatsIncluded = getEffectiveWhatsIncluded({
+      id: course.id,
+      whats_included: course.whats_included,
+      stats: course.stats,
+    });
     setTempWhatsIncluded(currentWhatsIncluded);
     setIsEditingWhatsIncluded(false);
-    setWhatsIncludedError('');
-    setNewWhatsIncludedItem('');
+    setWhatsIncludedError("");
+    setNewWhatsIncludedItem("");
   };
 
   // Handle add what's included item
   const handleAddWhatsIncludedItem = () => {
     if (!newWhatsIncludedItem.trim()) {
-      setWhatsIncludedError('Please enter an item');
+      setWhatsIncludedError("Please enter an item");
       return;
     }
-    
+
     if (tempWhatsIncluded.includes(newWhatsIncludedItem.trim())) {
-      setWhatsIncludedError('This item already exists');
+      setWhatsIncludedError("This item already exists");
       return;
     }
-    
+
     setTempWhatsIncluded([...tempWhatsIncluded, newWhatsIncludedItem.trim()]);
-    setNewWhatsIncludedItem('');
-    setWhatsIncludedError('');
+    setNewWhatsIncludedItem("");
+    setWhatsIncludedError("");
   };
 
   // Handle remove what's included item
@@ -834,52 +1130,60 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
   };
 
   // === FEATURES HANDLERS ===
-  
+
   // Handle features save
   const handleFeaturesSave = () => {
     if (featuresError) return;
-    
-    console.log('🎯 Admin: Saving features for course:', course.id, tempFeatures);
-    
+
+    console.log(
+      "🎯 Admin: Saving features for course:",
+      course.id,
+      tempFeatures
+    );
+
     try {
       setStoredFeatures(course.id, tempFeatures);
       setIsEditingFeatures(false);
-      setFeaturesRefreshKey(prev => prev + 1);
-      
+      setFeaturesRefreshKey((prev) => prev + 1);
+
       // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ['course', course.id] });
-      queryClient.invalidateQueries({ queryKey: ['courses'] });
-      
-      console.log('✅ Admin: Features saved successfully');
+      queryClient.invalidateQueries({ queryKey: ["course", course.id] });
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+
+      console.log("✅ Admin: Features saved successfully");
     } catch (error) {
-      console.error('❌ Admin: Failed to save features:', error);
+      console.error("❌ Admin: Failed to save features:", error);
     }
   };
 
   // Handle features cancel
   const handleFeaturesCancel = () => {
-    const currentFeatures = getEffectiveFeatures({ id: course.id, features: course.features, stats: course.stats });
+    const currentFeatures = getEffectiveFeatures({
+      id: course.id,
+      features: course.features,
+      stats: course.stats,
+    });
     setTempFeatures(currentFeatures);
     setIsEditingFeatures(false);
-    setFeaturesError('');
-    setNewFeatureItem('');
+    setFeaturesError("");
+    setNewFeatureItem("");
   };
 
   // Handle add feature item
   const handleAddFeatureItem = () => {
     if (!newFeatureItem.trim()) {
-      setFeaturesError('Please enter a feature');
+      setFeaturesError("Please enter a feature");
       return;
     }
-    
+
     if (tempFeatures.includes(newFeatureItem.trim())) {
-      setFeaturesError('This feature already exists');
+      setFeaturesError("This feature already exists");
       return;
     }
-    
+
     setTempFeatures([...tempFeatures, newFeatureItem.trim()]);
-    setNewFeatureItem('');
-    setFeaturesError('');
+    setNewFeatureItem("");
+    setFeaturesError("");
   };
 
   // Handle remove feature item
@@ -889,35 +1193,43 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
   };
 
   // === REQUIREMENTS HANDLERS ===
-  
+
   // Handle requirements save
   const handleRequirementsSave = () => {
     if (requirementsError) return;
-    
-    console.log('📋 Admin: Saving requirements for course:', course.id, tempRequirements);
-    
+
+    console.log(
+      "📋 Admin: Saving requirements for course:",
+      course.id,
+      tempRequirements
+    );
+
     try {
       setStoredRequirements(course.id, tempRequirements);
       setIsEditingRequirements(false);
-      setRequirementsRefreshKey(prev => prev + 1);
-      
+      setRequirementsRefreshKey((prev) => prev + 1);
+
       // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ['course', course.id] });
-      queryClient.invalidateQueries({ queryKey: ['courses'] });
-      
-      console.log('✅ Admin: Requirements saved successfully');
+      queryClient.invalidateQueries({ queryKey: ["course", course.id] });
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+
+      console.log("✅ Admin: Requirements saved successfully");
     } catch (error) {
-      console.error('❌ Admin: Failed to save requirements:', error);
+      console.error("❌ Admin: Failed to save requirements:", error);
     }
   };
 
   // Handle requirements cancel
   const handleRequirementsCancel = () => {
-    const currentRequirements = getEffectiveRequirements({ id: course.id, requirements: course.requirements, difficulty_level: course.difficulty_level });
+    const currentRequirements = getEffectiveRequirements({
+      id: course.id,
+      requirements: course.requirements,
+      difficulty_level: course.difficulty_level,
+    });
     setTempRequirements(currentRequirements);
     setIsEditingRequirements(false);
-    setRequirementsError('');
-    setNewRequirementItem('');
+    setRequirementsError("");
+    setNewRequirementItem("");
   };
 
   // Handle instructors editing
@@ -925,10 +1237,14 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
     setIsEditingInstructors(true);
   };
 
-  const handleInstructorToggle = (instructor: {id: number; name: string; profile_pic_url?: string}) => {
-    const isSelected = tempInstructors.some(i => i.id === instructor.id);
+  const handleInstructorToggle = (instructor: {
+    id: number;
+    name: string;
+    profile_pic_url?: string;
+  }) => {
+    const isSelected = tempInstructors.some((i) => i.id === instructor.id);
     if (isSelected) {
-      setTempInstructors(tempInstructors.filter(i => i.id !== instructor.id));
+      setTempInstructors(tempInstructors.filter((i) => i.id !== instructor.id));
     } else {
       setTempInstructors([...tempInstructors, instructor]);
     }
@@ -936,51 +1252,60 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
 
   const handleInstructorsSave = () => {
     const currentInstructors = courseInstructors;
-    if (JSON.stringify(tempInstructors.sort((a,b) => a.id - b.id)) !== JSON.stringify(currentInstructors.sort((a,b) => a.id - b.id))) {
-      console.log('💾 Saving instructors change:', { from: currentInstructors, to: tempInstructors });
-      
+    if (
+      JSON.stringify(tempInstructors?.sort((a: any, b: any) => a.id - b.id)) !==
+      JSON.stringify(currentInstructors.sort((a: any, b: any) => a.id - b.id))
+    ) {
+      console.log("💾 Saving instructors change:", {
+        from: currentInstructors,
+        to: tempInstructors,
+      });
+
       // Store instructors in centralized localStorage that frontend can access
-      setStoredInstructors(course.id, tempInstructors);
-      
+      setStoredInstructors(course.id, tempInstructors as any);
+
       // Force immediate UI refresh
-      setInstructorsRefreshKey(prev => prev + 1);
-      
+      setInstructorsRefreshKey((prev) => prev + 1);
+
       // Query invalidation for synchronization
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.invalidateQueries({ queryKey: ["all-courses"] });
-      
+
       // Additional refresh cycle for persistence
       setTimeout(() => {
-        setInstructorsRefreshKey(prev => prev + 1);
+        setInstructorsRefreshKey((prev) => prev + 1);
       }, 100);
-      
-      success("Instructors Updated", "Course instructors have been updated and will reflect in frontend immediately.");
+
+      success(
+        "Instructors Updated",
+        "Course instructors have been updated and will reflect in frontend immediately."
+      );
     } else {
-      console.log('Instructors unchanged, not saving');
+      console.log("Instructors unchanged, not saving");
     }
     setIsEditingInstructors(false);
   };
 
   const handleInstructorsCancel = () => {
-    setTempInstructors(courseInstructors);
+    setTempInstructors(courseInstructors as any);
     setIsEditingInstructors(false);
   };
 
   // Handle add requirement item
   const handleAddRequirementItem = () => {
     if (!newRequirementItem.trim()) {
-      setRequirementsError('Please enter a requirement');
+      setRequirementsError("Please enter a requirement");
       return;
     }
-    
+
     if (tempRequirements.includes(newRequirementItem.trim())) {
-      setRequirementsError('This requirement already exists');
+      setRequirementsError("This requirement already exists");
       return;
     }
-    
+
     setTempRequirements([...tempRequirements, newRequirementItem.trim()]);
-    setNewRequirementItem('');
-    setRequirementsError('');
+    setNewRequirementItem("");
+    setRequirementsError("");
   };
 
   // Handle remove requirement item
@@ -990,84 +1315,157 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
   };
 
   const formattedPrice = course.is_free ? "Free" : `₹${course.price}`;
-  
+
   // Get rating and difficulty using centralized logic
   const courseRating = React.useMemo(() => {
     const effectiveRating = getEffectiveRating(course);
-    console.log(`[AdminCard] Course ${course.id} (${course.title}): backend_rating=${course.rating}, effective=${effectiveRating}`);
+    console.log(
+      `[AdminCard] Course ${course.id} (${course.title}): backend_rating=${course.rating}, effective=${effectiveRating}`
+    );
     return effectiveRating;
   }, [course]);
-  
+
   const courseDifficulty = React.useMemo(() => {
-    const effectiveDifficulty = getEffectiveDifficulty({ id: course.id, difficulty_level: course.difficulty_level });
-    console.log(`[AdminCard] Course ${course.id} (${course.title}): backend_difficulty=${course.difficulty_level}, effective=${effectiveDifficulty}`);
+    const effectiveDifficulty = getEffectiveDifficulty({
+      id: course.id,
+      difficulty_level: course.difficulty_level,
+    });
+    console.log(
+      `[AdminCard] Course ${course.id} (${course.title}): backend_difficulty=${course.difficulty_level}, effective=${effectiveDifficulty}`
+    );
     return effectiveDifficulty;
   }, [course]);
-  
+
   const courseCompanies = React.useMemo(() => {
     const effectiveCompanies = getEffectiveCompanies({ id: course.id });
-    console.log(`[AdminCard] Course ${course.id} (${course.title}): effective_companies=${effectiveCompanies.map(c => c.name).join(', ')}`);
+    console.log(
+      `[AdminCard] Course ${course.id} (${
+        course.title
+      }): effective_companies=${effectiveCompanies
+        .map((c) => c.name)
+        .join(", ")}`
+    );
     return effectiveCompanies;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, companiesRefreshKey]); // companiesRefreshKey needed to force re-render after localStorage changes
-  
+
   const courseLearningObjectives = React.useMemo(() => {
-    const effectiveObjectives = getEffectiveLearningObjectives({ id: course.id, learning_objectives: course.learning_objectives });
-    console.log(`[AdminCard] Course ${course.id} (${course.title}): effective_learning_objectives=${effectiveObjectives.join(', ')}`);
+    const effectiveObjectives = getEffectiveLearningObjectives({
+      id: course.id,
+      learning_objectives: course.learning_objectives,
+    });
+    console.log(
+      `[AdminCard] Course ${course.id} (${
+        course.title
+      }): effective_learning_objectives=${effectiveObjectives.join(", ")}`
+    );
     return effectiveObjectives;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, learningObjectivesRefreshKey]);
-  
+
   const courseStudentStats = React.useMemo(() => {
-    const effectiveStats = getEffectiveStudentStats({ id: course.id, rating: course.rating, enrolled_students: course.enrolled_students });
-    console.log(`[AdminCard] Course ${course.id} (${course.title}): effective_student_stats=${effectiveStats.rating}/5 from ${effectiveStats.totalLearners} learners`);
+    const effectiveStats = getEffectiveStudentStats({
+      id: course.id,
+      rating: course.rating,
+      enrolled_students: course.enrolled_students,
+    });
+    console.log(
+      `[AdminCard] Course ${course.id} (${course.title}): effective_student_stats=${effectiveStats.rating}/5 from ${effectiveStats.totalLearners} learners`
+    );
     return effectiveStats;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, studentStatsRefreshKey]);
-  
+
   const courseJobPlacement = React.useMemo(() => {
-    const effectivePlacement = getEffectiveJobPlacement({ id: course.id, enrolled_students: course.enrolled_students });
-    console.log(`[AdminCard] Course ${course.id} (${course.title}): effective_job_placement=${effectivePlacement.totalLearners} learners at ${effectivePlacement.companies.join(', ')}`);
+    const effectivePlacement = getEffectiveJobPlacement({
+      id: course.id,
+      enrolled_students: course.enrolled_students,
+    });
+    console.log(
+      `[AdminCard] Course ${course.id} (${
+        course.title
+      }): effective_job_placement=${
+        effectivePlacement.totalLearners
+      } learners at ${effectivePlacement.companies.join(", ")}`
+    );
     return effectivePlacement;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, jobPlacementRefreshKey]);
-  
+
   const courseWhatsIncluded = React.useMemo(() => {
-    const effectiveIncluded = getEffectiveWhatsIncluded({ id: course.id, whats_included: course.whats_included, stats: course.stats });
-    console.log(`[AdminCard] Course ${course.id} (${course.title}): effective_whats_included=${effectiveIncluded.join(', ')}`);
+    const effectiveIncluded = getEffectiveWhatsIncluded({
+      id: course.id,
+      whats_included: course.whats_included,
+      stats: course.stats,
+    });
+    console.log(
+      `[AdminCard] Course ${course.id} (${
+        course.title
+      }): effective_whats_included=${effectiveIncluded.join(", ")}`
+    );
     return effectiveIncluded;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, whatsIncludedRefreshKey]);
-  
+
   const courseTags = React.useMemo(() => {
-    const effectiveTags = getEffectiveCourseTags({ id: course.id, tags: course.tags, title: course.title, difficulty_level: course.difficulty_level });
-    console.log(`[AdminCard] Course ${course.id} (${course.title}): effective_tags=${effectiveTags.join(', ')}`);
+    const effectiveTags = getEffectiveCourseTags({
+      id: course.id,
+      tags: course.tags,
+      title: course.title,
+      difficulty_level: course.difficulty_level,
+    });
+    console.log(
+      `[AdminCard] Course ${course.id} (${
+        course.title
+      }): effective_tags=${effectiveTags.join(", ")}`
+    );
     return effectiveTags;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, tagsRefreshKey]);
-  
+
   const courseFeatures = React.useMemo(() => {
-    const effectiveFeatures = getEffectiveFeatures({ id: course.id, features: course.features, stats: course.stats });
-    console.log(`[AdminCard] Course ${course.id} (${course.title}): effective_features=${effectiveFeatures.join(', ')}`);
+    const effectiveFeatures = getEffectiveFeatures({
+      id: course.id,
+      features: course.features,
+      stats: course.stats,
+    });
+    console.log(
+      `[AdminCard] Course ${course.id} (${
+        course.title
+      }): effective_features=${effectiveFeatures.join(", ")}`
+    );
     return effectiveFeatures;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, featuresRefreshKey]);
-  
+
   const courseRequirements = React.useMemo(() => {
-    const effectiveRequirements = getEffectiveRequirements({ id: course.id, requirements: course.requirements, difficulty_level: course.difficulty_level });
-    console.log(`[AdminCard] Course ${course.id} (${course.title}): effective_requirements=${effectiveRequirements.join(', ')}`);
+    const effectiveRequirements = getEffectiveRequirements({
+      id: course.id,
+      requirements: course.requirements,
+      difficulty_level: course.difficulty_level,
+    });
+
     return effectiveRequirements;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, requirementsRefreshKey]);
-  
+
   const courseInstructors = React.useMemo(() => {
     const effectiveInstructors = getEffectiveInstructors(course);
-    console.log(`[AdminCard] Course ${course.id} (${course.title}): effective_instructors=${effectiveInstructors.map(i => i.name).join(', ')}`);
+    console.log(
+      `[AdminCard] Course ${course.id} (${
+        course.title
+      }): effective_instructors=${effectiveInstructors
+        .map((i) => i.name)
+        .join(", ")}`
+    );
     return effectiveInstructors;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, instructorsRefreshKey]);
-  
-  const courseDuration = getEffectiveDuration({ id: course.id, duration_in_hours: course.duration_in_hours });
+
+  const courseDuration = getEffectiveDuration({
+    id: course.id,
+    duration_in_hours: course.duration_in_hours,
+  });
 
   // Update temp values when course data changes
   useEffect(() => {
@@ -1076,7 +1474,7 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
     setTempRating(courseRating);
     setTempDifficulty(courseDifficulty);
     setTempDuration(courseDuration);
-    setTempCompanies(courseCompanies.map(c => c.name));
+    setTempCompanies(courseCompanies.map((c) => c.name));
     setTempLearningObjectives(courseLearningObjectives);
     setTempTags(courseTags);
     setTempStudentStats(courseStudentStats);
@@ -1085,10 +1483,23 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
     setTempFeatures(courseFeatures);
     setTempRequirements(courseRequirements);
     setTempInstructors(getEffectiveInstructors(course));
-    
+
     // Auto-cleanup problematic hardcoded tags when admin loads
     cleanUpHardcodedTags();
-  }, [course, courseRating, courseDifficulty, courseDuration, courseCompanies, courseLearningObjectives, courseTags, courseStudentStats, courseJobPlacement, courseWhatsIncluded, courseFeatures, courseRequirements]);
+  }, [
+    course,
+    courseRating,
+    courseDifficulty,
+    courseDuration,
+    courseCompanies,
+    courseLearningObjectives,
+    courseTags,
+    courseStudentStats,
+    courseJobPlacement,
+    courseWhatsIncluded,
+    courseFeatures,
+    courseRequirements,
+  ]);
 
   return (
     <div
@@ -1147,7 +1558,10 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
             <div className="flex flex-col gap-2 w-full">
               <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2 bg-gray-50">
                 {getAllAvailableCompanies().map((company) => (
-                  <label key={company} className="flex items-center gap-2 text-xs cursor-pointer">
+                  <label
+                    key={company}
+                    className="flex items-center gap-2 text-xs cursor-pointer"
+                  >
                     <input
                       type="checkbox"
                       checked={tempCompanies.includes(company)}
@@ -1175,7 +1589,11 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-2 flex-wrap cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors" onClick={handleCompanyEdit} title="Click to edit companies">
+          <div
+            className="flex items-center gap-2 flex-wrap cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors"
+            onClick={handleCompanyEdit}
+            title="Click to edit companies"
+          >
             <span className="text-[11px] text-[var(--font-tertiary)] font-normal uppercase tracking-[0.5px]">
               Created and certified by
             </span>
@@ -1193,8 +1611,18 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
                   <span>{company.name}</span>
                 </div>
               ))}
-              <svg className="w-3 h-3 text-gray-400 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5l7 7-7 7M4 5l7 7-7 7" />
+              <svg
+                className="w-3 h-3 text-gray-400 ml-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 5l7 7-7 7M4 5l7 7-7 7"
+                />
               </svg>
             </div>
           </div>
@@ -1229,7 +1657,7 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
               </select>
             </div>
           ) : (
-            <span 
+            <span
               onClick={handleDifficultyEdit}
               className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-full text-xs font-medium text-gray-700 whitespace-nowrap cursor-pointer hover:bg-gray-200 transition-colors group"
               title="Click to edit difficulty"
@@ -1273,7 +1701,7 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
               <span className="text-xs font-medium">hours</span>
             </div>
           ) : (
-            <span 
+            <span
               onClick={handleDurationEdit}
               className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-full text-xs font-medium text-gray-700 whitespace-nowrap cursor-pointer hover:bg-gray-200 transition-colors group"
               title="Click to edit duration"
@@ -1319,7 +1747,7 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
                 <span className="text-xs font-semibold text-gray-700">/5</span>
               </div>
             ) : (
-              <span 
+              <span
                 onClick={handleRatingEdit}
                 className="text-xs font-semibold text-gray-700 cursor-pointer hover:text-blue-600 transition-colors group"
                 title="Click to edit rating"
@@ -1387,19 +1815,31 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
         {/* Instructor Section - Editable */}
         {isEditingInstructors ? (
           <div className="mb-4 p-4 border border-blue-200 rounded-lg bg-blue-50">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3">Course Instructors (Editing):</h4>
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">
+              Course Instructors (Editing):
+            </h4>
             <div className="grid grid-cols-1 gap-3 mb-3 max-h-48 overflow-y-auto">
               {DEFAULT_INSTRUCTORS.map((instructor) => (
-                <label key={instructor.id} className="flex items-center gap-3 text-sm cursor-pointer p-2 rounded hover:bg-blue-100">
+                <label
+                  key={instructor.id}
+                  className="flex items-center gap-3 text-sm cursor-pointer p-2 rounded hover:bg-blue-100"
+                >
                   <input
                     type="checkbox"
-                    checked={tempInstructors.some(i => i.id === instructor.id)}
+                    checked={tempInstructors.some(
+                      (i) => i.id === instructor.id
+                    )}
                     onChange={() => handleInstructorToggle(instructor)}
                     className="w-4 h-4"
                   />
                   <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-300">
                     <img
-                      src={instructor.profile_pic_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(instructor.name)}&background=6366f1&color=fff`}
+                      src={
+                        instructor.profile_pic_url ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          instructor.name
+                        )}&background=6366f1&color=fff`
+                      }
                       alt={instructor.name}
                       className="w-full h-full object-cover"
                     />
@@ -1428,14 +1868,19 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
             <div className="text-xs font-semibold text-[var(--font-secondary)] mb-3 uppercase tracking-[0.5px] flex items-center justify-between">
               <span>Instructors</span>
               <div title="Click to edit instructors">
-                <svg 
-                  className="w-3 h-3 text-gray-400 cursor-pointer hover:text-blue-500" 
-                  fill="none" 
-                  stroke="currentColor" 
+                <svg
+                  className="w-3 h-3 text-gray-400 cursor-pointer hover:text-blue-500"
+                  fill="none"
+                  stroke="currentColor"
                   viewBox="0 0 24 24"
                   onClick={handleInstructorsEdit}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5l7 7-7 7M4 5l7 7-7 7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 5l7 7-7 7M4 5l7 7-7 7"
+                  />
                 </svg>
               </div>
             </div>
@@ -1453,7 +1898,7 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
                           src={
                             instructor.profile_pic_url ||
                             `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                              instructor.name
+                              instructor?.name ? instructor?.name : "IN"
                             )}&background=6366f1&color=fff`
                           }
                           alt={instructor.name}
@@ -1465,11 +1910,15 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
                 </div>
                 <p className="text-xs text-[var(--font-secondary)] leading-relaxed">
                   {courseInstructors[0]?.name || "Expert Instructor"}
-                  {courseInstructors.length > 1 && ` +${courseInstructors.length - 1} more`}
+                  {courseInstructors.length > 1 &&
+                    ` +${courseInstructors.length - 1} more`}
                 </p>
               </div>
             ) : (
-              <div className="text-xs text-gray-500 italic cursor-pointer hover:text-blue-500" onClick={handleInstructorsEdit}>
+              <div
+                className="text-xs text-gray-500 italic cursor-pointer hover:text-blue-500"
+                onClick={handleInstructorsEdit}
+              >
                 No instructors assigned. Click to add instructors.
               </div>
             )}
@@ -1518,10 +1967,14 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
             <div className="space-y-3">
               {tempLearningObjectives.map((objective, index) => (
                 <div key={index} className="flex items-start gap-2">
-                  <span className="text-green-600 font-bold text-xs mt-2 flex-shrink-0">✓</span>
+                  <span className="text-green-600 font-bold text-xs mt-2 flex-shrink-0">
+                    ✓
+                  </span>
                   <textarea
                     value={objective}
-                    onChange={(e) => handleLearningObjectiveChange(index, e.target.value)}
+                    onChange={(e) =>
+                      handleLearningObjectiveChange(index, e.target.value)
+                    }
                     className="flex-1 text-sm text-gray-600 bg-white border border-gray-300 rounded px-2 py-1 resize-none"
                     rows={2}
                   />
@@ -1557,11 +2010,25 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
             </div>
           </div>
         ) : (
-          <div className="mb-4 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors" onClick={handleLearningObjectivesEdit} title="Click to edit learning objectives">
+          <div
+            className="mb-4 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+            onClick={handleLearningObjectivesEdit}
+            title="Click to edit learning objectives"
+          >
             <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
               What you'll learn:
-              <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5l7 7-7 7M4 5l7 7-7 7" />
+              <svg
+                className="w-3 h-3 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 5l7 7-7 7M4 5l7 7-7 7"
+                />
               </svg>
             </h3>
             <ul className="space-y-2">
@@ -1583,10 +2050,15 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
         {/* Course Tags - Editable */}
         {isEditingTags ? (
           <div className="mb-4 p-4 border border-blue-200 rounded-lg bg-blue-50">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3">Course Tags (Editing):</h4>
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">
+              Course Tags (Editing):
+            </h4>
             <div className="grid grid-cols-2 gap-2 mb-3">
               {DEFAULT_AVAILABLE_TAGS.map((tag) => (
-                <label key={tag} className="flex items-center gap-2 text-xs cursor-pointer">
+                <label
+                  key={tag}
+                  className="flex items-center gap-2 text-xs cursor-pointer"
+                >
                   <input
                     type="checkbox"
                     checked={tempTags.includes(tag)}
@@ -1613,44 +2085,54 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
               <button
                 onClick={async () => {
                   try {
-                    console.log('🚀 Starting comprehensive tag cleanup...');
-                    
+                    console.log("🚀 Starting comprehensive tag cleanup...");
+
                     // Step 1: Clear all tags for this course immediately
                     setTempTags([]);
-                    
+
                     // Step 2: Run global cleanup first to remove problematic tags
                     cleanUpHardcodedTags();
-                    
+
                     // Step 3: Force immediate save of empty tags for this course
                     setStoredCourseTags(course.id, []);
-                    
+
                     // Step 4: Multiple state refreshes to ensure UI sync
-                    setTagsRefreshKey(prev => prev + 1);
-                    
+                    setTagsRefreshKey((prev) => prev + 1);
+
                     // Step 5: Wait a moment for localStorage to settle
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+
                     // Step 6: Force another refresh cycle
-                    setTagsRefreshKey(prev => prev + 1);
-                    
+                    setTagsRefreshKey((prev) => prev + 1);
+
                     // Step 7: Comprehensive query invalidation
-                    await queryClient.invalidateQueries({ queryKey: ["courses"] });
-                    await queryClient.invalidateQueries({ queryKey: ["all-courses"] });
+                    await queryClient.invalidateQueries({
+                      queryKey: ["courses"],
+                    });
+                    await queryClient.invalidateQueries({
+                      queryKey: ["all-courses"],
+                    });
                     await queryClient.refetchQueries({ queryKey: ["courses"] });
-                    
+
                     // Step 8: Final state update
                     setTimeout(() => {
-                      setTagsRefreshKey(prev => prev + 1);
+                      setTagsRefreshKey((prev) => prev + 1);
                     }, 200);
-                    
-                    console.log('✅ Comprehensive tag cleanup completed');
-                    success("All Tags Cleared", "Removed all tags from this course and cleaned up problematic tags globally. Changes are now reflected in both admin and frontend.");
-                    
+
+                    console.log("✅ Comprehensive tag cleanup completed");
+                    success(
+                      "All Tags Cleared",
+                      "Removed all tags from this course and cleaned up problematic tags globally. Changes are now reflected in both admin and frontend."
+                    );
+
                     // Exit edit mode since changes are saved
                     setIsEditingTags(false);
                   } catch (error) {
-                    console.error('❌ Error during tag cleanup:', error);
-                    success("Cleanup Error", "There was an issue during cleanup. Please try again.");
+                    console.error("❌ Error during tag cleanup:", error);
+                    success(
+                      "Cleanup Error",
+                      "There was an issue during cleanup. Please try again."
+                    );
                   }
                 }}
                 className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
@@ -1661,7 +2143,11 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
             </div>
           </div>
         ) : (
-          <div className="flex flex-wrap gap-2 mb-4 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors" onClick={handleTagsEdit} title="Click to edit tags">
+          <div
+            className="flex flex-wrap gap-2 mb-4 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+            onClick={handleTagsEdit}
+            title="Click to edit tags"
+          >
             {courseTags.map((tag, index) => (
               <div
                 key={index}
@@ -1670,8 +2156,18 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
                 {tag}
               </div>
             ))}
-            <svg className="w-3 h-3 text-gray-400 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5l7 7-7 7M4 5l7 7-7 7" />
+            <svg
+              className="w-3 h-3 text-gray-400 mt-1"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 5l7 7-7 7M4 5l7 7-7 7"
+              />
             </svg>
           </div>
         )}
@@ -1679,27 +2175,43 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
         {/* Enhanced Rating Section - Editable */}
         {isEditingStudentStats ? (
           <div className="mb-4 p-4 border border-blue-200 rounded-lg bg-blue-50">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3">Student Statistics (Editing):</h4>
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">
+              Student Statistics (Editing):
+            </h4>
             <div className="grid grid-cols-2 gap-4 mb-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Rating (0-5):</label>
+                <label className="block text-xs text-gray-600 mb-1">
+                  Rating (0-5):
+                </label>
                 <input
                   type="number"
                   min="0"
                   max="5"
                   step="0.1"
                   value={tempStudentStats.rating}
-                  onChange={(e) => setTempStudentStats({...tempStudentStats, rating: parseFloat(e.target.value) || 0})}
+                  onChange={(e) =>
+                    setTempStudentStats({
+                      ...tempStudentStats,
+                      rating: parseFloat(e.target.value) || 0,
+                    })
+                  }
                   className="w-full text-sm border border-gray-300 rounded px-2 py-1"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Total Learners:</label>
+                <label className="block text-xs text-gray-600 mb-1">
+                  Total Learners:
+                </label>
                 <input
                   type="number"
                   min="1"
                   value={tempStudentStats.totalLearners}
-                  onChange={(e) => setTempStudentStats({...tempStudentStats, totalLearners: parseInt(e.target.value) || 1})}
+                  onChange={(e) =>
+                    setTempStudentStats({
+                      ...tempStudentStats,
+                      totalLearners: parseInt(e.target.value) || 1,
+                    })
+                  }
                   className="w-full text-sm border border-gray-300 rounded px-2 py-1"
                 />
               </div>
@@ -1720,14 +2232,28 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors" onClick={handleStudentStatsEdit} title="Click to edit student statistics">
+          <div
+            className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors"
+            onClick={handleStudentStatsEdit}
+            title="Click to edit student statistics"
+          >
             <StarRating rating={courseStudentStats.rating} size="text-sm" />
             <span className="text-sm font-semibold text-gray-700">
               {courseStudentStats.rating}/5 rating from{" "}
               {courseStudentStats.totalLearners}+ learners
             </span>
-            <svg className="w-3 h-3 text-gray-400 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5l7 7-7 7M4 5l7 7-7 7" />
+            <svg
+              className="w-3 h-3 text-gray-400 ml-auto"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 5l7 7-7 7M4 5l7 7-7 7"
+              />
             </svg>
           </div>
         )}
@@ -1735,24 +2261,43 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
         {/* Student Success Stories - Job Placement - Editable */}
         {isEditingJobPlacement ? (
           <div className="mb-4 p-4 border border-blue-200 rounded-lg bg-blue-50">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3">Job Placement Info (Editing):</h4>
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">
+              Job Placement Info (Editing):
+            </h4>
             <div className="grid grid-cols-1 gap-4 mb-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Total Learners Who Got Jobs:</label>
+                <label className="block text-xs text-gray-600 mb-1">
+                  Total Learners Who Got Jobs:
+                </label>
                 <input
                   type="number"
                   min="1"
                   value={tempJobPlacement.totalLearners}
-                  onChange={(e) => setTempJobPlacement({...tempJobPlacement, totalLearners: parseInt(e.target.value) || 1})}
+                  onChange={(e) =>
+                    setTempJobPlacement({
+                      ...tempJobPlacement,
+                      totalLearners: parseInt(e.target.value) || 1,
+                    })
+                  }
                   className="w-full text-sm border border-gray-300 rounded px-2 py-1"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Companies (comma separated):</label>
+                <label className="block text-xs text-gray-600 mb-1">
+                  Companies (comma separated):
+                </label>
                 <input
                   type="text"
-                  value={tempJobPlacement.companies.join(', ')}
-                  onChange={(e) => setTempJobPlacement({...tempJobPlacement, companies: e.target.value.split(',').map(c => c.trim()).filter(c => c)})}
+                  value={tempJobPlacement.companies.join(", ")}
+                  onChange={(e) =>
+                    setTempJobPlacement({
+                      ...tempJobPlacement,
+                      companies: e.target.value
+                        .split(",")
+                        .map((c) => c.trim())
+                        .filter((c) => c),
+                    })
+                  }
                   className="w-full text-sm border border-gray-300 rounded px-2 py-1"
                   placeholder="Deloitte, TCS, Accenture"
                 />
@@ -1774,33 +2319,49 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-4 mb-4 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors" onClick={handleJobPlacementEdit} title="Click to edit job placement info">
+          <div
+            className="flex items-center gap-4 mb-4 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+            onClick={handleJobPlacementEdit}
+            title="Click to edit job placement info"
+          >
             <div className="flex items-center">
-              {courseJobPlacement.companies.slice(0, 3).map((company, index) => (
-                <div
-                  key={index}
-                  className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-semibold text-[var(--font-light)] ${
-                    index === 0
-                      ? "bg-blue-500 ml-0"
-                      : index === 1
-                      ? "bg-cyan-500 -ml-2"
-                      : "bg-purple-500 -ml-2"
-                  } relative z-${index + 1}`}
-                >
-                  {company.slice(0, 2).toUpperCase()}
-                </div>
-              ))}
+              {courseJobPlacement.companies
+                .slice(0, 3)
+                .map((company, index) => (
+                  <div
+                    key={index}
+                    className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-semibold text-[var(--font-light)] ${
+                      index === 0
+                        ? "bg-blue-500 ml-0"
+                        : index === 1
+                        ? "bg-cyan-500 -ml-2"
+                        : "bg-purple-500 -ml-2"
+                    } relative z-${index + 1}`}
+                  >
+                    {company.slice(0, 2).toUpperCase()}
+                  </div>
+                ))}
             </div>
             <div className="flex-1">
               <p className="text-xs text-gray-600 font-medium leading-relaxed">
                 Join {courseJobPlacement.totalLearners}+ learners who landed
                 jobs at
                 <br />
-                {courseJobPlacement.companies.join(', ')} with these skills
+                {courseJobPlacement.companies.join(", ")} with these skills
               </p>
             </div>
-            <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5l7 7-7 7M4 5l7 7-7 7" />
+            <svg
+              className="w-3 h-3 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 5l7 7-7 7M4 5l7 7-7 7"
+              />
             </svg>
           </div>
         )}
@@ -1820,7 +2381,7 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
               </button>
             )}
           </div>
-          
+
           {isEditingWhatsIncluded ? (
             <div className="space-y-3">
               {/* Existing items list */}
@@ -1843,7 +2404,7 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
                   </div>
                 ))}
               </div>
-              
+
               {/* Add new item */}
               <div className="space-y-2">
                 <div className="flex gap-2">
@@ -1854,7 +2415,7 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
                     placeholder="Add new item..."
                     className="flex-1 text-xs p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === "Enter") {
                         handleAddWhatsIncludedItem();
                       }
                     }}
@@ -1870,7 +2431,7 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
                   <p className="text-xs text-red-600">{whatsIncludedError}</p>
                 )}
               </div>
-              
+
               {/* Action buttons */}
               <div className="flex gap-2 pt-2">
                 <button
@@ -1917,9 +2478,16 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
-              <h4 className="text-sm font-semibold text-gray-700">Course Features</h4>
+              <h4 className="text-sm font-semibold text-gray-700">
+                Course Features
+              </h4>
             </div>
             {!isEditingFeatures && (
               <button
@@ -1930,7 +2498,7 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
               </button>
             )}
           </div>
-          
+
           {isEditingFeatures ? (
             <div className="space-y-3">
               {/* Existing features list */}
@@ -1953,7 +2521,7 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
                   </div>
                 ))}
               </div>
-              
+
               {/* Add new feature */}
               <div className="space-y-2">
                 <div className="flex gap-2">
@@ -1964,7 +2532,7 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
                     placeholder="Add new feature..."
                     className="flex-1 text-xs p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === "Enter") {
                         handleAddFeatureItem();
                       }
                     }}
@@ -1980,7 +2548,7 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
                   <p className="text-xs text-red-600">{featuresError}</p>
                 )}
               </div>
-              
+
               {/* Action buttons */}
               <div className="flex gap-2 pt-2">
                 <button
@@ -2027,7 +2595,7 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
               </button>
             )}
           </div>
-          
+
           {isEditingRequirements ? (
             <div className="space-y-3">
               {/* Existing requirements list */}
@@ -2050,7 +2618,7 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
                   </div>
                 ))}
               </div>
-              
+
               {/* Add new requirement */}
               <div className="space-y-2">
                 <div className="flex gap-2">
@@ -2061,7 +2629,7 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
                     placeholder="Add new requirement..."
                     className="flex-1 text-xs p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-yellow-500"
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === "Enter") {
                         handleAddRequirementItem();
                       }
                     }}
@@ -2077,7 +2645,7 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
                   <p className="text-xs text-red-600">{requirementsError}</p>
                 )}
               </div>
-              
+
               {/* Action buttons */}
               <div className="flex gap-2 pt-2">
                 <button
@@ -2097,7 +2665,10 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
           ) : (
             <div className="space-y-2">
               {courseRequirements.map((requirement, index) => (
-                <p key={index} className="text-xs text-yellow-800 leading-relaxed flex items-start gap-2">
+                <p
+                  key={index}
+                  className="text-xs text-yellow-800 leading-relaxed flex items-start gap-2"
+                >
                   <span className="text-yellow-600 mt-1">•</span>
                   <span>{requirement}</span>
                 </p>
@@ -2119,7 +2690,12 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+            />
           </svg>
           Edit Course Content
         </button>

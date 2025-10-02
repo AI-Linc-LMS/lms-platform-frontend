@@ -1104,7 +1104,11 @@ forceRemoveSpecificTag("adsfdasfadf");
 // Instructor storage functions
 export const setStoredInstructors = (
   courseId: number | string,
-  instructors: Array<{ id: number; name: string; profile_pic_url?: string }>
+  instructors: Array<{
+    id: number | undefined;
+    name: string;
+    profile_pic_url?: string;
+  }>
 ) => {
   try {
     const stored = localStorage.getItem(COURSE_INSTRUCTORS_STORAGE_KEY);
@@ -1120,15 +1124,15 @@ export const setStoredInstructors = (
 export const getEffectiveInstructors = (course: {
   id: number | string;
   instructors?: Array<{
-    id?: number;
-    name?: string;
+    id: number;
+    name?: string | undefined;
     bio?: string;
     profile_pic_url?: string;
     linkedin_profile?: string;
   }>;
 }): Array<{
   id?: number;
-  name?: string;
+  name?: string | undefined;
   bio?: string;
   profile_pic_url?: string;
   linkedin_profile?: string;
@@ -1137,20 +1141,26 @@ export const getEffectiveInstructors = (course: {
     // Function to normalize instructor images (handles specific instructor image corrections)
     const normalizeInstructor = (instructor: {
       id?: number;
-      name?: string;
+      name?: string | undefined;
       bio?: string;
       profile_pic_url?: string;
       linkedin_profile?: string;
     }) => {
-      // Ensure Shubham Lal always gets the correct image, regardless of API data
+      const normalizedName = instructor.name ?? "";
+
       if (instructor.name === "Shubham Lal") {
         return {
           ...instructor,
+          name: normalizedName,
           profile_pic_url:
             "https://lh3.googleusercontent.com/a/ACg8ocJSPMwGcKIWqYE1LDeBo_N1Z5pYriaPsNJSwLFAbPQ4N9lmnNIs=s96-c",
         };
       }
-      return instructor;
+
+      return {
+        ...instructor,
+        name: normalizedName,
+      };
     };
 
     // First check localStorage for admin overrides
