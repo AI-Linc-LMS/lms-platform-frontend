@@ -22,7 +22,7 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
         </h1>
         <div className="flex items-center gap-2">
           <div className="flex flex-col items-end gap-1">
-            <span className="bg-[#10b981] text-[var(--font-light)] px-2 py-1 rounded-xl text-[11px] font-semibold uppercase tracking-[0.5px]">
+            <span className="bg-[var(--course-cta)] text-[var(--font-light)] px-2 py-1 rounded-xl text-[11px] font-semibold uppercase tracking-[0.5px]">
               Active
             </span>
           </div>
