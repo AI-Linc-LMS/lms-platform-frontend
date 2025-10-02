@@ -298,6 +298,10 @@ const withAppInitializer = <P extends object>(
                 "--font-light",
                 result.theme_settings.fontLight
               );
+              document.body.style.setProperty(
+                "--course-cta",
+                result.theme_settings.courseCta
+              );
 
               /* Font Family */
               document.body.style.setProperty(
@@ -335,7 +339,7 @@ const withAppInitializer = <P extends object>(
               id: "/",
               icons: [
                 {
-                  src: result.app_icon_url ||`${origin}/pwa-192x192.png`,
+                  src: result.app_icon_url || `${origin}/pwa-192x192.png`,
                   sizes: "192x192",
                   type: "image/png",
                 },
