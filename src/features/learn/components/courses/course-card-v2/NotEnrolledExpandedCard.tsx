@@ -30,6 +30,7 @@ import {
   verifyPayment,
 } from "../../../../../services/payment/paymentGatewayApis";
 import { IconActionsNotEnrolledSection } from "./components/IconNotEnrolledActionSection";
+import { enrollInCourse } from "../../../../../services/continue-course-learning/continueCourseApis";
 
 // Enhanced 3D Star Rating Component
 const StarRating = ({
@@ -92,11 +93,14 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
 }) => {
   const navigate = useNavigate();
 
-  const handlePrimaryClick = () => {
-    navigate(`/courses/${course.id}`);
-  };
-
   const clientId = Number(import.meta.env.VITE_CLIENT_ID) || 1;
+
+  const handlePrimaryClick = async () => {
+    const enroll = await enrollInCourse(clientId, course.id);
+    if (enroll && enroll.message === "User enrolled successfully.") {
+      navigate(`/courses/${course.id}`);
+    }
+  };
 
   const formattedPrice = formatPrice(course?.price || "0");
   const isFree = course?.is_free === true || formattedPrice === "0";
@@ -119,6 +123,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
   })();
 
   const user = useSelector((state: { user: UserState }) => state.user);
+  const clientInfo = useSelector((state: any) => state.client);
 
   const [, setPaymentResult] = useState<{
     paymentId?: string;
@@ -185,7 +190,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
         key: orderData.key,
         amount: Number(course.price),
         currency: orderData.currency || "INR",
-        name: "AI-LINC Platform",
+        name: clientInfo?.data?.name || "AI LINC",
         description: "Course Access Payment",
         order_id: orderData.order_id,
         handler: async function (response: RazorpayResponse) {
