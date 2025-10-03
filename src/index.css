@@ -548,3 +548,9 @@ body {
 
   --default-primary:#255C79;
 }
+
+@media (max-width: 768px) {
+  body {
+    padding-top: calc(3.5rem + env(safe-area-inset-top));
+  }
+}
