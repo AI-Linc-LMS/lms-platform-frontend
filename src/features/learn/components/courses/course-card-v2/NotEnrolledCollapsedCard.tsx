@@ -77,9 +77,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
   const isFree = course?.is_free === true || formattedPrice === "0";
   const courseRating = (() => {
     const effectiveRating = getEffectiveRating(course);
-    console.log(
-      `[NotEnrolledCollapsed] Course ${course.id} (${course.title}): backend_rating=${course.rating}, effective=${effectiveRating}`
-    );
+
     return effectiveRating;
   })();
 
@@ -88,9 +86,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
       id: course.id,
       difficulty_level: course.difficulty_level,
     });
-    console.log(
-      `[NotEnrolledCollapsed] Course ${course.id} (${course.title}): backend_difficulty=${course.difficulty_level}, effective=${effectiveDifficulty}`
-    );
+
     return effectiveDifficulty;
   })();
   const courseDuration = getEffectiveDuration({
@@ -100,7 +96,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
 
   return (
     <div
-      className={`course-card w-full max-w-lg bg-white lg:h-[350px] rounded-2xl border border-blue-100 shadow-xl transition-all duration-300 ease-in-out relative overflow-visible ${className}`}
+      className={`course-card w-full max-w-lg bg-white rounded-2xl border border-blue-100 shadow-xl transition-all duration-300 ease-in-out relative overflow-visible ${className}`}
     >
       {/* Card Header */}
       <div className="p-4 sm:p-4 pb-3 border-b border-gray-100">
@@ -108,10 +104,10 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
           <h1 className="text-xl sm:text-2xl font-bold text-gray-700 leading-tight pr-4 flex-1">
             {course.title}
           </h1>
+
           <button
+            className="bg-gray-100 border border-gray-200 rounded-full w-9 h-9 flex items-center justify-center cursor-pointer transition-all duration-300 text-gray-500 hover:bg-gray-200 hover:scale-105 flex-shrink-0"
             onClick={onExpand}
-            className="bg-gray-100 border border-gray-200 rounded-full w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 flex items-center justify-center cursor-pointer transition-all duration-300 text-gray-500 hover:bg-gray-200 hover:scale-105"
-            aria-label="Expand course card"
           >
             <svg
               className="w-3 h-3 sm:w-3.5 sm:h-3.5 transition-transform duration-300"
@@ -132,8 +128,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
         {/* Company Logos */}
         <CompanyLogosSection course={course} />
 
-        {/* Rating */}
-        <div className="flex justify-end items-center gap-2 mt-3 mb-0 ml-auto">
+        <div className="flex justify-end mt-3 mb-0 items-center gap-2 ml-auto">
           <StarRating rating={courseRating} size="text-xs" />
           <span className="text-xs font-semibold text-gray-700">
             {courseRating}/5
@@ -141,10 +136,9 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
         </div>
       </div>
 
-      {/* Content Section - Matching EnrolledCollapsedCard structure */}
+      {/* Course Info Pills */}
       <div className="p-3 sm:p-4 md:p-6">
-        {/* Course Info Pills */}
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-4">
           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-full text-xs font-medium text-gray-700 whitespace-nowrap">
             <svg
               className="w-3 h-3 text-yellow-500"
@@ -170,13 +164,15 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-full text-xs font-medium text-yellow-800 whitespace-nowrap">
             {isFree ? "Free" : `₹${formattedPrice}`}
           </span>
+
+          {/* Rating */}
         </div>
 
-        {/* Action Button */}
-        <div className="mt-auto">
+        <div className="flex items-center mt-2 gap-3">
+          {/* Primary Action Button */}
           <button
             onClick={onExpand}
-            className={`px-5 py-3 mt-7.5 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[var(--course-cta)] text-[var(--font-light)] hover:bg-[var(--course-cta)] hover:-translate-y-0.5 ${"w-full"} ${className}`}
+            className={`px-5 py-3 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[var(--course-cta)] text-[var(--font-light)] hover:bg-[var(--course-cta)] hover:-translate-y-0.5 ${"w-full"} ${className}`}
           >
             View More
           </button>

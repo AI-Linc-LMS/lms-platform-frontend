@@ -30,7 +30,7 @@ const SidebarLogoPart = ({
           }
           alt={`${clientInfo.data.name} logo`}
           className={`object-contain transition-all duration-300 ${
-            isExpanded ? "h-10 w-auto" : "h-8 w-8"
+            isExpanded ? "h-full w-full" : "h-8 w-8"
           }`}
         />
       )}
@@ -50,7 +50,7 @@ const SidebarLogoPart = ({
       <div
         className={`${
           isExpanded ? "" : "rotate-180"
-        } absolute w-[52px] h-[52px] grid place-items-center rounded-[12px] 
+        } absolute w-[45px] h-[52px] grid place-items-center rounded-[12px] 
         transition-transform duration-300 right-[-37px] bottom-[-12px] 
         bg-[var(--nav-background)] cursor-pointer pr-[3px]`}
         onClick={onClickArrow}
