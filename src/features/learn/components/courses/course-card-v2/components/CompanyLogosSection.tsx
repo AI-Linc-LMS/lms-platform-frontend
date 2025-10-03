@@ -11,10 +11,9 @@ export const CompanyLogosSection: React.FC<CompanyLogosProps> = ({
   companies,
 }) => {
   // Use centralized logic to get effective companies
-  const effectiveCompanies = course 
+  const effectiveCompanies = course
     ? (() => {
         const companies = getEffectiveCompanies(course);
-        console.log(`[CompanyLogos] Course ${course.id}: effective_companies=${companies.map(c => c.name).join(', ')}`);
         return companies;
       })()
     : companies || [];
