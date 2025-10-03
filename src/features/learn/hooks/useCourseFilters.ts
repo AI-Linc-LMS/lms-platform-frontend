@@ -60,8 +60,18 @@ export const useCourseFilters = (courses: Course[] | undefined) => {
       }
 
       // Level/Difficulty filter
-      if (selectedLevels.length > 0 && course.level) {
-        if (!selectedLevels.includes(course.level)) {
+
+      if (selectedLevels.length > 0) {
+        if (!course.difficulty_level) {
+          return false;
+        }
+
+        const normalizedLevel = course?.difficulty_level?.trim().toLowerCase();
+        const normalizedSelectedLevels = selectedLevels.map((l) =>
+          l.trim().toLowerCase()
+        );
+
+        if (!normalizedSelectedLevels.includes(normalizedLevel || "")) {
           return false;
         }
       }
