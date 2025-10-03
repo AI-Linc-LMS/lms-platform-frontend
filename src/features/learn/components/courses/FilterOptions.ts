@@ -14,9 +14,9 @@ export const categoryOptions: FilterOption[] = [
 ];
 
 export const levelOptions: FilterOption[] = [
-  { id: "beginner", label: "Beginner" },
-  { id: "intermediate", label: "Intermediate" },
-  { id: "pro", label: "Pro" },
+  { id: "Easy", label: "Beginner" },
+  { id: "Medium", label: "Intermediate" },
+  { id: "Hard", label: "Pro" },
 ];
 
 export const priceOptions: FilterOption[] = [

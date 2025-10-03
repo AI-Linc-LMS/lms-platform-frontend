@@ -1,5 +1,8 @@
 import { Course } from "../types/course.types";
-import { getEffectiveRating, getEffectiveDifficulty } from "../components/courses/course-card-v2/utils/courseDataUtils";
+import {
+  getEffectiveRating,
+  getEffectiveDifficulty,
+} from "../components/courses/course-card-v2/utils/courseDataUtils";
 
 interface ApiCourse {
   id: number;
@@ -26,8 +29,10 @@ export const adaptCourses = (courses: ApiCourse[]): Course[] => {
       // Add sample data for demonstration if not present in API
       categories: course.categories || getDemoCategories(course.title),
       level: (() => {
-        const effectiveDifficulty = getEffectiveDifficulty({ id: course.id, difficulty_level: course.level });
-        console.log(`[CourseAdapter] Course ${course.id} (${course.title}): backend_difficulty=${course.level}, effective=${effectiveDifficulty}`);
+        const effectiveDifficulty = getEffectiveDifficulty({
+          id: course.id,
+          difficulty_level: course.level,
+        });
         return effectiveDifficulty;
       })(),
       price:
@@ -35,8 +40,10 @@ export const adaptCourses = (courses: ApiCourse[]): Course[] => {
           ? Number(course.price)
           : getDemoPrice(course.id),
       rating: (() => {
-        const effectiveRating = getEffectiveRating({ id: course.id, rating: course.rating });
-        console.log(`[CourseAdapter] Course ${course.id} (${course.title}): backend_rating=${course.rating}, effective=${effectiveRating}`);
+        const effectiveRating = getEffectiveRating({
+          id: course.id,
+          rating: course.rating,
+        });
         return effectiveRating;
       })(),
     };
