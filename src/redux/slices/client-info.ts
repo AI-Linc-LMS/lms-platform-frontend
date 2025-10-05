@@ -39,6 +39,7 @@ export interface ClientData {
   app_logo_url: string;
   app_icon_url: string;
   login_img_url: string;
+  login_logo_url: string;
   show_footer: boolean;
   is_active: boolean;
   features: { id: number; name: string }[];
