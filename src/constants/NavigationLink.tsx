@@ -6,12 +6,11 @@ import CoursesIconController from "../commonComponents/icons/sidebarIcons/Course
 import AssessmentsIconController from "../commonComponents/icons/sidebarIcons/AssessmentsIconController";
 import CommunityIconController from "../commonComponents/icons/sidebarIcons/CommunityIconController";
 
-
-
 export const NavigationLinks: SidebarLinkInfo[] = [
   {
     id: 1,
     title: "Dashboard",
+    slug: "dashboard",
     links: [
       {
         id: 1,
@@ -24,6 +23,7 @@ export const NavigationLinks: SidebarLinkInfo[] = [
   {
     id: 4,
     title: "Courses",
+    slug: "course",
     links: [
       {
         id: 1,
@@ -36,6 +36,7 @@ export const NavigationLinks: SidebarLinkInfo[] = [
   {
     id: 5,
     title: "Assessments",
+    slug: "assessment",
     links: [
       {
         id: 1,
@@ -48,6 +49,7 @@ export const NavigationLinks: SidebarLinkInfo[] = [
   {
     id: 2,
     title: "Live",
+    slug: "live_class",
     links: [
       {
         id: 1,
@@ -60,6 +62,7 @@ export const NavigationLinks: SidebarLinkInfo[] = [
   {
     id: 3,
     title: "Jobs",
+    slug: "job_portal",
     links: [
       {
         id: 1,
@@ -72,6 +75,7 @@ export const NavigationLinks: SidebarLinkInfo[] = [
   {
     id: 6,
     title: "Community",
+    slug: "community_forum",
     links: [
       {
         id: 1,
