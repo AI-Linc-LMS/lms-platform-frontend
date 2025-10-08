@@ -11,6 +11,7 @@ import { useToast } from "../contexts/ToastContext";
 import TimeTrackingDashboard from "../features/learn/components/graphs-components/TimeTrackingDashboard";
 import DailyProgress from "../features/learn/components/DailyProgressTable";
 import StreakTable from "../features/learn/components/StreakTable";
+import ResumeBuilder from "../features/resume-builder/pages/ResumeBuilder";
 
 interface UserData {
   first_name: string;
@@ -29,7 +30,7 @@ interface UserData {
   inAppNotification?: boolean;
 }
 
-type TabType = "activity" | "profile";
+type TabType = "activity" | "profile" | "resume";
 
 const ProfileSettings = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -265,6 +266,29 @@ const ProfileSettings = () => {
                 />
               </svg>
               <span className="hidden sm:inline">Activity</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("resume")}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                activeTab === "resume"
+                  ? "bg-gradient-to-r from-[var(--primary-500)] to-[var(--primary-700)] text-[var(--font-light)] shadow-lg scale-105"
+                  : "text-[var(--font-secondary)] hover:text-[var(--primary-500)] hover:bg-[var(--neutral-100)]"
+              }`}
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              <span className="hidden sm:inline">Resume</span>
             </button>
           </div>
         </div>
@@ -882,6 +906,13 @@ const ProfileSettings = () => {
               </div>
             </div>
           </div>
+
+          {/* Resume Tab Content */}
+          {activeTab === "resume" && (
+            <div className="w-full min-h-screen">
+              <ResumeBuilder />
+            </div>
+          )}
         </div>
       </div>
     </div>
