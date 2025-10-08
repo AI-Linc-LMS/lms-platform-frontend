@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store";
+import { useTranslation } from "react-i18next";
+import { useTranslatedCommunity } from "../../learn/utils/courseTranslationUtils";
 import {
   ChevronDown,
   ChevronUp,
@@ -36,6 +38,9 @@ import {
 } from "../../../services/community/commentApis";
 
 const CommunityPage: React.FC = () => {
+  const { t } = useTranslation();
+  const { getCommunityTranslations } = useTranslatedCommunity();
+  const communityTranslations = getCommunityTranslations();
   const navigate = useNavigate();
   const location = useLocation();
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -317,7 +322,7 @@ const CommunityPage: React.FC = () => {
                   <Users className="text-[var(--font-light)]" size={16} />
                 </div>
                 <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
-                  Community
+                  {t("community.title")}
                 </h1>
               </div>
             </div>
@@ -347,7 +352,7 @@ const CommunityPage: React.FC = () => {
                   <Users className="text-[var(--font-light)]" size={16} />
                 </div>
                 <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
-                  Community
+                  {t("community.title")}
                 </h1>
               </div>
             </div>
@@ -458,7 +463,7 @@ const CommunityPage: React.FC = () => {
                 <Users className="text-[var(--font-light)]" size={16} />
               </div>
               <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
-                Community
+                {t("community.title")}
               </h1>
             </div>
 
@@ -475,8 +480,8 @@ const CommunityPage: React.FC = () => {
                 className="bg-blue-600 text-[var(--font-light)] px-3 py-2 sm:px-4 rounded-md hover:bg-blue-700 transition-colors font-medium flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
               >
                 <Plus size={16} />
-                <span className="hidden xs:inline">New</span>
-                <span className="hidden sm:inline">Thread</span>
+                <span className="hidden xs:inline">{communityTranslations.newThread}</span>
+                <span className="hidden sm:inline">{communityTranslations.thread}</span>
               </button>
             </div>
           </div>
@@ -512,7 +517,7 @@ const CommunityPage: React.FC = () => {
                 />
                 <input
                   type="text"
-                  placeholder="Search discussions..."
+                  placeholder={t("community.searchPlaceholder")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -542,7 +547,7 @@ const CommunityPage: React.FC = () => {
                   />
                   <input
                     type="text"
-                    placeholder="Search discussions..."
+                    placeholder={t("community.searchPlaceholder")}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm"
@@ -729,12 +734,12 @@ const CommunityPage: React.FC = () => {
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   {searchTerm || selectedTag
                     ? "No threads found"
-                    : "No threads yet"}
+                    : t("community.noThreads.title")}
                 </h3>
                 <p className="text-gray-600 mb-6">
                   {searchTerm || selectedTag
                     ? "Try adjusting your search or filter criteria."
-                    : "Be the first to start a discussion in the community."}
+                    : t("community.noThreads.description")}
                 </p>
                 {!searchTerm && !selectedTag && (
                   <button
@@ -742,7 +747,7 @@ const CommunityPage: React.FC = () => {
                     className="bg-blue-600 text-[var(--font-light)] px-6 py-3 rounded-md hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 mx-auto"
                   >
                     <Plus size={18} />
-                    Create First Thread
+                    {communityTranslations.createFirstThread}
                   </button>
                 )}
                 {(searchTerm || selectedTag) && (

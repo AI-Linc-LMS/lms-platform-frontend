@@ -1,6 +1,13 @@
 import React, { useState } from "react";
 import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { 
+  useTranslatedDifficulty, 
+  useTranslatedCourseContent, 
+  useTranslatedJobPlacement,
+  useTranslatedCourseProgress
+} from "../../../utils/courseTranslationUtils";
 
 import {
   formatPrice,
@@ -8,11 +15,6 @@ import {
   getEffectiveDifficulty,
   getEffectiveStudentStats,
   getEffectiveJobPlacement,
-  getEffectiveFeatures,
-  getEffectiveCourseTags,
-  getEffectiveRequirements,
-  getEffectiveWhatsIncluded,
-  getEffectiveLearningObjectives,
   getEffectiveDuration,
 } from "./utils/courseDataUtils";
 import { CompanyLogosSection } from "./components";
@@ -92,6 +94,20 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
   onCollapse,
 }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  
+  // Translation utilities
+  const { translateDifficulty } = useTranslatedDifficulty();
+  const { 
+    getTranslatedDescription,
+    getTranslatedLearningObjectives,
+    // getTranslatedFeatures,
+    getTranslatedRequirements,
+    getTranslatedWhatsIncluded,
+    getTranslatedCourseTags 
+  } = useTranslatedCourseContent();
+  const { getTranslatedJobPlacementText } = useTranslatedJobPlacement();
+  const { getTranslatedRatingText } = useTranslatedCourseProgress();
 
   const clientId = Number(import.meta.env.VITE_CLIENT_ID) || 1;
 
@@ -119,11 +135,11 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
       difficulty_level: course.difficulty_level,
     });
 
-    return effectiveDifficulty;
+    return translateDifficulty(effectiveDifficulty);
   })();
 
   const user = useSelector((state: { user: UserState }) => state.user);
-  const clientInfo = useSelector((state: any) => state.client);
+  const clientInfo = useSelector((state: { client: { client_id: number; data?: { name?: string } } }) => state.client);
 
   const [, setPaymentResult] = useState<{
     paymentId?: string;
@@ -326,10 +342,10 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
               <circle cx="12" cy="12" r="10" />
               <polyline points="12,6 12,12 16,14" />
             </svg>
-            {courseDuration} hours
+            {courseDuration} {t("courses.hours")}
           </span>
           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-full text-xs font-medium text-yellow-800 whitespace-nowrap">
-            {isFree ? "Free" : `₹${formattedPrice}`}
+            {isFree ? t("courses.free") : `₹${formattedPrice}`}
           </span>
 
           {/* Rating */}
@@ -341,7 +357,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
             onClick={isFree ? handlePrimaryClick : handlePayment}
             className={`px-5 py-3 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[var(--course-cta)] text-[var(--font-light)] hover:bg-[var(--course-cta)] hover:-translate-y-0.5 ${"w-full"} ${className}`}
           >
-            {`Enroll Now - ${isFree ? "Free" : `₹${formattedPrice}`}`}
+            {`${t("courses.enrollNow")} - ${isFree ? t("courses.free") : `₹${formattedPrice}`}`}
           </button>
         </div>
       </div>
@@ -351,18 +367,17 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
         {/* Course Description */}
         <div className="mb-4">
           <p className="text-gray-600 text-sm leading-relaxed">
-            {course.description ||
-              "Comprehensive course designed to enhance your skills and boost your career prospects with hands-on projects and industry-recognized certification."}
+            {getTranslatedDescription(course as unknown as { title?: string; description?: string; [key: string]: unknown })}
           </p>
         </div>
 
         {/* Course Outcomes - Using Centralized Logic */}
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">
-            What you'll learn:
+            {t("courses.whatYouWillLearn")}:
           </h3>
           <ul className="space-y-2">
-            {getEffectiveLearningObjectives(course).map((outcome, index) => (
+            {getTranslatedLearningObjectives(course as unknown as { title?: string; description?: string; [key: string]: unknown }).map((outcome, index) => (
               <li
                 key={index}
                 className="flex items-start gap-3 text-sm text-gray-600"
@@ -378,7 +393,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
 
         {/* Course Tags */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {getEffectiveCourseTags(course).map((tag, index) => (
+          {getTranslatedCourseTags(course as unknown as { title?: string; description?: string; [key: string]: unknown }).map((tag, index) => (
             <div
               key={index}
               className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full text-xs font-semibold whitespace-nowrap"
@@ -392,8 +407,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
         <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
           <StarRating rating={courseRating} size="text-sm" />
           <span className="text-sm font-semibold text-gray-700">
-            {courseRating}/5 rating from{" "}
-            {getEffectiveStudentStats(course).totalLearners}+ learners
+            {getTranslatedRatingText(courseRating, getEffectiveStudentStats(course).totalLearners)}
           </span>
         </div>
 
@@ -416,11 +430,10 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
             ))}
           </div>
           <p className="text-xs text-gray-600 font-medium leading-relaxed">
-            Join {getEffectiveJobPlacement(course).totalLearners}+ learners who
-            landed jobs at
-            <br />
-            {getEffectiveJobPlacement(course).companies.join(", ")} with these
-            skills
+            {getTranslatedJobPlacementText(
+              getEffectiveJobPlacement(course).totalLearners,
+              getEffectiveJobPlacement(course).companies
+            )}
           </p>
         </div>
 
@@ -432,10 +445,10 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
         {/* What's Included - Using Centralized Logic */}
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h4 className="flex items-center gap-2 text-sm font-semibold text-blue-800 mb-3">
-            🎁 What's Included:
+            🎁 {t("courses.whatsIncluded")}:
           </h4>
           <ul className="space-y-2">
-            {getEffectiveWhatsIncluded(course).map((item, index) => (
+            {getTranslatedWhatsIncluded().map((item, index) => (
               <li
                 key={index}
                 className="flex items-center gap-3 text-xs text-blue-800"
@@ -455,10 +468,10 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
         {/* Course Requirements */}
         <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <h4 className="text-sm font-semibold text-yellow-800 mb-2">
-            📋 Requirements:
+            📋 {t("courses.requirements")}:
           </h4>
           <div className="space-y-2">
-            {getEffectiveRequirements(course).map((requirement, index) => (
+            {getTranslatedRequirements(course as unknown as { title?: string; description?: string; [key: string]: unknown }).map((requirement, index) => (
               <p
                 key={index}
                 className="text-xs text-yellow-800 leading-relaxed flex items-start gap-2"
@@ -481,7 +494,9 @@ export default NotEnrolledExpandedCard;
 
 // Enhanced FeaturesSection
 export const FeaturesSection: React.FC<{ course: Course }> = ({ course }) => {
-  const effectiveFeatures = getEffectiveFeatures(course);
+  const { t } = useTranslation();
+  const { getTranslatedFeatures } = useTranslatedCourseContent();
+  const effectiveFeatures = getTranslatedFeatures(course as unknown as { title?: string; description?: string; [key: string]: unknown });
 
   return (
     <div>
@@ -502,7 +517,7 @@ export const FeaturesSection: React.FC<{ course: Course }> = ({ course }) => {
               />
             </svg>
             <h3 className="text-gray-800 font-semibold text-sm">
-              Key Features
+              {t("courses.keyFeatures")}
             </h3>
           </div>
           <div className="space-y-2 text-sm">

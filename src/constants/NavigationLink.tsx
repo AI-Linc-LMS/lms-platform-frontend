@@ -6,8 +6,82 @@ import CoursesIconController from "../commonComponents/icons/sidebarIcons/Course
 import AssessmentsIconController from "../commonComponents/icons/sidebarIcons/AssessmentsIconController";
 import CommunityIconController from "../commonComponents/icons/sidebarIcons/CommunityIconController";
 
+export const getNavigationLinks = (t: (key: string) => string): SidebarLinkInfo[] => [
+  {
+    id: 1,
+    title: t("navigation.dashboard"),
+    links: [
+      {
+        id: 1,
+        title: t("navigation.dashboard"),
+        href: "/",
+        icon: <DashboardController />,
+      },
+    ],
+  },
+  {
+    id: 4,
+    title: t("navigation.courses"),
+    links: [
+      {
+        id: 1,
+        title: t("navigation.courses"),
+        href: "/courses",
+        icon: <CoursesIconController />,
+      },
+    ],
+  },
+  {
+    id: 5,
+    title: t("navigation.assessments"),
+    links: [
+      {
+        id: 1,
+        title: t("navigation.assessments"),
+        href: "/assessments",
+        icon: <AssessmentsIconController />,
+      },
+    ],
+  },
+  {
+    id: 2,
+    title: t("navigation.live"),
+    links: [
+      {
+        id: 1,
+        title: t("navigation.live"),
+        href: "/live",
+        icon: <LiveIconController />,
+      },
+    ],
+  },
+  {
+    id: 3,
+    title: t("navigation.jobs"),
+    links: [
+      {
+        id: 1,
+        title: t("navigation.jobs"),
+        href: "/jobs",
+        icon: <JobsIconController />,
+      },
+    ],
+  },
+  {
+    id: 6,
+    title: t("navigation.community"),
+    links: [
+      {
+        id: 1,
+        title: t("navigation.community"),
+        href: "/community",
+        icon: <CommunityIconController />,
+      },
+    ],
+  },
+];
 
-
+// Fallback static links for backward compatibility
 export const NavigationLinks: SidebarLinkInfo[] = [
   {
     id: 1,

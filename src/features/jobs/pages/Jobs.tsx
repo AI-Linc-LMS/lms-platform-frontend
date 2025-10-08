@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import JobCard from "../components/JobCard";
 import JobFilters from "../components/JobFilters";
@@ -26,6 +27,7 @@ const Transition = React.forwardRef(function Transition(
 });
 
 const Jobs: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
@@ -166,11 +168,10 @@ const Jobs: React.FC = () => {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-16 lg:py-20">
             <div className="text-center">
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">
-                Find Your Dream Job
+                {t("jobs.title")}
               </h1>
               <p className="text-lg sm:text-xl lg:text-2xl mb-8 sm:mb-12 opacity-90 max-w-3xl mx-auto">
-                Discover thousands of job opportunities from top companies
-                around the world
+                {t("jobs.description")}
               </p>
 
               <div className="max-w-4xl mx-auto">
@@ -193,7 +194,7 @@ const Jobs: React.FC = () => {
                     </div>
                     <input
                       type="text"
-                      placeholder="Job title, keywords, or company"
+                      placeholder={t("jobs.search.jobPlaceholder")}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-3 sm:py-4 text-[var(--neutral-500)] placeholder-[var(--neutral-300)] border-0 focus:ring-0 text-base sm:text-lg"
@@ -224,7 +225,7 @@ const Jobs: React.FC = () => {
                     </div>
                     <input
                       type="text"
-                      placeholder="Location"
+                      placeholder={t("jobs.search.locationPlaceholder")}
                       value={locationFilter}
                       onChange={(e) => setLocationFilter(e.target.value)}
                       className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-3 sm:py-4 text-[var(--neutral-500)] placeholder-[var(--neutral-300)] border-0 focus:ring-0 text-base sm:text-lg"
@@ -236,7 +237,7 @@ const Jobs: React.FC = () => {
                       onClick={handleSearch}
                       className="px-6 w-full sm:px-8 py-3 sm:py-4 bg-[var(--primary-500)] text-[var(--font-light)] rounded-xl hover:bg-[var(--primary-600)] transition-colors font-semibold text-base sm:text-lg whitespace-nowrap"
                     >
-                      Search Jobs
+                      {t("jobs.search.searchButton")}
                     </button>
                     <button
                       onClick={() => setIsFilterDialogOpen(true)}
@@ -255,11 +256,11 @@ const Jobs: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
             <div>
               <h2 className="text-2xl sm:text-3xl font-bold text-[var(--neutral-500)] mb-2">
-                Job Opportunities
+                {t("jobs.opportunities.title")}
               </h2>
               <p className="text-[var(--neutral-300)] text-sm sm:text-base">
-                {`${filteredJobs.length} jobs found`}{" "}
-                {searchQuery && `for "${searchQuery}"`}
+                {t("jobs.opportunities.jobsFound", { count: filteredJobs.length })}{" "}
+                {searchQuery && t("jobs.opportunities.for", { query: searchQuery })}
               </p>
             </div>
 

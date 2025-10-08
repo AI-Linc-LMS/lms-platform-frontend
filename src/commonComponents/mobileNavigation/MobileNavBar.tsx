@@ -6,9 +6,11 @@ import {
   Briefcase,
   Video,
 } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 const MobileNavBar = () => {
   const location = useLocation();
+  const { t } = useTranslation();
 
   const isActive = (path: string) => {
     if (path === "/" && location.pathname === "/") {
@@ -23,31 +25,31 @@ const MobileNavBar = () => {
         <NavItem
           to="/courses"
           icon={<BookCopy size={22} strokeWidth={1.5} />}
-          label="Courses"
+          label={t("navigation.courses")}
           isActive={isActive("/courses")}
         />
         <NavItem
           to="/assessments"
           icon={<FileText size={22} strokeWidth={1.5} />}
-          label="Tests"
+          label={t("navigation.assessments")}
           isActive={isActive("/assessments")}
         />
         <NavItem
           to="/"
           icon={<LayoutDashboard size={22} strokeWidth={1.5} />}
-          label="Dashboard"
+          label={t("navigation.dashboard")}
           isActive={isActive("/")}
         />
         <NavItem
           to="/jobs"
           icon={<Briefcase size={22} strokeWidth={1.5} />}
-          label="Jobs"
+          label={t("navigation.jobs")}
           isActive={isActive("/jobs")}
         />
         <NavItem
           to="/live"
           icon={<Video size={22} strokeWidth={1.5} />}
-          label="Live"
+          label={t("navigation.live")}
           isActive={isActive("/live")}
         />
       </div>

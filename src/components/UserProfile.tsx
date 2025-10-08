@@ -11,6 +11,7 @@ import { useToast } from "../contexts/ToastContext";
 import TimeTrackingDashboard from "../features/learn/components/graphs-components/TimeTrackingDashboard";
 import DailyProgress from "../features/learn/components/DailyProgressTable";
 import StreakTable from "../features/learn/components/StreakTable";
+import { useTranslation } from 'react-i18next';
 
 interface UserData {
   first_name: string;
@@ -30,6 +31,7 @@ interface UserData {
 }
 
 const ProfileSettings = () => {
+  const { t } = useTranslation();
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -217,7 +219,7 @@ const ProfileSettings = () => {
     <div className="p-4 sm:p-6 rounded-lg w-full max-w-7xl mx-auto">
       <div className="mb-6">
         <h3 className="text-lg sm:text-xl font-bold text-[#257195] mb-4">
-          My Activity
+          {t("userProfile.myActivity")}
         </h3>
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2 border border-gray-300 rounded-xl p-4 sm:p-6 shadow-sm">
@@ -235,7 +237,7 @@ const ProfileSettings = () => {
       </div>
 
       <h3 className="text-lg sm:text-xl font-bold text-[#257195] mb-4">
-        My Profile
+        {t("userProfile.myProfile")}
       </h3>
       <div className="border border-gray-300 shadow-sm rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
@@ -282,15 +284,15 @@ const ProfileSettings = () => {
                   ></path>
                 </svg>
               ) : editable ? (
-                "Save"
+                t("userProfile.save")
               ) : (
                 <>
                   <img
                     src={editIcon}
-                    alt="Edit"
+                    alt={t("userProfile.edit")}
                     className="w-3 h-3 sm:w-4 sm:h-4"
                   />
-                  <span>Edit</span>
+                  <span>{t("userProfile.edit")}</span>
                 </>
               )}
             </button>
@@ -300,7 +302,7 @@ const ProfileSettings = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              First Name
+              {t("userProfile.firstName")}
             </label>
             <input
               name="first_name"
@@ -316,7 +318,7 @@ const ProfileSettings = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Last Name
+              {t("userProfile.lastName")}
             </label>
             <input
               name="last_name"
@@ -332,7 +334,7 @@ const ProfileSettings = () => {
 
           <div className="sm:col-span-2 lg:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
+              {t("userProfile.email")}
             </label>
             <input
               name="email"
@@ -342,13 +344,13 @@ const ProfileSettings = () => {
               className="w-full border border-gray-300 rounded px-3 py-2 text-sm sm:text-base focus:outline-none bg-gray-100"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Email cannot be changed
+              {t("userProfile.emailCannotBeChanged")}
             </p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Username
+              {t("userProfile.username")}
             </label>
             <input
               name="username"
@@ -358,13 +360,13 @@ const ProfileSettings = () => {
               className="w-full border border-gray-300 rounded px-3 py-2 text-sm sm:text-base focus:outline-none bg-gray-100"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Username cannot be changed
+              {t("userProfile.usernameCannotBeChanged")}
             </p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone Number
+              {t("userProfile.phoneNumber")}
             </label>
             <input
               name="phone_number"
@@ -380,7 +382,7 @@ const ProfileSettings = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date of Birth
+              {t("userProfile.dateOfBirth")}
             </label>
             <input
               name="date_of_birth"
@@ -396,7 +398,7 @@ const ProfileSettings = () => {
 
           <div className="sm:col-span-2 lg:col-span-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Bio
+              {t("userProfile.bio")}
             </label>
             <textarea
               name="bio"
@@ -412,7 +414,7 @@ const ProfileSettings = () => {
 
           <div className="sm:col-span-2 lg:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              LinkedIn Profile
+              {t("userProfile.linkedin")}
             </label>
             <input
               name="social_links.linkedin"
@@ -429,7 +431,7 @@ const ProfileSettings = () => {
 
           <div className="sm:col-span-2 lg:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              GitHub Profile
+              {t("userProfile.github")}
             </label>
             <input
               name="social_links.github"
@@ -449,11 +451,11 @@ const ProfileSettings = () => {
 
         <div>
           <h3 className="text-base sm:text-lg font-bold text-[#257195] mb-4">
-            Notification Settings
+            {t("userProfile.notificationSettings")}
           </h3>
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
             <div className="flex items-center justify-between sm:justify-start gap-2">
-              <span className="text-sm sm:text-base">Email Notifications</span>
+              <span className="text-sm sm:text-base">{t("userProfile.emailNotifications")}</span>
               <button
                 type="button"
                 onClick={() => handleToggle("emailNotification")}
@@ -470,7 +472,7 @@ const ProfileSettings = () => {
             </div>
 
             <div className="flex items-center justify-between sm:justify-start gap-2">
-              <span className="text-sm sm:text-base">In-App Notifications</span>
+              <span className="text-sm sm:text-base">{t("userProfile.inAppNotifications")}</span>
               <button
                 type="button"
                 onClick={() => handleToggle("inAppNotification")}
@@ -493,7 +495,7 @@ const ProfileSettings = () => {
             onClick={() => Logout()}
             className="bg-[var(--primary-500)] text-[var(--font-light)] px-6 py-2 rounded-lg text-sm sm:text-base w-full sm:w-auto"
           >
-            Logout
+            {t("userProfile.logout")}
           </button>
         </div>
       </div>

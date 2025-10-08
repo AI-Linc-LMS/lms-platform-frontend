@@ -10,13 +10,9 @@ import DesktopSearch from "../components/courses/DesktopSearch";
 // import AssessmentBanner from '../components/assessment/AssessmentBanner';
 import AssessmentSuccessNotification from "../components/assessment/AssessmentSuccessNotification";
 import { useCourseFilters } from "../hooks/useCourseFilters";
-import {
-  categoryOptions,
-  levelOptions,
-  priceOptions,
-  ratingOptions,
-} from "../components/courses/FilterOptions";
+import { useTranslatedFilterOptions } from "../components/courses/useTranslatedFilterOptions";
 import { adaptCourses } from "../utils/courseAdapter";
+import { useTranslation } from "react-i18next";
 // import { FiPlayCircle, FiArrowRight, FiClock, FiCheckCircle } from 'react-icons/fi';
 
 interface AssessmentLocationState {
@@ -28,6 +24,13 @@ interface AssessmentLocationState {
 
 // Main component
 const Courses = () => {
+  const { t } = useTranslation();
+  const {
+    categoryOptions,
+    levelOptions,
+    priceOptions,
+    ratingOptions,
+  } = useTranslatedFilterOptions();
   const clientId = Number(import.meta.env.VITE_CLIENT_ID) || 1;
   const location = useLocation() as unknown as {
     state: AssessmentLocationState;
@@ -125,12 +128,12 @@ const Courses = () => {
 
       <div className="mb-6">
         <h1 className="text-[var(--neutral-500)] font-bold text-[18px] md:text-[22px] ">
-          Our Courses & Assessments
+          {t("courses.ourCoursesAndAssessments")}
         </h1>
         <p className="text-[var(--neutral-300)]  font-normal text-[14px] md:text-[16px]">
           {hasNoCourses
-            ? "No courses available at the moment"
-            : "Here's the List of all our Courses and available Assessments"}
+            ? t("courses.noCoursesAvailable")
+            : t("courses.coursesListDescription")}
         </p>
       </div>
 

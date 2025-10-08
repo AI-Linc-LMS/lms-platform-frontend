@@ -1,5 +1,7 @@
 import React from "react";
 import { Course } from "../../../types/final-course.types";
+import { useTranslation } from "react-i18next";
+import { useTranslatedDifficulty } from "../../../utils/courseTranslationUtils";
 // import { useNavigate } from "react-router-dom";
 import {
   formatPrice,
@@ -68,6 +70,8 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
   className = "",
   onExpand,
 }) => {
+  const { t } = useTranslation();
+  const { translateDifficulty } = useTranslatedDifficulty();
   // const navigate = useNavigate();
 
   // const handlePrimaryClick = () => {
@@ -87,7 +91,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
       difficulty_level: course.difficulty_level,
     });
 
-    return effectiveDifficulty;
+    return translateDifficulty(effectiveDifficulty);
   })();
   const courseDuration = getEffectiveDuration({
     id: course.id,
@@ -159,10 +163,10 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
               <circle cx="12" cy="12" r="10" />
               <polyline points="12,6 12,12 16,14" />
             </svg>
-            {courseDuration} hours
+            {courseDuration} {t("courses.hours")}
           </span>
           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-full text-xs font-medium text-yellow-800 whitespace-nowrap">
-            {isFree ? "Free" : `₹${formattedPrice}`}
+            {isFree ? t("courses.free") : `₹${formattedPrice}`}
           </span>
 
           {/* Rating */}
@@ -174,7 +178,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
             onClick={onExpand}
             className={`px-5 py-3 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[var(--course-cta)] text-[var(--font-light)] hover:bg-[var(--course-cta)] hover:-translate-y-0.5 ${"w-full"} ${className}`}
           >
-            View More
+            {t("common.viewMore")}
           </button>
         </div>
       </div>
