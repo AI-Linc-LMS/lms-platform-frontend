@@ -22,7 +22,6 @@ import {
   ReferralFormData,
 } from "../../../types/referral";
 import { useToast } from "../../../contexts/ToastContext";
-import PermissionDeniedModal from "../workshop-registrations/components/modals/PermissionDeniedModal";
 
 const Referals = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -41,8 +40,6 @@ const Referals = () => {
 
   // New: referral type state
   const [selectedReferralType, setSelectedReferralType] = useState("workshop");
-  const [permissionDeniedOpen, setPermissionDeniedOpen] = useState(false);
-
   // Removed assessments query
 
   // Function to generate referral link based on type
@@ -338,8 +335,6 @@ const Referals = () => {
               setEditingReferral(null);
             }}
             onSubmit={(data: ReferralData) => {
-              setPermissionDeniedOpen(true);
-              return;
               if (editingReferral) {
                 updateMutation.mutate({
                   id: editingReferral?.id.toString() ?? "",
@@ -363,19 +358,12 @@ const Referals = () => {
               setReferralToDelete(null);
             }}
             onConfirm={() => {
-              setPermissionDeniedOpen(true);
-              return;
               deleteMutation.mutate(referralToDelete?.id.toString() ?? "");
             }}
             referral={referralToDelete}
             isLoading={deleteMutation.isPending}
           />
         )}
-
-        <PermissionDeniedModal
-          isOpen={permissionDeniedOpen}
-          onClose={() => setPermissionDeniedOpen(false)}
-        />
       </div>
     </div>
   );
