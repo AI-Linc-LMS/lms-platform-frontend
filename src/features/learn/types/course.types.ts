@@ -22,6 +22,14 @@ export interface Instructor {
   website?: string;
 }
 
+export interface InstructorSingle {
+  id?: number; // backend may send empty objects []
+  name?: string;
+  bio?: string;
+  profile_pic_url?: string;
+  linkedin_profile?: string;
+}
+
 export interface Submodule {
   id: number;
   title: string;
