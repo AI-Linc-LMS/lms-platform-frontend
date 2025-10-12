@@ -8,7 +8,7 @@ import { logout } from "../redux/slices/userSlice";
 import { handleMobileNavigation } from "../utils/authRedirectUtils";
 import { RootState } from "../redux/store.ts";
 import LanguageSwitcher from "../components/ui/LanguageSwitcher";
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 
 interface UserState {
   profile_picture?: string;
@@ -17,7 +17,7 @@ interface UserState {
 
 const TopNav: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const isRTL = i18n.language === 'ar';
+  const isRTL = i18n.language === "ar";
   const [showDropdown, setShowDropdown] = useState(false);
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
@@ -123,7 +123,11 @@ const TopNav: React.FC = () => {
   }, [location.pathname, triggerNotification]);
 
   return (
-    <div className={`w-full bg-[var(--nav-background)] md:bg-white flex justify-between ${isRTL ? 'md:justify-start' : 'md:justify-end'} items-center px-4 py-4 mb-3 shadow-[0_1px_10px_rgba(0,0,0,0.05)] md:shadow border-b border-gray-200 md:border-b-0`}>
+    <div
+      className={`w-full bg-[var(--nav-background)] md:bg-white flex justify-between ${
+        isRTL ? "md:justify-start" : "md:justify-end"
+      } items-center px-4 py-4 mb-3 shadow-[0_1px_10px_rgba(0,0,0,0.05)] md:shadow border-b border-gray-200 md:border-b-0`}
+    >
       <div className="md:hidden">
         <img
           src={clientInfo.data?.app_logo_url}
@@ -132,7 +136,11 @@ const TopNav: React.FC = () => {
           onClick={() => navigate("/")}
         />
       </div>
-      <div className={`flex items-center gap-3 md:gap-5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+      <div
+        className={`flex items-center gap-3 md:gap-5 ${
+          isRTL ? "flex-row-reverse" : ""
+        }`}
+      >
         {(isAdminOrInstructor || isSuperAdmin) && (
           <Link
             to="/admin/dashboard"
@@ -141,10 +149,10 @@ const TopNav: React.FC = () => {
             {t("navigation.admin")}
           </Link>
         )}
-        
+
         {/* Language Switcher */}
-        <LanguageSwitcher />
-        
+        {/* <LanguageSwitcher /> */}
+
         <div className="relative">
           <div
             className="bg-gray-100 p-2 rounded-md cursor-pointer"
