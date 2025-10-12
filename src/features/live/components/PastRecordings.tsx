@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { LiveSession } from "../../../services/live/liveServicesApis";
+import { useTranslation } from "react-i18next";
 
 interface PastRecordingsProps {
   pastLiveSessions: LiveSession[];
@@ -9,6 +10,7 @@ interface PastRecordingsProps {
 const PastRecordings: React.FC<PastRecordingsProps> = ({
   pastLiveSessions,
 }) => {
+  const { t } = useTranslation();
   const [filterDate, setFilterDate] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
 
@@ -45,14 +47,14 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({
     <div>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <h2 className="text-2xl font-bold text-[var(--neutral-500)] mb-4 md:mb-0">
-          Past Sessions
+          {t("live.pastSessions.title")}
         </h2>
 
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative">
             <input
               type="text"
-              placeholder="Search sessions..."
+              placeholder={t("live.pastSessions.searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary-500)] focus:border-[var(--primary-500)]"
@@ -97,10 +99,10 @@ const PastRecordings: React.FC<PastRecordingsProps> = ({
             />
           </svg>
           <h3 className="mt-2 text-sm font-medium text-gray-900">
-            No recordings found
+            {t("live.pastSessions.noRecordings.title")}
           </h3>
           <p className="mt-1 text-sm text-gray-500">
-            Try adjusting your filters or search terms.
+            {t("live.pastSessions.noRecordings.description")}
           </p>
         </div>
       ) : (

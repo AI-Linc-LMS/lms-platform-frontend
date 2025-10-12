@@ -1,5 +1,6 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import PrimaryButton from "../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import DashboardPieChart from "../components/enrolled-courses/DashboardPieChart";
 import BackToHomeButton from "../../../commonComponents/common-buttons/back-buttons/back-to-home-button/BackToHomeButton";
@@ -12,6 +13,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 
 const EnrolledCourseDetailPage: React.FC = () => {
+  const { t } = useTranslation();
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
@@ -49,9 +51,9 @@ const EnrolledCourseDetailPage: React.FC = () => {
   if (!courseId) {
     return (
       <div className="p-4">
-        <p className="text-xl mb-4">Course ID not found</p>
+        <p className="text-xl mb-4">{t("course.courseIdNotFound")}</p>
         <PrimaryButton onClick={() => navigate("/")}>
-          Back to Courses
+          {t("course.backToCourses")}
         </PrimaryButton>
       </div>
     );
@@ -82,7 +84,7 @@ const EnrolledCourseDetailPage: React.FC = () => {
               </div>
 
               <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                Book Your Seat
+                {t("course.bookYourSeat")}
               </h2>
               {course?.course_title ? (
                 <h3 className="text-lg font-semibold text-gray-700 mb-4">
@@ -90,7 +92,7 @@ const EnrolledCourseDetailPage: React.FC = () => {
                 </h3>
               ) : (
                 <p className="text-gray-600 mb-4">
-                  Secure your learning seat today
+                  {t("course.secureYourSeat")}
                 </p>
               )}
 
@@ -99,7 +101,7 @@ const EnrolledCourseDetailPage: React.FC = () => {
                   ₹499
                 </div>
                 <div className="text-sm text-gray-600">
-                  Secure your learning seat today
+                  {t("course.secureYourSeat")}
                 </div>
               </div>
 
@@ -117,11 +119,11 @@ const EnrolledCourseDetailPage: React.FC = () => {
                     ></path>
                   </svg>
                   <span className="text-sm font-medium text-yellow-800">
-                    Limited Seats Available!
+                    {t("course.limitedSeats")}
                   </span>
                 </div>
                 <p className="text-xs text-yellow-700">
-                  Only a few seats left for this batch
+                  {t("course.fewSeatsLeft")}
                 </p>
               </div>
 
@@ -138,7 +140,7 @@ const EnrolledCourseDetailPage: React.FC = () => {
                       clipRule="evenodd"
                     ></path>
                   </svg>
-                  Reserved seat in live sessions
+                  {t("course.reservedSeat")}
                 </li>
                 <li className="flex items-center">
                   <svg
@@ -152,7 +154,7 @@ const EnrolledCourseDetailPage: React.FC = () => {
                       clipRule="evenodd"
                     ></path>
                   </svg>
-                  Priority access to course materials
+                  {t("course.priorityAccess")}
                 </li>
                 <li className="flex items-center">
                   <svg
@@ -166,7 +168,7 @@ const EnrolledCourseDetailPage: React.FC = () => {
                       clipRule="evenodd"
                     ></path>
                   </svg>
-                  Direct mentor interaction
+                  {t("course.directMentor")}
                 </li>
                 <li className="flex items-center">
                   <svg
@@ -180,7 +182,7 @@ const EnrolledCourseDetailPage: React.FC = () => {
                       clipRule="evenodd"
                     ></path>
                   </svg>
-                  Certificate upon completion
+                  {t("course.certificateCompletion")}
                 </li>
               </ul>
 
@@ -189,7 +191,7 @@ const EnrolledCourseDetailPage: React.FC = () => {
                   onClick={() => navigate("/")}
                   className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-colors"
                 >
-                  Maybe Later
+                  {t("course.maybeLater")}
                 </button>
                 <PrimaryButton
                   className="flex-1 !px-3 sm:!px-4 !py-2 sm:!py-3 !rounded-xl !text-sm sm:!text-base"
@@ -200,7 +202,7 @@ const EnrolledCourseDetailPage: React.FC = () => {
                     )
                   }
                 >
-                  Book My Seat
+                  {t("course.bookMySeat")}
                 </PrimaryButton>
               </div>
             </div>
@@ -234,8 +236,7 @@ const EnrolledCourseDetailPage: React.FC = () => {
                 </div>
                 <div className="ml-3">
                   <p className="text-sm text-yellow-700">
-                    Course data is currently unavailable. Please try refreshing
-                    the page or contact support if the issue persists.
+                    {t("course.courseDataUnavailable")}
                   </p>
                 </div>
               </div>

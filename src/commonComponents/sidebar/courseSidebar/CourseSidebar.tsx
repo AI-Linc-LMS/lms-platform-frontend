@@ -17,47 +17,91 @@ import subjectiveSelection from "../../../assets/course_sidebar_assets/subjectiv
 import developmentSelection from "../../../assets/course_sidebar_assets/development/develpmentSelection.png";
 import { useMediaQuery } from "../../../hooks/useMediaQuery";
 
+export interface ContentAvailability {
+  hasArticles?: boolean;
+  hasVideos?: boolean;
+  hasProblems?: boolean;
+  hasQuizzes?: boolean;
+  hasAssignments?: boolean;
+  hasDevelopment?: boolean;
+  hasAnyContent?: boolean;
+}
+
 interface Props {
   activeLabel: string | null;
   onSelect: (label: string) => void;
+  contentAvailability?: ContentAvailability;
 }
 
-const CourseSidebar = ({ activeLabel, onSelect }: Props) => {
+const CourseSidebar = ({
+  activeLabel,
+  onSelect,
+  contentAvailability,
+}: Props) => {
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   // Base menu items (shown on both mobile and desktop)
-  const menuItems = [
-    { label: "All", icon: allIcon, selectIcon: allSelectIcon },
-    { label: "Article", icon: articleIcon, selectIcon: articleIcon },
-    { label: "Videos", icon: videosIcon, selectIcon: videosSelectIcon },
-    { label: "Quiz", icon: quizIcon, selectIcon: quizSelectIcon },
+  const allMenuItems = [
+    {
+      label: "All",
+      icon: allIcon,
+      selectIcon: allSelectIcon,
+      shouldShow: contentAvailability?.hasAnyContent !== false,
+    },
+    {
+      label: "Article",
+      icon: articleIcon,
+      selectIcon: articleIcon,
+      shouldShow: contentAvailability?.hasArticles !== false,
+    },
+    {
+      label: "Videos",
+      icon: videosIcon,
+      selectIcon: videosSelectIcon,
+      shouldShow: contentAvailability?.hasVideos !== false,
+    },
+    {
+      label: "Quiz",
+      icon: quizIcon,
+      selectIcon: quizSelectIcon,
+      shouldShow: contentAvailability?.hasQuizzes !== false,
+    },
     {
       label: "Subjective",
       icon: subjectiveicon,
       selectIcon: subjectiveSelection,
+      shouldShow: contentAvailability?.hasAssignments !== false,
     },
   ];
 
   if (!isMobile) {
     // Add desktop-only items in the exact order
-    menuItems.unshift({
+    allMenuItems.unshift({
       label: "Dashboard",
       icon: dashboardIcon,
       selectIcon: dashboardSelectIcon,
+      shouldShow: true, // Dashboard always shows
     });
     // Add Problems and Development in correct positions
-    const videosIndex = menuItems.findIndex((item) => item.label === "Videos");
-    menuItems.splice(videosIndex + 1, 0, {
+    const videosIndex = allMenuItems.findIndex(
+      (item) => item.label === "Videos"
+    );
+    allMenuItems.splice(videosIndex + 1, 0, {
       label: "Problems",
       icon: problemIcon,
       selectIcon: problemSelectIcon,
+      shouldShow: contentAvailability?.hasProblems !== false,
     });
-    menuItems.push({
+    allMenuItems.push({
       label: "Development",
       icon: developmenticon,
       selectIcon: developmentSelection,
+      shouldShow: contentAvailability?.hasDevelopment !== false,
     });
   }
+
+  // Filter menu items based on content availability
+  const menuItems = allMenuItems.filter((item) => item.shouldShow);
 
   return (
     <div

@@ -1,9 +1,11 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import NoCourseBgMobile from "../../../../assets/dashboard_assets/no-course-mlite.webp";
 import NoCourseBgWeb from "../../../../assets/dashboard_assets/no-course.webp";
 
 const NoCourse = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   return (
     <>
       {/* Mobile View */}
@@ -13,18 +15,17 @@ const NoCourse = () => {
       >
         <div className="max-w-lg w-full py-2">
           <h1 className="text-4xl font-bold text-[var(--font-light)] mb-3">
-            Ready to Start Learning?
+            {t("dashboard.emptyState.title")}
           </h1>
           <p className="text-gray-200 text-lg mb-8">
-            Your personal dashboard is empty. Discover exciting courses and
-            begin your journey to new skills!
+            {t("dashboard.emptyState.description")}
           </p>
         </div>
         <button
           className="w-full flex items-center justify-center sm:w-auto bg-white text-[var(--primary-500)] font-bold py-4 px-12 rounded-xl shadow-lg transform transition-transform cursor-pointer mb-4"
           onClick={() => navigate("/courses")}
         >
-          Explore Courses{" "}
+          {t("dashboard.emptyState.button")} {" "}
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-5 w-5 ml-2"
@@ -46,17 +47,16 @@ const NoCourse = () => {
           {/* Left side */}
           <div className="w-5/12 text-left">
             <h1 className="text-6xl font-bold text-gray-800 mb-6 leading-tight">
-              Ready to Start Learning?
+              {t("dashboard.emptyState.title")}
             </h1>
             <p className="text-xl text-gray-600 mb-10">
-              Your personal dashboard is empty. Discover exciting courses and
-              begin your journey to new skills!
+              {t("dashboard.emptyState.description")}
             </p>
             <button
               className="group flex items-center justify-center w-auto bg-[var(--primary-500)] text-[var(--font-light)] font-bold py-4 px-12 rounded-xl shadow-lg transform transition-transform cursor-pointer hover:scale-105"
               onClick={() => navigate("/courses")}
             >
-              Explore Courses{" "}
+              {t("dashboard.emptyState.button")} {" "}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-6 w-6 ml-3 transition-transform transform group-hover:translate-x-2"

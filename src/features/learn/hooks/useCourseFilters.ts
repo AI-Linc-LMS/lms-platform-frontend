@@ -116,14 +116,6 @@ export const useCourseFilters = (courses: Course[] | undefined) => {
     if (!filteredCourses.length) return [];
 
     return [...filteredCourses].sort((a, b) => {
-      // PRIORITY 1: Always put enrolled courses first
-      const aEnrolled = a.is_enrolled || false;
-      const bEnrolled = b.is_enrolled || false;
-
-      if (aEnrolled && !bEnrolled) return -1; // a (enrolled) comes first
-      if (!aEnrolled && bEnrolled) return 1; // b (enrolled) comes first
-
-      // If both are enrolled or both are not enrolled, apply secondary sorting
       switch (sortBy) {
         case "most_popular":
           // Sort by enrolled students (most popular)

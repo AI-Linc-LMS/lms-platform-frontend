@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { getCourseLeaderboard } from "../../../../services/enrolled-courses-content/courseContentApis";
 import React, { useState } from "react";
 
 const EnrolledLeaderBoard = ({ courseId }: { courseId: number }) => {
+  const { t } = useTranslation();
   const [showInfo, setShowInfo] = useState(false);
   const clientId = import.meta.env.VITE_CLIENT_ID;
 
@@ -33,7 +35,7 @@ const EnrolledLeaderBoard = ({ courseId }: { courseId: number }) => {
     return (
       <div className="w-full rounded-3xl bg-white p-3 md:p-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-lg md:text-[22px] font-semibold">Leaderboard</h1>
+          <h1 className="text-lg md:text-[22px] font-semibold">{t("course.leaderboard")}</h1>
           <div className="relative">
             <button
               className="w-6 h-6 rounded-full border border-gray-400 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
@@ -46,18 +48,18 @@ const EnrolledLeaderBoard = ({ courseId }: { courseId: number }) => {
             {showInfo && (
               <div className="absolute right-0 top-8 z-10 bg-gray-800 text-[var(--font-light)] p-3 rounded-lg shadow-lg min-w-[200px]">
                 <div className="text-xs space-y-1">
-                  <div>VideoTutorial: 10 Marks</div>
-                  <div>Quiz: 20 Marks</div>
-                  <div>Assignment: 30 Marks</div>
-                  <div>Article: 5 Marks</div>
-                  <div>CodingProblem: 50 Marks</div>
+                  <div>{t("course.videoTutorial")}: 10 {t("course.marks")}</div>
+                  <div>{t("course.quiz")}: 20 {t("course.marks")}</div>
+                  <div>{t("course.assignment")}: 30 {t("course.marks")}</div>
+                  <div>{t("course.article")}: 5 {t("course.marks")}</div>
+                  <div>{t("course.codingProblem")}: 50 {t("course.marks")}</div>
                 </div>
               </div>
             )}
           </div>
         </div>
         <p className="text-red-500 text-sm md:text-base">
-          Error loading leaderboard data
+          {t("course.errorLoadingLeaderboard")}
         </p>
       </div>
     );
@@ -66,7 +68,7 @@ const EnrolledLeaderBoard = ({ courseId }: { courseId: number }) => {
   return (
     <div className="w-full rounded-3xl bg-white p-3 md:p-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-lg md:text-[22px] font-semibold">Leaderboard</h1>
+        <h1 className="text-lg md:text-[22px] font-semibold">{t("course.leaderboard")}</h1>
         <div className="relative">
           <button
             className="w-6 h-6 rounded-full border border-gray-400 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
@@ -79,18 +81,18 @@ const EnrolledLeaderBoard = ({ courseId }: { courseId: number }) => {
           {showInfo && (
             <div className="absolute right-0 top-8 z-10 bg-gray-800 text-[var(--font-light)] p-3 rounded-lg shadow-lg min-w-[200px]">
               <div className="text-xs space-y-1">
-                <div>VideoTutorial: 10 Marks</div>
-                <div>Quiz: 20 Marks</div>
-                <div>Assignment: 30 Marks</div>
-                <div>Article: 5 Marks</div>
-                <div>CodingProblem: 50 Marks</div>
+                <div>{t("course.videoTutorial")}: 10 {t("course.marks")}</div>
+                <div>{t("course.quiz")}: 20 {t("course.marks")}</div>
+                <div>{t("course.assignment")}: 30 {t("course.marks")}</div>
+                <div>{t("course.article")}: 5 {t("course.marks")}</div>
+                <div>{t("course.codingProblem")}: 50 {t("course.marks")}</div>
               </div>
             </div>
           )}
         </div>
       </div>
       <p className="text-sm md:text-base">
-        Let's see who is on top of the leaderboard.
+        {t("course.leaderboardDescription")}
       </p>
 
       <div className="overflow-x-auto overflow-hidden rounded-xl border border-gray-300 my-3 md:my-5">
@@ -101,19 +103,19 @@ const EnrolledLeaderBoard = ({ courseId }: { courseId: number }) => {
                 className="border-b border-gray-300 px-2 py-3 md:py-4 text-xs text-gray-600 w-[80px] md:w-[120px]"
                 style={{ height: "30px" }}
               >
-                Standing
+                {t("course.standing")}
               </th>
               <th
                 className="border-b border-l border-gray-300 px-2 text-xs text-gray-600 w-[100px] md:w-[120px]"
                 style={{ height: "30px" }}
               >
-                Name
+                {t("course.name")}
               </th>
               <th
                 className="border-b border-l border-gray-300 px-2 text-xs text-gray-600 w-[80px] md:w-[120px]"
                 style={{ height: "30px" }}
               >
-                Marks
+                {t("course.marks")}
               </th>
             </tr>
           </thead>
@@ -167,8 +169,7 @@ const EnrolledLeaderBoard = ({ courseId }: { courseId: number }) => {
         </svg>
 
         <p className="text-xs md:text-[12px] text-[var(--neutral-300)]">
-          As you complete modules you will move top of the leaderboard and earn
-          exciting rewards.
+          {t("course.leaderboardInfo")}
         </p>
       </div>
     </div>

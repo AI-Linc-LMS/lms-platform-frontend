@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Flame, Trophy, Play } from "lucide-react";
 import { Course } from "../../../../types/final-course.types";
 import { calculateProgress } from "../utils/courseDataUtils";
@@ -10,6 +11,7 @@ interface QuickOverviewSectionProps {
 export const QuickOverviewSection: React.FC<QuickOverviewSectionProps> = ({
   course,
 }) => {
+  const { t } = useTranslation();
   const progressPercentage = course.progress_percentage ?? 0;
   const videosWatched = course.stats?.video?.completed ?? 0;
   const totalVideos = course.stats?.video?.total ?? 0;
@@ -40,10 +42,10 @@ export const QuickOverviewSection: React.FC<QuickOverviewSectionProps> = ({
           </div>
           <div className="flex flex-col gap-0.5 min-w-0">
             <span className="text-xs sm:text-sm font-semibold text-[#374151]">
-              Course Progress
+              {t("courses.progress.courseProgress")}
             </span>
             <span className="text-[10px] sm:text-[11px] text-[var(--font-secondary)] truncate">
-              {videosWatched}/{totalVideos} videos
+              {videosWatched}/{totalVideos} {t("courses.progress.videos")}
             </span>
           </div>
         </div>
@@ -59,7 +61,7 @@ export const QuickOverviewSection: React.FC<QuickOverviewSectionProps> = ({
               {dayStreak}
             </span>
             <span className="text-[9px] sm:text-[10px] text-[var(--font-secondary)] font-medium text-center leading-tight">
-              Day Streak
+              {t("courses.progress.dayStreak")}
             </span>
           </div>
 
@@ -72,7 +74,7 @@ export const QuickOverviewSection: React.FC<QuickOverviewSectionProps> = ({
               {badges}
             </span>
             <span className="text-[9px] sm:text-[10px] text-[var(--font-secondary)] font-medium text-center leading-tight">
-              Badges
+              {t("courses.progress.badges")}
             </span>
           </div>
 
@@ -85,7 +87,7 @@ export const QuickOverviewSection: React.FC<QuickOverviewSectionProps> = ({
               {videosWatched}
             </span>
             <span className="text-[9px] sm:text-[10px] text-[var(--font-secondary)] font-medium text-center leading-tight">
-              Videos
+              {t("courses.progress.videos")}
             </span>
           </div>
         </div>

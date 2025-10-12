@@ -1,5 +1,6 @@
 import FilterCategory from "./FilterCategory";
 import { FilterOption } from "./FilterOptions";
+import { useTranslation } from "react-i18next";
 
 interface DesktopFiltersProps {
   selectedCategories: string[];
@@ -32,22 +33,24 @@ const DesktopFilters = ({
   priceOptions,
   ratingOptions,
 }: DesktopFiltersProps) => {
+  const { t } = useTranslation();
+  
   return (
     <div className="hidden md:block w-full md:w-1/4 lg:w-1/5">
       <div className="bg-white rounded-xl p-4 border border-[#DEE2E6]">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-[var(--neutral-500)]">Filter By</h2>
+          <h2 className="font-bold text-[var(--neutral-500)]">{t("filters.title")}</h2>
           <button
             onClick={clearAllFilters}
             className="text-sm text-[#17627A] hover:underline"
           >
-            Clear All
+            {t("filters.clearAll")}
           </button>
         </div>
 
         {/* Categories */}
         <FilterCategory
-          title="Categories"
+          title={t("filters.categories.title")}
           options={categoryOptions}
           selectedOptions={selectedCategories}
           setSelectedOptions={setSelectedCategories}
@@ -55,7 +58,7 @@ const DesktopFilters = ({
 
         {/* Level/Difficulty */}
         <FilterCategory
-          title="Level/Difficulty"
+          title={t("filters.difficulty.title")}
           options={levelOptions}
           selectedOptions={selectedLevels}
           setSelectedOptions={setSelectedLevels}
@@ -63,7 +66,7 @@ const DesktopFilters = ({
 
         {/* Price */}
         <FilterCategory
-          title="Price"
+          title={t("filters.price.title")}
           options={priceOptions}
           selectedOptions={selectedPrices}
           setSelectedOptions={setSelectedPrices}
@@ -71,7 +74,7 @@ const DesktopFilters = ({
 
         {/* Rating */}
         <FilterCategory
-          title="Rating"
+          title={t("filters.rating.title")}
           options={ratingOptions}
           selectedOptions={selectedRatings}
           setSelectedOptions={setSelectedRatings}

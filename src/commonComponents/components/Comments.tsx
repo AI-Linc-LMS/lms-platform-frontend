@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   getCommentsByContentId,
@@ -18,6 +19,7 @@ const Comments: React.FC<CommentsProps> = ({
   isDarkTheme,
   clientId,
 }) => {
+  const { t } = useTranslation();
   const [newComment, setNewComment] = useState("");
   const [visibleComments, setVisibleComments] = useState(5);
 
@@ -75,7 +77,7 @@ const Comments: React.FC<CommentsProps> = ({
             disabled={!newComment.trim() || createCommentMutation.isPending}
             className="px-4 py-2 bg-[var(--primary-500)] text-[var(--font-light)] rounded-lg hover:bg-[#1e4a61] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {createCommentMutation.isPending ? "Posting..." : "Post Comment"}
+            {createCommentMutation.isPending ? t("community.commentForm.posting") : t("community.commentForm.post")}
           </button>
         </div>
       </form>
@@ -97,7 +99,7 @@ const Comments: React.FC<CommentsProps> = ({
         </div>
       ) : commentsData?.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          <p>No comments yet. Be the first to comment!</p>
+          <p>{t("community.noComments.title")}</p>
         </div>
       ) : (
         <div className="space-y-4 max-h-140 overflow-y-auto pr-2">

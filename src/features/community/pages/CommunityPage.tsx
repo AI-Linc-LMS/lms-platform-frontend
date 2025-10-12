@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store";
+import { useTranslation } from "react-i18next";
+import { useTranslatedCommunity } from "../../learn/utils/courseTranslationUtils";
 import {
   ChevronDown,
   ChevronUp,
@@ -36,6 +38,9 @@ import {
 } from "../../../services/community/commentApis";
 
 const CommunityPage: React.FC = () => {
+  const { t } = useTranslation();
+  const { getCommunityTranslations } = useTranslatedCommunity();
+  const communityTranslations = getCommunityTranslations();
   const navigate = useNavigate();
   const location = useLocation();
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -317,7 +322,7 @@ const CommunityPage: React.FC = () => {
                   <Users className="text-[var(--font-light)]" size={16} />
                 </div>
                 <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
-                  Community
+                  {t("community.title")}
                 </h1>
               </div>
             </div>
@@ -347,7 +352,7 @@ const CommunityPage: React.FC = () => {
                   <Users className="text-[var(--font-light)]" size={16} />
                 </div>
                 <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
-                  Community
+                  {t("community.title")}
                 </h1>
               </div>
             </div>
@@ -458,7 +463,7 @@ const CommunityPage: React.FC = () => {
                 <Users className="text-[var(--font-light)]" size={16} />
               </div>
               <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
-                Community
+                {t("community.title")}
               </h1>
             </div>
 
@@ -475,8 +480,8 @@ const CommunityPage: React.FC = () => {
                 className="bg-blue-600 text-[var(--font-light)] px-3 py-2 sm:px-4 rounded-md hover:bg-blue-700 transition-colors font-medium flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
               >
                 <Plus size={16} />
-                <span className="hidden xs:inline">New</span>
-                <span className="hidden sm:inline">Thread</span>
+                <span className="hidden xs:inline">{t("community.newThread")}</span>
+                <span className="hidden sm:inline">{t("community.thread")}</span>
               </button>
             </div>
           </div>
@@ -492,7 +497,7 @@ const CommunityPage: React.FC = () => {
                 >
                   <span className="flex items-center gap-2 text-sm">
                     <Filter size={16} />
-                    Filters & Search
+                    {t("community.filtersAndSearch")}
                   </span>
                   {showMobileFilters ? (
                     <ChevronUp size={16} />
@@ -512,7 +517,7 @@ const CommunityPage: React.FC = () => {
                 />
                 <input
                   type="text"
-                  placeholder="Search discussions..."
+                  placeholder={t("community.searchPlaceholder")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -542,7 +547,7 @@ const CommunityPage: React.FC = () => {
                   />
                   <input
                     type="text"
-                    placeholder="Search discussions..."
+                    placeholder={t("community.searchPlaceholder")}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm"
@@ -568,7 +573,7 @@ const CommunityPage: React.FC = () => {
           {showNewThreadForm && (
             <div className="mb-4 sm:mb-6 p-4 sm:p-6 bg-white border border-gray-200 rounded-lg mx-1 sm:mx-0">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
-                {editingThread ? "Edit Thread" : "Start a new discussion"}
+                {editingThread ? t("community.createForm.editThread") : t("community.createForm.startNewDiscussion")}
               </h3>
               <div className="space-y-3 sm:space-y-4">
                 <div className="flex w-full justify-between gap-4">
@@ -577,12 +582,12 @@ const CommunityPage: React.FC = () => {
                       htmlFor="thread-title"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Title
+                      {t("community.createForm.titleLabel")}
                     </label>
                     <input
                       id="thread-title"
                       type="text"
-                      placeholder="Thread title"
+                      placeholder={t("community.createForm.titlePlaceholder")}
                       value={newThread.title}
                       onChange={(e) =>
                         setNewThread({ ...newThread, title: e.target.value })
@@ -595,7 +600,7 @@ const CommunityPage: React.FC = () => {
                       htmlFor="thread-tags"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Tags
+                      {t("community.createForm.tagsLabel")}
                     </label>
                     <TagInput
                       availableTags={allTags}
@@ -604,19 +609,19 @@ const CommunityPage: React.FC = () => {
                         setNewThread({ ...newThread, tagIds })
                       }
                       onCreateTag={handleCreateTag}
-                      placeholder="Search or create tags (e.g. React, TypeScript, API)..."
+                      placeholder={t("community.createForm.tagsSearchPlaceholder")}
                       className="w-full"
                     />
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    body
+                    {t("community.createForm.bodyLabel")}
                   </label>
                   <RichTextEditor
                     value={newThread.body}
                     onChange={(body) => setNewThread({ ...newThread, body })}
-                    placeholder="What would you like to discuss? You can format text, add code snippets, and upload images..."
+                    placeholder={t("community.createForm.bodyPlaceholder")}
                     height="h-64 sm:h-96"
                   />
                 </div>
@@ -637,14 +642,14 @@ const CommunityPage: React.FC = () => {
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         <span>
-                          {editingThread ? "Updating..." : "Creating..."}
+                          {editingThread ? t("common.updating") : t("common.creating")}
                         </span>
                       </>
                     ) : (
                       <>
                         <Plus size={16} />
                         <span>
-                          {editingThread ? "Update Thread" : "Create Thread"}
+                          {editingThread ? t("community.createForm.updateThread") : t("community.createForm.createThread")}
                         </span>
                       </>
                     )}
@@ -662,7 +667,7 @@ const CommunityPage: React.FC = () => {
                     }
                     className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors font-medium text-sm sm:text-base disabled:opacity-50"
                   >
-                    Cancel
+                    {t("common.cancel")}
                   </button>
                 </div>
               </div>
@@ -728,13 +733,13 @@ const CommunityPage: React.FC = () => {
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   {searchTerm || selectedTag
-                    ? "No threads found"
-                    : "No threads yet"}
+                    ? t("community.noThreadsFound")
+                    : t("community.noThreads.title")}
                 </h3>
                 <p className="text-gray-600 mb-6">
                   {searchTerm || selectedTag
-                    ? "Try adjusting your search or filter criteria."
-                    : "Be the first to start a discussion in the community."}
+                    ? t("community.tryAdjustSearch")
+                    : t("community.noThreads.description")}
                 </p>
                 {!searchTerm && !selectedTag && (
                   <button
@@ -742,7 +747,7 @@ const CommunityPage: React.FC = () => {
                     className="bg-blue-600 text-[var(--font-light)] px-6 py-3 rounded-md hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 mx-auto"
                   >
                     <Plus size={18} />
-                    Create First Thread
+                    {communityTranslations.createFirstThread}
                   </button>
                 )}
                 {(searchTerm || selectedTag) && (
@@ -753,7 +758,7 @@ const CommunityPage: React.FC = () => {
                     }}
                     className="bg-gray-100 text-gray-700 px-6 py-3 rounded-md hover:bg-gray-200 transition-colors font-medium"
                   >
-                    Clear Filters
+                    {t("community.clearFilters")}
                   </button>
                 )}
               </div>

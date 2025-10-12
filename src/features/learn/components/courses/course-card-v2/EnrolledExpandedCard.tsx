@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { FileText, PlayCircle, Play, Trophy } from "lucide-react";
 import { calculateCourseProgress } from "../../../utils/progressUtils";
 import { getEffectiveWhatsIncluded } from "./utils/courseDataUtils";
+import { useTranslatedCourseContent } from "../../../utils/courseTranslationUtils";
 import {
   AchievementSection,
   ContentMetricsSection,
@@ -16,6 +17,7 @@ import {
   NextLessonSection,
 } from "./components";
 import { format, subDays } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 interface EnrolledExpandedCardProps {
   course: Course;
@@ -29,6 +31,8 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
   onCollapse,
 }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { getTranslatedDescription } = useTranslatedCourseContent();
 
   // ADDED: Use the new utility to get the definitive progress percentage.
 
@@ -99,8 +103,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
         {/* MOBILE OPTIMIZED: Course Description */}
         <div className="mt-4 sm:mt-6 md:mt-10 mb-3 sm:mb-4 md:mb-6">
           <p className="text-xs sm:text-sm leading-[1.5] text-[#374151] m-0">
-            {course.description ||
-              "Learn how to build intelligent, goal-driven digital products using Agentic AI systems. This course covers advanced techniques for creating autonomous AI agents that can make decisions and take actions in complex environments."}
+            {getTranslatedDescription(course as unknown as { title?: string; description?: string })}
           </p>
         </div>
 
@@ -111,7 +114,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
         <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-2 sm:p-3 mb-3 sm:mb-4 overflow-hidden">
           <div className="flex justify-between items-center mb-2">
             <span className="text-xs sm:text-[13px] font-semibold text-[#374151]">
-              Your Progress
+              {t("courses.progress.yourProgress")}
             </span>
             <span className="text-xs sm:text-[13px] font-bold text-[#10b981]">
               {/* MODIFIED: Use the new 'progressPercentage' variable here. */}
@@ -133,7 +136,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
               <PlayCircle className="w-2 h-2 sm:w-[10px] sm:h-[10px] text-[#10b981] flex-shrink-0" />
               <span className="truncate">
                 {course.stats?.video?.completed || 0}/
-                {course.stats?.video?.total || 0} videos watched
+                {course.stats?.video?.total || 0} {t("courses.progress.videosWatched")}
               </span>
             </div>
             <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-[var(--font-secondary)]">
@@ -153,7 +156,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
               </svg>
               <span className="truncate">
                 {course.stats?.quiz?.completed || 0}/
-                {course.stats?.quiz?.total || 0} quizzes completed
+                {course.stats?.quiz?.total || 0} {t("courses.progress.quizzesCompleted")}
               </span>
             </div>
           </div>
@@ -163,10 +166,10 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
         <div className="bg-[#fef3c7] border border-[#fde68a] rounded-lg p-2 sm:p-3 mb-3 sm:mb-4 overflow-hidden">
           <div className="flex justify-between items-center mb-2">
             <span className="text-xs sm:text-[13px] font-semibold text-[#92400e]">
-              Recent Activity
+              {t("courses.recentActivity")}
             </span>
             <span className="text-[10px] sm:text-[11px] text-[#a16207]">
-              2 hours ago
+              2 {t("courses.hours")} ago
             </span>
           </div>
           <div className="space-y-1">
@@ -236,7 +239,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
                 {course.streak_count ?? 0}
               </span>
               <span className="text-[9px] sm:text-[10px] text-[#a16207] font-medium uppercase tracking-[0.3px]">
-                Day Streak
+                {t("courses.progress.dayStreak")}
               </span>
             </div>
           </div>

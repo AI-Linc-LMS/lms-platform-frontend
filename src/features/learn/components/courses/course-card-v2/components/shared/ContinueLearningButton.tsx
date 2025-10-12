@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 interface ContinueLearningButtonProps {
   onClick: () => void;
@@ -11,6 +12,8 @@ export const ContinueLearningButton: React.FC<ContinueLearningButtonProps> = ({
   fullWidth = true,
   className = "",
 }) => {
+  const { t } = useTranslation();
+  
   return (
     <div className={fullWidth ? "w-full" : ""}>
       <button
@@ -19,7 +22,7 @@ export const ContinueLearningButton: React.FC<ContinueLearningButtonProps> = ({
           fullWidth ? "w-full" : ""
         } ${className}`}
       >
-        Continue Learning
+        {t("courses.continueLearning")}
       </button>
     </div>
   );

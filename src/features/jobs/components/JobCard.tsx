@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Job } from "../types/jobs.types";
+import { 
+  getTranslatedJobDescription
+} from "../../../utils/jobTranslations";
 
 interface JobCardProps {
   job: Job;
@@ -22,10 +26,32 @@ const JobCard: React.FC<JobCardProps> = ({
   className = "",
 }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   // const [internalBookmarked, setInternalBookmarked] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
 
   // const isBookmarked = externalBookmarked !== undefined ? externalBookmarked : internalBookmarked;
+
+  const getTranslatedJobType = (type: string) => {
+    const typeMap: { [key: string]: string } = {
+      'Full-time': 'jobs.filters.jobType.fullTime',
+      'Part-time': 'jobs.filters.jobType.partTime',
+      'Contract': 'jobs.filters.jobType.contract',
+      'Internship': 'jobs.filters.jobType.internship',
+      'Freelance': 'jobs.filters.jobType.freelance'
+    };
+    return t(typeMap[type] || 'jobs.filters.jobType.fullTime');
+  };
+
+  const getTranslatedExperienceLevel = (level: string) => {
+    const levelMap: { [key: string]: string } = {
+      'Entry Level': 'jobs.filters.experience.entryLevel',
+      'Mid Level': 'jobs.filters.experience.midLevel',
+      'Senior Level': 'jobs.filters.experience.seniorLevel',
+      'Executive': 'jobs.filters.experience.executive'
+    };
+    return t(levelMap[level] || 'jobs.filters.experience.entryLevel');
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -33,10 +59,10 @@ const JobCard: React.FC<JobCardProps> = ({
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 1) return "1 day ago";
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
-    return `${Math.ceil(diffDays / 30)} months ago`;
+    if (diffDays === 1) return t("jobs.card.postedAgo", { time: "1 day" });
+    if (diffDays < 7) return t("jobs.card.postedAgo", { time: `${diffDays} days` });
+    if (diffDays < 30) return t("jobs.card.postedAgo", { time: `${Math.ceil(diffDays / 7)} weeks` });
+    return t("jobs.card.postedAgo", { time: `${Math.ceil(diffDays / 30)} months` });
   };
 
   // const getExperienceColor = (experience: string) => {
@@ -174,21 +200,21 @@ const JobCard: React.FC<JobCardProps> = ({
                     <span
                       className={`px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium {getJobTypeColor(job.type)}`}
                     >
-                      {job.type}
+                      {getTranslatedJobType(job.type)}
                     </span>
                     <span
                       className={`px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium {getExperienceColor(job.experienceLevel)}`}
                     >
-                      {job.experienceLevel}
+                      {getTranslatedExperienceLevel(job.experienceLevel)}
                     </span>
                     {job.remote && (
                       <span className="px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium bg-[#28A745] text-[var(--font-light)]">
-                        Remote
+                        {t("jobs.card.remote")}
                       </span>
                     )}
                     {featured && (
                       <span className="px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium bg-[#FFC107] text-[var(--font-light)]">
-                        ⭐ Featured
+                        {t("jobs.card.featured")}
                       </span>
                     )}
                     {/* Skill Tags - Show fewer on mobile */}
@@ -240,7 +266,7 @@ const JobCard: React.FC<JobCardProps> = ({
             <span className="text-[#28A745] font-bold text-base sm:text-lg">
               {job.salary
                 ? `₹${job.salary.min.toLocaleString()} - ₹${job.salary.max.toLocaleString()}`
-                : "Salary not specified"}
+                : t("jobs.card.salaryNotSpecified")}
             </span>
           </div>
         </div>
@@ -248,13 +274,23 @@ const JobCard: React.FC<JobCardProps> = ({
         {/* Description */}
         <div className="mb-4">
           <p className="text-[var(--neutral-400)] leading-relaxed text-sm sm:text-base">
-            {showFullDescription
-              ? job.description
-              : job.description.length > 120
-              ? `${job.description.slice(0, 120)}...`
-              : job.description}
+            {(() => {
+              // Try to get translated description first
+              const translatedDescription = getTranslatedJobDescription(job.id, t);
+              const description = translatedDescription || job.description;
+              
+              return showFullDescription
+                ? description
+                : description.length > 120
+                ? `${description.slice(0, 120)}...`
+                : description;
+            })()}
           </p>
-          {job.description.length > 120 && (
+          {(() => {
+            const translatedDescription = getTranslatedJobDescription(job.id, t);
+            const description = translatedDescription || job.description;
+            return description.length > 120;
+          })() && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -262,7 +298,7 @@ const JobCard: React.FC<JobCardProps> = ({
               }}
               className="text-[var(--primary-500)] font-medium text-xs sm:text-sm mt-2 hover:underline"
             >
-              {showFullDescription ? "Show Less" : "Read More"}
+              {showFullDescription ? t("jobs.card.showLess") : t("jobs.card.readMore")}
             </button>
           )}
         </div>
@@ -283,7 +319,7 @@ const JobCard: React.FC<JobCardProps> = ({
             {job.requirements.length > (window.innerWidth < 640 ? 2 : 3) && (
               <span className="px-2 py-1 sm:px-3 sm:py-1 bg-[var(--neutral-50)] text-[var(--neutral-300)] rounded-lg text-xs sm:text-sm border border-[#DEE2E6]">
                 +{job.requirements.length - (window.innerWidth < 640 ? 2 : 3)}{" "}
-                more
+                {t("jobs.card.more")}
               </span>
             )}
           </div>
@@ -298,7 +334,7 @@ const JobCard: React.FC<JobCardProps> = ({
             }}
             className="flex-1 px-4 py-2 sm:py-3 bg-[var(--primary-500)] text-[var(--font-light)] rounded-lg hover:bg-[var(--primary-600)] transition-colors font-medium text-sm sm:text-base"
           >
-            Apply Now
+            {t("jobs.card.applyNow")}
           </button>
           <button
             onClick={(e) => {
@@ -307,7 +343,7 @@ const JobCard: React.FC<JobCardProps> = ({
             }}
             className="flex-1 px-4 py-2 sm:py-3 border border-[var(--primary-500)] text-[var(--primary-500)] rounded-lg hover:bg-[var(--primary-500)] hover:text-[var(--font-light)] transition-colors font-medium text-sm sm:text-base"
           >
-            View Details
+            {t("jobs.card.viewDetails")}
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { CompanyLogo, getEffectiveCompanies } from "../utils/courseDataUtils";
 
 interface CompanyLogosProps {
@@ -10,6 +11,8 @@ export const CompanyLogosSection: React.FC<CompanyLogosProps> = ({
   course,
   companies,
 }) => {
+  const { t } = useTranslation();
+  
   // Use centralized logic to get effective companies
   const effectiveCompanies = course
     ? (() => {
@@ -21,7 +24,7 @@ export const CompanyLogosSection: React.FC<CompanyLogosProps> = ({
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <span className="text-[11px] text-[var(--font-tertiary)] font-normal uppercase tracking-[0.5px]">
-        Created and certified by
+        {t("courses.createdAndCertifiedBy")}
       </span>
       <div className="flex items-center gap-2 flex-wrap">
         {effectiveCompanies.map((company) => (
