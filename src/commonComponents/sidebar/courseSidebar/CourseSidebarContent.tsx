@@ -189,7 +189,11 @@ const CourseSidebarContent = ({
 
   // Get actual data to use - prioritize fresh submoduleData over stale temp data
   const w = window as unknown as { temporarySubmoduleData?: SubmoduleData };
-  const actualData = submoduleData || (refreshTrigger > 0 && w.temporarySubmoduleData ? w.temporarySubmoduleData : undefined);
+  const actualData =
+    submoduleData ||
+    (refreshTrigger > 0 && w.temporarySubmoduleData
+      ? w.temporarySubmoduleData
+      : undefined);
 
   // Show loading state when no data is available
   if (!actualData) {
