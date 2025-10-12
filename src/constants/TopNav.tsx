@@ -7,7 +7,7 @@ import { useRole } from "../hooks/useRole";
 import { logout } from "../redux/slices/userSlice";
 import { handleMobileNavigation } from "../utils/authRedirectUtils";
 import { RootState } from "../redux/store.ts";
-import LanguageSwitcher from "../components/ui/LanguageSwitcher";
+// import LanguageSwitcher from "../components/ui/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
 
 interface UserState {
