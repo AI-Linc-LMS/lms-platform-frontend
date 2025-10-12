@@ -1,6 +1,7 @@
 import React from "react";
 import { Video, FileText, HelpCircle, Code, Edit } from "lucide-react";
 import { Course } from "../../../../types/final-course.types";
+import { useTranslation } from "react-i18next";
 
 interface ContentMetric {
   id: string;
@@ -59,10 +60,12 @@ const CONTENT_METRICS: ContentMetric[] = [
 export const ContentMetricsSection: React.FC<ContentMetricsSectionProps> = ({
   course,
 }) => {
+  const { t } = useTranslation();
+  
   return (
     <div className="mb-4">
       <div className="text-xs font-semibold text-[var(--font-secondary)] mb-2 uppercase tracking-[0.5px]">
-        Content
+        {t("courses.progress.content")}
       </div>
       <div className="grid grid-cols-5 gap-2">
         {CONTENT_METRICS.map((metric) => {

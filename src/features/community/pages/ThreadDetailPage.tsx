@@ -24,8 +24,10 @@ import {
 } from "../../../services/community/commentApis";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store";
+import { useTranslation } from "react-i18next";
 
 const ThreadDetailPage: React.FC = () => {
+  const { t } = useTranslation();
   // Pagination for top-level comments
   const [commentsPage, setCommentsPage] = useState(1);
   const commentsPerPage = 10;
@@ -568,8 +570,8 @@ const ThreadDetailPage: React.FC = () => {
               className="flex items-center gap-1 sm:gap-2 text-gray-600 hover:text-gray-800 font-medium text-sm sm:text-base"
             >
               <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
-              <span className="hidden xs:inline">Back to</span>
-              <span>Community</span>
+              <span className="hidden xs:inline">{t("common.backTo")}</span>
+              <span>{t("community.title")}</span>
             </button>
           </div>
         </div>
@@ -694,7 +696,7 @@ const ThreadDetailPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
               <span className="hidden sm:inline">
-                {comments?.length ?? 0} Comments
+                {comments?.length ?? 0} {t("community.comments")}
               </span>
             </h2>
           </div>
@@ -765,7 +767,7 @@ const ThreadDetailPage: React.FC = () => {
                         role="button"
                         tabIndex={0}
                       >
-                        See more comments
+                        {t("community.seeMoreComments")}
                       </span>
                     </div>
                   )}
@@ -777,10 +779,10 @@ const ThreadDetailPage: React.FC = () => {
                       <AlertCircle size={24} className="text-gray-400" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      No comments yet
+                      {t("community.noComments.title")}
                     </h3>
                     <p className="text-gray-600">
-                      Be the first to share your thoughts on this thread.
+                      {t("community.noComments.description")}
                     </p>
                   </div>
                 </div>

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Course,
   Instructor,
@@ -18,6 +19,7 @@ interface CourseContentProps {
 
 // Modify the InstructorsSection to include more instructors
 const InstructorsSection: React.FC = () => {
+  const { t } = useTranslation();
   // Define mock instructors specific to this course
   const mockInstructors: Instructor[] = [
     {
@@ -69,14 +71,14 @@ const InstructorsSection: React.FC = () => {
     <div className="mt-6 bg-white rounded-2xl p-4 md:p-6 border border-gray-100 shadow-sm">
       <div className="flex flex-col md:flex-row justify-between items-center mb-4 md:mb-5">
         <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-2 md:mb-0">
-          Course Instructors
+          {t("course.courseInstructors")}
         </h2>
         {mockInstructors.length > 2 && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="text-xs md:text-sm text-blue-600 hover:text-blue-800 transition-colors"
           >
-            {isExpanded ? "Collapse" : `View All (${mockInstructors.length})`}
+            {isExpanded ? t("common.collapse") : `${t("common.viewAll")} (${mockInstructors.length})`}
           </button>
         )}
       </div>
@@ -106,7 +108,7 @@ const InstructorsSection: React.FC = () => {
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center text-[#0A66C2] hover:text-[#005582] transition-colors text-xs md:text-sm"
               >
-                <FaLinkedin className="mr-1 w-4 h-4" /> LinkedIn Profile
+                <FaLinkedin className="mr-1 w-4 h-4" /> {t("course.linkedinProfile")}
               </a>
             )}
           </div>
@@ -121,6 +123,7 @@ const CourseContent: React.FC<CourseContentProps> = ({
   isLoading,
   error,
 }) => {
+  const { t } = useTranslation();
   const [tooltipInfo, setTooltipInfo] = useState<{
     visible: boolean;
     index: number;
@@ -217,11 +220,10 @@ const CourseContent: React.FC<CourseContentProps> = ({
             />
           </svg>
           <h2 className="text-xl font-semibold text-gray-800 mb-2">
-            Error Loading Course
+            {t("course.errorLoadingCourse")}
           </h2>
           <p className="text-gray-600 text-center max-w-md">
-            We encountered an error while loading the course content. Please try
-            refreshing the page or contact support if the problem persists.
+            {t("course.errorLoadingMessage")}
           </p>
         </div>
       </div>
@@ -246,11 +248,10 @@ const CourseContent: React.FC<CourseContentProps> = ({
             />
           </svg>
           <h2 className="text-xl font-semibold text-gray-800 mb-2">
-            No Course Found
+            {t("course.noCourseFound")}
           </h2>
           <p className="text-gray-600 text-center max-w-md">
-            The requested course could not be found. Please check the course ID
-            or try again later.
+            {t("course.noCourseFoundMessage")}
           </p>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { getAllRecommendedCourse } from "../../../../services/continue-course-learning/continueCourseApis";
 import { useNavigate } from "react-router-dom";
 
@@ -8,6 +9,7 @@ import Course from "../../types/final-course.types";
 
 const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   // Fetch data using TanStack Query
   const {
     data: courses,
@@ -25,11 +27,10 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
         <div className="flex flex-row items-center justify-between w-full my-3 md:my-8">
           <div>
             <h1 className="text-[var(--neutral-500)] font-bold text-[18px] md:text-[22px]">
-              Based On Your Learning
+              {t("dashboard.basedLearning.title")}
             </h1>
             <p className="text-[var(--neutral-300)] font-normal text-[14px] md:text-[18px]">
-              Based on your learnings we think your might like this courses
-              below.
+              {t("dashboard.basedLearning.subtitle")}
             </p>
           </div>
           <div>
@@ -37,13 +38,13 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
               onClick={() => navigate("/recommended-learning")}
               className="w-[80px] md:w-[95px] h-[45px] md:h-[55px] rounded-xl border border-[var(--primary-400)] text-[13px] md:text-[15px] font-medium text-[var(--primary-400)] cursor-pointer transition-all duration-200 hover:bg-[#E9F7FA] hover:text-[#1E7A99] hover:scale-95"
             >
-              See all
+              {t("dashboard.basedLearning.seeAll")}
             </button>
           </div>
         </div>
         {error && (
           <div className="text-red-500">
-            Error loading courses. Please try again later.
+            {t("courses.error")}
           </div>
         )}
         {!courses ||
@@ -97,11 +98,10 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
         <div className="flex flex-row items-center justify-between w-full my-3 md:my-8">
           <div>
             <h1 className="text-[var(--neutral-500)] font-bold text-[18px] md:text-[22px]">
-              Based On Your Learning
+              {t("dashboard.basedLearning.title")}
             </h1>
             <p className="text-[var(--neutral-300)] font-normal text-[14px] md:text-[18px]">
-              Based on your learnings we think your might like this courses
-              below.
+              {t("dashboard.basedLearning.subtitle")}
             </p>
           </div>
           <div>
@@ -109,7 +109,7 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
               onClick={() => navigate("/recommended-learning")}
               className="w-[80px] md:w-[95px] h-[45px] md:h-[55px] rounded-xl border border-[var(--primary-400)] text-[13px] md:text-[15px] font-medium text-[var(--primary-400)] cursor-pointer transition-all duration-200 hover:bg-[#E9F7FA] hover:text-[#1E7A99] hover:scale-95"
             >
-              See all
+              {t("dashboard.basedLearning.seeAll")}
             </button>
           </div>
         </div>
@@ -130,17 +130,16 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
             <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
           </svg>
           <h3 className="text-xl font-medium text-gray-700 mb-2">
-            No courses available yet
+            {t("dashboard.basedLearning.noCourses.title")}
           </h3>
           <p className="text-gray-500 mb-6">
-            We couldn't find any recommended courses based on your learning
-            history.
+            {t("dashboard.basedLearning.noCourses.description")}
           </p>
           <PrimaryButton
             className="mx-auto"
             onClick={() => (window.location.href = "/courses")}
           >
-            Explore Courses
+            {t("dashboard.basedLearning.noCourses.button")}
           </PrimaryButton>
         </div>
       </div>
@@ -157,10 +156,10 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
       <div className="flex flex-row items-center justify-between w-full my-3 md:my-8 pt-12">
         <div>
           <h1 className="text-[var(--neutral-500)] font-bold text-[18px] md:text-[22px]">
-            Based On Your Learning
+            {t("dashboard.basedLearning.title")}
           </h1>
           <p className="text-[var(--neutral-300)] font-normal text-[14px] md:text-[18px]">
-            Based on your learnings we think your might like this courses below.
+            {t("dashboard.basedLearning.subtitle")}
           </p>
         </div>
         <div>
@@ -168,7 +167,7 @@ const BasedLearningCourses = ({ clientId }: { clientId: number }) => {
             onClick={() => navigate("/recommended-learning")}
             className="w-[80px] md:w-[95px] h-[45px] md:h-[55px] rounded-xl border border-[var(--primary-400)] text-[13px] md:text-[15px] font-medium text-[var(--primary-400)] cursor-pointer transition-all duration-200 hover:bg-[#E9F7FA] hover:text-[#1E7A99] hover:scale-95"
           >
-            See all
+            {t("dashboard.basedLearning.seeAll")}
           </button>
         </div>
       </div>
