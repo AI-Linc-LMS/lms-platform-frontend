@@ -747,6 +747,7 @@ const CourseTopicDetailPage: React.FC = () => {
       className="relative min-h-screen"
     >
       <BackToPreviousPage />
+
       <div className="flex flex-col md:flex-row mt-4 relative">
         {/* Sidebar container - only shown as content panel on desktop */}
         {!isMobile && (
@@ -937,6 +938,7 @@ const CourseTopicDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
+
       {/* Mobile bottom navigation */}
       {isMobile && (
         <div className="fixed bottom-0 left-0 right-0 z-50">

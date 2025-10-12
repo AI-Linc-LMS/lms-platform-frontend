@@ -1,5 +1,6 @@
 import React from "react";
 import { Medal, Star, Flame, Lock, Award } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface AchievementData {
   achieved: boolean;
@@ -18,21 +19,23 @@ interface Achievement {
   info: string;
 }
 
-// Map backend keys to UI details
-const ACHIEVEMENT_MAPPER: Record<
-  string,
-  { label: string; icon: React.ComponentType<{ className?: string }> }
-> = {
-  first_step: { label: "First Steps", icon: Medal },
-  quiz_master: { label: "Quiz Master", icon: Star },
-  streak_keeper: { label: "Streak Keeper", icon: Flame },
-  expert: { label: "Expert", icon: Award },
-  certified: { label: "Certified", icon: Lock },
-};
-
 export const AchievementSection: React.FC<{
   achievements: BackendAchievements;
 }> = ({ achievements }) => {
+  const { t } = useTranslation();
+  
+  // Map backend keys to UI details with translations
+  const ACHIEVEMENT_MAPPER: Record<
+    string,
+    { label: string; icon: React.ComponentType<{ className?: string }> }
+  > = {
+    first_step: { label: t("courses.achievements.firstSteps"), icon: Medal },
+    quiz_master: { label: t("courses.achievements.quizMaster"), icon: Star },
+    streak_keeper: { label: t("courses.achievements.streakKeeper"), icon: Flame },
+    expert: { label: t("courses.achievements.expert"), icon: Award },
+    certified: { label: t("courses.achievements.certified"), icon: Lock },
+  };
+
   // Transform backend object → UI array
   const mappedAchievements: Achievement[] = achievements
     ? Object?.entries(achievements)?.map(([key, value]) => {

@@ -1,6 +1,7 @@
 import React from "react";
 import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
+// import { useTranslation } from "react-i18next";
 import { generateTrustedByCompanies } from "./utils/courseDataUtils";
 import {
   EnrolledBannerSection,

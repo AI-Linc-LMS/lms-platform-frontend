@@ -13,6 +13,7 @@ import {
 } from "date-fns";
 import { getUserActivityHeatmapData } from "../../../../services/dashboardApis";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from 'react-i18next';
 
 interface LessonsHeatmapCardProps {
   hoveredCell: string | null;
@@ -35,6 +36,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
   hoveredCell,
   setHoveredCell,
 }) => {
+  const { t } = useTranslation();
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const {
     data: apiData,
@@ -209,7 +211,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
     return (
       <div className="flex flex-col w-full">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-medium text-gray-700">Activity Map</h2>
+          <h2 className="text-xl font-medium text-gray-700">{t("userProfile.activityMap")}</h2>
           <div className="w-24 h-8 bg-gray-200 rounded animate-pulse"></div>
         </div>
         <div className="flex justify-between items-start gap-1">
@@ -231,7 +233,7 @@ const LessonsHeatmapCard: React.FC<LessonsHeatmapCardProps> = ({
       <div className="flex justify-between items-center mb-4 md:mb-6">
         <div className="flex flex-row items-center justify-between w-full">
           <h2 className="text-[20px] font-medium text-gray-700">
-            Activity Map
+            {t("userProfile.activityMap")}
           </h2>
           <select
             value={year}

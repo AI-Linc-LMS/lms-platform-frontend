@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useDispatch, useSelector } from "react-redux";
+import { useTranslation } from "react-i18next";
 import { getEnrolledCourses } from "../../../../services/enrolled-courses-content/coursesApis";
 import { setCourses } from "../../../../redux/slices/courseSlice";
 import { RootState } from "../../../../redux/store";
@@ -59,6 +60,8 @@ export const transformCourseData = (backendCourse: Course): Course => {
 
 // Empty state component
 const EmptyCoursesState = () => {
+  const { t } = useTranslation();
+  
   return (
     <div className="flex flex-col items-center justify-center py-12 px-6 bg-white rounded-xl border border-[var(--primary-200)] shadow-sm transition-all duration-300 transform hover:scale-[1.01]">
       <svg
@@ -76,17 +79,16 @@ const EmptyCoursesState = () => {
         />
       </svg>
       <h3 className="text-xl font-bold text-[var(--neutral-500)] mb-2">
-        No enrolled courses found
+        {t("dashboard.continueLearning.noCourses.title")}
       </h3>
       <p className="text-[var(--neutral-300)] text-center max-w-md mb-8  text-[14px] md:text-[16px]">
-        You haven't enrolled in any courses yet. Browse our catalog to find
-        courses that match your interests and start your learning journey.
+        {t("dashboard.continueLearning.noCourses.description")}
       </p>
       <PrimaryButton
         onClick={() => (window.location.href = "/")}
         className="max-w-xs transition-all duration-200 transform hover:scale-95"
       >
-        Browse Courses
+        {t("dashboard.continueLearning.noCourses.button")}
       </PrimaryButton>
     </div>
   );
@@ -97,6 +99,7 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
 }) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const dispatch = useDispatch();
+  const { t } = useTranslation();
   const Courses = useSelector(
     (state: RootState) => state.courses.courses
   ) as unknown as Course[];
@@ -149,8 +152,8 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
     }
   };
 
-  if (isLoading) return <p>Loading courses...</p>;
-  if (error) return <p>Error loading courses. Please try again later.</p>;
+  if (isLoading) return <p>{t("courses.loading")}</p>;
+  if (error) return <p>{t("courses.error")}</p>;
 
   // Handle empty courses array
   const hasNoCourses = !Courses || Courses.length === 0;
@@ -160,12 +163,12 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
       <div className="flex justify-between items-center">
         <div className="md:mb-4 mb-2">
           <h1 className="text-[var(--neutral-500)] font-bold text-[18px] md:text-[22px] ">
-            Continue Learning
+            {t("dashboard.continueLearning.title")}
           </h1>
           <p className="text-[var(--neutral-300)]  font-normal text-[14px] md:text-[16px]">
             {hasNoCourses
-              ? "You haven't enrolled in any courses yet"
-              : "Here is a list of enrolled courses"}
+              ? t("dashboard.continueLearning.noCoursesSubtitle")
+              : t("dashboard.continueLearning.subtitle")}
           </p>
         </div>
       </div>

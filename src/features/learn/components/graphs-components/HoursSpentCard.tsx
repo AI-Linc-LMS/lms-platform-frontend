@@ -11,6 +11,7 @@ import { getHoursSpentData } from "../../../../services/dashboardApis";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { useMemo } from "react";
+import { useTranslation } from 'react-i18next';
 
 interface HoursSpentCardProps {
   timeRange: string;
@@ -24,6 +25,7 @@ interface HoursSpentData {
 }
 
 const HoursSpentCard = ({ timeRange, setTimeRange }: HoursSpentCardProps) => {
+  const { t } = useTranslation();
   const clientId = import.meta.env.VITE_CLIENT_ID;
 
   const { data, isLoading, error } = useQuery<HoursSpentData>({
@@ -91,7 +93,7 @@ const HoursSpentCard = ({ timeRange, setTimeRange }: HoursSpentCardProps) => {
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-2">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">{totalHours}</h2>
-          <p className="text-gray-500 text-md">Total hours spent</p>
+          <p className="text-gray-500 text-md">{t("userProfile.totalHoursSpent")}</p>
         </div>
         <div className="flex items-center gap-4 mt-2 md:mt-0">
           {error && <div className="text-sm">Error loading data</div>}
@@ -101,9 +103,9 @@ const HoursSpentCard = ({ timeRange, setTimeRange }: HoursSpentCardProps) => {
               onChange={(e) => setTimeRange(e.target.value)}
               className="appearance-none bg-white border border-gray-200 rounded-full px-3 md:px-4 py-1 md:py-2 pr-8 text-sm text-gray-700 focus:outline-none"
             >
-              <option value="7">Last Week</option>
-              <option value="15">Last 15 Days</option>
-              <option value="30">Last 30 Days</option>
+              <option value="7">{t("userProfile.lastWeek")}</option>
+              <option value="15">{t("userProfile.last15Days")}</option>
+              <option value="30">{t("userProfile.last30Days")}</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
               <svg

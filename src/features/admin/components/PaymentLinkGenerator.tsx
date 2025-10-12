@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 import { UserState } from "../../learn/components/assessment/types/assessmentTypes";
 import AccessDenied from "../../../components/AccessDenied";
 import { useRole } from "../../../hooks/useRole";
+import PermissionDeniedModal from "../workshop-registrations/components/modals/PermissionDeniedModal";
 
 const PaymentLinkGenerator: React.FC = () => {
   const [amount, setAmount] = useState<string>("");
@@ -15,8 +16,11 @@ const PaymentLinkGenerator: React.FC = () => {
   const [generatedLink, setGeneratedLink] = useState<string>("");
   const { isSuperAdmin, isAdminOrInstructor } = useRole();
   const user = useSelector((state: { user: UserState }) => state.user);
+  const [permissionDeniedOpen, setPermissionDeniedOpen] = useState(false);
 
   const handleGenerateLink = () => {
+    setPermissionDeniedOpen(true);
+    return;
     const numericAmount = parseInt(amount, 10);
     if (isNaN(numericAmount) || numericAmount <= 0) {
       alert("Please enter a valid amount");
@@ -129,6 +133,11 @@ const PaymentLinkGenerator: React.FC = () => {
           </div>
         )}
       </div>
+
+      <PermissionDeniedModal
+        isOpen={permissionDeniedOpen}
+        onClose={() => setPermissionDeniedOpen(false)}
+      />
     </div>
   );
 };

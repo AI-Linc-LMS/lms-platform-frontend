@@ -1,6 +1,7 @@
 import { PieChart, Pie, Cell } from "recharts";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { getHoursSpentData } from "../../../services/dashboardApis.ts";
 import { HoursSpentData } from "../utils/interface.constant.ts";
 import { useSelector } from "react-redux";
@@ -9,6 +10,7 @@ import { RootState } from "../../../redux/store.ts";
 const Streak = () => {
   const [progress, setProgress] = useState<number>(0);
   const [streak, setStreak] = useState(0);
+  const { t } = useTranslation();
   const clientInfo = useSelector((state: RootState) => state.clientInfo);
   const courses = useSelector((state: RootState) => state.courses);
 
@@ -62,10 +64,10 @@ const Streak = () => {
           <span role="img" aria-label="fire">
             🔥
           </span>{" "}
-          Your Streak: <span className="font-bold">{streak} days</span>
+          {t("dashboard.streak.title")}: <span className="font-bold">{t("dashboard.streak.days", { count: streak })}</span>
         </p>
         <p className="text-gray-500 text-sm md:text-base text-wrap">
-          Overall Course Progress: {progress.toFixed(2)}% complete
+          {t("dashboard.streak.overallProgress", { progress: progress.toFixed(2) })}
         </p>
       </div>
       <div className="relative w-20 h-20">
