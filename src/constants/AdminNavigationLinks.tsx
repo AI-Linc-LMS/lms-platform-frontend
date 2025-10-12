@@ -25,7 +25,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
   {
     id: 2,
     title: "Manage Students",
-    slug: "admin_manage_students",
+    slug: "manage_students",
     links: [
       {
         id: 2,
@@ -38,7 +38,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
   {
     id: 2,
     title: "Course Builder",
-    slug: "admin_course_builder",
+    slug: "course_builder",
     links: [
       {
         id: 1,
@@ -51,7 +51,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
   {
     id: 3,
     title: "Workshop Registrations",
-    slug: "admin_workshop_reg",
+    slug: "workshop_registrations",
     links: [
       {
         id: 1,
@@ -65,7 +65,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
   {
     id: 5,
     title: "Assesment Results",
-    slug: "admin_assesment_result",
+    slug: "assesment_results",
     links: [
       {
         id: 1,
@@ -78,7 +78,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
   {
     id: 6,
     title: "Referrals",
-    slug: "admin_referral",
+    slug: "referrals",
     links: [
       {
         id: 1,
@@ -91,7 +91,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
   {
     id: 7,
     title: "Emails",
-    slug: "admin_emails",
+    slug: "emails",
     links: [
       {
         id: 1,
@@ -117,7 +117,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
   {
     id: 9,
     title: "Payment Links",
-    slug: "admin_payment",
+    slug: "payment_links",
     links: [
       {
         id: 1,
@@ -131,7 +131,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
   {
     id: 10,
     title: "Webinar Management",
-    slug: "admin_webinar_management",
+    slug: "webinar_management",
     links: [
       {
         id: 1,

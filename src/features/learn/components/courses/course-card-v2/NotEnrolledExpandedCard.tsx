@@ -1,7 +1,13 @@
 import React, { useState } from "react";
 import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { 
+  useTranslatedDifficulty, 
+  useTranslatedCourseContent, 
+  useTranslatedJobPlacement,
+  useTranslatedCourseProgress
+} from "../../../utils/courseTranslationUtils";
 
 import {
   formatPrice,
@@ -9,8 +15,6 @@ import {
   getEffectiveDifficulty,
   getEffectiveStudentStats,
   getEffectiveJobPlacement,
-  getEffectiveWhatsIncluded,
-  getEffectiveLearningObjectives,
   getEffectiveDuration,
 } from "./utils/courseDataUtils";
 import { CompanyLogosSection } from "./components";
@@ -90,15 +94,26 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
   onCollapse,
 }) => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  
+  // Translation utilities
+  const { translateDifficulty } = useTranslatedDifficulty();
+  const { 
+    getTranslatedDescription,
+    getTranslatedLearningObjectives,
+    // getTranslatedFeatures,
+    getTranslatedRequirements,
+    getTranslatedWhatsIncluded,
+    getTranslatedCourseTags 
+  } = useTranslatedCourseContent();
+  const { getTranslatedJobPlacementText } = useTranslatedJobPlacement();
+  const { getTranslatedRatingText } = useTranslatedCourseProgress();
 
   const clientId = Number(import.meta.env.VITE_CLIENT_ID) || 1;
 
   const handlePrimaryClick = async () => {
     const enroll = await enrollInCourse(clientId, course.id);
     if (enroll && enroll.message === "User enrolled successfully.") {
-      // Invalidate courses cache to refresh the data
-      queryClient.invalidateQueries({ queryKey: ["all-courses"] });
       navigate(`/courses/${course.id}`);
     }
   };
@@ -120,11 +135,11 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
       difficulty_level: course.difficulty_level,
     });
 
-    return effectiveDifficulty;
+    return translateDifficulty(effectiveDifficulty);
   })();
 
   const user = useSelector((state: { user: UserState }) => state.user);
-  const clientInfo = useSelector((state: any) => state.client);
+  const clientInfo = useSelector((state: { client: { client_id: number; data?: { name?: string } } }) => state.client);
 
   const [, setPaymentResult] = useState<{
     paymentId?: string;
@@ -224,9 +239,6 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
                 orderId: response.razorpay_order_id,
                 amount: Number(course.price),
               });
-
-              // Invalidate courses cache to refresh the data after successful payment
-              queryClient.invalidateQueries({ queryKey: ["all-courses"] });
 
               // Wait a moment to show completion, then show success modal
               setTimeout(() => {
@@ -330,10 +342,10 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
               <circle cx="12" cy="12" r="10" />
               <polyline points="12,6 12,12 16,14" />
             </svg>
-            {courseDuration} hours
+            {courseDuration} {t("courses.hours")}
           </span>
           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-full text-xs font-medium text-yellow-800 whitespace-nowrap">
-            {isFree ? "Free" : `₹${formattedPrice}`}
+            {isFree ? t("courses.free") : `₹${formattedPrice}`}
           </span>
 
           {/* Rating */}
@@ -345,7 +357,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
             onClick={isFree ? handlePrimaryClick : handlePayment}
             className={`px-5 py-3 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[var(--course-cta)] text-[var(--font-light)] hover:bg-[var(--course-cta)] hover:-translate-y-0.5 ${"w-full"} ${className}`}
           >
-            {`Enroll Now - ${isFree ? "Free" : `₹${formattedPrice}`}`}
+            {`${t("courses.enrollNow")} - ${isFree ? t("courses.free") : `₹${formattedPrice}`}`}
           </button>
         </div>
       </div>
@@ -355,18 +367,17 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
         {/* Course Description */}
         <div className="mb-4">
           <p className="text-gray-600 text-sm leading-relaxed">
-            {course.description ||
-              "Comprehensive course designed to enhance your skills and boost your career prospects with hands-on projects and industry-recognized certification."}
+            {getTranslatedDescription(course as unknown as { title?: string; description?: string; [key: string]: unknown })}
           </p>
         </div>
 
         {/* Course Outcomes - Using Centralized Logic */}
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">
-            What you'll learn:
+            {t("courses.whatYouWillLearn")}:
           </h3>
           <ul className="space-y-2">
-            {getEffectiveLearningObjectives(course).map((outcome, index) => (
+            {getTranslatedLearningObjectives(course as unknown as { title?: string; description?: string; [key: string]: unknown }).map((outcome, index) => (
               <li
                 key={index}
                 className="flex items-start gap-3 text-sm text-gray-600"
@@ -381,8 +392,8 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
         </div>
 
         {/* Course Tags */}
-        {/* <div className="flex flex-wrap gap-2 mb-4">
-          {getEffectiveCourseTags(course).map((tag, index) => (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {getTranslatedCourseTags(course as unknown as { title?: string; description?: string; [key: string]: unknown }).map((tag, index) => (
             <div
               key={index}
               className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full text-xs font-semibold whitespace-nowrap"
@@ -390,61 +401,13 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
               {tag}
             </div>
           ))}
-        </div> */}
-
-        <div className="p-2 sm:p-4 md:p-3">
-          <div className="flex flex-wrap gap-2 mb-4">
-            <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-full text-xs font-medium text-gray-700 whitespace-nowrap">
-              <svg
-                className="w-3 h-3 text-yellow-500"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-              {courseDifficulty}
-            </span>
-            <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-full text-xs font-medium text-gray-700 whitespace-nowrap">
-              <svg
-                className="w-3 h-3 text-gray-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12,6 12,12 16,14" />
-              </svg>
-              {courseDuration} hours
-            </span>
-            <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-full text-xs font-medium text-gray-700 whitespace-nowrap">
-              <svg
-                width="10px"
-                height="10px"
-                viewBox="0 0 15 15"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M9.5 14.5H9C9 14.6894 9.107 14.8625 9.27639 14.9472C9.44579 15.0319 9.64849 15.0136 9.8 14.9L9.5 14.5ZM11.5 13L11.8 12.6C11.6222 12.4667 11.3778 12.4667 11.2 12.6L11.5 13ZM13.5 14.5L13.2 14.9C13.3515 15.0136 13.5542 15.0319 13.7236 14.9472C13.893 14.8625 14 14.6894 14 14.5H13.5ZM11.5 11C10.1193 11 9 9.88071 9 8.5H8C8 10.433 9.567 12 11.5 12V11ZM14 8.5C14 9.88071 12.8807 11 11.5 11V12C13.433 12 15 10.433 15 8.5H14ZM11.5 6C12.8807 6 14 7.11929 14 8.5H15C15 6.567 13.433 5 11.5 5V6ZM11.5 5C9.567 5 8 6.567 8 8.5H9C9 7.11929 10.1193 6 11.5 6V5ZM9 10.5V14.5H10V10.5H9ZM9.8 14.9L11.8 13.4L11.2 12.6L9.2 14.1L9.8 14.9ZM11.2 13.4L13.2 14.9L13.8 14.1L11.8 12.6L11.2 13.4ZM14 14.5V10.5H13V14.5H14ZM15 5V1.5H14V5H15ZM13.5 0H1.5V1H13.5V0ZM0 1.5V13.5H1V1.5H0ZM1.5 15H8V14H1.5V15ZM0 13.5C0 14.3284 0.671573 15 1.5 15V14C1.22386 14 1 13.7761 1 13.5H0ZM1.5 0C0.671574 0 0 0.671573 0 1.5H1C1 1.22386 1.22386 1 1.5 1V0ZM15 1.5C15 0.671573 14.3284 0 13.5 0V1C13.7761 1 14 1.22386 14 1.5H15ZM3 5H8V4H3V5ZM3 8H6V7H3V8Z"
-                  fill="#000000"
-                />
-              </svg>
-              Industry Certified
-            </span>
-            <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-full text-xs font-medium text-yellow-800 whitespace-nowrap">
-              {isFree ? "Free" : `₹${formattedPrice}`}
-            </span>
-
-            {/* Rating */}
-          </div>
         </div>
 
         {/* Rating Section */}
         <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
           <StarRating rating={courseRating} size="text-sm" />
           <span className="text-sm font-semibold text-gray-700">
-            {courseRating}/5 rating from{" "}
-            {getEffectiveStudentStats(course).totalLearners}+ learners
+            {getTranslatedRatingText(courseRating, getEffectiveStudentStats(course).totalLearners)}
           </span>
         </div>
 
@@ -467,21 +430,25 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
             ))}
           </div>
           <p className="text-xs text-gray-600 font-medium leading-relaxed">
-            Join {getEffectiveJobPlacement(course).totalLearners}+ learners who
-            landed jobs at
-            <br />
-            {getEffectiveJobPlacement(course).companies.join(", ")} with these
-            skills
+            {getTranslatedJobPlacementText(
+              getEffectiveJobPlacement(course).totalLearners,
+              getEffectiveJobPlacement(course).companies
+            )}
           </p>
         </div>
+
+        {/* Instructor Section */}
+        {/* <div className="mb-4">
+          <InstructorSection course={course} />
+        </div> */}
 
         {/* What's Included - Using Centralized Logic */}
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h4 className="flex items-center gap-2 text-sm font-semibold text-blue-800 mb-3">
-            🎁 What's Included:
+            🎁 {t("courses.whatsIncluded")}:
           </h4>
           <ul className="space-y-2">
-            {getEffectiveWhatsIncluded(course).map((item, index) => (
+            {getTranslatedWhatsIncluded().map((item, index) => (
               <li
                 key={index}
                 className="flex items-center gap-3 text-xs text-blue-800"
@@ -491,6 +458,29 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
               </li>
             ))}
           </ul>
+        </div>
+
+        {/* Course Features - Using Centralized Logic */}
+        <div className="mb-4">
+          <FeaturesSection course={course} />
+        </div>
+
+        {/* Course Requirements */}
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <h4 className="text-sm font-semibold text-yellow-800 mb-2">
+            📋 {t("courses.requirements")}:
+          </h4>
+          <div className="space-y-2">
+            {getTranslatedRequirements(course as unknown as { title?: string; description?: string; [key: string]: unknown }).map((requirement, index) => (
+              <p
+                key={index}
+                className="text-xs text-yellow-800 leading-relaxed flex items-start gap-2"
+              >
+                <span className="text-yellow-600 mt-1">•</span>
+                <span>{requirement}</span>
+              </p>
+            ))}
+          </div>
         </div>
 
         {/* Action Buttons */}
@@ -503,3 +493,60 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
 export default NotEnrolledExpandedCard;
 
 // Enhanced FeaturesSection
+export const FeaturesSection: React.FC<{ course: Course }> = ({ course }) => {
+  const { t } = useTranslation();
+  const { getTranslatedFeatures } = useTranslatedCourseContent();
+  const effectiveFeatures = getTranslatedFeatures(course as unknown as { title?: string; description?: string; [key: string]: unknown });
+
+  return (
+    <div>
+      {effectiveFeatures && effectiveFeatures.length > 0 && (
+        <div className="mb-4 bg-white border border-gray-200 p-4 rounded-lg shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <svg
+              className="w-5 h-5 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <h3 className="text-gray-800 font-semibold text-sm">
+              {t("courses.keyFeatures")}
+            </h3>
+          </div>
+          <div className="space-y-2 text-sm">
+            {effectiveFeatures.slice(0, 6).map((feature, index) => (
+              <div className="flex items-start gap-2" key={index}>
+                <svg
+                  className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                <span className="text-gray-600 leading-relaxed">{feature}</span>
+              </div>
+            ))}
+            {effectiveFeatures.length > 6 && (
+              <div className="text-xs text-gray-500 mt-2 pl-6">
+                +{effectiveFeatures.length - 6} more features
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

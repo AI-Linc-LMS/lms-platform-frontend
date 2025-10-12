@@ -21,6 +21,7 @@ import {
 } from "./components";
 import EmailConfirmationModal from "./components/modals/EmailConfirmationModal";
 import { useMeetingReminder } from "./hooks/useMeetingReminder";
+import PermissionDeniedModal from "./components/modals/PermissionDeniedModal";
 
 const WorkshopRegistration = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -460,10 +461,11 @@ const WorkshopRegistration = () => {
 
     return data;
   }, [search, workshopData, filters, sortConfigs]);
-
+  const [permissionDeniedOpen, setPermissionDeniedOpen] = useState(false);
   const handleExport = () => {
     // Combine permanent columns with visible columns for export
-
+    setPermissionDeniedOpen(true);
+    return;
     const allVisibleColumns = [...permanentColumns, ...visibleColumns];
     exportToExcel(filteredData, allVisibleColumns);
   };
@@ -708,6 +710,11 @@ const WorkshopRegistration = () => {
         selectedRecipients={selectedEmailsForConfirmation}
         totalSelected={selectedEmailsForConfirmation.length}
         onRemoveEmail={handleRemoveEmailFromConfirmation}
+      />
+
+      <PermissionDeniedModal
+        isOpen={permissionDeniedOpen}
+        onClose={() => setPermissionDeniedOpen(false)}
       />
     </div>
   );

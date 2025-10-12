@@ -23,6 +23,7 @@ import {
   getAmountColor,
 } from "./index";
 import { COURSE_NAME_OPTIONS } from "./TableRowUtils";
+import PermissionDeniedModal from "../modals/PermissionDeniedModal";
 
 interface WorkshopTableRowProps {
   entry: WorkshopRegistrationData;
@@ -145,6 +146,8 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     field: "first_call_status" | "second_call_status" | "course_name",
     value: string
   ) => {
+    setPermissionDeniedOpen(true);
+    return;
     if (field === "first_call_status") {
       setFirstCallStatus(value);
     }
@@ -205,6 +208,7 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
     field: "follow_up_date" | "meeting_scheduled_at" | "next_payment_date"
   ) => {
     if (selectedEntryForDateEdit) {
+      setPermissionDeniedOpen(true);
       console.log(date, field);
       // updateMutation.mutate(
       //   { [field]: date },
@@ -279,6 +283,8 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
       document.body.style.width = "";
     };
   }, [modalOpen, commentModalOpen, editHistoryOpen]);
+
+  const [permissionDeniedOpen, setPermissionDeniedOpen] = useState(false);
 
   // Define column order
   const columnOrder = [
@@ -466,6 +472,8 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
         onSecondCallCommentChange={setModalSecondCallComment}
         onFollowUpCommentChange={setModalFollowUpComment}
         onSave={(data) => {
+          setPermissionDeniedOpen(true);
+          return;
           setModalOpen(false);
           updateMutation.mutate(data, {
             onSuccess: () => {
@@ -501,6 +509,8 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
             : salesDoneBy
         }
         onOfferedAmountChange={(value) => {
+          setPermissionDeniedOpen(true);
+          return;
           if (editSalesAndOfferedAmount === "offered_amount") {
             setOfferedAmount(value);
           } else {
@@ -508,6 +518,8 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
           }
         }}
         onSave={(value, field) => {
+          setPermissionDeniedOpen(true);
+          return;
           if (field === "offered_amount") {
             setOfferedAmount(value);
           } else {
@@ -548,6 +560,10 @@ export const WorkshopTableRow: React.FC<WorkshopTableRowProps> = ({
         onClose={() => setFollowUpDateModalOpen(false)}
         entry={selectedEntryForDateEdit || entry}
         onSave={handleSaveFollowUpDate}
+      />
+      <PermissionDeniedModal
+        isOpen={permissionDeniedOpen}
+        onClose={() => setPermissionDeniedOpen(false)}
       />
     </>
   );
