@@ -15,6 +15,7 @@ import SubjectiveCard from "../components/course-cards/subjective/SubjectiveCard
 import DevelopmentCard from "../components/course-cards/development/DevelopmentCard";
 import useMediaQuery from "../../../hooks/useMediaQuery";
 import { ContentType } from "../../../commonComponents/sidebar/courseSidebar/component/AllContent";
+import { ContentAvailability } from "../../../commonComponents/sidebar/courseSidebar/CourseSidebar";
 
 export interface SubmoduleContent {
   content_type: ContentType;
@@ -43,6 +44,40 @@ export interface SubmoduleData {
   submoduleId: number;
   weekNo: number;
 }
+
+// Helper function to calculate content availability
+const getContentAvailability = (
+  submoduleData?: SubmoduleData
+): ContentAvailability => {
+  if (!submoduleData?.data) {
+    return {
+      hasArticles: false,
+      hasVideos: false,
+      hasProblems: false,
+      hasQuizzes: false,
+      hasAssignments: false,
+      hasDevelopment: false,
+      hasAnyContent: false,
+    };
+  }
+
+  const data = submoduleData.data;
+  return {
+    hasArticles: data.some((content) => content.content_type === "Article"),
+    hasVideos: data.some((content) => content.content_type === "VideoTutorial"),
+    hasProblems: data.some(
+      (content) => content.content_type === "CodingProblem"
+    ),
+    hasQuizzes: data.some((content) => content.content_type === "Quiz"),
+    hasAssignments: data.some(
+      (content) => content.content_type === "Assignment"
+    ),
+    hasDevelopment: data.some(
+      (content) => content.content_type === "Development"
+    ),
+    hasAnyContent: data.length > 0,
+  };
+};
 
 const CourseTopicDetailPage: React.FC = () => {
   const { courseId, submoduleId } = useParams<{
@@ -147,6 +182,9 @@ const CourseTopicDetailPage: React.FC = () => {
     staleTime: 0,
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes but always refetch
   });
+
+  // Calculate content availability
+  const contentAvailability = getContentAvailability(submoduleData);
 
   // Reset switching state when submodule data is loaded
   useEffect(() => {
@@ -754,6 +792,7 @@ const CourseTopicDetailPage: React.FC = () => {
             <CourseSidebar
               activeLabel={activeSidebarLabel}
               onSelect={handleSidebarLabelSelect}
+              contentAvailability={contentAvailability}
             />
             {isSidebarContentOpen && (
               <CourseSidebarContent
@@ -943,6 +982,7 @@ const CourseTopicDetailPage: React.FC = () => {
           <CourseSidebar
             activeLabel={activeSidebarLabel}
             onSelect={handleSidebarLabelSelect}
+            contentAvailability={contentAvailability}
           />
         </div>
       )}
