@@ -103,12 +103,12 @@
     },
     "basedLearning": {
       "title": "Based On Your Learning",
-      "subtitle": "Based on your learnings we think your might like this courses below.",
+      "subtitle": "Courses recommended based on your learning history",
       "seeAll": "See all",
       "noCourses": {
-        "title": "No courses available yet",
+        "title": "No recommended courses available",
         "description": "We couldn't find any recommended courses based on your learning history.",
-        "button": "Explore Courses"
+        "button": "Browse Courses"
       }
     },
     "leaderboard": {
