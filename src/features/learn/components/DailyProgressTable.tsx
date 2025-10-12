@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import light from "../../../assets/dashboard_assets/light.png";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -10,6 +11,7 @@ import {
 const goalMinutes = 30; // Default goal
 
 const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
+  const { t } = useTranslation();
   const {
     data: leaderboardData,
     isLoading: isLeaderboardLoading,
@@ -126,10 +128,10 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
   return (
     <div className="flex flex-col w-full lg:min-w-[270px] xl:min-w-[350px] transition-all duration-300 bg-white p-4 rounded-xl md:mt-10">
       <h2 className="text-xl font-semibold text-[var(--neutral-500)] mb-3">
-        Daily Progress
+        {t("dashboard.dailyProgress.title")}
       </h2>
       <p className="text-[14px] text-[var(--neutral-400)] mb-8">
-        Keep track of your daily learning ⚡
+        {t("dashboard.dailyProgress.subtitle")}
       </p>
 
       <div className="overflow-hidden rounded-xl border border-gray-300 mb-4">
@@ -137,13 +139,13 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
           <thead className="bg-gray-100">
             <tr>
               <th className="border-b border-gray-300 px-2 py-7 text-xs text-gray-600">
-                Standing
+                {t("dashboard.dailyProgress.headers.standing")}
               </th>
               <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600">
-                Name
+                {t("dashboard.dailyProgress.headers.name")}
               </th>
               <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600">
-                Spent
+                {t("dashboard.dailyProgress.headers.spent")}
               </th>
             </tr>
           </thead>

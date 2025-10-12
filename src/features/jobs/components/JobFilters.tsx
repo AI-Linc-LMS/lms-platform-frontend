@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 interface JobFiltersProps {
   jobType: string;
@@ -21,21 +22,33 @@ const JobFilters: React.FC<JobFiltersProps> = ({
   remote,
   onRemoteChange,
 }) => {
+  const { t } = useTranslation();
   // const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  const jobTypes = ["Full-time", "Part-time", "Contract", "Internship"];
-  const experienceLevels = ["Entry Level", "Mid Level", "Senior Level"];
+  const jobTypes = [
+    t("jobs.filters.jobType.fullTime"),
+    t("jobs.filters.jobType.partTime"),
+    t("jobs.filters.jobType.contract"),
+    t("jobs.filters.jobType.internship")
+  ];
+  
+  const experienceLevels = [
+    t("jobs.filters.experience.entryLevel"),
+    t("jobs.filters.experience.midLevel"),
+    t("jobs.filters.experience.seniorLevel")
+  ];
+  
   const salaryRanges = [
-    { label: "Any", min: 0, max: 10000000 },
-    { label: "₹30k - ₹50k", min: 30000, max: 50000 },
-    { label: "₹50k - ₹80k", min: 50000, max: 80000 },
-    { label: "₹80k - ₹1.2L", min: 80000, max: 120000 },
-    { label: "₹1.2L - ₹2L", min: 120000, max: 200000 },
-    { label: "₹2L - ₹5L", min: 200000, max: 500000 },
-    { label: "₹5L - ₹10L", min: 500000, max: 1000000 },
-    { label: "₹10L - ₹25L", min: 1000000, max: 2500000 },
-    { label: "₹25L - ₹50L", min: 2500000, max: 5000000 },
-    { label: "₹50L+", min: 5000000, max: 10000000 },
+    { label: t("jobs.filters.salary.any"), min: 0, max: 10000000 },
+    { label: t("jobs.filters.salary.range1"), min: 30000, max: 50000 },
+    { label: t("jobs.filters.salary.range2"), min: 50000, max: 80000 },
+    { label: t("jobs.filters.salary.range3"), min: 80000, max: 120000 },
+    { label: t("jobs.filters.salary.range4"), min: 120000, max: 200000 },
+    { label: t("jobs.filters.salary.range5"), min: 200000, max: 500000 },
+    { label: t("jobs.filters.salary.range6"), min: 500000, max: 1000000 },
+    { label: t("jobs.filters.salary.range7"), min: 1000000, max: 2500000 },
+    { label: t("jobs.filters.salary.range8"), min: 2500000, max: 5000000 },
+    { label: t("jobs.filters.salary.range9"), min: 5000000, max: 10000000 },
   ];
 
   const handleClearAllFilters = () => {
@@ -56,7 +69,7 @@ const JobFilters: React.FC<JobFiltersProps> = ({
       <div className="flex items-center justify-between mb-4 sm:mb-6">
         <div className="flex items-center gap-2">
           <h3 className="text-lg sm:text-xl font-bold text-[var(--neutral-500)]">
-            Filters
+            {t("jobs.filters.title")}
           </h3>
           {hasActiveFilters && (
             <span className="bg-[var(--primary-500)] text-[var(--font-light)] text-xs px-2 py-1 rounded-full">
@@ -76,7 +89,7 @@ const JobFilters: React.FC<JobFiltersProps> = ({
             onClick={handleClearAllFilters}
             className="text-[var(--neutral-300)] hover:text-[var(--primary-500)] text-sm font-medium"
           >
-            Clear all
+            {t("jobs.filters.clearAll")}
           </button>
         )}
       </div>
@@ -91,7 +104,7 @@ const JobFilters: React.FC<JobFiltersProps> = ({
             className="w-4 h-4 text-[var(--primary-500)] border-[#DEE2E6] rounded focus:ring-[var(--primary-500)] focus:ring-2"
           />
           <span className="text-sm font-medium text-[var(--neutral-500)]">
-            Remote work only
+            {t("jobs.filters.remoteOnly")}
           </span>
         </label>
       </div>
@@ -99,7 +112,7 @@ const JobFilters: React.FC<JobFiltersProps> = ({
       {/* Job Type */}
       <div className="mb-4 sm:mb-6">
         <label className="block text-sm font-medium text-[var(--neutral-500)] mb-3">
-          Job Type
+          {t("jobs.filters.jobType.title")}
         </label>
         <div className="space-y-2">
           <label className="flex items-center gap-3 cursor-pointer">
@@ -111,7 +124,7 @@ const JobFilters: React.FC<JobFiltersProps> = ({
               onChange={(e) => onJobTypeChange(e.target.value)}
               className="w-4 h-4 text-[var(--primary-500)] border-[#DEE2E6] focus:ring-[var(--primary-500)] focus:ring-2"
             />
-            <span className="text-sm text-[var(--neutral-500)]">All Types</span>
+            <span className="text-sm text-[var(--neutral-500)]">{t("jobs.filters.jobType.allTypes")}</span>
           </label>
           {jobTypes.map((type) => (
             <label
@@ -135,7 +148,7 @@ const JobFilters: React.FC<JobFiltersProps> = ({
       {/* Experience Level */}
       <div className="mb-4 sm:mb-6">
         <label className="block text-sm font-medium text-[var(--neutral-500)] mb-3">
-          Experience Level
+          {t("jobs.filters.experience.title")}
         </label>
         <div className="space-y-2">
           <label className="flex items-center gap-3 cursor-pointer">
@@ -148,7 +161,7 @@ const JobFilters: React.FC<JobFiltersProps> = ({
               className="w-4 h-4 text-[var(--primary-500)] border-[#DEE2E6] focus:ring-[var(--primary-500)] focus:ring-2"
             />
             <span className="text-sm text-[var(--neutral-500)]">
-              All Levels
+              {t("jobs.filters.experience.allLevels")}
             </span>
           </label>
           {experienceLevels.map((level) => (
@@ -173,7 +186,7 @@ const JobFilters: React.FC<JobFiltersProps> = ({
       {/* Salary Range */}
       <div className="mb-4 sm:mb-6">
         <label className="block text-sm font-medium text-[var(--neutral-500)] mb-3">
-          Salary Range
+          {t("jobs.filters.salary.title")}
         </label>
         <div className="space-y-2">
           {salaryRanges.map((range) => (

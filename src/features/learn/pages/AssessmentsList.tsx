@@ -14,9 +14,12 @@ import {
   FiTrendingUp,
   FiArrowLeft,
 } from "react-icons/fi";
+import { useTranslation } from "react-i18next";
+import { getTranslatedAssessmentTitle, getTranslatedAssessmentDescription } from "../../../utils/assessmentTranslations";
 
 const AssessmentsList: React.FC = () => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const clientId = import.meta.env.VITE_CLIENT_ID;
 
   const {
@@ -46,7 +49,7 @@ const AssessmentsList: React.FC = () => {
             <div className="absolute inset-0 rounded-full h-16 w-16 border-4 border-transparent border-t-[var(--primary-500)] animate-pulse mx-auto"></div>
           </div>
           <p className="mt-4 text-[var(--primary-500)] font-medium">
-            Loading assessments...
+            {t("assessments.loadingAssessments")}
           </p>
         </div>
       </div>
@@ -74,7 +77,7 @@ const AssessmentsList: React.FC = () => {
               </svg>
             </div>
             <h2 className="text-2xl font-bold text-gray-800 mb-3">
-              Oops! Something went wrong
+              {t("assessments.errorTitle")}
             </h2>
             <p className="text-gray-600 mb-6 leading-relaxed">
               {error.message}
@@ -83,7 +86,7 @@ const AssessmentsList: React.FC = () => {
               onClick={() => window.location.reload()}
               className="bg-gradient-to-r from-[var(--primary-500)] to-[#2C5F7F] text-[var(--font-light)] px-8 py-3 rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-200"
             >
-              Try Again
+              {t("assessments.tryAgain")}
             </button>
           </div>
         </div>
@@ -103,23 +106,24 @@ const AssessmentsList: React.FC = () => {
             className="inline-flex items-center gap-2 mb-8 px-4 py-2 text-[var(--primary-500)] hover:text-[#2C5F7F] transition-colors group"
           >
             <FiArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span className="font-medium">Back to Courses</span>
+            <span className="font-medium">{t("assessments.backToCourses")}</span>
           </button>
 
           <div className="text-center">
             <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-[var(--primary-200)]/30 mb-6">
               <FiAward className="w-4 h-4 text-[var(--primary-500)]" />
               <span className="text-sm font-medium text-[var(--primary-500)]">
-                Skill Assessment Center
+                {t("assessments.skillAssessmentCenter")}
               </span>
             </div>
 
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-[var(--primary-500)] to-[#2C5F7F] bg-clip-text text-transparent mb-6">
-              Test Your Expertise
+            <h1
+              className={`${i18n.language?.startsWith("hi") ? "text-4xl" : "text-5xl"} font-bold bg-gradient-to-r from-[var(--primary-500)] to-[#2C5F7F] bg-clip-text text-transparent mb-6`}
+            >
+              {t("assessments.testYourExpertise")}
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Discover your strengths and areas for improvement with our
-              comprehensive assessments designed to help you grow and succeed.
+              {t("assessments.description")}
             </p>
 
             {/* Stats Cards */}
@@ -129,21 +133,21 @@ const AssessmentsList: React.FC = () => {
                   <FiUsers className="w-6 h-6 text-blue-600" />
                 </div>
                 <h3 className="font-bold text-gray-800 mb-1">10,000+</h3>
-                <p className="text-sm text-gray-600">Assessments Taken</p>
+                <p className="text-sm text-gray-600">{t("assessments.stats.assessmentsTaken")}</p>
               </div>
               <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-lg">
                 <div className="w-12 h-12 bg-gradient-to-br from-green-50 to-green-100 rounded-xl flex items-center justify-center mx-auto mb-3">
                   <FiTrendingUp className="w-6 h-6 text-green-600" />
                 </div>
                 <h3 className="font-bold text-gray-800 mb-1">95%</h3>
-                <p className="text-sm text-gray-600">Success Rate</p>
+                <p className="text-sm text-gray-600">{t("assessments.stats.successRate")}</p>
               </div>
               <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-lg">
                 <div className="w-12 h-12 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl flex items-center justify-center mx-auto mb-3">
                   <FiAward className="w-6 h-6 text-purple-600" />
                 </div>
                 <h3 className="font-bold text-gray-800 mb-1">500+</h3>
-                <p className="text-sm text-gray-600">Certificates Issued</p>
+                <p className="text-sm text-gray-600">{t("assessments.stats.certificatesIssued")}</p>
               </div>
             </div>
           </div>
@@ -180,18 +184,18 @@ const AssessmentsList: React.FC = () => {
                         assessment.is_active ? "bg-green-500" : "bg-red-500"
                       }`}
                     ></div>
-                    {assessment.is_active ? "Active" : "Inactive"}
+                    {assessment.is_active ? t("assessments.active") : t("assessments.inactive")}
                   </div>
                 </div>
 
                 {/* Assessment Header */}
                 <div className="mb-6">
                   <h3 className="text-2xl font-bold text-gray-800 mb-3 group-hover:text-[var(--primary-500)] transition-colors">
-                    {assessment.title}
+                    {getTranslatedAssessmentTitle(assessment.title, t)}
                   </h3>
                   {assessment.description && (
                     <p className="text-gray-600 leading-relaxed line-clamp-3">
-                      {assessment.description}
+                      {getTranslatedAssessmentDescription(assessment.title, assessment.description, t)}
                     </p>
                   )}
                 </div>
@@ -203,7 +207,7 @@ const AssessmentsList: React.FC = () => {
                       <FiClock className="h-5 w-5 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Duration</p>
+                      <p className="text-sm text-gray-500">{t("assessments.duration")}</p>
                       <p className="font-semibold text-gray-800">
                         {assessment.duration_minutes} minutes
                       </p>
@@ -215,8 +219,8 @@ const AssessmentsList: React.FC = () => {
                       <FiCheckCircle className="h-5 w-5 text-green-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Status</p>
-                      <p className="font-semibold text-green-600">Available</p>
+                      <p className="text-sm text-gray-500">{t("assessments.status")}</p>
+                      <p className="font-semibold text-green-600">{t("assessments.available")}</p>
                     </div>
                   </div>
                 </div>
@@ -228,14 +232,14 @@ const AssessmentsList: React.FC = () => {
                     disabled={!assessment.is_active}
                     className={`w-full py-4 px-6 rounded-2xl font-semibold transition-all duration-300 flex items-center justify-center gap-3 text-lg ${
                       assessment.is_active
-                        ? "bg-gradient-to-r from-[var(--primary-500)] to-[#2C5F7F] text-[var(--font-light)] hover:shadow-xl hover:shadow-[var(--primary-500)]/25 transform hover:scale-105"
+                        ? "bg-gradient-to-r from-[var(--primary-500)] to-[#2C5F7F] text-[var(--font-light)] hover:shadow-[var(--primary-500)]/25 transform hover:scale-105"
                         : "bg-gray-100 text-gray-400 cursor-not-allowed"
                     }`}
                   >
                     <FiPlayCircle className="h-5 w-5" />
                     {assessment.is_active
-                      ? "Start Assessment"
-                      : "Currently Unavailable"}
+                      ? t("assessments.startAssessment")
+                      : t("assessments.currentlyUnavailable")}
                   </button>
                 </div>
 
@@ -263,17 +267,16 @@ const AssessmentsList: React.FC = () => {
                 </svg>
               </div>
               <h3 className="text-3xl font-bold text-gray-800 mb-4">
-                No Assessments Available
+                {t("assessments.noAssessmentsTitle")}
               </h3>
               <p className="text-gray-600 text-lg leading-relaxed mb-8">
-                We're working on bringing you amazing assessments. Check back
-                soon for new opportunities to test your skills!
+                {t("assessments.noAssessmentsDescription")}
               </p>
               <button
                 onClick={() => navigate("/courses")}
                 className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[var(--primary-500)] to-[#2C5F7F] text-[var(--font-light)] rounded-2xl font-semibold hover:shadow-xl transform hover:scale-105 transition-all duration-200"
               >
-                Explore Courses Instead
+                {t("assessments.exploreCoursesInstead")}
               </button>
             </div>
           </div>

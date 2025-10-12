@@ -1,6 +1,9 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 const JobsHeader: React.FC = () => {
+  const { t } = useTranslation();
+  
   return (
     <div className="bg-white rounded-2xl border border-[#DEE2E6] p-6 md:p-8 mb-8">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
@@ -9,27 +12,25 @@ const JobsHeader: React.FC = () => {
           <div className="flex items-center gap-2 mb-4">
             <div className="w-3 h-3 bg-[var(--primary-500)] rounded-full"></div>
             <span className="text-[var(--primary-500)] font-medium text-sm uppercase tracking-wide">
-              Career Opportunities
+              {t("jobs.careerOpportunities")}
             </span>
           </div>
 
           <h1 className="text-3xl md:text-4xl font-bold text-[var(--neutral-500)] mb-4 leading-tight">
-            Find Your Dream Job
-            <span className="block text-[var(--primary-500)]">Today</span>
+            {t("jobs.title")}
+            <span className="block text-[var(--primary-500)]">{t("jobs.subtitle")}</span>
           </h1>
 
           <p className="text-[var(--neutral-300)] text-lg mb-6 leading-relaxed">
-            Discover thousands of job opportunities from top companies. Take the
-            next step in your career journey with positions that match your
-            skills and aspirations.
+            {t("jobs.description")}
           </p>
 
           <div className="flex flex-wrap gap-4 mb-6">
             <button className="px-6 py-3 bg-[var(--primary-500)] text-[var(--font-light)] rounded-lg hover:bg-[var(--primary-600)] transition-colors font-medium">
-              Upload Resume
+              {t("jobs.uploadResume")}
             </button>
             <button className="px-6 py-3 border border-[var(--primary-500)] text-[var(--primary-500)] rounded-lg hover:bg-[var(--primary-500)] hover:text-[var(--font-light)] transition-colors font-medium">
-              Career Tips
+              {t("jobs.careerTips")}
             </button>
           </div>
 
@@ -40,12 +41,12 @@ const JobsHeader: React.FC = () => {
                 1,200+
               </div>
               <div className="text-[var(--neutral-300)] text-sm">
-                Active Jobs
+                {t("jobs.activeJobs")}
               </div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-[#28A745]">850+</div>
-              <div className="text-[var(--neutral-300)] text-sm">Companies</div>
+              <div className="text-[var(--neutral-300)] text-sm">{t("jobs.companies")}</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-[#17627A]">95%</div>

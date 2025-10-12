@@ -6,6 +6,88 @@ import CoursesIconController from "../commonComponents/icons/sidebarIcons/Course
 import AssessmentsIconController from "../commonComponents/icons/sidebarIcons/AssessmentsIconController";
 import CommunityIconController from "../commonComponents/icons/sidebarIcons/CommunityIconController";
 
+export const getNavigationLinks = (t: (key: string) => string): SidebarLinkInfo[] => [
+  {
+    id: 1,
+    title: t("navigation.dashboard"),
+    slug: "dashboard",
+    links: [
+      {
+        id: 1,
+        title: t("navigation.dashboard"),
+        href: "/",
+        icon: <DashboardController />,
+      },
+    ],
+  },
+  {
+    id: 4,
+    title: t("navigation.courses"),
+    slug: "courses",
+    links: [
+      {
+        id: 1,
+        title: t("navigation.courses"),
+        href: "/courses",
+        icon: <CoursesIconController />,
+      },
+    ],
+  },
+  {
+    id: 5,
+    title: t("navigation.assessments"),
+    slug: "assessments",
+    links: [
+      {
+        id: 1,
+        title: t("navigation.assessments"),
+        href: "/assessments",
+        icon: <AssessmentsIconController />,
+      },
+    ],
+  },
+  {
+    id: 2,
+    title: t("navigation.live"),
+    slug: "live",
+    links: [
+      {
+        id: 1,
+        title: t("navigation.live"),
+        href: "/live",
+        icon: <LiveIconController />,
+      },
+    ],
+  },
+  {
+    id: 3,
+    title: t("navigation.jobs"),
+    slug: "jobs",
+    links: [
+      {
+        id: 1,
+        title: t("navigation.jobs"),
+        href: "/jobs",
+        icon: <JobsIconController />,
+      },
+    ],
+  },
+  {
+    id: 6,
+    title: t("navigation.community"),
+    slug: "community",
+    links: [
+      {
+        id: 1,
+        title: t("navigation.community"),
+        href: "/community",
+        icon: <CommunityIconController />,
+      },
+    ],
+  },
+];
+
+// Fallback static links for backward compatibility
 export const NavigationLinks: SidebarLinkInfo[] = [
   {
     id: 1,
@@ -23,7 +105,7 @@ export const NavigationLinks: SidebarLinkInfo[] = [
   {
     id: 4,
     title: "Courses",
-    slug: "course",
+    slug: "courses",
     links: [
       {
         id: 1,
@@ -36,7 +118,7 @@ export const NavigationLinks: SidebarLinkInfo[] = [
   {
     id: 5,
     title: "Assessments",
-    slug: "assessment",
+    slug: "assessments",
     links: [
       {
         id: 1,
@@ -49,7 +131,7 @@ export const NavigationLinks: SidebarLinkInfo[] = [
   {
     id: 2,
     title: "Live",
-    slug: "live_class",
+    slug: "live",
     links: [
       {
         id: 1,
@@ -62,7 +144,7 @@ export const NavigationLinks: SidebarLinkInfo[] = [
   {
     id: 3,
     title: "Jobs",
-    slug: "job_portal",
+    slug: "jobs",
     links: [
       {
         id: 1,
@@ -75,7 +157,7 @@ export const NavigationLinks: SidebarLinkInfo[] = [
   {
     id: 6,
     title: "Community",
-    slug: "community_forum",
+    slug: "community",
     links: [
       {
         id: 1,

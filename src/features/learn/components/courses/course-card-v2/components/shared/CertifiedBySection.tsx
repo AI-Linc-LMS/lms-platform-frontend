@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 interface CertifiedBySectionProps {
   trustedCompanies: Array<{ name: string; color?: string } | string>;
@@ -40,10 +41,12 @@ export const CertifiedBySection: React.FC<CertifiedBySectionProps> = ({
   trustedCompanies,
   maxVisible = 3,
 }) => {
+  const { t } = useTranslation();
+  
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <span className="text-[11px] text-[var(--font-tertiary)] font-normal uppercase tracking-[0.5px]">
-        Created and certified by
+        {t("courses.certifiedBy")}
       </span>
       <div className="flex items-center gap-2 flex-wrap">
         {trustedCompanies.slice(0, maxVisible).map((company, index) => {

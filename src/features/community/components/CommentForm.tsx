@@ -7,12 +7,14 @@ import {
   Send,
 } from "lucide-react";
 import RichTextEditor from "./RichTextEditor";
+import { useTranslation } from "react-i18next";
 
 interface CommentFormProps {
   onSubmit: (content: string) => Promise<void>;
 }
 
 const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
+  const { t } = useTranslation();
   const [showForm, setShowForm] = useState(false);
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,10 +48,10 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                Your Comment
+                {t("community.commentForm.title")}
               </h3>
               <p className="text-sm text-gray-500">
-                Share your knowledge with the community
+                {t("community.commentForm.subtitle")}
               </p>
             </div>
           </div>
@@ -62,34 +64,34 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
         <div className="p-4 sm:p-6">
           <div className="prose prose-sm max-w-none mb-4">
             <p className="text-gray-600 text-sm">
-              Format your comment using the toolbar below. You can:
+              {t("community.commentForm.formatHelp.title")}
             </p>
             <ul className="text-gray-600 text-sm list-disc pl-5">
-              <li>Add code snippets with syntax highlighting</li>
-              <li>Upload and embed images</li>
-              <li>Format text with bold, italic, and lists</li>
-              <li>Add links and quotes</li>
+              <li>{t("community.commentForm.formatHelp.code")}</li>
+              <li>{t("community.commentForm.formatHelp.images")}</li>
+              <li>{t("community.commentForm.formatHelp.text")}</li>
+              <li>{t("community.commentForm.formatHelp.links")}</li>
             </ul>
           </div>
 
           <RichTextEditor
             value={content}
             onChange={setContent}
-            placeholder="Share your knowledge with code examples and images..."
+            placeholder={t("community.commentForm.placeholder")}
             height="h-64 sm:h-96"
           />
 
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-4 gap-3 sm:gap-4">
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Info size={16} />
-              <span>Your comment will be visible to the community</span>
+              <span>{t("community.commentForm.visibleInfo")}</span>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
               <button
                 onClick={() => setShowForm(false)}
                 className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors font-medium text-sm"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={handleSubmit}
@@ -99,12 +101,12 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
                 {isSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Posting...</span>
+                    <span>{t("community.commentForm.posting")}</span>
                   </>
                 ) : (
                   <>
                     <Send size={16} />
-                    <span>Post Comment</span>
+                    <span>{t("community.commentForm.post")}</span>
                   </>
                 )}
               </button>

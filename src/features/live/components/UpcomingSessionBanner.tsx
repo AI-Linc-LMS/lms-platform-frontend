@@ -1,6 +1,8 @@
+import React from "react";
 import PrimaryButton from "../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import SecondaryButton from "../../../commonComponents/common-buttons/secondary-button/SecondaryButton";
 import { LiveSession } from "../../../services/live/liveServicesApis";
+import { useTranslation } from "react-i18next";
 
 interface UpcomingSessionBannerProps {
   session: LiveSession | null; // Array of sessions
@@ -11,6 +13,7 @@ const UpcomingSessionBanner: React.FC<UpcomingSessionBannerProps> = ({
   session,
   currentTime,
 }) => {
+  const { t } = useTranslation();
   // Helpers
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -51,11 +54,10 @@ const UpcomingSessionBanner: React.FC<UpcomingSessionBannerProps> = ({
         <div className="flex flex-col justify-between lg:flex-row gap-4">
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-[var(--primary-200)] p-6 flex flex-col gap-8 w-full min-h-[300px] justify-center items-center text-center">
             <p className="text-[var(--primary-500)] text-xl font-semibold">
-              🚀 Live sessions will be coming soon!
+              {t("live.comingSoon.title")}
             </p>
             <p className="text-[var(--neutral-300)] max-w-md">
-              We’re preparing the next amazing session for you. Stay tuned and
-              check back later for updates.
+              {t("live.comingSoon.description")}
             </p>
 
             <div className="w-full max-w-xs">

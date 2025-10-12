@@ -11,6 +11,7 @@ import EmailJobsHistoryModal, { EmailJob } from "./EmailJobsHistoryModal";
 import EmailForm from "./EmailForm";
 import AccessDenied from "../../../components/AccessDenied";
 import { useRole } from "../../../hooks/useRole";
+import PermissionDeniedModal from "../workshop-registrations/components/modals/PermissionDeniedModal";
 
 interface EmailSelfServeProps {
   preFilledEmails?: string[];
@@ -83,6 +84,8 @@ const EmailSelfServe: React.FC<EmailSelfServeProps> = ({
 
   const handleRestartFailedEmails = () => {
     if (jobId) {
+      setPermissionDeniedOpen(true);
+      return;
       restartJobMutation.mutate(jobId ?? "");
     }
   };
@@ -130,7 +133,11 @@ const EmailSelfServe: React.FC<EmailSelfServeProps> = ({
     }
   }, [showStatusModal, jobId]);
 
+  const [permissionDeniedOpen, setPermissionDeniedOpen] = useState(false);
+
   const handleRefreshStatus = () => {
+    setPermissionDeniedOpen(true);
+    return;
     if (jobId) {
       setIsRefreshing(true);
       updateJobMutation.mutate(jobId ?? "", {
@@ -216,6 +223,11 @@ const EmailSelfServe: React.FC<EmailSelfServeProps> = ({
         onResend={handleRestartFailedEmails}
         isResending={restartJobMutation.isPending}
         isRefreshing={isRefreshing}
+      />
+
+      <PermissionDeniedModal
+        isOpen={permissionDeniedOpen}
+        onClose={() => setPermissionDeniedOpen(false)}
       />
     </>
   );

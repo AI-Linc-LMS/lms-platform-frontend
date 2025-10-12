@@ -1,4 +1,6 @@
 import { VideoIcon } from "lucide-react";
+// import { useTranslation } from "react-i18next";
+import { useTranslatedCourseProgress } from "../../utils/courseTranslationUtils";
 import Course from "../../types/final-course.types";
 import { CompanyLogosSection } from "./course-card-v2/components";
 import { getEffectiveLearningObjectives } from "./course-card-v2/utils/courseDataUtils";
@@ -135,6 +137,9 @@ export default function CardHelperExpanded({
   handlePrimaryClick: () => void;
   handleIconAction: (action: string) => void;
 }) {
+  // const { t } = useTranslation();
+  const { getTranslatedRatingText } = useTranslatedCourseProgress();
+  
   return (
     <>
       <div
@@ -567,7 +572,7 @@ export default function CardHelperExpanded({
                   color: "#374151",
                 }}
               >
-                {courseRating}/5 rating from 500+ learners
+                {getTranslatedRatingText(courseRating || 4.8, 500)}
               </span>
             </div>
 
