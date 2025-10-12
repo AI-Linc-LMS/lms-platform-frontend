@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { getAllRecommendedCourse } from "../../../services/continue-course-learning/continueCourseApis";
+import { useTranslation } from "react-i18next";
 import LoadingSpinner from "../../../commonComponents/loading-spinner/LoadingSpinner";
 import BackArrowIcon from "../../../commonComponents/icons/BackArrowIcon";
 import CourseCardV2 from "../components/courses/course-card-v2/CourseCardV2";
@@ -9,6 +10,7 @@ import Course from "../types/final-course.types";
 const RecommendedLearningAll = () => {
   const navigate = useNavigate();
   const clientId = Number(import.meta.env.VITE_CLIENT_ID);
+  const { t } = useTranslation();
 
   const {
     data: courses,
@@ -52,10 +54,10 @@ const RecommendedLearningAll = () => {
         </button>
         <div>
           <h1 className="text-[var(--neutral-500)] font-bold text-2xl ">
-            Based On Your Learning
+            {t("dashboard.basedLearning.title")}
           </h1>
           <p className="text-[var(--neutral-300)]  font-normal text-lg">
-            Courses recommended based on your learning history
+            {t("dashboard.basedLearning.subtitle")}
           </p>
         </div>
       </div>
@@ -63,17 +65,16 @@ const RecommendedLearningAll = () => {
       {!mappedCourses || mappedCourses.length === 0 ? (
         <div className="text-center p-10 border border-dashed border-gray-300 rounded-xl bg-gray-50">
           <h3 className="text-xl font-medium text-gray-700 mb-2">
-            No recommended courses available
+            {t("dashboard.basedLearning.noCourses.title")}
           </h3>
           <p className="text-gray-500 mb-6">
-            We couldn't find any recommended courses based on your learning
-            history.
+            {t("dashboard.basedLearning.noCourses.description")}
           </p>
           <button
             onClick={() => navigate("/courses")}
             className="bg-[#17627A] text-[var(--font-light)] py-2 px-6 rounded-lg transition-all duration-200 hover:bg-[#12536A]"
           >
-            Browse Courses
+            {t("dashboard.basedLearning.noCourses.button")}
           </button>
         </div>
       ) : (
