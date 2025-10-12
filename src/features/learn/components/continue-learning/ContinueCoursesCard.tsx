@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
 import { ContinueCourse, CourseIconData, CourseStats } from "./types";
 import CourseIconGroup from "./CourseIconGroup";
@@ -19,6 +20,7 @@ const ContinueCoursesCard: React.FC<ContinueCoursesCardProps> = ({
   course,
 }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const createIconData = (stats: CourseStats): CourseIconData[] => [
     {
@@ -85,7 +87,7 @@ const ContinueCoursesCard: React.FC<ContinueCoursesCardProps> = ({
           onClick={() => navigate(`/courses/${course.id}`)}
           className="text-[13px] md:text-[15px] py-1 md:py-2"
         >
-          Continue
+          {t("courses.continue")}
         </PrimaryButton>
       </div>
     </div>

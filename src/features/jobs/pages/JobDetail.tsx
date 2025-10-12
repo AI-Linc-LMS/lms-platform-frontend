@@ -1,11 +1,18 @@
 import React, { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import JobApplication from "../components/JobApplication";
 import AssessmentInvitationModal from "../components/AssessmentInvitationModal";
 import { completeJobDetails } from "../components/MockJobDetails";
+import { 
+  getTranslatedJobDescription, 
+  getTranslatedJobRequirements, 
+  getTranslatedJobBenefits 
+} from "../../../utils/jobTranslations";
 
 const JobDetail: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { jobId } = useParams<{ jobId: string }>();
 
   // Find the job detail based on the jobId from the route
@@ -29,6 +36,27 @@ const JobDetail: React.FC = () => {
       month: "long",
       day: "numeric",
     });
+  };
+
+  const getTranslatedJobType = (type: string) => {
+    const typeMap: { [key: string]: string } = {
+      'Full-time': 'jobs.filters.jobType.fullTime',
+      'Part-time': 'jobs.filters.jobType.partTime',
+      'Contract': 'jobs.filters.jobType.contract',
+      'Internship': 'jobs.filters.jobType.internship',
+      'Freelance': 'jobs.filters.jobType.freelance'
+    };
+    return t(typeMap[type] || 'jobs.filters.jobType.fullTime');
+  };
+
+  const getTranslatedExperienceLevel = (level: string) => {
+    const levelMap: { [key: string]: string } = {
+      'Entry Level': 'jobs.filters.experience.entryLevel',
+      'Mid Level': 'jobs.filters.experience.midLevel',
+      'Senior Level': 'jobs.filters.experience.seniorLevel',
+      'Executive': 'jobs.filters.experience.executive'
+    };
+    return t(levelMap[level] || 'jobs.filters.experience.entryLevel');
   };
 
   const handleApplyNow = () => {
@@ -66,7 +94,7 @@ const JobDetail: React.FC = () => {
                 d="M15 19l-7-7 7-7"
               />
             </svg>
-            Back to Jobs
+            {t("jobs.detail.backToJobs")}
           </button>
 
           <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
@@ -125,7 +153,7 @@ const JobDetail: React.FC = () => {
                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <span>Posted {formatDate(mockJobDetail.postedDate)}</span>
+                  <span>{t("jobs.detail.datePosted", { date: formatDate(mockJobDetail.postedDate) })}</span>
                 </div>
                 {mockJobDetail.applicationDeadline && (
                   <div className="flex items-center gap-2">
@@ -143,7 +171,7 @@ const JobDetail: React.FC = () => {
                       />
                     </svg>
                     <span>
-                      Apply by {formatDate(mockJobDetail.applicationDeadline)}
+                      {t("jobs.detail.applicationDeadline", { date: formatDate(mockJobDetail.applicationDeadline) })}
                     </span>
                   </div>
                 )}
@@ -152,14 +180,14 @@ const JobDetail: React.FC = () => {
               {/* Tags */}
               <div className="flex flex-wrap gap-2 mb-6">
                 <span className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#17627A] text-[var(--font-light)] rounded-full text-xs sm:text-sm font-medium">
-                  {mockJobDetail.type}
+                  {getTranslatedJobType(mockJobDetail.type)}
                 </span>
                 <span className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[var(--primary-500)] text-[var(--font-light)] rounded-full text-xs sm:text-sm font-medium">
-                  {mockJobDetail.experienceLevel}
+                  {getTranslatedExperienceLevel(mockJobDetail.experienceLevel)}
                 </span>
                 {mockJobDetail.remote && (
                   <span className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#28A745] text-[var(--font-light)] rounded-full text-xs sm:text-sm font-medium">
-                    Remote
+                    {t("jobs.card.remote")}
                   </span>
                 )}
                 {mockJobDetail.tags
@@ -197,7 +225,7 @@ const JobDetail: React.FC = () => {
                   </svg> */}
                   <span className="text-[#28A745] font-bold text-lg sm:text-xl">
                     ₹{mockJobDetail.salary.min.toLocaleString()} - ₹
-                    {mockJobDetail.salary.max.toLocaleString()} / year
+                    {mockJobDetail.salary.max.toLocaleString()} {t("jobs.detail.year")}
                   </span>
                 </div>
               )}
@@ -208,7 +236,7 @@ const JobDetail: React.FC = () => {
                   onClick={handleApplyNow}
                   className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-[var(--primary-500)] text-[var(--font-light)] rounded-lg hover:bg-[var(--primary-600)] transition-colors font-medium text-base sm:text-lg"
                 >
-                  Apply Now
+                  {t("jobs.card.applyNow")}
                 </button>
                 {/* <button
                   onClick={handleBookmark}
@@ -252,19 +280,25 @@ const JobDetail: React.FC = () => {
             {/* Job Description */}
             <div className="bg-white rounded-2xl border border-[#DEE2E6] p-4 sm:p-6">
               <h2 className="text-xl sm:text-2xl font-bold text-[var(--neutral-500)] mb-4">
-                Job Description
+                {t("jobs.detail.jobDescription")}
               </h2>
               <div className="prose prose-gray max-w-none">
-                {mockJobDetail.description
-                  .split("\n\n")
-                  .map((paragraph: string, index: number) => (
-                    <p
-                      key={index}
-                      className="text-[var(--neutral-400)] leading-relaxed mb-4 text-sm sm:text-base"
-                    >
-                      {paragraph}
-                    </p>
-                  ))}
+                {(() => {
+                  // Try to get translated description first
+                  const translatedDescription = getTranslatedJobDescription(mockJobDetail.id, t);
+                  const description = translatedDescription || mockJobDetail.description;
+                  
+                  return description
+                    .split("\n\n")
+                    .map((paragraph: string, index: number) => (
+                      <p
+                        key={index}
+                        className="text-[var(--neutral-400)] leading-relaxed mb-4 text-sm sm:text-base"
+                      >
+                        {paragraph}
+                      </p>
+                    ));
+                })()}
               </div>
             </div>
 
@@ -272,7 +306,7 @@ const JobDetail: React.FC = () => {
             {mockJobDetail.about && (
               <div className="bg-white rounded-2xl border border-[#DEE2E6] p-4 sm:p-6">
                 <h2 className="text-xl sm:text-2xl font-bold text-[var(--neutral-500)] mb-4">
-                  About {mockJobDetail.company}
+                  {t("jobs.detail.about", { company: mockJobDetail.company })}
                 </h2>
                 <div className="prose prose-gray max-w-none">
                   <p className="text-[var(--neutral-400)] leading-relaxed text-sm sm:text-base">
@@ -285,19 +319,23 @@ const JobDetail: React.FC = () => {
             {/* Requirements */}
             <div className="bg-white rounded-2xl border border-[#DEE2E6] p-4 sm:p-6">
               <h2 className="text-xl sm:text-2xl font-bold text-[var(--neutral-500)] mb-4">
-                Requirements
+                {t("jobs.detail.requirements")}
               </h2>
               <ul className="space-y-3">
-                {mockJobDetail.requirements.map(
-                  (req: string, index: number) => (
+                {(() => {
+                  // Try to get translated requirements first
+                  const translatedRequirements = getTranslatedJobRequirements(mockJobDetail.id, t);
+                  const requirements = translatedRequirements.length > 0 ? translatedRequirements : mockJobDetail.requirements;
+                  
+                  return requirements.map((req: string, index: number) => (
                     <li key={index} className="flex items-start gap-3">
                       <div className="w-2 h-2 bg-[var(--primary-500)] rounded-full mt-2 flex-shrink-0"></div>
                       <span className="text-[var(--neutral-400)] text-sm sm:text-base">
                         {req}
                       </span>
                     </li>
-                  )
-                )}
+                  ));
+                })()}
               </ul>
             </div>
 
@@ -305,11 +343,15 @@ const JobDetail: React.FC = () => {
             {mockJobDetail.benefits && (
               <div className="bg-white rounded-2xl border border-[#DEE2E6] p-4 sm:p-6">
                 <h2 className="text-xl sm:text-2xl font-bold text-[var(--neutral-500)] mb-4">
-                  Benefits & Perks
+                  {t("jobs.detail.benefitsAndPerks")}
                 </h2>
                 <div className="grid grid-cols-1 gap-3">
-                  {mockJobDetail.benefits.map(
-                    (benefit: string, index: number) => (
+                  {(() => {
+                    // Try to get translated benefits first
+                    const translatedBenefits = getTranslatedJobBenefits(mockJobDetail.id, t);
+                    const benefits = translatedBenefits.length > 0 ? translatedBenefits : mockJobDetail.benefits;
+                    
+                    return benefits.map((benefit: string, index: number) => (
                       <div key={index} className="flex items-start gap-3">
                         <svg
                           className="w-4 h-4 sm:w-5 sm:h-5 text-[#28A745] mt-0.5 flex-shrink-0"
@@ -328,8 +370,8 @@ const JobDetail: React.FC = () => {
                           {benefit}
                         </span>
                       </div>
-                    )
-                  )}
+                    ));
+                  })()}
                 </div>
               </div>
             )}
@@ -340,14 +382,14 @@ const JobDetail: React.FC = () => {
             {/* Quick Apply Card */}
             <div className="bg-white rounded-2xl border border-[#DEE2E6] p-4 sm:p-6">
               <h3 className="text-lg sm:text-xl font-bold text-[var(--neutral-500)] mb-4">
-                Quick Apply
+                {t("jobs.detail.quickApply")}
               </h3>
               <div className="space-y-3 sm:space-y-4">
                 <button
                   onClick={handleApplyNow}
                   className="w-full px-6 py-3 bg-[var(--primary-500)] text-[var(--font-light)] rounded-lg hover:bg-[var(--primary-600)] transition-colors font-medium"
                 >
-                  Apply Now
+                  {t("jobs.card.applyNow")}
                 </button>
                 {/* <button
                   onClick={handleBookmark}
@@ -360,26 +402,26 @@ const JobDetail: React.FC = () => {
               <div className="mt-6 pt-6 border-t border-[var(--neutral-50)]">
                 <div className="text-sm text-[var(--neutral-300)] space-y-2">
                   <div className="flex justify-between">
-                    <span>Job Type:</span>
+                    <span>{t("jobs.detail.jobType")}</span>
                     <span className="font-medium text-[var(--neutral-500)]">
-                      {mockJobDetail.type}
+                      {getTranslatedJobType(mockJobDetail.type)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Experience:</span>
+                    <span>{t("jobs.detail.experience")}</span>
                     <span className="font-medium text-[var(--neutral-500)]">
-                      {mockJobDetail.experienceLevel}
+                      {getTranslatedExperienceLevel(mockJobDetail.experienceLevel)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Remote:</span>
+                    <span>{t("jobs.detail.remote")}</span>
                     <span className="font-medium text-[var(--neutral-500)]">
-                      {mockJobDetail.remote ? "Yes" : "No"}
+                      {mockJobDetail.remote ? t("jobs.detail.yes") : t("jobs.detail.no")}
                     </span>
                   </div>
                   {mockJobDetail.applicationDeadline && (
                     <div className="flex justify-between">
-                      <span>Deadline:</span>
+                      <span>{t("jobs.detail.deadline")}</span>
                       <span className="font-medium text-[var(--neutral-500)]">
                         {formatDate(mockJobDetail.applicationDeadline)}
                       </span>
@@ -392,7 +434,7 @@ const JobDetail: React.FC = () => {
             {/* Company Info Card */}
             <div className="bg-white rounded-2xl border border-[#DEE2E6] p-4 sm:p-6">
               <h3 className="text-lg sm:text-xl font-bold text-[var(--neutral-500)] mb-4">
-                About {mockJobDetail.company}
+                {t("jobs.detail.about", { company: mockJobDetail.company })}
               </h3>
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-[var(--neutral-50)] flex items-center justify-center">
@@ -407,30 +449,30 @@ const JobDetail: React.FC = () => {
                     {mockJobDetail.company}
                   </h4>
                   <p className="text-[var(--neutral-300)] text-sm">
-                    Technology Company
+                    {t("jobs.detail.technologyCompany")}
                   </p>
                 </div>
               </div>
               <p className="text-[var(--neutral-400)] text-sm leading-relaxed mb-4">
-                {mockJobDetail.about || "Technology Company"}
+                {mockJobDetail.about || t("jobs.detail.technologyCompany")}
               </p>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-[var(--neutral-300)]">Industry:</span>
+                  <span className="text-[var(--neutral-300)]">{t("jobs.detail.industry")}</span>
                   <span className="font-medium text-[var(--neutral-500)]">
-                    Technology
+                    {t("jobs.detail.technology")}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--neutral-300)]">
-                    Company Size:
+                    {t("jobs.detail.companySize")}
                   </span>
                   <span className="font-medium text-[var(--neutral-500)]">
-                    1000-5000 employees
+                    1000-5000 {t("jobs.detail.employees")}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[var(--neutral-300)]">Founded:</span>
+                  <span className="text-[var(--neutral-300)]">{t("jobs.detail.founded")}</span>
                   <span className="font-medium text-[var(--neutral-500)]">
                     2010
                   </span>
@@ -448,7 +490,7 @@ const JobDetail: React.FC = () => {
                 }}
                 className="w-full mt-4 px-4 py-2 border border-[#DEE2E6] text-[var(--neutral-400)] rounded-lg hover:bg-[var(--neutral-50)] transition-colors text-sm"
               >
-                View Company Profile
+                {t("jobs.detail.viewCompanyProfile")}
               </button>
             </div>
           </div>

@@ -7,6 +7,8 @@ import { useRole } from "../hooks/useRole";
 import { logout } from "../redux/slices/userSlice";
 import { handleMobileNavigation } from "../utils/authRedirectUtils";
 import { RootState } from "../redux/store.ts";
+// import LanguageSwitcher from "../components/ui/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 interface UserState {
   profile_picture?: string;
@@ -14,6 +16,8 @@ interface UserState {
 }
 
 const TopNav: React.FC = () => {
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === "ar";
   const [showDropdown, setShowDropdown] = useState(false);
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
@@ -119,7 +123,11 @@ const TopNav: React.FC = () => {
   }, [location.pathname, triggerNotification]);
 
   return (
-    <div className="w-full bg-[var(--nav-background)] md:bg-white flex justify-between md:justify-end items-center px-4 py-4 mb-3 shadow-[0_1px_10px_rgba(0,0,0,0.05)] md:shadow border-b border-gray-200 md:border-b-0">
+    <div
+      className={`w-full bg-[var(--nav-background)] md:bg-white flex justify-between ${
+        isRTL ? "md:justify-start" : "md:justify-end"
+      } items-center px-4 py-4 mb-3 shadow-[0_1px_10px_rgba(0,0,0,0.05)] md:shadow border-b border-gray-200 md:border-b-0`}
+    >
       <div className="md:hidden">
         <img
           src={clientInfo.data?.app_logo_url}
@@ -128,15 +136,23 @@ const TopNav: React.FC = () => {
           onClick={() => navigate("/")}
         />
       </div>
-      <div className="flex items-center gap-3 md:gap-5">
+      <div
+        className={`flex items-center gap-3 md:gap-5 ${
+          isRTL ? "flex-row-reverse" : ""
+        }`}
+      >
         {(isAdminOrInstructor || isSuperAdmin) && (
           <Link
             to="/admin/dashboard"
             className="bg-[#17627A] text-[var(--font-light)] px-4 py-2 rounded-md text-sm font-medium hover:bg-[var(--primary-800)] transition-colors"
           >
-            Admin
+            {t("navigation.admin")}
           </Link>
         )}
+
+        {/* Language Switcher */}
+        {/* <LanguageSwitcher /> */}
+
         <div className="relative">
           <div
             className="bg-gray-100 p-2 rounded-md cursor-pointer"
@@ -174,10 +190,10 @@ const TopNav: React.FC = () => {
                 <div className="flex justify-between items-start gap-3">
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900">
-                      Community is live!
+                      {t("notifications.communityLive.title")}
                     </p>
                     <p className="text-sm text-gray-600 mt-1">
-                      Join discussions, ask questions, and connect with peers.
+                      {t("notifications.communityLive.message")}
                     </p>
                   </div>
                   {/* Close Button */}
@@ -194,7 +210,7 @@ const TopNav: React.FC = () => {
                     className="inline-block text-sm text-[var(--font-light)] bg-[#17627A] hover:bg-[var(--primary-800)] px-3 py-1 rounded"
                     onClick={hideNotification}
                   >
-                    Go to Community
+                    {t("notifications.communityLive.action")}
                   </Link>
                 </div>
               </div>
@@ -228,13 +244,13 @@ const TopNav: React.FC = () => {
                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 onClick={handleCloseDropdown}
               >
-                Profile
+                {t("navigation.profile")}
               </Link>
               <button
                 onClick={handleLogout}
                 className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
               >
-                Logout
+                {t("navigation.logout")}
               </button>
             </div>
           )}

@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 interface Category {
   name: string;
   value: number;
@@ -28,6 +30,8 @@ const DashboardPieChart = ({
   isLoading: boolean;
   error: Error | null;
 }) => {
+  const { t } = useTranslation();
+  
   const processApiData = (apiData: ApiResponse): DashboardData => {
     // Extract progress values from API response
     const {
@@ -42,20 +46,20 @@ const DashboardPieChart = ({
       totalCompletion: total_progress,
       categories: [
         {
-          name: "Article",
+          name: t("course.article"),
           value: article_progress,
           color: "var(--accent-blue)",
           ring: 0,
         },
-        { name: "Video", value: video_progress, color: "#EED21B", ring: 1 },
+        { name: t("course.video"), value: video_progress, color: "#EED21B", ring: 1 },
         {
-          name: "Problems",
+          name: t("course.problems"),
           value: coding_problem_progress,
           color: "var(--secondary-200)",
           ring: 2,
         },
         {
-          name: "Quiz",
+          name: t("course.quiz"),
           value: quiz_progress,
           color: "var(--primary-400)",
           ring: 3,
@@ -79,10 +83,10 @@ const DashboardPieChart = ({
   const defaultData = {
     totalCompletion: 25,
     categories: [
-      { name: "Article", value: 19, color: "var(--accent-blue)", ring: 0 },
-      { name: "Video", value: 22, color: "#EED21B", ring: 1 },
-      { name: "Problems", value: 5, color: "var(--secondary-200)", ring: 2 },
-      { name: "Quiz", value: 9, color: "var(--primary-400)", ring: 3 },
+      { name: t("course.article"), value: 19, color: "var(--accent-blue)", ring: 0 },
+      { name: t("course.video"), value: 22, color: "#EED21B", ring: 1 },
+      { name: t("course.problems"), value: 5, color: "var(--secondary-200)", ring: 2 },
+      { name: t("course.quiz"), value: 9, color: "var(--primary-400)", ring: 3 },
     ],
   };
 
@@ -199,33 +203,33 @@ const DashboardPieChart = ({
           <span className="text-2xl md:text-3xl font-bold text-[#2A9DC4]">
             {percentage}%
           </span>
-          <span className="text-sm md:text-lg text-[#2A9DC4]">Completed</span>
+          <span className="text-sm md:text-lg text-[#2A9DC4]">{t("course.completed")}</span>
         </div>
       </div>
     );
   };
 
   if (isLoading) {
-    return <div>Loading dashboard data...</div>;
+    return <div>{t("course.loadingDashboard")}</div>;
   }
 
   if (error) {
-    return <div>Error loading dashboard data</div>;
+    return <div>{t("course.errorLoadingDashboard")}</div>;
   }
 
   // Ensure we have valid data before rendering
   if (!categories || !Array.isArray(categories)) {
-    return <div>Invalid data format</div>;
+    return <div>{t("course.invalidDataFormat")}</div>;
   }
 
   return (
     <div className="flex flex-col gap-4 items-center justify-center mx-auto">
       <div className="w-full rounded-3xl bg-[#EFF9FC] border border-[var(--primary-200)] p-3 md:p-4 shadow-sm">
         <h1 className="font-sans text-base md:text-[18px] text-[var(--neutral-500)]">
-          Dashboard
+          {t("course.dashboard")}
         </h1>
         <p className="text-[var(--neutral-400)] font-normal text-xs md:text-[12px]">
-          A simple overview of your status.
+          {t("course.dashboardDescription")}
         </p>
 
         {/* Charts container */}
@@ -269,8 +273,7 @@ const DashboardPieChart = ({
           </div>
           <div>
             <p className="text-[10px] font-medium text-[var(--neutral-300)]">
-              Check out this awesome visual that shows exactly how far you've
-              come in your course! It's like a fun map of your progress!
+              {t("course.dashboardInfo")}
             </p>
           </div>
         </div>

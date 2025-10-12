@@ -5,8 +5,10 @@ import { useQuery } from "@tanstack/react-query";
 import UpcomingSessionBanner from "../components/UpcomingSessionBanner";
 import { LiveSession } from "../../../services/live/liveServicesApis";
 import Calendar from "../components/Calender";
+import { useTranslation } from "react-i18next";
 
 const Live: React.FC = () => {
+  const { t } = useTranslation();
   const clientId = import.meta.env.VITE_CLIENT_ID;
 
   const { data, error, isLoading, refetch } = useQuery<LiveSession[]>({
@@ -106,16 +108,15 @@ const Live: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-[var(--neutral-500)] mb-4">
-            Live Classes
+            {t("live.title")}
           </h1>
           <p className="text-lg text-[var(--neutral-300)] max-w-2xl mx-auto">
-            Join live sessions with industry experts and access our library of
-            recorded classes
+            {t("live.description")}
           </p>
         </div>
 
         <h2 className="text-2xl font-bold text-[var(--neutral-500)] mb-6 flex items-center gap-2">
-          📅 Upcoming Session
+          {t("live.upcomingSession")}
         </h2>
 
         {/* Optional: Upcoming Session Component */}

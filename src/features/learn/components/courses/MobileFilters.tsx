@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { TransitionProps } from "@mui/material/transitions";
 import { FilterIcon, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface MobileFiltersProps {
   isFilterOpen: boolean;
@@ -65,6 +66,8 @@ const MobileFilters = ({
   priceOptions,
   ratingOptions,
 }: MobileFiltersProps) => {
+  const { t } = useTranslation();
+  
   return (
     <div className="md:hidden">
       {/* Search Input - Mobile */}
@@ -92,7 +95,7 @@ const MobileFilters = ({
           >
             <div className="flex items-center space-x-2">
               <FilterIcon size={18} />
-              <span className="font-medium">Filters</span>
+              <span className="font-medium">{t("filters.title")}</span>
             </div>
             <svg
               className={`w-4 h-4 transition-transform duration-300 ${
@@ -141,7 +144,7 @@ const MobileFilters = ({
             alignItems: "center",
           }}
         >
-          Filter By
+          {t("filters.title")}
           <IconButton className="!p-0" onClick={toggleFilters}>
             <X />
           </IconButton>
@@ -155,13 +158,13 @@ const MobileFilters = ({
               }}
               className="text-sm text-[#17627A] hover:underline"
             >
-              Clear All
+              {t("filters.clearAll")}
             </button>
           </div>
 
           {/* Categories */}
           <FilterCategory
-            title="Categories"
+            title={t("filters.categories.title")}
             options={categoryOptions}
             selectedOptions={selectedCategories}
             setSelectedOptions={setSelectedCategories}
@@ -169,7 +172,7 @@ const MobileFilters = ({
 
           {/* Level/Difficulty */}
           <FilterCategory
-            title="Level/Difficulty"
+            title={t("filters.difficulty.title")}
             options={levelOptions}
             selectedOptions={selectedLevels}
             setSelectedOptions={setSelectedLevels}
@@ -177,7 +180,7 @@ const MobileFilters = ({
 
           {/* Price */}
           <FilterCategory
-            title="Price"
+            title={t("filters.price.title")}
             options={priceOptions}
             selectedOptions={selectedPrices}
             setSelectedOptions={setSelectedPrices}
@@ -185,7 +188,7 @@ const MobileFilters = ({
 
           {/* Rating */}
           <FilterCategory
-            title="Rating"
+            title={t("filters.rating.title")}
             options={ratingOptions}
             selectedOptions={selectedRatings}
             setSelectedOptions={setSelectedRatings}

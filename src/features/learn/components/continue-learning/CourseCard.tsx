@@ -1,4 +1,5 @@
 import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
+import { useTranslation } from "react-i18next";
 import { CourseData } from "./types";
 import CourseIconGroup from "./CourseIconGroup";
 import CategoryBadge from "./CategoryBadge";
@@ -13,6 +14,8 @@ const CourseCard: React.FC<CourseData> = ({
   iconData,
   onContinue,
 }) => {
+  const { t } = useTranslation();
+  
   return (
     <div className="w-full border-[var(--primary-200)] rounded-[16px] md:rounded-[22px] border-[1px] bg-[var(--neutral-50)] p-4 flex flex-col gap-3 min-h-[280px] md:min-h-[300px]">
       <div className="flex flex-col sm:flex-row justify-between gap-3">
@@ -38,7 +41,7 @@ const CourseCard: React.FC<CourseData> = ({
         <CourseProgress
           moduleNumber={completed_modules}
           totalModules={num_modules}
-          moduleName={`Module ${completed_modules + 1}`}
+          moduleName={t("courses.modules.module", { number: completed_modules + 1 })}
           stats={iconData}
         />
       </div>
@@ -48,7 +51,7 @@ const CourseCard: React.FC<CourseData> = ({
           onClick={onContinue}
           className="text-[13px] md:text-[15px] py-2 w-full "
         >
-          Continue
+          {t("courses.continue")}
         </PrimaryButton>
       </div>
     </div>
