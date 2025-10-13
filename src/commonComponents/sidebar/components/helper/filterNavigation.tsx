@@ -8,17 +8,20 @@ export interface ClientFeature {
 }
 
 export const filterNavigationByFeatures = (
-  features: ClientFeature[] = []
+  features: ClientFeature[] = [],
+  navigationLinks: SidebarLinkInfo[] = NavigationLinks
 ): SidebarLinkInfo[] => {
   // Always include dashboard
   const enabledFeatures = new Set(["dashboard"]);
 
   // Add enabled features to the set
-  features.forEach((feature) =>
-    enabledFeatures.add(feature.name.toLowerCase())
-  );
+  features.forEach((feature) => {
+    console.log(feature.name);
+    enabledFeatures.add(feature.name.toLowerCase());
+  });
+  console.log(navigationLinks);
 
-  return NavigationLinks.filter((link) => {
+  return navigationLinks.filter((link) => {
     const linkSlugLower = link.slug.toLowerCase();
 
     // Include if slug matches enabled features or is dashboard
