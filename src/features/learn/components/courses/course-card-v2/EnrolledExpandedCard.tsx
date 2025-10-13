@@ -1,7 +1,11 @@
 import React from "react";
 import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
-import { FileText, PlayCircle, Play, Trophy } from "lucide-react";
+import {
+  FileText,
+  PlayCircle,
+  //  Play, Trophy
+} from "lucide-react";
 import { calculateCourseProgress } from "../../../utils/progressUtils";
 import { getEffectiveWhatsIncluded } from "./utils/courseDataUtils";
 import { useTranslatedCourseContent } from "../../../utils/courseTranslationUtils";
@@ -103,7 +107,9 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
         {/* MOBILE OPTIMIZED: Course Description */}
         <div className="mt-4 sm:mt-6 md:mt-10 mb-3 sm:mb-4 md:mb-6">
           <p className="text-xs sm:text-sm leading-[1.5] text-[#374151] m-0">
-            {getTranslatedDescription(course as unknown as { title?: string; description?: string })}
+            {getTranslatedDescription(
+              course as unknown as { title?: string; description?: string }
+            )}
           </p>
         </div>
 
@@ -136,7 +142,8 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
               <PlayCircle className="w-2 h-2 sm:w-[10px] sm:h-[10px] text-[#10b981] flex-shrink-0" />
               <span className="truncate">
                 {course.stats?.video?.completed || 0}/
-                {course.stats?.video?.total || 0} {t("courses.progress.videosWatched")}
+                {course.stats?.video?.total || 0}{" "}
+                {t("courses.progress.videosWatched")}
               </span>
             </div>
             <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-[var(--font-secondary)]">
@@ -156,14 +163,15 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
               </svg>
               <span className="truncate">
                 {course.stats?.quiz?.completed || 0}/
-                {course.stats?.quiz?.total || 0} {t("courses.progress.quizzesCompleted")}
+                {course.stats?.quiz?.total || 0}{" "}
+                {t("courses.progress.quizzesCompleted")}
               </span>
             </div>
           </div>
         </div>
 
         {/* MOBILE OPTIMIZED: Recent Activity */}
-        <div className="bg-[#fef3c7] border border-[#fde68a] rounded-lg p-2 sm:p-3 mb-3 sm:mb-4 overflow-hidden">
+        {/* <div className="bg-[#fef3c7] border border-[#fde68a] rounded-lg p-2 sm:p-3 mb-3 sm:mb-4 overflow-hidden">
           <div className="flex justify-between items-center mb-2">
             <span className="text-xs sm:text-[13px] font-semibold text-[#92400e]">
               {t("courses.recentActivity")}
@@ -204,7 +212,7 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
               </>
             )}
           </div>
-        </div>
+        </div> */}
 
         {/* Achievements Section */}
         <AchievementSection achievements={course.achievements} />
