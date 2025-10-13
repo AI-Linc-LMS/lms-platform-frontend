@@ -24,15 +24,6 @@ const InstructorsSection: React.FC = () => {
   const mockInstructors: Instructor[] = [
     {
       id: "1",
-      name: "Yamini Bandi",
-      bio: "AI Product Development Specialist with expertise in Agentic AI systems and innovative digital product design.",
-      linkedin_profile: "https://www.linkedin.com/in/yaminibandi",
-      profile_pic_url:
-        "https://media.licdn.com/dms/image/v2/D5603AQGnJXGVLD3l6A/profile-displayphoto-shrink_800_800/B56ZUU9NlaGsBs-/0/1739813346507?e=1758153600&v=beta&t=CZixxbB8N4P00hjhzaC0EZqF1MZp7KJqSYNK76lkXQs",
-      website: "https://yaminibandi.ai",
-    },
-    {
-      id: "2",
       name: "Shubham Lal",
       bio: "Senior AI Engineer with extensive experience in building autonomous agents and intelligent product ecosystems.",
       linkedin_profile: "https://www.linkedin.com/in/shubhamlal/",
@@ -42,21 +33,12 @@ const InstructorsSection: React.FC = () => {
     },
     {
       id: "3",
-      name: "Divyansh Dubey",
-      bio: "Machine Learning Research Lead specializing in advanced AI algorithms and autonomous system design.",
-      linkedin_profile: "https://www.linkedin.com/in/divyansh-dubey/",
+      name: "Prateek Dayal",
+      bio: "Machine Learning Research Lead specializing in advanced AI algorithms and Teaching Machine learning.",
+      linkedin_profile: "https://www.linkedin.com/in/prateekdayal/",
       profile_pic_url:
         "https://media.licdn.com/dms/image/v2/C4D03AQFTKsUzbzTaow/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1661867320805?e=1758153600&v=beta&t=WYy1yfOd1S6UjcyKj2Vnl2U9Zsipw7QjmsfwdhipcrY",
       website: "https://emilyrodriguez.ai",
-    },
-    {
-      id: "4",
-      name: "Abirami Sukumaran",
-      bio: "AI Product Manager with expertise in developing intelligent software solutions and AI strategy.",
-      linkedin_profile: "https://www.linkedin.com/in/abiramisukumaran/",
-      profile_pic_url:
-        "https://media.licdn.com/dms/image/v2/C5603AQFGooYQlpfsiA/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1600277251078?e=1758153600&v=beta&t=TateWcCJTZWeS3FHwfTJ209ajFfUFEKofgNqFM3c5DQ",
-      website: "https://alexchen.tech",
     },
   ];
 
