@@ -13,7 +13,9 @@ const CourseTopicDetailPage = lazy(
 );
 
 const Login = lazy(() => import("./features/auth/pages/Login"));
-const ForgotPassword = lazy(() => import("./features/auth/pages/ForgotPassword"));
+const ForgotPassword = lazy(
+  () => import("./features/auth/pages/ForgotPassword")
+);
 const Signup = lazy(() => import("./features/auth/pages/Signup"));
 const CourseBuilder = lazy(
   () => import("./features/admin/course-builder/pages/CourseBuilder")
@@ -49,8 +51,7 @@ const AssesmentStudentsResults = lazy(
 );
 const Otp = lazy(() => import("./features/auth/pages/Otp"));
 const WorkshopResistrations = lazy(
-  () =>
-    import("./features/admin/workshop-registrations/WorkshopResistrations")
+  () => import("./features/admin/workshop-registrations/WorkshopResistrations")
 );
 const CertificatePortal = lazy(
   () => import("./components/certificate/CertificatePortal")
@@ -242,7 +243,7 @@ const routes: RouteConfig[] = [
     isPrivate: true,
     requiredRole: "admin_or_instructor",
   },
-  
+
   {
     path: "/continue-learning",
     component: ContinueLearningAll,
@@ -294,11 +295,10 @@ const routes: RouteConfig[] = [
     isPrivate: true,
   },
   {
-    path:"/admin/webinar-management",
-    component: WebinarManagement, 
+    path: "/admin/webinar-management",
+    component: WebinarManagement,
     isPrivate: true,
-    
-  }
+  },
 ];
 
 export default routes;

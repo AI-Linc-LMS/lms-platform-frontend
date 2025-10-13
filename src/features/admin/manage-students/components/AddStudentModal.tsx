@@ -5,6 +5,7 @@ interface AddStudentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (studentData: StudentFormData) => void;
+  availableCourses?: string[];
 }
 
 interface StudentFormData {
@@ -18,6 +19,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  availableCourses: externalCourses,
 }) => {
   const [formData, setFormData] = useState<StudentFormData>({
     name: "",
@@ -28,15 +30,17 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({
 
   const [errors, setErrors] = useState<Partial<StudentFormData>>({});
 
-  const availableCourses = [
-    "Deployment in ML",
-    "Full-Stack Development",
-    "Front-End Development",
-    "Back-End Development",
-    "Data Science",
-    "Machine Learning",
-    "DevOps",
-  ];
+  const availableCourses = externalCourses && externalCourses.length > 0
+    ? externalCourses
+    : [
+        "Deployment in ML",
+        "Full-Stack Development",
+        "Front-End Development",
+        "Back-End Development",
+        "Data Science",
+        "Machine Learning",
+        "DevOps",
+      ];
 
   const validateForm = () => {
     const newErrors: Partial<StudentFormData> = {};
