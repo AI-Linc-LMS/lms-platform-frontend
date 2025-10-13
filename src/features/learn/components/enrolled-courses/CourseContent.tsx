@@ -78,7 +78,9 @@ const InstructorsSection: React.FC = () => {
             onClick={() => setIsExpanded(!isExpanded)}
             className="text-xs md:text-sm text-blue-600 hover:text-blue-800 transition-colors"
           >
-            {isExpanded ? t("common.collapse") : `${t("common.viewAll")} (${mockInstructors.length})`}
+            {isExpanded
+              ? t("common.collapse")
+              : `${t("common.viewAll")} (${mockInstructors.length})`}
           </button>
         )}
       </div>
@@ -89,11 +91,14 @@ const InstructorsSection: React.FC = () => {
             className="bg-white rounded-xl p-3 md:p-4 text-center border border-gray-100 hover:shadow-sm transition-all"
           >
             <div className="mb-2 md:mb-3">
-              <img
-                src={instructor.profile_pic_url || "/default-avatar.png"}
-                alt={instructor.name}
-                className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover mx-auto"
-              />
+              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-gray-300 text-gray-700 flex items-center justify-center text-2xl font-semibold mx-auto">
+                {instructor.name
+                  ?.split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                  .toUpperCase()
+                  .slice(0, 2)}
+              </div>
             </div>
             <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-1">
               {instructor.name}
@@ -108,7 +113,8 @@ const InstructorsSection: React.FC = () => {
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center text-[#0A66C2] hover:text-[#005582] transition-colors text-xs md:text-sm"
               >
-                <FaLinkedin className="mr-1 w-4 h-4" /> {t("course.linkedinProfile")}
+                <FaLinkedin className="mr-1 w-4 h-4" />{" "}
+                {t("course.linkedinProfile")}
               </a>
             )}
           </div>
