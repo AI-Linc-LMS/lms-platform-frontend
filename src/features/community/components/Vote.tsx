@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { addVoteOnThread } from "../../../services/community/threadApis";
 import { VoteType } from "../types";
 import { useToast } from "../../../contexts/ToastContext";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 import { addVoteOnComment } from "../../../services/community/commentApis";
 
 interface VoteCardProps {
@@ -66,7 +66,7 @@ const VoteCard: React.FC<VoteCardProps> = ({
         onClick={() => handleVote(VoteType.Upvote)}
         className={`p-1.5 sm:p-2 rounded-md transition-colors text-orange-600 hover:bg-orange-50`}
       >
-        <ArrowUp size={16} className="sm:w-4 sm:h-4" />
+        <ThumbsUpIcon size={16} className="sm:w-4 sm:h-4" />
       </button>
       <div className="flex flex-col items-center text-xs sm:text-sm font-semibold">
         <span
@@ -81,7 +81,7 @@ const VoteCard: React.FC<VoteCardProps> = ({
         onClick={() => handleVote(VoteType.Downvote)}
         className={`p-1.5 sm:p-2 rounded-md transition-colors text-blue-600 hover:bg-blue-50`}
       >
-        <ArrowDown size={16} className="sm:w-4 sm:h-4" />
+        <ThumbsDownIcon size={16} className="sm:w-4 sm:h-4" />
       </button>
     </div>
   );

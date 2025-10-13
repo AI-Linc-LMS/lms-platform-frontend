@@ -31,7 +31,7 @@ const DashboardPieChart = ({
   error: Error | null;
 }) => {
   const { t } = useTranslation();
-  
+
   const processApiData = (apiData: ApiResponse): DashboardData => {
     // Extract progress values from API response
     const {
@@ -51,7 +51,12 @@ const DashboardPieChart = ({
           color: "var(--accent-blue)",
           ring: 0,
         },
-        { name: t("course.video"), value: video_progress, color: "#EED21B", ring: 1 },
+        {
+          name: t("course.video"),
+          value: video_progress,
+          color: "#EED21B",
+          ring: 1,
+        },
         {
           name: t("course.problems"),
           value: coding_problem_progress,
@@ -83,10 +88,25 @@ const DashboardPieChart = ({
   const defaultData = {
     totalCompletion: 25,
     categories: [
-      { name: t("course.article"), value: 19, color: "var(--accent-blue)", ring: 0 },
+      {
+        name: t("course.article"),
+        value: 19,
+        color: "var(--accent-blue)",
+        ring: 0,
+      },
       { name: t("course.video"), value: 22, color: "#EED21B", ring: 1 },
-      { name: t("course.problems"), value: 5, color: "var(--secondary-200)", ring: 2 },
-      { name: t("course.quiz"), value: 9, color: "var(--primary-400)", ring: 3 },
+      {
+        name: t("course.problems"),
+        value: 5,
+        color: "var(--secondary-200)",
+        ring: 2,
+      },
+      {
+        name: t("course.quiz"),
+        value: 9,
+        color: "var(--primary-400)",
+        ring: 3,
+      },
     ],
   };
 
@@ -203,7 +223,9 @@ const DashboardPieChart = ({
           <span className="text-2xl md:text-3xl font-bold text-[#2A9DC4]">
             {percentage}%
           </span>
-          <span className="text-sm md:text-lg text-[#2A9DC4]">{t("course.completed")}</span>
+          <span className="text-sm md:text-lg text-[#2A9DC4]">
+            {t("course.completed")}
+          </span>
         </div>
       </div>
     );
@@ -231,15 +253,13 @@ const DashboardPieChart = ({
         <p className="text-[var(--neutral-400)] font-normal text-xs md:text-[12px]">
           {t("course.dashboardDescription")}
         </p>
-
         {/* Charts container */}
         <div className="flex flex-col md:flex-row items-center justify-center gap-4 mt-4 md:mt-6 mb-4 md:mb-6">
           <ConcentricCirclesChart categories={categories} />
           <CompletionCircle percentage={chartData.totalCompletion || 0} />
         </div>
-
         {/* Stats row */}
-        <div className="grid grid-cols-2 md:flex md:justify-between gap-2 md:gap-0">
+        {/* <div className="grid grid-cols-2 md:flex md:justify-between gap-2 md:gap-0">
           {categories.map((category: Category, index: number) => (
             <div key={index} className="flex flex-col items-center">
               <span
@@ -247,13 +267,12 @@ const DashboardPieChart = ({
                 style={{ color: category.color }}
               >
                 {category.value}%
-              </span>
-              {/* Category icons */}
-              <span className="text-xs md:text-sm">{category.name}</span>
+              </span> */}
+        {/* Category icons */}
+        {/* <span className="text-xs md:text-sm">{category.name}</span>
             </div>
           ))}
-        </div>
-
+        </div> */}
         <div className="w-full mx-auto h-auto md:h-[62px] bg-[#DEE2E6] rounded-xl flex flex-row items-center justify-center p-3 md:p-4 gap-2 md:gap-4 mt-3">
           <div className="flex-shrink-0">
             <svg
