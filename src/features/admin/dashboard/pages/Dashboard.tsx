@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import UserGroupIcon from "../../../../commonComponents/icons/admin/dashboard/UserRounded.png";
 import activeStudents from "../../../../commonComponents/icons/admin/dashboard/activestudents.png";
@@ -6,11 +7,12 @@ import timeSpent from "../../../../commonComponents/icons/admin/dashboard/ClockC
 import i from "../../../../commonComponents/icons/admin/dashboard/exclamation-circle.png";
 import StudentRanking from "../components/RankingTable";
 import TimeSpentGraph from "../components/TimeSpentGraph";
-import StudentDailyActivityChart from "../components/StudentActivityChart";
+import StudentDailyActivityChart, { StudentDailyActivityApi } from "../components/StudentActivityChart";
 import { useRole } from "../../../../hooks/useRole";
 import AccessDenied from "../../../../components/AccessDenied";
 import { useQuery } from "@tanstack/react-query";
 import { coreAdminDashboard } from "../../../../services/admin/dashboardApis";
+import { getCourses } from "../../../../services/admin/courseApis";
 
 export interface Dashboard {
   number_of_students: number;
@@ -20,6 +22,7 @@ export interface Dashboard {
     unit: string;
   };
   daily_login_count: number;
+  student_daily_activity: StudentDailyActivityApi[];
   leaderboard: LeaderboardEntry[];
   daily_time_spend: DailyTimeSpentAdmin[];
 }
@@ -38,6 +41,7 @@ export interface DailyTimeSpentAdmin {
 
 const Dashboard = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const [selectedCourseId, setSelectedCourseId] = useState<number | "">("");
   const {
     data: dashboardData,
     isLoading,
@@ -47,6 +51,17 @@ const Dashboard = () => {
     queryFn: () => coreAdminDashboard(clientId),
     retry: false,
   });
+
+  // Load courses for dynamic dropdown
+  const { data: coursesData } = useQuery({
+    queryKey: ["admin-courses", clientId],
+    queryFn: () => getCourses(clientId),
+    retry: false,
+  });
+  const courseOptions = useMemo(() => {
+    const arr = (coursesData as Array<{ id: number; title: string }>) || [];
+    return arr.map((c) => ({ id: c.id, title: c.title }));
+  }, [coursesData]);
 
   const navigate = useNavigate();
   const metrics = dashboardData
@@ -134,8 +149,20 @@ const Dashboard = () => {
         </div>
       </div>
       <div className="flex items-center justify-between mb-4">
-        <select className=" rounded-lg p-2 border border-[var(--primary-100)] text-xs text-gray-700 w-1/10">
-          <option value="1">Select Courses</option>
+        <select
+          className=" rounded-lg p-2 border border-[var(--primary-100)] text-xs text-gray-700 w-1/10"
+          value={selectedCourseId}
+          onChange={(e) => {
+            const val = e.target.value;
+            setSelectedCourseId(val === "" ? "" : Number(val));
+          }}
+        >
+          <option value="">All Courses</option>
+          {courseOptions.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.title}
+            </option>
+          ))}
         </select>
 
         <div className="flex items-center text-[var(--primary-500)] text-sm gap-2">
@@ -172,7 +199,11 @@ const Dashboard = () => {
           isLoading={isLoading}
           error={error}
         />
-        <StudentDailyActivityChart />
+        <StudentDailyActivityChart
+          student_daily_activity={dashboardData?.student_daily_activity ?? []}
+          isLoading={isLoading}
+          error={error as Error | null}
+        />
         <StudentRanking
           leaderboard={dashboardData?.leaderboard ?? []}
           isLoading={isLoading}

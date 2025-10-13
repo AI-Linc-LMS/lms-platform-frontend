@@ -26,7 +26,9 @@
     "view": "View",
     "download": "Download",
     "upload": "Upload",
-    "viewMore": "View More"
+    "viewMore": "View More",
+    "collapse": "Collapse",
+    "viewAll": "View All"
   },
   "navigation": {
     "home": "Home",
@@ -103,12 +105,12 @@
     },
     "basedLearning": {
       "title": "Based On Your Learning",
-      "subtitle": "Based on your learnings we think your might like this courses below.",
+      "subtitle": "Courses recommended based on your learning history",
       "seeAll": "See all",
       "noCourses": {
-        "title": "No courses available yet",
+        "title": "No recommended courses available",
         "description": "We couldn't find any recommended courses based on your learning history.",
-        "button": "Explore Courses"
+        "button": "Browse Courses"
       }
     },
     "leaderboard": {
@@ -375,7 +377,7 @@
   },
   "assessments": {
     "backToCourses": "Back to Courses",
-    "skillAssessmentCenter": "Skill Assessment Center", 
+    "skillAssessmentCenter": "Skill Assessment Center",
     "testYourExpertise": "Test Your Expertise",
     "description": "Discover your strengths and areas for improvement with our comprehensive assessments designed to help you grow and succeed.",
     "noAssessmentsTitle": "No Assessments Available",
@@ -393,7 +395,7 @@
     "tryAgain": "Try Again",
     "stats": {
       "assessmentsTaken": "Assessments Taken",
-      "successRate": "Success Rate", 
+      "successRate": "Success Rate",
       "certificatesIssued": "Certificates Issued"
     },
     "kakatiyaAssessment": {
@@ -541,8 +543,7 @@
     "noThreads": {
       "title": "No threads yet",
       "description": "Be the first to start a discussion in the community."
-    }
-    ,
+    },
     "noComments": {
       "title": "No comments yet",
       "description": "Be the first to share your thoughts on this thread."
@@ -945,11 +946,7 @@
           "Cutting-edge security projects",
           "Continuous learning"
         ],
-        "7": [
-          "Competitive salary",
-          "Research opportunities",
-          "Career growth"
-        ],
+        "7": ["Competitive salary", "Research opportunities", "Career growth"],
         "8": [
           "Hybrid work model",
           "Data-driven projects",
@@ -965,11 +962,7 @@
           "Learning opportunities",
           "Competitive compensation"
         ],
-        "11": [
-          "Full remote work",
-          "Flexible hours",
-          "Continuous learning"
-        ],
+        "11": ["Full remote work", "Flexible hours", "Continuous learning"],
         "12": [
           "Hybrid work model",
           "Innovative projects",
