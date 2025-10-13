@@ -36,8 +36,7 @@ const InstructorsSection: React.FC = () => {
       name: "Prateek Dayal",
       bio: "Machine Learning Research Lead specializing in advanced AI algorithms and Teaching Machine learning.",
       linkedin_profile: "https://www.linkedin.com/in/prateekdayal/",
-      profile_pic_url:
-        "https://media.licdn.com/dms/image/v2/C4D03AQFTKsUzbzTaow/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1661867320805?e=1758153600&v=beta&t=WYy1yfOd1S6UjcyKj2Vnl2U9Zsipw7QjmsfwdhipcrY",
+      profile_pic_url: "/src/assets/course-content/prateek.jpeg",
       website: "https://emilyrodriguez.ai",
     },
   ];
@@ -74,12 +73,17 @@ const InstructorsSection: React.FC = () => {
           >
             <div className="mb-2 md:mb-3">
               <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-gray-300 text-gray-700 flex items-center justify-center text-2xl font-semibold mx-auto">
-                {instructor.name
+                {/* {instructor.name
                   ?.split(" ")
                   .map((n) => n[0])
                   .join("")
                   .toUpperCase()
-                  .slice(0, 2)}
+                  .slice(0, 2)} */}
+                <img
+                  src={instructor.profile_pic_url}
+                  alt={instructor.name}
+                  className="w-full h-full object-cover rounded-full"
+                />
               </div>
             </div>
             <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-1">
