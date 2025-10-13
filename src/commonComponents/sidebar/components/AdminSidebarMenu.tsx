@@ -1,6 +1,9 @@
-import { AdminNavigationLinks } from "../../../constants/AdminNavigationLinks";
 import SidebarList from "../sidebarItems/SidebarList";
 import { SidebarLinkInfo } from "../../../constants/typings";
+import { useSelector } from "react-redux";
+import { RootState } from "../../../redux/store";
+import { useMemo } from "react";
+import { filterNavigationByAdminFeatures } from "./helper/filterNavigation";
 // import { FiLink } from 'react-icons/fi';
 // import { Link, useLocation } from 'react-router-dom';
 
@@ -13,13 +16,19 @@ const AdminSidebarMenu = ({ isExpanded }: AdminSidebarMenuProps) => {
   // const isActive = location.pathname === '/admin/payment-links';
   //const clientId = Number(import.meta.env.VITE_CLIENT_ID);
 
+  const clientInfo = useSelector((state: RootState) => state.clientInfo);
+
+  const filteredNavigationLinks = useMemo(() => {
+    return filterNavigationByAdminFeatures(clientInfo?.data?.features || []);
+  }, [clientInfo?.data?.features]);
+
   return (
     <div
       className={`${
         isExpanded ? "px-2" : "px-2"
       } h-full w-full flex flex-col divide-y-[0.5px] divide-[#D3D3D318] items-center`}
     >
-      {AdminNavigationLinks.map((link: SidebarLinkInfo) => (
+      {filteredNavigationLinks.map((link: SidebarLinkInfo) => (
         // (clientId === 1 || link.id <= 2) && (
         <SidebarList
           key={link.title}
