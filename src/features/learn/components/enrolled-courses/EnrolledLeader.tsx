@@ -35,7 +35,9 @@ const EnrolledLeaderBoard = ({ courseId }: { courseId: number }) => {
     return (
       <div className="w-full rounded-3xl bg-white p-3 md:p-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-lg md:text-[22px] font-semibold">{t("course.leaderboard")}</h1>
+          <h1 className="text-lg md:text-[22px] font-semibold">
+            {t("course.leaderboard")}
+          </h1>
           <div className="relative">
             <button
               className="w-6 h-6 rounded-full border border-gray-400 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
@@ -48,11 +50,21 @@ const EnrolledLeaderBoard = ({ courseId }: { courseId: number }) => {
             {showInfo && (
               <div className="absolute right-0 top-8 z-10 bg-gray-800 text-[var(--font-light)] p-3 rounded-lg shadow-lg min-w-[200px]">
                 <div className="text-xs space-y-1">
-                  <div>{t("course.videoTutorial")}: 10 {t("course.marks")}</div>
-                  <div>{t("course.quiz")}: 20 {t("course.marks")}</div>
-                  <div>{t("course.assignment")}: 30 {t("course.marks")}</div>
-                  <div>{t("course.article")}: 5 {t("course.marks")}</div>
-                  <div>{t("course.codingProblem")}: 50 {t("course.marks")}</div>
+                  <div>
+                    {t("course.videoTutorial")}: 10 {t("course.marks")}
+                  </div>
+                  <div>
+                    {t("course.quiz")}: 20 {t("course.marks")}
+                  </div>
+                  <div>
+                    {t("course.assignment")}: 30 {t("course.marks")}
+                  </div>
+                  <div>
+                    {t("course.article")}: 5 {t("course.marks")}
+                  </div>
+                  <div>
+                    {t("course.codingProblem")}: 50 {t("course.marks")}
+                  </div>
                 </div>
               </div>
             )}
@@ -68,7 +80,9 @@ const EnrolledLeaderBoard = ({ courseId }: { courseId: number }) => {
   return (
     <div className="w-full rounded-3xl bg-white p-3 md:p-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-lg md:text-[22px] font-semibold">{t("course.leaderboard")}</h1>
+        <h1 className="text-lg md:text-[22px] font-semibold">
+          {t("course.leaderboard")}
+        </h1>
         <div className="relative">
           <button
             className="w-6 h-6 rounded-full border border-gray-400 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
@@ -81,11 +95,21 @@ const EnrolledLeaderBoard = ({ courseId }: { courseId: number }) => {
           {showInfo && (
             <div className="absolute right-0 top-8 z-10 bg-gray-800 text-[var(--font-light)] p-3 rounded-lg shadow-lg min-w-[200px]">
               <div className="text-xs space-y-1">
-                <div>{t("course.videoTutorial")}: 10 {t("course.marks")}</div>
-                <div>{t("course.quiz")}: 20 {t("course.marks")}</div>
-                <div>{t("course.assignment")}: 30 {t("course.marks")}</div>
-                <div>{t("course.article")}: 5 {t("course.marks")}</div>
-                <div>{t("course.codingProblem")}: 50 {t("course.marks")}</div>
+                <div>
+                  {t("course.videoTutorial")}: 10 {t("course.marks")}
+                </div>
+                <div>
+                  {t("course.quiz")}: 20 {t("course.marks")}
+                </div>
+                <div>
+                  {t("course.assignment")}: 30 {t("course.marks")}
+                </div>
+                <div>
+                  {t("course.article")}: 5 {t("course.marks")}
+                </div>
+                <div>
+                  {t("course.codingProblem")}: 50 {t("course.marks")}
+                </div>
               </div>
             </div>
           )}
@@ -96,59 +120,63 @@ const EnrolledLeaderBoard = ({ courseId }: { courseId: number }) => {
       </p>
 
       <div className="overflow-x-auto overflow-hidden rounded-xl border border-gray-300 my-3 md:my-5">
-        <table className="w-full text-center border-collapse">
-          <thead className="bg-gray-100">
-            <tr>
-              <th
-                className="border-b border-gray-300 px-2 py-3 md:py-4 text-xs text-gray-600 w-[80px] md:w-[120px]"
-                style={{ height: "30px" }}
-              >
-                {t("course.standing")}
-              </th>
-              <th
-                className="border-b border-l border-gray-300 px-2 text-xs text-gray-600 w-[100px] md:w-[120px]"
-                style={{ height: "30px" }}
-              >
-                {t("course.name")}
-              </th>
-              <th
-                className="border-b border-l border-gray-300 px-2 text-xs text-gray-600 w-[80px] md:w-[120px]"
-                style={{ height: "30px" }}
-              >
-                {t("course.marks")}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading
-              ? // Show 6 skeleton rows while loading
-                Array(6)
-                  .fill(0)
-                  .map((_, index) => (
-                    <React.Fragment key={index}>
-                      {renderSkeleton()}
-                    </React.Fragment>
-                  ))
-              : data?.map(
-                  (entry: { rank: number; name: string; score: number }) => (
-                    <tr
-                      key={entry.rank}
-                      className={`${entry.name === "You" ? "bg-blue-50" : ""}`}
-                    >
-                      <td className="border-b border-gray-300 px-2 py-2 md:py-4 text-xs md:text-sm">
-                        {entry.rank}
-                      </td>
-                      <td className="border-b border-l border-gray-300 px-2 py-2 text-xs md:text-sm">
-                        {entry.name}
-                      </td>
-                      <td className="border-b border-l border-gray-300 px-2 py-2 text-xs md:text-sm">
-                        {entry.score}
-                      </td>
-                    </tr>
-                  )
-                )}
-          </tbody>
-        </table>
+        <div className="overflow-y-auto max-h-[220px]">
+          <table className="w-full text-center border-collapse">
+            <thead className="bg-gray-100 sticky top-0 z-10">
+              <tr>
+                <th
+                  className="border-b border-gray-300 px-2 py-3 md:py-4 text-xs text-gray-600 w-[80px] md:w-[120px] bg-gray-100"
+                  style={{ height: "30px" }}
+                >
+                  {t("course.standing")}
+                </th>
+                <th
+                  className="border-b border-l border-gray-300 px-2 text-xs text-gray-600 w-[100px] md:w-[120px] bg-gray-100"
+                  style={{ height: "30px" }}
+                >
+                  {t("course.name")}
+                </th>
+                <th
+                  className="border-b border-l border-gray-300 px-2 text-xs text-gray-600 w-[80px] md:w-[120px] bg-gray-100"
+                  style={{ height: "30px" }}
+                >
+                  {t("course.marks")}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading
+                ? // Show 5 skeleton rows while loading
+                  Array(5)
+                    .fill(0)
+                    .map((_, index) => (
+                      <React.Fragment key={index}>
+                        {renderSkeleton()}
+                      </React.Fragment>
+                    ))
+                : data?.map(
+                    (entry: { rank: number; name: string; score: number }) => (
+                      <tr
+                        key={entry.rank}
+                        className={`${
+                          entry.name === "You" ? "bg-blue-50" : ""
+                        }`}
+                      >
+                        <td className="border-b border-gray-300 px-2 py-2 md:py-4 text-xs md:text-sm">
+                          {entry.rank}
+                        </td>
+                        <td className="border-b border-l border-gray-300 px-2 py-2 text-xs md:text-sm">
+                          {entry.name}
+                        </td>
+                        <td className="border-b border-l border-gray-300 px-2 py-2 text-xs md:text-sm">
+                          {entry.score}
+                        </td>
+                      </tr>
+                    )
+                  )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="w-full bg-[#DEE2E6] rounded-xl flex flex-row p-3 md:p-4 gap-2 md:gap-3">
