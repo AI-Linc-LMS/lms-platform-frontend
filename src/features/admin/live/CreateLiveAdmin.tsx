@@ -6,7 +6,6 @@ import {
   LiveSession,
 } from "../../../services/live/liveServicesApis";
 import { useMutation } from "@tanstack/react-query";
-import PermissionDeniedModal from "../workshop-registrations/components/modals/PermissionDeniedModal";
 
 interface CreateLiveAdminProps {
   onClose: () => void;
@@ -88,12 +87,10 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
       [name]: value,
     }));
   };
-  const [permissionDeniedOpen, setPermissionDeniedOpen] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPermissionDeniedOpen(true);
-    return;
+
     try {
       if (isEditMode && editSession) {
         // Update existing session
@@ -272,10 +269,6 @@ const CreateLiveAdmin: React.FC<CreateLiveAdminProps> = ({
           </button>
         </div>
       </form>
-      <PermissionDeniedModal
-        isOpen={permissionDeniedOpen}
-        onClose={() => setPermissionDeniedOpen(false)}
-      />
       +
     </div>
   );

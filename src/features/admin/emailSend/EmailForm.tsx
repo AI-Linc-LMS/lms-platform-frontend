@@ -5,7 +5,6 @@ import { createEmailJob } from "../../../services/admin/workshopRegistrationApis
 import { useMutation } from "@tanstack/react-query";
 import { FiUpload, FiEye } from "react-icons/fi";
 import EmailPreviewModal from "./EmailPreviewModal";
-import PermissionDeniedModal from "../workshop-registrations/components/modals/PermissionDeniedModal";
 
 export interface JobData {
   task_name: string;
@@ -55,7 +54,6 @@ const EmailForm: React.FC<EmailFormProps> = ({
   const [showEmailPreviewModal, setShowEmailPreviewModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { success: showSuccessToast, error: showErrorToast } = useToast();
-  const [permissionDeniedOpen, setPermissionDeniedOpen] = useState(false);
 
   const createJobMutation = useMutation({
     mutationFn: (jobData: JobData) => createEmailJob(clientId, jobData),
@@ -168,8 +166,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
       subject: emailTemplate.subject,
       email_body: emailTemplate.email_body,
     };
-    setPermissionDeniedOpen(true);
-    return;
+
     createJobMutation.mutate(createJobData);
     setIsLoading(false);
   };
@@ -424,11 +421,6 @@ Priya Sharma,priya.sharma@example.com`;
         onClose={() => setShowEmailPreviewModal(false)}
         emails={emailData}
         onRemoveEmail={handleRemoveEmail}
-      />
-
-      <PermissionDeniedModal
-        isOpen={permissionDeniedOpen}
-        onClose={() => setPermissionDeniedOpen(false)}
       />
     </div>
   );
