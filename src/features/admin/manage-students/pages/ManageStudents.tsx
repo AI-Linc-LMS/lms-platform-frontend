@@ -1,129 +1,115 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 // import { useNavigate } from "react-router-dom";
-import { FiSearch, FiFilter, FiEdit2, FiTrash2 } from "react-icons/fi";
-import AddStudentModal from "../components/AddStudentModal";
+import { FiSearch, FiFilter, FiEdit2 } from "react-icons/fi";
 import FilterModal, { FilterCriteria } from "../components/FilterModal";
 import AccessDenied from "../../../../components/AccessDenied";
 import { useRole } from "../../../../hooks/useRole";
+import { useQuery } from "@tanstack/react-query";
+import { getCourses } from "../../../../services/admin/courseApis";
+import {
+  getManageStudents,
+  StudentListItem,
+  ManageStudentsParams,
+  ManageStudentsResponse,
+} from "../../../../services/admin/studentApis";
+// import { useToast } from "../../../../contexts/ToastContext";
+import StudentDetailDrawer from "../components/StudentDetailDrawer";
 
-interface Student {
-  id: number;
-  name: string;
-  email: string;
-  mobileNumber: string;
-  enrolledCourses: string[];
-}
-
-interface StudentFormData {
-  name: string;
-  email: string;
-  mobileNumber: string;
-  enrolledCourses: string[];
-}
+type CourseOption = { id: number; title: string };
 
 const ManageStudents = () => {
   //   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  // search term lives inside filters
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [filters, setFilters] = useState<FilterCriteria>({
-    courses: [],
+    courseId: undefined,
+    isActive: undefined,
     searchTerm: "",
   });
-  const [students, setStudents] = useState<Student[]>([
-    {
-      id: 1,
-      name: "Avish Shetty",
-      email: "avishvshetty@gmail.com",
-      mobileNumber: "+91 9839487393",
-      enrolledCourses: ["Deployment in ML", "Full-Stack Development"],
-    },
-    {
-      id: 2,
-      name: "Avish Shetty",
-      email: "avishvshetty@gmail.com",
-      mobileNumber: "+91 9839487393",
-      enrolledCourses: ["Deployment in ML"],
-    },
-    {
-      id: 3,
-      name: "Avish Shetty",
-      email: "avishvshetty@gmail.com",
-      mobileNumber: "+91 9839487393",
-      enrolledCourses: ["Deployment in ML", "Front-End Development"],
-    },
-    {
-      id: 4,
-      name: "Avish Shetty",
-      email: "avishvshetty@gmail.com",
-      mobileNumber: "+91 9839487393",
-      enrolledCourses: ["Deployment in ML", "Back-End Development"],
-    },
-    {
-      id: 5,
-      name: "Avish Shetty",
-      email: "avishvshetty@gmail.com",
-      mobileNumber: "+91 9839487393",
-      enrolledCourses: ["Deployment in ML"],
-    },
-    {
-      id: 6,
-      name: "Avish Shetty",
-      email: "avishvshetty@gmail.com",
-      mobileNumber: "+91 9839487393",
-      enrolledCourses: ["Deployment in ML", "Full-Stack Development"],
-    },
-  ]);
+  const [sortBy, setSortBy] = useState<ManageStudentsParams["sort_by"]>(
+    "name"
+  );
+  const [sortOrder, setSortOrder] = useState<ManageStudentsParams["sort_order"]>(
+    "asc"
+  );
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(10);
+  const clientId = import.meta.env.VITE_CLIENT_ID;
+  // const { success, error: showError } = useToast();
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedStudentId, setSelectedStudentId] = useState<number | undefined>(undefined);
+
+  // Load available courses for filters and modal
+  const { data: coursesData } = useQuery({
+    queryKey: ["admin-courses", clientId],
+    queryFn: () => getCourses(clientId),
+  });
+  const availableCourses = useMemo<CourseOption[]>(() => {
+    if (!coursesData) return [];
+    const arr = (coursesData as Array<{ id: number; title: string }>) || [];
+    return arr.map((c) => ({ id: c.id, title: c.title }));
+  }, [coursesData]);
+
+  // Fetch students with filters
+  const { data: studentsData, refetch, isFetching } = useQuery<ManageStudentsResponse>({
+    queryKey: [
+      "admin-students",
+      clientId,
+      filters.courseId,
+      filters.isActive,
+      filters.searchTerm,
+      sortBy,
+      sortOrder,
+      page,
+      limit,
+    ],
+    queryFn: () =>
+      getManageStudents(clientId, {
+        course_id: filters.courseId,
+        is_active: filters.isActive,
+        search: filters.searchTerm || undefined,
+        sort_by: sortBy,
+        sort_order: sortOrder,
+        page,
+        limit,
+      }),
+    refetchOnWindowFocus: false,
+    // keepPreviousData is v3 option; if using v5, it's removed.
+  });
+
+  const students: StudentListItem[] = useMemo(() => {
+    if (!studentsData) return [];
+    return studentsData.students || [];
+  }, [studentsData]);
+
+  const totalCount: number = useMemo(() => {
+    if (!studentsData) return 0;
+    return studentsData.pagination?.total_students ?? students.length;
+  }, [studentsData, students.length]);
+  const currentPage = studentsData?.pagination?.current_page ?? page;
+  const totalPages = studentsData?.pagination?.total_pages ?? Math.max(1, Math.ceil(totalCount / (limit || 1)));
+  const hasNext = studentsData?.pagination?.has_next ?? page < totalPages;
+  const hasPrev = studentsData?.pagination?.has_previous ?? page > 1;
 
   //   const handleBackToMain = () => {
   //     navigate("/");
   //   };
 
-  const handleAddStudent = () => {
-    setIsAddModalOpen(true);
+  const handleEditStudent = (id: number) => {
+    setSelectedStudentId(id);
+    setIsDetailOpen(true);
   };
 
-  const handleAddStudentSubmit = (studentData: StudentFormData) => {
-    const newStudent: Student = {
-      id: Math.max(...students.map((s) => s.id)) + 1,
-      ...studentData,
-    };
-    setStudents((prev) => [...prev, newStudent]);
-  };
-
-  const handleEditStudent = () => {
-    // TODO: Implement edit student functionality
-    //console.log("Edit student:", studentId);
-  };
-
-  const handleDeleteStudent = (studentId: number) => {
-    if (window.confirm("Are you sure you want to delete this student?")) {
-      setStudents((prev) => prev.filter((student) => student.id !== studentId));
-    }
-  };
+  // Row-level mutations removed; actions now live inside StudentDetailDrawer
 
   const handleApplyFilters = (newFilters: FilterCriteria) => {
     setFilters(newFilters);
-    setSearchTerm(newFilters.searchTerm);
+    setPage(1); // reset to first page on filter change
   };
 
-  const filteredStudents = students.filter((student) => {
-    // Search filter
-    const matchesSearch =
-      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchTerm.toLowerCase());
-
-    // Course filter
-    const matchesCourses =
-      filters.courses.length === 0 ||
-      filters.courses.some((course) =>
-        student.enrolledCourses.includes(course)
-      );
-
-    return matchesSearch && matchesCourses;
-  });
-
-  const hasActiveFilters = filters.courses.length > 0;
+  const hasActiveFilters = Boolean(
+    filters.courseId !== undefined || filters.isActive !== undefined
+  );
 
   const { isSuperAdmin } = useRole();
 
@@ -175,13 +161,13 @@ const ManageStudents = () => {
               <input
                 type="text"
                 placeholder="Search by Name, Email"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={filters.searchTerm}
+                onChange={(e) => setFilters((f) => ({ ...f, searchTerm: e.target.value }))}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none"
               />
             </div>
 
-            {/* Filter and Add Student Buttons */}
+            {/* Filter and Controls */}
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsFilterModalOpen(true)}
@@ -193,19 +179,27 @@ const ManageStudents = () => {
               >
                 <FiFilter className="w-4 h-4" />
                 Filter
-                {hasActiveFilters && (
-                  <span className="bg-white text-[var(--primary-500)] text-xs px-1.5 py-0.5 rounded-full font-medium">
-                    {filters.courses.length}
-                  </span>
-                )}
               </button>
-              <button
-                onClick={handleAddStudent}
-                className="flex items-center gap-2 px-4 py-2 bg-[var(--primary-500)] text-[var(--font-light)] rounded-lg hover:bg-[var(--primary-600)] transition-colors"
+              {/* Sorting */}
+              <select
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as ManageStudentsParams["sort_by"])}
               >
-                <span className="text-lg">+</span>
-                Add Student
-              </button>
+                <option value="name">Sort by Name</option>
+                <option value="marks">Sort by Marks</option>
+                <option value="last_activity">Last Activity</option>
+                <option value="time_spent">Time Spent</option>
+                <option value="streak">Streak</option>
+              </select>
+              <select
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as ManageStudentsParams["sort_order"])}
+              >
+                <option value="asc">Asc</option>
+                <option value="desc">Desc</option>
+              </select>
             </div>
           </div>
 
@@ -214,28 +208,30 @@ const ManageStudents = () => {
             <div className="mt-4 pt-4 border-t border-gray-200">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm text-gray-600">Active filters:</span>
-                {filters.courses.map((course) => (
-                  <span
-                    key={course}
-                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--primary-500)] text-[var(--font-light)]"
-                  >
-                    {course}
+                {filters.courseId !== undefined && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--primary-500)] text-[var(--font-light)]">
+                    Course: {availableCourses.find((c) => c.id === filters.courseId)?.title || filters.courseId}
                     <button
-                      onClick={() => {
-                        const newFilters = {
-                          ...filters,
-                          courses: filters.courses.filter((c) => c !== course),
-                        };
-                        setFilters(newFilters);
-                      }}
+                      onClick={() => setFilters((f) => ({ ...f, courseId: undefined }))}
                       className="ml-1 text-[var(--font-light)] hover:text-gray-200"
                     >
                       ×
                     </button>
                   </span>
-                ))}
+                )}
+                {filters.isActive !== undefined && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--primary-500)] text-[var(--font-light)]">
+                    {filters.isActive ? "Active" : "Inactive"}
+                    <button
+                      onClick={() => setFilters((f) => ({ ...f, isActive: undefined }))}
+                      className="ml-1 text-[var(--font-light)] hover:text-gray-200"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
                 <button
-                  onClick={() => setFilters({ courses: [], searchTerm: "" })}
+                  onClick={() => setFilters({ courseId: undefined, isActive: undefined, searchTerm: "" })}
                   className="text-xs text-gray-500 hover:text-gray-700 underline"
                 >
                   Clear all
@@ -264,10 +260,10 @@ const ManageStudents = () => {
                     Email
                   </th>
                   <th className="text-left py-4 px-6 text-sm font-medium text-gray-700 uppercase tracking-wider">
-                    Mobile Number
+                    Enrollments
                   </th>
                   <th className="text-left py-4 px-6 text-sm font-medium text-gray-700 uppercase tracking-wider">
-                    Enrolled Courses
+                    Most Active Course
                   </th>
                   <th className="text-left py-4 px-6 text-sm font-medium text-gray-700 uppercase tracking-wider">
                     Actions
@@ -275,19 +271,19 @@ const ManageStudents = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredStudents.length === 0 ? (
+                {students.length === 0 ? (
                   <tr>
                     <td
                       colSpan={6}
                       className="py-8 px-6 text-center text-gray-500"
                     >
-                      {searchTerm || hasActiveFilters
+                      {filters.searchTerm || hasActiveFilters
                         ? "No students found matching your criteria."
                         : "No students found."}
                     </td>
                   </tr>
                 ) : (
-                  filteredStudents.map((student) => (
+                  students.map((student) => (
                     <tr
                       key={student.id}
                       className="hover:bg-gray-50 transition-colors"
@@ -299,41 +295,25 @@ const ManageStudents = () => {
                         />
                       </td>
                       <td className="py-4 px-6 text-sm text-gray-900">
-                        {student.name}
+                        {student.name || `${student.first_name ?? ""} ${student.last_name ?? ""}`.trim() || student.email}
                       </td>
                       <td className="py-4 px-6 text-sm text-gray-900">
                         {student.email}
                       </td>
                       <td className="py-4 px-6 text-sm text-gray-900">
-                        {student.mobileNumber}
+                        {student.enrollment_count ?? 0}
                       </td>
-                      <td className="py-4 px-6">
-                        <div className="flex flex-wrap gap-1">
-                          {student.enrolledCourses.map((course, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                            >
-                              {course}
-                            </span>
-                          ))}
-                        </div>
+                      <td className="py-4 px-6 text-sm text-gray-900">
+                        {student.most_active_course || "-"}
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => handleEditStudent()}
+                            onClick={() => handleEditStudent(student.id)}
                             className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                            title="Edit Student"
+                            title="View Student"
                           >
                             <FiEdit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteStudent(student.id)}
-                            className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                            title="Delete Student"
-                          >
-                            <FiTrash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
@@ -343,14 +323,48 @@ const ManageStudents = () => {
               </tbody>
             </table>
           </div>
+          {/* Pagination */}
+          <div className="flex items-center justify-between p-4 border-t border-gray-200 bg-gray-50">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span>
+                Page {currentPage} of {isNaN(totalPages) ? 1 : totalPages}
+              </span>
+              <span className="mx-2">•</span>
+              <label className="flex items-center gap-2">
+                <span>Rows:</span>
+                <select
+                  className="border border-gray-300 rounded px-2 py-1"
+                  value={limit}
+                  onChange={(e) => {
+                    setLimit(Number(e.target.value));
+                    setPage(1);
+                  }}
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </label>
+              {isFetching && <span className="ml-2">Loading…</span>}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={!hasPrev}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className={`px-3 py-1 rounded border ${page <= 1 ? "text-gray-300 border-gray-200" : "text-gray-700 border-gray-300 hover:bg-gray-100"}`}
+              >
+                Prev
+              </button>
+              <button
+                disabled={!hasNext}
+                onClick={() => setPage((p) => p + 1)}
+                className={`px-3 py-1 rounded border ${page >= totalPages ? "text-gray-300 border-gray-200" : "text-gray-700 border-gray-300 hover:bg-gray-100"}`}
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
-
-        {/* Add Student Modal */}
-        <AddStudentModal
-          isOpen={isAddModalOpen}
-          onClose={() => setIsAddModalOpen(false)}
-          onSubmit={handleAddStudentSubmit}
-        />
 
         {/* Filter Modal */}
         <FilterModal
@@ -358,6 +372,17 @@ const ManageStudents = () => {
           onClose={() => setIsFilterModalOpen(false)}
           onApplyFilters={handleApplyFilters}
           currentFilters={filters}
+          availableCourses={availableCourses}
+        />
+
+        {/* Student Detail Drawer */}
+        <StudentDetailDrawer
+          isOpen={isDetailOpen}
+          onClose={() => setIsDetailOpen(false)}
+          clientId={Number(clientId)}
+          studentId={selectedStudentId}
+          availableCourses={availableCourses}
+          onChanged={() => refetch()}
         />
       </div>
     </div>

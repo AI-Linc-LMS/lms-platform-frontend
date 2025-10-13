@@ -1,15 +1,19 @@
 import { useState } from "react";
 import { FiX } from "react-icons/fi";
 
+type CourseOption = { id: number; title: string };
+
 interface FilterModalProps {
   isOpen: boolean;
   onClose: () => void;
   onApplyFilters: (filters: FilterCriteria) => void;
   currentFilters: FilterCriteria;
+  availableCourses?: CourseOption[];
 }
 
 export interface FilterCriteria {
-  courses: string[];
+  courseId?: number;
+  isActive?: boolean;
   searchTerm: string;
 }
 
@@ -18,26 +22,18 @@ const FilterModal: React.FC<FilterModalProps> = ({
   onClose,
   onApplyFilters,
   currentFilters,
+  availableCourses,
 }) => {
   const [filters, setFilters] = useState<FilterCriteria>(currentFilters);
-
-  const availableCourses = [
-    "Deployment in ML",
-    "Full-Stack Development",
-    "Front-End Development",
-    "Back-End Development",
-    "Data Science",
-    "Machine Learning",
-    "DevOps",
+  const fallbackCourses: CourseOption[] = [
+    { id: -1, title: "Sample Course" },
   ];
-
-  const handleCourseToggle = (course: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      courses: prev.courses.includes(course)
-        ? prev.courses.filter((c) => c !== course)
-        : [...prev.courses, course],
-    }));
+  const coursesToShow =
+    availableCourses && availableCourses.length > 0
+      ? availableCourses
+      : fallbackCourses;
+  const handleCourseSelect = (courseId: number | undefined) => {
+    setFilters((prev) => ({ ...prev, courseId }));
   };
 
   const handleApply = () => {
@@ -47,7 +43,8 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
   const handleClear = () => {
     const clearedFilters: FilterCriteria = {
-      courses: [],
+      courseId: undefined,
+      isActive: undefined,
       searchTerm: "",
     };
     setFilters(clearedFilters);
@@ -58,7 +55,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/20 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">
@@ -75,30 +72,51 @@ const FilterModal: React.FC<FilterModalProps> = ({
         <div className="p-6 space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Filter by Enrolled Courses
+              Filter by Enrolled Course
             </label>
-            <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-lg p-3">
-              {availableCourses.map((course) => (
-                <label
-                  key={course}
-                  className="flex items-center space-x-2 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={filters.courses.includes(course)}
-                    onChange={() => handleCourseToggle(course)}
-                    className="rounded border-gray-300 text-[var(--primary-500)] focus:ring-[var(--primary-500)]"
-                  />
-                  <span className="text-sm text-gray-700">{course}</span>
-                </label>
+            <select
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none"
+              value={filters.courseId ?? ""}
+              onChange={(e) => {
+                const val = e.target.value;
+                handleCourseSelect(val === "" ? undefined : Number(val));
+              }}
+            >
+              <option value="">All Courses</option>
+              {coursesToShow.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {course.title}
+                </option>
               ))}
-            </div>
-            {filters.courses.length > 0 && (
-              <p className="text-xs text-gray-500 mt-2">
-                {filters.courses.length} course
-                {filters.courses.length !== 1 ? "s" : ""} selected
-              </p>
-            )}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Status
+            </label>
+            <select
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none"
+              value={
+                filters.isActive === undefined
+                  ? "all"
+                  : filters.isActive
+                  ? "active"
+                  : "inactive"
+              }
+              onChange={(e) => {
+                const val = e.target.value;
+                setFilters((prev) => ({
+                  ...prev,
+                  isActive:
+                    val === "all" ? undefined : val === "active" ? true : false,
+                }));
+              }}
+            >
+              <option value="all">All</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
           </div>
 
           <div>
