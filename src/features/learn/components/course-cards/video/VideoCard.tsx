@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import VideoPlayer from "../../video-player/VideoPlayer";
-import FloatingAIButton from "../../floating-ai-button/FloatingAIButton";
+
 import { useQuery } from "@tanstack/react-query";
 import { getCourseContent } from "../../../../../services/enrolled-courses-content/courseContentApis";
 import { submitContent } from "../../../../../services/enrolled-courses-content/submitApis";
@@ -552,7 +552,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
       </div>
 
       {/* Floating Ask AI Button */}
-      <FloatingAIButton onClick={() => {}} />
+      {/* <FloatingAIButton onClick={() => {}} /> */}
 
       {/* Report Issue Modal */}
       <ReportIssueModal
