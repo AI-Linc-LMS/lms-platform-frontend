@@ -1,6 +1,8 @@
 import React from "react";
 import defaultQuizIcon from "../../../../assets/course_sidebar_assets/quiz/defaultQuizIcon.png";
-import QuizBackButton from "../../../../assets/course_sidebar_assets/quizBackButton.png";
+
+import tickIcon from "../../../../assets/course_sidebar_assets/tickIcon.png";
+import completeTickIcon from "../../../../assets/course_sidebar_assets/completeTickIcon.png";
 
 export interface Quiz {
   id: number;
@@ -55,8 +57,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
           const questionCount = isSelected && quiz.questions;
 
           // Use a placeholder submissions count based on API data if available
-          const submissions =
-            isSelected && quizzes ? quiz.questions * 10 : quiz.submissions;
+          const submissions = quiz.submissions;
 
           return (
             <div
@@ -94,8 +95,16 @@ const QuizContent: React.FC<QuizContentProps> = ({
                 </div>
               </div>
 
-              <div className="text-gray-400 text-sm">
-                <img src={QuizBackButton} alt="Back to Quizzes" />
+              <div className="text-gray-400 text-sm flex jsutify-between">
+                <div className="flex items-end justify-start w-5 h-5">
+                  <img
+                    src={
+                      quiz.status === "complete" ? completeTickIcon : tickIcon
+                    }
+                    alt={quiz.status === "complete" ? "Completed" : "Pending"}
+                    className="w-full h-full"
+                  />
+                </div>
               </div>
             </div>
           );

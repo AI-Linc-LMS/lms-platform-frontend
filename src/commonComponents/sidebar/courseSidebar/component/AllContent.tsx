@@ -1,10 +1,14 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import articleIcon from "../../../../assets/course_sidebar_assets/article/articleIcon.png";
 import videosIcon from "../../../../assets/course_sidebar_assets/video/vidoesIcon.png";
 import problemIcon from "../../../../assets/course_sidebar_assets/problem/problemIcon.png";
 import quizIcon from "../../../../assets/course_sidebar_assets/quiz/defaultQuizIcon.png";
 import tickIcon from "../../../../assets/course_sidebar_assets/tickIcon.png";
 import completeTickIcon from "../../../../assets/course_sidebar_assets/completeTickIcon.png";
+
+// Constants for localStorage - same as VideoPlayer
+const STORAGE_PREFIX = "video_progress_";
+const STORAGE_VERSION = "v1";
 
 export type ContentType =
   | "Article"
@@ -78,20 +82,22 @@ const CircularProgress = ({
         viewBox={`0 0 ${size} ${size}`}
         className="transform -rotate-90"
       >
+        {/* Background circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#e6e6e6"
+          stroke="#E5E7EB"
           strokeWidth={strokeWidth}
         />
+        {/* Progress circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#deeede"
+          stroke="#10B981"
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
@@ -100,9 +106,9 @@ const CircularProgress = ({
       </svg>
 
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-[18px] h-[18px] bg-white border border-gray-200 rounded-full flex items-center justify-center">
-          <div className="text-[9px] font-medium text-gray-500">
-            {Math.round(progress)}%
+        <div className="w-[18px] h-[18px] bg-white rounded-full flex items-center justify-center">
+          <div className="text-[8px] font-semibold text-gray-700">
+            {Math.round(progress)}
           </div>
         </div>
       </div>
@@ -116,8 +122,94 @@ const AllContent = ({
   selectedContentId,
   activeLabel,
 }: AllContentProps) => {
-  const sortedContents = [...contents].sort((a, b) => a.order - b.order);
+  const sortedContents = useMemo(
+    () => [...contents].sort((a, b) => a.order - b.order),
+    [contents]
+  );
   const isFirstRender = useRef(true);
+  const [videoProgress, setVideoProgress] = useState<Record<number, number>>(
+    {}
+  );
+
+  // Helper function to extract title from localStorage key
+  // Key format: video_progress_v1_1118086241?badge=0&autopause=0&player_id=0&app_id=58479_Introduction data science
+  const extractTitleFromKey = (key: string): string | null => {
+    const prefix = STORAGE_PREFIX + STORAGE_VERSION + "_";
+    if (!key.startsWith(prefix)) return null;
+
+    // Find the last underscore which separates the URL params from the title
+    const lastUnderscoreIndex = key.lastIndexOf("_");
+    if (lastUnderscoreIndex > prefix.length) {
+      return key.substring(lastUnderscoreIndex + 1);
+    }
+    return null;
+  };
+
+  // Helper function to normalize strings for comparison
+  const normalizeString = (str: string): string => {
+    return str.toLowerCase().trim().replace(/\s+/g, " ");
+  };
+
+  // Load video progress from localStorage
+  useEffect(() => {
+    const loadProgress = () => {
+      const progressMap: Record<number, number> = {};
+
+      // Build a map of normalized title -> { progress, key }
+      const titleProgressMap: Record<
+        string,
+        { progress: number; key: string }
+      > = {};
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(STORAGE_PREFIX + STORAGE_VERSION)) {
+          const title = extractTitleFromKey(key);
+          const progressValue = localStorage.getItem(key);
+
+          if (title && progressValue) {
+            const parsedProgress = parseFloat(progressValue);
+            if (!isNaN(parsedProgress) && parsedProgress > 0) {
+              const normalizedTitle = normalizeString(title);
+              titleProgressMap[normalizedTitle] = {
+                progress: parsedProgress,
+                key: key,
+              };
+            }
+          }
+        }
+      }
+
+      // Match video items with progress by title
+      sortedContents.forEach((item) => {
+        if (item.content_type === "VideoTutorial") {
+          const normalizedItemTitle = normalizeString(item.title);
+
+          if (titleProgressMap[normalizedItemTitle]) {
+            const { progress } = titleProgressMap[normalizedItemTitle];
+            progressMap[item.id] = progress;
+          } else {
+          }
+        }
+      });
+
+      setVideoProgress(progressMap);
+    };
+
+    // Initial load
+    loadProgress();
+
+    // Listen for storage events (from other tabs)
+    window.addEventListener("storage", loadProgress);
+
+    // Set up polling interval to catch same-window updates (every 2 seconds)
+    const interval = setInterval(loadProgress, 2000);
+
+    return () => {
+      window.removeEventListener("storage", loadProgress);
+      clearInterval(interval);
+    };
+  }, [sortedContents]);
 
   // Select first content only when All tab is first opened
   useEffect(() => {
@@ -197,7 +289,7 @@ const AllContent = ({
                   progress={
                     item.status === "complete"
                       ? 100
-                      : item.progress_percentage || 0
+                      : videoProgress[item.id] || item.progress_percentage || 0
                   }
                   isComplete={item.status === "complete"}
                 />

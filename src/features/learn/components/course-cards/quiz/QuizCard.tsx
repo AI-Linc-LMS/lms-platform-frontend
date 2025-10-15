@@ -6,6 +6,7 @@ import {
 } from "../../../../../services/enrolled-courses-content/courseContentApis";
 import { useMediaQuery } from "../../../../../hooks/useMediaQuery";
 import { submitContent } from "../../../../../services/enrolled-courses-content/submitApis";
+import Comments from "../../../../../commonComponents/components/Comments";
 import topbg from "../../../../../commonComponents/icons/enrolled-courses/quiz/topbg.png";
 import leftbg from "../../../../../commonComponents/icons/enrolled-courses/quiz/leftbg.png";
 import tickicon from "../../../../../commonComponents/icons/enrolled-courses/quiz/doneicon.png";
@@ -85,6 +86,8 @@ const QuizCard: React.FC<QuizCardProps> = ({
   const [loadingAttempts, setLoadingAttempts] = useState(false);
   const [attemptSwitchLoading, setAttemptSwitchLoading] = useState(false);
   const [totalAttempts, setTotalAttempts] = useState(0);
+  const [activeTab, setActiveTab] = useState<"review" | "comments">("review");
+  const [isDataReady, setIsDataReady] = useState(false);
 
   const {
     data: fetchedData,
@@ -94,9 +97,10 @@ const QuizCard: React.FC<QuizCardProps> = ({
     queryKey: ["quiz", courseId, contentId],
     queryFn: () => getCourseContent(clientId, courseId, contentId),
     enabled: !!contentId && !!courseId && !injectedData,
-    // Ensure fresh data when switching between content
-    staleTime: 0,
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes but always refetch
+    staleTime: 30 * 1000, // Cache for 30 seconds to prevent unnecessary refetches
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnMount: false, // Don't refetch if data is already cached
+    refetchOnWindowFocus: false, // Don't refetch on window focus
   });
 
   useEffect(() => {
@@ -112,6 +116,9 @@ const QuizCard: React.FC<QuizCardProps> = ({
 
   ////console.log("userAnswers", userAnswers);
   useEffect(() => {
+    // Reset data ready state when content changes
+    setIsDataReady(false);
+
     if (data?.details?.mcqs) {
       setTotalQuestions(data.details.mcqs.length);
       // Initialize user answers array
@@ -123,6 +130,11 @@ const QuizCard: React.FC<QuizCardProps> = ({
           selectedOption: null,
         }))
       );
+
+      // Set data as ready after a brief delay to ensure all state is initialized
+      setTimeout(() => {
+        setIsDataReady(true);
+      }, 100);
     }
   }, [data]);
 
@@ -173,7 +185,8 @@ const QuizCard: React.FC<QuizCardProps> = ({
       ? pastAttempts[selectedAttemptIndex]?.custom_dimension?.userAnswers
       : userAnswers;
 
-  if (isLoading || (alreadyCompleted && loadingAttempts)) {
+  // Show loader until data is fetched AND fully initialized
+  if (isLoading || !isDataReady || (alreadyCompleted && loadingAttempts)) {
     return (
       <div className="rounded-lg shadow p-0 md:p-0 mb-8 animate-pulse">
         {/* Header skeleton */}
@@ -752,45 +765,81 @@ const QuizCard: React.FC<QuizCardProps> = ({
 
         {/* Existing Review/Result Section */}
         <div className="p-4 md:p-4 bg-white rounded-lg shadow mt-3">
-          {attemptSwitchLoading ? (
-            <div className="flex w-full animate-pulse">
-              {/* Sidebar Skeleton */}
-              <div className="w-1/3 min-w-[120px] bg-white rounded-lg md:mr-8 p-4">
-                <div className="h-6 w-2/3 bg-gray-200 rounded mb-4" />
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {Array.from({ length: 8 }).map((_, idx) => (
-                    <div key={idx} className="h-8 w-full bg-gray-200 rounded" />
-                  ))}
+          {/* Tabs */}
+          <div className="flex border-b border-gray-200 mb-4">
+            <button
+              onClick={() => setActiveTab("review")}
+              className={`px-6 py-3 text-sm font-medium transition-colors ${
+                activeTab === "review"
+                  ? "border-b-2 border-[var(--primary-500)] text-[var(--primary-500)]"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Review
+            </button>
+            <button
+              onClick={() => setActiveTab("comments")}
+              className={`px-6 py-3 text-sm font-medium transition-colors ${
+                activeTab === "comments"
+                  ? "border-b-2 border-[var(--primary-500)] text-[var(--primary-500)]"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Comments
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          {activeTab === "review" ? (
+            attemptSwitchLoading ? (
+              <div className="flex w-full animate-pulse">
+                {/* Sidebar Skeleton */}
+                <div className="w-1/3 min-w-[120px] bg-white rounded-lg md:mr-8 p-4">
+                  <div className="h-6 w-2/3 bg-gray-200 rounded mb-4" />
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {Array.from({ length: 8 }).map((_, idx) => (
+                      <div
+                        key={idx}
+                        className="h-8 w-full bg-gray-200 rounded"
+                      />
+                    ))}
+                  </div>
+                </div>
+                {/* Main Content Skeleton */}
+                <div className="flex-1 bg-white rounded-lg p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="h-4 w-24 bg-gray-200 rounded" />
+                    <div className="h-4 w-16 bg-gray-200 rounded" />
+                  </div>
+                  <div className="h-6 w-2/3 bg-gray-200 rounded mb-6" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-8">
+                    {Array.from({ length: 4 }).map((_, idx) => (
+                      <div
+                        key={idx}
+                        className="h-10 w-full bg-gray-200 rounded"
+                      />
+                    ))}
+                  </div>
+                  <div className="mb-4 bg-gray-100 rounded-lg h-10 w-full" />
+                  <div className="mb-4 p-4 bg-white border rounded-lg">
+                    <div className="h-4 w-24 bg-gray-200 rounded mb-2" />
+                    <div className="h-4 w-2/3 bg-gray-200 rounded" />
+                  </div>
+                  <div className="flex justify-between mt-6">
+                    <div className="h-8 w-24 bg-gray-200 rounded" />
+                    <div className="h-8 w-24 bg-gray-200 rounded" />
+                  </div>
                 </div>
               </div>
-              {/* Main Content Skeleton */}
-              <div className="flex-1 bg-white rounded-lg p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <div className="h-4 w-24 bg-gray-200 rounded" />
-                  <div className="h-4 w-16 bg-gray-200 rounded" />
-                </div>
-                <div className="h-6 w-2/3 bg-gray-200 rounded mb-6" />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-8">
-                  {Array.from({ length: 4 }).map((_, idx) => (
-                    <div
-                      key={idx}
-                      className="h-10 w-full bg-gray-200 rounded"
-                    />
-                  ))}
-                </div>
-                <div className="mb-4 bg-gray-100 rounded-lg h-10 w-full" />
-                <div className="mb-4 p-4 bg-white border rounded-lg">
-                  <div className="h-4 w-24 bg-gray-200 rounded mb-2" />
-                  <div className="h-4 w-2/3 bg-gray-200 rounded" />
-                </div>
-                <div className="flex justify-between mt-6">
-                  <div className="h-8 w-24 bg-gray-200 rounded" />
-                  <div className="h-8 w-24 bg-gray-200 rounded" />
-                </div>
-              </div>
-            </div>
+            ) : (
+              renderReviewContent(reviewUserAnswers)
+            )
           ) : (
-            renderReviewContent(reviewUserAnswers)
+            <Comments
+              courseId={courseId}
+              contentId={contentId}
+              isDarkTheme={false}
+            />
           )}
         </div>
       </div>
