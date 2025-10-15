@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -28,17 +28,19 @@ const colors: { [key: string]: string } = {
   Development: "var(--primary-50)",
 };
 
+type Period = "weekly" | "bimonthly" | "monthly";
+
 const StudentDailyActivityChart = ({
   student_daily_activity = [],
   isLoading,
   error,
+  period,
 }: {
   student_daily_activity?: StudentDailyActivityApi[];
   isLoading: boolean;
   error: Error | null;
+  period: Period;
 }) => {
-  const itemsPerPage = 7;
-  const [page, setPage] = useState(0);
   const chartData = useMemo(() => {
     return (student_daily_activity ?? []).map((item) => {
       const d = new Date(item.date);
@@ -47,6 +49,9 @@ const StudentDailyActivityChart = ({
         month: "short",
       });
       return {
+        // ISO string used for axis scale and tick formatter (e.g., YYYY-MM-DD)
+        dateISO: item.date,
+        // Legacy label (not used for axis now)
         date: dateString,
         Articles: item.article ?? 0,
         Videos: item.video ?? 0,
@@ -61,17 +66,49 @@ const StudentDailyActivityChart = ({
     return ["Articles", "Videos", "Problems", "Quiz", "Subjective", "Development"];
   }, []);
 
-  const totalPages = Math.max(1, Math.ceil(chartData.length / itemsPerPage));
+  // Determine window size based on period
+  const windowSize = useMemo(() => {
+    switch (period) {
+      case "weekly":
+        return 7;
+      case "bimonthly":
+        return 15;
+      case "monthly":
+        return 30;
+      default:
+        return 7;
+    }
+  }, [period]);
 
-  const currentData = chartData.slice(page * itemsPerPage, page * itemsPerPage + itemsPerPage);
+  // Take the most recent N days
+  const currentData = useMemo(() => {
+    const len = chartData.length;
+    const start = Math.max(0, len - windowSize);
+    return chartData.slice(start, len);
+  }, [chartData, windowSize]);
 
-  const handleNext = () => {
-    setPage((prev) => Math.min(prev + 1, totalPages - 1));
-  };
-
-  const handlePrev = () => {
-    setPage((prev) => Math.max(prev - 1, 0));
-  };
+  // Compute limited X-axis ticks (max 7) to avoid clutter
+  const xTickLabels = useMemo(() => {
+    const n = currentData.length;
+    if (n === 0) return [] as string[];
+    if (period === "weekly") {
+      return currentData.map((d) => String(d.dateISO));
+    }
+    const maxTicks = 8;
+    const step = period === "bimonthly" ? 2 : 4;
+    const indices: number[] = [];
+    for (let i = 0; i < n && indices.length < maxTicks; i += step) {
+      indices.push(i);
+    }
+    if (!indices.includes(n - 1)) {
+      if (indices.length >= maxTicks) {
+        indices[indices.length - 1] = n - 1;
+      } else {
+        indices.push(n - 1);
+      }
+    }
+    return indices.map((i) => String(currentData[i].dateISO));
+  }, [currentData, period]);
 
   if (isLoading) {
     return (
@@ -94,13 +131,14 @@ const StudentDailyActivityChart = ({
   return (
     <div className="rounded-xl p-4 shadow-md w-full ring-1 ring-[var(--primary-100)] ring-offset-1 max-w-[700px] max-h-[430px]">
       <h2 className="text-xl font-bold mb-4 text-[var(--primary-500)]">
-        Student Daily Activity →
+        Student Daily Activity
       </h2>
       <div className="mt-8">
-        <ResponsiveContainer height={240}>
+        <ResponsiveContainer height={260}>
           <BarChart
             data={currentData}
-            margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+            // increase bottom margin to give room for two-line date labels
+            margin={{ top: 0, right: 0, left: 0, bottom: 40 }}
             barSize={20}
             barGap={0}
             barCategoryGap="0%"
@@ -112,15 +150,47 @@ const StudentDailyActivityChart = ({
               strokeWidth={1}
             />
             <XAxis
-              dataKey="date"
-              tick={{ fontSize: 12, fill: "#5D77A6" }}
+              dataKey="dateISO"
               tickLine={false}
               axisLine={false}
               interval={0}
+              ticks={xTickLabels}
               minTickGap={12}
-              tickMargin={10}
+              // provide more margin between axis and labels
+              tickMargin={14}
               scale="band"
               padding={{ left: 10, right: 10 }}
+              tick={({ x, y, payload }) => {
+                const dateObj = new Date(payload.value);
+                const day = dateObj.getDate();
+                const month = dateObj.getMonth() + 1;
+                const year = dateObj.getFullYear();
+                // shift labels slightly lower to fit inside chart area
+                return (
+                  <g transform={`translate(${x},${y})`}>
+                    <text
+                      x={0}
+                      y={0}
+                      dy={10}
+                      textAnchor="middle"
+                      fill="#5D77A6"
+                      fontSize={12}
+                    >
+                      {`${day}/${month}`}
+                    </text>
+                    <text
+                      x={0}
+                      y={0}
+                      dy={28}
+                      textAnchor="middle"
+                      fill="#B0B8C1"
+                      fontSize={13}
+                    >
+                      {year}
+                    </text>
+                  </g>
+                );
+              }}
             />
             <YAxis
               tickFormatter={(tick) => `${tick}`}
@@ -155,48 +225,7 @@ const StudentDailyActivityChart = ({
       {chartData.length === 0 && (
         <div className="text-center text-sm text-gray-500 mt-4">No activity data available.</div>
       )}
-      <div className="flex justify-end mt-6 space-x-2">
-        <div className="flex items-center gap-2">
-          <div
-            onClick={handlePrev}
-            className={`w-8 h-8 md:w-10 md:h-10 rounded-full border border-[#D3E3F2] flex items-center justify-center cursor-pointer ${
-              page === 0 ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            title={page === 0 ? "Start of data" : "Previous"}
-          >
-            <svg
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              className="text-[#1A3C57]"
-            >
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </div>
-          <div
-            onClick={handleNext}
-            className={`w-8 h-8 md:w-10 md:h-10 rounded-full border border-[#D3E3F2] flex items-center justify-center cursor-pointer ${
-              page >= totalPages - 1 ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            title={page >= totalPages - 1 ? "End of data" : "Next"}
-          >
-            <svg
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              className="text-[#1A3C57]"
-            >
-              <path d="M9 18l6-6-6-6" />
-            </svg>
-          </div>
-        </div>
-      </div>
+      {/* No arrows; period buttons on Dashboard control the window */}
     </div>
   );
 };
