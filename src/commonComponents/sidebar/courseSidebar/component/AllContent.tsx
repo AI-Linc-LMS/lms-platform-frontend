@@ -24,6 +24,7 @@ export interface ContentItem {
   content_type: ContentType;
   order: number;
   duration_in_minutes: number;
+  marks: number;
   status?: string;
   progress_percentage?: number;
 }
@@ -122,6 +123,7 @@ const AllContent = ({
   selectedContentId,
   activeLabel,
 }: AllContentProps) => {
+  console.log(contents);
   const sortedContents = useMemo(
     () => [...contents].sort((a, b) => a.order - b.order),
     [contents]
@@ -276,7 +278,7 @@ const AllContent = ({
                   {item.title}
                 </h3>
                 <div className="text-xs text-gray-500 flex flex-wrap gap-2 items-center">
-                  <span>⏱ {item.duration_in_minutes} min</span>
+                  <span>{item.marks} Marks</span>
                   <span>|</span>
                   <span>{item.content_type}</span>
                 </div>

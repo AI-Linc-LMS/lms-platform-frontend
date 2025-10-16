@@ -207,6 +207,7 @@ const CourseSidebarContent = ({
     : [];
 
   // Transform submodule data for AllContent
+  console.log(actualData?.data, 20);
   const allContents = actualData?.data
     ? actualData.data.map((content: SubmoduleContent) => ({
         id: content.id,
@@ -214,6 +215,7 @@ const CourseSidebarContent = ({
         content_type: content.content_type,
         order: content.order,
         duration_in_minutes: content.duration_in_minutes,
+        marks: content.marks || 0,
         status: content.status,
         progress_percentage:
           content.content_type === "VideoTutorial"

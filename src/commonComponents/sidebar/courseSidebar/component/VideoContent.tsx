@@ -235,9 +235,7 @@ const VideoContent: React.FC<VideoContentProps> = ({
                   >
                     {video.title}
                   </h3>
-                  <p className="text-xs text-gray-500">
-                    {video.marks} Marks | {video.duration}
-                  </p>
+                  <p className="text-xs text-gray-500">{video.marks} Marks </p>
                 </div>
               </div>
 
