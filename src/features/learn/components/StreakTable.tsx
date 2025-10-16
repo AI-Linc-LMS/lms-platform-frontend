@@ -4,6 +4,7 @@ import {
   getStreakTableData,
   StreakData,
 } from "../../../services/dashboardApis";
+import Streak from "./Streak";
 
 interface StreakTableProps {
   clientId: number;
@@ -86,11 +87,11 @@ const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
     Object.keys(data.streak).length === 0
   ) {
     return (
-      <div className="flex flex-col w-full  transition-all duration-300 px-0 md:p-4 rounded-3xl md:mt-12">
+      <div className="flex flex-col w-full  transition-all duration-300 px-0 md:p-4 rounded-3xl md:mt-6">
+        <Streak showProgress={false} />
         <h2 className="text-xl font-semibold text-gray-800 mb-3">
           Weekly Streaks
         </h2>
-
         {!data || !data.streak || Object.keys(data.streak).length === 0 ? (
           <p className="text-[14px] text-[var(--neutral-400)] mb-8">
             No Streak data available
@@ -101,6 +102,7 @@ const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
           </p>
         )}
         <div className="grid grid-cols-5 gap-4">
+          SS
           {[...Array(30)].map((_, index) => (
             <div
               key={index}
@@ -113,7 +115,8 @@ const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
   }
 
   return (
-    <div className="flex flex-col w-full lg:min-w-[270px] xl:min-w-[350px] transition-all duration-300 px-0 md:p-4 rounded-3xl md:mt-12">
+    <div className="flex flex-col w-full lg:min-w-[270px] xl:min-w-[350px] transition-all duration-300 px-0 md:p-4 rounded-3xl md:mt-6">
+      <Streak showProgress={false} />
       <h2 className="text-xl font-semibold text-gray-800 mb-3">
         Weekly Streaks
       </h2>

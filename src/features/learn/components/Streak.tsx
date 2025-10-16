@@ -7,7 +7,7 @@ import { HoursSpentData } from "../utils/interface.constant.ts";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store.ts";
 
-const Streak = () => {
+const Streak = ({ showProgress = true }: { showProgress?: boolean }) => {
   const [progress, setProgress] = useState<number>(0);
   const [streak, setStreak] = useState(0);
   const { t } = useTranslation();
@@ -30,7 +30,7 @@ const Streak = () => {
       completedHours += single.stats.video.completed;
     }
     if (totalHours == 0) totalHours = 1;
-    setProgress(Number(completedHours / totalHours)*100);
+    setProgress(Number(completedHours / totalHours) * 100);
   }, [courses]);
 
   useEffect(() => {
@@ -64,35 +64,44 @@ const Streak = () => {
           <span role="img" aria-label="fire">
             🔥
           </span>{" "}
-          {t("dashboard.streak.title")}: <span className="font-bold">{t("dashboard.streak.days", { count: streak })}</span>
+          {t("dashboard.streak.title")}:{" "}
+          <span className="font-bold">
+            {t("dashboard.streak.days", { count: streak })}
+          </span>
         </p>
         <p className="text-gray-500 text-sm md:text-base text-wrap">
-          {t("dashboard.streak.overallProgress", { progress: progress.toFixed(2) })}
+          {t("dashboard.streak.overallProgress", {
+            progress: progress.toFixed(2),
+          })}
         </p>
       </div>
-      <div className="relative w-20 h-20">
-        <PieChart width={80} height={80}>
-          <Pie
-            data={pieData}
-            cx="50%"
-            cy="50%"
-            innerRadius={28}
-            outerRadius={38}
-            fill="var(--primary-500)"
-            paddingAngle={0}
-            dataKey="value"
-            startAngle={90}
-            endAngle={-270}
-            stroke="none"
-          >
-            <Cell key={`cell-0`} fill={COLORS[0]} />
-            <Cell key={`cell-1`} fill={COLORS[1]} />
-          </Pie>
-        </PieChart>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <p className="text-xl font-bold text-gray-800">{progress.toFixed(2)}%</p>
+      {showProgress && (
+        <div className="relative w-20 h-20">
+          <PieChart width={80} height={80}>
+            <Pie
+              data={pieData}
+              cx="50%"
+              cy="50%"
+              innerRadius={28}
+              outerRadius={38}
+              fill="var(--primary-500)"
+              paddingAngle={0}
+              dataKey="value"
+              startAngle={90}
+              endAngle={-270}
+              stroke="none"
+            >
+              <Cell key={`cell-0`} fill={COLORS[0]} />
+              <Cell key={`cell-1`} fill={COLORS[1]} />
+            </Pie>
+          </PieChart>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-xl font-bold text-gray-800">
+              {progress.toFixed(2)}%
+            </p>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
