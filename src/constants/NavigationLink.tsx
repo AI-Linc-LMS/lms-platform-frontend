@@ -157,6 +157,19 @@ export const NavigationLinks: SidebarLinkInfo[] = [
     ],
   },
   {
+    id: 3,
+    title: "Attendance",
+    slug: "dashboard",
+    links: [
+      {
+        id: 1,
+        title: "Attendance",
+        href: "/attendance",
+        icon: <JobsIconController />,
+      },
+    ],
+  },
+  {
     id: 6,
     title: "Community",
     slug: "community_forum",
