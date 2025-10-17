@@ -75,6 +75,19 @@ export const getNavigationLinks = (
     ],
   },
   {
+    id: 7,
+    title: t("navigation.attendance"),
+    slug: "attendance",
+    links: [
+      {
+        id: 1,
+        title: t("navigation.attendance"),
+        href: "/attendance",
+        icon: <JobsIconController />,
+      },
+    ],
+  },
+  {
     id: 6,
     title: t("navigation.community"),
     slug: "community_forum",
@@ -159,7 +172,7 @@ export const NavigationLinks: SidebarLinkInfo[] = [
   {
     id: 3,
     title: "Attendance",
-    slug: "dashboard",
+    slug: "attendance",
     links: [
       {
         id: 1,

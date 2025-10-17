@@ -7,6 +7,7 @@ import { GoTasklist } from "react-icons/go";
 import { BsPersonFillAdd } from "react-icons/bs";
 import { RiLiveLine } from "react-icons/ri";
 import { GrWorkshop } from "react-icons/gr";
+import JobsIconController from "../commonComponents/icons/sidebarIcons/JobsIconController";
 
 export const AdminNavigationLinks: SidebarLinkInfo[] = [
   {
@@ -138,6 +139,19 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
         title: "Webinar Management",
         href: "/admin/webinar-management",
         icon: <GrWorkshop />,
+      },
+    ],
+  },
+  {
+    id: 7,
+    title: "Attendance",
+    slug: "attendance",
+    links: [
+      {
+        id: 1,
+        title: "Attendance",
+        href: "/attendance",
+        icon: <JobsIconController />,
       },
     ],
   },
