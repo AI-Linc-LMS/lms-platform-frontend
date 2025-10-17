@@ -4,6 +4,19 @@ import {
   getLiveAttendanceActivities,
   markAttendance,
 } from "../../../services/attendanceApis";
+import AttendanceDialog from "./AttendanceDialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  TablePagination,
+  Button,
+  Chip,
+} from "@mui/material";
 
 interface AttendanceMarkingProps {
   activityId?: number; // Optional for future use
@@ -21,12 +34,14 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
     type: "success" | "error" | "";
     text: string;
   }>({ type: "", text: "" });
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Fetch live attendance activities
   const { data: liveActivities, isLoading: isLoadingActivities } = useQuery({
     queryKey: ["live-attendance"],
     queryFn: () => getLiveAttendanceActivities(clientId),
-    refetchInterval: 60000, // Refetch every 30 seconds to get updated activities
+    refetchInterval: 60000, // Refetch every 60 seconds
   });
 
   // Mark attendance mutation
@@ -77,8 +92,8 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
       return;
     }
 
-    if (code.length !== 4) {
-      setMessage({ type: "error", text: "Code must be 4 digits" });
+    if (code.length !== 6) {
+      setMessage({ type: "error", text: "Code must be 6 digits" });
       return;
     }
 
@@ -89,7 +104,7 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
   };
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, "").slice(0, 4);
+    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
     setCode(value);
   };
 
@@ -98,6 +113,25 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
     setCode("");
     setMessage({ type: "", text: "" });
   };
+
+  const handleClose = () => {
+    setSelectedActivityId(null);
+    setCode("");
+    setMessage({ type: "", text: "" });
+  };
+
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const isPending = markAttendanceMutation.isPending;
 
   if (isLoadingActivities) {
     return (
@@ -112,7 +146,7 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
   );
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-6xl mx-auto p-6">
       {/* Live Attendance Activities */}
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
         <h2 className="text-2xl font-bold text-[var(--primary-500)] mb-6">
@@ -120,41 +154,84 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
         </h2>
 
         {liveActivities && liveActivities.length > 0 ? (
-          <div className="space-y-4">
-            {liveActivities.map((activity) => {
-              const isSelected = selectedActivityId === activity.id;
+          <Paper sx={{ width: "100%", overflow: "hidden" }}>
+            <TableContainer sx={{ maxHeight: 600 }}>
+              <Table stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>
+                      <strong>Name</strong>
+                    </TableCell>
+                    <TableCell>
+                      <strong>Expires At</strong>
+                    </TableCell>
+                    <TableCell>
+                      <strong>Time Remaining</strong>
+                    </TableCell>
+                    <TableCell align="center">
+                      <strong>Action</strong>
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {liveActivities
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((activity) => {
+                      const timeRemaining = activity.time_remaining_minutes;
+                      const isUrgent =
+                        timeRemaining !== undefined && timeRemaining < 5;
 
-              return (
-                <div
-                  key={activity.id}
-                  className={`border-2 rounded-lg p-4 cursor-pointer transition ${
-                    isSelected
-                      ? "border-[var(--primary-500)] bg-blue-50"
-                      : "border-gray-200 hover:border-[var(--primary-300)]"
-                  }`}
-                  onClick={() => handleActivitySelect(activity.id)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg text-gray-900">
-                        {activity.title}
-                      </h3>
-                      {activity.description && (
-                        <p className="text-gray-600 text-sm mt-1">
-                          {activity.description}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end gap-2 ml-4">
-                      <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                        Active
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                      return (
+                        <TableRow key={activity.id} hover>
+                          <TableCell>{activity.name}</TableCell>
+                          <TableCell>
+                            {new Date(activity.expires_at).toLocaleString(
+                              "en-IN",
+                              {
+                                dateStyle: "short",
+                                timeStyle: "short",
+                              }
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {timeRemaining !== undefined ? (
+                              <Chip
+                                label={`${timeRemaining} min${
+                                  timeRemaining !== 1 ? "s" : ""
+                                } left`}
+                                color={isUrgent ? "error" : "success"}
+                                size="small"
+                              />
+                            ) : (
+                              "-"
+                            )}
+                          </TableCell>
+                          <TableCell align="center">
+                            <Button
+                              variant="contained"
+                              color="primary"
+                              size="small"
+                              onClick={() => handleActivitySelect(activity.id)}
+                            >
+                              Mark Attendance
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25]}
+              component="div"
+              count={liveActivities.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+            />
+          </Paper>
         ) : (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📋</div>
@@ -169,91 +246,17 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
         )}
       </div>
 
-      {/* Mark Attendance Form */}
-      {selectedActivity && (
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h3 className="text-xl font-bold text-[var(--primary-500)] mb-4">
-            Mark Attendance for: {selectedActivity.title}
-          </h3>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label
-                htmlFor="attendance-code"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Enter 4-Digit Attendance Code
-              </label>
-              <input
-                id="attendance-code"
-                type="text"
-                value={code}
-                onChange={handleCodeChange}
-                placeholder="0000"
-                maxLength={4}
-                className="w-full px-6 py-4 text-3xl font-bold text-center border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent tracking-widest"
-                disabled={markAttendanceMutation.isPending}
-              />
-            </div>
-
-            {message.text && (
-              <div
-                className={`p-4 rounded-lg ${
-                  message.type === "success"
-                    ? "bg-green-100 text-green-800 border border-green-300"
-                    : "bg-red-100 text-red-800 border border-red-300"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  {message.type === "success" ? (
-                    <svg
-                      className="w-5 h-5"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  ) : (
-                    <svg
-                      className="w-5 h-5"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  )}
-                  <span className="font-medium">{message.text}</span>
-                </div>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={markAttendanceMutation.isPending || code.length !== 4}
-              className="w-full px-6 py-4 bg-[var(--primary-500)] text-white text-lg font-semibold rounded-lg hover:bg-[#1a4a5f] transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              {markAttendanceMutation.isPending
-                ? "Marking Attendance..."
-                : "Mark Attendance"}
-            </button>
-          </form>
-
-          <div className="text-center text-sm text-gray-500 mt-4">
-            <p>
-              💡 The attendance code is valid for 15 minutes from the time it
-              was generated.
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Attendance Dialog */}
+      <AttendanceDialog
+        open={!!selectedActivity}
+        selectedActivity={selectedActivity}
+        code={code}
+        message={message}
+        isPending={isPending}
+        onClose={handleClose}
+        onCodeChange={handleCodeChange}
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 };

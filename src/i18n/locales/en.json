@@ -43,7 +43,8 @@
     "settings": "Settings",
     "admin": "Admin",
     "logout": "Logout",
-    "login": "Login"
+    "login": "Login",
+    "attendance": "Attendance"
   },
   "notifications": {
     "communityLive": {
