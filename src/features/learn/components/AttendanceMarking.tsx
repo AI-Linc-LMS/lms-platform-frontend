@@ -178,8 +178,11 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((activity) => {
                       const timeRemaining = activity.time_remaining_minutes;
+                      const isExpired = timeRemaining === 0;
                       const isUrgent =
-                        timeRemaining !== undefined && timeRemaining < 5;
+                        timeRemaining !== undefined &&
+                        timeRemaining < 5 &&
+                        timeRemaining > 0;
 
                       return (
                         <TableRow key={activity.id} hover>
@@ -196,10 +199,20 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
                           <TableCell>
                             {timeRemaining !== undefined ? (
                               <Chip
-                                label={`${timeRemaining} min${
-                                  timeRemaining !== 1 ? "s" : ""
-                                } left`}
-                                color={isUrgent ? "error" : "success"}
+                                label={
+                                  isExpired
+                                    ? "Expired"
+                                    : `${timeRemaining} min${
+                                        timeRemaining !== 1 ? "s" : ""
+                                      } left`
+                                }
+                                color={
+                                  isExpired
+                                    ? "default"
+                                    : isUrgent
+                                    ? "error"
+                                    : "success"
+                                }
                                 size="small"
                               />
                             ) : (
@@ -212,6 +225,7 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
                               color="primary"
                               size="small"
                               onClick={() => handleActivitySelect(activity.id)}
+                              disabled={isExpired}
                             >
                               Mark Attendance
                             </Button>
