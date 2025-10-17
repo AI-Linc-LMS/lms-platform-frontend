@@ -150,7 +150,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
       {
         id: 1,
         title: "Attendance",
-        href: "/attendance",
+        href: "/admin/attendance",
         icon: <JobsIconController />,
       },
     ],
