@@ -108,11 +108,11 @@ const Dashboard = () => {
       case "total_students":
         return `Total number of students ${suffix}`;
       case "active_students":
-        return `Total number of active students ${suffix}`;
+        return `Number of students logged in the platform in last 15 days ${suffix}`;
       case "time_spent":
         return `Total time spent by students ${suffix}`;
       case "daily_logins":
-        return `Number of student logins today ${suffix}`;
+        return `Average number of students logged in the platform in last 7 days ${suffix}`;
       default:
         return "";
     }
@@ -237,7 +237,22 @@ const Dashboard = () => {
                 </span>
               </div>
               <div className="text-3xl font-bold text-[var(--primary-500)]">
-                {metric.value}
+                {metric.id === "time_spent" ? (
+                  // metric.value has format "<number> <unit>"
+                  (() => {
+                    const parts = String(metric.value).split(" ");
+                    const num = parts[0];
+                    const unit = parts.slice(1).join(" ");
+                    return (
+                      <span>
+                        <span>{num}</span>
+                        {unit && <span className="text-base ml-2">{unit}</span>}
+                      </span>
+                    );
+                  })()
+                ) : (
+                  metric.value
+                )}
               </div>
             </div>
             <div className="bg-[var(--primary-50)] rounded-full p-4 flex items-center justify-center border border-[var(--primary-500)]">

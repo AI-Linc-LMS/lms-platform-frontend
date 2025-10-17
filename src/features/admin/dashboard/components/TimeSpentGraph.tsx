@@ -112,14 +112,14 @@ const TimeSpentGraph = ({
   }
 
   return (
-    <div className="rounded-2xl bg-white p-4 md:p-6 w-full max-w-[600px] max-h-[370px] ring-1 ring-[var(--primary-100)] ring-offset-1">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold mb-4 text-[var(--primary-500)]">
+    <div className="rounded-2xl bg-white p-6 w-full max-w-[700px] h-[430px] ring-1 ring-[var(--primary-100)] ring-offset-1 shadow-md">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-[var(--primary-500)]">
           Total Time Spent by Students
         </h2>
       </div>
 
-      <div className="h-[240px] -ml-4">
+      <div className="h-[260px] -ml-4">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={visibleData}
@@ -146,7 +146,7 @@ const TimeSpentGraph = ({
                       dy={8}
                       textAnchor="middle"
                       fill="#5D77A6"
-                      fontSize={12}
+                      fontSize={10}
                     >
                       {`${day}/${month}`}
                     </text>
@@ -156,7 +156,7 @@ const TimeSpentGraph = ({
                       dy={22}
                       textAnchor="middle"
                       fill="#B0B8C1"
-                      fontSize={13}
+                      fontSize={12}
                     >
                       {year}
                     </text>
