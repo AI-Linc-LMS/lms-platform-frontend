@@ -77,6 +77,12 @@ const CommunityPage = lazy(
   () => import("./features/community/pages/CommunityPage")
 );
 const WebinarManagement = lazy(() => import("./pages/admin/WebinarManagement"));
+const AttendanceManagementPage = lazy(
+  () => import("./features/admin/pages/AttendanceManagementPage")
+);
+const AttendancePage = lazy(
+  () => import("./features/learn/pages/AttendancePage")
+);
 import { PWATestPage } from "./components/PWATestPage";
 import { IOSPWATestPage } from "./components/IOSPWATestPage";
 
@@ -123,6 +129,12 @@ const routes: RouteConfig[] = [
     component: Learn,
     isPrivate: true,
   },
+  {
+    path: "/attendance",
+    component: AttendancePage,
+    isPrivate: true,
+  },
+
   {
     path: "/learn",
     component: Learn,
@@ -222,6 +234,12 @@ const routes: RouteConfig[] = [
   {
     path: "/admin/assesment-results",
     component: AssesmentStudentsResults,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/attendance",
+    component: AttendanceManagementPage,
     isPrivate: true,
     requiredRole: "admin_or_instructor",
   },
