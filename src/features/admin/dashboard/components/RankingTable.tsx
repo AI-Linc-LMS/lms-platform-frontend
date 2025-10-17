@@ -14,15 +14,15 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
 }) => {
   if (isLoading || error || !leaderboard || leaderboard.length === 0) {
     return (
-      <div className="flex flex-col transition-all duration-300 p-4 rounded-3xl lg:min-w-[270px] xl:min-w-[350px]">
-        <h2 className="text-xl font-semibold text-[var(--neutral-500)] mb-3">
+      <div className="flex flex-col transition-all duration-300 p-6 rounded-2xl shadow-md lg:min-w-[320px] xl:min-w-[400px] h-[430px] bg-white ring-1 ring-[var(--primary-100)] ring-offset-1">
+        <h2 className="text-xl font-bold text-[var(--primary-500)] mb-6">
           Student Ranking
         </h2>
-        <p className="text-[14px] text-[var(--neutral-400)] mb-2">
+        <p className="text-sm text-gray-500 mb-4">
           No leaderboard available
         </p>
-        <div className="bg-[#DEE2E6] rounded-xl px-4 py-5 flex items-center gap-2 max-w-md mt-2">
-          <div className="mt-0.5 text-gray-500">
+        <div className="bg-[#F0F4FF] rounded-xl px-5 py-6 flex items-start gap-3 mt-2 border border-[var(--primary-100)]">
+          <div className="mt-0.5 text-[var(--primary-500)]">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="w-5 h-5"
@@ -38,8 +38,8 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
               />
             </svg>
           </div>
-          <p className="text-[13px] text-[var(--neutral-300)]">
-            As you complete modules you will move top of the leaderboard and
+          <p className="text-[13px] text-gray-600 leading-relaxed">
+            As you complete modules you will move to the top of the leaderboard and
             earn exciting rewards.
           </p>
         </div>
@@ -53,52 +53,65 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
     .slice(0, 10);
 
   return (
-    <div className="flex flex-col transition-all duration-300 px-4">
-      <h2 className="text-xl font-semibold text-[var(--primary-500)] mb-3">
+    <div className="flex flex-col transition-all duration-300 p-6 rounded-2xl shadow-md bg-white ring-1 ring-[var(--primary-100)] ring-offset-1 lg:min-w-[320px] xl:min-w-[400px] h-[430px]">
+      <h2 className="text-xl font-bold text-[var(--primary-500)] mb-6">
         Student Ranking
       </h2>
 
-      <div className="flex w-full border border-gray-300 rounded-xl overflow-hidden min-w-[300px]">
-        <table className="text-center border-collapse min-h-[450px] w-full">
-          <thead className="bg-gray-100">
+      <div className="flex-1 overflow-auto rounded-xl border border-gray-200 shadow-sm">
+        <table className="text-center border-collapse w-full">
+          <thead className="bg-gradient-to-r from-[var(--primary-50)] to-[#E6F0FF] sticky top-0 z-10">
             <tr>
-              <th className="border-b border-r border-gray-300 bg-[var(--primary-50)]  h-[50px] text-xs text-[var(--font-dark)]">
-                Standing
+              <th className="border-b-2 border-r border-[var(--primary-200)] h-[48px] text-xs font-semibold text-[var(--primary-700)] uppercase tracking-wide">
+                Rank
               </th>
-              <th className="border-b border-r border-gray-300 bg-[var(--primary-50)] h-[50px] text-xs text-[var(--font-dark)]">
+              <th className="border-b-2 border-r border-[var(--primary-200)] h-[48px] text-xs font-semibold text-[var(--primary-700)] uppercase tracking-wide">
                 Name
               </th>
-              <th className="border-b border-r border-gray-300 bg-[var(--primary-50)] h-[50px] text-xs text-[var(--font-dark)]">
+              <th className="border-b-2 border-r border-[var(--primary-200)] h-[48px] text-xs font-semibold text-[var(--primary-700)] uppercase tracking-wide">
                 Course
               </th>
-              <th className="border-b border-gray-300 bg-[var(--primary-50)] h-[50px] text-xs text-[var(--font-dark)]">
+              <th className="border-b-2 border-[var(--primary-200)] h-[48px] text-xs font-semibold text-[var(--primary-700)] uppercase tracking-wide">
                 Marks
               </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white">
             {safeRows.map((item: LeaderboardEntry, index: number) => {
               const standing = typeof item?.rank === "number" ? item.rank : index + 1;
               const name = item?.name || "—";
               const course = item?.course || "—";
               const marks = typeof item?.marks === "number" ? item.marks : 0;
-              const displayCourse = course.length > 13 ? `${course.substring(0, 13)}...` : course;
+              const displayCourse = course.length > 18 ? `${course.substring(0, 18)}...` : course;
+              const isTopThree = standing <= 3;
+              
               return (
                 <tr
                   key={index}
-                  className={`group relative transition-all duration-300 hover:bg-[#E9F7FA]`}
+                  className={`group relative transition-all duration-200 hover:bg-[#F0F8FF] ${
+                    isTopThree ? 'bg-[#FFFBF0]' : ''
+                  }`}
                 >
-                  <td className="border-b border-r border-gray-300  h-[50px] text-[12px]">
-                    <span>{standing}</span>
+                  <td className="border-b border-r border-gray-200 h-[52px] text-sm font-medium">
+                    <div className="flex items-center justify-center gap-1">
+                      {isTopThree && (
+                        <span className="text-lg">
+                          {standing === 1 ? '🥇' : standing === 2 ? '🥈' : '🥉'}
+                        </span>
+                      )}
+                      <span className={isTopThree ? 'text-[var(--primary-600)] font-bold' : 'text-gray-700'}>
+                        {standing}
+                      </span>
+                    </div>
                   </td>
-                  <td className="border-b border-r border-gray-300  h-[50px] text-[12px]">
-                    <span>{name}</span>
+                  <td className="border-b border-r border-gray-200 h-[52px] text-sm px-2">
+                    <span className="font-medium text-gray-800">{name}</span>
                   </td>
-                  <td className="border-b border-r border-gray-300  h-[50px] text-[12px] p-1" title={course}>
+                  <td className="border-b border-r border-gray-200 h-[52px] text-xs px-2 text-gray-600" title={course}>
                     <span>{displayCourse}</span>
                   </td>
-                  <td className="border-b border-gray-300  h-[50px] text-[12px]">
-                    <span className="">{marks}</span>
+                  <td className="border-b border-gray-200 h-[52px] text-sm">
+                    <span className="font-semibold text-[var(--primary-600)]">{marks}</span>
                   </td>
                 </tr>
               );
@@ -108,11 +121,11 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
       </div>
 
       {/* Scoring breakdown info */}
-      <div className="bg-[#DEE2E6] rounded-xl px-4 py-5 flex items-start gap-2 max-w-xl my-4">
-        <div className="mt-0.5 text-gray-500">
+      <div className="bg-[#F0F4FF] rounded-xl px-4 py-4 flex items-start gap-2 mt-4 border border-[var(--primary-100)]">
+        <div className="mt-0.5 text-[var(--primary-500)] flex-shrink-0">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="w-5 h-5"
+            className="w-4 h-4"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -125,16 +138,15 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
             />
           </svg>
         </div>
-        <div className="text-[13px] text-[var(--neutral-300)]">
-          <p className="mb-1 font-medium text-gray-600">How marks are calculated</p>
-          <ul className="list-disc ml-5 space-y-0.5 text-gray-600">
-            <li>VideoTutorial: 10 points</li>
-            <li>Quiz: 20 points</li>
-            <li>Assignment: 30 points</li>
-            <li>Article: 5 points</li>
-            <li>CodingProblem: 50 points</li>
-          </ul>
-          <p className="mt-2 text-gray-500">Top 10 students are shown based on total marks earned.</p>
+        <div className="text-[11px] text-gray-700">
+          <p className="font-semibold text-gray-800 mb-1">Points System</p>
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+            <span>Video: 10</span>
+            <span>Quiz: 20</span>
+            <span>Assignment: 30</span>
+            <span>Article: 5</span>
+            <span>Coding: 50</span>
+          </div>
         </div>
       </div>
     </div>
