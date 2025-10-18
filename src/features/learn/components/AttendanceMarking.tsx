@@ -16,7 +16,12 @@ import {
   TablePagination,
   Button,
   Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 interface AttendanceMarkingProps {
   activityId?: number; // Optional for future use
@@ -36,6 +41,7 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
   }>({ type: "", text: "" });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   // Fetch live attendance activities
   const { data: liveActivities, isLoading: isLoadingActivities } = useQuery({
@@ -57,6 +63,7 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
       setMessage({ type: "success", text: response.message });
       setCode("");
       setSelectedActivityId(null);
+      setShowSuccessDialog(true);
       queryClient.invalidateQueries({
         queryKey: ["live-attendance"],
       });
@@ -92,8 +99,8 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
       return;
     }
 
-    if (code.length !== 6) {
-      setMessage({ type: "error", text: "Code must be 6 digits" });
+    if (code.length !== 4) {
+      setMessage({ type: "error", text: "Code must be 4 digits" });
       return;
     }
 
@@ -104,7 +111,7 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
   };
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+    const value = e.target.value.replace(/\D/g, "").slice(0, 4);
     setCode(value);
   };
 
@@ -146,10 +153,10 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
   );
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="max-w-6xl mx-auto p-4">
       {/* Live Attendance Activities */}
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-        <h2 className="text-2xl font-bold text-[var(--primary-500)] mb-6">
+      <div className="bg-white rounded-lg shadow-lg p-4 mb-4">
+        <h2 className="text-2xl font-bold text-[var(--primary-500)] mb-4">
           Live Attendance Sessions
         </h2>
 
@@ -183,6 +190,7 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
                         timeRemaining !== undefined &&
                         timeRemaining < 5 &&
                         timeRemaining > 0;
+                      const hasMarked = activity.has_marked_attendance;
 
                       return (
                         <TableRow key={activity.id} hover>
@@ -220,15 +228,26 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
                             )}
                           </TableCell>
                           <TableCell align="center">
-                            <Button
-                              variant="contained"
-                              color="primary"
-                              size="small"
-                              onClick={() => handleActivitySelect(activity.id)}
-                              disabled={isExpired}
-                            >
-                              Mark Attendance
-                            </Button>
+                            {hasMarked ? (
+                              <Chip
+                                icon={<CheckCircleIcon />}
+                                label="Marked Attendance"
+                                color="success"
+                                size="small"
+                              />
+                            ) : (
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                size="small"
+                                onClick={() =>
+                                  handleActivitySelect(activity.id)
+                                }
+                                disabled={isExpired}
+                              >
+                                Mark Attendance
+                              </Button>
+                            )}
                           </TableCell>
                         </TableRow>
                       );
@@ -271,6 +290,38 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
         onCodeChange={handleCodeChange}
         onSubmit={handleSubmit}
       />
+
+      {/* Success Dialog */}
+      <Dialog
+        open={showSuccessDialog}
+        onClose={() => setShowSuccessDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle className="text-center">
+          <div className="flex flex-col items-center gap-2">
+            <CheckCircleIcon sx={{ fontSize: 60, color: "success.main" }} />
+            <span className="text-2xl font-bold text-green-600">Success!</span>
+          </div>
+        </DialogTitle>
+        <DialogContent>
+          <div className="text-center py-4">
+            <p className="text-lg text-gray-700">
+              Your attendance has been marked successfully!
+            </p>
+          </div>
+        </DialogContent>
+        <DialogActions className="justify-center pb-4">
+          <Button
+            onClick={() => setShowSuccessDialog(false)}
+            variant="contained"
+            color="success"
+            size="large"
+          >
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 };
