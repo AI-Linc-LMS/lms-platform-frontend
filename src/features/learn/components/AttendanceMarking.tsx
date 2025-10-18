@@ -74,9 +74,10 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
       }, 5000);
     },
     onError: (error: any) => {
+      console.log(error);
       setMessage({
         type: "error",
-        text: error.response?.data?.message || "Invalid or expired code",
+        text: error.response?.data?.error || "Invalid or expired code",
       });
 
       // Clear error message after 5 seconds
@@ -99,8 +100,8 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
       return;
     }
 
-    if (code.length !== 4) {
-      setMessage({ type: "error", text: "Code must be 4 digits" });
+    if (code.length !== 6) {
+      setMessage({ type: "error", text: "Code must be 6 digits" });
       return;
     }
 
@@ -111,7 +112,7 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
   };
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, "").slice(0, 4);
+    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
     setCode(value);
   };
 
