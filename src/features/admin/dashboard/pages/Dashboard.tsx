@@ -22,6 +22,7 @@ export interface Dashboard {
     unit: string;
   };
   daily_login_count: number;
+  daily_login_data: Array<{ date: string; login_count: number }>;
   student_daily_activity: StudentDailyActivityApi[];
   leaderboard: LeaderboardEntry[];
   daily_time_spend: DailyTimeSpentAdmin[];
@@ -48,8 +49,8 @@ const Dashboard = () => {
     isLoading,
     error,
   } = useQuery<Dashboard>({
-    queryKey: ["coreAdminDashboard", clientId],
-    queryFn: () => coreAdminDashboard(clientId),
+    queryKey: ["coreAdminDashboard", clientId, selectedCourseId],
+    queryFn: () => coreAdminDashboard(clientId, selectedCourseId === "" ? undefined : selectedCourseId),
     retry: false,
   });
 
@@ -70,6 +71,47 @@ const Dashboard = () => {
     return found?.title || "selected course";
   }, [selectedCourseId, courseOptions]);
 
+  // Calculate window size based on period
+  const windowSize = useMemo(() => {
+    switch (period) {
+      case "weekly":
+        return 7;
+      case "bimonthly":
+        return 15;
+      case "monthly":
+        return 30;
+      default:
+        return 7;
+    }
+  }, [period]);
+
+  // Calculate total time spent based on period window
+  const calculatedTimeSpent = useMemo(() => {
+    if (!dashboardData?.daily_time_spend) return { value: 0, unit: "hours" };
+    
+    const data = dashboardData.daily_time_spend;
+    const len = data.length;
+    const start = Math.max(0, len - windowSize);
+    const windowData = data.slice(start, len);
+    
+    const totalHours = windowData.reduce((sum, item) => sum + (item.time_spent || 0), 0);
+    return { value: parseFloat(totalHours.toFixed(2)), unit: "hours" };
+  }, [dashboardData?.daily_time_spend, windowSize]);
+
+  // Calculate average daily login count based on period window
+  const calculatedDailyLogin = useMemo(() => {
+    if (!dashboardData?.daily_login_data) return 0;
+    
+    const data = dashboardData.daily_login_data;
+    const len = data.length;
+    const start = Math.max(0, len - windowSize);
+    const windowData = data.slice(start, len);
+    
+    const totalLogins = windowData.reduce((sum, item) => sum + (item.login_count || 0), 0);
+    const average = windowData.length > 0 ? totalLogins / windowData.length : 0;
+    return parseFloat(average.toFixed(2));
+  }, [dashboardData?.daily_login_data, windowSize]);
+
   const navigate = useNavigate();
   const metrics = dashboardData
     ? [
@@ -88,13 +130,13 @@ const Dashboard = () => {
         {
           id: "time_spent" as const,
           label: "Time Spent by Student",
-          value: `${dashboardData.time_spent_by_students.value} ${dashboardData.time_spent_by_students.unit}`,
+          value: `${calculatedTimeSpent.value} ${calculatedTimeSpent.unit}`,
           Icon: timeSpent,
         },
         {
           id: "daily_logins" as const,
           label: "Student Daily Logins",
-          value: dashboardData.daily_login_count,
+          value: calculatedDailyLogin,
           Icon: dailylogins,
         },
       ]
@@ -108,11 +150,11 @@ const Dashboard = () => {
       case "total_students":
         return `Total number of students ${suffix}`;
       case "active_students":
-        return `Total number of active students ${suffix}`;
+        return `Number of students logged in the platform in last 15 days ${suffix}`;
       case "time_spent":
         return `Total time spent by students ${suffix}`;
       case "daily_logins":
-        return `Number of student logins today ${suffix}`;
+        return `Average number of students logged in the platform in last 7 days ${suffix}`;
       default:
         return "";
     }
@@ -237,7 +279,22 @@ const Dashboard = () => {
                 </span>
               </div>
               <div className="text-3xl font-bold text-[var(--primary-500)]">
-                {metric.value}
+                {metric.id === "time_spent" ? (
+                  // metric.value has format "<number> <unit>"
+                  (() => {
+                    const parts = String(metric.value).split(" ");
+                    const num = parts[0];
+                    const unit = parts.slice(1).join(" ");
+                    return (
+                      <span>
+                        <span>{num}</span>
+                        {unit && <span className="text-base ml-2">{unit}</span>}
+                      </span>
+                    );
+                  })()
+                ) : (
+                  metric.value
+                )}
               </div>
             </div>
             <div className="bg-[var(--primary-50)] rounded-full p-4 flex items-center justify-center border border-[var(--primary-500)]">
