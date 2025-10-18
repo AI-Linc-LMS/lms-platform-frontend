@@ -18,9 +18,7 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
         <h2 className="text-xl font-bold text-[var(--primary-500)] mb-6">
           Student Ranking
         </h2>
-        <p className="text-sm text-gray-500 mb-4">
-          No leaderboard available
-        </p>
+        <p className="text-sm text-gray-500 mb-4">No leaderboard available</p>
         <div className="bg-[#F0F4FF] rounded-xl px-5 py-6 flex items-start gap-3 mt-2 border border-[var(--primary-100)]">
           <div className="mt-0.5 text-[var(--primary-500)]">
             <svg
@@ -38,9 +36,9 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
               />
             </svg>
           </div>
-          <p className="text-[13px] text-gray-600 leading-relaxed">
-            As you complete modules you will move to the top of the leaderboard and
-            earn exciting rewards.
+          <p className="text-[13px] text-[var(--neutral-300)] leading-relaxed">
+            As you complete modules you will move to the top of the leaderboard
+            and earn exciting rewards.
           </p>
         </div>
       </div>
@@ -49,7 +47,10 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
 
   // Defensive rendering: ensure array, limit to top 10, and provide safe fallbacks
   const safeRows = (Array.isArray(leaderboard) ? leaderboard : [])
-    .filter((row) => row && (typeof row.marks === "number" || typeof row.rank === "number"))
+    .filter(
+      (row) =>
+        row && (typeof row.marks === "number" || typeof row.rank === "number")
+    )
     .slice(0, 10);
 
   return (
@@ -78,18 +79,20 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
           </thead>
           <tbody className="bg-[var(--card-bg)]">
             {safeRows.map((item: LeaderboardEntry, index: number) => {
-              const standing = typeof item?.rank === "number" ? item.rank : index + 1;
+              const standing =
+                typeof item?.rank === "number" ? item.rank : index + 1;
               const name = item?.name || "—";
               const course = item?.course || "—";
               const marks = typeof item?.marks === "number" ? item.marks : 0;
-              const displayCourse = course.length > 18 ? `${course.substring(0, 18)}...` : course;
+              const displayCourse =
+                course.length > 18 ? `${course.substring(0, 18)}...` : course;
               const isTopThree = standing <= 3;
-              
+
               return (
                 <tr
                   key={index}
                   className={`group relative transition-all duration-200 hover:bg-[#F0F8FF] ${
-                    isTopThree ? 'bg-[#FFFBF0]' : ''
+                    isTopThree ? "bg-[#FFFBF0]" : ""
                   }`}
                 >
                   <td className="border-b border-r border-gray-200 h-[52px] text-sm font-medium">
@@ -97,13 +100,25 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
                       {isTopThree && (
                         <span className="text-lg inline-flex items-center">
                           <img
-                            src={standing === 1 ? '/gold-medal.png' : standing === 2 ? '/silver-medal.png' : '/bronze-medal.png'}
+                            src={
+                              standing === 1
+                                ? "/gold-medal.png"
+                                : standing === 2
+                                ? "/silver-medal.png"
+                                : "/bronze-medal.png"
+                            }
                             alt={`medal-${standing}`}
                             className="w-5 h-5 object-contain mr-0.5"
                           />
                         </span>
                       )}
-                      <span className={isTopThree ? 'text-[var(--primary-600)] font-bold' : 'text-gray-700'}>
+                      <span
+                        className={
+                          isTopThree
+                            ? "text-[var(--primary-600)] font-bold"
+                            : "text-gray-700"
+                        }
+                      >
                         {standing}
                       </span>
                     </div>
@@ -111,11 +126,16 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
                   <td className="border-b border-r border-gray-200 h-[52px] text-sm px-2">
                     <span className="font-medium text-gray-800">{name}</span>
                   </td>
-                  <td className="border-b border-r border-gray-200 h-[52px] text-xs px-2 text-gray-600" title={course}>
+                  <td
+                    className="border-b border-r border-gray-200 h-[52px] text-xs px-2 text-gray-600"
+                    title={course}
+                  >
                     <span>{displayCourse}</span>
                   </td>
                   <td className="border-b border-gray-200 h-[52px] text-sm">
-                    <span className="font-semibold text-[var(--primary-600)]">{marks}</span>
+                    <span className="font-semibold text-[var(--primary-600)]">
+                      {marks}
+                    </span>
                   </td>
                 </tr>
               );
