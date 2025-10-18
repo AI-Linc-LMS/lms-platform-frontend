@@ -61,17 +61,9 @@ const AttendanceManagement: React.FC<AttendanceManagementProps> = () => {
         .join("");
 
       // Get current time in 12-hour format
-      const now = new Date();
-      const hours = now.getHours();
-      const minutes = now.getMinutes();
-      const ampm = hours >= 12 ? "PM" : "AM";
-      const hour12 = hours % 12 || 12;
-      const timeStr = `${hour12}${
-        minutes > 0 ? `:${minutes.toString().padStart(2, "0")}` : ""
-      }${ampm}`;
 
       // Generate name: e.g., "KU-Classroom-10AM" or "KU-Classroom-10:30AM"
-      const generatedName = `${initials}-Classroom-${timeStr}`;
+      const generatedName = `${initials}-Classroom`;
       setName(generatedName);
     }
   }, [clientInfo, showCreateModal]);
