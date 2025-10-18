@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -21,38 +21,66 @@ const ErrorDashboard = ({ error }: { error: Error | null }) => (
   </div>
 );
 
+type Period = "weekly" | "bimonthly" | "monthly";
+
 interface TimeSpentProps {
   daily_time_spend: DailyTimeSpentAdmin[];
   isLoading: boolean;
   error: Error | null;
+  period: Period;
 }
 
 const TimeSpentGraph = ({
   daily_time_spend,
   isLoading,
   error,
+  period,
 }: TimeSpentProps) => {
-  // State to track the start index of visible data window
-  const [startIndex, setStartIndex] = useState(0);
-  const windowSize = 6;
+  // Determine window size by selected period
+  const windowSize = useMemo(() => {
+    switch (period) {
+      case "weekly":
+        return 7;
+      case "bimonthly":
+        return 15; // ~15 days
+      case "monthly":
+        return 30; // up to 30 days if available
+      default:
+        return 7;
+    }
+  }, [period]);
 
-  // Clamp startIndex so that window stays within data range
-  const maxStartIndex = Math.max(0, daily_time_spend.length - windowSize);
-
-  // Get the visible slice of data for current window
+  // Show the most recent N days based on period
   const visibleData = useMemo(() => {
-    return daily_time_spend.slice(startIndex, startIndex + windowSize);
-  }, [startIndex, daily_time_spend]);
+    if (!Array.isArray(daily_time_spend)) return [];
+    const len = daily_time_spend.length;
+    const start = Math.max(0, len - windowSize);
+    return daily_time_spend.slice(start, len);
+  }, [daily_time_spend, windowSize]);
 
-  // Handle arrow click to scroll right (forward)
-  const handleNext = () => {
-    setStartIndex((prev) => Math.min(prev + 1, maxStartIndex));
-  };
-
-  // Handle arrow click to scroll left (backward)
-  const handlePrev = () => {
-    setStartIndex((prev) => Math.max(prev - 1, 0));
-  };
+  // Compute up to 7 X-axis tick dates based on period to avoid clutter
+  const xTickDates = useMemo(() => {
+    const n = visibleData.length;
+    if (n === 0) return [] as string[];
+    if (period === "weekly") {
+      return visibleData.map((d) => String(d.date));
+    }
+    const maxTicks = 8;
+  const step = period === "bimonthly" ? 2 : 4; // 2 for ~15 days, 4 for ~30 days
+    const indices: number[] = [];
+    for (let i = 0; i < n && indices.length < maxTicks; i += step) {
+      indices.push(i);
+    }
+    // Ensure last day is included for better context
+    if (!indices.includes(n - 1)) {
+      if (indices.length >= maxTicks) {
+        indices[indices.length - 1] = n - 1;
+      } else {
+        indices.push(n - 1);
+      }
+    }
+    return indices.map((i) => String(visibleData[i].date));
+  }, [visibleData, period]);
 
   const maxTimeSpent = Math.max(...visibleData.map((d) => d.time_spent ?? 0));
   const step = maxTimeSpent / 4;
@@ -73,7 +101,7 @@ const TimeSpentGraph = ({
   // Avoid NaN step
   const safeStep = isFinite(step) && step > 0 ? step : 1;
   const ticks = generateTicks(maxTimeSpent, safeStep);
-  console.log(ticks);
+  // console.log(ticks);
 
   if (isLoading) {
     return <div> Loading... </div>;
@@ -84,54 +112,14 @@ const TimeSpentGraph = ({
   }
 
   return (
-    <div className="rounded-2xl bg-white p-4 md:p-6 w-full max-w-[600px] max-h-[370px] ring-1 ring-[var(--primary-100)] ring-offset-1">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold mb-4 text-[var(--primary-500)]">
-          Total Time Spent by Students →
+    <div className="rounded-2xl bg-white p-6 w-full max-w-[700px] h-[430px] ring-1 ring-[var(--primary-100)] ring-offset-1 shadow-md">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-[var(--primary-500)]">
+          Total Time Spent by Students
         </h2>
-        <div className="flex items-center gap-2">
-          <div
-            onClick={handlePrev}
-            className={`w-8 h-8 md:w-10 md:h-10 rounded-full border border-[#D3E3F2] flex items-center justify-center cursor-pointer ${
-              startIndex >= maxStartIndex ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            title={startIndex >= maxStartIndex ? "End of data" : "Next 10 days"}
-          >
-            <svg
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              className="text-[#1A3C57]"
-            >
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </div>
-          <div
-            onClick={handleNext}
-            className={`w-8 h-8 md:w-10 md:h-10 rounded-full border border-[#D3E3F2] flex items-center justify-center cursor-pointer ${
-              startIndex >= maxStartIndex ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            title={startIndex >= maxStartIndex ? "End of data" : "Next 10 days"}
-          >
-            <svg
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              className="text-[#1A3C57]"
-            >
-              <path d="M9 18l6-6-6-6" />
-            </svg>
-          </div>
-        </div>
       </div>
 
-      <div className="h-[240px] -ml-4">
+      <div className="h-[260px] -ml-4">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={visibleData}
@@ -142,13 +130,14 @@ const TimeSpentGraph = ({
               tickLine={false}
               axisLine={false}
               interval={0}
+              ticks={xTickDates}
               padding={{ left: 10, right: 10 }}
               tick={({ x, y, payload }) => {
                 // Expecting payload.value to be a date string (e.g., '2023-10-03')
                 const dateObj = new Date(payload.value);
                 const day = dateObj.getDate();
                 const month = dateObj.getMonth() + 1;
-                const year = dateObj.getFullYear();
+                const dayName = dateObj.toLocaleDateString("en-US", { weekday: "short" });
                 return (
                   <g transform={`translate(${x},${y})`}>
                     <text
@@ -157,7 +146,7 @@ const TimeSpentGraph = ({
                       dy={8}
                       textAnchor="middle"
                       fill="#5D77A6"
-                      fontSize={12}
+                      fontSize={10}
                     >
                       {`${day}/${month}`}
                     </text>
@@ -167,9 +156,9 @@ const TimeSpentGraph = ({
                       dy={22}
                       textAnchor="middle"
                       fill="#B0B8C1"
-                      fontSize={13}
+                      fontSize={11}
                     >
-                      {year}
+                      {dayName}
                     </text>
                   </g>
                 );
@@ -193,9 +182,9 @@ const TimeSpentGraph = ({
               }}
               formatter={(value) => [`${value} hr`, "Time Spent"]}
             />
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             <Customized
-              component={React.memo(CustomHorizontalGrid) as React.FC<any>}
+              // Recharts passes a large props object; we accept unknown here
+              component={React.memo(CustomHorizontalGrid) as React.FC<unknown>}
             />
 
             <Line
@@ -233,14 +222,17 @@ const CustomHorizontalGrid = ({
   xAxisMap,
   yAxisMap,
 }: {
-  xAxisMap: Record<string, any>;
-  yAxisMap: Record<string, any>;
+  xAxisMap: Record<string, unknown>;
+  yAxisMap: Record<string, unknown>;
 }) => {
-  const x0 = xAxisMap[Object.keys(xAxisMap)[0]]?.x ?? 0;
-  const width = xAxisMap[Object.keys(xAxisMap)[0]]?.width ?? 0;
-  const yAxis = yAxisMap[Object.keys(yAxisMap)[0]];
-  const yScale = yAxis?.scale;
-  const ticks = yAxis?.ticks ?? [];
+  const xKey = Object.keys(xAxisMap)[0];
+  const xAxis = (xAxisMap as Record<string, { x?: number; width?: number }>)[xKey] || {};
+  const x0 = xAxis.x ?? 0;
+  const width = xAxis.width ?? 0;
+  const yKey = Object.keys(yAxisMap)[0];
+  const yAxis = (yAxisMap as Record<string, { scale?: (v: number) => number; ticks?: number[] }>)[yKey] || {};
+  const yScale = yAxis.scale;
+  const ticks = yAxis.ticks ?? [];
 
   return (
     <>

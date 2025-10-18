@@ -182,7 +182,7 @@ const CourseTopicDetailPage: React.FC = () => {
     staleTime: 0,
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes but always refetch
   });
-
+  console.log(submoduleData, 123);
   // Calculate content availability
   const contentAvailability = getContentAvailability(submoduleData);
 
@@ -275,7 +275,7 @@ const CourseTopicDetailPage: React.FC = () => {
         setSelectedProjectId(firstDevelopment.id.toString());
       }
     }
-  }, [submoduleData, activeSidebarLabel]);
+  }, [submoduleData]); // Removed activeSidebarLabel dependency to prevent resetting index when switching tabs
 
   // Props objects for each content type
   const videoProps = {
@@ -524,16 +524,10 @@ const CourseTopicDetailPage: React.FC = () => {
       | "Article"
       | "Quiz"
   ) => {
-    // For "All" tab - only close sidebar on second click of the same content
-    // For other tabs - close sidebar on first click
-    if (activeSidebarLabel === "All") {
-      // Close sidebar on second click in "All" tab
-      if (selectedContentId === contentId) {
-        setIsSidebarContentOpen(false);
-      }
-    } else {
-      // Close sidebar on first click for all other tabs
+    // Close sidebar on second click of the same content (for all tabs)
+    if (selectedContentId === contentId) {
       setIsSidebarContentOpen(false);
+      return; // Don't proceed if it's the same content
     }
 
     // Clear cache for the previous content to prevent stale data
@@ -566,10 +560,13 @@ const CourseTopicDetailPage: React.FC = () => {
       }
     }
 
+    const foundIndex =
+      submoduleData?.data?.findIndex((content) => content.id === contentId) ??
+      0;
+
+    // Update states immediately
     setSelectedContentId(contentId);
-    setCurrentContentIndex(
-      submoduleData?.data?.findIndex((content) => content.id === contentId) ?? 0
-    );
+    setCurrentContentIndex(foundIndex);
 
     // Update the selected ID based on the content type without changing activeSidebarLabel
     switch (contentType) {
@@ -775,9 +772,6 @@ const CourseTopicDetailPage: React.FC = () => {
 
   // Find the current content item
   const currentContent = submoduleData.data[currentContentIndex];
-  //console.log("Current Content ID:", currentContent?.id);
-  //console.log("Current Content Type:", currentContent?.content_type);
-  //console.log("Active Sidebar Label:", activeSidebarLabel);
 
   return (
     <div
@@ -896,12 +890,17 @@ const CourseTopicDetailPage: React.FC = () => {
 
           {/* Content display based on active tab */}
           <div
-            className={`mb-20 md:mb-0 ${!isSidebarContentOpen ? "ml-12" : ""}`}
+            key={`content-${currentContent?.id}-${currentContent?.content_type}`}
+            className={`mb-20 md:mb-0 ${
+              !isSidebarContentOpen ? "ml-12" : ""
+            } animate-fadeIn`}
           >
             {currentContent?.content_type === "VideoTutorial" && (
               <VideoCard
                 key={`video-${submoduleId}-${currentContent.id}`}
-                currentWeek={{ title: `Week ${submoduleData?.weekNo || 1}` }}
+                currentWeek={{
+                  title: `Week ${submoduleData?.weekNo || 1}`,
+                }}
                 currentTopic={{ title: currentContent.title }}
                 contentId={currentContent.id}
                 courseId={parseInt(courseId || "0")}

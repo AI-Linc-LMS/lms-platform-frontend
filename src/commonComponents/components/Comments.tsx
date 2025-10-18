@@ -77,7 +77,9 @@ const Comments: React.FC<CommentsProps> = ({
             disabled={!newComment.trim() || createCommentMutation.isPending}
             className="px-4 py-2 bg-[var(--primary-500)] text-[var(--font-light)] rounded-lg hover:bg-[#1e4a61] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {createCommentMutation.isPending ? t("community.commentForm.posting") : t("community.commentForm.post")}
+            {createCommentMutation.isPending
+              ? t("community.commentForm.posting")
+              : t("community.commentForm.post")}
           </button>
         </div>
       </form>
@@ -101,7 +103,7 @@ const Comments: React.FC<CommentsProps> = ({
         <div className="text-center py-8 text-gray-500">
           <p>{t("community.noComments.title")}</p>
         </div>
-      ) : (
+      ) : Array.isArray(commentsData) && commentsData.length > 0 ? (
         <div className="space-y-4 max-h-140 overflow-y-auto pr-2">
           {[...commentsData]
             .sort(
@@ -242,6 +244,10 @@ const Comments: React.FC<CommentsProps> = ({
               </button>
             </div>
           )}
+        </div>
+      ) : (
+        <div className="text-center py-8 text-gray-500">
+          <p>No comments available</p>
         </div>
       )}
     </div>

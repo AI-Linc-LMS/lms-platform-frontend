@@ -3,6 +3,7 @@ export interface Author {
   user_name: string;
   profile_pic_url?: string;
   role?: string;
+  name: string;
 }
 
 export interface Tag {

@@ -63,7 +63,7 @@ export function VideoPlayer({
 
   // Get localStorage key for this video - format to ensure consistency across sessions
   const getStorageKey = useCallback((id: string) => {
-    return `${STORAGE_PREFIX}${STORAGE_VERSION}_${id}`;
+    return `${STORAGE_PREFIX}${STORAGE_VERSION}_${id}_${title}`;
   }, []);
 
   // First-time viewer notice message - centralized for consistency
