@@ -13,12 +13,12 @@ export type StudentDailyActivityApi = {
 };
 
 const colors: { [key: string]: string } = {
-  Articles: "#FF6B6B",
-  Videos: "#4ECDC4",
-  Problems: "#FFD93D",
-  Quiz: "#6C5CE7",
-  Subjective: "#A8E6CF",
-  Development: "#FF8B94",
+  Articles: "var(--chart-articles, #FF6B6B)",
+  Videos: "var(--chart-videos, #4ECDC4)",
+  Problems: "var(--chart-problems, #FFD93D)",
+  Quiz: "var(--chart-quiz, #6C5CE7)",
+  Subjective: "var(--chart-subjective, #A8E6CF)",
+  Development: "var(--chart-development, #FF8B94)",
 };
 
 type Period = "weekly" | "bimonthly" | "monthly";
@@ -133,7 +133,7 @@ const StudentDailyActivityChart = ({
 
       <div className="mt-4">
         <ResponsiveContainer height={280}>
-          <BarChart data={currentData} margin={{ top: 0, right: 0, left: 0, bottom: 40 }} barSize={25} barGap={26} barCategoryGap="20%">
+          <BarChart data={currentData} margin={{ top: 0, right: 20, left: 0, bottom: 40 }} barSize={25} barGap={26} barCategoryGap="20%">
             <CartesianGrid stroke="#E6EDF6" horizontal vertical={false} strokeWidth={1} />
             <XAxis
               dataKey="dateISO"
@@ -143,17 +143,17 @@ const StudentDailyActivityChart = ({
               ticks={xTickLabels}
               minTickGap={12}
               tickMargin={14}
-              scale="band"
+              scale="point"
               padding={{ left: 10, right: 10 }}
               tick={({ x, y, payload }) => {
                 const dateObj = new Date(payload.value);
                 const day = dateObj.getDate();
                 const month = dateObj.getMonth() + 1;
-                const year = dateObj.getFullYear();
+                const dayName = dateObj.toLocaleDateString("en-US", { weekday: "short" });
                 return (
                   <g transform={`translate(${x},${y})`}>
                     <text x={0} y={0} dy={10} textAnchor="middle" fill="#5D77A6" fontSize={10}>{`${day}/${month}`}</text>
-                    <text x={0} y={0} dy={28} textAnchor="middle" fill="#B0B8C1" fontSize={12}>{year}</text>
+                    <text x={0} y={0} dy={24} textAnchor="middle" fill="#B0B8C1" fontSize={11}>{dayName}</text>
                   </g>
                 );
               }}
@@ -191,7 +191,7 @@ const StudentDailyActivityChart = ({
       {/* Absolute tooltip for hovered segment */}
       {hoveredSegment && (
         <div className="absolute z-20" style={{ left: Math.min(hoveredSegment.x + 12, 720), top: hoveredSegment.y + 12 }}>
-          <div className="bg-white border border-[#D3E3F2] rounded-lg p-3 shadow-lg min-w-[140px]">
+    <div className="bg-[var(--card-bg)] border border-[#D3E3F2] rounded-lg p-3 shadow-lg min-w-[140px]">
             <p className="text-xs font-semibold text-gray-700 mb-2">{new Date(hoveredSegment.dateISO).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}</p>
             <div className="flex items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2">
