@@ -72,9 +72,9 @@ const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
             variant="outlined"
             value={code}
             onChange={onCodeChange}
-            placeholder="000000"
+            placeholder="0000"
             inputProps={{
-              maxLength: 6,
+              maxLength: 4,
               style: {
                 textAlign: "center",
                 fontSize: "2rem",
