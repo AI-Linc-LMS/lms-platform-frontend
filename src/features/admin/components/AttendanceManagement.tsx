@@ -207,39 +207,46 @@ const AttendanceManagement: React.FC<AttendanceManagementProps> = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[var(--primary-500)]"></div>
         </div>
       ) : (
-        <Paper sx={{ width: "100%", overflow: "hidden" }}>
+        <Paper
+          sx={{
+            width: "100%",
+            overflow: "hidden",
+            fontFamily:
+              'Lato, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+          }}
+        >
           <TableContainer sx={{ maxHeight: 600 }}>
             <Table stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell>
+                  <TableCell sx={{ fontFamily: "inherit" }}>
                     <strong>Name</strong>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontFamily: "inherit" }}>
                     <strong>Code</strong>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontFamily: "inherit" }}>
                     <strong>Duration (min)</strong>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontFamily: "inherit" }}>
                     <strong>Status</strong>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontFamily: "inherit" }}>
                     <strong>Validity</strong>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontFamily: "inherit" }}>
                     <strong>Created By</strong>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontFamily: "inherit" }}>
                     <strong>Created At</strong>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontFamily: "inherit" }}>
                     <strong>Expires At</strong>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontFamily: "inherit" }}>
                     <strong>Attendees</strong>
                   </TableCell>
-                  <TableCell align="center">
+                  <TableCell align="center" sx={{ fontFamily: "inherit" }}>
                     <strong>Actions</strong>
                   </TableCell>
                 </TableRow>
