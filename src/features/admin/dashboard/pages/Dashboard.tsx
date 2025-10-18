@@ -22,6 +22,7 @@ export interface Dashboard {
     unit: string;
   };
   daily_login_count: number;
+  daily_login_data: Array<{ date: string; login_count: number }>;
   student_daily_activity: StudentDailyActivityApi[];
   leaderboard: LeaderboardEntry[];
   daily_time_spend: DailyTimeSpentAdmin[];
@@ -42,13 +43,14 @@ export interface DailyTimeSpentAdmin {
 const Dashboard = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const [selectedCourseId, setSelectedCourseId] = useState<number | "">("");
+  const [period, setPeriod] = useState<"weekly" | "bimonthly" | "monthly">("weekly");
   const {
     data: dashboardData,
     isLoading,
     error,
   } = useQuery<Dashboard>({
-    queryKey: ["coreAdminDashboard", clientId],
-    queryFn: () => coreAdminDashboard(clientId),
+    queryKey: ["coreAdminDashboard", clientId, selectedCourseId],
+    queryFn: () => coreAdminDashboard(clientId, selectedCourseId === "" ? undefined : selectedCourseId),
     retry: false,
   });
 
@@ -63,31 +65,100 @@ const Dashboard = () => {
     return arr.map((c) => ({ id: c.id, title: c.title }));
   }, [coursesData]);
 
+  const selectedCourseName = useMemo(() => {
+    if (selectedCourseId === "") return "All Courses";
+    const found = courseOptions.find((c) => c.id === selectedCourseId);
+    return found?.title || "selected course";
+  }, [selectedCourseId, courseOptions]);
+
+  // Calculate window size based on period
+  const windowSize = useMemo(() => {
+    switch (period) {
+      case "weekly":
+        return 7;
+      case "bimonthly":
+        return 15;
+      case "monthly":
+        return 30;
+      default:
+        return 7;
+    }
+  }, [period]);
+
+  // Calculate total time spent based on period window
+  const calculatedTimeSpent = useMemo(() => {
+    if (!dashboardData?.daily_time_spend) return { value: 0, unit: "hours" };
+    
+    const data = dashboardData.daily_time_spend;
+    const len = data.length;
+    const start = Math.max(0, len - windowSize);
+    const windowData = data.slice(start, len);
+    
+    const totalHours = windowData.reduce((sum, item) => sum + (item.time_spent || 0), 0);
+    return { value: parseFloat(totalHours.toFixed(2)), unit: "hours" };
+  }, [dashboardData?.daily_time_spend, windowSize]);
+
+  // Calculate average daily login count based on period window
+  const calculatedDailyLogin = useMemo(() => {
+    if (!dashboardData?.daily_login_data) return 0;
+    
+    const data = dashboardData.daily_login_data;
+    const len = data.length;
+    const start = Math.max(0, len - windowSize);
+    const windowData = data.slice(start, len);
+    
+    const totalLogins = windowData.reduce((sum, item) => sum + (item.login_count || 0), 0);
+    const average = windowData.length > 0 ? totalLogins / windowData.length : 0;
+    return parseFloat(average.toFixed(2));
+  }, [dashboardData?.daily_login_data, windowSize]);
+
   const navigate = useNavigate();
   const metrics = dashboardData
     ? [
         {
+          id: "total_students" as const,
           label: "Number of students",
           value: dashboardData.number_of_students,
           Icon: UserGroupIcon,
         },
         {
+          id: "active_students" as const,
           label: "Active Students",
           value: dashboardData.active_students,
           Icon: activeStudents,
         },
         {
+          id: "time_spent" as const,
           label: "Time Spent by Student",
-          value: `${dashboardData.time_spent_by_students.value} ${dashboardData.time_spent_by_students.unit}`,
+          value: `${calculatedTimeSpent.value} ${calculatedTimeSpent.unit}`,
           Icon: timeSpent,
         },
         {
+          id: "daily_logins" as const,
           label: "Student Daily Logins",
-          value: dashboardData.daily_login_count,
+          value: calculatedDailyLogin,
           Icon: dailylogins,
         },
       ]
     : [];
+
+  const getMetricTooltip = (
+    id: "total_students" | "active_students" | "time_spent" | "daily_logins"
+  ) => {
+    const suffix = selectedCourseId === "" ? "across all courses." : `in ${selectedCourseName}.`;
+    switch (id) {
+      case "total_students":
+        return `Total number of students ${suffix}`;
+      case "active_students":
+        return `Number of students logged in the platform in last 15 days ${suffix}`;
+      case "time_spent":
+        return `Total time spent by students ${suffix}`;
+      case "daily_logins":
+        return `Average number of students logged in the platform in last 7 days ${suffix}`;
+      default:
+        return "";
+    }
+  };
 
   const handleBackToMain = () => {
     navigate("/");
@@ -166,7 +237,26 @@ const Dashboard = () => {
         </select>
 
         <div className="flex items-center text-[var(--primary-500)] text-sm gap-2">
-          <p>Weekly</p>|<p>Monthly</p>|<p>Yearly</p>
+          <button
+            className={`px-2 py-1 rounded ${period === "weekly" ? "bg-[var(--primary-100)] text-[var(--primary-700)]" : "hover:underline"}`}
+            onClick={() => setPeriod("weekly")}
+          >
+            Weekly
+          </button>
+          |
+          <button
+            className={`px-2 py-1 rounded ${period === "bimonthly" ? "bg-[var(--primary-100)] text-[var(--primary-700)]" : "hover:underline"}`}
+            onClick={() => setPeriod("bimonthly")}
+          >
+            Bimonthly
+          </button>
+          |
+          <button
+            className={`px-2 py-1 rounded ${period === "monthly" ? "bg-[var(--primary-100)] text-[var(--primary-700)]" : "hover:underline"}`}
+            onClick={() => setPeriod("monthly")}
+          >
+            Monthly
+          </button>
         </div>
       </div>
       <div className="flex gap-4">
@@ -178,12 +268,33 @@ const Dashboard = () => {
             <div>
               <div className="text-xs text-[var(--primary-500)] flex items-center gap-1 mb-2">
                 {metric.label}
-                <span className="ml-1 text-gray-400 cursor-pointer">
-                  <img src={i} alt="i" className="w-4 h-4" />
+                <span className="ml-1 text-gray-400 cursor-default relative group">
+                  <img src={i} alt="info" className="w-4 h-4" />
+                  <div
+                    role="tooltip"
+                    className="absolute z-20 hidden group-hover:block bg-gray-700 text-white text-[10px] leading-snug rounded px-2 py-1 w-[120px] -top-2 left-1/2 -translate-x-1/2 -translate-y-full shadow-lg"
+                  >
+                    {getMetricTooltip(metric.id)}
+                  </div>
                 </span>
               </div>
               <div className="text-3xl font-bold text-[var(--primary-500)]">
-                {metric.value}
+                {metric.id === "time_spent" ? (
+                  // metric.value has format "<number> <unit>"
+                  (() => {
+                    const parts = String(metric.value).split(" ");
+                    const num = parts[0];
+                    const unit = parts.slice(1).join(" ");
+                    return (
+                      <span>
+                        <span>{num}</span>
+                        {unit && <span className="text-base ml-2">{unit}</span>}
+                      </span>
+                    );
+                  })()
+                ) : (
+                  metric.value
+                )}
               </div>
             </div>
             <div className="bg-[var(--primary-50)] rounded-full p-4 flex items-center justify-center border border-[var(--primary-500)]">
@@ -198,11 +309,13 @@ const Dashboard = () => {
           daily_time_spend={dashboardData?.daily_time_spend ?? []}
           isLoading={isLoading}
           error={error}
+          period={period}
         />
         <StudentDailyActivityChart
           student_daily_activity={dashboardData?.student_daily_activity ?? []}
           isLoading={isLoading}
           error={error as Error | null}
+          period={period}
         />
         <StudentRanking
           leaderboard={dashboardData?.leaderboard ?? []}

@@ -1,28 +1,12 @@
-import React from "react";
+import { useEffect, useState } from "react";
 import videoIcon from "../../../../assets/course_sidebar_assets/video/vidoesIcon.png";
 import completeTickIcon from "../../../../assets/course_sidebar_assets/completeTickIcon.png";
 
-interface VideoItem {
-  id: string;
-  title: string;
-  marks: number;
-  duration: string;
-  completed: boolean;
-  progress?: number;
-}
+// Same constants and progress circle used in AllContent
+const STORAGE_PREFIX = "video_progress_";
+const STORAGE_VERSION = "v1";
 
-interface VideoContentProps {
-  videos: VideoItem[];
-  selectedVideoId?: string;
-  onVideoClick: (id: string) => void;
-  totalDuration?: string;
-  topicTitle?: string;
-  topicNo: number;
-  week?: string;
-  difficulty?: string;
-  completionPercentage?: number;
-}
-
+// Reuse CircularProgress
 const CircularProgress = ({
   progress,
   isComplete,
@@ -38,11 +22,14 @@ const CircularProgress = ({
 
   if (isComplete) {
     return (
-      <div className="w-[26px] h-[26px] rounded-full bg-[var(--success-500)] flex items-center justify-center">
+      <div
+        className="w-[18px] h-[18px] rounded-full bg-[var(--success-500)] flex items-center justify-center"
+        style={{ aspectRatio: "1 / 1", minWidth: "18px", minHeight: "18px" }}
+      >
         <svg
           viewBox="0 0 24 24"
-          width="16"
-          height="16"
+          width="10"
+          height="10"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
@@ -71,7 +58,7 @@ const CircularProgress = ({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#e6e6e6"
+          stroke="#E5E7EB"
           strokeWidth={strokeWidth}
         />
         <circle
@@ -79,7 +66,7 @@ const CircularProgress = ({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#deeede"
+          stroke="#10B981"
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
@@ -88,15 +75,36 @@ const CircularProgress = ({
       </svg>
 
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-[18px] h-[18px] bg-white border border-gray-200 rounded-full flex items-center justify-center">
-          <div className="text-[9px] font-medium text-gray-500">
-            {Math.round(progress)}%
+        <div className="w-[18px] h-[18px] bg-white rounded-full flex items-center justify-center">
+          <div className="text-[8px] font-semibold text-gray-700">
+            {Math.round(progress)}
           </div>
         </div>
       </div>
     </div>
   );
 };
+
+interface VideoItem {
+  id: number;
+  title: string;
+  duration: string;
+  marks: number;
+  completed?: boolean;
+  progress?: number;
+}
+
+interface VideoContentProps {
+  videos: VideoItem[];
+  selectedVideoId?: number;
+  onVideoClick: (id: number) => void;
+  totalDuration?: string;
+  topicTitle?: string;
+  topicNo?: number;
+  week?: string;
+  difficulty?: string;
+  completionPercentage?: number;
+}
 
 const VideoContent: React.FC<VideoContentProps> = ({
   videos,
@@ -109,6 +117,64 @@ const VideoContent: React.FC<VideoContentProps> = ({
   difficulty = "Beginner",
   completionPercentage = 0,
 }) => {
+  const [videoProgress, setVideoProgress] = useState<Record<number, number>>(
+    {}
+  );
+
+  // Extract title from localStorage key
+  const extractTitleFromKey = (key: string): string | null => {
+    const prefix = STORAGE_PREFIX + STORAGE_VERSION + "_";
+    if (!key.startsWith(prefix)) return null;
+    const lastUnderscoreIndex = key.lastIndexOf("_");
+    if (lastUnderscoreIndex > prefix.length) {
+      return key.substring(lastUnderscoreIndex + 1);
+    }
+    return null;
+  };
+
+  const normalizeString = (str: string): string =>
+    str.toLowerCase().trim().replace(/\s+/g, " ");
+
+  // Load video progress from localStorage
+  useEffect(() => {
+    const loadProgress = () => {
+      const progressMap: Record<number, number> = {};
+      const titleProgressMap: Record<string, { progress: number }> = {};
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(STORAGE_PREFIX + STORAGE_VERSION)) {
+          const title = extractTitleFromKey(key);
+          const progressValue = localStorage.getItem(key);
+          if (title && progressValue) {
+            const parsed = parseFloat(progressValue);
+            if (!isNaN(parsed) && parsed > 0) {
+              titleProgressMap[normalizeString(title)] = { progress: parsed };
+            }
+          }
+        }
+      }
+
+      videos.forEach((video) => {
+        const normalized = normalizeString(video.title);
+        if (titleProgressMap[normalized]) {
+          progressMap[video.id] = titleProgressMap[normalized].progress;
+        }
+      });
+
+      setVideoProgress(progressMap);
+    };
+
+    loadProgress();
+    window.addEventListener("storage", loadProgress);
+    const interval = setInterval(loadProgress, 2000);
+
+    return () => {
+      window.removeEventListener("storage", loadProgress);
+      clearInterval(interval);
+    };
+  }, [videos]);
+
   return (
     <div className="p-2">
       {/* Header */}
@@ -145,6 +211,9 @@ const VideoContent: React.FC<VideoContentProps> = ({
         {videos.map((video, idx) => {
           const isSelected = selectedVideoId === video.id;
           const isLast = idx === videos.length - 1;
+          const progress = video.completed
+            ? 100
+            : videoProgress[video.id] || video.progress || 0;
 
           return (
             <div
@@ -166,20 +235,15 @@ const VideoContent: React.FC<VideoContentProps> = ({
                   >
                     {video.title}
                   </h3>
-                  <p className="text-xs text-gray-500">
-                    {video.marks} Marks | {video.duration}
-                  </p>
+                  <p className="text-xs text-gray-500">{video.marks} Marks </p>
                 </div>
               </div>
 
               <div className="flex items-center">
-                {video.completed ? (
+                {progress >= 100 || video.completed ? (
                   <img src={completeTickIcon} alt="check" className="w-5 h-5" />
                 ) : (
-                  <CircularProgress
-                    progress={video.progress || 0}
-                    isComplete={false}
-                  />
+                  <CircularProgress progress={progress} isComplete={false} />
                 )}
               </div>
             </div>

@@ -119,7 +119,6 @@ const CourseSidebarContent = ({
   articleProps,
   problemProps,
   developmentProps,
-  subjectiveProps,
   selectedContentId,
   submoduleData,
   onContentSelect,
@@ -156,35 +155,12 @@ const CourseSidebarContent = ({
   //console.log("Refresh trigger:", refreshTrigger);
 
   const handleContentClick = (contentId: number, contentType: ContentType) => {
+    // The onContentSelect already handles all state updates including:
+    // - Setting selectedContentId
+    // - Setting currentContentIndex
+    // - Setting the specific content type ID (selectedQuizId, selectedVideoId, etc.)
+    // So we don't need to call the individual handlers anymore
     onContentSelect(contentId, contentType);
-
-    // Only trigger the specific content type handler without changing activeSidebarLabel
-    switch (contentType) {
-      case "VideoTutorial":
-        videoProps.onVideoClick(contentId.toString());
-        break;
-      case "Article":
-        articleProps.onArticleClick(contentId);
-        break;
-      case "CodingProblem":
-        if (problemProps?.onProblemSelect) {
-          problemProps.onProblemSelect(contentId.toString());
-        }
-        break;
-      case "Quiz":
-        quizProps.onSelectQuiz(contentId);
-        break;
-      case "Assignment":
-        if (subjectiveProps?.onAssignmentClick) {
-          subjectiveProps.onAssignmentClick(contentId);
-        }
-        break;
-      case "Development":
-        if (developmentProps?.onProjectSelect) {
-          developmentProps.onProjectSelect(contentId.toString());
-        }
-        break;
-    }
   };
 
   // Get actual data to use - prioritize fresh submoduleData over stale temp data
@@ -231,6 +207,7 @@ const CourseSidebarContent = ({
     : [];
 
   // Transform submodule data for AllContent
+  console.log(actualData?.data, 20);
   const allContents = actualData?.data
     ? actualData.data.map((content: SubmoduleContent) => ({
         id: content.id,
@@ -238,6 +215,7 @@ const CourseSidebarContent = ({
         content_type: content.content_type,
         order: content.order,
         duration_in_minutes: content.duration_in_minutes,
+        marks: content.marks || 0,
         status: content.status,
         progress_percentage:
           content.content_type === "VideoTutorial"
@@ -363,11 +341,12 @@ const CourseSidebarContent = ({
         )}
         {activeLabel === "Videos" && (
           <VideoContent
-            videos={videos}
-            selectedVideoId={videoProps.selectedVideoId || ""}
-            onVideoClick={(id) => {
-              handleContentClick(parseInt(id), "VideoTutorial");
-            }}
+            videos={videos.map((v) => ({
+              ...v,
+              id: Number(v.id), // 👈 convert string -> number
+            }))}
+            selectedVideoId={Number(videoProps.selectedVideoId) || 0} // ensure numeric too
+            onVideoClick={(id) => handleContentClick(id, "VideoTutorial")}
             topicNo={actualData?.weekNo || 1}
             topicTitle={actualData?.submoduleName || "Topic 1"}
             week={`Week ${actualData?.weekNo || 1}`}
@@ -386,11 +365,16 @@ const CourseSidebarContent = ({
                 : 0
             }
             totalDuration={`${
-              actualData?.data?.reduce(
-                (acc: number, curr: SubmoduleContent) =>
-                  acc + curr.duration_in_minutes,
-                0
-              ) || 0
+              actualData?.data
+                ?.filter(
+                  (curr: SubmoduleContent) =>
+                    curr.content_type === "VideoTutorial"
+                )
+                .reduce(
+                  (acc: number, curr: SubmoduleContent) =>
+                    acc + curr.duration_in_minutes,
+                  0
+                ) || 0
             } min`}
           />
         )}

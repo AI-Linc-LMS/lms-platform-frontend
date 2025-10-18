@@ -16,6 +16,7 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
     queryKey: ["leaderboard", clientId],
     queryFn: async () => {
       const response = await getLeaderboardData(clientId);
+      console.log("Leaderboard response:", response);
       // Handle both array and object with leaderboard property
       if (Array.isArray(response)) {
         return response;
@@ -65,42 +66,44 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
         )}
 
         <div className="overflow-hidden rounded-xl border border-gray-300 mb-4">
-          <table className="w-full text-center border-collapse min-h-[450px]">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="border-b border-gray-300 px-2 py-7 text-xs text-gray-600">
-                  {t("dashboard.leaderboard.headers.standing")}
-                </th>
-                <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600">
-                  {t("dashboard.leaderboard.headers.name")}
-                </th>
-                <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600">
-                  {t("dashboard.leaderboard.headers.course")}
-                </th>
-                <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600">
-                  {t("dashboard.leaderboard.headers.marks")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...Array(5)].map((_, index) => (
-                <tr key={index} className="animate-pulse">
-                  <td className="px-2 py-2 text-xs border-b border-gray-300">
-                    <div className="h-4 bg-gray-200 rounded-xl w-6 mx-auto"></div>
-                  </td>
-                  <td className="px-2 py-2 text-xs border-b border-l border-gray-300">
-                    <div className="h-4 bg-gray-200 rounded-xl w-20 mx-auto"></div>
-                  </td>
-                  <td className="px-2 py-2 text-xs border-b border-l border-gray-300">
-                    <div className="h-4 bg-gray-200 rounded-xl w-16 mx-auto"></div>
-                  </td>
-                  <td className="px-2 py-2 text-xs border-b border-l border-gray-300">
-                    <div className="h-4 bg-gray-200 rounded-xl w-8 mx-auto"></div>
-                  </td>
+          <div className="overflow-y-auto max-h-[500px]">
+            <table className="w-full text-center border-collapse">
+              <thead className="bg-gray-100 sticky top-0 z-10">
+                <tr>
+                  <th className="border-b border-gray-300 px-2 py-7 text-xs text-gray-600">
+                    {t("dashboard.leaderboard.headers.standing")}
+                  </th>
+                  <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600">
+                    {t("dashboard.leaderboard.headers.name")}
+                  </th>
+                  <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600">
+                    {t("dashboard.leaderboard.headers.course")}
+                  </th>
+                  <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600">
+                    {t("dashboard.leaderboard.headers.marks")}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {[...Array(5)].map((_, index) => (
+                  <tr key={index} className="animate-pulse">
+                    <td className="px-2 py-2 text-xs border-b border-gray-300">
+                      <div className="h-4 bg-gray-200 rounded-xl w-6 mx-auto"></div>
+                    </td>
+                    <td className="px-2 py-2 text-xs border-b border-l border-gray-300">
+                      <div className="h-4 bg-gray-200 rounded-xl w-20 mx-auto"></div>
+                    </td>
+                    <td className="px-2 py-2 text-xs border-b border-l border-gray-300">
+                      <div className="h-4 bg-gray-200 rounded-xl w-16 mx-auto"></div>
+                    </td>
+                    <td className="px-2 py-2 text-xs border-b border-l border-gray-300">
+                      <div className="h-4 bg-gray-200 rounded-xl w-8 mx-auto"></div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div className="bg-[#DEE2E6] rounded-xl px-5 py-4 flex items-center gap-2 max-w-md mt-12">
@@ -139,75 +142,77 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
       </p>
 
       <div className="overflow-hidden rounded-xl border border-gray-300 mb-4">
-        <table className="w-full text-center border-collapse min-h-[450px]">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border-b border-gray-300 px-2 py-7 text-xs text-gray-600">
-                {t("dashboard.leaderboard.headers.standing")}
-              </th>
-              <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600">
-                {t("dashboard.leaderboard.headers.name")}
-              </th>
-              <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600">
-                {t("dashboard.leaderboard.headers.course")}
-              </th>
-              <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600">
-                {t("dashboard.leaderboard.headers.marks")}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredData?.map((item: LeaderboardItem, index: number) => {
-              // Check if this entry is the current user (name is "You")
-              const isCurrentUser = item.name === "You";
-              const isLast = index === filteredData.length - 1;
+        <div className="overflow-y-auto max-h-[600px]">
+          <table className="w-full text-center border-collapse">
+            <thead className="bg-gray-100 sticky top-0 z-10">
+              <tr>
+                <th className="border-b border-gray-300 px-2 py-7 text-xs text-gray-600">
+                  {t("dashboard.leaderboard.headers.standing")}
+                </th>
+                <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600">
+                  {t("dashboard.leaderboard.headers.name")}
+                </th>
+                <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600">
+                  {t("dashboard.leaderboard.headers.course")}
+                </th>
+                <th className="border-b border-l border-gray-300 px-2 py-2 text-xs text-gray-600">
+                  {t("dashboard.leaderboard.headers.marks")}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredData?.map((item: LeaderboardItem, index: number) => {
+                // Check if this entry is the current user (name is "You")
+                const isCurrentUser = item.name === "You";
+                const isLast = index === filteredData.length - 1;
 
-              return (
-                <tr
-                  key={index}
-                  className={`group relative transition-all duration-300 hover:bg-[#E9F7FA] ${
-                    isCurrentUser
-                      ? "bg-blue-100 text-[var(--secondary-700)]"
-                      : ""
-                  }`}
-                >
-                  <td
-                    className={`px-2 py-2 text-xs border-gray-300 ${
-                      isLast ? "" : "border-b"
+                return (
+                  <tr
+                    key={index}
+                    className={`group relative transition-all duration-300 hover:bg-[#E9F7FA] ${
+                      isCurrentUser
+                        ? "bg-blue-100 text-[var(--secondary-700)]"
+                        : ""
                     }`}
                   >
-                    <span>{item.rank}</span>
-                  </td>
-                  <td
-                    className={`px-2 py-2 text-xs border-l border-gray-300 ${
-                      isLast ? "" : "border-b"
-                    }`}
-                  >
-                    <span>{item.name}</span>
-                  </td>
-                  <td
-                    className={`px-2 py-2 text-xs border-l border-gray-300 ${
-                      isLast ? "" : "border-b"
-                    }`}
-                  >
-                    <span>
-                      {item.course_name.length > 13
-                        ? `${item.course_name.substring(0, 13)}...`
-                        : item.course_name}
-                    </span>
-                  </td>
-                  <td
-                    className={`px-2 py-2 text-xs border-l border-gray-300 ${
-                      isLast ? "" : "border-b"
-                    }`}
-                  >
-                    <span>{item.marks}</span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    <td
+                      className={`px-2 py-2 text-xs border-gray-300 ${
+                        isLast ? "" : "border-b"
+                      }`}
+                    >
+                      <span>{item.rank}</span>
+                    </td>
+                    <td
+                      className={`px-2 py-2 text-xs border-l border-gray-300 ${
+                        isLast ? "" : "border-b"
+                      }`}
+                    >
+                      <span>{item.name}</span>
+                    </td>
+                    <td
+                      className={`px-2 py-2 text-xs border-l border-gray-300 ${
+                        isLast ? "" : "border-b"
+                      }`}
+                    >
+                      <span>
+                        {item.course_name.length > 13
+                          ? `${item.course_name.substring(0, 13)}...`
+                          : item.course_name}
+                      </span>
+                    </td>
+                    <td
+                      className={`px-2 py-2 text-xs border-l border-gray-300 ${
+                        isLast ? "" : "border-b"
+                      }`}
+                    >
+                      <span>{item.marks}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="bg-[#DEE2E6] rounded-xl px-5 py-4 flex items-center gap-2 max-w-md mt-12">
