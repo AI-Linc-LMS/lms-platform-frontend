@@ -137,7 +137,7 @@ const TimeSpentGraph = ({
                 const dateObj = new Date(payload.value);
                 const day = dateObj.getDate();
                 const month = dateObj.getMonth() + 1;
-                const year = dateObj.getFullYear();
+                const dayName = dateObj.toLocaleDateString("en-US", { weekday: "short" });
                 return (
                   <g transform={`translate(${x},${y})`}>
                     <text
@@ -156,9 +156,9 @@ const TimeSpentGraph = ({
                       dy={22}
                       textAnchor="middle"
                       fill="#B0B8C1"
-                      fontSize={12}
+                      fontSize={11}
                     >
-                      {year}
+                      {dayName}
                     </text>
                   </g>
                 );

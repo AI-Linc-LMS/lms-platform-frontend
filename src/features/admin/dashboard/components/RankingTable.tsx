@@ -14,7 +14,7 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
 }) => {
   if (isLoading || error || !leaderboard || leaderboard.length === 0) {
     return (
-      <div className="flex flex-col transition-all duration-300 p-6 rounded-2xl shadow-md lg:min-w-[320px] xl:min-w-[400px] h-[430px] bg-white ring-1 ring-[var(--primary-100)] ring-offset-1">
+      <div className="flex flex-col transition-all duration-300 p-6 rounded-2xl shadow-md lg:min-w-[320px] xl:min-w-[400px] h-[430px] bg-[var(--card-bg)] ring-1 ring-[var(--primary-100)] ring-offset-1">
         <h2 className="text-xl font-bold text-[var(--primary-500)] mb-6">
           Student Ranking
         </h2>
@@ -53,7 +53,7 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
     .slice(0, 10);
 
   return (
-    <div className="flex flex-col transition-all duration-300 p-6 rounded-2xl shadow-md bg-white ring-1 ring-[var(--primary-100)] ring-offset-1 lg:min-w-[320px] xl:min-w-[400px] h-[430px]">
+    <div className="flex flex-col transition-all duration-300 p-6 rounded-2xl shadow-md bg-[var(--card-bg)] ring-1 ring-[var(--primary-100)] ring-offset-1 lg:min-w-[320px] xl:min-w-[400px] h-[430px]">
       <h2 className="text-xl font-bold text-[var(--primary-500)] mb-6">
         Student Ranking
       </h2>
@@ -76,7 +76,7 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white">
+          <tbody className="bg-[var(--card-bg)]">
             {safeRows.map((item: LeaderboardEntry, index: number) => {
               const standing = typeof item?.rank === "number" ? item.rank : index + 1;
               const name = item?.name || "—";
@@ -95,8 +95,12 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
                   <td className="border-b border-r border-gray-200 h-[52px] text-sm font-medium">
                     <div className="flex items-center justify-center gap-1">
                       {isTopThree && (
-                        <span className="text-lg">
-                          {standing === 1 ? '🥇' : standing === 2 ? '🥈' : '🥉'}
+                        <span className="text-lg inline-flex items-center">
+                          <img
+                            src={standing === 1 ? '/gold-medal.png' : standing === 2 ? '/silver-medal.png' : '/bronze-medal.png'}
+                            alt={`medal-${standing}`}
+                            className="w-5 h-5 object-contain mr-0.5"
+                          />
                         </span>
                       )}
                       <span className={isTopThree ? 'text-[var(--primary-600)] font-bold' : 'text-gray-700'}>
