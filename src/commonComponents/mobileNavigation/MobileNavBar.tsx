@@ -5,12 +5,33 @@ import {
   FileText,
   Briefcase,
   Video,
+  Users,
 } from "lucide-react";
-import { useTranslation } from 'react-i18next';
+import { useSelector } from "react-redux";
+import { RootState } from "../../redux/store";
+import { useMemo } from "react";
+import { filterNavigationByFeatures } from "../sidebar/components/helper/filterNavigation";
+
+const iconMap = {
+  dashboard: <LayoutDashboard size={22} strokeWidth={1.5} />,
+  course: <BookCopy size={22} strokeWidth={1.5} />,
+  assessment: <FileText size={22} strokeWidth={1.5} />,
+  attendance: <Briefcase size={22} strokeWidth={1.5} />,
+  community_forum: <Users size={22} strokeWidth={1.5} />,
+  live: <Video size={22} strokeWidth={1.5} />, // optional if you want to include live
+};
 
 const MobileNavBar = () => {
   const location = useLocation();
-  const { t } = useTranslation();
+  const clientInfo = useSelector((state: RootState) => state.clientInfo);
+
+  const filteredNavigationLinksUser = useMemo(() => {
+    return filterNavigationByFeatures(clientInfo?.data?.features || []);
+  }, [clientInfo?.data?.features]);
+
+  const mobileNavItems = useMemo(() => {
+    return filteredNavigationLinksUser.slice(0, 5);
+  }, [filteredNavigationLinksUser]);
 
   const isActive = (path: string) => {
     if (path === "/" && location.pathname === "/") {
@@ -18,40 +39,26 @@ const MobileNavBar = () => {
     }
     return location.pathname.startsWith(path) && path !== "/";
   };
+  console.log(mobileNavItems);
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 w-full bg-white shadow-[0_-1px_10px_rgba(0,0,0,0.05)] z-50 rounded-t-2xl border-t border-gray-200">
       <div className="flex justify-around items-center pt-3 pb-2">
-        <NavItem
-          to="/courses"
-          icon={<BookCopy size={22} strokeWidth={1.5} />}
-          label={t("navigation.courses")}
-          isActive={isActive("/courses")}
-        />
-        <NavItem
-          to="/assessments"
-          icon={<FileText size={22} strokeWidth={1.5} />}
-          label={t("navigation.assessments")}
-          isActive={isActive("/assessments")}
-        />
-        <NavItem
-          to="/"
-          icon={<LayoutDashboard size={22} strokeWidth={1.5} />}
-          label={t("navigation.dashboard")}
-          isActive={isActive("/")}
-        />
-        <NavItem
-          to="/jobs"
-          icon={<Briefcase size={22} strokeWidth={1.5} />}
-          label={t("navigation.jobs")}
-          isActive={isActive("/jobs")}
-        />
-        <NavItem
-          to="/live"
-          icon={<Video size={22} strokeWidth={1.5} />}
-          label={t("navigation.live")}
-          isActive={isActive("/live")}
-        />
+        {mobileNavItems?.map((item) => {
+          const link = item.links?.[0];
+          const icon = iconMap[item.slug as keyof typeof iconMap];
+          if (!link || !icon) return null;
+
+          return (
+            <NavItem
+              key={item.id}
+              to={link.href}
+              icon={icon}
+              label={item.title}
+              isActive={isActive(link.href)}
+            />
+          );
+        })}
       </div>
     </div>
   );
