@@ -225,7 +225,7 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
                                 }
                                 color={
                                   isExpired
-                                    ? "default"
+                                    ? "error"
                                     : isUrgent
                                     ? "error"
                                     : "success"
