@@ -28,8 +28,8 @@ const ActivityTableRow: React.FC<ActivityTableRowProps> = ({
 
   return (
     <TableRow>
-      <TableCell>{activity.name}</TableCell>
-      <TableCell>
+      <TableCell sx={{ fontFamily: "inherit" }}>{activity.name}</TableCell>
+      <TableCell sx={{ fontFamily: "inherit" }}>
         {activity.is_active && activity.code ? (
           <span className="font-mono font-bold text-lg text-[var(--primary-500)]">
             {activity.code}
@@ -38,36 +38,44 @@ const ActivityTableRow: React.FC<ActivityTableRowProps> = ({
           "-"
         )}
       </TableCell>
-      <TableCell>{activity.duration_minutes || "-"}</TableCell>
-      <TableCell>
+      <TableCell sx={{ fontFamily: "inherit" }}>
+        {activity.duration_minutes || "-"}
+      </TableCell>
+      <TableCell sx={{ fontFamily: "inherit" }}>
         <Chip
+          sx={{ fontFamily: "inherit" }}
           label={activity.is_active ? "Active" : "Inactive"}
           color={activity.is_active ? "success" : "error"}
           size="small"
         />
       </TableCell>
-      <TableCell>
+      <TableCell sx={{ fontFamily: "inherit" }}>
         <Chip
+          sx={{ fontFamily: "inherit" }}
           label={activity.is_valid ? "Valid" : "Expired"}
           color={activity.is_valid ? "success" : "error"}
           size="small"
         />
       </TableCell>
-      <TableCell>{activity.created_by_name || "-"}</TableCell>
-      <TableCell>
+      <TableCell sx={{ fontFamily: "inherit" }}>
+        {activity.created_by_name || "-"}
+      </TableCell>
+      <TableCell sx={{ fontFamily: "inherit" }}>
         {new Date(activity.created_at).toLocaleString("en-IN", {
           dateStyle: "short",
           timeStyle: "short",
         })}
       </TableCell>
-      <TableCell>
+      <TableCell sx={{ fontFamily: "inherit" }}>
         {new Date(activity.expires_at).toLocaleString("en-IN", {
           dateStyle: "short",
           timeStyle: "short",
         })}
       </TableCell>
-      <TableCell>{activity.attendees_count || 0}</TableCell>
-      <TableCell align="center">
+      <TableCell sx={{ fontFamily: "inherit" }}>
+        {activity.attendees_count || 0}
+      </TableCell>
+      <TableCell align="center" sx={{ fontFamily: "inherit" }}>
         <div className="flex gap-1 justify-center">
           {activity.is_active && activity.code && (
             <IconButton
