@@ -61,7 +61,7 @@ const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
         </Box>
 
         <Typography variant="body2" className="text-gray-600 mt-1 font-normal">
-          Enter 6-digit attendance code
+          Enter 4-digit attendance code
         </Typography>
       </DialogTitle>
 
@@ -112,7 +112,7 @@ const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
                 backgroundColor: "var(--primary-500)",
                 "&:hover": { backgroundColor: "#1a4a5f" },
               }}
-              disabled={isPending || code.length !== 6}
+              disabled={isPending || code.length !== 4}
               fullWidth
               size="large"
             >

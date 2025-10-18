@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSelector } from "react-redux";
+import { RootState } from "../../../redux/store";
 import {
   getAttendanceActivities,
   getAttendanceActivityDetail,
@@ -28,6 +30,7 @@ interface AttendanceManagementProps {
 const AttendanceManagement: React.FC<AttendanceManagementProps> = () => {
   const clientId = Number(import.meta.env.VITE_CLIENT_ID);
   const queryClient = useQueryClient();
+  const clientInfo = useSelector((state: RootState) => state.clientInfo);
 
   const [selectedActivity, setSelectedActivity] =
     useState<AttendanceActivity | null>(null);
@@ -41,11 +44,37 @@ const AttendanceManagement: React.FC<AttendanceManagementProps> = () => {
 
   // Form state
   const [name, setName] = useState("");
-  const [durationMinutes, setDurationMinutes] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState("30");
   const [formErrors, setFormErrors] = useState<{
     name?: string[];
     duration_minutes?: string[];
   }>({});
+
+  // Generate default name based on client info
+  useEffect(() => {
+    if (clientInfo?.data?.name && showCreateModal) {
+      const clientName = clientInfo.data.name;
+      // Extract initials (e.g., "Kakatiya University" -> "KU")
+      const initials = clientName
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase())
+        .join("");
+
+      // Get current time in 12-hour format
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      const ampm = hours >= 12 ? "PM" : "AM";
+      const hour12 = hours % 12 || 12;
+      const timeStr = `${hour12}${
+        minutes > 0 ? `:${minutes.toString().padStart(2, "0")}` : ""
+      }${ampm}`;
+
+      // Generate name: e.g., "KU-Classroom-10AM" or "KU-Classroom-10:30AM"
+      const generatedName = `${initials}-Classroom-${timeStr}`;
+      setName(generatedName);
+    }
+  }, [clientInfo, showCreateModal]);
 
   // Fetch attendance activities
   const { data: activities, isLoading } = useQuery({
@@ -64,7 +93,7 @@ const AttendanceManagement: React.FC<AttendanceManagementProps> = () => {
       setShowCreateModal(false);
       setErrorMessage("");
       setName("");
-      setDurationMinutes("");
+      setDurationMinutes("30");
       setFormErrors({});
     },
     onError: (error: any) => {
