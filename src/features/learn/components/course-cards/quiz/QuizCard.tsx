@@ -172,6 +172,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
           );
           setTotalAttempts(sorted.length);
           setPastAttempts(sorted.slice(0, 8));
+
           setSelectedAttemptIndex(0); // latest
         })
         .catch(() => setPastAttempts([]))
@@ -613,12 +614,12 @@ const QuizCard: React.FC<QuizCardProps> = ({
   };
 
   if (quizCompleted || alreadyCompleted) {
-    // Calculate score for selected attempt
-    const selectedAttemptUserAnswers = reviewUserAnswers || [];
-    const selectedAttemptScore = selectedAttemptUserAnswers.filter(
-      (a: any) => a.isCorrect
-    ).length;
-    const selectedAttemptTotal = selectedAttemptUserAnswers.length;
+    // Get marks from selected attempt (uses marks and maximum_marks from API response)
+    const selectedAttempt = pastAttempts[selectedAttemptIndex];
+    const selectedAttemptScore = selectedAttempt?.marks
+      ? parseFloat(selectedAttempt.marks)
+      : 0;
+    const selectedAttemptTotal = selectedAttempt?.maximum_marks || 0;
 
     return (
       <div className="mb-8">
@@ -695,9 +696,9 @@ const QuizCard: React.FC<QuizCardProps> = ({
                 Your Score
               </div>
 
-              <div className="md:text-8xl font-bold text-[var(--primary-400)]">
+              <div className="md:text-7xl font-bold text-[var(--primary-400)]">
                 {selectedAttemptScore}
-                <span className="text-5xl text-[var(--secondary-500)]">
+                <span className="text-4xl text-[var(--secondary-500)]">
                   {" "}
                   out of {selectedAttemptTotal}
                 </span>{" "}
@@ -742,24 +743,40 @@ const QuizCard: React.FC<QuizCardProps> = ({
           {loadingAttempts ? (
             <div className="text-gray-400 text-sm">Loading attempts...</div>
           ) : (
-            pastAttempts.map((attempt, idx) => (
-              <button
-                key={attempt.id}
-                onClick={() => handleAttemptSwitch(idx)}
-                className={`border rounded-lg px-6 py-3 text-left transition font-semibold shadow-sm
-                  ${
-                    idx === selectedAttemptIndex
-                      ? "border-blue-400 bg-blue-50 text-[var(--secondary-500)] ring-2 ring-blue-200"
-                      : "border-gray-200 bg-white text-gray-500 hover:border-blue-300"
-                  }
-                `}
-              >
-                <div className="text-base font-semibold">Attempt {idx + 1}</div>
-                <div className="text-xs text-gray-400">
-                  Date: {new Date(attempt.created_at).toLocaleDateString()}
-                </div>
-              </button>
-            ))
+            pastAttempts.map((attempt, idx) => {
+              const attemptScore = attempt?.marks
+                ? parseFloat(attempt.marks)
+                : 0;
+              const attemptTotal = attempt?.maximum_marks || 0;
+
+              return (
+                <button
+                  key={attempt.id}
+                  onClick={() => handleAttemptSwitch(idx)}
+                  className={`border rounded-lg px-6 py-3 text-left transition font-semibold shadow-sm
+                    ${
+                      idx === selectedAttemptIndex
+                        ? "border-blue-400 bg-blue-50 text-[var(--secondary-500)] ring-2 ring-blue-200"
+                        : "border-gray-200 bg-white text-gray-500 hover:border-blue-300"
+                    }
+                  `}
+                >
+                  <div className="text-base font-semibold">
+                    Attempt {idx + 1}
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Date: {new Date(attempt.created_at).toLocaleDateString()}
+                  </div>
+                  <div className="text-sm font-semibold mt-1">
+                    Marks:{" "}
+                    <span className="text-[var(--primary-500)]">
+                      {attemptScore}
+                    </span>{" "}
+                    / {attemptTotal}
+                  </div>
+                </button>
+              );
+            })
           )}
         </div>
 
