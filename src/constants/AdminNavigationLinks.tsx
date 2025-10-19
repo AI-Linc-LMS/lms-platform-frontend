@@ -145,7 +145,7 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
   {
     id: 7,
     title: "Attendance",
-    slug: "attendance",
+    slug: "admin_attendance",
     links: [
       {
         id: 1,
