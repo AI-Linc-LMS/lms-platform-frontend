@@ -42,7 +42,7 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
   allTags = [],
 }) => {
   const authorAvatar = getUserAvatar(
-    thread.author.name,
+    thread.author.user_name,
     thread.author.profile_pic_url
   );
 
@@ -75,7 +75,7 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
                 {thread.title}
               </h3>
 
-              {canEdit(thread.author.name) && (
+              {canEdit(thread.author.user_name) && (
                 <div
                   className="flex items-center gap-2 flex-shrink-0"
                   onClick={(e) => e.stopPropagation()}
