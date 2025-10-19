@@ -10,6 +10,7 @@ import CourseStatistics from "./CourseStatistics";
 import CourseActions from "./CourseActions";
 import CollapsibleCourseModule from "./CollapsibleCourseModule";
 import { FaLinkedin } from "react-icons/fa";
+import pratekDayalPic from "/src/assets/course-content/prateek.jpeg";
 
 interface CourseContentProps {
   course: Course;
@@ -36,7 +37,7 @@ const InstructorsSection: React.FC = () => {
       name: "Prateek Dayal",
       bio: "Machine Learning Research Lead specializing in advanced AI algorithms and Teaching Machine learning.",
       linkedin_profile: "https://www.linkedin.com/in/prateekdayal/",
-      profile_pic_url: "/src/assets/course-content/prateek.jpeg",
+      profile_pic_url: pratekDayalPic,
       website: "https://emilyrodriguez.ai",
     },
   ];

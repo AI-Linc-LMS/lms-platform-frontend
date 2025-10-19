@@ -74,9 +74,10 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
       }, 5000);
     },
     onError: (error: any) => {
+      console.log(error);
       setMessage({
         type: "error",
-        text: error.response?.data?.message || "Invalid or expired code",
+        text: error.response?.data?.error || "Invalid or expired code",
       });
 
       // Clear error message after 5 seconds
@@ -99,8 +100,8 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
       return;
     }
 
-    if (code.length !== 4) {
-      setMessage({ type: "error", text: "Code must be 4 digits" });
+    if (code.length !== 6) {
+      setMessage({ type: "error", text: "Code must be 6 digits" });
       return;
     }
 
@@ -111,7 +112,7 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
   };
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, "").slice(0, 4);
+    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
     setCode(value);
   };
 
@@ -161,21 +162,28 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
         </h2>
 
         {liveActivities && liveActivities.length > 0 ? (
-          <Paper sx={{ width: "100%", overflow: "hidden" }}>
+          <Paper
+            sx={{
+              width: "100%",
+              overflow: "hidden",
+              fontFamily:
+                'Lato, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+            }}
+          >
             <TableContainer sx={{ maxHeight: 600 }}>
               <Table stickyHeader>
                 <TableHead>
                   <TableRow>
-                    <TableCell>
+                    <TableCell sx={{ fontFamily: "inherit" }}>
                       <strong>Name</strong>
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ fontFamily: "inherit" }}>
                       <strong>Expires At</strong>
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ fontFamily: "inherit" }}>
                       <strong>Time Remaining</strong>
                     </TableCell>
-                    <TableCell align="center">
+                    <TableCell align="center" sx={{ fontFamily: "inherit" }}>
                       <strong>Action</strong>
                     </TableCell>
                   </TableRow>
@@ -194,8 +202,10 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
 
                       return (
                         <TableRow key={activity.id} hover>
-                          <TableCell>{activity.name}</TableCell>
-                          <TableCell>
+                          <TableCell sx={{ fontFamily: "inherit" }}>
+                            {activity.name}
+                          </TableCell>
+                          <TableCell sx={{ fontFamily: "inherit" }}>
                             {new Date(activity.expires_at).toLocaleString(
                               "en-IN",
                               {
@@ -204,7 +214,7 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
                               }
                             )}
                           </TableCell>
-                          <TableCell>
+                          <TableCell sx={{ fontFamily: "inherit" }}>
                             {timeRemaining !== undefined ? (
                               <Chip
                                 label={
@@ -216,24 +226,29 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
                                 }
                                 color={
                                   isExpired
-                                    ? "default"
+                                    ? "error"
                                     : isUrgent
                                     ? "error"
                                     : "success"
                                 }
                                 size="small"
+                                sx={{ fontFamily: "inherit" }}
                               />
                             ) : (
                               "-"
                             )}
                           </TableCell>
-                          <TableCell align="center">
+                          <TableCell
+                            align="center"
+                            sx={{ fontFamily: "inherit" }}
+                          >
                             {hasMarked ? (
                               <Chip
                                 icon={<CheckCircleIcon />}
                                 label="Marked Attendance"
                                 color="success"
                                 size="small"
+                                sx={{ fontFamily: "inherit" }}
                               />
                             ) : (
                               <Button
@@ -244,6 +259,7 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
                                   handleActivitySelect(activity.id)
                                 }
                                 disabled={isExpired}
+                                sx={{ fontFamily: "inherit" }}
                               >
                                 Mark Attendance
                               </Button>
@@ -297,26 +313,36 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
         onClose={() => setShowSuccessDialog(false)}
         maxWidth="sm"
         fullWidth
+        PaperProps={{
+          sx: {
+            fontFamily:
+              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+          },
+        }}
       >
-        <DialogTitle className="text-center">
+        <DialogTitle className="text-center" sx={{ fontFamily: "inherit" }}>
           <div className="flex flex-col items-center gap-2">
             <CheckCircleIcon sx={{ fontSize: 60, color: "success.main" }} />
             <span className="text-2xl font-bold text-green-600">Success!</span>
           </div>
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ fontFamily: "inherit" }}>
           <div className="text-center py-4">
             <p className="text-lg text-gray-700">
               Your attendance has been marked successfully!
             </p>
           </div>
         </DialogContent>
-        <DialogActions className="justify-center pb-4">
+        <DialogActions
+          className="justify-center pb-4"
+          sx={{ fontFamily: "inherit" }}
+        >
           <Button
             onClick={() => setShowSuccessDialog(false)}
             variant="contained"
             color="success"
             size="large"
+            sx={{ fontFamily: "inherit" }}
           >
             OK
           </Button>
