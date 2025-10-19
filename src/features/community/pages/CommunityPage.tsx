@@ -480,8 +480,12 @@ const CommunityPage: React.FC = () => {
                 className="bg-blue-600 text-[var(--font-light)] px-3 py-2 sm:px-4 rounded-md hover:bg-blue-700 transition-colors font-medium flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
               >
                 <Plus size={16} />
-                <span className="hidden xs:inline">{t("community.newThread")}</span>
-                <span className="hidden sm:inline">{t("community.thread")}</span>
+                <span className="hidden xs:inline">
+                  {t("community.newThread")}
+                </span>
+                <span className="hidden sm:inline">
+                  {t("community.thread")}
+                </span>
               </button>
             </div>
           </div>
@@ -573,7 +577,9 @@ const CommunityPage: React.FC = () => {
           {showNewThreadForm && (
             <div className="mb-4 sm:mb-6 p-4 sm:p-6 bg-white border border-gray-200 rounded-lg mx-1 sm:mx-0">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
-                {editingThread ? t("community.createForm.editThread") : t("community.createForm.startNewDiscussion")}
+                {editingThread
+                  ? t("community.createForm.editThread")
+                  : t("community.createForm.startNewDiscussion")}
               </h3>
               <div className="space-y-3 sm:space-y-4">
                 <div className="flex w-full justify-between gap-4">
@@ -609,7 +615,9 @@ const CommunityPage: React.FC = () => {
                         setNewThread({ ...newThread, tagIds })
                       }
                       onCreateTag={handleCreateTag}
-                      placeholder={t("community.createForm.tagsSearchPlaceholder")}
+                      placeholder={t(
+                        "community.createForm.tagsSearchPlaceholder"
+                      )}
                       className="w-full"
                     />
                   </div>
@@ -642,14 +650,18 @@ const CommunityPage: React.FC = () => {
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         <span>
-                          {editingThread ? t("common.updating") : t("common.creating")}
+                          {editingThread
+                            ? t("common.updating")
+                            : t("common.creating")}
                         </span>
                       </>
                     ) : (
                       <>
                         <Plus size={16} />
                         <span>
-                          {editingThread ? t("community.createForm.updateThread") : t("community.createForm.createThread")}
+                          {editingThread
+                            ? t("community.createForm.updateThread")
+                            : t("community.createForm.createThread")}
                         </span>
                       </>
                     )}

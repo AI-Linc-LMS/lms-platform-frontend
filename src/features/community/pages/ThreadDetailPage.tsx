@@ -123,15 +123,15 @@ const ThreadDetailPage: React.FC = () => {
     const participants = new Set<string>();
 
     // Add thread author
-    if (thread?.author?.user_name) {
-      participants.add(thread.author.user_name);
+    if (thread?.author?.name) {
+      participants.add(thread.author.name);
     }
 
     // Add comment authors recursively
     const addCommentAuthors = (comments: Comment[]) => {
       comments.forEach((comment) => {
-        if (comment.author.user_name) {
-          participants.add(comment.author.user_name);
+        if (comment.author.name) {
+          participants.add(comment.author.name);
         }
         // Recursively add reply authors
         if (comment.replies && comment.replies.length > 0) {
@@ -593,7 +593,7 @@ const ThreadDetailPage: React.FC = () => {
         />
 
         {/* Thread Edit Form */}
-        {editingThread && canEdit(thread.author.user_name) && (
+        {editingThread && canEdit(thread.author.name) && (
           <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
               Edit Thread

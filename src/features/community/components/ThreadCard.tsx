@@ -42,7 +42,7 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
   allTags = [],
 }) => {
   const authorAvatar = getUserAvatar(
-    thread.author.user_name,
+    thread.author.name,
     thread.author.profile_pic_url
   );
 
@@ -75,7 +75,7 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
                 {thread.title}
               </h3>
 
-              {canEdit(thread.author.user_name) && (
+              {canEdit(thread.author.name) && (
                 <div
                   className="flex items-center gap-2 flex-shrink-0"
                   onClick={(e) => e.stopPropagation()}
@@ -148,7 +148,7 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
                   {authorAvatar.avatar ? (
                     <img
                       src={authorAvatar.avatar}
-                      alt={thread.author.user_name}
+                      alt={thread.author.name}
                       className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover"
                     />
                   ) : (
@@ -160,7 +160,7 @@ const ThreadCard: React.FC<ThreadCardProps> = ({
                   )}
                   <div>
                     <div className="font-medium text-gray-900 text-xs sm:text-sm">
-                      {thread.author.user_name}
+                      {thread.author.name}
                     </div>
                     <div className="text-xs text-gray-500 flex items-center gap-1 sm:gap-2">
                       <Calendar size={8} className="sm:w-2.5 sm:h-2.5" />
