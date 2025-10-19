@@ -101,7 +101,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({
         <div className="mt-3 sm:mt-4 space-y-2 sm:space-y-3">
           {comments.map((comment) => {
             const commentAuthorAvatar = getUserAvatar(
-              comment.author.user_name,
+              comment?.author?.user_name || "",
               comment.author.profile_pic_url
             );
             return (
@@ -117,7 +117,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({
                   {commentAuthorAvatar.avatar ? (
                     <img
                       src={commentAuthorAvatar.avatar}
-                      alt={comment.author.user_name}
+                      alt={comment.author.name}
                       className="w-6 h-6 rounded-full object-cover"
                     />
                   ) : (
@@ -128,7 +128,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({
                     </div>
                   )}
                   <span className="font-medium text-gray-900 text-sm">
-                    {comment.author.user_name}
+                    {comment.author.name}
                   </span>
                   <span className="text-xs text-gray-500">
                     {comment.created_at}
