@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Flame, Trophy, Play } from "lucide-react";
 import { Course } from "../../../../types/final-course.types";
 import { calculateProgress } from "../utils/courseDataUtils";
+import { calculateCourseProgress } from "../../../../utils/progressUtils";
 
 interface QuickOverviewSectionProps {
   course: Course;
@@ -12,7 +13,7 @@ export const QuickOverviewSection: React.FC<QuickOverviewSectionProps> = ({
   course,
 }) => {
   const { t } = useTranslation();
-  const progressPercentage = course.progress_percentage ?? 0;
+  const progressPercentage = calculateCourseProgress(course);
   const videosWatched = course.stats?.video?.completed ?? 0;
   const totalVideos = course.stats?.video?.total ?? 0;
   const dayStreak = course.streak_count ?? 0;

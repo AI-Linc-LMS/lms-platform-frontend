@@ -124,6 +124,11 @@ const DashboardPieChart = ({
   }: {
     categories: Category[];
   }) => {
+    // If there are no categories, render nothing
+    if (!categories || categories.length === 0) {
+      return null;
+    }
+
     // Define the radius values for each ring (from outer to inner)
     const ringRadii = [45, 35, 25, 15];
     const ringStrokeWidths = [10, 8, 6, 4];
@@ -134,32 +139,39 @@ const DashboardPieChart = ({
           viewBox="0 0 100 100"
           className="w-full h-full transform -rotate-90"
         >
-          {ringRadii.map((radius, index) => (
-            <circle
-              key={`bg-${index}`}
-              cx="50"
-              cy="50"
-              r={radius}
-              fill="none"
-              stroke="#EEEEEE"
-              strokeWidth={ringStrokeWidths[index]}
-            />
-          ))}
+          {/* Background rings only for categories that have value > 0 */}
+          {categories.map((category) => {
+            if (category.value <= 0) return null;
+            const radius = ringRadii[category.ring];
+            const strokeWidth = ringStrokeWidths[category.ring];
+            return (
+              <circle
+                key={`bg-${category.ring}`}
+                cx="50"
+                cy="50"
+                r={radius}
+                fill="none"
+                stroke="#EEEEEE"
+                strokeWidth={strokeWidth}
+              />
+            );
+          })}
 
-          {/* Draw progress arcs for each category */}
-          {categories.map((category, index) => {
+          {/* Draw progress arcs only for categories that have value > 0 */}
+          {categories.map((category) => {
+            if (category.value <= 0) return null;
+
             const radius = ringRadii[category.ring];
             const strokeWidth = ringStrokeWidths[category.ring];
             const circumference = 2 * Math.PI * radius;
 
-            // Calculate stroke dash properties
             const strokeDasharray = circumference;
             const strokeDashoffset =
               circumference - (category.value / 100) * circumference;
 
             return (
               <circle
-                key={index}
+                key={`progress-${category.ring}`}
                 cx="50"
                 cy="50"
                 r={radius}
@@ -259,20 +271,22 @@ const DashboardPieChart = ({
           <CompletionCircle percentage={chartData.totalCompletion || 0} />
         </div>
         {/* Stats row */}
-        {/* <div className="grid grid-cols-2 md:flex md:justify-between gap-2 md:gap-0">
-          {categories.map((category: Category, index: number) => (
-            <div key={index} className="flex flex-col items-center">
-              <span
-                className="text-xl md:text-2xl font-bold"
-                style={{ color: category.color }}
-              >
-                {category.value}%
-              </span> */}
-        {/* Category icons */}
-        {/* <span className="text-xs md:text-sm">{category.name}</span>
-            </div>
-          ))}
-        </div> */}
+        <div className="grid grid-cols-2 md:flex md:justify-between gap-2 md:gap-0">
+          {categories
+            .filter((category: Category) => category.value > 0)
+            .map((category: Category, index: number) => (
+              <div key={index} className="flex flex-col items-center">
+                <span
+                  className="text-xl md:text-2xl font-bold"
+                  style={{ color: category.color }}
+                >
+                  {category.value}%
+                </span>
+                {/* Category icons */}
+                <span className="text-xs md:text-sm">{category.name}</span>
+              </div>
+            ))}
+        </div>
         <div className="w-full mx-auto h-auto md:h-[62px] bg-[#DEE2E6] rounded-xl flex flex-row items-center justify-center p-3 md:p-4 gap-2 md:gap-4 mt-3">
           <div className="flex-shrink-0">
             <svg

@@ -44,14 +44,6 @@ const ActivityTableRow: React.FC<ActivityTableRowProps> = ({
       <TableCell sx={{ fontFamily: "inherit" }}>
         <Chip
           sx={{ fontFamily: "inherit" }}
-          label={activity.is_active ? "Active" : "Inactive"}
-          color={activity.is_active ? "success" : "error"}
-          size="small"
-        />
-      </TableCell>
-      <TableCell sx={{ fontFamily: "inherit" }}>
-        <Chip
-          sx={{ fontFamily: "inherit" }}
           label={activity.is_valid ? "Valid" : "Expired"}
           color={activity.is_valid ? "success" : "error"}
           size="small"

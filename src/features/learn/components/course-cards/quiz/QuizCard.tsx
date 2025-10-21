@@ -164,16 +164,12 @@ const QuizCard: React.FC<QuizCardProps> = ({
       setLoadingAttempts(true);
       pastSubmissions(clientId, courseId, contentId)
         .then((data) => {
-          // Sort by created_at descending, take first 8
-          const sorted = [...data].sort(
-            (a, b) =>
-              new Date(b.created_at).getTime() -
-              new Date(a.created_at).getTime()
-          );
+          // Sort by id ascending (lowest id first), take first 8
+          const sorted = [...data].sort((a, b) => a.id - b.id);
           setTotalAttempts(sorted.length);
           setPastAttempts(sorted.slice(0, 8));
 
-          setSelectedAttemptIndex(0); // latest
+          setSelectedAttemptIndex(0); // first attempt (lowest id)
         })
         .catch(() => setPastAttempts([]))
         .finally(() => setLoadingAttempts(false));

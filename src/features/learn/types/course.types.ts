@@ -72,11 +72,26 @@ export interface Course {
   progress_percentage?: number; // 0 to 100
   streak?: number; // Number of consecutive days user has engaged with the course
   achievements?: string[]; // List of achievement badges earned in the course
-  stats?: {
-    video: { total: number };
-    article: { total: number };
-    coding_problem: { total: number };
-    quiz: { total: number };
-    assignment: { total: number };
+  stats: {
+    video: {
+      total: number;
+      completed: number;
+    };
+    article: {
+      total: number;
+      completed: number;
+    };
+    coding_problem: {
+      total: number;
+      completed: number;
+    };
+    quiz: {
+      total: number;
+      completed: number;
+    };
+    assignment: {
+      total: number;
+      completed: number;
+    };
   };
 }
