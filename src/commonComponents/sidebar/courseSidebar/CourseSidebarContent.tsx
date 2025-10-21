@@ -270,7 +270,7 @@ const CourseSidebarContent = ({
           duration: `${content.duration_in_minutes} min`,
           marks: content.marks || 10,
           submissions: content.submissions || 0,
-          questions: content.questions || 10,
+          questions: content.questions || 0,
           status: content.status || "non-complete",
         }))
     : [];

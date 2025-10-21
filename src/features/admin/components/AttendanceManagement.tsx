@@ -220,9 +220,7 @@ const AttendanceManagement: React.FC<AttendanceManagementProps> = () => {
                   <TableCell sx={{ fontFamily: "inherit" }}>
                     <strong>Duration (min)</strong>
                   </TableCell>
-                  <TableCell sx={{ fontFamily: "inherit" }}>
-                    <strong>Status</strong>
-                  </TableCell>
+
                   <TableCell sx={{ fontFamily: "inherit" }}>
                     <strong>Validity</strong>
                   </TableCell>
