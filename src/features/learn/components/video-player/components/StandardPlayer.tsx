@@ -178,25 +178,36 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
     // Set up interval to save progress every 5 seconds
     if (onSaveProgress && videoId && videoRef.current) {
       // Save progress immediately on mount
-      if (lastKnownTime > 0 && duration > 0) {
+      if (lastKnownTime > 0 && duration > 0 && !hasMarkedComplete) {
         const currentPercent = (lastKnownTime / duration) * 100;
-        if (currentPercent > 1 && currentPercent < 99) {
+        if (currentPercent > 1) {
           //console.log(`StandardPlayer: Saving progress for ${videoId}: ${currentPercent.toFixed(1)}%`);
-          onSaveProgress(videoId, currentPercent);
+          onSaveProgress(
+            videoId,
+            currentPercent >= 98.5 ? 100 : currentPercent
+          );
         }
       }
 
       // Set up periodic saving
       progressSaveInterval.current = setInterval(() => {
-        if (lastKnownTime > 0 && duration > 0 && videoRef.current) {
+        if (
+          lastKnownTime > 0 &&
+          duration > 0 &&
+          videoRef.current &&
+          !hasMarkedComplete
+        ) {
           // Get the most up-to-date time
           const currentTime = videoRef.current.currentTime;
           const currentPercent = (currentTime / duration) * 100;
 
-          // Only save if we have meaningful progress and it's less than completion threshold
-          if (currentPercent > 1 && currentPercent < 99) {
+          // Save progress if meaningful and not yet marked complete
+          if (currentPercent > 1) {
             //console.log(`StandardPlayer: Saving progress (interval) for ${videoId}: ${currentPercent.toFixed(1)}%`);
-            onSaveProgress(videoId, currentPercent);
+            onSaveProgress(
+              videoId,
+              currentPercent >= 98.5 ? 100 : currentPercent
+            );
           }
         }
       }, 5000); // Save every 5 seconds
@@ -217,9 +228,9 @@ export const StandardPlayer: React.FC<StandardPlayerProps> = ({
         !hasMarkedComplete
       ) {
         const finalPercent = (lastKnownTime / duration) * 100;
-        if (finalPercent > 1 && finalPercent < 99) {
+        if (finalPercent > 1) {
           //console.log(`StandardPlayer: Saving final progress for ${videoId}: ${finalPercent.toFixed(1)}%`);
-          onSaveProgress(videoId, finalPercent);
+          onSaveProgress(videoId, finalPercent >= 98.5 ? 100 : finalPercent);
         }
       }
     };

@@ -55,6 +55,7 @@ export interface Comment {
     user_name: string;
     profile_pic_url?: string;
     role?: string;
+    name?: string;
   };
   parent: number | null;
   body: string;

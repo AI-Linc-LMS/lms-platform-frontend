@@ -123,7 +123,6 @@ const AllContent = ({
   selectedContentId,
   activeLabel,
 }: AllContentProps) => {
-  console.log(contents);
   const sortedContents = useMemo(
     () => [...contents].sort((a, b) => a.order - b.order),
     [contents]
@@ -188,7 +187,11 @@ const AllContent = ({
           const normalizedItemTitle = normalizeString(item.title);
 
           if (titleProgressMap[normalizedItemTitle]) {
-            const { progress } = titleProgressMap[normalizedItemTitle];
+            let { progress } = titleProgressMap[normalizedItemTitle];
+            // Round up if very close to 100% (>= 98.5%)
+            if (progress >= 98.5) {
+              progress = 100;
+            }
             progressMap[item.id] = progress;
           } else {
           }
@@ -287,14 +290,21 @@ const AllContent = ({
 
             <div className="flex items-center justify-center w-5 h-5">
               {item.content_type === "VideoTutorial" ? (
-                <CircularProgress
-                  progress={
-                    item.status === "complete"
-                      ? 100
-                      : videoProgress[item.id] || item.progress_percentage || 0
-                  }
-                  isComplete={item.status === "complete"}
-                />
+                (() => {
+                  const localProgress =
+                    videoProgress[item.id] || item.progress_percentage || 0;
+                  // Consider complete if status is complete OR progress >= 98.5%
+                  const isComplete =
+                    item.status === "complete" || localProgress >= 98.5;
+                  const displayProgress = isComplete ? 100 : localProgress;
+
+                  return (
+                    <CircularProgress
+                      progress={displayProgress}
+                      isComplete={isComplete}
+                    />
+                  );
+                })()
               ) : (
                 <img
                   src={item.status === "complete" ? completeTickIcon : tickIcon}
