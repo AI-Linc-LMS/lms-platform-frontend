@@ -123,7 +123,6 @@ const AllContent = ({
   selectedContentId,
   activeLabel,
 }: AllContentProps) => {
-  console.log(contents);
   const sortedContents = useMemo(
     () => [...contents].sort((a, b) => a.order - b.order),
     [contents]
@@ -194,9 +193,7 @@ const AllContent = ({
               progress = 100;
             }
             progressMap[item.id] = progress;
-            console.log(`Video "${item.title}" progress: ${progress}%`);
           } else {
-            console.log(`No progress found for video: "${item.title}"`);
           }
         }
       });

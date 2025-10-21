@@ -18,7 +18,6 @@ export const filterNavigationByFeatures = (
   features.forEach((feature) => {
     enabledFeatures.add(feature.name.toLowerCase());
   });
-  console.log(navigationLinks);
 
   return navigationLinks.filter((link) => {
     const linkSlugLower = link.slug.toLowerCase();

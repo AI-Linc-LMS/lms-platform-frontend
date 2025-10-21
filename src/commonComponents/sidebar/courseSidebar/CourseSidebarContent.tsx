@@ -207,7 +207,6 @@ const CourseSidebarContent = ({
     : [];
 
   // Transform submodule data for AllContent
-  console.log(actualData?.data, 20);
   const allContents = actualData?.data
     ? actualData.data.map((content: SubmoduleContent) => ({
         id: content.id,
