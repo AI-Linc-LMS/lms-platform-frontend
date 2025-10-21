@@ -37,7 +37,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
   const [replyContent, setReplyContent] = useState("");
 
   const commentAuthorAvatar = getUserAvatar(
-    comment?.author.user_name,
+    comment?.author.user_name || "",
     comment?.author.profile_pic_url
   );
 
@@ -112,7 +112,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
                     {commentAuthorAvatar.avatar ? (
                       <img
                         src={commentAuthorAvatar.avatar}
-                        alt={comment.author.user_name}
+                        alt={comment.author.name}
                         className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
                       />
                     ) : (
@@ -125,7 +125,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
 
                     <div>
                       <div className="font-semibold text-gray-900 text-sm sm:text-base">
-                        {comment.author.user_name}
+                        {comment.author.name}
                       </div>
                       <div className="text-xs sm:text-sm text-gray-500">
                         {comment.created_at}

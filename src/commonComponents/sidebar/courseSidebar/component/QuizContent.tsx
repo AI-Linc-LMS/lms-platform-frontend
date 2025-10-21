@@ -54,7 +54,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
           const isLastItem = idx === quizzes.length - 1;
 
           // If this quiz is selected and we have API data, get the question count from API
-          const questionCount = isSelected && quiz.questions;
+          const questionCount = quiz.questions;
 
           // Use a placeholder submissions count based on API data if available
           const submissions = quiz.submissions;

@@ -158,7 +158,12 @@ const VideoContent: React.FC<VideoContentProps> = ({
       videos.forEach((video) => {
         const normalized = normalizeString(video.title);
         if (titleProgressMap[normalized]) {
-          progressMap[video.id] = titleProgressMap[normalized].progress;
+          let { progress } = titleProgressMap[normalized];
+          // Round up if very close to 100% (>= 98.5%)
+          if (progress >= 98.5) {
+            progress = 100;
+          }
+          progressMap[video.id] = progress;
         }
       });
 
@@ -211,9 +216,9 @@ const VideoContent: React.FC<VideoContentProps> = ({
         {videos.map((video, idx) => {
           const isSelected = selectedVideoId === video.id;
           const isLast = idx === videos.length - 1;
-          const progress = video.completed
-            ? 100
-            : videoProgress[video.id] || video.progress || 0;
+          const localProgress = videoProgress[video.id] || video.progress || 0;
+          const isComplete = video.completed || localProgress >= 98.5;
+          const progress = isComplete ? 100 : localProgress;
 
           return (
             <div
@@ -240,7 +245,7 @@ const VideoContent: React.FC<VideoContentProps> = ({
               </div>
 
               <div className="flex items-center">
-                {progress >= 100 || video.completed ? (
+                {isComplete ? (
                   <img src={completeTickIcon} alt="check" className="w-5 h-5" />
                 ) : (
                   <CircularProgress progress={progress} isComplete={false} />

@@ -109,7 +109,7 @@ const ThreadHeader: React.FC<ThreadHeaderProps> = ({
                 {authorAvatar.avatar ? (
                   <img
                     src={authorAvatar.avatar}
-                    alt={thread.author.user_name}
+                    alt={thread.author.name}
                     className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover"
                   />
                 ) : (
@@ -122,7 +122,7 @@ const ThreadHeader: React.FC<ThreadHeaderProps> = ({
 
                 <div>
                   <div className="font-semibold text-gray-900 text-sm sm:text-base">
-                    {thread.author.user_name}
+                    {thread.author.name}
                   </div>
                   <div className="text-xs sm:text-sm text-gray-500 flex items-center gap-2 sm:gap-3">
                     <span className="flex items-center gap-1">

@@ -182,7 +182,6 @@ const CourseTopicDetailPage: React.FC = () => {
     staleTime: 0,
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes but always refetch
   });
-  console.log(submoduleData, 123);
   // Calculate content availability
   const contentAvailability = getContentAvailability(submoduleData);
 
