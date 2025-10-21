@@ -162,6 +162,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
   // Handle video completion
   const handleVideoComplete = async () => {
+    console.log("came here");
     // Call the onComplete handler if provided
     if (onComplete) {
       onComplete();
@@ -174,6 +175,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
     // Continue with existing completion logic
     if (clientId && courseId && contentId) {
+      console.log("came here");
       await submitContent(clientId, courseId, contentId, "VideoTutorial", {});
     }
     //console.log("Video completed! Loading next video...");
