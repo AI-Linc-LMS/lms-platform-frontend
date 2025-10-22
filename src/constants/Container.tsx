@@ -58,7 +58,7 @@ function Container({ children }: { children: React.ReactNode }) {
         className={`animate-children-fade-up ${
           showSidebar
             ? isSidebarExpanded
-              ? "md:ml-[250px]"
+              ? "md:ml-[180px] lg:ml-[250px]"
               : "md:ml-[90px]"
             : "ml-0"
         } pb-20 md:pb-0 md:mt-10 relative transition-all pl-4 pr-4 md:pl-7 md:pr-4 h-full`}
