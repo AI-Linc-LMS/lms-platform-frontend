@@ -27,6 +27,7 @@ export interface SubmoduleContent {
   description?: string;
   status?: string;
   marks?: number;
+  obtainedMarks?: number;
   submissions?: number;
   questions?: number;
   accuracy?: number;
