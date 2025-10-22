@@ -110,7 +110,6 @@ const VideoContent: React.FC<VideoContentProps> = ({
   videos,
   selectedVideoId,
   onVideoClick,
-  totalDuration = "0",
   topicTitle = "Topic 1",
   topicNo = 1,
   week = "Week 1",
@@ -202,7 +201,6 @@ const VideoContent: React.FC<VideoContentProps> = ({
       {/* Progress Bar */}
       <div className="flex justify-between items-center text-xs text-gray-600 mb-4">
         <span>{completionPercentage}% Completed</span>
-        <span>{totalDuration}</span>
       </div>
       <div className="w-full h-3 bg-gray-200 rounded-full mb-5">
         <div
