@@ -88,7 +88,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
                   <div className="text-xs text-gray-500 flex gap-2 mt-1">
                     <span> Total Marks: {quiz.marks}</span>
 
-                    {obtainedMarks !== null && obtainedMarks !== 0 && (
+                    {obtainedMarks !== null && submissions > 1 && (
                       <>
                         <span>|</span>
                         <span> Obtained Marks: {obtainedMarks}</span>
