@@ -23,14 +23,43 @@ const Streak = ({ showProgress = true }: { showProgress?: boolean }) => {
   });
 
   useEffect(() => {
-    let completedHours = 0;
-    let totalHours = 0;
+    let completedVideos = 0;
+    let totalVideos = 0;
+    let totalArticles = 0;
+    let completedArticles = 0;
+    let totalQuizzes = 0;
+    let completedQuizzes = 0;
+    let totalAssignments = 0;
+    let completedAssignments = 0;
+    let totalCodingProblems = 0;
+    let completedCodingProblems = 0;
     for (const single of courses.courses) {
-      totalHours += single.stats.video.total;
-      completedHours += single.stats.video.completed;
+      totalVideos += single.stats?.video?.total || 0;
+      completedVideos += single.stats?.video?.completed || 0;
+      totalArticles += single.stats?.article?.total || 0;
+      completedArticles += single.stats?.article?.completed || 0;
+      totalCodingProblems += single.stats?.coding_problem?.total || 0;
+      completedCodingProblems += single.stats?.coding_problem?.completed || 0;
+      totalQuizzes += single.stats?.quiz?.total || 0;
+      completedQuizzes += single.stats?.quiz?.completed || 0;
+      totalAssignments += single.stats?.assignment?.total || 0;
+      completedAssignments += single.stats?.assignment?.completed || 0;
     }
-    if (totalHours == 0) totalHours = 1;
-    setProgress(Number(completedHours / totalHours) * 100);
+    const completedHours =
+      completedVideos +
+      completedArticles +
+      completedQuizzes +
+      completedAssignments +
+      completedCodingProblems;
+    const totalHours =
+      totalVideos +
+      totalArticles +
+      totalQuizzes +
+      totalAssignments +
+      totalCodingProblems;
+    if (totalHours !== 0) {
+      setProgress(Math.round(Number(completedHours / totalHours) * 100));
+    }
   }, [courses]);
 
   useEffect(() => {
