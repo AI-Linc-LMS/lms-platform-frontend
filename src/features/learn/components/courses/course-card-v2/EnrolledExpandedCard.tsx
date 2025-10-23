@@ -138,35 +138,101 @@ const EnrolledExpandedCard: React.FC<EnrolledExpandedCardProps> = ({
             ></div>
           </div>
           <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-[var(--font-secondary)]">
-              <PlayCircle className="w-2 h-2 sm:w-[10px] sm:h-[10px] text-[#10b981] flex-shrink-0" />
-              <span className="truncate">
-                {course.stats?.video?.completed || 0}/
-                {course.stats?.video?.total || 0}{" "}
-                {t("courses.progress.videosWatched")}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-[var(--font-secondary)]">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-2 h-2 sm:w-[10px] sm:h-[10px] text-[#10b981] flex-shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 12l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="truncate">
-                {course.stats?.quiz?.completed || 0}/
-                {course.stats?.quiz?.total || 0}{" "}
-                {t("courses.progress.quizzesCompleted")}
-              </span>
-            </div>
+            {/* Videos */}
+            {(course.stats?.video?.total || 0) > 0 && (
+              <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-[var(--font-secondary)]">
+                <PlayCircle className="w-2 h-2 sm:w-[10px] sm:h-[10px] text-[#10b981] flex-shrink-0" />
+                <span className="truncate">
+                  {course.stats?.video?.completed || 0}/
+                  {course.stats?.video?.total || 0}{" "}
+                  {t("courses.progress.videosWatched")}
+                </span>
+              </div>
+            )}
+
+            {/* Articles */}
+            {(course.stats?.article?.total || 0) > 0 && (
+              <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-[var(--font-secondary)]">
+                <FileText className="w-2 h-2 sm:w-[10px] sm:h-[10px] text-[#10b981] flex-shrink-0" />
+                <span className="truncate">
+                  {course.stats?.article?.completed || 0}/
+                  {course.stats?.article?.total || 0} Articles
+                </span>
+              </div>
+            )}
+
+            {/* Coding Problems */}
+            {(course.stats?.coding_problem?.total || 0) > 0 && (
+              <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-[var(--font-secondary)]">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-2 h-2 sm:w-[10px] sm:h-[10px] text-[#10b981] flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                  />
+                </svg>
+                <span className="truncate">
+                  {course.stats?.coding_problem?.completed || 0}/
+                  {course.stats?.coding_problem?.total || 0} Coding Problems
+                </span>
+              </div>
+            )}
+
+            {/* Quizzes */}
+            {(course.stats?.quiz?.total || 0) > 0 && (
+              <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-[var(--font-secondary)]">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-2 h-2 sm:w-[10px] sm:h-[10px] text-[#10b981] flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span className="truncate">
+                  {course.stats?.quiz?.completed || 0}/
+                  {course.stats?.quiz?.total || 0}{" "}
+                  {t("courses.progress.quizzesCompleted")}
+                </span>
+              </div>
+            )}
+
+            {/* Assignments */}
+            {(course.stats?.assignment?.total || 0) > 0 && (
+              <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-[var(--font-secondary)]">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-2 h-2 sm:w-[10px] sm:h-[10px] text-[#10b981] flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+                <span className="truncate">
+                  {course.stats?.assignment?.completed || 0}/
+                  {course.stats?.assignment?.total || 0} Assignments
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

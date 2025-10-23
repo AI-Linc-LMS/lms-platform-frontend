@@ -407,21 +407,41 @@ export const generateTrustedByCompanies = (course: CourseData) => {
 // === COURSE PROGRESS UTILITIES ===
 
 export const calculateProgress = (course: CourseData) => {
-  const videosCompleted = course.stats?.video?.completed || 0;
-  const videosTotal = course.stats?.video?.total || 0;
-  const quizzesCompleted = course.stats?.quiz?.completed || 0;
-  const quizzesTotal = course.stats?.quiz?.total || 0;
+  const totalVideos = course.stats?.video?.total || 0;
+  const completedVideos = course.stats?.video?.completed || 0;
+  const totalArticles = course.stats?.article?.total || 0;
+  const completedArticles = course.stats?.article?.completed || 0;
+  const totalCodingProblems = course.stats?.coding_problem?.total || 0;
+  const completedCodingProblems = course.stats?.coding_problem?.completed || 0;
+  const totalQuizzes = course.stats?.quiz?.total || 0;
+  const completedQuizzes = course.stats?.quiz?.completed || 0;
+  const totalAssignments = course.stats?.assignment?.total || 0;
+  const completedAssignments = course.stats?.assignment?.completed || 0;
 
-  if (videosTotal === 0 && quizzesTotal === 0) return 0;
+  const totalItems =
+    totalVideos +
+    totalArticles +
+    totalCodingProblems +
+    totalQuizzes +
+    totalAssignments;
+  if (totalItems === 0) {
+    return 0; // No trackable items, so progress is 0.
+  }
 
-  // Calculate weighted progress (videos 70%, quizzes 30%)
-  const videoProgress =
-    videosTotal > 0 ? (videosCompleted / videosTotal) * 0.7 : 0;
-  const quizProgress =
-    quizzesTotal > 0 ? (quizzesCompleted / quizzesTotal) * 0.3 : 0;
+  const completedItems =
+    completedVideos +
+    completedArticles +
+    completedCodingProblems +
+    completedQuizzes +
+    completedAssignments;
+  const calculatedProgress = (completedItems / totalItems) * 100;
 
-  // Return exact rounded value; do not force a minimum
-  return Math.round((videoProgress + quizProgress) * 100);
+  // If calculation results in a tiny, non-zero progress, show 1%.
+  if (calculatedProgress > 0 && calculatedProgress < 1) {
+    return 1;
+  }
+
+  return Math.round(calculatedProgress);
 };
 
 export const getTimeAgo = (courseId: number): string => {
