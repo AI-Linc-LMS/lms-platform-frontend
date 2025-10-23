@@ -7,6 +7,7 @@ import timeSpent from "../../../../commonComponents/icons/admin/dashboard/ClockC
 import i from "../../../../commonComponents/icons/admin/dashboard/exclamation-circle.png";
 import StudentRanking from "../components/RankingTable";
 import TimeSpentGraph from "../components/TimeSpentGraph";
+import StudentDailyLoginsGraph from "../components/StudentDailyLoginsGraph";
 import StudentDailyActivityChart, { StudentDailyActivityApi } from "../components/StudentActivityChart";
 import { useRole } from "../../../../hooks/useRole";
 import AccessDenied from "../../../../components/AccessDenied";
@@ -305,23 +306,37 @@ const Dashboard = () => {
       </div>
       <div className="h-1 border-t border-[#D9E8FF] my-5"></div>
       <div className="flex gap-4 my-4">
-        <TimeSpentGraph
-          daily_time_spend={dashboardData?.daily_time_spend ?? []}
-          isLoading={isLoading}
-          error={error}
-          period={period}
-        />
-        <StudentDailyActivityChart
-          student_daily_activity={dashboardData?.student_daily_activity ?? []}
-          isLoading={isLoading}
-          error={error as Error | null}
-          period={period}
-        />
-        <StudentRanking
-          leaderboard={dashboardData?.leaderboard ?? []}
-          isLoading={isLoading}
-          error={error}
-        />
+        <div className="flex-1 flex flex-col gap-4">
+          <TimeSpentGraph
+            daily_time_spend={dashboardData?.daily_time_spend ?? []}
+            isLoading={isLoading}
+            error={error}
+            period={period}
+          />
+          <StudentDailyLoginsGraph
+            daily_login_data={dashboardData?.daily_login_data ?? []}
+            isLoading={isLoading}
+            error={error as Error | null}
+            period={period}
+          />
+        </div>
+
+        <div className="flex-1">
+          <StudentDailyActivityChart
+            student_daily_activity={dashboardData?.student_daily_activity ?? []}
+            isLoading={isLoading}
+            error={error as Error | null}
+            period={period}
+          />
+        </div>
+
+        <div className="flex-1">
+          <StudentRanking
+            leaderboard={dashboardData?.leaderboard ?? []}
+            isLoading={isLoading}
+            error={error}
+          />
+        </div>
       </div>
     </div>
   );

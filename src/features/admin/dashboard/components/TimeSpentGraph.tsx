@@ -112,7 +112,7 @@ const TimeSpentGraph = ({
   }
 
   return (
-    <div className="rounded-2xl bg-white p-6 w-full max-w-[700px] h-[430px] ring-1 ring-[var(--primary-100)] ring-offset-1 shadow-md">
+  <div className="rounded-2xl bg-white p-6 w-full h-[430px] ring-1 ring-[var(--primary-100)] ring-offset-1 shadow-md">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-[var(--primary-500)]">
           Total Time Spent by Students
