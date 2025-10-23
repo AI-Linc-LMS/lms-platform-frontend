@@ -153,10 +153,6 @@ const AttendanceManagement: React.FC<AttendanceManagementProps> = () => {
     setPage(0);
   };
 
-  const copyCodeToClipboard = (code: string) => {
-    navigator.clipboard.writeText(code);
-  };
-
   return (
     <div className="p-6 bg-white rounded-lg shadow">
       <div className="flex justify-between items-center mb-6">
@@ -250,7 +246,6 @@ const AttendanceManagement: React.FC<AttendanceManagementProps> = () => {
                         key={activity.id}
                         activity={activity}
                         onViewRecords={handleViewRecords}
-                        onCopyCode={copyCodeToClipboard}
                       />
                     ))
                 ) : (
