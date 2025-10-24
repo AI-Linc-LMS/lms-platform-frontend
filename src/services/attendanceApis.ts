@@ -24,6 +24,11 @@ export interface AttendanceActivity {
   attendees_count?: number;
   time_remaining_minutes?: number; // Only available in student APIs
   has_marked_attendance?: boolean; // Only available in student APIs
+  // Session tracking fields
+  topic_covered?: string | null;
+  assignments_given?: string | null;
+  hands_on_coding?: string | null;
+  additional_comments?: string | null;
 }
 
 export interface AttendanceRecord {
@@ -46,6 +51,13 @@ export interface CreateAttendanceRequest {
 
 export interface MarkAttendanceRequest {
   code: string;
+}
+
+export interface SessionTrackingRequest {
+  topic_covered: string;
+  assignments_given?: string;
+  hands_on_coding?: string;
+  additional_comments?: string;
 }
 
 export interface AttendanceActivityDetail extends AttendanceActivity {
@@ -94,6 +106,22 @@ export const getAttendanceActivityDetail = async (
 ): Promise<AttendanceActivityDetail> => {
   const response = await axiosInstance.get(
     `${API_BASE_URL}/activity/clients/${clientId}/admin/attendance-activities/${activityId}/`
+  );
+  return response.data;
+};
+
+/**
+ * PATCH /clients/{client_id}/admin/attendance-activities/{activity_id}/update/
+ * Update session tracking data (admin only)
+ */
+export const updateSessionTracking = async (
+  clientId: number,
+  activityId: number,
+  data: SessionTrackingRequest
+): Promise<AttendanceActivity> => {
+  const response = await axiosInstance.patch(
+    `${API_BASE_URL}/activity/clients/${clientId}/admin/attendance-activities/${activityId}/update/`,
+    data
   );
   return response.data;
 };
