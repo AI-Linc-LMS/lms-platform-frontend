@@ -127,7 +127,7 @@ const StudentDailyActivityChart = ({
   return (
     <div
       ref={containerRef}
-      className="relative rounded-2xl p-6 shadow-md w-full ring-1 ring-[var(--primary-100)] ring-offset-1 max-w-[900px] h-[430px]"
+      className="relative rounded-2xl p-6 shadow-md w-full ring-1 ring-[var(--primary-100)] ring-offset-1 h-[430px]"
     >
       <h2 className="text-xl font-bold mb-6 text-[var(--primary-500)]">Student Daily Activity</h2>
 
