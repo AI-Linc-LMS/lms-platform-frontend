@@ -1,6 +1,15 @@
 import React from "react";
-import { Medal, Star, Flame, Lock, Award } from "lucide-react";
+import {
+  Medal,
+  Star,
+  Flame,
+  Lock,
+  Award,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Tooltip, styled } from "@mui/material";
 
 interface AchievementData {
   achieved: boolean;
@@ -19,11 +28,34 @@ interface Achievement {
   info: string;
 }
 
+// Custom styled MUI Tooltip with dark gamification theme
+const GameTooltip = styled(({ className, ...props }: any) => (
+  <Tooltip {...props} classes={{ popper: className }} />
+))(() => ({
+  [`& .MuiTooltip-tooltip`]: {
+    backgroundColor: "#1e293b",
+    color: "#ffffff",
+    fontSize: "0.75rem",
+    borderRadius: "0.5rem",
+    padding: "0.75rem 1rem",
+    maxWidth: "240px",
+    boxShadow:
+      "0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.3)",
+    border: "1px solid rgba(59, 130, 246, 0.3)",
+  },
+  [`& .MuiTooltip-arrow`]: {
+    color: "#1e293b",
+    "&::before": {
+      border: "1px solid rgba(59, 130, 246, 0.3)",
+    },
+  },
+}));
+
 export const AchievementSection: React.FC<{
   achievements: BackendAchievements;
 }> = ({ achievements }) => {
   const { t } = useTranslation();
-  
+
   // Map backend keys to UI details with translations
   const ACHIEVEMENT_MAPPER: Record<
     string,
@@ -31,7 +63,10 @@ export const AchievementSection: React.FC<{
   > = {
     first_step: { label: t("courses.achievements.firstSteps"), icon: Medal },
     quiz_master: { label: t("courses.achievements.quizMaster"), icon: Star },
-    streak_keeper: { label: t("courses.achievements.streakKeeper"), icon: Flame },
+    streak_keeper: {
+      label: t("courses.achievements.streakKeeper"),
+      icon: Flame,
+    },
     expert: { label: t("courses.achievements.expert"), icon: Award },
     certified: { label: t("courses.achievements.certified"), icon: Lock },
   };
@@ -57,7 +92,7 @@ export const AchievementSection: React.FC<{
     <div className="bg-[#f0f9ff] border border-[#bae6fd] rounded-lg p-3 mb-4">
       <div className="flex justify-between items-center mb-2">
         <span className="text-[13px] font-semibold text-[#0369a1]">
-          Achievements
+          {t("courses.achievements.title")}
         </span>
         <span className="text-[11px] text-[#0284c7] font-semibold">
           {earnedCount}/{totalCount}
@@ -69,32 +104,59 @@ export const AchievementSection: React.FC<{
           const IconComponent = achievement.icon;
 
           return (
-            <div
+            <GameTooltip
               key={achievement.id}
-              title={achievement.info} // Tooltip for more detail
-              className={`flex flex-col items-center gap-1 p-2 rounded-md justify-between text-center transition-all duration-200 ${
-                achievement.earned
-                  ? "bg-[#dbeafe] border border-[#bfdbfe]"
-                  : "bg-[#f3f4f6] border border-[#e5e7eb] opacity-60"
-              }`}
+              title={
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    {achievement.earned ? (
+                      <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    )}
+                    <span className="font-semibold text-sm leading-tight">
+                      {achievement.label}
+                    </span>
+                  </div>
+                  <p className="text-xs leading-relaxed text-gray-300 pl-6">
+                    {achievement.info ||
+                      (achievement.earned
+                        ? "🎉 Achievement unlocked!"
+                        : "🔒 Complete the requirements to unlock")}
+                  </p>
+                </div>
+              }
+              arrow
+              placement="top"
+              enterDelay={200}
+              leaveDelay={100}
+              TransitionProps={{ timeout: 300 }}
             >
-              <IconComponent
-                className={`w-6 h-6 ${
+              <div
+                className={`flex flex-col items-center gap-1 p-2 rounded-md justify-between text-center transition-all duration-200 cursor-pointer hover:scale-105 hover:shadow-lg ${
                   achievement.earned
-                    ? "text-[#1d4ed8]"
-                    : "text-[var(--font-tertiary)]"
-                }`}
-              />
-              <span
-                className={`text-[11px] font-medium uppercase tracking-[0.3px] ${
-                  achievement.earned
-                    ? "text-[#1e40af]"
-                    : "text-[var(--font-secondary)]"
+                    ? "bg-[#dbeafe] border border-[#bfdbfe]"
+                    : "bg-[#f3f4f6] border border-[#e5e7eb] opacity-60"
                 }`}
               >
-                {achievement.label}
-              </span>
-            </div>
+                <IconComponent
+                  className={`w-6 h-6 ${
+                    achievement.earned
+                      ? "text-[#1d4ed8]"
+                      : "text-[var(--font-tertiary)]"
+                  }`}
+                />
+                <span
+                  className={`text-[11px] font-medium uppercase tracking-[0.3px] leading-tight ${
+                    achievement.earned
+                      ? "text-[#1e40af]"
+                      : "text-[var(--font-secondary)]"
+                  }`}
+                >
+                  {achievement.label}
+                </span>
+              </div>
+            </GameTooltip>
           );
         })}
       </div>

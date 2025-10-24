@@ -41,6 +41,7 @@
     "i18next": "^25.5.3",
     "i18next-browser-languagedetector": "^8.2.0",
     "lucide-react": "^0.534.0",
+    "motion": "^12.23.24",
     "package": "^1.0.1",
     "prismjs": "^1.30.0",
     "react": "^19.0.0",
