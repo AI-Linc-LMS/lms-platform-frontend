@@ -14,7 +14,7 @@ import { getEnrolledCourses } from "../../../services/enrolled-courses-content/c
 import { setCourses } from "../../../redux/slices/courseSlice.ts";
 import SkeletonLoader from "../components/SkeletonLoader.tsx";
 import Streak from "../components/Streak.tsx";
-import DailyProgress from "../components/DailyProgressTable.tsx";
+// import DailyProgress from "../components/DailyProgressTable.tsx";
 import StreakTable from "../components/StreakTable.tsx";
 
 const Learn = () => {
@@ -78,7 +78,7 @@ const Learn = () => {
 
                 <div className="space-y-6">
                   <div className="bg-white/80 backdrop-blur-md border border-[var(--primary-100)] rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
-                    <DailyProgress clientId={parseInt(clientId, 10)} />
+                    {/* <DailyProgress clientId={parseInt(clientId, 10)} /> */}
                   </div>
                   <div className="bg-white/80 backdrop-blur-md border border-[var(--primary-100)] rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
                     <StreakTable clientId={parseInt(clientId, 10)} />

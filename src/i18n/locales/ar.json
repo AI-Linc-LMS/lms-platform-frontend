@@ -200,6 +200,7 @@
       "text": "تقييم {{rating}}/5 من {{count}}+ متعلم"
     },
     "achievements": {
+      "title": "الإنجازات",
       "firstSteps": "الخطوات الأولى",
       "quizMaster": "سيد الاختبارات",
       "streakKeeper": "حارس السلسلة",
