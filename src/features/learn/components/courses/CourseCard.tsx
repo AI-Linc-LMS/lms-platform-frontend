@@ -62,7 +62,9 @@ const CourseCard: React.FC<CourseCardProps> = ({
 
   if (isEnrolled) {
     return (
-      <CourseCardV2 course={course} enrolled={true} className={className} />
+      <>
+        <CourseCardV2 course={course} enrolled={true} className={className} />
+      </>
     );
   }
 

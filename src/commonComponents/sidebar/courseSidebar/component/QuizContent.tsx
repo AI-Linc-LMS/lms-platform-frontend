@@ -10,6 +10,7 @@ export interface Quiz {
   marks: number;
   submissions: number;
   questions: number;
+  obtainedMarks: number;
   status: string;
 }
 
@@ -52,9 +53,8 @@ const QuizContent: React.FC<QuizContentProps> = ({
         {quizzes.map((quiz, idx) => {
           const isSelected = quiz.id === selectedQuizId;
           const isLastItem = idx === quizzes.length - 1;
-
           // If this quiz is selected and we have API data, get the question count from API
-          const questionCount = quiz.questions;
+          const obtainedMarks = quiz.obtainedMarks;
 
           // Use a placeholder submissions count based on API data if available
           const submissions = quiz.submissions;
@@ -86,11 +86,23 @@ const QuizContent: React.FC<QuizContentProps> = ({
                     {isSelected && quizzes ? quiz.title : quiz.title}
                   </h3>
                   <div className="text-xs text-gray-500 flex gap-2 mt-1">
-                    <span>{quiz.marks} Marks</span>
-                    <span>|</span>
-                    <span>{questionCount} Questions</span>
-                    <span>|</span>
-                    <span>{submissions.toLocaleString()} Submissions</span>
+                    <span> Total Marks: {quiz.marks}</span>
+
+                    {obtainedMarks !== null && submissions > 0 && (
+                      <>
+                        <span>|</span>
+                        <span> Obtained Marks: {obtainedMarks}</span>
+                        <span>|</span>
+                      </>
+                    )}
+                    {submissions !== null && submissions !== 0 && (
+                      <>
+                        <span>
+                          {" "}
+                          Submissions: {submissions.toLocaleString()}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

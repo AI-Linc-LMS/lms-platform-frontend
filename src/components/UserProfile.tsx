@@ -9,7 +9,7 @@ import { getUser, updateUser } from "../services/userApis";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "../contexts/ToastContext";
 import TimeTrackingDashboard from "../features/learn/components/graphs-components/TimeTrackingDashboard";
-import DailyProgress from "../features/learn/components/DailyProgressTable";
+// import DailyProgress from "../features/learn/components/DailyProgressTable";
 import StreakTable from "../features/learn/components/StreakTable";
 import ResumeBuilder from "../features/resume-builder/pages/ResumeBuilder";
 
@@ -310,9 +310,9 @@ const ProfileSettings = () => {
                 </div>
 
                 <div className="space-y-6">
-                  <div className="bg-white/80 backdrop-blur-md border border-[var(--primary-100)] rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
+                  {/* <div className="bg-white/80 backdrop-blur-md border border-[var(--primary-100)] rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
                     <DailyProgress clientId={parseInt(clientId, 10)} />
-                  </div>
+                  </div> */}
                   <div className="bg-white/80 backdrop-blur-md border border-[var(--primary-100)] rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
                     <StreakTable clientId={parseInt(clientId, 10)} />
                   </div>

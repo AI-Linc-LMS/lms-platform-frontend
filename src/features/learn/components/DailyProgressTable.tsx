@@ -204,34 +204,6 @@ const DailyProgress: React.FC<{ clientId: number }> = ({ clientId }) => {
           <img src={light} alt="Progress Icon" />
         </span>
       </div>
-
-      <div className="flex justify-between text-[13px] mt-1 text-gray-500">
-        <span>0 mins</span>
-        <span>{goalMinutes} mins</span>
-      </div>
-
-      <div className="bg-[#DEE2E6] rounded-xl px-5 py-4 flex items-center gap-2 max-w-md mt-12">
-        <div className="mt-0.5 text-gray-500">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-5 h-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z"
-            />
-          </svg>
-        </div>
-        <p className="text-sm text-[var(--neutral-300)]">
-          Log in every day and snag yourself a shiny +1 Streak point! Don't miss
-          out on the fun—keep those streaks rolling!
-        </p>
-      </div>
     </div>
   );
 };

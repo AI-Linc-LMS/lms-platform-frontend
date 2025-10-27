@@ -197,6 +197,7 @@
       "text": "{{count}}+ शिक्षार्थियों से {{rating}}/5 रेटिंग"
     },
     "achievements": {
+      "title": "उपलब्धियां",
       "firstSteps": "पहले कदम",
       "quizMaster": "क्विज़ मास्टर",
       "streakKeeper": "लकीर रक्षक",
