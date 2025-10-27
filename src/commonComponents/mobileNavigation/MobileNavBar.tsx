@@ -39,7 +39,6 @@ const MobileNavBar = () => {
     }
     return location.pathname.startsWith(path) && path !== "/";
   };
-  console.log(mobileNavItems);
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 w-full bg-white shadow-[0_-1px_10px_rgba(0,0,0,0.05)] z-50 rounded-t-2xl border-t border-gray-200">

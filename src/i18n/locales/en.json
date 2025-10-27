@@ -201,6 +201,7 @@
       "text": "{{rating}}/5 rating from {{count}}+ learners"
     },
     "achievements": {
+      "title": "Achievements",
       "firstSteps": "First Steps",
       "quizMaster": "Quiz Master",
       "streakKeeper": "Streak Keeper",

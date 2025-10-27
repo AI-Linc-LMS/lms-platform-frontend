@@ -245,8 +245,15 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
                             {hasMarked ? (
                               <Chip
                                 icon={<CheckCircleIcon />}
-                                label="Marked Attendance"
+                                label="Present"
                                 color="success"
+                                size="small"
+                                sx={{ fontFamily: "inherit" }}
+                              />
+                            ) : isExpired && !hasMarked ? (
+                              <Chip
+                                label="Absent"
+                                color="error"
                                 size="small"
                                 sx={{ fontFamily: "inherit" }}
                               />
@@ -258,7 +265,6 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
                                 onClick={() =>
                                   handleActivitySelect(activity.id)
                                 }
-                                disabled={isExpired}
                                 sx={{ fontFamily: "inherit" }}
                               >
                                 Mark Attendance

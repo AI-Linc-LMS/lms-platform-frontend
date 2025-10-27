@@ -290,21 +290,23 @@ const AllContent = ({
 
             <div className="flex items-center justify-center w-5 h-5">
               {item.content_type === "VideoTutorial" ? (
-                (() => {
-                  const localProgress =
-                    videoProgress[item.id] || item.progress_percentage || 0;
-                  // Consider complete if status is complete OR progress >= 98.5%
-                  const isComplete =
-                    item.status === "complete" || localProgress >= 98.5;
-                  const displayProgress = isComplete ? 100 : localProgress;
+                <>
+                  {(() => {
+                    const localProgress =
+                      videoProgress[item.id] || item.progress_percentage || 0;
+                    // Consider complete if status is complete OR progress >= 98.5%
+                    const isComplete =
+                      item.status === "complete" || localProgress >= 98.5;
+                    const displayProgress = isComplete ? 100 : localProgress;
 
-                  return (
-                    <CircularProgress
-                      progress={displayProgress}
-                      isComplete={isComplete}
-                    />
-                  );
-                })()
+                    return (
+                      <CircularProgress
+                        progress={displayProgress}
+                        isComplete={isComplete}
+                      />
+                    );
+                  })()}
+                </>
               ) : (
                 <img
                   src={item.status === "complete" ? completeTickIcon : tickIcon}

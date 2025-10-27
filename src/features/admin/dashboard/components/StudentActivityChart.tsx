@@ -110,7 +110,7 @@ const StudentDailyActivityChart = ({
 
   if (isLoading)
     return (
-      <div className="rounded-2xl p-6 shadow-md w-full ring-1 ring-[var(--primary-100)] ring-offset-1 max-w-[900px] h-[430px]">
+      <div className="rounded-2xl bg-white p-6 shadow-md w-full ring-1 ring-[var(--primary-100)] ring-offset-1 h-[430px]">
         <h2 className="text-xl font-bold mb-6 text-[var(--primary-500)]">Student Daily Activity</h2>
         <div className="mt-8 animate-pulse h-60 bg-gray-100 rounded" />
       </div>
@@ -118,7 +118,7 @@ const StudentDailyActivityChart = ({
 
   if (error)
     return (
-      <div className="rounded-2xl p-6 shadow-md w-full ring-1 ring-red-200 ring-offset-1 max-w-[900px] h-[430px] text-red-600">
+      <div className="rounded-2xl bg-white p-6 shadow-md w-full ring-1 ring-red-200 ring-offset-1 h-[430px] text-red-600">
         <h2 className="text-xl font-bold mb-6 text-[var(--primary-500)]">Student Daily Activity</h2>
         Failed to load activity data.
       </div>
@@ -127,7 +127,7 @@ const StudentDailyActivityChart = ({
   return (
     <div
       ref={containerRef}
-      className="relative rounded-2xl p-6 shadow-md w-full ring-1 ring-[var(--primary-100)] ring-offset-1 max-w-[900px] h-[430px]"
+      className="relative rounded-2xl bg-white p-6 shadow-md w-full ring-1 ring-[var(--primary-100)] ring-offset-1 h-[430px]"
     >
       <h2 className="text-xl font-bold mb-6 text-[var(--primary-500)]">Student Daily Activity</h2>
 

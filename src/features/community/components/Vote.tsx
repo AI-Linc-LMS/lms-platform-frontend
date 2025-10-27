@@ -4,6 +4,7 @@ import { VoteType } from "../types";
 import { useToast } from "../../../contexts/ToastContext";
 import { ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 import { addVoteOnComment } from "../../../services/community/commentApis";
+import { useState } from "react";
 
 interface VoteCardProps {
   threadId: number;
@@ -24,6 +25,7 @@ const VoteCard: React.FC<VoteCardProps> = ({
 }: VoteCardProps) => {
   const { error: showError } = useToast();
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const [isAnimating, setIsAnimating] = useState(false);
   const upVoteToThreadMutation = useMutation({
     mutationFn: (type: VoteType) => addVoteOnThread(clientId, threadId, type),
     onSuccess: () => {
@@ -57,31 +59,42 @@ const VoteCard: React.FC<VoteCardProps> = ({
     if (Vote === "thread") upVoteToThreadMutation.mutate(type);
     else addVoteOnCommentMutation.mutate(type);
   };
+
+  const handleClick = (type: VoteType) => {
+    setIsAnimating(true);
+    handleVote(type);
+    setTimeout(() => setIsAnimating(false), 300); // reset animation after 300ms
+  };
   return (
-    <div
-      className="flex flex-col items-center gap-1 min-w-[50px] sm:min-w-[60px]"
-      onClick={(e) => e.stopPropagation()}
-    >
+    <div className="flex flex-col items-center">
+      {/* Upvote button + count */}
       <button
-        onClick={() => handleVote(VoteType.Upvote)}
-        className={`p-1.5 sm:p-2 rounded-md transition-colors text-orange-600 hover:bg-orange-50`}
+        onClick={() => handleClick(VoteType.Upvote)}
+        className={`p-1.5 sm:p-2 rounded-md transition-colors text-orange-600 hover:bg-orange-50 flex flex-col items-center`}
       >
-        <ThumbsUpIcon size={16} className="sm:w-4 sm:h-4" />
-      </button>
-      <div className="flex flex-col items-center text-xs sm:text-sm font-semibold">
-        <span
-          className={`${
-            upvote - downvote > 0 ? "text-orange-600" : "text-blue-600"
-          } px-1.5 sm:px-2 py-0.5`}
-        >
-          {upvote - downvote}
+        <ThumbsUpIcon
+          size={16}
+          className={`sm:w-4 sm:h-4 transition-transform duration-200 ${
+            isAnimating ? "scale-125" : "scale-100"
+          }`}
+        />
+        <span className="text-xs sm:text-sm font-semibold text-orange-600 mt-1">
+          {upvote}
         </span>
-      </div>
+      </button>
+
+      {/* Divider or spacing */}
+      <div className="h-2" />
+
+      {/* Downvote button + count */}
       <button
         onClick={() => handleVote(VoteType.Downvote)}
-        className={`p-1.5 sm:p-2 rounded-md transition-colors text-blue-600 hover:bg-blue-50`}
+        className="p-1.5 sm:p-2 rounded-md transition-colors text-blue-600 hover:bg-blue-50 flex flex-col items-center"
       >
         <ThumbsDownIcon size={16} className="sm:w-4 sm:h-4" />
+        <span className="text-xs sm:text-sm font-semibold text-blue-600 mt-1">
+          {downvote}
+        </span>
       </button>
     </div>
   );

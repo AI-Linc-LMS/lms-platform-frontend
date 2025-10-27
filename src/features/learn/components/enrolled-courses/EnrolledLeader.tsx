@@ -120,7 +120,7 @@ const EnrolledLeaderBoard = ({ courseId }: { courseId: number }) => {
       </p>
 
       <div className="overflow-x-auto overflow-hidden rounded-xl border border-gray-300 my-3 md:my-5">
-        <div className="overflow-y-auto max-h-[220px]">
+        <div className="overflow-y-auto max-h-[600px]">
           <table className="w-full text-center border-collapse">
             <thead className="bg-gray-100 sticky top-0 z-10">
               <tr>
