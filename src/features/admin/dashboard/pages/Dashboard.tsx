@@ -9,11 +9,15 @@ import StudentRanking from "../components/RankingTable";
 import TimeSpentGraph from "../components/TimeSpentGraph";
 import StudentDailyLoginsGraph from "../components/StudentDailyLoginsGraph";
 import StudentDailyActivityChart, { StudentDailyActivityApi } from "../components/StudentActivityChart";
+import StudentPresentStreakGraph from "../components/StudentPresentStreakGraph";
+import AttendanceTrendGraph from "../components/AttendanceTrendGraph";
+import SessionStartTimeTrendGraph from "../components/SessionStartTimeTrendGraph";
 import { useRole } from "../../../../hooks/useRole";
 import AccessDenied from "../../../../components/AccessDenied";
 import { useQuery } from "@tanstack/react-query";
 import { coreAdminDashboard } from "../../../../services/admin/dashboardApis";
 import { getCourses } from "../../../../services/admin/courseApis";
+import { getStudentActivityAnalytics, getAttendanceAnalytics } from "../../../../services/attendanceApis";
 
 export interface Dashboard {
   number_of_students: number;
@@ -65,6 +69,36 @@ const Dashboard = () => {
     const arr = (coursesData as Array<{ id: number; title: string }>) || [];
     return arr.map((c) => ({ id: c.id, title: c.title }));
   }, [coursesData]);
+
+  // Load student activity analytics for completion graph
+  const {
+    data: studentActivityData,
+    isLoading: isStudentActivityLoading,
+    error: studentActivityError,
+  } = useQuery({
+    queryKey: ["studentActivityAnalytics", clientId, selectedCourseId],
+    queryFn: () =>
+      getStudentActivityAnalytics(
+        clientId,
+        selectedCourseId === "" ? undefined : selectedCourseId
+      ),
+    retry: false,
+  });
+
+  // Load attendance analytics for attendance trend graph
+  const {
+    data: attendanceAnalyticsData,
+    isLoading: isAttendanceAnalyticsLoading,
+    error: attendanceAnalyticsError,
+  } = useQuery({
+    queryKey: ["attendanceAnalytics", clientId, selectedCourseId],
+    queryFn: () =>
+      getAttendanceAnalytics(
+        clientId,
+        selectedCourseId === "" ? undefined : selectedCourseId
+      ),
+    retry: false,
+  });
 
   const selectedCourseName = useMemo(() => {
     if (selectedCourseId === "") return "All Courses";
@@ -305,18 +339,14 @@ const Dashboard = () => {
         ))}
       </div>
       <div className="h-1 border-t border-[#D9E8FF] my-5"></div>
+      
+      {/* Row 1: Time Spent, Student Activity, Student Ranking */}
       <div className="flex gap-4 my-4">
-        <div className="flex-1 flex flex-col gap-4">
+        <div className="flex-1">
           <TimeSpentGraph
             daily_time_spend={dashboardData?.daily_time_spend ?? []}
             isLoading={isLoading}
             error={error}
-            period={period}
-          />
-          <StudentDailyLoginsGraph
-            daily_login_data={dashboardData?.daily_login_data ?? []}
-            isLoading={isLoading}
-            error={error as Error | null}
             period={period}
           />
         </div>
@@ -336,6 +366,55 @@ const Dashboard = () => {
             isLoading={isLoading}
             error={error}
           />
+        </div>
+      </div>
+
+      {/* Row 2: Student Daily Logins, Student Present Streak, Attendance Trend */}
+      <div className="flex gap-4 my-4">
+        <div className="flex-1">
+          <StudentDailyLoginsGraph
+            daily_login_data={dashboardData?.daily_login_data ?? []}
+            isLoading={isLoading}
+            error={error as Error | null}
+            period={period}
+          />
+        </div>
+
+        <div className="flex-1">
+          <StudentPresentStreakGraph
+            data={studentActivityData ?? []}
+            isLoading={isStudentActivityLoading}
+            error={studentActivityError as Error | null}
+          />
+        </div>
+
+        <div className="flex-1">
+          <AttendanceTrendGraph
+            attendance_activity_record={attendanceAnalyticsData?.attendance_activity_record ?? []}
+            isLoading={isAttendanceAnalyticsLoading}
+            error={attendanceAnalyticsError as Error | null}
+            period={period}
+          />
+        </div>
+      </div>
+
+      {/* Row 3: Session Start Time Trend, (Future graphs can be added here) */}
+      <div className="flex gap-4 my-4">
+        <div className="flex-1">
+          <SessionStartTimeTrendGraph
+            attendance_creation_time={attendanceAnalyticsData?.attendance_creation_time ?? []}
+            isLoading={isAttendanceAnalyticsLoading}
+            error={attendanceAnalyticsError as Error | null}
+            period={period}
+          />
+        </div>
+
+        <div className="flex-1">
+          {/* Future graph 1 goes here */}
+        </div>
+
+        <div className="flex-1">
+          {/* Future graph 2 goes here */}
         </div>
       </div>
     </div>
