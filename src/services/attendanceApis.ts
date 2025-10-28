@@ -64,6 +64,29 @@ export interface AttendanceActivityDetail extends AttendanceActivity {
   attendees: AttendanceRecord[];
 }
 
+export interface AttendanceActivityRecord {
+  date: string;
+  activities_created: number;
+  total_attendance_count: number;
+}
+
+export interface AttendanceCreationTime {
+  date: string;
+  activity_created_time: string;
+  has_activity: boolean;
+}
+
+export interface AttendanceAnalytics {
+  attendance_activity_record: AttendanceActivityRecord[];
+  attendance_creation_time: AttendanceCreationTime[];
+}
+
+export interface StudentActivityAnalytics {
+  studentName: string;
+  Present_streak: number;
+  Active_days: number;
+}
+
 // ============================================
 // ADMIN APIs
 // ============================================
@@ -122,6 +145,40 @@ export const updateSessionTracking = async (
   const response = await axiosInstance.patch(
     `${API_BASE_URL}/activity/clients/${clientId}/admin/attendance-activities/${activityId}/update/`,
     data
+  );
+  return response.data;
+};
+
+/**
+ * GET /admin-dashboard/api/clients/{client_id}/attendance-analytics/
+ * Get attendance analytics data for graphs (admin only)
+ * Optional course_id query parameter to filter by course
+ */
+export const getAttendanceAnalytics = async (
+  clientId: number,
+  courseId?: number
+): Promise<AttendanceAnalytics> => {
+  const params = courseId ? { course_id: courseId } : {};
+  const response = await axiosInstance.get(
+    `${API_BASE_URL}/admin-dashboard/api/clients/${clientId}/attendance-analytics/`,
+    { params }
+  );
+  return response.data;
+};
+
+/**
+ * GET /admin-dashboard/api/clients/{client_id}/student-activity-analytics/
+ * Get student activity analytics (present streak and active days)
+ * Optional course_id parameter - if not provided, considers all students
+ */
+export const getStudentActivityAnalytics = async (
+  clientId: number,
+  courseId?: number
+): Promise<StudentActivityAnalytics[]> => {
+  const params = courseId ? { course_id: courseId } : {};
+  const response = await axiosInstance.get(
+    `${API_BASE_URL}/admin-dashboard/api/clients/${clientId}/student-activity-analytics/`,
+    { params }
   );
   return response.data;
 };

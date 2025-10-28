@@ -14,7 +14,7 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
 }) => {
   if (isLoading || error || !leaderboard || leaderboard.length === 0) {
     return (
-      <div className="flex flex-col transition-all duration-300 p-6 rounded-2xl shadow-md lg:min-w-[320px] xl:min-w-[400px] h-[430px] bg-[var(--card-bg)] ring-1 ring-[var(--primary-100)] ring-offset-1">
+      <div className="flex flex-col transition-all duration-300 p-6 rounded-2xl shadow-md w-full h-[430px] bg-[var(--card-bg)] ring-1 ring-[var(--primary-100)] ring-offset-1">
         <h2 className="text-xl font-bold text-[var(--primary-500)] mb-6">
           Student Ranking
         </h2>
@@ -54,7 +54,7 @@ const StudentRanking: React.FC<StudentRankingProps> = ({
     .slice(0, 10);
 
   return (
-    <div className="flex flex-col transition-all duration-300 p-6 rounded-2xl shadow-md bg-[var(--card-bg)] ring-1 ring-[var(--primary-100)] ring-offset-1 lg:min-w-[320px] xl:min-w-[400px] h-[430px]">
+    <div className="flex flex-col transition-all duration-300 p-6 rounded-2xl shadow-md bg-[var(--card-bg)] ring-1 ring-[var(--primary-100)] ring-offset-1 w-full h-[430px]">
       <h2 className="text-xl font-bold text-[var(--primary-500)] mb-6">
         Student Ranking
       </h2>
