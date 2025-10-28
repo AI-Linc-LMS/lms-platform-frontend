@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDispatch, useSelector } from "react-redux";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "react-router-dom";
 import { getEnrolledCourses } from "../../../../services/enrolled-courses-content/coursesApis";
 import { setCourses } from "../../../../redux/slices/courseSlice";
 import { RootState } from "../../../../redux/store";
@@ -61,7 +62,7 @@ export const transformCourseData = (backendCourse: Course): Course => {
 // Empty state component
 const EmptyCoursesState = () => {
   const { t } = useTranslation();
-  
+
   return (
     <div className="flex flex-col items-center justify-center py-12 px-6 bg-white rounded-xl border border-[var(--primary-200)] shadow-sm transition-all duration-300 transform hover:scale-[1.01]">
       <svg
@@ -100,6 +101,8 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const dispatch = useDispatch();
   const { t } = useTranslation();
+  const location = useLocation();
+  const queryClient = useQueryClient();
   const Courses = useSelector(
     (state: RootState) => state.courses.courses
   ) as unknown as Course[];
@@ -109,6 +112,11 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
   const { data, isLoading, error } = useQuery({
     queryKey: ["Courses"],
     queryFn: () => getEnrolledCourses(clientId),
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
+    staleTime: 0, // Consider data stale immediately
+    gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
   });
 
   //console.log("enrolled courses data:", data);
@@ -118,6 +126,30 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
       dispatch(setCourses(data));
     }
   }, [data, dispatch]);
+
+  // Force refetch when page becomes visible (user returns from another page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Page is now visible, invalidate and refetch courses
+        queryClient.invalidateQueries({ queryKey: ["Courses"] });
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [queryClient]);
+
+  // Refetch when navigating back to this component
+  useEffect(() => {
+    // Only invalidate if we're on a dashboard/learn page
+    if (location.pathname === "/" || location.pathname.includes("/learn")) {
+      queryClient.invalidateQueries({ queryKey: ["Courses"] });
+    }
+  }, [location.pathname, queryClient]);
 
   const handleCarouselScroll = () => {
     const sc = scrollContainerRef.current;
