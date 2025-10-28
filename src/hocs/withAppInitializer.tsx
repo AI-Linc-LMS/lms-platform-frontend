@@ -1,9 +1,10 @@
 import React, { ComponentType, useEffect, useState } from "react";
 import { initApp } from "../services/authApis";
-import logo from "/logo.png";
 import { ClientData, setClientInfo } from "../redux/slices/client-info.ts";
 import { useDispatch } from "react-redux";
 import AccountInactive from "../features/learn/pages/AccountInactive.tsx";
+
+import ErrorPage from "./Errorpage.tsx";
 
 const withAppInitializer = <P extends object>(
   WrappedComponent: ComponentType<P>
@@ -398,12 +399,7 @@ const withAppInitializer = <P extends object>(
     }, [response, dispatch]);
 
     if (error) {
-      return (
-        <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
-          <img src={logo} alt="Logo" className="w-48 h-48 mb-4" />
-          <div className="text-red-500 text-lg">{error}</div>
-        </div>
-      );
+      return <ErrorPage />;
     }
 
     if (!isInitialized) {
