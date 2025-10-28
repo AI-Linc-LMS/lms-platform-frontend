@@ -16,7 +16,7 @@ export interface Quiz {
 
 interface QuizContentProps {
   quizzes: Quiz[];
-  selectedQuizId: number;
+  selectedQuizId: number | null;
   onSelect: (quizId: number) => void;
 }
 

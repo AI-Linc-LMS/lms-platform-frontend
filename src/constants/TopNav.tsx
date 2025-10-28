@@ -12,9 +12,9 @@ import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import {
   getDailyLeaderboard,
-  getHoursSpentData,
+  getStreakTableData,
+  StreakData,
 } from "../services/dashboardApis";
-import { HoursSpentData } from "../features/learn/utils/interface.constant.ts";
 
 interface UserState {
   profile_picture?: string;
@@ -23,6 +23,7 @@ interface UserState {
 
 const TopNav: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const clientId = import.meta.env.VITE_CLIENT_ID;
   const isRTL = i18n.language === "ar";
   const [showDropdown, setShowDropdown] = useState(false);
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
@@ -39,7 +40,6 @@ const TopNav: React.FC = () => {
   const user = useSelector((state: { user: UserState }) => state.user);
   const clientInfo = useSelector((state: RootState) => state.clientInfo);
   const dispatch = useDispatch();
-  const [streak, setStreak] = useState(0);
 
   const userId = user.id;
   const { isAdminOrInstructor, isSuperAdmin } = useRole();
@@ -70,30 +70,15 @@ const TopNav: React.FC = () => {
     }
   }, [showDropdown]);
 
-  const { data } = useQuery<HoursSpentData>({
-    queryKey: ["hoursSpentData", "30"],
-    queryFn: () => getHoursSpentData(clientInfo.data?.id, Number("30")),
+  const { data } = useQuery<StreakData>({
+    queryKey: ["streakTable", Number(clientId)],
+    queryFn: () => getStreakTableData(Number(clientId)),
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
   });
-
-  useEffect(() => {
-    if (data) {
-      const calculateStreak = (hours: number[]): number => {
-        let currentStreak = 0;
-        for (let i = hours.length - 1; i >= 0; i--) {
-          if (hours[i] > 0.5) {
-            currentStreak++;
-          } else {
-            break;
-          }
-        }
-        return currentStreak;
-      };
-      setStreak(calculateStreak(data.hours_spent));
-    }
-  }, [data]);
 
   const hideNotification = useCallback(() => {
     setShowNotification(false);
@@ -297,9 +282,12 @@ const TopNav: React.FC = () => {
                   }}
                 >
                   <span className="hidden sm:inline">
-                    {t("dashboard.streak.days", { count: streak })} Streak
+                    {t("dashboard.streak.days", {
+                      count: data?.current_streak,
+                    })}{" "}
+                    Streak
                   </span>
-                  <span className="sm:hidden">{streak}d</span>
+                  <span className="sm:hidden">{data?.current_streak}d</span>
                 </motion.span>
               </motion.span>
 

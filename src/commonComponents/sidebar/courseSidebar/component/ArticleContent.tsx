@@ -13,7 +13,7 @@ export interface ArticleItem {
 interface ArticleContentProps {
   articles: ArticleItem[];
   onArticleClick?: (id: number) => void;
-  selectedArticleId: number;
+  selectedArticleId: number | null;
 }
 
 const ArticleContent = ({

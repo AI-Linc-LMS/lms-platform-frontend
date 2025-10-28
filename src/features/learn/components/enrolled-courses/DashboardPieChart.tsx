@@ -271,7 +271,14 @@ const DashboardPieChart = ({
           <CompletionCircle percentage={chartData.totalCompletion || 0} />
         </div>
         {/* Stats row */}
-        <div className="grid grid-cols-2 md:flex md:justify-between gap-2 md:gap-0">
+        <div
+          className={`${
+            categories.filter((category: Category) => category.value > 0)
+              .length <= 2
+              ? "flex justify-center gap-8 md:gap-12"
+              : "grid grid-cols-2 md:flex md:justify-between"
+          } gap-2 md:gap-0`}
+        >
           {categories
             .filter((category: Category) => category.value > 0)
             .map((category: Category, index: number) => (
