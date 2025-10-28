@@ -53,9 +53,10 @@ export const QuickOverviewSection: React.FC<QuickOverviewSectionProps> = ({
         </div>
 
         {/* Right: Stats Grid */}
-        <div className="flex gap-5 sm:gap-6 lg:gap-4 justify-start lg:justify-end flex-shrink-0">
+        <div className="flex gap-5 sm:gap-6 lg:gap-4 justify-center lg:justify-end flex-shrink-0">
           {/* Day Streak */}
           <div className="flex flex-col items-center gap-1">
+            s
             <div className="w-10 h-10 lg:w-11 lg:h-11 flex items-center justify-center bg-[#f3f4f6] rounded-lg">
               <Flame className="w-5 h-5 lg:w-6 lg:h-6 text-[#f59e0b]" />
             </div>
