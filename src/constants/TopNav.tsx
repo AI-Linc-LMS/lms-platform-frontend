@@ -310,7 +310,7 @@ const TopNav: React.FC = () => {
             >
               <div className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
                 <CloudLightning className="h-4 w-4 text-[#f9cd0c]" />
-                Daily Leaders
+                Today's Leaders
               </div>
 
               {isLeaderboardLoading ? (

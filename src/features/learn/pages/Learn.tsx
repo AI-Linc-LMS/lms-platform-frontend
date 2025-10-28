@@ -57,7 +57,11 @@ const Learn = () => {
               <WelcomeSection />
 
               <div className="relative">
-                {isLoading ? <SkeletonLoader /> : <Streak />}
+                {isLoading ? (
+                  <SkeletonLoader />
+                ) : (
+                  <Streak clientId={parseInt(clientId, 10)} />
+                )}
               </div>
               <EnrolledCourses />
 
