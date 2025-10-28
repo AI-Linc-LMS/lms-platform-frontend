@@ -89,8 +89,10 @@ const CourseTopicDetailPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [currentContentIndex, setCurrentContentIndex] = useState(0);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
-  const [selectedQuizId, setSelectedQuizId] = useState<number>(1);
-  const [selectedArticleId, setSelectedArticleId] = useState<number>(1);
+  const [selectedQuizId, setSelectedQuizId] = useState<number | null>(null);
+  const [selectedArticleId, setSelectedArticleId] = useState<number | null>(
+    null
+  );
   const [selectedProblemId, setSelectedProblemId] = useState<
     string | undefined
   >();
@@ -640,11 +642,51 @@ const CourseTopicDetailPage: React.FC = () => {
             if (prevId === videoId) return prevId; // No change to avoid unnecessary re-renders
             return videoId; // Change to force re-render
           });
+
+          // Invalidate queries to refresh sidebar data immediately (similar to quiz/problem submission)
+          queryClient.invalidateQueries({
+            queryKey: ["submodule", courseId, submoduleId],
+          });
         }
       }
     }
   };
 
+  const updateQuizStatus = (quizId: number, status: string): void => {
+    if (submoduleData?.data) {
+      const updatedData = [...submoduleData.data];
+      const quizIndex = updatedData.findIndex(
+        (content) => content.content_type === "Quiz" && content.id === quizId
+      );
+      console.log("Quiz Index:", quizIndex, quizId);
+      if (quizIndex !== -1) {
+        updatedData[quizIndex] = {
+          ...updatedData[quizIndex],
+          status: status,
+        };
+
+        // Update submodule data with new status
+        if (submoduleData) {
+          const newSubmoduleData: SubmoduleData = {
+            ...submoduleData,
+            data: updatedData,
+          };
+          // This line would trigger a re-render of all components using submoduleData
+          // In a real app, you'd use a state management system or context API
+          const w = window as unknown as {
+            temporarySubmoduleData: SubmoduleData;
+          };
+          w.temporarySubmoduleData = newSubmoduleData;
+
+          // Force re-render sidebar components
+          setSelectedQuizId((prevId) => {
+            if (prevId === quizId) return prevId; // No change to avoid unnecessary re-renders
+            return quizId; // Change to force re-render
+          });
+        }
+      }
+    }
+  };
   // Update the updateProblemStatus function to take an optional parameter to skip API calls
   const updateProblemStatus = (
     problemId: string,
@@ -934,8 +976,12 @@ const CourseTopicDetailPage: React.FC = () => {
                 key={`quiz-${submoduleId}-${currentContent.id}`}
                 contentId={currentContent.id}
                 courseId={parseInt(courseId || "0")}
+                submoduleId={submoduleId}
                 isSidebarContentOpen={isSidebarContentOpen}
                 onStartNextQuiz={handleStartNextQuiz}
+                onComplete={() => {
+                  updateQuizStatus(currentContent.id, "complete");
+                }}
               />
             )}
             {currentContent?.content_type === "Article" && (
@@ -945,6 +991,7 @@ const CourseTopicDetailPage: React.FC = () => {
                 courseId={parseInt(courseId || "0")}
                 onMarkComplete={() => {
                   //console.log("Marked as completed");
+                  updateProblemStatus(currentContent.id.toString(), "complete");
                 }}
               />
             )}

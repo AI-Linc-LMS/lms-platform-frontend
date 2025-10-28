@@ -27,6 +27,8 @@ export interface ContentItem {
   marks: number;
   status?: string;
   progress_percentage?: number;
+  obtainedMarks?: number;
+  submissions?: number;
 }
 
 interface AllContentProps {
@@ -127,6 +129,16 @@ const AllContent = ({
     () => [...contents].sort((a, b) => a.order - b.order),
     [contents]
   );
+
+  // Debug: Log quiz items to check data
+  useEffect(() => {
+    const quizItems = sortedContents.filter(
+      (item) => item.content_type === "Quiz"
+    );
+    if (quizItems.length > 0) {
+    }
+  }, [sortedContents]);
+
   const isFirstRender = useRef(true);
   const [videoProgress, setVideoProgress] = useState<Record<number, number>>(
     {}
@@ -282,6 +294,22 @@ const AllContent = ({
                 </h3>
                 <div className="text-xs text-gray-500 flex flex-wrap gap-2 items-center">
                   <span>{item.marks} Marks</span>
+                  {item.content_type === "Quiz" &&
+                    typeof item.obtainedMarks === "number" &&
+                    item.obtainedMarks >= 0 &&
+                    (item.submissions || 0) > 0 && (
+                      <>
+                        <span>|</span>
+                        <span> Obtained Marks: {item.obtainedMarks}</span>
+                      </>
+                    )}
+                  {item.content_type === "Quiz" &&
+                    (item.submissions || 0) > 0 && (
+                      <>
+                        <span>|</span>
+                        <span> Submissions: {item.submissions}</span>
+                      </>
+                    )}
                   <span>|</span>
                   <span>{item.content_type}</span>
                 </div>
@@ -307,6 +335,23 @@ const AllContent = ({
                     );
                   })()}
                 </>
+              ) : item.content_type === "Quiz" ? (
+                // For Quiz items, show complete tick if they have submissions or status is complete
+                <img
+                  src={
+                    item.status === "complete" ||
+                    (item.submissions && item.submissions > 0)
+                      ? completeTickIcon
+                      : tickIcon
+                  }
+                  alt={
+                    item.status === "complete" ||
+                    (item.submissions && item.submissions > 0)
+                      ? "Completed"
+                      : "Pending"
+                  }
+                  className="w-full h-full"
+                />
               ) : (
                 <img
                   src={item.status === "complete" ? completeTickIcon : tickIcon}
