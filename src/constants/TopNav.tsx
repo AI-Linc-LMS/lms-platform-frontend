@@ -306,11 +306,6 @@ const TopNav: React.FC = () => {
                     }
                   }}
                 >
-                  <div className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                    <CloudLightning className="h-4 w-4 text-[#f9cd0c]" />
-                    Today's Leaders
-                  </div>
-
                   {isLeaderboardLoading ? (
                     <div className="space-y-2">
                       {[...Array(3)].map((_, index) => (
@@ -429,11 +424,11 @@ const TopNav: React.FC = () => {
                     repeatDelay: 3,
                   }}
                 >
-                  <CloudLightning className="h-3 w-3 sm:h-4 sm:w-4 text-[#f9cd0c] me-1 sm:me-2 relative z-10 drop-shadow-[0_0_3px_rgba(249,205,12,0.8)] flex-shrink-0" />
+                  🔥
                 </motion.div>
 
                 <motion.span
-                  className="text-secondary-500 font-bold relative z-10 truncate"
+                  className="text-secondary-500 font-bold relative z-10 ms-1 truncate"
                   animate={{
                     scale: [1, 1.1, 1],
                   }}
