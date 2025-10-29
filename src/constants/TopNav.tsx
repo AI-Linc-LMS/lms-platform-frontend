@@ -1,4 +1,4 @@
-import { Bell, Clock, CloudLightning } from "lucide-react";
+import { Bell, Clock } from "lucide-react";
 import userImg from "../commonComponents/icons/nav/User Image.png";
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
