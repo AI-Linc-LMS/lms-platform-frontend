@@ -397,10 +397,10 @@ export default function StudentDetailPage() {
 
                 {/* Course Management */}
                 <section className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300">
-                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
+                  <div className="bg-gradient-to-r from-[var(--primary-50)] to-[var(--primary-100)] px-6 py-4 border-b border-gray-200">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
-                        <FiBookOpen className="w-5 h-5 text-purple-600" />
+                      <div className="w-10 h-10 rounded-xl bg-[var(--primary-100)] flex items-center justify-center">
+                        <FiBookOpen className="w-5 h-5 text-[var(--primary-600)]" />
                       </div>
                       <h3 className="font-bold text-gray-800 text-lg">Course Management</h3>
                     </div>
