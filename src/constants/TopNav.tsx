@@ -193,7 +193,7 @@ const TopNav: React.FC = () => {
               <img
                 src={clientInfo.data?.app_logo_url}
                 alt={clientInfo.data?.name}
-                className="relative z-10 h-12 sm:h-14 w-auto cursor-pointer p-1.5"
+                className="relative z-10 h-8 sm:h-14 w-auto cursor-pointer p-1.5"
                 onClick={() => navigate("/")}
               />
             </div>
