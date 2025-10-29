@@ -91,24 +91,8 @@ const ManageStudents = () => {
 
   const students: StudentListItem[] = useMemo(() => {
     if (!studentsData) return [];
-    // Check if course_progress and course_marks are being returned when filtering by course
-    if (filters.courseId && studentsData.students.length > 0) {
-      const firstStudent = studentsData.students[0];
-      console.log('🔍 Filtered by course ID:', filters.courseId);
-      console.log('📊 Sample student data:', {
-        name: firstStudent.name,
-        course_progress: firstStudent.course_progress,
-        course_marks: firstStudent.course_marks,
-        hasProgressData: firstStudent.course_progress !== undefined,
-        hasMarksData: firstStudent.course_marks !== undefined,
-      });
-      if (firstStudent.course_progress === undefined || firstStudent.course_marks === undefined) {
-        console.warn('⚠️ Backend needs to add course_progress and course_marks fields when filtering by course_id');
-        console.warn('📄 See BACKEND_REQUIREMENT_MANAGE_STUDENTS.md for details');
-      }
-    }
     return studentsData.students || [];
-  }, [studentsData, filters.courseId]);
+  }, [studentsData]);
 
   const totalCount: number = useMemo(() => {
     if (!studentsData) return 0;
