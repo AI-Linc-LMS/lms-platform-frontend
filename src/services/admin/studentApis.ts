@@ -29,6 +29,12 @@ export interface StudentListItem {
   enrollment_count: number;
   assessment_submissions: number;
   activity_summary: { total_activities: number; by_type: Record<string, number> };
+  // Course-specific fields (when filtering by course_id)
+  // Backend should populate these from enrolled_courses array for the filtered course:
+  // - course_progress: enrolled_courses.find(c => c.id === course_id).progress_percentage
+  // - course_marks: enrolled_courses.find(c => c.id === course_id).marks
+  course_progress?: number;
+  course_marks?: number;
 }
 
 export interface ManageStudentsPagination {

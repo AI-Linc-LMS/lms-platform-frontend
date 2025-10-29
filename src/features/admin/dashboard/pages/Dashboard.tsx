@@ -369,7 +369,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Row 2: Student Daily Logins, Student Present Streak, Attendance Trend */}
+      {/* Row 2: Student Daily Logins, Attendance Trend, Session Start Time Trend */}
       <div className="flex gap-4 my-4">
         <div className="flex-1">
           <StudentDailyLoginsGraph
@@ -381,14 +381,6 @@ const Dashboard = () => {
         </div>
 
         <div className="flex-1">
-          <StudentPresentStreakGraph
-            data={studentActivityData ?? []}
-            isLoading={isStudentActivityLoading}
-            error={studentActivityError as Error | null}
-          />
-        </div>
-
-        <div className="flex-1">
           <AttendanceTrendGraph
             attendance_activity_record={attendanceAnalyticsData?.attendance_activity_record ?? []}
             isLoading={isAttendanceAnalyticsLoading}
@@ -396,10 +388,7 @@ const Dashboard = () => {
             period={period}
           />
         </div>
-      </div>
 
-      {/* Row 3: Session Start Time Trend, (Future graphs can be added here) */}
-      <div className="flex gap-4 my-4">
         <div className="flex-1">
           <SessionStartTimeTrendGraph
             attendance_creation_time={attendanceAnalyticsData?.attendance_creation_time ?? []}
@@ -408,13 +397,20 @@ const Dashboard = () => {
             period={period}
           />
         </div>
+      </div>
 
-        <div className="flex-1">
-          {/* Future graph 1 goes here */}
+      {/* Row 3: Student Active Days (2/3 width), Future graphs */}
+      <div className="flex gap-4 my-4">
+        <div className="flex-[2]">
+          <StudentPresentStreakGraph
+            data={studentActivityData ?? []}
+            isLoading={isStudentActivityLoading}
+            error={studentActivityError as Error | null}
+          />
         </div>
 
         <div className="flex-1">
-          {/* Future graph 2 goes here */}
+          {/* Future graph 1 goes here */}
         </div>
       </div>
     </div>
