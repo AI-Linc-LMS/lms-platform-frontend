@@ -27,6 +27,7 @@ export interface DailyLeaderboardResponse {
 
 export interface StreakData {
   month: number;
+  current_streak: number;
   year: number;
   streak: Record<string, boolean>;
 }
@@ -50,8 +51,6 @@ export const getDailyLeaderboard = async (
     //console.log("Leaderboard API response:", res.data);
     return res.data;
   } catch (error: any) {
-    
-
     // You can throw a custom error if you want
     throw new Error(
       error?.response?.data?.detail ||
@@ -71,8 +70,6 @@ export const getUserActivityHeatmapData = async (clientId: number) => {
     //console.log("User activity heatmap API response:", res.data);
     return res.data;
   } catch (error: any) {
-    
-
     // You can throw a custom error if you want
     throw new Error(
       error?.response?.data?.detail ||
@@ -92,8 +89,6 @@ export const getUserDailyTimeSpentData = async (clientId: number = 1) => {
     //console.log("User daily time spent API response:", res.data);
     return res.data;
   } catch (error: any) {
-    
-
     // You can throw a custom error if you want
     throw new Error(
       error?.response?.data?.detail ||
@@ -115,8 +110,6 @@ export const getLeaderboardData = async (
     //console.log("Leaderboard API response:", res.data);
     return res.data;
   } catch (error: any) {
-    
-
     // You can throw a custom error if you want
     throw new Error(
       error?.response?.data?.detail ||
@@ -138,8 +131,6 @@ export const getStreakTableData = async (
     //console.log("Streak table API response:", res.data);
     return res.data;
   } catch (error: any) {
-   
-
     // You can throw a custom error if you want
     throw new Error(
       error?.response?.data?.detail ||
@@ -149,8 +140,10 @@ export const getStreakTableData = async (
   }
 };
 
-
-export const getHoursSpentData = async (clientId: number = 1, range: number = 7) => {
+export const getHoursSpentData = async (
+  clientId: number = 1,
+  range: number = 7
+) => {
   try {
     const res = await axiosInstance.get(
       `/api/clients/${clientId}/student/hours-spent-graph/?range=last-${range}-days`
@@ -159,8 +152,6 @@ export const getHoursSpentData = async (clientId: number = 1, range: number = 7)
     //console.log("Hours spent data API response:", res.data);
     return res.data;
   } catch (error: any) {
-    
-
     // You can throw a custom error if you want
     throw new Error(
       error?.response?.data?.detail ||
@@ -168,4 +159,4 @@ export const getHoursSpentData = async (clientId: number = 1, range: number = 7)
         "Failed to fetch hours spent data"
     );
   }
-}
+};

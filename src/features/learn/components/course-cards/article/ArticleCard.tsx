@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCourseContent } from "../../../../../services/enrolled-courses-content/courseContentApis";
 import { submitContent } from "../../../../../services/enrolled-courses-content/submitApis";
 
@@ -50,6 +50,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
 }) => {
   const navigate = useNavigate();
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const queryClient = useQueryClient();
 
   const {
     data: articleData,
@@ -98,6 +99,12 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
       await submitContent(clientId, courseId, contentId, "Article", {});
       setIsCompleted(!isCompleted);
       onMarkComplete();
+
+      // Invalidate streak data to update streak immediately after article completion
+      await queryClient.invalidateQueries({
+        queryKey: ["streakTable", parseInt(clientId)],
+      });
+
       navigate(0);
     } catch {
       //console.log(err);

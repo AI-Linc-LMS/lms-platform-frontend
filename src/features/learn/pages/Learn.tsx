@@ -57,7 +57,11 @@ const Learn = () => {
               <WelcomeSection />
 
               <div className="relative">
-                {isLoading ? <SkeletonLoader /> : <Streak />}
+                {isLoading ? (
+                  <SkeletonLoader />
+                ) : (
+                  <Streak clientId={parseInt(clientId, 10)} />
+                )}
               </div>
               <EnrolledCourses />
 
@@ -77,9 +81,6 @@ const Learn = () => {
                 <Leaderboard clientId={clientId} />
 
                 <div className="space-y-6">
-                  <div className="bg-white/80 backdrop-blur-md border border-[var(--primary-100)] rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
-                    {/* <DailyProgress clientId={parseInt(clientId, 10)} /> */}
-                  </div>
                   <div className="bg-white/80 backdrop-blur-md border border-[var(--primary-100)] rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
                     <StreakTable clientId={parseInt(clientId, 10)} />
                   </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import VideoPlayer from "../../video-player/VideoPlayer";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCourseContent } from "../../../../../services/enrolled-courses-content/courseContentApis";
 import { submitContent } from "../../../../../services/enrolled-courses-content/submitApis";
 import Comments from "../../../../../commonComponents/components/Comments";
@@ -67,6 +67,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
   onProgressUpdate,
 }) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"description" | "comments">(
     "description"
   );
@@ -162,7 +163,6 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
   // Handle video completion
   const handleVideoComplete = async () => {
-    console.log("came here");
     // Call the onComplete handler if provided
     if (onComplete) {
       onComplete();
@@ -175,8 +175,12 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
     // Continue with existing completion logic
     if (clientId && courseId && contentId) {
-      console.log("came here");
       await submitContent(clientId, courseId, contentId, "VideoTutorial", {});
+
+      // Invalidate streak data to update streak immediately after video completion
+      await queryClient.invalidateQueries({
+        queryKey: ["streakTable", parseInt(clientId)],
+      });
     }
     //console.log("Video completed! Loading next video...");
     setTimeout(() => {

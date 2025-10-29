@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getCourseContent,
   pastSubmissions,
@@ -51,8 +51,10 @@ interface UserAnswer {
 interface QuizCardProps {
   contentId: number;
   courseId: number;
+  submoduleId?: string;
   isSidebarContentOpen: boolean;
   quizData?: QuizData;
+  onComplete: () => void;
   onSubmission?: (contentId: number) => void;
   onReset?: (contentId: number) => void;
   onStartNextQuiz?: () => void;
@@ -62,13 +64,16 @@ interface QuizCardProps {
 const QuizCard: React.FC<QuizCardProps> = ({
   contentId,
   courseId,
+  submoduleId,
   isSidebarContentOpen,
   quizData: injectedData,
   onSubmission,
+  onComplete,
   onStartNextQuiz,
   isVisible = true,
 }) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const queryClient = useQueryClient();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [alreadyCompleted, setAlreadyCompleted] = useState(false);
@@ -369,7 +374,20 @@ const QuizCard: React.FC<QuizCardProps> = ({
     );
     ////console.log("response", response);
     if (response === 201) {
+      onComplete();
       setQuizCompleted(true);
+
+      // Invalidate cache to refresh sidebar immediately (like video progress)
+      if (submoduleId) {
+        await queryClient.invalidateQueries({
+          queryKey: ["submodule", courseId.toString(), submoduleId],
+        });
+      }
+
+      // Invalidate streak data to update streak immediately after quiz completion
+      await queryClient.invalidateQueries({
+        queryKey: ["streakTable", parseInt(clientId)],
+      });
     } else {
       ////console.log("error", response);
     }
