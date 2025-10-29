@@ -70,13 +70,13 @@ interface VideoItem {
 }
 
 interface QuizProps {
-  selectedQuizId: number;
+  selectedQuizId: number | null;
   onSelectQuiz: (id: number) => void;
   quizzes: Quiz[];
 }
 
 interface ArticleProps {
-  selectedArticleId: number;
+  selectedArticleId: number | null;
   onArticleClick: (id: number) => void;
   articles: ArticleItem[];
 }
@@ -216,6 +216,9 @@ const CourseSidebarContent = ({
         duration_in_minutes: content.duration_in_minutes,
         marks: content.marks || 0,
         status: content.status,
+        completed: content.status === "complete",
+        obtainedMarks: content.obtainedMarks,
+        submissions: content.submissions,
         progress_percentage:
           content.content_type === "VideoTutorial"
             ? content.status === "complete"
@@ -273,6 +276,7 @@ const CourseSidebarContent = ({
           submissions: content.submissions || 0,
           questions: content.questions || 0,
           status: content.status || "non-complete",
+          completed: content.status === "complete",
         }))
     : [];
 

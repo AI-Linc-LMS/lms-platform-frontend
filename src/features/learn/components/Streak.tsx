@@ -2,24 +2,33 @@ import { PieChart, Pie, Cell } from "recharts";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { getHoursSpentData } from "../../../services/dashboardApis.ts";
-import { HoursSpentData } from "../utils/interface.constant.ts";
+import {
+  getStreakTableData,
+  StreakData,
+} from "../../../services/dashboardApis.ts";
+
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store.ts";
 
-const Streak = ({ showProgress = true }: { showProgress?: boolean }) => {
+const Streak = ({
+  showProgress = true,
+  clientId,
+}: {
+  showProgress?: boolean;
+  clientId: number;
+}) => {
   const [progress, setProgress] = useState<number>(0);
-  const [streak, setStreak] = useState(0);
   const { t } = useTranslation();
-  const clientInfo = useSelector((state: RootState) => state.clientInfo);
   const courses = useSelector((state: RootState) => state.courses);
 
-  const { data } = useQuery<HoursSpentData>({
-    queryKey: ["hoursSpentData", "30"],
-    queryFn: () => getHoursSpentData(clientInfo.data?.id, Number("30")),
+  const { data } = useQuery<StreakData>({
+    queryKey: ["streakTable", clientId],
+    queryFn: () => getStreakTableData(clientId),
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
   });
 
   useEffect(() => {
@@ -62,23 +71,6 @@ const Streak = ({ showProgress = true }: { showProgress?: boolean }) => {
     }
   }, [courses]);
 
-  useEffect(() => {
-    if (data) {
-      const calculateStreak = (hours: number[]): number => {
-        let currentStreak = 0;
-        for (let i = hours.length - 1; i >= 0; i--) {
-          if (hours[i] > 0.5) {
-            currentStreak++;
-          } else {
-            break;
-          }
-        }
-        return currentStreak;
-      };
-      setStreak(calculateStreak(data.hours_spent));
-    }
-  }, [data]);
-
   const pieData = [
     { name: "Progress", value: progress },
     { name: "Remaining", value: 100 - progress },
@@ -95,7 +87,7 @@ const Streak = ({ showProgress = true }: { showProgress?: boolean }) => {
           </span>{" "}
           {t("dashboard.streak.title")}:{" "}
           <span className="font-bold">
-            {t("dashboard.streak.days", { count: streak })}
+            {t("dashboard.streak.days", { count: data?.current_streak })}
           </span>
         </p>
         <p className="text-gray-500 text-sm md:text-base text-wrap">
