@@ -39,11 +39,11 @@ const StudentPresentStreakGraph = ({
         presentStreak: student.Present_streak,
         activeDays: student.Active_days,
       }))
-      .sort((a, b) => b.presentStreak - a.presentStreak) // Sort by present streak desc
-      .slice(0, 10); // Show top 10 students
+      .sort((a, b) => b.activeDays - a.activeDays) // Sort by active days desc
+      .slice(0, 20); // Show top 20 students
   }, [data]);
 
-  const maxStreak = Math.max(...chartData.map((d) => d.presentStreak), 10);
+  const maxValue = Math.max(...chartData.map((d) => d.activeDays), 10);
 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <ErrorDashboard error={error} />;
@@ -52,9 +52,9 @@ const StudentPresentStreakGraph = ({
     <div className="rounded-2xl bg-white p-6 w-full h-[430px] ring-1 ring-[var(--primary-100)] ring-offset-1 shadow-md">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-bold text-[var(--primary-500)]">
-          Student Present Streak
+          Student Active Days
         </h2>
-        <div className="text-xs text-gray-500">Top 10 Students</div>
+        <div className="text-xs text-gray-500">Top 20 Students</div>
       </div>
 
       <div className="h-[300px] -ml-4">
@@ -62,7 +62,7 @@ const StudentPresentStreakGraph = ({
           <BarChart
             data={chartData}
             margin={{ top: 5, right: 20, bottom: 60, left: 0 }}
-            barSize={30}
+            barSize={20}
           >
             <CartesianGrid stroke="#E6EDF6" horizontal vertical={false} strokeWidth={1} />
             
@@ -74,11 +74,11 @@ const StudentPresentStreakGraph = ({
               angle={-45}
               textAnchor="end"
               height={60}
-              tick={{ fontSize: 11, fill: "#5D77A6", fontWeight: 500 }}
+              tick={{ fontSize: 10, fill: "#5D77A6", fontWeight: 500 }}
             />
 
             <YAxis
-              domain={[0, maxStreak]}
+              domain={[0, maxValue]}
               tick={{ fontSize: 11, fill: "#5D77A6" }}
               tickLine={false}
               axisLine={false}
@@ -97,15 +97,15 @@ const StudentPresentStreakGraph = ({
                       </p>
                       <div className="space-y-1 text-xs">
                         <div className="flex justify-between gap-6">
-                          <span className="text-gray-600">Present Streak:</span>
+                          <span className="text-gray-600">Active Days:</span>
                           <span className="font-semibold text-[var(--primary-600)]">
-                            {data.presentStreak} days
+                            {data.activeDays} days
                           </span>
                         </div>
                         <div className="flex justify-between gap-6">
-                          <span className="text-gray-600">Active Days:</span>
+                          <span className="text-gray-600">Present Streak:</span>
                           <span className="font-medium text-gray-700">
-                            {data.activeDays}
+                            {data.presentStreak}
                           </span>
                         </div>
                       </div>
@@ -117,7 +117,7 @@ const StudentPresentStreakGraph = ({
             />
 
             <Bar
-              dataKey="presentStreak"
+              dataKey="activeDays"
               fill="url(#colorStreak)"
               radius={[6, 6, 0, 0]}
             />
@@ -135,7 +135,7 @@ const StudentPresentStreakGraph = ({
       <div className="mt-3 flex items-center justify-center gap-4 text-xs text-gray-600">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-gradient-to-b from-[#10B981] to-[#34D399]" />
-          <span>Present Streak (Days)</span>
+          <span>Active Days</span>
         </div>
       </div>
     </div>
