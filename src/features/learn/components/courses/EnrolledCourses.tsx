@@ -133,6 +133,8 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
       if (!document.hidden) {
         // Page is now visible, invalidate and refetch courses
         queryClient.invalidateQueries({ queryKey: ["Courses"] });
+        // Also refresh streak data when courses are refreshed
+        queryClient.invalidateQueries({ queryKey: ["streakTable", clientId] });
       }
     };
 
@@ -141,15 +143,17 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [queryClient]);
+  }, [queryClient, clientId]);
 
   // Refetch when navigating back to this component
   useEffect(() => {
     // Only invalidate if we're on a dashboard/learn page
     if (location.pathname === "/" || location.pathname.includes("/learn")) {
       queryClient.invalidateQueries({ queryKey: ["Courses"] });
+      // Also refresh streak data when navigating back to dashboard/learn
+      queryClient.invalidateQueries({ queryKey: ["streakTable", clientId] });
     }
-  }, [location.pathname, queryClient]);
+  }, [location.pathname, queryClient, clientId]);
 
   const handleCarouselScroll = () => {
     const sc = scrollContainerRef.current;

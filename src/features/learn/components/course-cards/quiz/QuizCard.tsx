@@ -383,6 +383,11 @@ const QuizCard: React.FC<QuizCardProps> = ({
           queryKey: ["submodule", courseId.toString(), submoduleId],
         });
       }
+
+      // Invalidate streak data to update streak immediately after quiz completion
+      await queryClient.invalidateQueries({
+        queryKey: ["streakTable", parseInt(clientId)],
+      });
     } else {
       ////console.log("error", response);
     }

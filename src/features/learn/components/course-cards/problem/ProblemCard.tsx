@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCourseContent } from "../../../../../services/enrolled-courses-content/courseContentApis";
 import {
   runCode,
@@ -38,6 +38,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   isSidebarContentOpen,
 }) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const queryClient = useQueryClient();
   const { data, isLoading, error } = useQuery<ProblemData>({
     queryKey: ["problem", courseId, contentId],
     queryFn: () => getCourseContent(clientId, courseId, contentId),
@@ -351,7 +352,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     mutationFn: () => {
       return submitCode(1, courseId, contentId, code, getSelectedLanguageId());
     },
-    onSuccess: (data: SubmitCodeResult) => {
+    onSuccess: async (data: SubmitCodeResult) => {
       const success = data.status === "Accepted";
       setResults({
         success,
@@ -366,7 +367,13 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       // If the submission was successful, call onComplete to mark the problem as complete
       if (success && onComplete) {
         //console.log("Solution was accepted! Calling onComplete callback");
+        onComplete(); // Call onComplete to mark problem as complete
         setIsSubmitSuccess(true);
+
+        // Invalidate streak data to update streak immediately after problem completion
+        await queryClient.invalidateQueries({
+          queryKey: ["streakTable", parseInt(clientId)],
+        });
       } else {
         setSubmitResult({
           status: data.status,

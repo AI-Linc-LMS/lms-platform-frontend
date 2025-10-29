@@ -1,4 +1,4 @@
-import { Bell, CloudLightning } from "lucide-react";
+import { Bell, Clock, CloudLightning } from "lucide-react";
 import userImg from "../commonComponents/icons/nav/User Image.png";
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
@@ -267,7 +267,7 @@ const TopNav: React.FC = () => {
                     repeatDelay: 3,
                   }}
                 >
-                  <CloudLightning className="h-3 w-3 sm:h-4 sm:w-4 text-[#f9cd0c] me-1 sm:me-2 relative z-10 drop-shadow-[0_0_3px_rgba(249,205,12,0.8)] flex-shrink-0" />
+                  <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-[#f9cd0c] me-1 sm:me-2 relative z-10 drop-shadow-[0_0_3px_rgba(249,205,12,0.8)] flex-shrink-0" />
                 </motion.div>
 
                 <motion.span
@@ -281,13 +281,8 @@ const TopNav: React.FC = () => {
                     repeatDelay: 3,
                   }}
                 >
-                  <span className="hidden sm:inline">
-                    {t("dashboard.streak.days", {
-                      count: data?.current_streak,
-                    })}{" "}
-                    Streak
-                  </span>
-                  <span className="sm:hidden">{data?.current_streak}d</span>
+                  <span className="hidden sm:inline">Today's Leaders</span>
+                  <span className="sm:hidden">Leader</span>
                 </motion.span>
               </motion.span>
 
@@ -374,6 +369,89 @@ const TopNav: React.FC = () => {
                   )}
                 </div>
               )}
+            </div>
+            <div className="relative">
+              <motion.span
+                className="inline-flex items-center justify-center px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs bg-[#FFF8E0] rounded-full border border-[#f9cd0c] relative overflow-hidden cursor-pointer whitespace-nowrap"
+                initial={{ scale: 1 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                animate={{
+                  boxShadow: [
+                    "0 0 0px rgba(249, 205, 12, 0)",
+                    "0 0 15px rgba(249, 205, 12, 0.6)",
+                    "0 0 0px rgba(249, 205, 12, 0)",
+                  ],
+                }}
+                transition={{
+                  boxShadow: {
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  },
+                  scale: { duration: 0.2 },
+                }}
+              >
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30"
+                  animate={{
+                    x: ["-100%", "200%"],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    repeatDelay: 5,
+                    ease: "easeInOut",
+                  }}
+                />
+
+                <motion.div
+                  className="absolute inset-0 bg-[#f9cd0c] rounded-full opacity-20"
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    opacity: [0.2, 0.4, 0.2],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
+
+                <motion.div
+                  animate={{
+                    rotate: [0, 10, -10, 10, 0],
+                    scale: [1, 1.2, 1],
+                  }}
+                  transition={{
+                    duration: 0.6,
+                    repeat: Infinity,
+                    repeatDelay: 3,
+                  }}
+                >
+                  <CloudLightning className="h-3 w-3 sm:h-4 sm:w-4 text-[#f9cd0c] me-1 sm:me-2 relative z-10 drop-shadow-[0_0_3px_rgba(249,205,12,0.8)] flex-shrink-0" />
+                </motion.div>
+
+                <motion.span
+                  className="text-secondary-500 font-bold relative z-10 truncate"
+                  animate={{
+                    scale: [1, 1.1, 1],
+                  }}
+                  transition={{
+                    duration: 0.5,
+                    repeat: Infinity,
+                    repeatDelay: 3,
+                  }}
+                >
+                  <span className="hidden sm:inline">
+                    {t("dashboard.streak.days", {
+                      count: data?.current_streak,
+                    })}{" "}
+                    Streak
+                  </span>
+                  <span className="sm:hidden">{data?.current_streak}d</span>
+                </motion.span>
+              </motion.span>
             </div>
 
             {/* Admin Link */}
