@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-// import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   FiSearch,
   FiFilter,
@@ -9,7 +9,6 @@ import {
   FiArrowDown,
   FiChevronLeft,
   FiChevronRight,
-  FiAward,
   FiBookOpen,
   FiX,
 } from "react-icons/fi";
@@ -23,14 +22,15 @@ import {
   StudentListItem,
   ManageStudentsParams,
   ManageStudentsResponse,
+  getCourseCompletionStats,
+  CourseCompletionStats,
 } from "../../../../services/admin/studentApis";
 // import { useToast } from "../../../../contexts/ToastContext";
-import StudentDetailDrawer from "../components/StudentDetailDrawer";
 
 type CourseOption = { id: number; title: string };
 
 const ManageStudents = () => {
-  //   const navigate = useNavigate();
+  const navigate = useNavigate();
   // search term lives inside filters
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [filters, setFilters] = useState<FilterCriteria>({
@@ -48,8 +48,6 @@ const ManageStudents = () => {
   const [limit, setLimit] = useState<number>(100);
   const clientId = import.meta.env.VITE_CLIENT_ID;
   // const { success, error: showError } = useToast();
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [selectedStudentId, setSelectedStudentId] = useState<number | undefined>(undefined);
 
   // Load available courses for filters and modal
   const { data: coursesData } = useQuery({
@@ -63,7 +61,7 @@ const ManageStudents = () => {
   }, [coursesData]);
 
   // Fetch students with filters
-  const { data: studentsData, refetch, isFetching } = useQuery<ManageStudentsResponse>({
+  const { data: studentsData, isFetching } = useQuery<ManageStudentsResponse>({
     queryKey: [
       "admin-students",
       clientId,
@@ -89,10 +87,34 @@ const ManageStudents = () => {
     // keepPreviousData is v3 option; if using v5, it's removed.
   });
 
+  // Fetch course completion stats when filtering by course
+  const { data: courseCompletionData } = useQuery<CourseCompletionStats[]>({
+    queryKey: ["course-completion-stats", clientId, filters.courseId],
+    queryFn: () => getCourseCompletionStats(clientId, filters.courseId),
+    enabled: filters.courseId !== undefined,
+    refetchOnWindowFocus: false,
+  });
+
   const students: StudentListItem[] = useMemo(() => {
     if (!studentsData) return [];
-    return studentsData.students || [];
-  }, [studentsData]);
+    const baseStudents = studentsData.students || [];
+    
+    // If filtering by course and we have completion data, merge it
+    if (filters.courseId && courseCompletionData) {
+      return baseStudents.map(student => {
+        const completionStats = courseCompletionData.find(
+          stats => stats.student_id === student.id
+        );
+        return {
+          ...student,
+          course_progress: completionStats?.completion_percentage,
+          course_marks: completionStats?.completed_contents,
+        };
+      });
+    }
+    
+    return baseStudents;
+  }, [studentsData, filters.courseId, courseCompletionData]);
 
   const totalCount: number = useMemo(() => {
     if (!studentsData) return 0;
@@ -103,16 +125,11 @@ const ManageStudents = () => {
   const hasNext = studentsData?.pagination?.has_next ?? page < totalPages;
   const hasPrev = studentsData?.pagination?.has_previous ?? page > 1;
 
-  //   const handleBackToMain = () => {
-  //     navigate("/");
-  //   };
-
   const handleEditStudent = (id: number) => {
-    setSelectedStudentId(id);
-    setIsDetailOpen(true);
+    navigate(`/admin/manage-students/${id}`);
   };
 
-  // Row-level mutations removed; actions now live inside StudentDetailDrawer
+  // Row-level mutations removed; actions now live inside StudentDetailPage
 
   const handleApplyFilters = (newFilters: FilterCriteria) => {
     setFilters(newFilters);
@@ -153,10 +170,6 @@ const ManageStudents = () => {
                 <div className="text-center">
                   <div className="text-3xl font-bold">{totalCount}</div>
                   <div className="text-sm text-white/80">Total Students</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold">{students.length}</div>
-                  <div className="text-sm text-white/80">Showing</div>
                 </div>
               </div>
             </div>
@@ -286,14 +299,9 @@ const ManageStudents = () => {
                     📧 Email
                   </th>
                   {filters.courseId ? (
-                    <>
-                      <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        📊 Progress
-                      </th>
-                      <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        🏆 Marks Obtained
-                      </th>
-                    </>
+                    <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
+                      📊 Completion %
+                    </th>
                   ) : (
                     <>
                       <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
@@ -312,7 +320,7 @@ const ManageStudents = () => {
               <tbody className="bg-white divide-y divide-gray-100">
                 {isFetching ? (
                   <tr>
-                    <td colSpan={6} className="py-12 px-6">
+                    <td colSpan={filters.courseId ? 5 : 6} className="py-12 px-6">
                       <div className="flex flex-col items-center justify-center gap-3">
                         <div className="w-12 h-12 border-4 border-[var(--primary-200)] border-t-[var(--primary-500)] rounded-full animate-spin"></div>
                         <p className="text-gray-500 text-sm">Loading students...</p>
@@ -322,7 +330,7 @@ const ManageStudents = () => {
                 ) : students.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={filters.courseId ? 5 : 6}
                       className="py-12 px-6 text-center"
                     >
                       <div className="flex flex-col items-center gap-3">
@@ -372,35 +380,23 @@ const ManageStudents = () => {
                         <span className="text-sm text-gray-700">{student.email}</span>
                       </td>
                       {filters.courseId ? (
-                        <>
-                          <td className="py-4 px-6">
-                            {student.course_progress !== undefined ? (
-                              <div className="flex items-center gap-3">
-                                <div className="flex-1 bg-gray-200 rounded-full h-2.5 max-w-[140px] overflow-hidden shadow-inner">
-                                  <div
-                                    className="h-full bg-gradient-to-r from-[var(--primary-500)] to-[var(--primary-600)] rounded-full transition-all duration-500"
-                                    style={{ width: `${student.course_progress}%` }}
-                                  ></div>
-                                </div>
-                                <span className="text-sm font-semibold text-gray-700 min-w-[45px]">
-                                  {student.course_progress}%
-                                </span>
+                        <td className="py-4 px-6">
+                          {student.course_progress !== undefined ? (
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 bg-gray-200 rounded-full h-2.5 max-w-[140px] overflow-hidden shadow-inner">
+                                <div
+                                  className="h-full bg-gradient-to-r from-[var(--primary-500)] to-[var(--primary-600)] rounded-full transition-all duration-500"
+                                  style={{ width: `${student.course_progress}%` }}
+                                ></div>
                               </div>
-                            ) : (
-                              <span className="text-gray-400 text-xs italic">Not available</span>
-                            )}
-                          </td>
-                          <td className="py-4 px-6">
-                            {student.course_marks !== undefined ? (
-                              <div className="flex items-center gap-1">
-                                <FiAward className="w-4 h-4 text-amber-500" />
-                                <span className="font-semibold text-gray-900">{student.course_marks}</span>
-                              </div>
-                            ) : (
-                              <span className="text-gray-400 text-xs italic">Not available</span>
-                            )}
-                          </td>
-                        </>
+                              <span className="text-sm font-semibold text-gray-700 min-w-[45px]">
+                                {student.course_progress.toFixed(2)}%
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-xs italic">No progress</span>
+                          )}
+                        </td>
                       ) : (
                         <>
                           <td className="py-4 px-6">
@@ -505,16 +501,6 @@ const ManageStudents = () => {
           onApplyFilters={handleApplyFilters}
           currentFilters={filters}
           availableCourses={availableCourses}
-        />
-
-        {/* Student Detail Drawer */}
-        <StudentDetailDrawer
-          isOpen={isDetailOpen}
-          onClose={() => setIsDetailOpen(false)}
-          clientId={Number(clientId)}
-          studentId={selectedStudentId}
-          availableCourses={availableCourses}
-          onChanged={() => refetch()}
         />
       </div>
     </div>

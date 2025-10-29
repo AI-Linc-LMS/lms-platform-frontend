@@ -47,6 +47,47 @@ export default function StudentDetailDrawer({
   onChanged,
 }: Props) {
   const { success, error } = useToast();
+  const [isAnimating, setIsAnimating] = useState(false);
+  
+  // Trigger animation when opening
+  useEffect(() => {
+    if (isOpen) {
+      setIsAnimating(false);
+      // Small delay to trigger animation
+      setTimeout(() => setIsAnimating(true), 10);
+    }
+  }, [isOpen]);
+  
+  // Add CSS animation for smooth fade in
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .animate-fadeIn {
+        animation: fadeIn 0.4s ease-out;
+      }
+    `;
+    if (!document.getElementById('student-drawer-animations')) {
+      style.id = 'student-drawer-animations';
+      document.head.appendChild(style);
+    }
+    return () => {
+      const existingStyle = document.getElementById('student-drawer-animations');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+    };
+  }, []);
+
   const {
     data,
     refetch,
@@ -162,18 +203,29 @@ export default function StudentDetailDrawer({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop with blur */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+        className={`fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
+          isAnimating ? 'opacity-100' : 'opacity-0'
+        }`}
         onClick={onClose}
         aria-hidden
       />
       
-      {/* Drawer */}
-      <aside className="absolute right-0 top-0 h-full w-full max-w-4xl bg-gradient-to-br from-gray-50 to-white shadow-2xl overflow-y-auto transform transition-transform">
+      {/* Centering container */}
+      <div className="min-h-screen px-4 flex items-center justify-center">
+        {/* Modal Dialog - Centered with smooth scale animation */}
+        <div 
+          className={`relative w-full max-w-4xl my-8 bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-500 ${
+            isAnimating ? 'scale-100 opacity-100 translate-y-0' : 'scale-90 opacity-0 translate-y-4'
+          }`}
+          style={{
+            transitionTimingFunction: isAnimating ? 'cubic-bezier(0.34, 1.56, 0.64, 1)' : 'ease-out'
+          }}
+        >
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-gradient-to-r from-[var(--primary-500)] to-[var(--primary-600)] text-white p-6 shadow-lg">
+        <div className="sticky top-0 z-10 bg-gradient-to-r from-[var(--primary-500)] to-[var(--primary-600)] text-white px-6 py-5 shadow-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
@@ -186,26 +238,28 @@ export default function StudentDetailDrawer({
             </div>
             <button 
               onClick={onClose} 
-              className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-colors"
+              className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all duration-200 hover:scale-110"
             >
               <FiX className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {isFetching && (
-          <div className="p-8 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-12 h-12 border-4 border-[var(--primary-200)] border-t-[var(--primary-500)] rounded-full animate-spin"></div>
-              <p className="text-gray-500 text-sm">Loading student data...</p>
+        {/* Scrollable Content */}
+        <div className="overflow-y-auto max-h-[calc(85vh-88px)] bg-gradient-to-br from-gray-50 via-white to-gray-50 scroll-smooth">
+          {isFetching && (
+            <div className="p-8 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-12 h-12 border-4 border-[var(--primary-200)] border-t-[var(--primary-500)] rounded-full animate-spin"></div>
+                <p className="text-gray-500 text-sm">Loading student data...</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {data && (
-          <div className="p-6 space-y-6">
+          <div className="p-6 space-y-6 animate-fadeIn">
             {/* Personal Info Card */}
-            <section className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <section className="bg-white rounded-xl shadow-md hover:shadow-lg border border-gray-200 overflow-hidden transition-shadow duration-300">
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center gap-2">
                   <FiUser className="w-5 h-5 text-[var(--primary-500)]" />
@@ -285,14 +339,14 @@ export default function StudentDetailDrawer({
                 <div className="flex gap-3 pt-4 border-t border-gray-200">
                   <button 
                     onClick={() => updateInfoMutation.mutate()} 
-                    className="flex items-center gap-2 px-4 py-2.5 bg-[var(--primary-500)] text-white rounded-lg hover:bg-[var(--primary-600)] transition-colors shadow-sm font-medium"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-[var(--primary-500)] text-white rounded-lg hover:bg-[var(--primary-600)] transition-all duration-200 shadow-sm hover:shadow-md font-medium transform hover:scale-105"
                   >
                     <FiSave className="w-4 h-4" />
                     Save Changes
                   </button>
                   <button 
                     onClick={toggleActive} 
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-colors font-medium ${
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all duration-200 font-medium transform hover:scale-105 shadow-sm hover:shadow-md ${
                       data.personal_info.is_active
                         ? 'border-red-300 text-red-700 hover:bg-red-50'
                         : 'border-green-300 text-green-700 hover:bg-green-50'
@@ -322,7 +376,7 @@ export default function StudentDetailDrawer({
             </section>
 
             {/* Course Management Card */}
-            <section className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <section className="bg-white rounded-xl shadow-md hover:shadow-lg border border-gray-200 overflow-hidden transition-shadow duration-300">
               <div className="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center gap-2">
                   <FiBookOpen className="w-5 h-5 text-purple-600" />
@@ -349,7 +403,7 @@ export default function StudentDetailDrawer({
                     onClick={() => {
                       if (selectedCourseId) enrollMutation.mutate(selectedCourseId);
                     }}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm font-medium"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 shadow-sm hover:shadow-md font-medium transform hover:scale-105"
                   >
                     <FiPlusCircle className="w-4 h-4" />
                     Enroll
@@ -358,7 +412,7 @@ export default function StudentDetailDrawer({
                     onClick={() => {
                       if (selectedCourseId) unenrollMutation.mutate(selectedCourseId);
                     }}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors shadow-sm font-medium"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-200 shadow-sm hover:shadow-md font-medium transform hover:scale-105"
                   >
                     <FiMinusCircle className="w-4 h-4" />
                     Unenroll
@@ -367,7 +421,7 @@ export default function StudentDetailDrawer({
                     onClick={() => {
                       resetMutation.mutate(selectedCourseId);
                     }}
-                    className="flex items-center gap-2 px-4 py-2.5 border border-orange-300 text-orange-700 rounded-lg hover:bg-orange-50 transition-colors font-medium"
+                    className="flex items-center gap-2 px-4 py-2.5 border border-orange-300 text-orange-700 rounded-lg hover:bg-orange-50 transition-all duration-200 font-medium transform hover:scale-105 shadow-sm hover:shadow-md"
                   >
                     <FiRefreshCw className="w-4 h-4" />
                     Reset Progress
@@ -377,7 +431,7 @@ export default function StudentDetailDrawer({
             </section>
 
             {/* Academic Summary Card */}
-            <section className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <section className="bg-white rounded-xl shadow-md hover:shadow-lg border border-gray-200 overflow-hidden transition-shadow duration-300">
               <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center gap-2">
                   <FiAward className="w-5 h-5 text-emerald-600" />
@@ -444,7 +498,7 @@ export default function StudentDetailDrawer({
             </section>
 
             {/* Enrolled Courses Card */}
-            <section className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <section className="bg-white rounded-xl shadow-md hover:shadow-lg border border-gray-200 overflow-hidden transition-shadow duration-300">
               <div className="bg-gradient-to-r from-indigo-50 to-blue-50 px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -503,7 +557,9 @@ export default function StudentDetailDrawer({
             </section>
           </div>
         )}
-      </aside>
+        </div>
+        </div>
+      </div>
     </div>
   );
 }
