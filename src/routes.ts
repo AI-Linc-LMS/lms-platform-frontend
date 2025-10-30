@@ -36,6 +36,9 @@ const Dashboard = lazy(
 const ManageStudents = lazy(
   () => import("./features/admin/manage-students/pages/ManageStudents")
 );
+const StudentDetailPage = lazy(
+  () => import("./features/admin/manage-students/pages/StudentDetailPage")
+);
 const ShortAssessment = lazy(
   () => import("./features/learn/pages/ShortAssessment")
 );
@@ -246,6 +249,12 @@ const routes: RouteConfig[] = [
   {
     path: "/admin/manage-students",
     component: ManageStudents,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/manage-students/:studentId",
+    component: StudentDetailPage,
     isPrivate: true,
     requiredRole: "admin_or_instructor",
   },

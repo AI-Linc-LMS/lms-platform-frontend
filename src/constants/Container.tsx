@@ -3,8 +3,12 @@ import AdminSidebar from "../commonComponents/sidebar/AdminSidebar";
 import TopNav from "../constants/TopNav";
 import MobileNavBar from "../commonComponents/mobileNavigation/MobileNavBar";
 import AdminMobileNavBar from "../commonComponents/mobileNavigation/AdminMobileNavBar";
+import StreakCongratulationsModal from "../components/StreakCongratulationsModal";
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { getStreakTableData } from "../services/dashboardApis";
+import { useStreakCongratulations } from "../hooks/useStreakCongratulations";
 
 function Container({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -12,6 +16,23 @@ function Container({ children }: { children: React.ReactNode }) {
   const [showSidebar, setShowSidebar] = useState(true); // Control sidebar visibility
   const [showMobileNav, setShowMobileNav] = useState(true);
   const [isAdminRoute, setIsAdminRoute] = useState(false);
+
+  // Get client ID from localStorage
+  const user = localStorage.getItem("user");
+  const clientId = user ? JSON.parse(user).client_id : null;
+
+  // Query streak data
+  const { data: streakData } = useQuery({
+    queryKey: ["streakTable", clientId],
+    queryFn: () => getStreakTableData(clientId),
+    enabled: !!clientId,
+    refetchInterval: 10000, // Refetch every 10 seconds to catch streak updates
+  });
+
+  // Use the streak congratulations hook
+  const { showCongratulations, handleClose } = useStreakCongratulations(
+    streakData?.current_streak
+  );
 
   useEffect(() => {
     // Hide sidebar and mobile nav on CourseTopicDetailPage
@@ -69,6 +90,13 @@ function Container({ children }: { children: React.ReactNode }) {
       {/* Mobile Navigation Bar */}
       {showMobileNav &&
         (isAdminRoute ? <AdminMobileNavBar /> : <MobileNavBar />)}
+
+      {/* Streak Congratulations Modal */}
+      <StreakCongratulationsModal
+        isOpen={showCongratulations}
+        onClose={handleClose}
+        currentStreak={streakData?.current_streak || 0}
+      />
     </div>
   );
 }

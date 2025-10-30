@@ -233,3 +233,31 @@ export const postManageStudentAction = async (
     throw new Error(message);
   }
 };
+
+// Course Completion Stats
+export interface CourseCompletionStats {
+  student_id: number;
+  name: string;
+  email: string;
+  course_id: number;
+  course_title: string;
+  completed_contents: number;
+  total_contents: number;
+  completion_percentage: number;
+}
+
+export const getCourseCompletionStats = async (
+  clientId: number,
+  courseId?: number
+): Promise<CourseCompletionStats[]> => {
+  const query = courseId ? `?course_id=${courseId}` : '';
+  try {
+    const res = await axiosInstance.get(
+      `/admin-dashboard/api/clients/${clientId}/course-completion-stats/${query}`
+    );
+    return res.data as CourseCompletionStats[];
+  } catch (error) {
+    const message = (error as Error).message ?? "Failed to fetch course completion stats";
+    throw new Error(message);
+  }
+};

@@ -91,7 +91,10 @@
     "streak": {
       "title": "Your Streak",
       "days": "{{count}} days",
-      "overallProgress": "Overall Course Progress: {{progress}}% complete"
+      "overallProgress": "Overall Course Progress: {{progress}}% complete",
+      "weeklyStreaks": "Weekly Streaks",
+      "studyEveryday": "Study everyday to build your streak 💪",
+      "yourStreak": "🔥 Your Streak: {{count}} days"
     },
     "continueLearning": {
       "title": "Continue Learning",
@@ -117,6 +120,7 @@
     "leaderboard": {
       "title": "Track Your Progress",
       "subtitle": "Keep grinding and stay top on our leaderboard",
+      "info": "As you complete modules you will move top of the leaderboard and earn exciting rewards.",
       "noData": "No leaderboard data available",
       "headers": {
         "standing": "Standing",
@@ -623,6 +627,29 @@
     "termsOfService": "Terms of Service",
     "helpCenter": "Help Center",
     "copyright": "© 2025 AI-Linc LMS. All rights reserved."
+  },
+  "attendance": {
+    "title": "Attendance",
+    "subtitle": "Mark your attendance by entering the code provided by your instructor",
+    "liveSessions": "Live Attendance Sessions",
+    "enterCode": "Enter Attendance Code",
+    "submit": "Submit Attendance",
+    "success": "Attendance marked successfully",
+    "error": "Failed to mark attendance",
+    "noSessions": "No live sessions available",
+    "headers": {
+      "session": "Session",
+      "date": "Date",
+      "time": "Time",
+      "status": "Status",
+      "action": "Action"
+    },
+    "status": {
+      "present": "Present",
+      "absent": "Absent",
+      "pending": "Pending"
+    },
+    "rowsPerPage": "Rows per page"
   },
   "jobs": {
     "title": "Find Your Dream Job",
