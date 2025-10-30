@@ -1,0 +1,1094 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "backTo": "Retour à",
+    "creating": "Création...",
+    "updating": "Mise à jour...",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "confirm": "Confirmer",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "clear": "Effacer",
+    "submit": "Soumettre",
+    "continue": "Continuer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "close": "Fermer",
+    "add": "Ajouter",
+    "update": "Mettre à jour",
+    "remove": "Retirer",
+    "view": "Voir",
+    "download": "Télécharger",
+    "upload": "Téléverser",
+    "viewMore": "Voir plus",
+    "collapse": "Réduire",
+    "viewAll": "Voir tout"
+  },
+  "navigation": {
+    "home": "Accueil",
+    "dashboard": "Tableau de bord",
+    "courses": "Cours",
+    "learn": "Apprendre",
+    "assessments": "Évaluations",
+    "live": "En direct",
+    "jobs": "Emplois",
+    "community": "Communauté",
+    "profile": "Profil",
+    "settings": "Paramètres",
+    "admin": "Admin",
+    "logout": "Déconnexion",
+    "login": "Connexion",
+    "attendance": "Présence"
+  },
+  "notifications": {
+    "communityLive": {
+      "title": "La communauté est en ligne !",
+      "message": "Rejoignez les discussions, posez des questions et connectez-vous avec vos pairs.",
+      "action": "Aller à la communauté"
+    }
+  },
+  "userProfile": {
+    "myActivity": "Mon activité",
+    "myProfile": "Mon profil",
+    "notificationSettings": "Paramètres de notification",
+    "emailNotifications": "Notifications par e-mail",
+    "inAppNotifications": "Notifications dans l'application",
+    "logout": "Déconnexion",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "email": "E-mail",
+    "username": "Nom d'utilisateur",
+    "phoneNumber": "Numéro de téléphone",
+    "bio": "Biographie",
+    "dateOfBirth": "Date de naissance",
+    "socialLinks": "Liens sociaux",
+    "linkedin": "Profil LinkedIn",
+    "github": "Profil GitHub",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "emailCannotBeChanged": "L'e-mail ne peut pas être modifié",
+    "usernameCannotBeChanged": "Le nom d'utilisateur ne peut pas être modifié",
+    "totalHoursSpent": "Heures totales passées",
+    "activityMap": "Carte d'activité",
+    "lastWeek": "La semaine dernière",
+    "last15Days": "Les 15 derniers jours",
+    "last30Days": "Les 30 derniers jours"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "subtitle": "Aperçu de votre progression d'apprentissage",
+    "welcome": {
+      "greeting": "Bonjour, {{name}} 👋",
+      "subtitle": "Continuez à apprendre aujourd'hui !"
+    },
+    "streak": {
+      "title": "Votre série",
+      "days": "{{count}} jours",
+      "overallProgress": "Progression globale du cours : {{progress}}% terminé",
+      "weeklyStreaks": "Séries hebdomadaires",
+      "studyEveryday": "Étudiez tous les jours pour développer votre série 💪",
+      "yourStreak": "🔥 Votre série : {{count}} jours"
+    },
+    "continueLearning": {
+      "title": "Continuer l'apprentissage",
+      "subtitle": "Voici la liste des cours inscrits",
+      "noCoursesSubtitle": "Vous ne vous êtes inscrit à aucun cours pour le moment",
+      "continueFrom": "Continuez là où vous vous êtes arrêté.",
+      "noCourses": {
+        "title": "Aucun cours inscrit trouvé",
+        "description": "Vous ne vous êtes inscrit à aucun cours pour le moment. Parcourez notre catalogue pour trouver des cours qui correspondent à vos intérêts et commencez votre parcours d'apprentissage.",
+        "button": "Parcourir les cours"
+      }
+    },
+    "basedLearning": {
+      "title": "Basé sur votre apprentissage",
+      "subtitle": "Cours recommandés en fonction de votre historique d'apprentissage",
+      "seeAll": "Voir tout",
+      "noCourses": {
+        "title": "Aucun cours recommandé disponible",
+        "description": "Nous n'avons trouvé aucun cours recommandé basé sur votre historique d'apprentissage.",
+        "button": "Parcourir les cours"
+      }
+    },
+    "leaderboard": {
+      "title": "Suivez votre progression",
+      "subtitle": "Continuez à travailler dur et restez en tête de notre classement",
+      "info": "En complétant les modules, vous monterez en haut du classement et gagnerez des récompenses excitantes.",
+      "noData": "Aucune donnée de classement disponible",
+      "headers": {
+        "standing": "Classement",
+        "name": "Nom",
+        "course": "Cours",
+        "marks": "Notes"
+      }
+    },
+    "dailyProgress": {
+      "title": "Progression quotidienne",
+      "subtitle": "Suivez votre apprentissage quotidien ⚡",
+      "headers": {
+        "standing": "Classement",
+        "name": "Nom",
+        "spent": "Temps passé"
+      }
+    },
+    "emptyState": {
+      "title": "Prêt à commencer à apprendre ?",
+      "description": "Votre tableau de bord personnel est vide. Découvrez des cours passionnants et commencez votre voyage vers de nouvelles compétences !",
+      "button": "Explorer les cours"
+    }
+  },
+  "courses": {
+    "title": "Cours",
+    "myCourses": "Mes cours",
+    "allCourses": "Tous les cours",
+    "enrolledCourses": "Cours inscrits",
+    "availableCourses": "Cours disponibles",
+    "courseDetails": "Détails du cours",
+    "enrollNow": "S'inscrire maintenant",
+    "continueLearning": "Continuer l'apprentissage",
+    "completed": "Terminé",
+    "inProgress": "En cours",
+    "notStarted": "Pas commencé",
+    "difficulty": "Difficulté",
+    "duration": "Durée",
+    "instructor": "Instructeur",
+    "rating": "Évaluation",
+    "students": "Étudiants",
+    "lessons": "Leçons",
+    "hours": "Heures",
+    "price": "Prix",
+    "free": "Gratuit",
+    "premium": "Premium",
+    "whatYouWillLearn": "Ce que vous apprendrez",
+    "courseContent": "Contenu du cours",
+    "requirements": "Prérequis",
+    "description": "Description",
+    "reviews": "Avis",
+    "certificate": "Certificat",
+    "continue": "Continuer",
+    "recentActivity": "Activité récente",
+    "ourCoursesAndAssessments": "Nos cours et évaluations",
+    "noCoursesAvailable": "Aucun cours disponible pour le moment",
+    "coursesListDescription": "Voici la liste de tous nos cours et évaluations disponibles",
+    "loading": "Chargement des cours...",
+    "error": "Erreur lors du chargement des cours. Veuillez réessayer plus tard.",
+    "whatsIncluded": "Ce qui est inclus",
+    "createdAndCertifiedBy": "Créé et certifié par",
+    "developedBy": "Développé par",
+    "inPartnershipWith": "En partenariat avec",
+    "certifiedBy": "Certifié par",
+    "keyFeatures": "Caractéristiques clés",
+    "jobPlacement": {
+      "text": "Rejoignez {{count}}+ apprenants qui ont trouvé des emplois chez {{companies}} avec ces compétences"
+    },
+    "progress": {
+      "dayStreak": "Série de jours",
+      "badges": "Badges",
+      "videos": "Vidéos",
+      "completed": "Terminé",
+      "inProgress": "En cours",
+      "locked": "Verrouillé",
+      "courseProgress": "Progression du cours",
+      "content": "Contenu",
+      "yourProgress": "Votre progression",
+      "videosWatched": "vidéos regardées",
+      "quizzesCompleted": "quiz terminés"
+    },
+    "ratingText": {
+      "text": "{{rating}}/5 évaluation de {{count}}+ apprenants"
+    },
+    "achievements": {
+      "title": "Réalisations",
+      "firstSteps": "Premiers pas",
+      "quizMaster": "Maître des quiz",
+      "streakKeeper": "Gardien de série",
+      "expert": "Expert",
+      "certified": "Certifié"
+    },
+    "difficultyLevels": {
+      "easy": "Facile",
+      "medium": "Moyen",
+      "hard": "Difficile",
+      "beginner": "Débutant",
+      "intermediate": "Intermédiaire",
+      "advanced": "Avancé",
+      "allLevels": "Tous niveaux",
+      "entryLevel": "Niveau d'entrée"
+    },
+    "descriptions": {
+      "excel": "Maîtrisez Microsoft Excel des bases aux fonctionnalités avancées. Apprenez l'analyse de données, les tableaux croisés dynamiques, les formules et l'automatisation pour améliorer votre productivité et vos perspectives de carrière.",
+      "tableau": "Apprenez la visualisation de données avec Tableau. Créez des tableaux de bord époustouflants, analysez des ensembles de données complexes et racontez des histoires captivantes avec vos données.",
+      "sql": "Maîtrisez la gestion et les requêtes de bases de données SQL. Apprenez à extraire, manipuler et analyser des données à partir de bases de données relationnelles en toute confiance.",
+      "python": "Apprenez la programmation Python des fondamentaux aux applications avancées. Construisez des projets, automatisez des tâches et développez des solutions logicielles.",
+      "dataScience": "Cours complet de science des données couvrant les statistiques, l'apprentissage automatique et l'analyse de données avec Python et R.",
+      "machineLearning": "Maîtrisez les algorithmes d'apprentissage automatique, les réseaux neuronaux et les applications IA avec des projets pratiques.",
+      "ai": "Explorez les concepts d'intelligence artificielle, l'apprentissage profond et les applications pratiques de l'IA dans diverses industries.",
+      "powerBI": "Apprenez Microsoft Power BI pour l'intelligence d'affaires, la visualisation de données et la création de tableaux de bord interactifs.",
+      "react": "Maîtrisez React.js pour créer des applications web modernes et interactives avec une architecture basée sur les composants.",
+      "javascript": "Apprenez la programmation JavaScript pour le développement web, des bases aux frameworks et bibliothèques avancés.",
+      "noeCodeWebDev": "Explorez les concepts d'intelligence artificielle, l'apprentissage profond et les applications pratiques de l'IA dans diverses industries.",
+      "reactFundamentals": "Maîtrisez React.js pour créer des applications web modernes et interactives avec une architecture basée sur les composants.",
+      "frontendDevelopment": "Le développement frontend est la pratique de construction de la partie visuelle d'un site web ou d'une application avec laquelle les utilisateurs interagissent directement. Il implique trois technologies principales : HTML – structure le contenu, CSS – stylise et conçoit la mise en page, JavaScript – ajoute de l'interactivité et un comportement dynamique. Le frontend moderne utilise également des frameworks (comme React, Vue, Angular) et des outils (comme Tailwind, Next.js) pour créer des expériences utilisateur plus rapides, réactives et engageantes.",
+      "webProjectDevelopment": "Construisez des projets web complets du concept au déploiement. Apprenez les techniques de développement full-stack, la planification de projet, le contrôle de version et les stratégies de déploiement modernes pour créer des applications web professionnelles.",
+      "backendMern": "Maîtrisez le développement backend en utilisant la stack MERN (MongoDB, Express.js, React, Node.js). Apprenez à créer des API évolutives, à gérer des bases de données, à implémenter l'authentification et à créer des applications full-stack avec des technologies JavaScript modernes.",
+      "angular": "Apprenez le framework Angular pour créer des applications web dynamiques à page unique. Maîtrisez TypeScript, les composants, les services et les fonctionnalités Angular modernes pour le développement web au niveau entreprise.",
+      "vue": "Maîtrisez le framework Vue.js pour créer des applications web progressives. Apprenez l'architecture basée sur les composants, la gestion d'état et les outils modernes de l'écosystème Vue.",
+      "nodejs": "Apprenez Node.js pour le développement JavaScript côté serveur. Créez des applications backend évolutives, des API et des microservices utilisant un runtime JavaScript moderne.",
+      "django": "Maîtrisez le framework Django pour le développement web rapide en Python. Apprenez à créer des applications web sécurisées et évolutives avec un admin intégré, un ORM et des fonctionnalités de sécurité.",
+      "flask": "Apprenez le framework Flask pour le développement web Python. Créez des applications web et des API légères et flexibles avec une configuration minimale et un contrôle maximal.",
+      "fullStack": "Cours complet de développement full-stack couvrant les technologies frontend et backend. Apprenez à créer des applications web complètes de la base de données à l'interface utilisateur.",
+      "mlRegression": "Ce cours contient des modules sélectionnés de 'Data Science'. Cours complet de Data Science couvrant tous les sujets essentiels et applications pratiques. Ce cours comprend des projets pratiques, des exemples concrets et des conseils étape par étape pour maîtriser les concepts de science des données.",
+      "eda": "Ce cours contient des modules sélectionnés de 'Data Science'. Cours complet de Data Science couvrant tous les sujets essentiels et applications pratiques. Ce cours comprend des projets pratiques, des exemples concrets et des conseils étape par étape pour maîtriser les concepts de science des données.",
+      "mlClassification": "Ce cours contient des modules sélectionnés de 'Data Science'. Cours complet de Data Science couvrant tous les sujets essentiels et applications pratiques. Ce cours comprend des projets pratiques, des exemples concrets et des conseils étape par étape pour maîtriser les concepts de science des données.",
+      "aiNlp": "Explorez les concepts d'intelligence artificielle, l'apprentissage profond et les applications pratiques de l'IA dans diverses industries.",
+      "neuralNetworks": "Explorez les concepts d'intelligence artificielle, l'apprentissage profond et les applications pratiques de l'IA dans diverses industries.",
+      "advancedMachineLearning": "Maîtrisez les algorithmes d'apprentissage automatique, les réseaux neuronaux et les applications IA avec des projets pratiques.",
+      "default": "Cours complet conçu pour améliorer vos compétences et booster vos perspectives de carrière avec des projets pratiques et une certification reconnue par l'industrie."
+    },
+    "learningObjectives": {
+      "excel": {
+        "objective1": "Maîtriser les formules, fonctions et calculs avancés Excel",
+        "objective2": "Créer des tableaux croisés dynamiques et des rapports d'analyse de données",
+        "objective3": "Construire des tableaux de bord interactifs et des visualisations de données",
+        "objective4": "Automatiser les tâches à l'aide de macros Excel et VBA",
+        "objective5": "Mettre en œuvre des techniques avancées de modélisation et de prévision de données"
+      },
+      "tableau": {
+        "objective1": "Créer des tableaux de bord et rapports interactifs professionnels",
+        "objective2": "Maîtriser les techniques de connexion et de préparation des données",
+        "objective3": "Construire des champs calculés avancés et des calculs de table",
+        "objective4": "Concevoir des histoires de données et des présentations captivantes",
+        "objective5": "Mettre en œuvre les meilleures pratiques de conception de visualisation de données"
+      },
+      "sql": {
+        "objective1": "Écrire des requêtes SQL complexes pour l'extraction et l'analyse de données",
+        "objective2": "Concevoir et optimiser des schémas de base de données et des relations",
+        "objective3": "Maîtriser les jointures avancées, sous-requêtes et fonctions de fenêtre",
+        "objective4": "Implémenter des procédures stockées et l'automatisation de base de données",
+        "objective5": "Optimiser les performances des requêtes et la gestion de base de données"
+      },
+      "python": {
+        "objective1": "Maîtriser la syntaxe Python, les structures de données et les algorithmes",
+        "objective2": "Construire des applications web en utilisant des frameworks populaires",
+        "objective3": "Mettre en œuvre des projets d'analyse et de visualisation de données",
+        "objective4": "Créer des scripts et des outils d'automatisation",
+        "objective5": "Développer des applications d'apprentissage automatique et d'IA"
+      },
+      "default": {
+        "objective1": "Acquérir une expérience pratique avec les outils de l'industrie",
+        "objective2": "Construire un portfolio de projets du monde réel",
+        "objective3": "Maîtriser les compétences essentielles pour l'avancement de carrière",
+        "objective4": "Obtenir une certification reconnue par l'industrie à l'achèvement"
+      }
+    },
+    "features": {
+      "excel": {
+        "feature1": "Programme Excel complet des bases aux techniques avancées",
+        "feature2": "Études de cas et projets d'affaires du monde réel",
+        "feature3": "Techniques avancées d'analyse et de visualisation de données",
+        "feature4": "Automatisation avec macros et programmation VBA",
+        "feature5": "Exercices interactifs et feuilles de pratique",
+        "feature6": "Préparation à la certification Excel standard de l'industrie"
+      },
+      "tableau": {
+        "feature1": "Formation et certification professionnelle Tableau Desktop",
+        "feature2": "Création pratique de tableaux de bord avec des ensembles de données réels",
+        "feature3": "Analyses avancées et fonctions statistiques",
+        "feature4": "Techniques de narration et de présentation de données",
+        "feature5": "Intégration avec plusieurs sources de données",
+        "feature6": "Projets de visualisation prêts pour le portfolio"
+      },
+      "sql": {
+        "feature1": "Programme SQL complet pour tous les systèmes de base de données",
+        "feature2": "Optimisation avancée des requêtes et réglage des performances",
+        "feature3": "Principes de conception et de normalisation de base de données",
+        "feature4": "Programmation de procédures stockées et de déclencheurs",
+        "feature5": "Scénarios d'administration de base de données du monde réel",
+        "feature6": "Préparation à la certification de base de données standard de l'industrie"
+      },
+      "default": {
+        "feature1": "Programme complet conçu par des experts de l'industrie",
+        "feature2": "Projets pratiques avec des applications du monde réel",
+        "feature3": "Apprentissage interactif avec des exercices pratiques",
+        "feature4": "Certification reconnue par l'industrie à l'achèvement",
+        "feature5": "Accès 24/7 aux supports et ressources de cours",
+        "feature6": "Soutien communautaire et collaboration entre pairs"
+      }
+    },
+    "courseRequirements": {
+      "excel": {
+        "requirement1": "Compétences informatiques de base et Microsoft Excel installé",
+        "requirement2": "Aucune expérience préalable d'Excel requise - convient aux débutants",
+        "requirement3": "Volonté de pratiquer avec les ensembles de données et exercices fournis"
+      },
+      "tableau": {
+        "requirement1": "Logiciel Tableau Desktop (essai gratuit disponible)",
+        "requirement2": "Compréhension de base des concepts de données utile mais non requise",
+        "requirement3": "Ordinateur avec minimum 8 Go de RAM pour des performances optimales"
+      },
+      "sql": {
+        "requirement1": "Accès à un système de base de données SQL (options gratuites fournies)",
+        "requirement2": "Compétences informatiques de base et capacité de pensée logique",
+        "requirement3": "Aucune expérience de programmation préalable requise"
+      },
+      "default": {
+        "requirement1": "Maîtrise informatique de base et accès Internet",
+        "requirement2": "Motivation pour apprendre et terminer des projets pratiques",
+        "requirement3": "Aucune expérience préalable requise - conçu pour les débutants"
+      }
+    },
+    "includesList": {
+      "item1": "Accès à vie au contenu et aux mises à jour du cours",
+      "item2": "Ressources téléchargeables et fichiers de projet",
+      "item3": "Certificat d'achèvement",
+      "item4": "Soutien communautaire 24/7 et forums de discussion",
+      "item5": "Sessions régulières de questions-réponses en direct avec les instructeurs",
+      "item6": "Orientation de carrière et aide au placement",
+      "item7": "Accès mobile et bureau",
+      "item8": "Garantie de remboursement de 30 jours"
+    },
+    "tags": {
+      "excel": {
+        "tag1": "Analyse de données",
+        "tag2": "Intelligence d'affaires",
+        "tag3": "Modélisation financière",
+        "tag4": "Automatisation"
+      },
+      "tableau": {
+        "tag1": "Visualisation de données",
+        "tag2": "Analyse d'affaires",
+        "tag3": "Conception de tableaux de bord",
+        "tag4": "Rapports"
+      },
+      "sql": {
+        "tag1": "Gestion de base de données",
+        "tag2": "Ingénierie des données",
+        "tag3": "Analytique",
+        "tag4": "Développement backend"
+      },
+      "default": {
+        "tag1": "Développement professionnel",
+        "tag2": "Évolution de carrière",
+        "tag3": "Compétences pratiques",
+        "tag4": "Certification de l'industrie"
+      }
+    }
+  },
+  "assessments": {
+    "backToCourses": "Retour aux cours",
+    "skillAssessmentCenter": "Centre d'évaluation des compétences",
+    "testYourExpertise": "Testez votre expertise",
+    "description": "Découvrez vos forces et domaines d'amélioration avec nos évaluations complètes conçues pour vous aider à grandir et réussir.",
+    "noAssessmentsTitle": "Aucune évaluation disponible",
+    "noAssessmentsDescription": "Nous travaillons à vous apporter des évaluations incroyables. Revenez bientôt pour de nouvelles opportunités de tester vos compétences !",
+    "exploreCoursesInstead": "Explorer les cours à la place",
+    "duration": "Durée",
+    "status": "Statut",
+    "available": "Disponible",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "startAssessment": "Commencer l'évaluation",
+    "currentlyUnavailable": "Actuellement indisponible",
+    "loadingAssessments": "Chargement des évaluations...",
+    "errorTitle": "Oups ! Quelque chose s'est mal passé",
+    "tryAgain": "Réessayer",
+    "stats": {
+      "assessmentsTaken": "Assessments Taken",
+      "successRate": "Success Rate",
+      "certificatesIssued": "Certificates Issued"
+    },
+    "kakatiyaAssessment": {
+      "title": "Kakatiya University Entrance Assessment",
+      "description": "Complete this assessment to showcase your AI and full-stack development skills and qualify for our scholarship program.",
+      "fullDescription": "Welcome to the Kakatiya University Entrance Assessment! Instructions: 1. This assessment contains multiple-choice questions covering various topics including Mathematics, Logical Reasoning, English, and Programming. 2. You have 120 minutes to complete the assessment. 3. Each question has four options (A, B, C, D). Select the best answer. 4. Once you submit an answer, you cannot change it. 5. Make sure you have a stable internet connection. 6. Do not refresh the page during the assessment. Good luck!",
+      "instructions": {
+        "welcome": "Welcome to the Kakatiya University Entrance Assessment!",
+        "instructions": "Instructions:",
+        "instruction1": "This assessment contains multiple-choice questions covering various topics including Mathematics, Logical Reasoning, English, and Programming.",
+        "instruction2": "You have 120 minutes to complete the assessment.",
+        "instruction3": "Each question has four options (A, B, C, D). Select the best answer.",
+        "instruction4": "Once you submit an answer, you cannot change it.",
+        "instruction5": "Make sure you have a stable internet connection.",
+        "instruction6": "Do not refresh the page during the assessment.",
+        "goodLuck": "Good luck!"
+      },
+      "details": {
+        "totalQuestions": "Total Questions: 30 MCQ",
+        "duration": "Duration: 30 minutes",
+        "topics": "Topics:",
+        "topicsList": {
+          "aiFundamentals": "AI Fundamentals",
+          "javascript": "JavaScript",
+          "react": "React",
+          "nodejs": "Node.JS",
+          "htmlCss": "HTML/CSS",
+          "cloudDatabase": "Cloud Database",
+          "logicAptitude": "Logic & Aptitude"
+        }
+      },
+      "buttons": {
+        "whyTakeTest": "Why Take This Test?",
+        "startAssessment": "Start Assessment",
+        "viewResults": "View Results",
+        "resumeTest": "Resume Test",
+        "continueAssessment": "Continue Assessment"
+      },
+      "sections": {
+        "unlockPerks": "UNLOCK THESE PERKS WITH THE TEST",
+        "whatsWithTest": "WHAT'S WITH THIS TEST",
+        "whyMatters": "Why this matters:",
+        "whyMattersText": "We're already in touch with companies actively hiring for AI-powered and no-code roles. If you ace this assessment, you may qualify directly for placement interviews with our partner companies.",
+        "whatIfLowScore": "What if you don't score high?",
+        "whatIfLowScoreText": "No worries. That's exactly why we're here.",
+        "personalizedPath": "If your results show there's room to grow, we'll offer you personalized upskilling pathways — through our industry-grade programs — designed to help you become a high-impact individual in AI and full-stack development.",
+        "performanceUnlocks": "Your performance here can unlock",
+        "directAccess": "Direct access to interviews with hiring partners",
+        "personalizedFeedback": "Personalized feedback on your current strengths and areas to grow",
+        "flagshipProgram": "A chance to join our flagship career-launching program and move closer to your dream job",
+        "careerLaunchingProgram": "A chance to join our flagship career-launching program and move closer to your dream job",
+        "postBootcamp": "Post-Bootcamp Assessment:",
+        "postBootcampTitle": "Post-Bootcamp Assessment:",
+        "pathForward": "Your Path Forward Starts Here",
+        "pathForwardStarts": "Your Path Forward Starts Here"
+      }
+    }
+  },
+  "live": {
+    "title": "Cours en direct",
+    "description": "Rejoignez des sessions en direct avec des experts de l'industrie et accédez à notre bibliothèque de cours enregistrés",
+    "upcomingSession": "📅 Session à venir",
+    "comingSoon": {
+      "title": "🚀 Les sessions en direct arrivent bientôt !",
+      "description": "Nous préparons la prochaine session incroyable pour vous. Restez à l'écoute et revenez plus tard pour les mises à jour.",
+      "joinSoon": "Rejoignez bientôt"
+    },
+    "pastSessions": {
+      "title": "Sessions passées",
+      "searchPlaceholder": "Rechercher des sessions...",
+      "noRecordings": {
+        "title": "Aucun enregistrement trouvé",
+        "description": "Essayez d'ajuster vos filtres ou termes de recherche."
+      }
+    }
+  },
+  "filters": {
+    "title": "Filtrer par",
+    "clearAll": "Tout effacer",
+    "categories": {
+      "title": "Catégories",
+      "fullStack": "Développement Full Stack",
+      "frontEnd": "Développement Front-End",
+      "backEnd": "Développement Back-End",
+      "uiUx": "Design UI/UX",
+      "dataScience": "Science des données et analytique",
+      "marketing": "Marketing",
+      "business": "Affaires"
+    },
+    "difficulty": {
+      "title": "Niveau/Difficulté",
+      "beginner": "Débutant",
+      "intermediate": "Intermédiaire",
+      "pro": "Professionnel"
+    },
+    "price": {
+      "title": "Prix",
+      "free": "Gratuit",
+      "paid": "Payant"
+    },
+    "rating": {
+      "title": "Évaluation",
+      "fourAndUp": "4 et plus",
+      "threeAndUp": "3 et plus"
+    }
+  },
+  "admin": {
+    "title": "Tableau de bord administrateur",
+    "courseManagement": "Gestion des cours",
+    "userManagement": "Gestion des utilisateurs",
+    "analytics": "Analytique",
+    "settings": "Paramètres",
+    "addCourse": "Ajouter un cours",
+    "editCourse": "Modifier le cours",
+    "deleteCourse": "Supprimer le cours",
+    "published": "Publié",
+    "draft": "Brouillon",
+    "addContent": "Ajouter du contenu",
+    "editContent": "Modifier le contenu"
+  },
+  "profile": {
+    "title": "Profil",
+    "personalInfo": "Informations personnelles",
+    "accountSettings": "Paramètres du compte",
+    "learningProgress": "Progression de l'apprentissage",
+    "achievements": "Réalisations",
+    "certificates": "Certificats",
+    "editProfile": "Modifier le profil",
+    "changePassword": "Changer le mot de passe"
+  },
+  "community": {
+    "title": "Communauté",
+    "discussions": "Discussions",
+    "askQuestion": "Poser une question",
+    "answers": "Réponses",
+    "likes": "J'aime",
+    "comments": "Commentaires",
+    "topics": "Sujets",
+    "createThread": "+ Discussion",
+    "createFirstThread": "+ Créer la première discussion",
+    "thread": "Discussion",
+    "newThread": "Nouvelle discussion",
+    "searchPlaceholder": "Rechercher des discussions...",
+    "seeMoreComments": "Voir plus de commentaires",
+    "noThreads": {
+      "title": "Aucune discussion pour le moment",
+      "description": "Soyez le premier à démarrer une discussion dans la communauté."
+    },
+    "noComments": {
+      "title": "Aucun commentaire pour le moment",
+      "description": "Soyez le premier à partager vos pensées sur cette discussion."
+    },
+    "commentForm": {
+      "title": "Votre commentaire",
+      "subtitle": "Partagez vos connaissances avec la communauté",
+      "placeholder": "Partagez vos connaissances avec des exemples de code et des images...",
+      "visibleInfo": "Votre commentaire sera visible par la communauté",
+      "post": "Publier le commentaire",
+      "posting": "Publication...",
+      "formatHelp": {
+        "title": "Formatez votre commentaire en utilisant la barre d'outils ci-dessous. Vous pouvez :",
+        "code": "Ajouter des extraits de code avec coloration syntaxique",
+        "images": "Télécharger et intégrer des images",
+        "text": "Formater le texte en gras, italique et listes",
+        "links": "Ajouter des liens et des citations"
+      }
+    },
+    "filtersAndSearch": "Filtres et recherche",
+    "createForm": {
+      "editThread": "Modifier la discussion",
+      "startNewDiscussion": "Démarrer une nouvelle discussion",
+      "titleLabel": "Titre",
+      "titlePlaceholder": "Titre de la discussion",
+      "tagsLabel": "Tags",
+      "tagsSearchPlaceholder": "Rechercher ou créer des tags (par ex. React, TypeScript, API)...",
+      "bodyLabel": "Corps",
+      "bodyPlaceholder": "De quoi aimeriez-vous discuter ? Vous pouvez formater le texte, ajouter des extraits de code et télécharger des images...",
+      "updateThread": "Mettre à jour la discussion",
+      "createThread": "Créer une discussion"
+    },
+    "noThreadsFound": "Aucune discussion trouvée",
+    "tryAdjustSearch": "Essayez d'ajuster vos critères de recherche ou de filtrage.",
+    "clearFilters": "Effacer les filtres"
+  },
+  "auth": {
+    "login": "Connexion",
+    "register": "S'inscrire",
+    "forgotPassword": "Mot de passe oublié",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "username": "Nom d'utilisateur",
+    "rememberMe": "Se souvenir de moi",
+    "signIn": "Se connecter",
+    "signUp": "S'inscrire",
+    "signOut": "Se déconnecter"
+  },
+  "messages": {
+    "loginSuccess": "Connexion réussie",
+    "loginError": "Échec de la connexion",
+    "registerSuccess": "Compte créé avec succès",
+    "registerError": "Échec de l'inscription",
+    "updateSuccess": "Mise à jour réussie",
+    "updateError": "Échec de la mise à jour",
+    "deleteSuccess": "Suppression réussie",
+    "deleteError": "Échec de la suppression",
+    "saveSuccess": "Enregistrement réussi",
+    "saveError": "Échec de l'enregistrement"
+  },
+  "search": {
+    "placeholder": "Rechercher des cours, sujets ou contenus...",
+    "results": "Résultats de recherche",
+    "noResults": "Aucun résultat trouvé",
+    "suggestions": "Suggestions"
+  },
+  "footer": {
+    "aboutUs": "À propos de nous",
+    "contactUs": "Nous contacter",
+    "privacyPolicy": "Politique de confidentialité",
+    "termsOfService": "Conditions d'utilisation",
+    "helpCenter": "Centre d'aide",
+    "copyright": "© 2025 AI-Linc LMS. Tous droits réservés."
+  },
+  "attendance": {
+    "title": "Présence",
+    "subtitle": "Marquez votre présence en entrant le code fourni par votre instructeur",
+    "liveSessions": "Sessions de présence en direct",
+    "enterCode": "Entrer le code de présence",
+    "submit": "Soumettre la présence",
+    "success": "Présence marquée avec succès",
+    "error": "Échec du marquage de présence",
+    "noSessions": "Aucune session en direct disponible",
+    "headers": {
+      "session": "Session",
+      "date": "Date",
+      "time": "Heure",
+      "status": "Statut",
+      "action": "Action"
+    },
+    "status": {
+      "present": "Présent",
+      "absent": "Absent",
+      "pending": "En attente"
+    },
+    "rowsPerPage": "Lignes par page"
+  },
+  "jobs": {
+    "title": "Trouvez l'emploi de vos rêves",
+    "subtitle": "Aujourd'hui",
+    "description": "Découvrez des milliers d'opportunités d'emploi auprès des meilleures entreprises. Franchissez la prochaine étape de votre parcours professionnel avec des postes correspondant à vos compétences et aspirations.",
+    "careerOpportunities": "Opportunités de carrière",
+    "uploadResume": "Télécharger le CV",
+    "careerTips": "Conseils de carrière",
+    "activeJobs": "Emplois actifs",
+    "companies": "Entreprises",
+    "search": {
+      "jobPlaceholder": "Titre du poste, mots-clés ou entreprise",
+      "locationPlaceholder": "Emplacement",
+      "searchButton": "Rechercher des emplois"
+    },
+    "opportunities": {
+      "title": "Opportunités d'emploi",
+      "jobsFound": "{{count}} emplois trouvés",
+      "for": "pour \"{{query}}\""
+    },
+    "filters": {
+      "title": "Filtres",
+      "clearAll": "Tout effacer",
+      "remoteOnly": "Travail à distance uniquement",
+      "jobType": {
+        "title": "Type d'emploi",
+        "allTypes": "Tous types",
+        "fullTime": "Temps plein",
+        "partTime": "Temps partiel",
+        "contract": "Contrat",
+        "internship": "Stage"
+      },
+      "experience": {
+        "title": "Niveau d'expérience",
+        "allLevels": "Tous niveaux",
+        "entryLevel": "Niveau d'entrée",
+        "midLevel": "Niveau intermédiaire",
+        "seniorLevel": "Niveau senior"
+      },
+      "salary": {
+        "title": "Fourchette salariale",
+        "any": "Tous",
+        "range1": "₹30k - ₹50k",
+        "range2": "₹50k - ₹80k",
+        "range3": "₹80k - ₹1.2L",
+        "range4": "₹1.2L - ₹2L",
+        "range5": "₹2L - ₹5L",
+        "range6": "₹5L - ₹10L",
+        "range7": "₹10L - ₹25L",
+        "range8": "₹25L - ₹50L",
+        "range9": "₹50L+"
+      }
+    },
+    "card": {
+      "readMore": "Lire plus",
+      "showLess": "Afficher moins",
+      "more": "plus",
+      "applyNow": "Postuler maintenant",
+      "viewDetails": "Voir les détails",
+      "featured": "⭐ En vedette",
+      "remote": "À distance",
+      "salaryNotSpecified": "Salaire non spécifié",
+      "postedAgo": "il y a {{time}}"
+    },
+    "detail": {
+      "backToJobs": "Retour aux emplois",
+      "jobDescription": "Description du poste",
+      "requirements": "Exigences",
+      "benefitsAndPerks": "Avantages et privilèges",
+      "quickApply": "Postuler rapidement",
+      "about": "À propos de {{company}}",
+      "jobType": "Type d'emploi :",
+      "experience": "Expérience :",
+      "remote": "À distance :",
+      "deadline": "Date limite :",
+      "yes": "Oui",
+      "no": "Non",
+      "industry": "Industrie :",
+      "companySize": "Taille de l'entreprise :",
+      "founded": "Fondée :",
+      "technology": "Technologie",
+      "employees": "employés",
+      "viewCompanyProfile": "Voir le profil de l'entreprise",
+      "year": "/ an",
+      "technologyCompany": "Entreprise technologique",
+      "datePosted": "Publié {{date}}",
+      "applicationDeadline": "Postuler avant {{date}}"
+    },
+    "dynamicContent": {
+      "descriptions": {
+        "1": "CellStrat est une startup d'IA dynamique spécialisée dans le conseil complet en IA pour les clients américains. Dirigez l'ingénierie IA/ML pour les projets clients mondiaux et le développement du produit CellVerse. Concevez et développez des systèmes d'IA évolutifs de la conception au déploiement.",
+        "2": "Dirigez le développement frontend pour les projets clients et la plateforme produit CellVerse. Concevez et développez des dépôts frontend avec des performances et une évolutivité optimales. Créez des applications web réactives et parfaites au pixel près en utilisant notre stack technologique moderne.",
+        "3": "Nous recherchons un développeur IA talentueux avec une expertise dans les modèles de fondation pour l'image, la vidéo et les VLLM. Appliquez vos compétences au développement de solutions d'IA de pointe.",
+        "4": "Dirigez notre équipe IA dans le développement de solutions complètes avec des modèles de fondation. Stimulez l'innovation technologique, encadrez l'équipe et concentrez-vous sur l'efficacité de la production.",
+        "5": "Opportunité passionnante pour un ingénieur fondateur en IA visionnaire de façonner l'avenir de la technologie IA chez Cenna. Soyez un acteur clé dans la création de solutions d'IA révolutionnaires.",
+        "6": "Rejoignez UltraSafe AI dans le développement de solutions d'IA innovantes axées sur les technologies de sécurité et de protection. Aidez à créer des systèmes intelligents qui protègent et responsabilisent.",
+        "7": "Genloop recherche un ingénieur IA senior pour diriger des projets d'IA complexes et stimuler l'innovation technologique. Idéal pour les professionnels expérimentés qui cherchent à avoir un impact significatif.",
+        "8": "Velodata Global recherche un ingénieur IA talentueux pour contribuer à des solutions innovantes basées sur les données. Aidez-nous à transformer des données complexes en informations exploitables.",
+        "9": "AiSensy élargit son équipe IA et recherche un ingénieur en intelligence artificielle compétent. Contribuez au développement de solutions intelligentes de communication et d'automatisation.",
+        "10": "KLA recherche un ingénieur en intelligence artificielle talentueux pour rejoindre notre équipe innovante. Aidez à développer des solutions d'IA de pointe et à stimuler les progrès technologiques.",
+        "11": "Hike recherche un ingénieur ML compétent pour travailler sur des projets à distance innovants. Aidez à développer des solutions d'apprentissage automatique qui repoussent les limites de la technologie.",
+        "12": "Indsafri élargit son équipe IA et recherche un ingénieur en intelligence artificielle passionné. Contribuez au développement de solutions d'IA innovantes dans divers domaines.",
+        "13": "Eudia recherche un ingénieur IA pour rejoindre notre équipe sur site à Bengaluru. Aidez à développer des solutions d'IA de pointe et à stimuler l'innovation technologique.",
+        "14": "Predigle recherche un ingénieur IA talentueux pour rejoindre notre équipe innovante. Contribuez au développement de solutions d'IA avancées et stimulez les progrès technologiques.",
+        "15": "Mundos recherche un ingénieur IA Fullstack pour travailler à distance. Développez des solutions d'IA complètes qui intègrent les technologies frontend et backend.",
+        "16": "APPSeCONNECT recherche un ingénieur de recherche en IA pour diriger des projets de recherche innovants. Stimulez les progrès technologiques et développez des solutions d'IA de pointe.",
+        "17": "Valuebound élargit son équipe IA et recherche un ingénieur en intelligence artificielle compétent. Contribuez au développement de solutions d'IA innovantes et stimulez l'innovation technologique.",
+        "18": "Rejoignez l'équipe Microsoft AI pour créer des systèmes intelligents de nouvelle génération. Travaillez sur des technologies d'IA de pointe, notamment les services Azure AI, Copilot et les modèles de fondation qui alimentent des millions d'utilisateurs dans le monde.",
+        "19": "Amazon recherche des scientifiques appliqués pour travailler sur Alexa, les services AWS AI et les produits d'IA de nouvelle génération. Stimulez l'innovation en traitement du langage naturel, vision par ordinateur et systèmes de recommandation.",
+        "20": "Dirigez l'architecture et la stratégie IA pour les produits phares de Microsoft. Concevez des systèmes d'IA évolutifs qui servent des milliards d'utilisateurs à travers les écosystèmes Office 365, Azure et Windows.",
+        "21": "Rejoignez l'équipe Alexa AI pour créer des expériences vocales intelligentes. Travaillez sur la reconnaissance vocale, la compréhension du langage naturel et l'IA conversationnelle qui alimente des millions d'appareils Alexa dans le monde."
+      },
+      "requirements": {
+        "1": [
+          "Compréhension approfondie des modèles de langage de grande taille (LLM)",
+          "Expérience avancée avec les API LLM (OpenAI GPT, Claude, Gemini)",
+          "Expérience prouvée dans la création d'architectures RAG",
+          "Expérience pratique avec les bases de données vectorielles et la recherche de similarité",
+          "Niveau expert en PyTorch et Transformers",
+          "Développement avancé FastAPI",
+          "Expérience approfondie d'AWS",
+          "Docker pour le développement et le déploiement",
+          "Compétences expertes en Python"
+        ],
+        "2": [
+          "5+ ans d'expérience en développement frontend",
+          "Niveau expert en React.js et TypeScript",
+          "CSS avancé et frameworks de style modernes",
+          "Expérience avec la gestion d'état (Redux/Zustand)",
+          "Maîtrise des outils de build modernes (Vite/Webpack)",
+          "Expérience avec les frameworks de test (Jest/Cypress)",
+          "Connaissance de la conception responsive et mobile-first",
+          "Compréhension de l'optimisation des performances web",
+          "Expérience avec le contrôle de version (Git)"
+        ],
+        "3": [
+          "Licence ou Master en informatique",
+          "3+ ans d'expérience en développement logiciel",
+          "Maîtrise de Java, C++ ou Python",
+          "Expérience avec les systèmes distribués",
+          "Connaissance des algorithmes et structures de données",
+          "Expérience avec les plateformes cloud",
+          "Solides compétences en résolution de problèmes",
+          "Excellentes capacités de communication",
+          "Expérience de collaboration en équipe"
+        ],
+        "4": [
+          "Licence en informatique ou domaine connexe",
+          "5+ ans d'expérience en développement logiciel",
+          "Maîtrise de C#, .NET ou Java",
+          "Expérience avec les services cloud Azure",
+          "Connaissance de l'architecture microservices",
+          "Expérience avec la conteneurisation (Docker/Kubernetes)",
+          "Compréhension des pratiques DevOps",
+          "Solides compétences analytiques et de résolution de problèmes",
+          "Expérience en leadership et mentorat"
+        ],
+        "5": [
+          "Master en informatique ou équivalent",
+          "8+ ans d'expérience en ingénierie logicielle",
+          "Programmation de niveau expert dans plusieurs langages",
+          "Expérience avec les services et l'architecture AWS",
+          "Historique prouvé de direction d'équipes techniques",
+          "Expérience avec des systèmes distribués à grande échelle",
+          "Solides capacités de conception de systèmes",
+          "Excellentes compétences en communication technique",
+          "Expérience avec les méthodologies de développement agile"
+        ],
+        "6": [
+          "Solide formation en IA et apprentissage automatique",
+          "Expérience avec les applications d'IA axées sur la sécurité",
+          "Maîtrise de Python et des frameworks d'IA",
+          "Compréhension des principes d'IA éthique"
+        ],
+        "7": [
+          "5+ ans d'expérience en IA et apprentissage automatique",
+          "Connaissance avancée des techniques d'apprentissage profond",
+          "Expérience avec des systèmes d'IA à grande échelle",
+          "Solides compétences en recherche et développement"
+        ],
+        "8": [
+          "Solide formation en IA et science des données",
+          "Maîtrise de Python et des bibliothèques d'apprentissage automatique",
+          "Expérience en prétraitement et analyse de données",
+          "Connaissance des plateformes d'IA cloud"
+        ],
+        "9": [
+          "Bonne compréhension de l'IA et de l'apprentissage automatique",
+          "Expérience en traitement du langage naturel",
+          "Maîtrise de Python et des frameworks d'IA",
+          "Connaissance des technologies de chatbot et d'IA conversationnelle"
+        ],
+        "10": [
+          "Solide formation en apprentissage automatique",
+          "Expérience avec les techniques de vérification d'IA",
+          "Maîtrise de Python et des frameworks d'IA",
+          "Connaissance des méthodes avancées de validation d'IA"
+        ],
+        "11": [
+          "Solide formation en apprentissage automatique",
+          "Expérience de collaboration à distance",
+          "Maîtrise de Python et des bibliothèques ML",
+          "Compréhension des systèmes d'apprentissage automatique distribués"
+        ],
+        "12": [
+          "Solides bases en intelligence artificielle",
+          "Expérience avec des projets d'apprentissage automatique",
+          "Maîtrise de Python et des frameworks d'IA",
+          "Compétences créatives en résolution de problèmes"
+        ],
+        "13": [
+          "Solide formation en intelligence artificielle",
+          "Expérience en développement d'IA",
+          "Maîtrise de la programmation et des frameworks d'IA",
+          "Capacité à travailler dans un environnement collaboratif"
+        ],
+        "14": [
+          "Solides bases en intelligence artificielle",
+          "Expérience avec des projets d'apprentissage automatique",
+          "Maîtrise de Python et des frameworks d'IA",
+          "Compétences analytiques et créatives en résolution de problèmes"
+        ],
+        "15": [
+          "Solide formation en développement full-stack",
+          "Expérience en IA et apprentissage automatique",
+          "Maîtrise de plusieurs langages de programmation",
+          "Capacité à travailler efficacement dans un environnement à distance"
+        ],
+        "16": [
+          "Connaissance avancée de l'IA et de l'apprentissage automatique",
+          "Expérience en recherche et développement en IA",
+          "Solide dossier de publication dans des conférences/journaux d'IA",
+          "Capacité à traduire la recherche en applications pratiques"
+        ],
+        "17": [
+          "Solides bases en intelligence artificielle",
+          "Expérience avec des projets d'apprentissage automatique",
+          "Maîtrise de Python et des frameworks d'IA",
+          "Capacité à travailler dans un environnement collaboratif sur site"
+        ],
+        "18": [
+          "Expertise approfondie en apprentissage automatique et systèmes d'IA",
+          "Expérience avec les services Azure AI et les plateformes cloud",
+          "Solide formation en frameworks d'apprentissage profond (PyTorch, TensorFlow)",
+          "Expérience avec les grands modèles de langage et les architectures de transformateurs",
+          "Maîtrise de Python, C# et des systèmes distribués",
+          "Connaissance de MLOps et du déploiement de modèles d'IA",
+          "5+ ans d'expérience en ingénierie IA/ML"
+        ],
+        "19": [
+          "Doctorat ou Master en informatique, IA ou domaine connexe",
+          "Solide formation en recherche avec publications dans des conférences de premier plan",
+          "Expertise en apprentissage profond, NLP ou vision par ordinateur",
+          "Expérience avec les services AWS AI/ML",
+          "Maîtrise de Python, Java et des frameworks d'apprentissage automatique",
+          "Expérience de traduction de la recherche en systèmes de production",
+          "4+ ans d'expérience en recherche appliquée"
+        ],
+        "20": [
+          "Vaste expérience en architecture et conception de systèmes d'IA",
+          "Connaissance approfondie de la plateforme et des services Azure AI",
+          "Expérience avec des systèmes d'IA distribués à grande échelle",
+          "Solides compétences en leadership et mentorat technique",
+          "Expertise en éthique de l'IA et pratiques d'IA responsable",
+          "Expérience avec Kubernetes, microservices et architecture cloud",
+          "8+ ans d'expérience IA/ML avec 3+ ans dans des rôles d'architecture"
+        ],
+        "21": [
+          "Solide formation en apprentissage automatique et NLP",
+          "Expérience avec la reconnaissance vocale et les technologies vocales",
+          "Maîtrise de Python, Java et des frameworks ML",
+          "Connaissance des services AWS et du cloud computing",
+          "Expérience avec le traitement de données à grande échelle",
+          "Compréhension des systèmes ML en temps réel",
+          "3+ ans d'expérience en ingénierie ML"
+        ]
+      },
+      "benefits": {
+        "1": [
+          "Rémunération compétitive",
+          "Options d'actions (ESOP)",
+          "Projets d'IA de pointe"
+        ],
+        "2": [
+          "Package salarial compétitif",
+          "Avantages santé et bien-être",
+          "Opportunités de développement professionnel",
+          "Modalités de travail flexibles",
+          "Environnement de bureau moderne"
+        ],
+        "3": [
+          "Rémunération de premier plan dans l'industrie",
+          "Assurance santé complète",
+          "Options d'actions et bonus",
+          "Repas et collations gratuits",
+          "Installations sportives sur site",
+          "Budget de développement professionnel",
+          "Modalités de travail flexibles",
+          "Opportunités de sabbatique"
+        ],
+        "4": [
+          "Salaire compétitif et options d'actions",
+          "Couverture santé complète",
+          "Plan d'épargne retraite avec abondement",
+          "Congés payés et jours fériés",
+          "Ressources de développement professionnel",
+          "Programmes de bien-être",
+          "Initiatives d'équilibre vie professionnelle/vie privée",
+          "Réductions pour les employés"
+        ],
+        "5": [
+          "Package de rémunération très compétitif",
+          "Avantages complets incluant santé, dentaire, vision",
+          "Plan d'achat d'actions et RSU",
+          "Congés payés généreux",
+          "Opportunités de développement de carrière et de formation",
+          "Programmes de bien-être des employés",
+          "Assistance à la relocalisation",
+          "Options de travail flexibles"
+        ],
+        "6": [
+          "Télétravail complet",
+          "Projets de sécurité de pointe",
+          "Apprentissage continu"
+        ],
+        "7": ["Salaire compétitif", "Opportunités de recherche", "Évolution de carrière"],
+        "8": [
+          "Modèle de travail hybride",
+          "Projets basés sur les données",
+          "Apprentissage continu"
+        ],
+        "9": [
+          "Projets innovants",
+          "Évolution de carrière",
+          "Rémunération compétitive"
+        ],
+        "10": [
+          "Modèle de travail hybride",
+          "Opportunités d'apprentissage",
+          "Rémunération compétitive"
+        ],
+        "11": ["Télétravail complet", "Horaires flexibles", "Apprentissage continu"],
+        "12": [
+          "Modèle de travail hybride",
+          "Projets innovants",
+          "Croissance professionnelle"
+        ],
+        "13": [
+          "Travail sur site",
+          "Opportunités d'apprentissage",
+          "Rémunération compétitive"
+        ],
+        "14": [
+          "Modèle de travail hybride",
+          "Projets de pointe",
+          "Développement professionnel"
+        ],
+        "15": [
+          "Télétravail complet",
+          "Horaires flexibles",
+          "Projets d'IA complets"
+        ],
+        "16": [
+          "Travail sur site",
+          "Opportunités de recherche",
+          "Rémunération compétitive"
+        ],
+        "17": [
+          "Travail sur site",
+          "Opportunités d'apprentissage",
+          "Rémunération compétitive"
+        ],
+        "18": [
+          "Rémunération de classe mondiale",
+          "Options d'actions",
+          "Projets à impact mondial",
+          "Budget de formation"
+        ],
+        "19": [
+          "Salaire compétitif",
+          "RSU",
+          "Opportunités de publication de recherche",
+          "Crédits AWS"
+        ],
+        "20": [
+          "Rémunération de cadre supérieur",
+          "Participation au capital",
+          "Rôle de leadership mondial",
+          "Budget d'innovation"
+        ],
+        "21": [
+          "Package compétitif",
+          "Unités d'actions",
+          "Innovation en IA vocale",
+          "Évolution de carrière"
+        ]
+      }
+    }
+  },
+  "course": {
+    "bookYourSeat": "Réservez votre place",
+    "secureYourSeat": "Sécurisez votre place d'apprentissage aujourd'hui",
+    "limitedSeats": "Places limitées disponibles !",
+    "fewSeatsLeft": "Plus que quelques places pour ce groupe",
+    "reservedSeat": "Place réservée dans les sessions en direct",
+    "priorityAccess": "Accès prioritaire aux ressources de cours",
+    "directMentor": "Interaction directe avec le mentor",
+    "certificateCompletion": "Certificat à l'achèvement",
+    "maybeLater": "Peut-être plus tard",
+    "bookMySeat": "Réserver ma place",
+    "courseIdNotFound": "Identifiant de cours introuvable",
+    "backToCourses": "Retour aux cours",
+    "courseDataUnavailable": "Les données du cours sont actuellement indisponibles. Veuillez actualiser la page ou contacter l'assistance si le problème persiste.",
+    "courseInstructors": "Instructeurs du cours",
+    "linkedinProfile": "Profil LinkedIn",
+    "errorLoadingCourse": "Erreur de chargement du cours",
+    "errorLoadingMessage": "Nous avons rencontré une erreur lors du chargement du contenu du cours. Veuillez actualiser la page ou contacter l'assistance si le problème persiste.",
+    "noCourseFound": "Aucun cours trouvé",
+    "noCourseFoundMessage": "Le cours demandé est introuvable. Veuillez vérifier l'identifiant du cours ou réessayer plus tard.",
+    "article": "Article",
+    "video": "Vidéo",
+    "problems": "Problèmes",
+    "quiz": "Quiz",
+    "completed": "Terminé",
+    "loadingDashboard": "Chargement des données du tableau de bord...",
+    "errorLoadingDashboard": "Erreur de chargement des données du tableau de bord",
+    "invalidDataFormat": "Format de données invalide",
+    "dashboard": "Tableau de bord",
+    "dashboardDescription": "Un aperçu simple de votre statut.",
+    "dashboardInfo": "Découvrez cette visualisation géniale qui montre exactement jusqu'où vous êtes allé dans votre cours ! C'est comme une carte amusante de votre progression !",
+    "leaderboard": "Classement",
+    "videoTutorial": "Tutoriel vidéo",
+    "assignment": "Devoir",
+    "codingProblem": "Problème de codage",
+    "marks": "Notes",
+    "errorLoadingLeaderboard": "Erreur de chargement des données du classement",
+    "leaderboardDescription": "Voyons qui est en haut du classement.",
+    "standing": "Position",
+    "name": "Nom",
+    "leaderboardInfo": "En complétant les modules, vous monterez en haut du classement et gagnerez des récompenses excitantes."
+  }
+}
