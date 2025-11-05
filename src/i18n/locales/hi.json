@@ -43,7 +43,9 @@
     "settings": "सेटिंग्स",
     "admin": "एडमिन",
     "logout": "लॉगआउट",
-    "login": "लॉगिन"
+    "login": "लॉगिन",
+    "attendance": "उपस्थिति",
+    "mock_interview": "मॉक साक्षात्कार"
   },
   "notifications": {
     "communityLive": {
