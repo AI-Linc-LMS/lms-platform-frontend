@@ -11,6 +11,13 @@ import {
   FiChevronRight,
   FiBookOpen,
   FiX,
+  FiUser,
+  FiMail,
+  FiBarChart2,
+  FiTarget,
+  FiSettings,
+  FiCheckCircle,
+  FiXCircle,
 } from "react-icons/fi";
 import FilterModal, { FilterCriteria } from "../components/FilterModal";
 import AccessDenied from "../../../../components/AccessDenied";
@@ -38,12 +45,9 @@ const ManageStudents = () => {
     isActive: undefined,
     searchTerm: "",
   });
-  const [sortBy, setSortBy] = useState<ManageStudentsParams["sort_by"]>(
-    "name"
-  );
-  const [sortOrder, setSortOrder] = useState<ManageStudentsParams["sort_order"]>(
-    "asc"
-  );
+  const [sortBy, setSortBy] = useState<ManageStudentsParams["sort_by"]>("name");
+  const [sortOrder, setSortOrder] =
+    useState<ManageStudentsParams["sort_order"]>("asc");
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(100);
   const clientId = import.meta.env.VITE_CLIENT_ID;
@@ -98,21 +102,22 @@ const ManageStudents = () => {
   const students: StudentListItem[] = useMemo(() => {
     if (!studentsData) return [];
     const baseStudents = studentsData.students || [];
-    
+
     // If filtering by course and we have completion data, merge it
     if (filters.courseId && courseCompletionData) {
-      return baseStudents.map(student => {
+      return baseStudents.map((student) => {
         const completionStats = courseCompletionData.find(
-          stats => stats.student_id === student.id
+          (stats) => stats.student_id === student.id
         );
         return {
           ...student,
           course_progress: completionStats?.completion_percentage,
           course_marks: completionStats?.completed_contents,
+          attendance_percentage: completionStats?.attendance_percentage,
         };
       });
     }
-    
+
     return baseStudents;
   }, [studentsData, filters.courseId, courseCompletionData]);
 
@@ -121,7 +126,9 @@ const ManageStudents = () => {
     return studentsData.pagination?.total_students ?? students.length;
   }, [studentsData, students.length]);
   const currentPage = studentsData?.pagination?.current_page ?? page;
-  const totalPages = studentsData?.pagination?.total_pages ?? Math.max(1, Math.ceil(totalCount / (limit || 1)));
+  const totalPages =
+    studentsData?.pagination?.total_pages ??
+    Math.max(1, Math.ceil(totalCount / (limit || 1)));
   const hasNext = studentsData?.pagination?.has_next ?? page < totalPages;
   const hasPrev = studentsData?.pagination?.has_previous ?? page > 1;
 
@@ -158,9 +165,7 @@ const ManageStudents = () => {
                   <FiUsers className="w-8 h-8" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold mb-1">
-                    Manage Students
-                  </h1>
+                  <h1 className="text-3xl font-bold mb-1">Manage Students</h1>
                   <p className="text-white/80 text-sm">
                     View, manage and track student progress
                   </p>
@@ -186,7 +191,9 @@ const ManageStudents = () => {
                 type="text"
                 placeholder="Search by name or email..."
                 value={filters.searchTerm}
-                onChange={(e) => setFilters((f) => ({ ...f, searchTerm: e.target.value }))}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, searchTerm: e.target.value }))
+                }
                 className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none transition-all shadow-sm"
               />
             </div>
@@ -205,30 +212,39 @@ const ManageStudents = () => {
                 Filter
                 {hasActiveFilters && (
                   <span className="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs">
-                    {(filters.courseId !== undefined ? 1 : 0) + (filters.isActive !== undefined ? 1 : 0)}
+                    {(filters.courseId !== undefined ? 1 : 0) +
+                      (filters.isActive !== undefined ? 1 : 0)}
                   </span>
                 )}
               </button>
-              
+
               {/* Sorting */}
               <div className="flex items-center gap-2">
                 <select
                   className="border-2 border-gray-300 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none transition-all shadow-sm"
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as ManageStudentsParams["sort_by"])}
+                  onChange={(e) =>
+                    setSortBy(e.target.value as ManageStudentsParams["sort_by"])
+                  }
                 >
-                  <option value="name">👤 Name</option>
-                  <option value="marks">🏆 Marks</option>
-                  <option value="last_activity">📅 Last Activity</option>
-                  <option value="time_spent">⏱️ Time Spent</option>
-                  <option value="streak">🔥 Streak</option>
+                  <option value="name">Name</option>
+                  <option value="marks">Marks</option>
+                  <option value="last_activity">Last Activity</option>
+                  <option value="time_spent">Time Spent</option>
+                  <option value="streak">Streak</option>
                 </select>
                 <button
-                  onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                  onClick={() =>
+                    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                  }
                   className="p-3 border-2 border-gray-300 rounded-xl hover:bg-gray-50 transition-all shadow-sm"
                   title={sortOrder === "asc" ? "Ascending" : "Descending"}
                 >
-                  {sortOrder === "asc" ? <FiArrowUp className="w-4 h-4" /> : <FiArrowDown className="w-4 h-4" />}
+                  {sortOrder === "asc" ? (
+                    <FiArrowUp className="w-4 h-4" />
+                  ) : (
+                    <FiArrowDown className="w-4 h-4" />
+                  )}
                 </button>
               </div>
             </div>
@@ -245,9 +261,12 @@ const ManageStudents = () => {
                 {filters.courseId !== undefined && (
                   <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-gradient-to-r from-[var(--primary-500)] to-[var(--primary-600)] text-white shadow-sm">
                     <FiBookOpen className="w-3 h-3" />
-                    {availableCourses.find((c) => c.id === filters.courseId)?.title || filters.courseId}
+                    {availableCourses.find((c) => c.id === filters.courseId)
+                      ?.title || filters.courseId}
                     <button
-                      onClick={() => setFilters((f) => ({ ...f, courseId: undefined }))}
+                      onClick={() =>
+                        setFilters((f) => ({ ...f, courseId: undefined }))
+                      }
                       className="ml-1 hover:bg-white/20 rounded-full p-0.5 transition-colors"
                     >
                       <FiX className="w-3 h-3" />
@@ -255,14 +274,28 @@ const ManageStudents = () => {
                   </span>
                 )}
                 {filters.isActive !== undefined && (
-                  <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm ${
-                    filters.isActive 
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-red-100 text-red-700'
-                  }`}>
-                    {filters.isActive ? "✅ Active" : "❌ Inactive"}
+                  <span
+                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm ${
+                      filters.isActive
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {filters.isActive ? (
+                      <>
+                        <FiCheckCircle className="w-3 h-3" />
+                        Active
+                      </>
+                    ) : (
+                      <>
+                        <FiXCircle className="w-3 h-3" />
+                        Inactive
+                      </>
+                    )}
                     <button
-                      onClick={() => setFilters((f) => ({ ...f, isActive: undefined }))}
+                      onClick={() =>
+                        setFilters((f) => ({ ...f, isActive: undefined }))
+                      }
                       className="ml-1 hover:bg-white/30 rounded-full p-0.5 transition-colors"
                     >
                       <FiX className="w-3 h-3" />
@@ -270,7 +303,13 @@ const ManageStudents = () => {
                   </span>
                 )}
                 <button
-                  onClick={() => setFilters({ courseId: undefined, isActive: undefined, searchTerm: "" })}
+                  onClick={() =>
+                    setFilters({
+                      courseId: undefined,
+                      isActive: undefined,
+                      searchTerm: "",
+                    })
+                  }
                   className="text-sm text-[var(--primary-500)] hover:text-[var(--primary-600)] font-medium underline"
                 >
                   Clear all filters
@@ -293,37 +332,68 @@ const ManageStudents = () => {
                     />
                   </th>
                   <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    👤 Name
+                    <div className="flex items-center gap-2">
+                      <FiUser className="w-4 h-4" />
+                      Name
+                    </div>
                   </th>
                   <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    📧 Email
+                    <div className="flex items-center gap-2">
+                      <FiMail className="w-4 h-4" />
+                      Email
+                    </div>
                   </th>
                   {filters.courseId ? (
-                    <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
-                      📊 Completion %
-                    </th>
+                    <>
+                      <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <FiBarChart2 className="w-4 h-4" />
+                          Completion %
+                        </div>
+                      </th>
+                      <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <FiBarChart2 className="w-4 h-4" />
+                          Attendance %
+                        </div>
+                      </th>
+                    </>
                   ) : (
                     <>
                       <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        📚 Enrollments
+                        <div className="flex items-center gap-2">
+                          <FiBookOpen className="w-4 h-4" />
+                          Enrollments
+                        </div>
                       </th>
                       <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        🎯 Most Active Course
+                        <div className="flex items-center gap-2">
+                          <FiTarget className="w-4 h-4" />
+                          Most Active Course
+                        </div>
                       </th>
                     </>
                   )}
                   <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    ⚙️ Actions
+                    <div className="flex items-center gap-2">
+                      <FiSettings className="w-4 h-4" />
+                      Actions
+                    </div>
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
                 {isFetching ? (
                   <tr>
-                    <td colSpan={filters.courseId ? 5 : 6} className="py-12 px-6">
+                    <td
+                      colSpan={filters.courseId ? 5 : 6}
+                      className="py-12 px-6"
+                    >
                       <div className="flex flex-col items-center justify-center gap-3">
                         <div className="w-12 h-12 border-4 border-[var(--primary-200)] border-t-[var(--primary-500)] rounded-full animate-spin"></div>
-                        <p className="text-gray-500 text-sm">Loading students...</p>
+                        <p className="text-gray-500 text-sm">
+                          Loading students...
+                        </p>
                       </div>
                     </td>
                   </tr>
@@ -342,7 +412,13 @@ const ManageStudents = () => {
                         </p>
                         {(filters.searchTerm || hasActiveFilters) && (
                           <button
-                            onClick={() => setFilters({ courseId: undefined, isActive: undefined, searchTerm: "" })}
+                            onClick={() =>
+                              setFilters({
+                                courseId: undefined,
+                                isActive: undefined,
+                                searchTerm: "",
+                              })
+                            }
                             className="text-sm text-[var(--primary-500)] hover:text-[var(--primary-600)] font-medium underline"
                           >
                             Clear filters
@@ -366,37 +442,74 @@ const ManageStudents = () => {
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gradient-to-br from-[var(--primary-500)] to-[var(--primary-600)] text-white rounded-full flex items-center justify-center font-semibold text-sm shadow-md">
-                            {(student.name || student.first_name || student.email)[0].toUpperCase()}
+                            {(student.name ||
+                              student.first_name ||
+                              student.email)[0].toUpperCase()}
                           </div>
                           <div>
                             <div className="font-medium text-gray-900">
-                              {student.name || `${student.first_name ?? ""} ${student.last_name ?? ""}`.trim() || student.email}
+                              {student.name ||
+                                `${student.first_name ?? ""} ${
+                                  student.last_name ?? ""
+                                }`.trim() ||
+                                student.email}
                             </div>
-                            <div className="text-xs text-gray-500">ID: {student.id}</div>
+                            <div className="text-xs text-gray-500">
+                              ID: {student.id}
+                            </div>
                           </div>
                         </div>
                       </td>
                       <td className="py-4 px-6">
-                        <span className="text-sm text-gray-700">{student.email}</span>
+                        <span className="text-sm text-gray-700">
+                          {student.email}
+                        </span>
                       </td>
                       {filters.courseId ? (
-                        <td className="py-4 px-6">
-                          {student.course_progress !== undefined ? (
-                            <div className="flex items-center gap-3">
-                              <div className="flex-1 bg-gray-200 rounded-full h-2.5 max-w-[140px] overflow-hidden shadow-inner">
-                                <div
-                                  className="h-full bg-gradient-to-r from-[var(--primary-500)] to-[var(--primary-600)] rounded-full transition-all duration-500"
-                                  style={{ width: `${student.course_progress}%` }}
-                                ></div>
+                        <>
+                          <td className="py-4 px-6">
+                            {student.course_progress !== undefined ? (
+                              <div className="flex items-center gap-3">
+                                <div className="flex-1 bg-gray-200 rounded-full h-2.5 max-w-[140px] overflow-hidden shadow-inner">
+                                  <div
+                                    className="h-full bg-gradient-to-r from-[var(--primary-500)] to-[var(--primary-600)] rounded-full transition-all duration-500"
+                                    style={{
+                                      width: `${student.course_progress}%`,
+                                    }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm font-semibold text-gray-700 min-w-[45px]">
+                                  {student.course_progress.toFixed(2)}%
+                                </span>
                               </div>
-                              <span className="text-sm font-semibold text-gray-700 min-w-[45px]">
-                                {student.course_progress.toFixed(2)}%
+                            ) : (
+                              <span className="text-gray-400 text-xs italic">
+                                No progress
                               </span>
-                            </div>
-                          ) : (
-                            <span className="text-gray-400 text-xs italic">No progress</span>
-                          )}
-                        </td>
+                            )}
+                          </td>
+                          <td className="py-4 px-6">
+                            {student.attendance_percentage !== undefined ? (
+                              <div className="flex items-center gap-3">
+                                <div className="flex-1 bg-gray-200 rounded-full h-2.5 max-w-[140px] overflow-hidden shadow-inner">
+                                  <div
+                                    className="h-full bg-gradient-to-r from-[var(--primary-500)] to-[var(--primary-600)] rounded-full transition-all duration-500"
+                                    style={{
+                                      width: `${student.attendance_percentage}%`,
+                                    }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm font-semibold text-gray-700 min-w-[45px]">
+                                  {student.attendance_percentage.toFixed(2)}%
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-xs italic">
+                                No progress
+                              </span>
+                            )}
+                          </td>
+                        </>
                       ) : (
                         <>
                           <td className="py-4 px-6">
@@ -428,7 +541,7 @@ const ManageStudents = () => {
               </tbody>
             </table>
           </div>
-          
+
           {/* Pagination */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-6 border-t-2 border-gray-200 bg-gradient-to-r from-gray-50 to-white">
             <div className="flex items-center gap-4 text-sm">
@@ -438,11 +551,15 @@ const ManageStudents = () => {
                   {currentPage}
                 </span>
                 <span className="text-gray-500">of</span>
-                <span className="font-semibold">{isNaN(totalPages) ? 1 : totalPages}</span>
+                <span className="font-semibold">
+                  {isNaN(totalPages) ? 1 : totalPages}
+                </span>
               </div>
               <span className="text-gray-300">•</span>
               <div className="flex items-center gap-2">
-                <label className="text-gray-700 font-medium">Rows per page:</label>
+                <label className="text-gray-700 font-medium">
+                  Rows per page:
+                </label>
                 <select
                   className="border-2 border-gray-300 rounded-lg px-3 py-1.5 font-medium focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none transition-all"
                   value={limit}
@@ -464,7 +581,7 @@ const ManageStudents = () => {
                 </div>
               )}
             </div>
-            
+
             <div className="flex items-center gap-2">
               <button
                 disabled={!hasPrev}
