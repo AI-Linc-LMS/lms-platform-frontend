@@ -33,12 +33,17 @@ const RecommendedLearningAll = lazy(
 const Dashboard = lazy(
   () => import("./features/admin/dashboard/pages/Dashboard")
 );
+
+const mockInterview = lazy(
+  () => import("./features/learn/pages/MockInterview")
+);
 const ManageStudents = lazy(
   () => import("./features/admin/manage-students/pages/ManageStudents")
 );
 const StudentDetailPage = lazy(
   () => import("./features/admin/manage-students/pages/StudentDetailPage")
 );
+
 const ShortAssessment = lazy(
   () => import("./features/learn/pages/ShortAssessment")
 );
@@ -189,6 +194,11 @@ const routes: RouteConfig[] = [
     isPrivate: true,
   },
   {
+    path: "/mock-interview",
+    component: mockInterview,
+    isPrivate: true,
+  },
+  {
     path: "/courses/:courseId",
     component: CourseDetailPage,
     isPrivate: true,
@@ -210,6 +220,7 @@ const routes: RouteConfig[] = [
     isPrivate: true,
     requiredRole: "admin_or_instructor",
   },
+
   {
     path: "/admin/email-send",
     component: EmailSelfServe,

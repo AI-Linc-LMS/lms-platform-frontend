@@ -43,7 +43,9 @@
     "settings": "الإعدادات",
     "admin": "المدير",
     "logout": "تسجيل الخروج",
-    "login": "تسجيل الدخول"
+    "login": "تسجيل الدخول",
+
+    "mock_interview": "المقابلة التجريبية"
   },
   "notifications": {
     "communityLive": {

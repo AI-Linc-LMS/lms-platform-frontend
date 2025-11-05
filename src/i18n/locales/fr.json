@@ -44,7 +44,9 @@
     "admin": "Admin",
     "logout": "Déconnexion",
     "login": "Connexion",
-    "attendance": "Présence"
+    "attendance": "Présence",
+
+    "mock_interview": "Entretien simulé"
   },
   "notifications": {
     "communityLive": {
@@ -975,7 +977,11 @@
           "Projets de sécurité de pointe",
           "Apprentissage continu"
         ],
-        "7": ["Salaire compétitif", "Opportunités de recherche", "Évolution de carrière"],
+        "7": [
+          "Salaire compétitif",
+          "Opportunités de recherche",
+          "Évolution de carrière"
+        ],
         "8": [
           "Modèle de travail hybride",
           "Projets basés sur les données",
@@ -991,7 +997,11 @@
           "Opportunités d'apprentissage",
           "Rémunération compétitive"
         ],
-        "11": ["Télétravail complet", "Horaires flexibles", "Apprentissage continu"],
+        "11": [
+          "Télétravail complet",
+          "Horaires flexibles",
+          "Apprentissage continu"
+        ],
         "12": [
           "Modèle de travail hybride",
           "Projets innovants",

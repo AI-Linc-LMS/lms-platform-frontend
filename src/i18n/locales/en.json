@@ -44,7 +44,8 @@
     "admin": "Admin",
     "logout": "Logout",
     "login": "Login",
-    "attendance": "Attendance"
+    "attendance": "Attendance",
+    "mock_interview": "Mock Interview"
   },
   "notifications": {
     "communityLive": {
