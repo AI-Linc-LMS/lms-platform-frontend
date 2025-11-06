@@ -28,13 +28,17 @@ export interface StudentListItem {
   streak_data: boolean[]; // last 7 days
   enrollment_count: number;
   assessment_submissions: number;
-  activity_summary: { total_activities: number; by_type: Record<string, number> };
+  activity_summary: {
+    total_activities: number;
+    by_type: Record<string, number>;
+  };
   // Course-specific fields (when filtering by course_id)
   // Backend should populate these from enrolled_courses array for the filtered course:
   // - course_progress: enrolled_courses.find(c => c.id === course_id).progress_percentage
   // - course_marks: enrolled_courses.find(c => c.id === course_id).marks
   course_progress?: number;
   course_marks?: number;
+  attendance_percentage?: number;
 }
 
 export interface ManageStudentsPagination {
@@ -66,7 +70,13 @@ export interface ManageStudentsParams {
   is_active?: boolean;
   page?: number;
   limit?: number;
-  sort_by?: "marks" | "name" | "last_activity" | "time_spent" | "streak" | string;
+  sort_by?:
+    | "marks"
+    | "name"
+    | "last_activity"
+    | "time_spent"
+    | "streak"
+    | string;
   sort_order?: "asc" | "desc";
 }
 
@@ -75,9 +85,11 @@ export const getManageStudents = async (
   params: ManageStudentsParams = {}
 ): Promise<ManageStudentsResponse> => {
   const query = new URLSearchParams();
-  if (params.course_id !== undefined) query.set("course_id", String(params.course_id));
+  if (params.course_id !== undefined)
+    query.set("course_id", String(params.course_id));
   if (params.search) query.set("search", params.search);
-  if (params.is_active !== undefined) query.set("is_active", String(params.is_active));
+  if (params.is_active !== undefined)
+    query.set("is_active", String(params.is_active));
   if (params.page) query.set("page", String(params.page));
   if (params.limit) query.set("limit", String(params.limit));
   if (params.sort_by) query.set("sort_by", params.sort_by);
@@ -85,7 +97,9 @@ export const getManageStudents = async (
 
   try {
     const res = await axiosInstance.get(
-      `/admin-dashboard/api/clients/${clientId}/manage-students/${query.toString() ? `?${query.toString()}` : ""}`
+      `/admin-dashboard/api/clients/${clientId}/manage-students/${
+        query.toString() ? `?${query.toString()}` : ""
+      }`
     );
     return res.data as ManageStudentsResponse;
   } catch (error) {
@@ -161,8 +175,13 @@ export const getManageStudentDetail = async (
     );
     return res.data;
   } catch (error) {
-  const err = error as AxiosError<ApiErrorPayload>;
-  const message = err.response?.data?.error || err.response?.data?.message || err.response?.data?.detail || err.message || "Failed to fetch student details";
+    const err = error as AxiosError<ApiErrorPayload>;
+    const message =
+      err.response?.data?.error ||
+      err.response?.data?.message ||
+      err.response?.data?.detail ||
+      err.message ||
+      "Failed to fetch student details";
     throw new Error(message);
   }
 };
@@ -187,8 +206,13 @@ export const patchManageStudent = async (
     );
     return res.data;
   } catch (error) {
-  const err = error as AxiosError<ApiErrorPayload>;
-  const message = err.response?.data?.error || err.response?.data?.message || err.response?.data?.detail || err.message || "Failed to update student";
+    const err = error as AxiosError<ApiErrorPayload>;
+    const message =
+      err.response?.data?.error ||
+      err.response?.data?.message ||
+      err.response?.data?.detail ||
+      err.message ||
+      "Failed to update student";
     throw new Error(message);
   }
 };
@@ -203,8 +227,13 @@ export const deactivateManageStudent = async (
       `/admin-dashboard/api/clients/${clientId}/manage-student/${studentId}/`
     );
   } catch (error) {
-  const err = error as AxiosError<ApiErrorPayload>;
-  const message = err.response?.data?.error || err.response?.data?.message || err.response?.data?.detail || err.message || "Failed to deactivate student";
+    const err = error as AxiosError<ApiErrorPayload>;
+    const message =
+      err.response?.data?.error ||
+      err.response?.data?.message ||
+      err.response?.data?.detail ||
+      err.message ||
+      "Failed to deactivate student";
     throw new Error(message);
   }
 };
@@ -228,8 +257,43 @@ export const postManageStudentAction = async (
     );
     return res.data;
   } catch (error) {
-  const err = error as AxiosError<ApiErrorPayload>;
-  const message = err.response?.data?.error || err.response?.data?.message || err.response?.data?.detail || err.message || "Failed to perform student action";
+    const err = error as AxiosError<ApiErrorPayload>;
+    const message =
+      err.response?.data?.error ||
+      err.response?.data?.message ||
+      err.response?.data?.detail ||
+      err.message ||
+      "Failed to perform student action";
+    throw new Error(message);
+  }
+};
+
+// Course Completion Stats
+export interface CourseCompletionStats {
+  student_id: number;
+  name: string;
+  email: string;
+  course_id: number;
+  course_title: string;
+  completed_contents: number;
+  total_contents: number;
+  completion_percentage: number;
+  attendance_percentage: number;
+}
+
+export const getCourseCompletionStats = async (
+  clientId: number,
+  courseId?: number
+): Promise<CourseCompletionStats[]> => {
+  const query = courseId ? `?course_id=${courseId}` : "";
+  try {
+    const res = await axiosInstance.get(
+      `/admin-dashboard/api/clients/${clientId}/course-completion-stats/${query}`
+    );
+    return res.data as CourseCompletionStats[];
+  } catch (error) {
+    const message =
+      (error as Error).message ?? "Failed to fetch course completion stats";
     throw new Error(message);
   }
 };
