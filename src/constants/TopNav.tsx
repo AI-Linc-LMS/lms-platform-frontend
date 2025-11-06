@@ -10,6 +10,7 @@ import { RootState } from "../redux/store.ts";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
+import LanguageSwitcher from "../components/ui/LanguageSwitcher";
 import {
   getDailyLeaderboard,
   getStreakTableData,
@@ -365,17 +366,17 @@ const TopNav: React.FC = () => {
                 </div>
               )}
             </div>
-            <div className="relative">
-              <motion.span
-                className="inline-flex items-center justify-center px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs bg-[#FFF8E0] rounded-full border border-[#f9cd0c] relative overflow-hidden cursor-pointer whitespace-nowrap"
+            <div className="relative group">
+              <motion.div
+                className="inline-flex items-center gap-1 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50 rounded-full border border-orange-300 relative overflow-hidden cursor-pointer shadow-md hover:shadow-lg transition-shadow"
                 initial={{ scale: 1 }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 animate={{
                   boxShadow: [
-                    "0 0 0px rgba(249, 205, 12, 0)",
-                    "0 0 15px rgba(249, 205, 12, 0.6)",
-                    "0 0 0px rgba(249, 205, 12, 0)",
+                    "0 2px 8px rgba(251, 146, 60, 0.25)",
+                    "0 4px 12px rgba(251, 146, 60, 0.4)",
+                    "0 2px 8px rgba(251, 146, 60, 0.25)",
                   ],
                 }}
                 transition={{
@@ -387,24 +388,26 @@ const TopNav: React.FC = () => {
                   scale: { duration: 0.2 },
                 }}
               >
+                {/* Animated gradient overlay */}
                 <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30"
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-40"
                   animate={{
                     x: ["-100%", "200%"],
                   }}
                   transition={{
                     duration: 3,
                     repeat: Infinity,
-                    repeatDelay: 5,
+                    repeatDelay: 4,
                     ease: "easeInOut",
                   }}
                 />
 
+                {/* Pulsing background */}
                 <motion.div
-                  className="absolute inset-0 bg-[#f9cd0c] rounded-full opacity-20"
+                  className="absolute inset-0 bg-gradient-to-r from-orange-300 to-red-300 rounded-full opacity-20"
                   animate={{
-                    scale: [1, 1.2, 1],
-                    opacity: [0.2, 0.4, 0.2],
+                    scale: [1, 1.15, 1],
+                    opacity: [0.2, 0.35, 0.2],
                   }}
                   transition={{
                     duration: 2,
@@ -413,10 +416,11 @@ const TopNav: React.FC = () => {
                   }}
                 />
 
-                <motion.div
+                {/* Streak number - matching Today's Leaders font size */}
+                <motion.span
+                  className="text-secondary-500 font-bold relative z-10"
                   animate={{
-                    rotate: [0, 10, -10, 10, 0],
-                    scale: [1, 1.2, 1],
+                    scale: [1, 1.1, 1],
                   }}
                   transition={{
                     duration: 0.6,
@@ -424,29 +428,46 @@ const TopNav: React.FC = () => {
                     repeatDelay: 3,
                   }}
                 >
-                  🔥
-                </motion.div>
+                  {data?.current_streak || 0}
+                </motion.span>
 
+                {/* Fire emoji - Snapchat style */}
                 <motion.span
-                  className="text-secondary-500 font-bold relative z-10 ms-1 truncate"
+                  className="relative z-10"
                   animate={{
-                    scale: [1, 1.1, 1],
+                    rotate: [0, 12, -12, 12, 0],
+                    scale: [1, 1.2, 1.15, 1.2, 1],
                   }}
                   transition={{
-                    duration: 0.5,
+                    duration: 0.8,
                     repeat: Infinity,
-                    repeatDelay: 3,
+                    repeatDelay: 2.5,
                   }}
                 >
-                  <span className="hidden sm:inline">
-                    {t("dashboard.streak.days", {
-                      count: data?.current_streak,
-                    })}{" "}
-                    Streak
-                  </span>
-                  <span className="sm:hidden">{data?.current_streak}d</span>
+                  🔥
                 </motion.span>
-              </motion.span>
+              </motion.div>
+
+              {/* Hover Tooltip */}
+              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-300 ease-out group-hover:translate-y-0 translate-y-[-4px] z-50">
+                <div className="relative">
+                  {/* Tooltip arrow */}
+                  <div className="absolute left-1/2 -translate-x-1/2 -top-2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[6px] border-b-white"></div>
+                  
+                  {/* Tooltip content */}
+                  <div className="bg-white rounded-lg px-3 py-2 shadow-xl whitespace-nowrap">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-semibold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                        Current Streak
+                      </span>
+                      <span className="text-base">🔥</span>
+                    </div>
+                    <div className="text-[10px] text-gray-600 mt-0.5">
+                      Keep it going!
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Admin Link */}
@@ -525,6 +546,9 @@ const TopNav: React.FC = () => {
                 </>
               )}
             </div>
+
+            {/* Language Switcher */}
+            <LanguageSwitcher />
 
             {/* User Profile Dropdown */}
             <div className="relative flex justify-center" ref={dropdownRef}>
