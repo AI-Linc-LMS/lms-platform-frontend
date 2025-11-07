@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getLiveAttendanceActivities,
   markAttendance,
 } from "../../../services/attendanceApis";
 import AttendanceDialog from "./AttendanceDialog";
+import { useTranslation } from "react-i18next";
 import {
   Table,
   TableBody,
@@ -28,6 +29,7 @@ interface AttendanceMarkingProps {
 }
 
 const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
+  const { t, i18n } = useTranslation();
   const clientId = Number(import.meta.env.VITE_CLIENT_ID);
   const queryClient = useQueryClient();
 
@@ -42,6 +44,19 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+
+  const locale = useMemo(() => {
+    switch (i18n.language) {
+      case "hi":
+        return "hi-IN";
+      case "ar":
+        return "ar-SA";
+      case "fr":
+        return "fr-FR";
+      default:
+        return "en-IN";
+    }
+  }, [i18n.language]);
 
   // Fetch live attendance activities
   const { data: liveActivities, isLoading: isLoadingActivities } = useQuery({
@@ -59,8 +74,8 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
       activityId: number;
       attendanceCode: string;
     }) => markAttendance(clientId, activityId, { code: attendanceCode }),
-    onSuccess: (response) => {
-      setMessage({ type: "success", text: response.message });
+    onSuccess: () => {
+      setMessage({ type: "success", text: t("attendance.success") });
       setCode("");
       setSelectedActivityId(null);
       setShowSuccessDialog(true);
@@ -77,7 +92,8 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
       console.log(error);
       setMessage({
         type: "error",
-        text: error.response?.data?.error || "Invalid or expired code",
+        text:
+          error?.response?.data?.error || t("attendance.errors.invalidCode"),
       });
 
       // Clear error message after 5 seconds
@@ -91,17 +107,26 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
     e.preventDefault();
 
     if (!selectedActivityId) {
-      setMessage({ type: "error", text: "Please select an activity" });
+      setMessage({
+        type: "error",
+        text: t("attendance.errors.selectActivity"),
+      });
       return;
     }
 
     if (!code.trim()) {
-      setMessage({ type: "error", text: "Please enter the attendance code" });
+      setMessage({
+        type: "error",
+        text: t("attendance.errors.enterCode"),
+      });
       return;
     }
 
     if (code.length !== 6) {
-      setMessage({ type: "error", text: "Code must be 6 digits" });
+      setMessage({
+        type: "error",
+        text: t("attendance.errors.invalidLength"),
+      });
       return;
     }
 
@@ -158,7 +183,7 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
       {/* Live Attendance Activities */}
       <div className="bg-white rounded-lg shadow-lg p-4 mb-4">
         <h2 className="text-2xl font-bold text-[var(--primary-500)] mb-4">
-          Live Attendance Sessions
+          {t("attendance.liveSessions")}
         </h2>
 
         {liveActivities && liveActivities.length > 0 ? (
@@ -175,16 +200,16 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell sx={{ fontFamily: "inherit" }}>
-                      <strong>Name</strong>
+                      <strong>{t("attendance.headers.name")}</strong>
                     </TableCell>
                     <TableCell sx={{ fontFamily: "inherit" }}>
-                      <strong>Expires At</strong>
+                      <strong>{t("attendance.headers.expiresAt")}</strong>
                     </TableCell>
                     <TableCell sx={{ fontFamily: "inherit" }}>
-                      <strong>Time Remaining</strong>
+                      <strong>{t("attendance.headers.timeRemaining")}</strong>
                     </TableCell>
                     <TableCell align="center" sx={{ fontFamily: "inherit" }}>
-                      <strong>Action</strong>
+                      <strong>{t("attendance.headers.action")}</strong>
                     </TableCell>
                   </TableRow>
                 </TableHead>
@@ -207,7 +232,7 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
                           </TableCell>
                           <TableCell sx={{ fontFamily: "inherit" }}>
                             {new Date(activity.expires_at).toLocaleString(
-                              "en-IN",
+                              locale,
                               {
                                 dateStyle: "short",
                                 timeStyle: "short",
@@ -219,10 +244,10 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
                               <Chip
                                 label={
                                   isExpired
-                                    ? "Expired"
-                                    : `${timeRemaining} min${
-                                        timeRemaining !== 1 ? "s" : ""
-                                      } left`
+                                    ? t("attendance.labels.expired")
+                                    : t("attendance.labels.minutesLeft", {
+                                        count: timeRemaining ?? 0,
+                                      })
                                 }
                                 color={
                                   isExpired
@@ -245,14 +270,14 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
                             {hasMarked ? (
                               <Chip
                                 icon={<CheckCircleIcon />}
-                                label="Present"
+                                label={t("attendance.status.present")}
                                 color="success"
                                 size="small"
                                 sx={{ fontFamily: "inherit" }}
                               />
                             ) : isExpired && !hasMarked ? (
                               <Chip
-                                label="Absent"
+                                label={t("attendance.status.absent")}
                                 color="error"
                                 size="small"
                                 sx={{ fontFamily: "inherit" }}
@@ -267,7 +292,7 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
                                 }
                                 sx={{ fontFamily: "inherit" }}
                               >
-                                Mark Attendance
+                                {t("attendance.actions.mark")}
                               </Button>
                             )}
                           </TableCell>
@@ -285,17 +310,17 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
               page={page}
               onPageChange={handleChangePage}
               onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage={t("attendance.rowsPerPage")}
             />
           </Paper>
         ) : (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📋</div>
             <h3 className="text-xl font-semibold text-gray-700 mb-2">
-              No Active Attendance Sessions
+              {t("attendance.empty.title")}
             </h3>
             <p className="text-gray-500">
-              Your instructor hasn't started an attendance session yet. Check
-              back later!
+              {t("attendance.empty.description")}
             </p>
           </div>
         )}
@@ -329,13 +354,15 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
         <DialogTitle className="text-center" sx={{ fontFamily: "inherit" }}>
           <div className="flex flex-col items-center gap-2">
             <CheckCircleIcon sx={{ fontSize: 60, color: "success.main" }} />
-            <span className="text-2xl font-bold text-green-600">Success!</span>
+            <span className="text-2xl font-bold text-green-600">
+              {t("common.success")}
+            </span>
           </div>
         </DialogTitle>
         <DialogContent sx={{ fontFamily: "inherit" }}>
           <div className="text-center py-4">
             <p className="text-lg text-gray-700">
-              Your attendance has been marked successfully!
+              {t("attendance.dialog.successMessage")}
             </p>
           </div>
         </DialogContent>
@@ -350,7 +377,7 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
             size="large"
             sx={{ fontFamily: "inherit" }}
           >
-            OK
+            {t("common.ok")}
           </Button>
         </DialogActions>
       </Dialog>

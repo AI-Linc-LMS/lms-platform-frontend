@@ -20,6 +20,7 @@
     "next": "Suivant",
     "previous": "Précédent",
     "close": "Fermer",
+    "ok": "OK",
     "add": "Ajouter",
     "update": "Mettre à jour",
     "remove": "Retirer",
@@ -638,18 +639,46 @@
     "error": "Échec du marquage de présence",
     "noSessions": "Aucune session en direct disponible",
     "headers": {
+      "name": "Nom",
+      "expiresAt": "Expire à",
+      "timeRemaining": "Temps restant",
       "session": "Session",
       "date": "Date",
       "time": "Heure",
       "status": "Statut",
       "action": "Action"
     },
+    "labels": {
+      "expired": "Expiré",
+      "minutesLeft_one": "{{count}} minute restante",
+      "minutesLeft_other": "{{count}} minutes restantes"
+    },
     "status": {
       "present": "Présent",
       "absent": "Absent",
       "pending": "En attente"
     },
-    "rowsPerPage": "Lignes par page"
+    "rowsPerPage": "Lignes par page",
+    "actions": {
+      "mark": "Marquer la présence",
+      "marking": "Marquage de la présence..."
+    },
+    "errors": {
+      "selectActivity": "Veuillez sélectionner une activité",
+      "enterCode": "Veuillez entrer le code de présence",
+      "invalidLength": "Le code doit comporter 6 chiffres",
+      "invalidCode": "Code invalide ou expiré"
+    },
+    "dialog": {
+      "title": "Marquer la présence pour {{activity}}",
+      "enterCode": "Entrez un code de présence à 6 chiffres",
+      "hint": "💡 Le code de présence n'est valable que pendant une durée limitée",
+      "successMessage": "Votre présence a été marquée avec succès !"
+    },
+    "empty": {
+      "title": "Aucune session de présence active",
+      "description": "Votre instructeur n'a pas encore lancé de session de présence. Revenez plus tard !"
+    }
   },
   "jobs": {
     "title": "Trouvez l'emploi de vos rêves",

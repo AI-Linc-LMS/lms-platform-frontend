@@ -48,7 +48,7 @@ const EnrolledLeaderBoard = ({ courseId }: { courseId: number }) => {
               <span className="text-xs font-medium">i</span>
             </button>
             {showInfo && (
-              <div className="absolute right-0 top-8 z-10 bg-gray-800 text-[var(--font-light)] p-3 rounded-lg shadow-lg min-w-[200px]">
+              <div className="absolute right-0 top-8 z-50 bg-gray-800 text-[var(--font-light)] p-3 rounded-lg shadow-lg min-w-[200px]">
                 <div className="text-xs space-y-1">
                   <div>
                     {t("course.videoTutorial")}: 10 {t("course.marks")}
@@ -93,7 +93,7 @@ const EnrolledLeaderBoard = ({ courseId }: { courseId: number }) => {
             <span className="text-xs font-medium">i</span>
           </button>
           {showInfo && (
-            <div className="absolute right-0 top-8 z-10 bg-gray-800 text-[var(--font-light)] p-3 rounded-lg shadow-lg min-w-[200px]">
+            <div className="absolute right-0 top-8 z-50 bg-gray-800 text-[var(--font-light)] p-3 rounded-lg shadow-lg min-w-[200px]">
               <div className="text-xs space-y-1">
                 <div>
                   {t("course.videoTutorial")}: 10 {t("course.marks")}
