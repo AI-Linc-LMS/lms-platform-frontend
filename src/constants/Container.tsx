@@ -19,7 +19,9 @@ function Container({ children }: { children: React.ReactNode }) {
 
   // Get client ID from localStorage
   const user = localStorage.getItem("user");
-  const clientId = user ? JSON.parse(user).client_id : null;
+  const parsedUser = user ? JSON.parse(user) : null;
+  const clientId = parsedUser?.client_id ?? null;
+  const userId = parsedUser?.id ?? null;
 
   // Query streak data
   const { data: streakData } = useQuery({
@@ -30,9 +32,11 @@ function Container({ children }: { children: React.ReactNode }) {
   });
 
   // Use the streak congratulations hook
-  const { showCongratulations, handleClose } = useStreakCongratulations(
-    streakData?.current_streak
-  );
+  const { showCongratulations, handleClose, latestCompletionDate } =
+    useStreakCongratulations({
+      streakData,
+      userId,
+    });
 
   useEffect(() => {
     // Hide sidebar and mobile nav on CourseTopicDetailPage
@@ -96,6 +100,7 @@ function Container({ children }: { children: React.ReactNode }) {
         isOpen={showCongratulations}
         onClose={handleClose}
         currentStreak={streakData?.current_streak || 0}
+        completionDate={latestCompletionDate}
       />
     </div>
   );

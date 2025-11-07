@@ -6,12 +6,14 @@ interface StreakCongratulationsModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentStreak: number;
+  completionDate?: string | null;
 }
 
 const StreakCongratulationsModal: React.FC<StreakCongratulationsModalProps> = ({
   isOpen,
   onClose,
   currentStreak,
+  completionDate,
 }) => {
   const [showConfetti, setShowConfetti] = useState(false);
 
@@ -111,12 +113,12 @@ const StreakCongratulationsModal: React.FC<StreakCongratulationsModalProps> = ({
 
                 {/* Title */}
                 <motion.h2
-                  className="text-3xl font-black bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-2"
+                  className="text-3xl font-black bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 bg-clip-text text-transparent mb-2"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                 >
-                  Streak Updated!
+                  Congratulations, well done!
                 </motion.h2>
 
                 {/* Subtitle */}
@@ -126,7 +128,7 @@ const StreakCongratulationsModal: React.FC<StreakCongratulationsModalProps> = ({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
                 >
-                  You've completed today's activity!
+                  You've kept your learning streak alive for today.
                 </motion.p>
 
                 {/* Streak count display */}
@@ -169,6 +171,11 @@ const StreakCongratulationsModal: React.FC<StreakCongratulationsModalProps> = ({
                   <p className="text-sm text-gray-600 mt-2 font-semibold">
                     {currentStreak === 1 ? "day" : "days"} in a row!
                   </p>
+                  {completionDate && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Marked on {new Date(completionDate).toLocaleDateString()}
+                    </p>
+                  )}
                 </motion.div>
 
                 {/* Motivational message */}
@@ -178,8 +185,26 @@ const StreakCongratulationsModal: React.FC<StreakCongratulationsModalProps> = ({
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
                 >
-                  Keep it up! Come back tomorrow to maintain your streak! 💪
+                  You're building an amazing habit—keep pushing and come back
+                  tomorrow to go even further! 💪
                 </motion.p>
+
+                <motion.div
+                  className="mt-6 flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <button
+                    onClick={onClose}
+                    className="px-4 py-2 rounded-full bg-[var(--primary-500)] text-white font-semibold shadow-md hover:bg-[var(--primary-600)] transition-colors"
+                  >
+                    Awesome, thanks!
+                  </button>
+                  <div className="px-4 py-2 rounded-full bg-white/80 border border-orange-200 text-sm text-orange-700 font-medium shadow-sm">
+                    Next milestone: {Math.max(1, currentStreak + 1)}-day streak
+                  </div>
+                </motion.div>
               </div>
             </motion.div>
           </div>
