@@ -70,7 +70,6 @@ const useTextToSpeech = (): UseTextToSpeechReturn => {
       speechSynthesis.cancel();
 
       if (!text.trim()) {
-        console.warn("No text provided for speech synthesis");
         return;
       }
 
@@ -107,8 +106,7 @@ const useTextToSpeech = (): UseTextToSpeechReturn => {
           utteranceRef.current = null;
         };
 
-        utterance.onerror = (event) => {
-          console.error("Speech synthesis error:", event);
+        utterance.onerror = () => {
           setState((prev) => ({
             ...prev,
             isSpeaking: false,
@@ -135,7 +133,7 @@ const useTextToSpeech = (): UseTextToSpeechReturn => {
         utteranceRef.current = utterance;
         speechSynthesis.speak(utterance);
       } catch (error) {
-        console.error("Error creating speech utterance:", error);
+        // Silent fail
       }
     },
     [state.selectedVoice]

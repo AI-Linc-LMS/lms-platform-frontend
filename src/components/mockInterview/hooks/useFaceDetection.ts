@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as tf from "@tensorflow/tfjs";
 import "@tensorflow/tfjs-backend-webgl";
+import * as blazeface from "@tensorflow-models/blazeface";
 
 interface FaceDetectionResult {
   faceCount: number;
@@ -23,33 +24,31 @@ interface UseFaceDetectionReturn {
   isLoading: boolean;
 }
 
-const useFaceDetection = (
-  videoRef: React.RefObject<HTMLVideoElement | null>
-): UseFaceDetectionReturn => {
+const useFaceDetection = (videoRef: {
+  current: HTMLVideoElement | null;
+}): UseFaceDetectionReturn => {
   const [faceDetection, setFaceDetection] =
     useState<FaceDetectionResult | null>(null);
   const [isModelLoading, setIsModelLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
 
-  const modelRef = useRef<tf.GraphModel | null>(null);
+  const modelRef = useRef<blazeface.BlazeFaceModel | null>(null);
   const animationRef = useRef<number | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Initialize TensorFlow and load the face detection model
+  // Initialize TensorFlow and load BlazeFace model
   const initializeModel = useCallback(async () => {
     try {
       setIsModelLoading(true);
       setError(null);
 
-      // Initialize TensorFlow backend
+      // Initialize TensorFlow backend with WebGL
+      await tf.setBackend("webgl");
       await tf.ready();
 
-      // Load a lightweight face detection model (BlazeFace)
-      const modelUrl =
-        "https://tfhub.dev/tensorflow/tfjs-model/blazeface/1/default/1";
-
-      modelRef.current = await tf.loadGraphModel(modelUrl, { fromTFHub: true });
+      // Load BlazeFace model
+      const model = await blazeface.load();
+      modelRef.current = model;
     } catch (err) {
       setError(
         "Failed to load face detection model. Please check your internet connection."
@@ -67,177 +66,54 @@ const useFaceDetection = (
       !videoRef.current.videoWidth ||
       videoRef.current.videoWidth === 0
     ) {
+      // Video not ready - report no face
+      setFaceDetection({
+        faceCount: 0,
+        isValidFrame: false,
+        boundingBoxes: [],
+      });
       return;
     }
 
     try {
       const video = videoRef.current;
 
-      // Create canvas for processing if it doesn't exist
-      if (!canvasRef.current) {
-        canvasRef.current = document.createElement("canvas");
-      }
-
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext("2d");
-
-      if (!ctx) return;
-
-      // Set canvas dimensions to match video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-
-      // Draw current video frame to canvas
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      // Convert canvas to tensor - BlazeFace expects RGB image
-      const imgTensor = tf.browser.fromPixels(canvas, 3);
-
-      // Resize to 128x128 for BlazeFace model with better interpolation
-      const resized = tf.image.resizeBilinear(imgTensor, [128, 128], true);
-      const casted = tf.cast(resized, "float32");
-
-      // Normalize to [0, 255] range if needed (BlazeFace typically expects this)
-      const normalized = casted.div(255.0).mul(255.0);
-      const batched = normalized.expandDims(0);
-
-      // Run face detection
-      const predictions = await modelRef.current.executeAsync(batched);
-
-      let boxes: Float32Array | Int32Array | Uint8Array;
-      let scores: Float32Array | Int32Array | Uint8Array;
-
-      // Handle model output - BlazeFace returns [boxes, scores]
-      if (Array.isArray(predictions) && predictions.length >= 2) {
-        const detectionsData = await predictions[0].data();
-        const scoresData = await predictions[1].data();
-        boxes = detectionsData as Float32Array | Int32Array | Uint8Array;
-        scores = scoresData as Float32Array | Int32Array | Uint8Array;
-
-        // Clean up prediction tensors
-        predictions.forEach((tensor: tf.Tensor) => tensor.dispose());
-      } else {
-        // Fallback for unexpected format
-        if (imgTensor) imgTensor.dispose();
-        if (resized) resized.dispose();
-        if (casted) casted.dispose();
-        if (batched) batched.dispose();
-        if (Array.isArray(predictions)) {
-          predictions.forEach((tensor: tf.Tensor) => tensor.dispose());
-        } else if (predictions) {
-          (predictions as tf.Tensor).dispose();
-        }
+      // Check if video is ready
+      if (video.videoWidth === 0 || video.videoHeight === 0) {
+        setFaceDetection({
+          faceCount: 0,
+          isValidFrame: false,
+          boundingBoxes: [],
+        });
         return;
       }
 
-      // Very lenient detection - prioritize finding faces
-      const primaryThreshold = 0.35; // Lower primary threshold
-      const fallbackThreshold = 0.15; // Very low fallback
+      // Run face detection using BlazeFace
+      const predictions = await modelRef.current.estimateFaces(video, false);
+      const faceCount = predictions.length;
 
-      const validDetections: Array<{
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-        confidence: number;
-      }> = [];
+      // Prepare bounding box data
+      const boundingBoxes = predictions.map((prediction: any) => {
+        const [x1, y1] = prediction.topLeft as [number, number];
+        const [x2, y2] = prediction.bottomRight as [number, number];
 
-      // BlazeFace typically has 896 anchors
-      const maxDetections = Math.min(896, scores.length);
+        return {
+          x: x1,
+          y: y1,
+          width: x2 - x1,
+          height: y2 - y1,
+        };
+      });
 
-      // First pass - try with primary threshold
-      for (let i = 0; i < maxDetections; i++) {
-        const confidence = scores[i];
-
-        if (confidence > primaryThreshold) {
-          if (boxes.length >= (i + 1) * 4) {
-            const ymin = boxes[i * 4];
-            const xmin = boxes[i * 4 + 1];
-            const ymax = boxes[i * 4 + 2];
-            const xmax = boxes[i * 4 + 3];
-
-            // Convert normalized coordinates to pixel coordinates
-            const x = Math.max(0, xmin * canvas.width);
-            const y = Math.max(0, ymin * canvas.height);
-            const width = Math.min(
-              canvas.width - x,
-              (xmax - xmin) * canvas.width
-            );
-            const height = Math.min(
-              canvas.height - y,
-              (ymax - ymin) * canvas.height
-            );
-
-            // Very lenient size validation
-            const faceArea = width * height;
-            const videoArea = canvas.width * canvas.height;
-            const areaRatio = faceArea / videoArea;
-
-            // Accept faces from 1% to 98% of frame
-            if (
-              width > 10 &&
-              height > 10 &&
-              areaRatio > 0.01 &&
-              areaRatio < 0.98
-            ) {
-              validDetections.push({ x, y, width, height, confidence });
-            }
-          }
-        }
-      }
-
-      // Second pass - very lenient fallback if no faces found
-      if (validDetections.length === 0) {
-        for (let i = 0; i < maxDetections; i++) {
-          const confidence = scores[i];
-
-          if (confidence > fallbackThreshold && boxes.length >= (i + 1) * 4) {
-            const ymin = boxes[i * 4];
-            const xmin = boxes[i * 4 + 1];
-            const ymax = boxes[i * 4 + 2];
-            const xmax = boxes[i * 4 + 3];
-
-            const x = Math.max(0, xmin * canvas.width);
-            const y = Math.max(0, ymin * canvas.height);
-            const width = Math.min(
-              canvas.width - x,
-              (xmax - xmin) * canvas.width
-            );
-            const height = Math.min(
-              canvas.height - y,
-              (ymax - ymin) * canvas.height
-            );
-
-            // Minimal validation - just check it's not tiny
-            if (width > 8 && height > 8) {
-              validDetections.push({ x, y, width, height, confidence });
-            }
-          }
-        }
-      }
-
-      // Update face detection state
+      // Update face detection state IMMEDIATELY
       const detectionResult = {
-        faceCount: validDetections.length,
+        faceCount,
         isValidFrame: video.videoWidth > 0 && !video.paused,
-        boundingBoxes: validDetections.map((d) => ({
-          x: d.x,
-          y: d.y,
-          width: d.width,
-          height: d.height,
-        })),
+        boundingBoxes,
       };
 
       setFaceDetection(detectionResult);
-
-      // Clean up tensors to prevent memory leaks
-      imgTensor.dispose();
-      resized.dispose();
-      casted.dispose();
-      normalized.dispose();
-      batched.dispose();
     } catch (err) {
-      setError("Error during face detection: " + (err as Error).message);
       setFaceDetection({
         faceCount: 0,
         isValidFrame: false,
@@ -250,10 +126,10 @@ const useFaceDetection = (
   const detectLoop = useCallback(() => {
     if (isDetecting) {
       detectFaces();
-      // Run detection every 500ms to reduce CPU load
+      // Run detection every 300ms for LIVE responsive tracking
       animationRef.current = setTimeout(() => {
         requestAnimationFrame(detectLoop);
-      }, 500);
+      }, 300);
     }
   }, [detectFaces, isDetecting]);
 
@@ -271,7 +147,7 @@ const useFaceDetection = (
 
     setIsDetecting(true);
     setError(null);
-  }, []);
+  }, [videoRef]);
 
   // Stop face detection
   const stopDetection = useCallback(() => {

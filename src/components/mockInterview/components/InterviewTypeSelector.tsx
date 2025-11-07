@@ -1,6 +1,5 @@
-// components/InterviewTypeSelector.tsx
 interface InterviewTypeSelectorProps {
-  onSelect: (type: "fresh" | "continue") => void;
+  onSelect: (type: "fresh" | "history") => void;
 }
 
 const InterviewTypeSelector = ({ onSelect }: InterviewTypeSelectorProps) => {
@@ -84,9 +83,9 @@ const InterviewTypeSelector = ({ onSelect }: InterviewTypeSelectorProps) => {
           </div>
         </button>
 
-        {/* Continue Interview Card */}
+        {/* View History Card */}
         <button
-          onClick={() => onSelect("continue")}
+          onClick={() => onSelect("history")}
           className="group relative bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-8 hover:border-blue-400 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
         >
           <div className="absolute top-4 right-4">

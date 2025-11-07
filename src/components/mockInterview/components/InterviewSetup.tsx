@@ -33,15 +33,16 @@ const InterviewSetup: React.FC<InterviewSetupProps> = ({
 
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
+            width: { ideal: 640, max: 1280 },
+            height: { ideal: 480, max: 720 },
             facingMode: "user",
-            frameRate: { ideal: 30 },
+            frameRate: { ideal: 30, max: 30 },
           },
           audio: {
             echoCancellation: true,
             noiseSuppression: true,
             autoGainControl: true,
+            sampleRate: 44100,
           },
         });
 

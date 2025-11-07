@@ -1,94 +1,30 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Button,
-} from "@mui/material";
-
-// Import custom hooks and components
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import useFaceDetection from "../hooks/useFaceDetection";
-import useMediaCapture from "../hooks/useMediaCapture";
 import useFullscreenControl from "../hooks/useFullscreenControl";
 import InterviewSetup from "./InterviewSetup";
 import ActiveInterviewSession from "./ActiveInterviewSession";
+import { mockInterviewAPI, InterviewEvent } from "../services/api";
+import { getQuestions } from "../utils/questionGenerator";
+import { useProctoring } from "../proctoring/useProctoring";
 
 interface InterviewRoomProps {
   topic: string;
   difficulty: string;
   onBack: () => void;
+  onComplete: () => void;
 }
 
-// Mock interview questions
-const mockQuestions = {
-  javascript: {
-    beginner: [
-      "Can you explain what JavaScript is and how it differs from other programming languages?",
-      "What are the different data types in JavaScript?",
-      "How do you declare variables in JavaScript?",
-      "What is the difference between let, const, and var?",
-      "Can you explain what a function is in JavaScript?",
-    ],
-    intermediate: [
-      "What is closure in JavaScript and can you provide an example?",
-      "Explain the concept of hoisting in JavaScript.",
-      "What are arrow functions and how do they differ from regular functions?",
-      "Can you explain the difference between synchronous and asynchronous programming?",
-      "What is the event loop in JavaScript?",
-    ],
-    advanced: [
-      "Explain prototypal inheritance in JavaScript.",
-      "What are Promises and how do they work?",
-      "Can you describe the difference between call, apply, and bind?",
-      "What is the difference between shallow and deep copying?",
-      "Explain how the this keyword works in different contexts.",
-    ],
-  },
-  react: {
-    beginner: [
-      "What is React and why would you use it?",
-      "What is JSX and how does it work?",
-      "What are components in React?",
-      "What is the difference between functional and class components?",
-      "How do you handle events in React?",
-    ],
-    intermediate: [
-      "What are React hooks and why were they introduced?",
-      "Explain the useState and useEffect hooks.",
-      "What is the difference between controlled and uncontrolled components?",
-      "How does React's virtual DOM work?",
-      "What is prop drilling and how can you avoid it?",
-    ],
-    advanced: [
-      "Explain React's reconciliation algorithm.",
-      "What are higher-order components and render props?",
-      "How does React's context API work?",
-      "What are the rules of hooks and why do they exist?",
-      "Explain React's batching mechanism and concurrent features.",
-    ],
-  },
-};
+const InterviewRoom = ({
+  topic,
+  difficulty,
+  onBack,
+  onComplete,
+}: InterviewRoomProps) => {
+  // Proctoring
+  const { eventLog, getEventLog } = useProctoring();
 
-const InterviewRoom = ({ topic, difficulty, onBack }: InterviewRoomProps) => {
-  // Event and warning tracking interface
-  interface InterviewEvent {
-    timestamp: number;
-    type:
-      | "face_detection"
-      | "camera_permission"
-      | "audio_permission"
-      | "multiple_faces"
-      | "no_face"
-      | "face_valid"
-      | "question_change"
-      | "user_response"
-      | "camera_ready"
-      | "fullscreen_lock";
-    data: any;
-    severity: "info" | "warning" | "error";
-  }
+  // Interview attempt ID
+  const [attemptId, setAttemptId] = useState<string | null>(null);
 
   // State management
   const [isRecording, setIsRecording] = useState(false);
@@ -99,7 +35,6 @@ const InterviewRoom = ({ topic, difficulty, onBack }: InterviewRoomProps) => {
   const [isAvatarAsking, setIsAvatarAsking] = useState(false);
   const [userResponse, setUserResponse] = useState("");
   const [isVideoReady, setIsVideoReady] = useState(false);
-  const [cameraPermissionGranted, setCameraPermissionGranted] = useState(false);
   const [currentFaceWarning, setCurrentFaceWarning] = useState<string | null>(
     null
   );
@@ -109,6 +44,9 @@ const InterviewRoom = ({ topic, difficulty, onBack }: InterviewRoomProps) => {
     events: [] as InterviewEvent[],
     faceValidationFailures: 0,
     multipleFaceDetections: 0,
+    fullscreenExits: 0,
+    tabSwitches: 0,
+    windowSwitches: 0,
     audioIssues: 0,
     totalDuration: 0,
   });
@@ -125,104 +63,84 @@ const InterviewRoom = ({ topic, difficulty, onBack }: InterviewRoomProps) => {
   const streamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioCanvasRef = useRef<HTMLCanvasElement>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const chunkIndexRef = useRef<number>(0);
+  const speechRecognitionRef = useRef<any>(null);
+  const [isSpeechListening, setIsSpeechListening] = useState(false);
 
   // Custom hooks
   const faceDetection = useFaceDetection(videoRef);
-  const mediaCapture: any = useMediaCapture();
   const fullscreenControl = useFullscreenControl(containerRef);
 
-  // Get questions for current topic and difficulty
-  const getQuestions = () => {
-    const topicKey = topic.toLowerCase() as keyof typeof mockQuestions;
-    const difficultyKey =
-      difficulty.toLowerCase() as keyof typeof mockQuestions.javascript;
-    return (
-      mockQuestions[topicKey]?.[difficultyKey] ||
-      mockQuestions.javascript.beginner
-    );
-  };
+  // Get questions - MEMOIZED to prevent re-generation
+  const questions = useMemo(() => {
+    return getQuestions(topic, difficulty, 10);
+  }, [topic, difficulty]);
 
-  const questions = getQuestions();
-  const currentQuestion = questions[currentQuestionIndex];
+  // Current question - MEMOIZED to prevent re-triggering avatar speech
+  const currentQuestion = useMemo(() => {
+    return questions[currentQuestionIndex];
+  }, [questions, currentQuestionIndex]);
 
   // Helper function to log events
-  const logEvent = (
-    type: InterviewEvent["type"],
-    data: any,
-    severity: InterviewEvent["severity"] = "info"
-  ) => {
-    const event: InterviewEvent = {
-      timestamp: Date.now(),
-      type,
-      data,
-      severity,
-    };
+  const logEvent = useCallback(
+    (
+      type: InterviewEvent["type"],
+      data: any,
+      severity: InterviewEvent["severity"] = "info"
+    ) => {
+      const event: InterviewEvent = {
+        timestamp: Date.now(),
+        type,
+        data,
+        severity,
+      };
 
-    setInterviewEvents((prev) => [...prev, event]);
+      setInterviewEvents((prev) => [...prev, event]);
+
+      setSubmissionData((prev) => ({
+        ...prev,
+        events: [...prev.events, event],
+        warnings:
+          severity === "warning" || severity === "error"
+            ? [...prev.warnings, `${type}: ${JSON.stringify(data)}`]
+            : prev.warnings,
+      }));
+
+      if (attemptId) {
+        mockInterviewAPI.trackEvent(attemptId, event).catch(() => {});
+      }
+    },
+    [attemptId]
+  );
+
+  // Track proctoring events - LIVE
+  useEffect(() => {
+    const proctoringEvents = getEventLog();
+    const tabSwitches = proctoringEvents.filter(
+      (e) => e.type === "TAB_BLUR"
+    ).length;
+    const windowSwitches = proctoringEvents.filter(
+      (e) => e.type === "WINDOW_BLUR"
+    ).length;
 
     setSubmissionData((prev) => ({
       ...prev,
-      events: [...prev.events, event],
-      warnings:
-        severity === "warning" || severity === "error"
-          ? [...prev.warnings, `${type}: ${JSON.stringify(data)}`]
-          : prev.warnings,
+      tabSwitches,
+      windowSwitches,
     }));
-  };
+  }, [eventLog, getEventLog]);
 
-  // Keyboard and fullscreen lock
-  const lockKeyboard = useCallback(async () => {
-    try {
-      // Modern Keyboard Lock API (Chrome 68+)
-      if ("keyboard" in navigator && "lock" in (navigator as any).keyboard) {
-        await (navigator as any).keyboard.lock(["Escape"]);
-        logEvent(
-          "fullscreen_lock",
-          { method: "keyboard_lock_api", status: "locked" },
-          "info"
-        );
-      }
-    } catch (error) {
-      // Keyboard Lock API not available
-    }
-
-    // Fallback: Prevent ESC and F11 keys
-    const preventEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" || e.key === "F11") {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-      }
-    };
-
-    document.addEventListener("keydown", preventEscape, true);
-    logEvent(
-      "fullscreen_lock",
-      { method: "event_listener", status: "locked" },
-      "info"
-    );
-
-    // Store cleanup function
-    return () => {
-      document.removeEventListener("keydown", preventEscape, true);
-      if ("keyboard" in navigator && "unlock" in (navigator as any).keyboard) {
-        (navigator as any).keyboard.unlock();
-      }
-    };
-  }, []);
-
-  // Handle camera ready from setup
-  const handleCameraReady = useCallback((stream: MediaStream) => {
-    setPreInitializedStream(stream);
-    setCameraPermissionGranted(true);
-    logEvent("camera_permission", { status: "pre_initialized" }, "info");
-  }, []);
-
-  // Handle face detection changes
+  // Handle face detection - LIVE AND RESPONSIVE
   useEffect(() => {
-    if (!faceDetection.isLoading && faceDetection.faceDetection) {
+    if (
+      !faceDetection.isLoading &&
+      faceDetection.faceDetection &&
+      isRecording
+    ) {
       const { faceCount, isValidFrame } = faceDetection.faceDetection;
 
+      // IMMEDIATE state updates for live tracking
       if (faceCount === 0 || !isValidFrame) {
         if (currentFaceWarning !== "no_face") {
           setCurrentFaceWarning("no_face");
@@ -247,19 +165,53 @@ const InterviewRoom = ({ topic, difficulty, onBack }: InterviewRoomProps) => {
           logEvent("face_valid", { faceCount }, "info");
         }
       }
-    } else if (!faceDetection.isLoading && !faceDetection.faceDetection) {
-      if (currentFaceWarning !== "no_face") {
-        setCurrentFaceWarning("no_face");
-        logEvent("no_face", { reason: "no_detection_data" }, "warning");
-      }
     }
   }, [
     faceDetection.faceDetection,
     faceDetection.isLoading,
     currentFaceWarning,
+    isRecording,
+    logEvent,
   ]);
 
-  // Format time as HH:MM:SS
+  // Keyboard lock
+  const lockKeyboard = useCallback(async () => {
+    try {
+      if ("keyboard" in navigator && "lock" in (navigator as any).keyboard) {
+        await (navigator as any).keyboard.lock(["Escape"]);
+      }
+    } catch (error) {
+      // Not available
+    }
+
+    const preventEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" || e.key === "F11") {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    };
+
+    document.addEventListener("keydown", preventEscape, true);
+
+    return () => {
+      document.removeEventListener("keydown", preventEscape, true);
+      if ("keyboard" in navigator && "unlock" in (navigator as any).keyboard) {
+        (navigator as any).keyboard.unlock();
+      }
+    };
+  }, []);
+
+  // Handle camera ready
+  const handleCameraReady = useCallback(
+    (stream: MediaStream) => {
+      setPreInitializedStream(stream);
+      logEvent("camera_ready", { status: "pre_initialized" }, "info");
+    },
+    [logEvent]
+  );
+
+  // Format time
   const formatTime = (seconds: number): string => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -269,7 +221,7 @@ const InterviewRoom = ({ topic, difficulty, onBack }: InterviewRoomProps) => {
       .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Start timer
+  // Timer functions
   const startTimer = () => {
     if (timerIntervalRef.current === null) {
       timerIntervalRef.current = window.setInterval(() => {
@@ -278,7 +230,6 @@ const InterviewRoom = ({ topic, difficulty, onBack }: InterviewRoomProps) => {
     }
   };
 
-  // Stop timer
   const stopTimer = () => {
     if (timerIntervalRef.current !== null) {
       clearInterval(timerIntervalRef.current);
@@ -286,7 +237,7 @@ const InterviewRoom = ({ topic, difficulty, onBack }: InterviewRoomProps) => {
     }
   };
 
-  // Setup audio visualization
+  // Audio visualization
   const setupAudioVisualization = (stream: MediaStream) => {
     try {
       const audioContext = new AudioContext();
@@ -302,11 +253,10 @@ const InterviewRoom = ({ topic, difficulty, onBack }: InterviewRoomProps) => {
 
       visualizeAudio();
     } catch (error) {
-      // Audio visualization setup failed
+      // Failed
     }
   };
 
-  // Visualize audio levels
   const visualizeAudio = () => {
     if (!analyserRef.current || !audioCanvasRef.current) return;
 
@@ -321,7 +271,6 @@ const InterviewRoom = ({ topic, difficulty, onBack }: InterviewRoomProps) => {
       if (!analyserRef.current) return;
 
       animationFrameRef.current = requestAnimationFrame(draw);
-
       analyserRef.current.getByteTimeDomainData(dataArray);
 
       canvasCtx.fillStyle = "rgba(0, 0, 0, 0.1)";
@@ -358,118 +307,164 @@ const InterviewRoom = ({ topic, difficulty, onBack }: InterviewRoomProps) => {
     draw();
   };
 
-  // Start interview with pre-initialized stream
+  // Start interview
   const handleStartInterview = async () => {
     if (!preInitializedStream) {
       alert("Camera not ready. Please wait...");
       return;
     }
 
-    logEvent("question_change", { action: "interview_started" }, "info");
+    // Initialize with backend
+    try {
+      const { attemptId: newAttemptId } = await mockInterviewAPI.startInterview(
+        topic,
+        difficulty
+      );
+      setAttemptId(newAttemptId);
+      logEvent(
+        "question_change",
+        { action: "interview_started", attemptId: newAttemptId },
+        "info"
+      );
+    } catch (error) {
+      const localId = `local-${Date.now()}`;
+      setAttemptId(localId);
+      logEvent(
+        "question_change",
+        { action: "interview_started", attemptId: localId },
+        "info"
+      );
+    }
 
-    // Use the pre-initialized stream
     streamRef.current = preInitializedStream;
     setIsRecording(true);
     startTimer();
 
-    // Setup video FAST - no complex waiting
+    // Setup video
     if (videoRef.current) {
       const video = videoRef.current;
       video.srcObject = preInitializedStream;
-
-      // Simple play attempt
+      video.playsInline = true;
+      video.muted = true;
       video.play().catch(() => {});
-
-      // Mark ready quickly
-      setTimeout(() => setIsVideoReady(true), 500);
+      setTimeout(() => setIsVideoReady(true), 300);
     }
 
-    // Enter fullscreen - WAIT and ensure it works
+    // Enter fullscreen
     try {
       await fullscreenControl.enterFullscreen();
-
-      // Wait longer for fullscreen to truly establish
       await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Check if actually in fullscreen
-      const isInFullscreen = !!(
-        document.fullscreenElement ||
-        (document as any).webkitFullscreenElement ||
-        (document as any).mozFullScreenElement
-      );
-
-      if (!isInFullscreen) {
-        // Retry once
-        await fullscreenControl.enterFullscreen();
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
-
       await lockKeyboard();
-
-      // Lock fullscreen immediately after keyboard
       if ((window as any).__lockFullscreen) {
         (window as any).__lockFullscreen();
       }
     } catch (err) {
-      // Fullscreen failed, continue anyway
+      // Continue anyway
     }
 
-    // Setup MediaRecorder
+    // Setup MediaRecorder with chunk uploading
     const mediaRecorder = new MediaRecorder(preInitializedStream, {
       mimeType: "video/webm;codecs=vp8,opus",
     });
 
-    const chunks: Blob[] = [];
+    recordedChunksRef.current = [];
 
-    mediaRecorder.ondataavailable = (event) => {
+    mediaRecorder.ondataavailable = async (event) => {
       if (event.data.size > 0) {
-        chunks.push(event.data);
+        recordedChunksRef.current.push(event.data);
+
+        if (attemptId) {
+          try {
+            await mockInterviewAPI.uploadMediaChunk(
+              attemptId,
+              event.data,
+              chunkIndexRef.current,
+              "video"
+            );
+            chunkIndexRef.current++;
+          } catch (error) {
+            // Continue
+          }
+        }
       }
     };
 
     mediaRecorder.onstop = () => {
-      new Blob(chunks, { type: "video/webm" });
+      new Blob(recordedChunksRef.current, { type: "video/webm" });
     };
 
-    mediaRecorder.start(1000);
+    mediaRecorder.start(5000);
     mediaRecorderRef.current = mediaRecorder;
 
-    // Setup audio visualization
     setupAudioVisualization(preInitializedStream);
 
-    // Start first question FAST - no waiting for face detection
-    // Face detection runs in background and shows warnings independently
+    // Initialize Speech Recognition
+    if (window.SpeechRecognition || window.webkitSpeechRecognition) {
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = "en-US";
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = (event: any) => {
+        let finalTranscript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          const transcript = result[0].transcript;
+          if (result.isFinal) {
+            finalTranscript += transcript + " ";
+          }
+        }
+
+        if (finalTranscript.trim()) {
+          setUserResponse((prev) => (prev + " " + finalTranscript).trim());
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        logEvent("recording_start", { error: event.error }, "error");
+        setIsSpeechListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsSpeechListening(false);
+      };
+
+      speechRecognitionRef.current = recognition;
+
+      logEvent(
+        "recording_start",
+        { status: "Speech recognition initialized successfully" },
+        "info"
+      );
+    }
+
+    // Start first question
     setTimeout(() => {
       setIsAvatarAsking(true);
       logEvent(
         "question_change",
-        {
-          questionIndex: currentQuestionIndex,
-          question: currentQuestion,
-        },
+        { questionIndex: currentQuestionIndex, question: currentQuestion },
         "info"
       );
-    }, 1200);
+    }, 2000);
   };
 
-  // Monitor and ensure video plays
+  // Monitor video
   useEffect(() => {
-    if (!isRecording || !videoRef.current || !streamRef.current) {
-      return;
-    }
+    if (!isRecording || !videoRef.current || !streamRef.current) return;
 
     const video = videoRef.current;
 
-    // Ensure video is assigned and playing
     if (video.srcObject !== streamRef.current) {
       video.srcObject = streamRef.current;
     }
 
-    // Aggressive play attempts
     const ensurePlay = () => {
       if (video.paused) {
         video.play().catch(() => {
-          // Retry
           setTimeout(ensurePlay, 200);
         });
       }
@@ -477,13 +472,11 @@ const InterviewRoom = ({ topic, difficulty, onBack }: InterviewRoomProps) => {
 
     ensurePlay();
 
-    // Check every 500ms
     const interval = setInterval(() => {
       if (video.paused && video.srcObject) {
         video.play().catch(() => {});
       }
 
-      // Mark ready if playing
       if (!isVideoReady && video.readyState >= 2 && !video.paused) {
         setIsVideoReady(true);
       }
@@ -492,55 +485,128 @@ const InterviewRoom = ({ topic, difficulty, onBack }: InterviewRoomProps) => {
     return () => clearInterval(interval);
   }, [isRecording, isVideoReady]);
 
-  // Start face detection when video is ready
+  // Start face detection when video ready
   useEffect(() => {
-    if (isVideoReady && isRecording) {
-      faceDetection.startDetection();
+    if (isVideoReady && isRecording && !faceDetection.isDetecting) {
+      // Start immediately for live detection
+      const timer = setTimeout(() => {
+        faceDetection.startDetection();
+      }, 500); // Reduced delay
+
       return () => {
-        faceDetection.stopDetection();
+        clearTimeout(timer);
       };
     }
-  }, [isVideoReady, isRecording, faceDetection]);
+  }, [
+    isVideoReady,
+    isRecording,
+    faceDetection.isDetecting,
+    faceDetection.startDetection,
+  ]);
 
-  // Handle exit interview
+  // Stop face detection on unmount
+  useEffect(() => {
+    return () => {
+      if (faceDetection.isDetecting) {
+        faceDetection.stopDetection();
+      }
+    };
+  }, []);
+
+  // Handle exit
   const handleExitInterview = () => {
-    // Unlock fullscreen temporarily to prevent auto re-entry
     if ((window as any).__unlockFullscreen) {
       (window as any).__unlockFullscreen();
     }
-
     setExitDialogOpen(true);
   };
 
   const confirmExit = async () => {
+    // Close dialog first
+    setExitDialogOpen(false);
+
+    // Submit to backend
+    if (attemptId) {
+      try {
+        const answers = interviewEvents
+          .filter((e) => e.type === "user_response")
+          .map((e, idx) => ({
+            questionId: `q${idx + 1}`,
+            answerText: e.data.transcript || "",
+            timestamp: e.timestamp,
+            confidence: e.data.confidence,
+          }));
+
+        let videoBlob: Blob | undefined;
+        if (recordedChunksRef.current.length > 0) {
+          videoBlob = new Blob(recordedChunksRef.current, {
+            type: "video/webm",
+          });
+        }
+
+        const proctoringEvents = getEventLog();
+        const tabSwitches = proctoringEvents.filter(
+          (e) => e.type === "TAB_BLUR"
+        ).length;
+        const windowSwitches = proctoringEvents.filter(
+          (e) => e.type === "WINDOW_BLUR"
+        ).length;
+
+        await mockInterviewAPI.submitInterview({
+          attemptId,
+          answers,
+          events: [
+            ...interviewEvents,
+            ...proctoringEvents.map((pe) => ({
+              timestamp: pe.timestamp,
+              type: pe.type.toLowerCase().replace("_", "_") as any,
+              data: pe.details || {},
+              severity: "warning" as const,
+            })),
+          ],
+          duration: elapsedTime,
+          faceValidationFailures: submissionData.faceValidationFailures,
+          multipleFaceDetections: submissionData.multipleFaceDetections,
+          fullscreenExits: submissionData.fullscreenExits,
+          completedQuestions: currentQuestionIndex + 1,
+          totalQuestions: questions.length,
+          videoBlob,
+          metadata: {
+            userAgent: navigator.userAgent,
+            screenResolution: `${window.screen.width}x${window.screen.height}`,
+            timestamp: Date.now(),
+            tabSwitches,
+            windowSwitches,
+          },
+        });
+      } catch (error) {
+        // Continue even if submission fails
+      }
+    }
+
+    // Exit fullscreen
+    try {
+      if ((window as any).__unlockFullscreen) {
+        (window as any).__unlockFullscreen();
+      }
+      await fullscreenControl.exitFullscreen();
+    } catch (error) {
+      // Continue even if fullscreen exit fails
+    }
+
+    // Cleanup
     stopTimer();
     setIsRecording(false);
-
-    const finalSubmissionData = {
-      ...submissionData,
-      totalDuration: elapsedTime,
-      completedQuestions: currentQuestionIndex + 1,
-      totalQuestions: questions.length,
-      events: interviewEvents,
-      endTime: Date.now(),
-      topic,
-      difficulty,
-    };
-
-    logEvent(
-      "question_change",
-      {
-        action: "interview_ended",
-        submissionData: finalSubmissionData,
-      },
-      "info"
-    );
 
     if (
       mediaRecorderRef.current &&
       mediaRecorderRef.current.state !== "inactive"
     ) {
-      mediaRecorderRef.current.stop();
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (error) {
+        // Continue
+      }
     }
 
     if (streamRef.current) {
@@ -551,44 +617,53 @@ const InterviewRoom = ({ topic, difficulty, onBack }: InterviewRoomProps) => {
       cancelAnimationFrame(animationFrameRef.current);
     }
     if (audioContextRef.current) {
-      audioContextRef.current.close();
+      try {
+        audioContextRef.current.close();
+      } catch (error) {
+        // Continue
+      }
     }
 
-    if (mediaCapture.isListening) {
-      mediaCapture.stopSpeechRecognition();
+    if (isSpeechListening && speechRecognitionRef.current) {
+      try {
+        speechRecognitionRef.current.stop();
+        setIsSpeechListening(false);
+      } catch (error) {
+        // Continue
+      }
     }
 
-    // Unlock keyboard
     if ("keyboard" in navigator && "unlock" in (navigator as any).keyboard) {
-      (navigator as any).keyboard.unlock();
+      try {
+        (navigator as any).keyboard.unlock();
+      } catch (error) {
+        // Continue
+      }
     }
 
-    // Unlock fullscreen before exiting
-    if ((window as any).__unlockFullscreen) {
-      (window as any).__unlockFullscreen();
-    }
-
-    await fullscreenControl.exitFullscreen();
-    setExitDialogOpen(false);
-    onBack();
+    // Navigate to completion page - DO THIS LAST
+    // Use setTimeout to ensure all cleanup is done
+    setTimeout(() => {
+      onComplete();
+    }, 100);
   };
 
   const cancelExit = () => {
     setExitDialogOpen(false);
-
-    // Re-lock fullscreen
     if ((window as any).__lockFullscreen) {
       (window as any).__lockFullscreen();
     }
   };
 
-  // Move to next question
+  // Next question - USER CONTROLLED
   const nextQuestion = () => {
+    if (isSpeechListening && speechRecognitionRef.current) {
+      speechRecognitionRef.current.stop();
+      setIsSpeechListening(false);
+    }
+
     if (currentQuestionIndex < questions.length - 1) {
       const nextIndex = currentQuestionIndex + 1;
-      setCurrentQuestionIndex(nextIndex);
-      setUserResponse("");
-      setIsAvatarAsking(true);
 
       logEvent(
         "question_change",
@@ -602,9 +677,9 @@ const InterviewRoom = ({ topic, difficulty, onBack }: InterviewRoomProps) => {
         "info"
       );
 
-      if (mediaCapture.isListening) {
-        mediaCapture.stopSpeechRecognition();
-      }
+      setCurrentQuestionIndex(nextIndex);
+      setUserResponse("");
+      setIsAvatarAsking(true);
     } else {
       logEvent(
         "question_change",
@@ -619,41 +694,98 @@ const InterviewRoom = ({ topic, difficulty, onBack }: InterviewRoomProps) => {
     }
   };
 
-  // Handle avatar finishing speaking
+  // Avatar finished speaking - DO NOT AUTO-START
   const handleQuestionComplete = () => {
     setIsAvatarAsking(false);
-    setTimeout(() => {
-      mediaCapture.startSpeechRecognition();
-    }, 500);
+    // User must manually click "Start Recording" button
   };
 
-  // Speech recognition effect
-  useEffect(() => {
-    if (
-      mediaCapture.speechResult?.isFinal &&
-      mediaCapture.speechResult.transcript
-    ) {
-      const transcript = mediaCapture.speechResult.transcript;
+  // User manually starts speaking - DIRECT SPEECH RECOGNITION
+  const handleStartSpeaking = useCallback(() => {
+    if (isAvatarAsking) {
+      return;
+    }
 
+    if (!speechRecognitionRef.current) {
       logEvent(
-        "user_response",
+        "recording_start",
+        { error: "Speech recognition not initialized" },
+        "error"
+      );
+      return;
+    }
+
+    try {
+      speechRecognitionRef.current.start();
+      setIsSpeechListening(true);
+      logEvent(
+        "recording_start",
         {
           questionIndex: currentQuestionIndex,
-          transcript,
-          confidence: mediaCapture.speechResult.confidence || 0,
-          question: currentQuestion,
+          questionText: currentQuestion,
         },
         "info"
       );
-
-      setUserResponse((prev) => {
-        const newResponse = prev + " " + transcript;
-        return newResponse.trim();
-      });
+    } catch (error) {
+      logEvent(
+        "recording_start",
+        {
+          error: String(error),
+          questionIndex: currentQuestionIndex,
+        },
+        "error"
+      );
     }
-  }, [mediaCapture.speechResult, currentQuestionIndex, currentQuestion]);
+  }, [isAvatarAsking, currentQuestionIndex, currentQuestion, logEvent]);
 
-  // Cleanup on unmount
+  // User stops speaking - SAVE ANSWER & AUTO ADVANCE to next question
+  const handleStopSpeaking = async () => {
+    if (speechRecognitionRef.current && isSpeechListening) {
+      speechRecognitionRef.current.stop();
+      setIsSpeechListening(false);
+
+      // Save current answer to backend for this question
+      if (attemptId && userResponse.trim()) {
+        try {
+          await mockInterviewAPI.saveQuestionAnswer(attemptId, {
+            questionIndex: currentQuestionIndex,
+            questionText: currentQuestion,
+            answerText: userResponse,
+            timestamp: Date.now(),
+            duration: elapsedTime,
+          });
+
+          logEvent(
+            "answer_saved",
+            {
+              questionIndex: currentQuestionIndex,
+              answerLength: userResponse.length,
+            },
+            "info"
+          );
+        } catch (error) {
+          // Continue even if save fails
+          logEvent(
+            "answer_save_failed",
+            {
+              questionIndex: currentQuestionIndex,
+              error: String(error),
+            },
+            "warning"
+          );
+        }
+      }
+
+      // Auto-advance to next question after stopping
+      setTimeout(() => {
+        nextQuestion();
+      }, 500);
+    }
+  };
+
+  // Speech recognition is now handled directly in handleStartInterview via onresult callback
+
+  // Cleanup
   useEffect(() => {
     return () => {
       stopTimer();
@@ -677,8 +809,8 @@ const InterviewRoom = ({ topic, difficulty, onBack }: InterviewRoomProps) => {
         audioContextRef.current.close();
       }
 
-      if (mediaCapture.isListening) {
-        mediaCapture.stopSpeechRecognition();
+      if (isSpeechListening && speechRecognitionRef.current) {
+        speechRecognitionRef.current.stop();
       }
 
       if ("keyboard" in navigator && "unlock" in (navigator as any).keyboard) {
@@ -687,8 +819,7 @@ const InterviewRoom = ({ topic, difficulty, onBack }: InterviewRoomProps) => {
 
       fullscreenControl.exitFullscreen();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isSpeechListening]);
 
   return (
     <div
@@ -716,96 +847,141 @@ const InterviewRoom = ({ topic, difficulty, onBack }: InterviewRoomProps) => {
           elapsedTime={elapsedTime}
           audioLevel={audioLevel}
           isVideoReady={isVideoReady}
-          cameraPermissionGranted={cameraPermissionGranted}
           currentFaceWarning={currentFaceWarning}
           submissionData={submissionData}
-          interviewEvents={interviewEvents}
-          isListening={mediaCapture.isListening}
-          isFaceDetectionLoading={faceDetection.isLoading}
+          isListening={isSpeechListening}
           videoRef={videoRef}
           audioCanvasRef={audioCanvasRef}
-          onNextQuestion={nextQuestion}
           onExitInterview={handleExitInterview}
           onQuestionComplete={handleQuestionComplete}
+          onStartSpeaking={handleStartSpeaking}
+          onStopSpeaking={handleStopSpeaking}
           formatTime={formatTime}
         />
       )}
 
-      {/* Exit Confirmation Dialog - Visible in Fullscreen */}
-      <Dialog
-        open={exitDialogOpen}
-        onClose={(_event, reason) => {
-          if (reason === "backdropClick" || reason === "escapeKeyDown") {
-            return;
-          }
-          cancelExit();
-        }}
-        disableEscapeKeyDown
-        disablePortal={false}
-        maxWidth="sm"
-        fullWidth
-        container={() => containerRef.current}
-        sx={{
-          position: "absolute",
-          "& .MuiDialog-container": {
-            zIndex: 9999999,
-            position: "absolute",
-          },
-          "& .MuiBackdrop-root": {
-            zIndex: 9999998,
-            position: "absolute",
-          },
-          "& .MuiDialog-paper": {
-            zIndex: 9999999,
-            backgroundColor: "white",
-            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
-            position: "relative",
-          },
-        }}
-        style={{
-          zIndex: 9999999,
-          position: "absolute",
-        }}
-      >
-        <DialogTitle
-          className="text-xl font-bold"
-          sx={{ backgroundColor: "white" }}
+      {/* Exit Dialog - Works in Fullscreen */}
+      {exitDialogOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 99999999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "rgba(0, 0, 0, 0.8)",
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              // Clicked on backdrop - do nothing (prevent accidental close)
+            }
+          }}
         >
-          End Interview?
-        </DialogTitle>
-        <DialogContent sx={{ backgroundColor: "white" }}>
-          <DialogContentText>
-            Are you sure you want to end this interview session? Your recording
-            will be saved and submitted for evaluation.
-          </DialogContentText>
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-            <p className="text-sm font-semibold text-blue-900 mb-1">
-              Time Elapsed: {formatTime(elapsedTime)}
-            </p>
-            <p className="text-sm text-blue-800">
-              Questions Completed: {currentQuestionIndex + 1} of{" "}
-              {questions.length}
-            </p>
+          <div
+            style={{
+              backgroundColor: "white",
+              borderRadius: "16px",
+              maxWidth: "500px",
+              width: "90%",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+              overflow: "hidden",
+            }}
+          >
+            {/* Header */}
+            <div className="bg-white border-b border-gray-200 p-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <svg
+                    className="w-6 h-6 text-red-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    End Interview?
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    This action cannot be undone
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="bg-white p-6">
+              <p className="text-gray-700 text-base mb-4">
+                Are you sure you want to end this interview session? Your
+                recording will be saved and submitted for evaluation.
+              </p>
+              <div className="mt-4 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+                <div className="flex items-center space-x-2 mb-2">
+                  <svg
+                    className="w-5 h-5 text-blue-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <p className="text-sm font-semibold text-blue-900">
+                    Time Elapsed: {formatTime(elapsedTime)}
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <svg
+                    className="w-5 h-5 text-blue-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                    <path
+                      fillRule="evenodd"
+                      d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <p className="text-sm text-blue-800">
+                    Questions Completed: {currentQuestionIndex + 1} of{" "}
+                    {questions.length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-white border-t border-gray-200 p-6 flex justify-end space-x-3">
+              <button
+                onClick={cancelExit}
+                className="px-6 py-3 border-2 border-indigo-600 text-indigo-600 rounded-xl font-bold text-base hover:bg-indigo-50 transition-all duration-200 transform hover:scale-105"
+              >
+                Continue Interview
+              </button>
+              <button
+                onClick={confirmExit}
+                className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-bold text-base shadow-lg transition-all duration-200 transform hover:scale-105"
+              >
+                End & Submit
+              </button>
+            </div>
           </div>
-        </DialogContent>
-        <DialogActions className="p-4" sx={{ backgroundColor: "white" }}>
-          <Button
-            onClick={cancelExit}
-            variant="outlined"
-            className="font-semibold"
-          >
-            Continue Interview
-          </Button>
-          <Button
-            onClick={confirmExit}
-            variant="contained"
-            color="error"
-            className="font-semibold"
-          >
-            End & Submit
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 };
