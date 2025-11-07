@@ -1,5 +1,4 @@
-// components/PreviousInterviewsList.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -16,85 +15,73 @@ import {
   Select,
   FormControl,
   InputLabel,
+  CircularProgress,
 } from "@mui/material";
-import { InterviewRecord } from "../MockInterview";
+import { InterviewRecord } from "../index";
+import { mockInterviewAPI } from "../services/api";
 
 interface PreviousInterviewsListProps {
   onViewRecord: (record: InterviewRecord) => void;
   onBack: () => void;
 }
 
-// Mock data - Replace with actual API call
-const mockInterviews: InterviewRecord[] = [
-  {
-    id: "1",
-    topic: "React",
-    difficulty: "medium",
-    date: new Date("2025-10-25"),
-    duration: 2400, // in seconds
-    score: 85,
-    status: "completed",
-    questionsAnswered: 8,
-    totalQuestions: 10,
-  },
-  {
-    id: "2",
-    topic: "JavaScript",
-    difficulty: "easy",
-    date: new Date("2025-10-22"),
-    duration: 1800,
-    score: 92,
-    status: "completed",
-    questionsAnswered: 10,
-    totalQuestions: 10,
-  },
-  {
-    id: "3",
-    topic: "System Design",
-    difficulty: "hard",
-    date: new Date("2025-10-20"),
-    duration: 3600,
-    score: 78,
-    status: "completed",
-    questionsAnswered: 6,
-    totalQuestions: 8,
-  },
-  {
-    id: "4",
-    topic: "TypeScript",
-    difficulty: "medium",
-    date: new Date("2025-10-18"),
-    duration: 1200,
-    score: 0,
-    status: "abandoned",
-    questionsAnswered: 3,
-    totalQuestions: 10,
-  },
-  {
-    id: "5",
-    topic: "Node.js",
-    difficulty: "hard",
-    date: new Date("2025-10-15"),
-    duration: 2700,
-    score: 88,
-    status: "completed",
-    questionsAnswered: 7,
-    totalQuestions: 8,
-  },
-];
-
 const PreviousInterviewsList = ({
   onViewRecord,
   onBack,
 }: PreviousInterviewsListProps) => {
-  const [interviews] = useState<InterviewRecord[]>(mockInterviews);
+  const [interviews, setInterviews] = useState<InterviewRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDifficulty, setFilterDifficulty] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
 
+  // Fetch interviews from API
+  useEffect(() => {
+    const fetchInterviews = async () => {
+      try {
+        setLoading(true);
+        
+        // Try to fetch from API
+        try {
+          const data = await mockInterviewAPI.getInterviewAttempts();
+          
+          // Transform API data to match InterviewRecord interface
+          const transformedData: InterviewRecord[] = data.map((attempt) => ({
+            id: attempt.id,
+            topic: attempt.topic,
+            difficulty: attempt.difficulty,
+            date: new Date(attempt.startedAt),
+            duration: attempt.duration,
+            score: attempt.score || 0,
+            status: attempt.status,
+            questionsAnswered: attempt.questionsAnswered,
+            totalQuestions: attempt.totalQuestions,
+          }));
+          
+          setInterviews(transformedData);
+        } catch (apiError) {
+          // If API fails, use mock data for demo
+          setInterviews(mockInterviews);
+        }
+      } catch (error) {
+        // Fallback to mock data
+        setInterviews(mockInterviews);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInterviews();
+  }, []);
+
   const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
+    
+    if (hrs > 0) {
+      return `${hrs}h ${mins}m`;
+    }
     return `${mins}m ${secs}s`;
   };
 
@@ -134,7 +121,8 @@ const PreviousInterviewsList = ({
     }
   };
 
-  const getScoreColor = (score: number) => {
+  const getScoreColor = (score: number | null) => {
+    if (score === null) return "text-gray-400 font-bold";
     if (score >= 80) return "text-green-600 font-bold";
     if (score >= 60) return "text-orange-600 font-bold";
     return "text-red-600 font-bold";
@@ -152,6 +140,26 @@ const PreviousInterviewsList = ({
     return matchesSearch && matchesDifficulty && matchesStatus;
   });
 
+  // Calculate stats
+  const completedInterviews = interviews.filter((i) => i.status === "completed");
+  const avgScore = completedInterviews.length > 0
+    ? Math.round(
+        completedInterviews.reduce((acc, i) => acc + (i.score || 0), 0) /
+        completedInterviews.length
+      )
+    : 0;
+  const totalTime = Math.round(
+    interviews.reduce((acc, i) => acc + i.duration, 0) / 3600
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <CircularProgress size={60} />
+      </div>
+    );
+  }
+
   return (
     <div className="py-6">
       {/* Header with Stats */}
@@ -166,28 +174,19 @@ const PreviousInterviewsList = ({
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4">
             <p className="text-sm text-gray-600 mb-1">Completed</p>
             <p className="text-3xl font-bold text-green-600">
-              {interviews.filter((i) => i.status === "completed").length}
+              {completedInterviews.length}
             </p>
           </div>
           <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-4">
             <p className="text-sm text-gray-600 mb-1">Avg Score</p>
             <p className="text-3xl font-bold text-purple-600">
-              {Math.round(
-                interviews
-                  .filter((i) => i.status === "completed")
-                  .reduce((acc, i) => acc + i.score, 0) /
-                  interviews.filter((i) => i.status === "completed").length
-              )}
-              %
+              {avgScore}%
             </p>
           </div>
           <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-xl p-4">
             <p className="text-sm text-gray-600 mb-1">Total Time</p>
             <p className="text-3xl font-bold text-orange-600">
-              {Math.round(
-                interviews.reduce((acc, i) => acc + i.duration, 0) / 3600
-              )}
-              h
+              {totalTime}h
             </p>
           </div>
         </div>
@@ -259,6 +258,11 @@ const PreviousInterviewsList = ({
                   <div className="text-gray-500">
                     <p className="text-xl mb-2">📋</p>
                     <p>No interviews found</p>
+                    <p className="text-sm mt-2">
+                      {interviews.length === 0
+                        ? "Start your first interview to see results here"
+                        : "Try adjusting your filters"}
+                    </p>
                   </div>
                 </TableCell>
               </TableRow>
@@ -306,7 +310,7 @@ const PreviousInterviewsList = ({
                   </TableCell>
                   <TableCell>
                     <span className={getScoreColor(interview.score)}>
-                      {interview.status === "abandoned"
+                      {interview.score === null || interview.status === "abandoned"
                         ? "-"
                         : `${interview.score}%`}
                     </span>
@@ -350,5 +354,42 @@ const PreviousInterviewsList = ({
     </div>
   );
 };
+
+// Mock data fallback
+const mockInterviews: InterviewRecord[] = [
+  {
+    id: "1",
+    topic: "React",
+    difficulty: "medium",
+    date: new Date("2025-11-05T14:30:00"),
+    duration: 2400,
+    score: 85,
+    status: "completed",
+    questionsAnswered: 8,
+    totalQuestions: 10,
+  },
+  {
+    id: "2",
+    topic: "JavaScript",
+    difficulty: "easy",
+    date: new Date("2025-11-03T10:15:00"),
+    duration: 1800,
+    score: 92,
+    status: "completed",
+    questionsAnswered: 10,
+    totalQuestions: 10,
+  },
+  {
+    id: "3",
+    topic: "System Design",
+    difficulty: "hard",
+    date: new Date("2025-11-01T16:00:00"),
+    duration: 3600,
+    score: 78,
+    status: "completed",
+    questionsAnswered: 6,
+    totalQuestions: 8,
+  },
+];
 
 export default PreviousInterviewsList;

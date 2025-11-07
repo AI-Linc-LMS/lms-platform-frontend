@@ -6,13 +6,6 @@ interface InterviewAvatarProps {
   isAsking?: boolean;
   onQuestionComplete?: () => void;
   className?: string;
-  avatarStyle?: "female" | "male" | "neutral";
-}
-
-interface AvatarAnimation {
-  speaking: boolean;
-  blinking: boolean;
-  lipSync: number; // 0-1 for mouth movement
 }
 
 const InterviewAvatar: React.FC<InterviewAvatarProps> = ({
@@ -20,301 +13,178 @@ const InterviewAvatar: React.FC<InterviewAvatarProps> = ({
   isAsking = false,
   onQuestionComplete,
   className = "",
-  avatarStyle = "female",
 }) => {
-  const [animation, setAnimation] = useState<AvatarAnimation>({
-    speaking: false,
-    blinking: false,
-    lipSync: 0,
-  });
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isBlinking, setIsBlinking] = useState(false);
+  const { speak, stop, isSpeaking: ttsIsSpeaking } = useTextToSpeech();
+  const lastQuestionRef = useRef<string>("");
 
-  const { speak, stop, isSpeaking, setVoice, availableVoices } =
-    useTextToSpeech();
-  const animationFrameRef = useRef<number | null>(null);
-  const lastSpeakTimeRef = useRef<number>(0);
-
-  // Avatar configurations for different styles
-  const avatarConfigs = {
-    female: {
-      backgroundColor: "#FEF7F0",
-      skinColor: "#F4C2A1",
-      hairColor: "#8B4513",
-      eyeColor: "#4A90E2",
-      lipColor: "#E91E63",
-      voicePreference: ["female", "woman", "samantha", "karen", "moira"],
-    },
-    male: {
-      backgroundColor: "#F0F4FE",
-      skinColor: "#D4A574",
-      hairColor: "#2C1810",
-      eyeColor: "#2E7D32",
-      lipColor: "#795548",
-      voicePreference: ["male", "man", "alex", "daniel", "fred"],
-    },
-    neutral: {
-      backgroundColor: "#F8F9FA",
-      skinColor: "#E0B59C",
-      hairColor: "#5D4037",
-      eyeColor: "#37474F",
-      lipColor: "#8D6E63",
-      voicePreference: ["female", "male"],
-    },
-  };
-
-  const config = avatarConfigs[avatarStyle];
-
-  // Set appropriate voice based on avatar style
-  useEffect(() => {
-    if (availableVoices.length > 0) {
-      const preferredVoice =
-        availableVoices.find((voice) =>
-          config.voicePreference.some((pref) =>
-            voice.name.toLowerCase().includes(pref.toLowerCase())
-          )
-        ) || availableVoices.find((voice) => voice.lang.startsWith("en"));
-
-      if (preferredVoice) {
-        setVoice(preferredVoice);
-      }
-    }
-  }, [availableVoices, setVoice, config.voicePreference]);
-
-  // Blinking animation
+  // Natural eye blinking effect
   useEffect(() => {
     const blinkInterval = setInterval(() => {
-      setAnimation((prev) => ({ ...prev, blinking: true }));
+      setIsBlinking(true);
       setTimeout(() => {
-        setAnimation((prev) => ({ ...prev, blinking: false }));
-      }, 150);
-    }, 2000 + Math.random() * 3000); // Random blinking between 2-5 seconds
+        setIsBlinking(false);
+      }, 150); // Blink duration
+    }, 3000 + Math.random() * 2000); // Random blink every 3-5 seconds
 
     return () => clearInterval(blinkInterval);
   }, []);
 
-  // Lip sync animation during speech
-  useEffect(() => {
-    if (isSpeaking) {
-      const startTime = Date.now();
-
-      const animateLipSync = () => {
-        const elapsed = Date.now() - startTime;
-        const intensity =
-          0.3 + 0.7 * Math.sin(elapsed * 0.01) * Math.sin(elapsed * 0.003);
-
-        setAnimation((prev) => ({
-          ...prev,
-          speaking: true,
-          lipSync: Math.max(0, Math.min(1, intensity)),
-        }));
-
-        if (isSpeaking) {
-          animationFrameRef.current = requestAnimationFrame(animateLipSync);
-        }
-      };
-
-      animateLipSync();
-    } else {
-      setAnimation((prev) => ({
-        ...prev,
-        speaking: false,
-        lipSync: 0,
-      }));
-
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    }
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [isSpeaking]);
-
-  // Speak current question
   useEffect(() => {
     if (isAsking && currentQuestion && currentQuestion.trim()) {
-      const currentTime = Date.now();
-
-      // Prevent rapid re-speaking of the same question
-      if (currentTime - lastSpeakTimeRef.current < 1000) {
+      if (lastQuestionRef.current === currentQuestion) {
         return;
       }
 
-      lastSpeakTimeRef.current = currentTime;
+      lastQuestionRef.current = currentQuestion;
+      setIsSpeaking(true);
 
-      // Add a slight delay before speaking
       setTimeout(() => {
         speak(currentQuestion, {
-          rate: 0.9,
-          pitch: avatarStyle === "female" ? 1.1 : 0.9,
-          volume: 0.8,
+          rate: 0.95,
+          pitch: 1.0,
+          volume: 0.85,
         });
-      }, 500);
+      }, 300);
     }
-  }, [isAsking, currentQuestion, speak, avatarStyle]);
+    
+    if (!isAsking) {
+      lastQuestionRef.current = "";
+    }
+  }, [isAsking, currentQuestion, speak]);
 
-  // Handle speech completion
   useEffect(() => {
-    if (!isSpeaking && animation.speaking) {
-      // Speech just finished
+    if (!ttsIsSpeaking && isSpeaking) {
+      setIsSpeaking(false);
       setTimeout(() => {
         onQuestionComplete?.();
       }, 500);
     }
-  }, [isSpeaking, animation.speaking, onQuestionComplete]);
+  }, [ttsIsSpeaking, isSpeaking, onQuestionComplete]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       stop();
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
     };
   }, [stop]);
 
   return (
-    <div
-      className={`flex flex-col items-center justify-center p-6 ${className}`}
-    >
-      {/* Avatar Container */}
-      <div
-        className="relative w-48 h-48 rounded-full shadow-2xl transition-all duration-300 transform"
-        style={{
-          backgroundColor: config.backgroundColor,
-          transform: animation.speaking ? "scale(1.02)" : "scale(1)",
-          boxShadow: animation.speaking
-            ? "0 20px 40px rgba(0,0,0,0.3), 0 0 0 4px rgba(74, 144, 226, 0.3)"
-            : "0 15px 30px rgba(0,0,0,0.2)",
-        }}
-      >
-        {/* Face */}
-        <div
-          className="absolute inset-4 rounded-full"
-          style={{ backgroundColor: config.skinColor }}
-        >
-          {/* Hair */}
-          <div
-            className="absolute -top-2 left-4 right-4 h-16 rounded-full"
-            style={{ backgroundColor: config.hairColor }}
-          />
-
-          {/* Eyes */}
-          <div className="absolute top-8 left-8 right-8 flex justify-between items-center">
-            {/* Left Eye */}
-            <div className="relative">
-              <div
-                className={`w-6 h-6 rounded-full transition-all duration-150 ${
-                  animation.blinking ? "scale-y-0" : "scale-y-100"
-                }`}
-                style={{ backgroundColor: config.eyeColor }}
-              >
-                <div className="absolute top-1 left-1 w-2 h-2 bg-black rounded-full">
-                  <div className="absolute top-0.5 left-0.5 w-1 h-1 bg-white rounded-full" />
-                </div>
-              </div>
-            </div>
-
-            {/* Right Eye */}
-            <div className="relative">
-              <div
-                className={`w-6 h-6 rounded-full transition-all duration-150 ${
-                  animation.blinking ? "scale-y-0" : "scale-y-100"
-                }`}
-                style={{ backgroundColor: config.eyeColor }}
-              >
-                <div className="absolute top-1 left-1 w-2 h-2 bg-black rounded-full">
-                  <div className="absolute top-0.5 left-0.5 w-1 h-1 bg-white rounded-full" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Nose */}
-          <div
-            className="absolute top-12 left-1/2 transform -translate-x-1/2 w-2 h-3 rounded-full opacity-30"
-            style={{
-              backgroundColor: config.skinColor,
-              filter: "brightness(0.8)",
-            }}
-          />
-
-          {/* Mouth */}
-          <div className="absolute top-16 left-1/2 transform -translate-x-1/2">
-            <div
-              className="relative transition-all duration-100"
-              style={{
-                width: `${20 + animation.lipSync * 15}px`,
-                height: `${8 + animation.lipSync * 8}px`,
-                backgroundColor: config.lipColor,
-                borderRadius: animation.lipSync > 0.3 ? "50%" : "50px",
-                transform: `scaleY(${0.8 + animation.lipSync * 0.6})`,
-              }}
-            >
-              {/* Teeth (visible when speaking) */}
-              {animation.lipSync > 0.4 && (
-                <div
-                  className="absolute top-0.5 left-1/2 transform -translate-x-1/2 bg-white"
-                  style={{
-                    width: `${animation.lipSync * 12}px`,
-                    height: "2px",
-                    borderRadius: "1px",
-                  }}
-                />
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Speaking indicator */}
-        {animation.speaking && (
-          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
-            <div className="flex space-x-1">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
-                  style={{
-                    animationDelay: `${i * 0.1}s`,
-                    animationDuration: "0.6s",
-                  }}
-                />
-              ))}
-            </div>
+    <div className={`flex flex-col items-center justify-center w-full ${className}`}>
+      {/* Human-like Avatar */}
+      <div className="relative flex items-center justify-center">
+        {/* Glow effect when speaking */}
+        {isSpeaking && (
+          <div className="absolute inset-0 rounded-full">
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-pulse blur-2xl opacity-60"></div>
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 animate-ping opacity-40"></div>
           </div>
         )}
+
+        {/* Main Avatar Circle */}
+        <div
+          className={`relative w-64 h-64 rounded-full bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 flex items-center justify-center shadow-2xl transition-all duration-300 ${
+            isSpeaking ? "scale-110 shadow-blue-500/50" : "scale-100"
+          }`}
+        >
+          {/* Inner Circle - Face */}
+          <div className="relative w-56 h-56 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center overflow-hidden shadow-inner">
+            {/* Face Elements */}
+            <div className="relative w-full h-full flex flex-col items-center justify-center">
+              {/* Hair */}
+              <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-slate-800 to-slate-700 rounded-t-full"></div>
+
+              {/* Eyes */}
+              <div className="flex space-x-12 mb-8 relative z-10" style={{ marginTop: '20px' }}>
+                {/* Left Eye */}
+                <div className="relative">
+                  <div className={`w-8 bg-white rounded-full flex items-center justify-center shadow-lg transition-all duration-150 ${isSpeaking ? 'scale-110' : ''} ${isBlinking ? 'h-1' : 'h-8'}`}>
+                    {!isBlinking && (
+                      <div className={`w-4 h-4 bg-slate-900 rounded-full relative transition-all duration-200 ${isSpeaking ? 'animate-pulse' : ''}`}>
+                        <div className="absolute top-1 left-1 w-1.5 h-1.5 bg-white rounded-full"></div>
+                      </div>
+                    )}
+                  </div>
+                  {/* Eyebrow */}
+                  <div className="absolute -top-3 left-0 right-0 h-1 bg-slate-800 rounded-full transform -translate-y-1"></div>
+                </div>
+
+                {/* Right Eye */}
+                <div className="relative">
+                  <div className={`w-8 bg-white rounded-full flex items-center justify-center shadow-lg transition-all duration-150 ${isSpeaking ? 'scale-110' : ''} ${isBlinking ? 'h-1' : 'h-8'}`}>
+                    {!isBlinking && (
+                      <div className={`w-4 h-4 bg-slate-900 rounded-full relative transition-all duration-200 ${isSpeaking ? 'animate-pulse' : ''}`}>
+                        <div className="absolute top-1 left-1 w-1.5 h-1.5 bg-white rounded-full"></div>
+                      </div>
+                    )}
+                  </div>
+                  {/* Eyebrow */}
+                  <div className="absolute -top-3 left-0 right-0 h-1 bg-slate-800 rounded-full transform -translate-y-1"></div>
+                </div>
+              </div>
+
+              {/* Nose */}
+              <div className="w-6 h-8 bg-amber-300/40 rounded-full mb-4 shadow-sm"></div>
+
+              {/* Mouth */}
+              <div className="relative">
+                {isSpeaking ? (
+                  <div className="w-20 h-12 bg-slate-800 rounded-full relative overflow-hidden animate-pulse">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-12 h-6 bg-red-400 rounded-full"></div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-16 h-2 bg-slate-800 rounded-full" style={{ borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%' }}></div>
+                )}
+              </div>
+            </div>
+
+            {/* Subtle face shading */}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-amber-300/20 rounded-full pointer-events-none"></div>
+          </div>
+        </div>
       </div>
 
       {/* Status Text */}
-      <div className="mt-4 text-center">
-        <p className="text-sm font-medium text-gray-700">
-          {animation.speaking
-            ? "Speaking..."
-            : isAsking
-            ? "Ready to ask"
-            : "Listening"}
-        </p>
-        {currentQuestion && (
-          <p className="mt-2 text-xs text-gray-500 max-w-md line-clamp-2">
-            {currentQuestion}
-          </p>
-        )}
+      <div className="mt-8 text-center w-full">
+        <div className="flex items-center justify-center space-x-3 bg-slate-800/50 backdrop-blur-sm px-6 py-3 rounded-full border border-slate-700">
+          {isSpeaking ? (
+            <>
+              <svg className="w-6 h-6 text-blue-400 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
+              </svg>
+              <p className="text-xl font-bold text-white">AI Interviewer is asking...</p>
+            </>
+          ) : isAsking ? (
+            <>
+              <svg className="w-6 h-6 text-indigo-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <p className="text-xl font-bold text-white">Preparing question...</p>
+            </>
+          ) : (
+            <>
+              <svg className="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <p className="text-xl font-bold text-white">Ready for your answer</p>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Audio Visualization */}
-      {animation.speaking && (
-        <div className="mt-4 flex space-x-1 items-end h-8">
-          {Array.from({ length: 10 }).map((_, i) => (
+      {/* Sound Wave Animation */}
+      {isSpeaking && (
+        <div className="mt-6 flex space-x-1 items-end h-12">
+          {Array.from({ length: 20 }).map((_, i) => (
             <div
               key={i}
-              className="bg-gradient-to-t from-blue-500 to-purple-500 w-1 rounded-full transition-all duration-150"
+              className="w-1.5 bg-gradient-to-t from-blue-500 via-indigo-500 to-purple-500 rounded-full transition-all duration-150"
               style={{
-                height: `${
-                  10 + Math.sin(Date.now() * 0.01 + i) * animation.lipSync * 20
-                }px`,
-                animationDelay: `${i * 50}ms`,
+                height: `${12 + Math.abs(Math.sin((i * Math.PI) / 10 + Date.now() / 200)) * 32}px`,
+                animationDelay: `${i * 30}ms`,
+                animation: 'pulse 0.6s ease-in-out infinite',
               }}
             />
           ))}
