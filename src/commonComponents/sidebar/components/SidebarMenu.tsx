@@ -11,16 +11,17 @@ interface SidebarMenuProps {
 }
 
 const SidebarMenu = ({ isExpanded }: SidebarMenuProps) => {
-  const { t } = useTranslation();
-  const navigationLinks = getNavigationLinks(t);
+  const { t, i18n } = useTranslation();
   const clientInfo = useSelector((state: RootState) => state.clientInfo);
 
   const filteredNavigationLinks = useMemo(() => {
+    const navigationLinks = getNavigationLinks(t);
+
     return filterNavigationByFeatures(
       clientInfo?.data?.features || [],
       navigationLinks
     );
-  }, [clientInfo?.data?.features]);
+  }, [clientInfo?.data?.features, i18n.language, t]);
 
   return (
     <div
