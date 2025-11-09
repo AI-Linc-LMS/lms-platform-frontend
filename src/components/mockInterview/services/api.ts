@@ -42,6 +42,7 @@ export interface InterviewEvent {
     | "no_face"
     | "face_valid"
     | "question_change"
+    | "question_ready"
     | "user_response"
     | "fullscreen_exit"
     | "fullscreen_enter"

@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import useFaceDetection from "../hooks/useFaceDetection";
 import useFullscreenControl from "../hooks/useFullscreenControl";
 import InterviewSetup from "./InterviewSetup";
 import ActiveInterviewSession from "./ActiveInterviewSession";
 import { mockInterviewAPI, InterviewEvent } from "../services/api";
 import { getQuestions } from "../utils/questionGenerator";
 import { useProctoring } from "../proctoring/useProctoring";
+import {
+  aiInterviewerVoice,
+  AI_INTERVIEWER_SCRIPTS,
+} from "../utils/speechSynthesis";
 
 interface InterviewRoomProps {
   topic: string;
@@ -35,9 +38,6 @@ const InterviewRoom = ({
   const [isAvatarAsking, setIsAvatarAsking] = useState(false);
   const [userResponse, setUserResponse] = useState("");
   const [isVideoReady, setIsVideoReady] = useState(false);
-  const [currentFaceWarning, setCurrentFaceWarning] = useState<string | null>(
-    null
-  );
   const [interviewEvents, setInterviewEvents] = useState<InterviewEvent[]>([]);
   const [submissionData, setSubmissionData] = useState({
     warnings: [] as string[],
@@ -65,12 +65,410 @@ const InterviewRoom = ({
   const audioCanvasRef = useRef<HTMLCanvasElement>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const chunkIndexRef = useRef<number>(0);
-  const speechRecognitionRef = useRef<any>(null);
-  const [isSpeechListening, setIsSpeechListening] = useState(false);
+  const answerStartTimeRef = useRef<number>(0);
+  const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
+  const [hasGivenIntroduction, setHasGivenIntroduction] = useState(false);
+  const [isRecordingAnswer, setIsRecordingAnswer] = useState(false);
+  const [currentTranscript, setCurrentTranscript] = useState("");
+  const recognitionRef = useRef<any>(null);
+
+  // Lightweight face detection (no canvas overlay)
+  const [faceStatus, setFaceStatus] = useState<"single" | "none" | "multiple">(
+    "single"
+  );
+  const faceDetectionIntervalRef = useRef<number | null>(null);
+  const blazeFaceModelRef = useRef<any>(null);
 
   // Custom hooks
-  const faceDetection = useFaceDetection(videoRef);
   const fullscreenControl = useFullscreenControl(containerRef);
+
+  // Initialize Speech Recognition ONCE (not dependent on isRecordingAnswer)
+  useEffect(() => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      console.warn("⚠️ Speech Recognition not supported in this browser");
+      alert(
+        "Speech recognition is not supported in your browser. Please use Chrome or Edge."
+      );
+      return;
+    }
+
+    // Request microphone permission explicitly
+    navigator.mediaDevices
+      .getUserMedia({ audio: true })
+      .then(() => {
+        console.log("✅ Microphone access granted");
+      })
+      .catch((error) => {
+        console.error("❌ Microphone access denied:", error);
+        alert(
+          "Microphone access is required for speech-to-text. Please allow microphone access."
+        );
+      });
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false; // Changed to false - restart manually for better control
+      recognition.interimResults = true;
+      recognition.lang = "en-US";
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        console.log("🎤 Speech recognition started successfully");
+      };
+
+      recognition.onresult = (event: any) => {
+        console.log("🎙️ Speech detected!");
+        let finalTranscript = "";
+        let interimTranscript = "";
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript + " ";
+            console.log("✅ Final transcript:", transcript);
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+
+        if (finalTranscript) {
+          setCurrentTranscript((prev) => {
+            const updated = prev + finalTranscript;
+            console.log("📝 Updated transcript:", updated);
+            return updated;
+          });
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error("❌ Speech recognition error:", event.error);
+
+        if (
+          event.error === "not-allowed" ||
+          event.error === "service-not-allowed"
+        ) {
+          alert(
+            "Microphone permission denied. Please enable microphone access in your browser settings."
+          );
+        } else if (event.error === "no-speech") {
+          console.log("⚠️ No speech detected, continuing to listen...");
+        } else if (event.error === "network") {
+          console.error(
+            "Network error - speech recognition may not work offline"
+          );
+        }
+      };
+
+      recognition.onend = () => {
+        console.log("🔇 Speech recognition ended");
+        // Auto-restart if still in recording mode
+        setTimeout(() => {
+          if (recognitionRef.current && isRecordingAnswer) {
+            try {
+              console.log("🔄 Restarting speech recognition automatically...");
+              recognitionRef.current.start();
+            } catch (error: any) {
+              if (error.message.includes("already started")) {
+                console.log("ℹ️ Recognition already running");
+              } else {
+                console.error("Failed to restart recognition:", error);
+              }
+            }
+          }
+        }, 100);
+      };
+
+      recognitionRef.current = recognition;
+      console.log("✅ Speech Recognition initialized and ready");
+    } catch (error) {
+      console.error("❌ Failed to initialize speech recognition:", error);
+      alert(
+        "Failed to initialize speech recognition. Please refresh and try again."
+      );
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+          console.log("🛑 Speech recognition stopped on cleanup");
+        } catch (e) {
+          // Silent
+        }
+      }
+    };
+  }, []); // Only initialize ONCE on mount
+
+  // Initialize lightweight face detection with retry logic
+  const [faceDetectionReady, setFaceDetectionReady] = useState(false);
+  const MAX_DETECTION_RETRIES = 3;
+
+  useEffect(() => {
+    const initFaceDetection = async (retryCount = 0) => {
+      try {
+        console.log(
+          `🔄 Initializing face detection (attempt ${
+            retryCount + 1
+          }/${MAX_DETECTION_RETRIES})...`
+        );
+
+        // Load TensorFlow.js
+        const tf = await import("@tensorflow/tfjs");
+        await tf.setBackend("webgl");
+        await tf.ready();
+        console.log("✅ TensorFlow.js ready");
+
+        // Load BlazeFace model
+        const blazeface = await import("@tensorflow-models/blazeface");
+        const model = await blazeface.load();
+        blazeFaceModelRef.current = model;
+        setFaceDetectionReady(true);
+        console.log("✅ Face detection model loaded successfully");
+      } catch (error) {
+        console.error(
+          `❌ Failed to load face detection (attempt ${retryCount + 1}):`,
+          error
+        );
+
+        // Retry loading
+        if (retryCount < MAX_DETECTION_RETRIES - 1) {
+          console.log(`🔄 Retrying in 2 seconds...`);
+          setTimeout(() => {
+            initFaceDetection(retryCount + 1);
+          }, 2000);
+        } else {
+          console.error("❌ Face detection failed after all retries");
+          alert(
+            "Face detection could not be initialized. Interview will continue without face monitoring."
+          );
+        }
+      }
+    };
+
+    initFaceDetection();
+  }, []);
+
+  // Track face detection violations
+  const lastFaceStatusRef = useRef<string>("single");
+  const noFaceCountRef = useRef<number>(0);
+  const multipleFaceCountRef = useRef<number>(0);
+
+  // Start face detection when recording - MAXIMUM ROBUSTNESS
+  useEffect(() => {
+    if (
+      isRecording &&
+      videoRef.current &&
+      blazeFaceModelRef.current &&
+      faceDetectionReady
+    ) {
+      console.log("👀 Starting ROBUST face detection with violation tracking...");
+
+      let consecutiveErrors = 0;
+      const MAX_CONSECUTIVE_ERRORS = 3; // Reduced for faster recovery
+      let detectionActive = true;
+      let lastSuccessfulDetection = Date.now();
+
+      const detectFaces = async () => {
+        if (!detectionActive) return;
+
+        try {
+          // Comprehensive video validation
+          if (!videoRef.current || !videoRef.current.srcObject) {
+            console.log("⚠️ Video or stream not available");
+            return;
+          }
+
+          // Check video readiness
+          if (videoRef.current.readyState < 2) {
+            console.log("⚠️ Video not ready, readyState:", videoRef.current.readyState);
+            return;
+          }
+
+          // Check video dimensions
+          const width = videoRef.current.videoWidth;
+          const height = videoRef.current.videoHeight;
+          
+          if (width === 0 || height === 0) {
+            console.log("⚠️ Invalid video dimensions:", width, height);
+            return;
+          }
+
+          // Ensure video is playing
+          if (videoRef.current.paused) {
+            try {
+              await videoRef.current.play();
+            } catch (playError) {
+              console.error("Failed to play video:", playError);
+              return;
+            }
+          }
+
+          // Perform face detection
+          const predictions = await blazeFaceModelRef.current.estimateFaces(
+            videoRef.current,
+            false
+          );
+          const faceCount = predictions.length;
+
+          // Reset error counter and update last successful detection
+          consecutiveErrors = 0;
+          lastSuccessfulDetection = Date.now();
+
+          // Update face status dynamically
+          const newStatus =
+            faceCount === 0 ? "none" : faceCount === 1 ? "single" : "multiple";
+
+          // Log status changes
+          if (newStatus !== lastFaceStatusRef.current) {
+            console.log(
+              `👤 Face status changed: ${lastFaceStatusRef.current} → ${newStatus} (${faceCount} faces)`
+            );
+            lastFaceStatusRef.current = newStatus;
+
+            // Log proctoring violations
+            if (newStatus === "none") {
+              noFaceCountRef.current++;
+              logEvent(
+                "no_face",
+                {
+                  timestamp: Date.now(),
+                  count: noFaceCountRef.current,
+                  message: "No face detected in camera view",
+                },
+                "warning"
+              );
+
+              setSubmissionData((prev) => ({
+                ...prev,
+                faceValidationFailures: prev.faceValidationFailures + 1,
+              }));
+
+              console.warn(
+                `⚠️ NO FACE DETECTED (Total violations: ${noFaceCountRef.current})`
+              );
+            } else if (newStatus === "multiple") {
+              multipleFaceCountRef.current++;
+              logEvent(
+                "multiple_faces",
+                {
+                  timestamp: Date.now(),
+                  count: multipleFaceCountRef.current,
+                  faceCount: faceCount,
+                  message: "Multiple faces detected",
+                },
+                "warning"
+              );
+
+              setSubmissionData((prev) => ({
+                ...prev,
+                multipleFaceDetections: prev.multipleFaceDetections + 1,
+              }));
+
+              console.warn(
+                `⚠️ MULTIPLE FACES DETECTED: ${faceCount} (Total violations: ${multipleFaceCountRef.current})`
+              );
+            } else {
+              console.log("✅ Single face detected - OK");
+            }
+          }
+
+          setFaceStatus(newStatus);
+        } catch (error) {
+          consecutiveErrors++;
+          const timeSinceLastSuccess = Date.now() - lastSuccessfulDetection;
+          
+          console.error(
+            `❌ Face detection error (${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS}, ${Math.round(timeSinceLastSuccess/1000)}s since last success):`,
+            error
+          );
+
+          // If too many consecutive errors OR too long without success, try to recover
+          if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS || timeSinceLastSuccess > 10000) {
+            console.warn(
+              "⚠️ Face detection failing, attempting FULL recovery..."
+            );
+            consecutiveErrors = 0;
+            detectionActive = false; // Pause detection during recovery
+
+            // Comprehensive recovery strategy
+            try {
+              // Step 1: Clear the old model
+              blazeFaceModelRef.current = null;
+              
+              // Step 2: Give it a moment to cleanup
+              await new Promise(resolve => setTimeout(resolve, 500));
+              
+              // Step 3: Reload TensorFlow backend
+              const tf = await import("@tensorflow/tfjs");
+              await tf.setBackend('webgl');
+              await tf.ready();
+              console.log("✅ TensorFlow backend reinitialized");
+              
+              // Step 4: Reload BlazeFace model
+              const blazeface = await import("@tensorflow-models/blazeface");
+              const model = await blazeface.load();
+              blazeFaceModelRef.current = model;
+              
+              console.log("✅ Face detection model FULLY reloaded");
+              
+              // Step 5: Resume detection
+              detectionActive = true;
+              lastSuccessfulDetection = Date.now();
+              
+            } catch (reloadError) {
+              console.error("❌ Failed to recover face detection:", reloadError);
+              // Try one more time after a longer wait
+              setTimeout(async () => {
+                try {
+                  const blazeface = await import("@tensorflow-models/blazeface");
+                  const model = await blazeface.load();
+                  blazeFaceModelRef.current = model;
+                  detectionActive = true;
+                  console.log("✅ Face detection recovered on retry");
+                } catch (e) {
+                  console.error("❌ Final recovery attempt failed:", e);
+                }
+              }, 2000);
+            }
+          }
+        }
+      };
+
+      // Run detection at optimal frequency (300ms for stability)
+      faceDetectionIntervalRef.current = window.setInterval(detectFaces, 300);
+
+      // Run first detection after a brief delay to ensure video is fully ready
+      setTimeout(detectFaces, 500);
+
+      // Health check interval - monitor detection health
+      const healthCheckInterval = setInterval(() => {
+        const timeSinceLastSuccess = Date.now() - lastSuccessfulDetection;
+        if (timeSinceLastSuccess > 15000) {
+          console.warn(`⚠️ No successful face detection in ${Math.round(timeSinceLastSuccess/1000)}s - detection may be stalled`);
+        }
+      }, 5000);
+
+      return () => {
+        detectionActive = false;
+        
+        if (faceDetectionIntervalRef.current) {
+          clearInterval(faceDetectionIntervalRef.current);
+          console.log("👀 Face detection stopped");
+          console.log(
+            `📊 Final face violation stats: No face: ${noFaceCountRef.current}, Multiple faces: ${multipleFaceCountRef.current}`
+          );
+        }
+        
+        if (healthCheckInterval) {
+          clearInterval(healthCheckInterval);
+        }
+      };
+    }
+  }, [isRecording]); // logEvent is stable, no need in deps
 
   // Get questions - MEMOIZED to prevent re-generation
   const questions = useMemo(() => {
@@ -130,49 +528,6 @@ const InterviewRoom = ({
       windowSwitches,
     }));
   }, [eventLog, getEventLog]);
-
-  // Handle face detection - LIVE AND RESPONSIVE
-  useEffect(() => {
-    if (
-      !faceDetection.isLoading &&
-      faceDetection.faceDetection &&
-      isRecording
-    ) {
-      const { faceCount, isValidFrame } = faceDetection.faceDetection;
-
-      // IMMEDIATE state updates for live tracking
-      if (faceCount === 0 || !isValidFrame) {
-        if (currentFaceWarning !== "no_face") {
-          setCurrentFaceWarning("no_face");
-          logEvent("no_face", { faceCount, isValidFrame }, "warning");
-          setSubmissionData((prev) => ({
-            ...prev,
-            faceValidationFailures: prev.faceValidationFailures + 1,
-          }));
-        }
-      } else if (faceCount > 1) {
-        if (currentFaceWarning !== "multiple_faces") {
-          setCurrentFaceWarning("multiple_faces");
-          logEvent("multiple_faces", { faceCount }, "warning");
-          setSubmissionData((prev) => ({
-            ...prev,
-            multipleFaceDetections: prev.multipleFaceDetections + 1,
-          }));
-        }
-      } else if (faceCount === 1 && isValidFrame) {
-        if (currentFaceWarning !== null) {
-          setCurrentFaceWarning(null);
-          logEvent("face_valid", { faceCount }, "info");
-        }
-      }
-    }
-  }, [
-    faceDetection.faceDetection,
-    faceDetection.isLoading,
-    currentFaceWarning,
-    isRecording,
-    logEvent,
-  ]);
 
   // Keyboard lock
   const lockKeyboard = useCallback(async () => {
@@ -398,57 +753,26 @@ const InterviewRoom = ({
 
     setupAudioVisualization(preInitializedStream);
 
-    // Initialize Speech Recognition
-    if (window.SpeechRecognition || window.webkitSpeechRecognition) {
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = "en-US";
-      recognition.maxAlternatives = 1;
+    // Give AI introduction and then ask first question
+    const startInterviewFlow = async () => {
+      if (!hasGivenIntroduction) {
+        await giveVoiceIntroduction();
+        setHasGivenIntroduction(true);
+        // Wait a bit before first question
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
 
-      recognition.onresult = (event: any) => {
-        let finalTranscript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const result = event.results[i];
-          const transcript = result[0].transcript;
-          if (result.isFinal) {
-            finalTranscript += transcript + " ";
-          }
-        }
-
-        if (finalTranscript.trim()) {
-          setUserResponse((prev) => (prev + " " + finalTranscript).trim());
-        }
-      };
-
-      recognition.onerror = (event: any) => {
-        logEvent("recording_start", { error: event.error }, "error");
-        setIsSpeechListening(false);
-      };
-
-      recognition.onend = () => {
-        setIsSpeechListening(false);
-      };
-
-      speechRecognitionRef.current = recognition;
-
-      logEvent(
-        "recording_start",
-        { status: "Speech recognition initialized successfully" },
-        "info"
-      );
-    }
-
-    // Start first question
-    setTimeout(() => {
-      setIsAvatarAsking(true);
+      // Speak first question
       logEvent(
         "question_change",
         { questionIndex: currentQuestionIndex, question: currentQuestion },
         "info"
       );
+      await speakQuestion(currentQuestion);
+    };
+
+    setTimeout(() => {
+      startInterviewFlow();
     }, 2000);
   };
 
@@ -485,36 +809,9 @@ const InterviewRoom = ({
     return () => clearInterval(interval);
   }, [isRecording, isVideoReady]);
 
-  // Start face detection when video ready
-  useEffect(() => {
-    if (isVideoReady && isRecording && !faceDetection.isDetecting) {
-      // Start immediately for live detection
-      const timer = setTimeout(() => {
-        faceDetection.startDetection();
-      }, 500); // Reduced delay
-
-      return () => {
-        clearTimeout(timer);
-      };
-    }
-  }, [
-    isVideoReady,
-    isRecording,
-    faceDetection.isDetecting,
-    faceDetection.startDetection,
-  ]);
-
-  // Stop face detection on unmount
-  useEffect(() => {
-    return () => {
-      if (faceDetection.isDetecting) {
-        faceDetection.stopDetection();
-      }
-    };
-  }, []);
-
   // Handle exit
   const handleExitInterview = () => {
+    console.log("🚪 Exit button clicked - opening confirmation dialog");
     if ((window as any).__unlockFullscreen) {
       (window as any).__unlockFullscreen();
     }
@@ -522,6 +819,7 @@ const InterviewRoom = ({
   };
 
   const confirmExit = async () => {
+    console.log("✅ Confirm exit clicked - ending interview");
     // Close dialog first
     setExitDialogOpen(false);
 
@@ -624,15 +922,6 @@ const InterviewRoom = ({
       }
     }
 
-    if (isSpeechListening && speechRecognitionRef.current) {
-      try {
-        speechRecognitionRef.current.stop();
-        setIsSpeechListening(false);
-      } catch (error) {
-        // Continue
-      }
-    }
-
     if ("keyboard" in navigator && "unlock" in (navigator as any).keyboard) {
       try {
         (navigator as any).keyboard.unlock();
@@ -650,18 +939,16 @@ const InterviewRoom = ({
 
   const cancelExit = () => {
     setExitDialogOpen(false);
-    if ((window as any).__lockFullscreen) {
-      (window as any).__lockFullscreen();
-    }
+    // Re-lock fullscreen immediately
+    setTimeout(() => {
+      if ((window as any).__lockFullscreen) {
+        (window as any).__lockFullscreen();
+      }
+    }, 100);
   };
 
-  // Next question - USER CONTROLLED
+  // Next question - Move to next without saving (already saved in handleStopSpeaking)
   const nextQuestion = () => {
-    if (isSpeechListening && speechRecognitionRef.current) {
-      speechRecognitionRef.current.stop();
-      setIsSpeechListening(false);
-    }
-
     if (currentQuestionIndex < questions.length - 1) {
       const nextIndex = currentQuestionIndex + 1;
 
@@ -679,7 +966,11 @@ const InterviewRoom = ({
 
       setCurrentQuestionIndex(nextIndex);
       setUserResponse("");
-      setIsAvatarAsking(true);
+
+      // Speak the next question
+      setTimeout(() => {
+        speakQuestion(questions[nextIndex]);
+      }, 500);
     } else {
       logEvent(
         "question_change",
@@ -694,96 +985,232 @@ const InterviewRoom = ({
     }
   };
 
-  // Avatar finished speaking - DO NOT AUTO-START
-  const handleQuestionComplete = () => {
-    setIsAvatarAsking(false);
-    // User must manually click "Start Recording" button
-  };
-
-  // User manually starts speaking - DIRECT SPEECH RECOGNITION
-  const handleStartSpeaking = useCallback(() => {
-    if (isAvatarAsking) {
-      return;
-    }
-
-    if (!speechRecognitionRef.current) {
-      logEvent(
-        "recording_start",
-        { error: "Speech recognition not initialized" },
-        "error"
-      );
-      return;
-    }
+  // AI Voice Introduction
+  const giveVoiceIntroduction = useCallback(async () => {
+    const introScript = AI_INTERVIEWER_SCRIPTS.introduction[0];
 
     try {
-      speechRecognitionRef.current.start();
-      setIsSpeechListening(true);
-      logEvent(
-        "recording_start",
-        {
+      setIsAgentSpeaking(true);
+      setIsAvatarAsking(true);
+
+      await aiInterviewerVoice.speak(introScript, {
+        rate: 0.9,
+        pitch: 1.0,
+        volume: 0.8,
+        onStart: () => setIsAgentSpeaking(true),
+        onEnd: () => {
+          setIsAgentSpeaking(false);
+          setIsAvatarAsking(false);
+        },
+      });
+    } catch (error) {
+      console.error("Error during voice introduction:", error);
+      setIsAgentSpeaking(false);
+      setIsAvatarAsking(false);
+    }
+  }, []);
+
+  // Speak a question using TTS
+  const speakQuestion = useCallback(
+    async (question: string) => {
+      try {
+        setIsAgentSpeaking(true);
+        setIsAvatarAsking(true);
+
+        await aiInterviewerVoice.speak(question, {
+          rate: 0.9,
+          pitch: 1.0,
+          volume: 0.8,
+          onStart: () => {
+            setIsAgentSpeaking(true);
+            setIsAvatarAsking(true);
+          },
+          onEnd: () => {
+            // Use setTimeout to ensure we're outside the speech synthesis callback
+            setTimeout(() => {
+              setIsAgentSpeaking(false);
+              setIsAvatarAsking(false);
+              // Start recording answer and speech recognition
+              answerStartTimeRef.current = elapsedTime;
+              setIsRecordingAnswer(true);
+              setCurrentTranscript(""); // Clear previous transcript
+
+              // Start speech recognition
+              if (recognitionRef.current) {
+                try {
+                  recognitionRef.current.start();
+                  console.log("🎤 Speech recognition started for answer");
+                } catch (error: any) {
+                  if (
+                    error.message &&
+                    error.message.includes("already started")
+                  ) {
+                    console.log("ℹ️ Speech recognition already active");
+                  } else {
+                    console.error("Failed to start speech recognition:", error);
+                    alert(
+                      "Failed to start speech recognition. Please check your microphone permissions."
+                    );
+                  }
+                }
+              } else {
+                console.error("❌ Speech recognition not initialized!");
+                alert(
+                  "Speech recognition is not available. Please refresh the page."
+                );
+              }
+
+              logEvent(
+                "recording_start",
+                {
+                  questionIndex: currentQuestionIndex,
+                  questionText: question,
+                  videoTimestamp: elapsedTime,
+                },
+                "info"
+              );
+            }, 100);
+          },
+        });
+      } catch (error) {
+        console.error("Error speaking question:", error);
+        setTimeout(() => {
+          setIsAgentSpeaking(false);
+          setIsAvatarAsking(false);
+          // Track answer start even if speech fails
+          answerStartTimeRef.current = elapsedTime;
+          setIsRecordingAnswer(true);
+          setCurrentTranscript("");
+
+          if (recognitionRef.current) {
+            try {
+              recognitionRef.current.start();
+              console.log(
+                "🎤 Speech recognition started for answer (after error)"
+              );
+            } catch (error: any) {
+              if (error.message && error.message.includes("already started")) {
+                console.log("ℹ️ Speech recognition already active");
+              } else {
+                console.error("Failed to start speech recognition:", error);
+              }
+            }
+          }
+        }, 100);
+      }
+    },
+    [elapsedTime, currentQuestionIndex, logEvent]
+  );
+
+  // Stop recording and save answer
+  const handleStopSpeaking = async () => {
+    console.log("🔘 Next Question button clicked!", {
+      answerStartTime: answerStartTimeRef.current,
+      isRecordingAnswer,
+      currentTranscript: currentTranscript.substring(0, 50) + "...",
+    });
+
+    // Stop speech recognition (if active)
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        console.error("Failed to stop speech recognition:", error);
+      }
+    }
+
+    // Disable recording immediately to prevent double-click
+    setIsRecordingAnswer(false);
+
+    const answerEndTime = elapsedTime;
+    const answerStartTime = answerStartTimeRef.current || 0;
+    const answerDuration = answerEndTime - answerStartTime;
+
+    // Get the transcribed text (or use empty if no speech)
+    const transcribedText = currentTranscript.trim() || "";
+
+    // Always set user response (even if empty - indicates they skipped)
+    const displayResponse = transcribedText || "(Answer skipped)";
+    setUserResponse(displayResponse);
+
+    // Reset for next answer
+    answerStartTimeRef.current = 0;
+    setCurrentTranscript("");
+
+    // Save answer with video timestamps to backend (with fallback)
+    if (attemptId) {
+      try {
+        await mockInterviewAPI.saveQuestionAnswer(attemptId, {
           questionIndex: currentQuestionIndex,
           questionText: currentQuestion,
-        },
-        "info"
-      );
-    } catch (error) {
-      logEvent(
-        "recording_start",
-        {
-          error: String(error),
+          answerText: transcribedText || "(No answer provided)",
+          timestamp: Date.now(),
+          duration: answerDuration,
+        });
+
+        console.log("✅ Answer saved:", {
           questionIndex: currentQuestionIndex,
-        },
-        "error"
-      );
-    }
-  }, [isAvatarAsking, currentQuestionIndex, currentQuestion, logEvent]);
+          transcript: transcribedText,
+          duration: answerDuration,
+        });
 
-  // User stops speaking - SAVE ANSWER & AUTO ADVANCE to next question
-  const handleStopSpeaking = async () => {
-    if (speechRecognitionRef.current && isSpeechListening) {
-      speechRecognitionRef.current.stop();
-      setIsSpeechListening(false);
-
-      // Save current answer to backend for this question
-      if (attemptId && userResponse.trim()) {
-        try {
-          await mockInterviewAPI.saveQuestionAnswer(attemptId, {
+        logEvent(
+          "answer_saved",
+          {
             questionIndex: currentQuestionIndex,
             questionText: currentQuestion,
-            answerText: userResponse,
-            timestamp: Date.now(),
-            duration: elapsedTime,
-          });
+            answerText: transcribedText,
+            videoStartTime: answerStartTime,
+            videoEndTime: answerEndTime,
+            duration: answerDuration,
+          },
+          "info"
+        );
+      } catch (error) {
+        console.error("❌ Failed to save answer (continuing anyway):", error);
 
-          logEvent(
-            "answer_saved",
-            {
-              questionIndex: currentQuestionIndex,
-              answerLength: userResponse.length,
-            },
-            "info"
-          );
-        } catch (error) {
-          // Continue even if save fails
-          logEvent(
-            "answer_save_failed",
-            {
-              questionIndex: currentQuestionIndex,
-              error: String(error),
-            },
-            "warning"
-          );
-        }
+        // FALLBACK: Store answer locally if API fails
+        const localAnswer = {
+          questionIndex: currentQuestionIndex,
+          questionText: currentQuestion,
+          answerText: transcribedText || "(No answer provided)",
+          timestamp: Date.now(),
+          duration: answerDuration,
+          savedLocally: true,
+        };
+
+        // Store in localStorage as backup
+        const existingAnswers = localStorage.getItem(
+          `interview_${attemptId}_answers`
+        );
+        const answers = existingAnswers ? JSON.parse(existingAnswers) : [];
+        answers.push(localAnswer);
+        localStorage.setItem(
+          `interview_${attemptId}_answers`,
+          JSON.stringify(answers)
+        );
+
+        console.log("💾 Answer saved locally as fallback");
+
+        logEvent(
+          "answer_save_failed",
+          {
+            questionIndex: currentQuestionIndex,
+            error: String(error),
+            storedLocally: true,
+          },
+          "warning"
+        );
       }
-
-      // Auto-advance to next question after stopping
-      setTimeout(() => {
-        nextQuestion();
-      }, 500);
     }
-  };
 
-  // Speech recognition is now handled directly in handleStartInterview via onresult callback
+    // Auto-advance after short delay (ALWAYS advance, even if API fails)
+    console.log("⏭️  Advancing to next question in 300ms...");
+    setTimeout(() => {
+      console.log("⏭️  Calling nextQuestion()");
+      nextQuestion();
+    }, 300);
+  };
 
   // Cleanup
   useEffect(() => {
@@ -809,9 +1236,8 @@ const InterviewRoom = ({
         audioContextRef.current.close();
       }
 
-      if (isSpeechListening && speechRecognitionRef.current) {
-        speechRecognitionRef.current.stop();
-      }
+      // Stop any ongoing TTS speech
+      aiInterviewerVoice.stop();
 
       if ("keyboard" in navigator && "unlock" in (navigator as any).keyboard) {
         (navigator as any).keyboard.unlock();
@@ -819,7 +1245,7 @@ const InterviewRoom = ({
 
       fullscreenControl.exitFullscreen();
     };
-  }, [isSpeechListening]);
+  }, []);
 
   return (
     <div
@@ -847,14 +1273,15 @@ const InterviewRoom = ({
           elapsedTime={elapsedTime}
           audioLevel={audioLevel}
           isVideoReady={isVideoReady}
-          currentFaceWarning={currentFaceWarning}
+          currentFaceWarning={null}
           submissionData={submissionData}
-          isListening={isSpeechListening}
+          isListening={isRecordingAnswer}
+          currentTranscript={currentTranscript}
+          faceStatus={faceStatus}
           videoRef={videoRef}
           audioCanvasRef={audioCanvasRef}
+          isAgentSpeaking={isAgentSpeaking}
           onExitInterview={handleExitInterview}
-          onQuestionComplete={handleQuestionComplete}
-          onStartSpeaking={handleStartSpeaking}
           onStopSpeaking={handleStopSpeaking}
           formatTime={formatTime}
         />
@@ -873,7 +1300,8 @@ const InterviewRoom = ({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: "rgba(0, 0, 0, 0.8)",
+            backgroundColor: "rgba(0, 0, 0, 0.85)",
+            animation: "fadeIn 0.2s ease-out",
           }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
@@ -887,8 +1315,9 @@ const InterviewRoom = ({
               borderRadius: "16px",
               maxWidth: "500px",
               width: "90%",
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8)",
               overflow: "hidden",
+              animation: "scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
             }}
           >
             {/* Header */}

@@ -299,7 +299,6 @@ const useMediaCapture = (): UseMediaCaptureReturn => {
     recordedChunks,
     speechResult,
     isSpeechListening,
-    isListening: isSpeechListening, // Alias for compatibility
     startCapture,
     stopCapture,
     startRecording,
