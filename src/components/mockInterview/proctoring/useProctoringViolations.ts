@@ -67,14 +67,15 @@ export const useProctoringViolations = (eventLog: ProctoringEvent[]) => {
 
     // Handle pending blurs
     if (pendingTabBlur) {
+      const tabBlur = pendingTabBlur as ProctoringEvent;
       const currentTime = Date.now();
-      const duration = currentTime - pendingTabBlur.timestamp;
+      const duration = currentTime - tabBlur.timestamp;
       stats.tabSwitches.totalTimeAway += duration;
       
       violationsList.push({
-        id: `tab_switch_pending_${pendingTabBlur.timestamp}`,
+        id: `tab_switch_pending_${tabBlur.timestamp}`,
         type: 'tab_switch',
-        timestamp: pendingTabBlur.timestamp,
+        timestamp: tabBlur.timestamp,
         duration: duration,
         description: `Currently away from interview tab (${Math.round(duration / 1000)}s)`,
         severity: 'high'
@@ -82,14 +83,15 @@ export const useProctoringViolations = (eventLog: ProctoringEvent[]) => {
     }
 
     if (pendingWindowBlur) {
+      const windowBlur = pendingWindowBlur as ProctoringEvent;
       const currentTime = Date.now();
-      const duration = currentTime - pendingWindowBlur.timestamp;
+      const duration = currentTime - windowBlur.timestamp;
       stats.windowSwitches.totalTimeAway += duration;
       
       violationsList.push({
-        id: `window_switch_pending_${pendingWindowBlur.timestamp}`,
+        id: `window_switch_pending_${windowBlur.timestamp}`,
         type: 'window_switch', 
-        timestamp: pendingWindowBlur.timestamp,
+        timestamp: windowBlur.timestamp,
         duration: duration,
         description: `Interview window currently not in focus (${Math.round(duration / 1000)}s)`,
         severity: 'high'
