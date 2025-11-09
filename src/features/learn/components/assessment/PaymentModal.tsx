@@ -88,6 +88,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 }) => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showProcessingModal, setShowProcessingModal] = useState(false);
+  const clientInfo = useSelector(
+    (state: { client: { client_id: number; data?: { name?: string } } }) =>
+      state.client
+  );
+
   const [processingStep, setProcessingStep] = useState<
     "creating" | "processing" | "verifying" | "complete"
   >("creating");
@@ -196,7 +201,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         key: orderData.key,
         amount: coursePrice,
         currency: orderData.currency || "INR",
-        name: "AI-LINC Platform",
+        name: clientInfo?.data?.name || "AI-LINC Platform",
         description: "Course Access Payment",
         order_id: orderData.order_id,
         handler: async function (response: RazorpayResponse) {
