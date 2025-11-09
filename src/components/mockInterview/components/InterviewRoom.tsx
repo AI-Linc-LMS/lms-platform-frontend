@@ -265,7 +265,9 @@ const InterviewRoom = ({
       blazeFaceModelRef.current &&
       faceDetectionReady
     ) {
-      console.log("👀 Starting ROBUST face detection with violation tracking...");
+      console.log(
+        "👀 Starting ROBUST face detection with violation tracking..."
+      );
 
       let consecutiveErrors = 0;
       const MAX_CONSECUTIVE_ERRORS = 3; // Reduced for faster recovery
@@ -284,14 +286,17 @@ const InterviewRoom = ({
 
           // Check video readiness
           if (videoRef.current.readyState < 2) {
-            console.log("⚠️ Video not ready, readyState:", videoRef.current.readyState);
+            console.log(
+              "⚠️ Video not ready, readyState:",
+              videoRef.current.readyState
+            );
             return;
           }
 
           // Check video dimensions
           const width = videoRef.current.videoWidth;
           const height = videoRef.current.videoHeight;
-          
+
           if (width === 0 || height === 0) {
             console.log("⚠️ Invalid video dimensions:", width, height);
             return;
@@ -380,14 +385,19 @@ const InterviewRoom = ({
         } catch (error) {
           consecutiveErrors++;
           const timeSinceLastSuccess = Date.now() - lastSuccessfulDetection;
-          
+
           console.error(
-            `❌ Face detection error (${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS}, ${Math.round(timeSinceLastSuccess/1000)}s since last success):`,
+            `❌ Face detection error (${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS}, ${Math.round(
+              timeSinceLastSuccess / 1000
+            )}s since last success):`,
             error
           );
 
           // If too many consecutive errors OR too long without success, try to recover
-          if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS || timeSinceLastSuccess > 10000) {
+          if (
+            consecutiveErrors >= MAX_CONSECUTIVE_ERRORS ||
+            timeSinceLastSuccess > 10000
+          ) {
             console.warn(
               "⚠️ Face detection failing, attempting FULL recovery..."
             );
@@ -398,33 +408,37 @@ const InterviewRoom = ({
             try {
               // Step 1: Clear the old model
               blazeFaceModelRef.current = null;
-              
+
               // Step 2: Give it a moment to cleanup
-              await new Promise(resolve => setTimeout(resolve, 500));
-              
+              await new Promise((resolve) => setTimeout(resolve, 500));
+
               // Step 3: Reload TensorFlow backend
               const tf = await import("@tensorflow/tfjs");
-              await tf.setBackend('webgl');
+              await tf.setBackend("webgl");
               await tf.ready();
               console.log("✅ TensorFlow backend reinitialized");
-              
+
               // Step 4: Reload BlazeFace model
               const blazeface = await import("@tensorflow-models/blazeface");
               const model = await blazeface.load();
               blazeFaceModelRef.current = model;
-              
+
               console.log("✅ Face detection model FULLY reloaded");
-              
+
               // Step 5: Resume detection
               detectionActive = true;
               lastSuccessfulDetection = Date.now();
-              
             } catch (reloadError) {
-              console.error("❌ Failed to recover face detection:", reloadError);
+              console.error(
+                "❌ Failed to recover face detection:",
+                reloadError
+              );
               // Try one more time after a longer wait
               setTimeout(async () => {
                 try {
-                  const blazeface = await import("@tensorflow-models/blazeface");
+                  const blazeface = await import(
+                    "@tensorflow-models/blazeface"
+                  );
                   const model = await blazeface.load();
                   blazeFaceModelRef.current = model;
                   detectionActive = true;
@@ -448,13 +462,17 @@ const InterviewRoom = ({
       const healthCheckInterval = setInterval(() => {
         const timeSinceLastSuccess = Date.now() - lastSuccessfulDetection;
         if (timeSinceLastSuccess > 15000) {
-          console.warn(`⚠️ No successful face detection in ${Math.round(timeSinceLastSuccess/1000)}s - detection may be stalled`);
+          console.warn(
+            `⚠️ No successful face detection in ${Math.round(
+              timeSinceLastSuccess / 1000
+            )}s - detection may be stalled`
+          );
         }
       }, 5000);
 
       return () => {
         detectionActive = false;
-        
+
         if (faceDetectionIntervalRef.current) {
           clearInterval(faceDetectionIntervalRef.current);
           console.log("👀 Face detection stopped");
@@ -462,7 +480,7 @@ const InterviewRoom = ({
             `📊 Final face violation stats: No face: ${noFaceCountRef.current}, Multiple faces: ${multipleFaceCountRef.current}`
           );
         }
-        
+
         if (healthCheckInterval) {
           clearInterval(healthCheckInterval);
         }
