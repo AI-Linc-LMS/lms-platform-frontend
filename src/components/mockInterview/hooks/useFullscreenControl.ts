@@ -49,7 +49,7 @@ const useFullscreenControl = (
       const element = getTargetElement();
 
       if (element.requestFullscreen) {
-        await element.requestFullscreen();
+        await element.requestFullscreen({ navigationUI: "hide" });
       } else if ((element as any).webkitRequestFullscreen) {
         await (element as any).webkitRequestFullscreen();
       } else if ((element as any).mozRequestFullScreen) {
