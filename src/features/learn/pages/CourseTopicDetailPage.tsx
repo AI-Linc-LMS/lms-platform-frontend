@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSubmoduleById } from "../../../services/enrolled-courses-content/courseContentApis";
@@ -167,6 +167,14 @@ const CourseTopicDetailPage: React.FC = () => {
   }, [isMobile]);
 
   const clientId = Number(import.meta.env.VITE_CLIENT_ID);
+  const streakQueryKey = clientId ? ["streakTable", clientId] : null;
+
+  const triggerStreakRefresh = useCallback(() => {
+    if (!streakQueryKey) return;
+
+    queryClient.invalidateQueries({ queryKey: streakQueryKey });
+    queryClient.refetchQueries({ queryKey: streakQueryKey, type: "active" });
+  }, [queryClient, streakQueryKey]);
   // Fetch submodule data
   const {
     data: submoduleData,
@@ -950,6 +958,7 @@ const CourseTopicDetailPage: React.FC = () => {
                 getNextTopicTitle={getNextTopicTitle}
                 onComplete={() => {
                   updateVideoProgress(currentContent.id.toString(), 100);
+                  triggerStreakRefresh();
                 }}
                 onProgressUpdate={(videoId, progress) => {
                   updateVideoProgress(videoId, progress);
@@ -981,6 +990,7 @@ const CourseTopicDetailPage: React.FC = () => {
                 onStartNextQuiz={handleStartNextQuiz}
                 onComplete={() => {
                   updateQuizStatus(currentContent.id, "complete");
+                  triggerStreakRefresh();
                 }}
               />
             )}

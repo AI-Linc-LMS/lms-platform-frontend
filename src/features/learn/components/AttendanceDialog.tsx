@@ -12,6 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import { XIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface AttendanceDialogProps {
   open: boolean;
@@ -34,6 +35,7 @@ const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
   onCodeChange,
   onSubmit,
 }) => {
+  const { t } = useTranslation();
   return (
     <Dialog
       open={open}
@@ -51,17 +53,19 @@ const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
             component="span"
             className="font-bold text-[var(--primary-500)]"
           >
-            Mark Attendance for:{" "}
-            {selectedActivity?.name || selectedActivity?.title}
+            {t("attendance.dialog.title", {
+              activity: selectedActivity?.name || selectedActivity?.title,
+            })}
           </Typography>
           <XIcon
             className="w-5 h-5 cursor-pointer text-gray-500 hover:text-gray-700 transition"
-            onClick={onClose}
+            onClick={!isPending ? onClose : undefined}
+            aria-disabled={isPending}
           />
         </Box>
 
         <Typography variant="body2" className="text-gray-600 mt-1 font-normal">
-          Enter 6-digit attendance code
+          {t("attendance.dialog.enterCode")}
         </Typography>
       </DialogTitle>
 
@@ -102,7 +106,7 @@ const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
               disabled={isPending}
               variant="outlined"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
 
             <Button
@@ -119,17 +123,17 @@ const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
               {isPending ? (
                 <Box display="flex" alignItems="center" gap={1}>
                   <CircularProgress size={20} color="inherit" />
-                  Marking Attendance...
+                  {t("attendance.actions.marking")}
                 </Box>
               ) : (
-                "Mark Attendance"
+                t("attendance.actions.mark")
               )}
             </Button>
           </DialogActions>
         </form>
 
         <p className="text-center text-sm text-gray-500 mt-2">
-          💡 The attendance code is valid for only sometime
+          {t("attendance.dialog.hint")}
         </p>
       </DialogContent>
     </Dialog>

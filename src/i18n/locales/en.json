@@ -20,6 +20,7 @@
     "next": "Next",
     "previous": "Previous",
     "close": "Close",
+    "ok": "OK",
     "add": "Add",
     "update": "Update",
     "remove": "Remove",
@@ -639,18 +640,46 @@
     "error": "Failed to mark attendance",
     "noSessions": "No live sessions available",
     "headers": {
+      "name": "Name",
+      "expiresAt": "Expires At",
+      "timeRemaining": "Time Remaining",
       "session": "Session",
       "date": "Date",
       "time": "Time",
       "status": "Status",
       "action": "Action"
     },
+    "labels": {
+      "expired": "Expired",
+      "minutesLeft_one": "{{count}} minute left",
+      "minutesLeft_other": "{{count}} minutes left"
+    },
     "status": {
       "present": "Present",
       "absent": "Absent",
       "pending": "Pending"
     },
-    "rowsPerPage": "Rows per page"
+    "rowsPerPage": "Rows per page",
+    "actions": {
+      "mark": "Mark Attendance",
+      "marking": "Marking Attendance..."
+    },
+    "errors": {
+      "selectActivity": "Please select an activity",
+      "enterCode": "Please enter the attendance code",
+      "invalidLength": "Code must be 6 digits",
+      "invalidCode": "Invalid or expired code"
+    },
+    "dialog": {
+      "title": "Mark Attendance for {{activity}}",
+      "enterCode": "Enter 6-digit attendance code",
+      "hint": "💡 The attendance code is valid for only some time",
+      "successMessage": "Your attendance has been marked successfully!"
+    },
+    "empty": {
+      "title": "No Active Attendance Sessions",
+      "description": "Your instructor hasn't started an attendance session yet. Check back later!"
+    }
   },
   "jobs": {
     "title": "Find Your Dream Job",
