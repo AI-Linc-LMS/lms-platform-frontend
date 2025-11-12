@@ -20,7 +20,6 @@ const InterviewSetup: React.FC<InterviewSetupProps> = ({
   const [cameraStatus, setCameraStatus] = useState<
     "initializing" | "ready" | "error"
   >("initializing");
-  const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
   const streamSentRef = useRef(false);
 
   useEffect(() => {
@@ -50,8 +49,6 @@ const InterviewSetup: React.FC<InterviewSetupProps> = ({
           stream.getTracks().forEach((track) => track.stop());
           return;
         }
-
-        setPreviewStream(stream);
 
         if (previewVideoRef.current) {
           previewVideoRef.current.srcObject = stream;
