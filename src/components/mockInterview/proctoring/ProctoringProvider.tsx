@@ -1,10 +1,11 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import type { ProctoringContextType, ProctoringEvent, ProctoringEventType } from "./types";
 
 export const ProctoringContext = createContext<ProctoringContextType | undefined>(undefined);
 
 export const ProctoringProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [eventLog, setEventLog] = useState<ProctoringEvent[]>([]);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
 
   // Always start with fresh events for each interview session
   useEffect(() => {
@@ -19,6 +20,23 @@ export const ProctoringProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const interviewId = getInterviewId();
     setEventLog([]);
     localStorage.removeItem(`proctoring_events_${interviewId}`);
+  };
+
+  // Start screen sharing
+  const startScreenShare = async () => {
+    try {
+      setIsScreenSharing(true);
+      logEvent("SCREEN_SHARE_START");
+    } catch (error) {
+      setIsScreenSharing(false);
+      throw error;
+    }
+  };
+
+  // Stop screen sharing
+  const stopScreenShare = () => {
+    setIsScreenSharing(false);
+    logEvent("SCREEN_SHARE_STOP");
   };
 
   // Get current interview ID from URL or generate one
@@ -85,6 +103,9 @@ export const ProctoringProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         eventLog,
         getEventLog,
         clearProctoringEvents,
+        startScreenShare,
+        stopScreenShare,
+        isScreenSharing,
       }}
     >
       {children}
