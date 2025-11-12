@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { 
-  useTranslatedDifficulty, 
-  useTranslatedCourseContent, 
+import {
+  useTranslatedDifficulty,
+  useTranslatedCourseContent,
   useTranslatedJobPlacement,
-  useTranslatedCourseProgress
+  useTranslatedCourseProgress,
 } from "../../../utils/courseTranslationUtils";
 
 import {
@@ -33,6 +33,7 @@ import {
 } from "../../../../../services/payment/paymentGatewayApis";
 import { IconActionsNotEnrolledSection } from "./components/IconNotEnrolledActionSection";
 import { enrollInCourse } from "../../../../../services/continue-course-learning/continueCourseApis";
+import { RootState } from "../../../../../redux/store";
 
 // Enhanced 3D Star Rating Component
 const StarRating = ({
@@ -95,16 +96,16 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
 }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  
+
   // Translation utilities
   const { translateDifficulty } = useTranslatedDifficulty();
-  const { 
+  const {
     getTranslatedDescription,
     getTranslatedLearningObjectives,
     // getTranslatedFeatures,
     getTranslatedRequirements,
     getTranslatedWhatsIncluded,
-    getTranslatedCourseTags 
+    getTranslatedCourseTags,
   } = useTranslatedCourseContent();
   const { getTranslatedJobPlacementText } = useTranslatedJobPlacement();
   const { getTranslatedRatingText } = useTranslatedCourseProgress();
@@ -139,7 +140,8 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
   })();
 
   const user = useSelector((state: { user: UserState }) => state.user);
-  const clientInfo = useSelector((state: { client: { client_id: number; data?: { name?: string } } }) => state.client);
+
+  const clientInfo = useSelector((state: RootState) => state.clientInfo);
 
   const [, setPaymentResult] = useState<{
     paymentId?: string;
@@ -357,7 +359,9 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
             onClick={isFree ? handlePrimaryClick : handlePayment}
             className={`px-5 py-3 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[var(--course-cta)] text-[var(--font-light)] hover:bg-[var(--course-cta)] hover:-translate-y-0.5 ${"w-full"} ${className}`}
           >
-            {`${t("courses.enrollNow")} - ${isFree ? t("courses.free") : `₹${formattedPrice}`}`}
+            {`${t("courses.enrollNow")} - ${
+              isFree ? t("courses.free") : `₹${formattedPrice}`
+            }`}
           </button>
         </div>
       </div>
@@ -367,7 +371,13 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
         {/* Course Description */}
         <div className="mb-4">
           <p className="text-gray-600 text-sm leading-relaxed">
-            {getTranslatedDescription(course as unknown as { title?: string; description?: string; [key: string]: unknown })}
+            {getTranslatedDescription(
+              course as unknown as {
+                title?: string;
+                description?: string;
+                [key: string]: unknown;
+              }
+            )}
           </p>
         </div>
 
@@ -377,7 +387,13 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
             {t("courses.whatYouWillLearn")}:
           </h3>
           <ul className="space-y-2">
-            {getTranslatedLearningObjectives(course as unknown as { title?: string; description?: string; [key: string]: unknown }).map((outcome, index) => (
+            {getTranslatedLearningObjectives(
+              course as unknown as {
+                title?: string;
+                description?: string;
+                [key: string]: unknown;
+              }
+            ).map((outcome, index) => (
               <li
                 key={index}
                 className="flex items-start gap-3 text-sm text-gray-600"
@@ -393,7 +409,13 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
 
         {/* Course Tags */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {getTranslatedCourseTags(course as unknown as { title?: string; description?: string; [key: string]: unknown }).map((tag, index) => (
+          {getTranslatedCourseTags(
+            course as unknown as {
+              title?: string;
+              description?: string;
+              [key: string]: unknown;
+            }
+          ).map((tag, index) => (
             <div
               key={index}
               className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full text-xs font-semibold whitespace-nowrap"
@@ -407,7 +429,10 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
         <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
           <StarRating rating={courseRating} size="text-sm" />
           <span className="text-sm font-semibold text-gray-700">
-            {getTranslatedRatingText(courseRating, getEffectiveStudentStats(course).totalLearners)}
+            {getTranslatedRatingText(
+              courseRating,
+              getEffectiveStudentStats(course).totalLearners
+            )}
           </span>
         </div>
 
@@ -471,7 +496,13 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
             📋 {t("courses.requirements")}:
           </h4>
           <div className="space-y-2">
-            {getTranslatedRequirements(course as unknown as { title?: string; description?: string; [key: string]: unknown }).map((requirement, index) => (
+            {getTranslatedRequirements(
+              course as unknown as {
+                title?: string;
+                description?: string;
+                [key: string]: unknown;
+              }
+            ).map((requirement, index) => (
               <p
                 key={index}
                 className="text-xs text-yellow-800 leading-relaxed flex items-start gap-2"
@@ -496,7 +527,13 @@ export default NotEnrolledExpandedCard;
 export const FeaturesSection: React.FC<{ course: Course }> = ({ course }) => {
   const { t } = useTranslation();
   const { getTranslatedFeatures } = useTranslatedCourseContent();
-  const effectiveFeatures = getTranslatedFeatures(course as unknown as { title?: string; description?: string; [key: string]: unknown });
+  const effectiveFeatures = getTranslatedFeatures(
+    course as unknown as {
+      title?: string;
+      description?: string;
+      [key: string]: unknown;
+    }
+  );
 
   return (
     <div>

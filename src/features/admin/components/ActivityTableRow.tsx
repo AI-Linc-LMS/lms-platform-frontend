@@ -1,9 +1,12 @@
 import React, { useState } from "react";
-import { TableRow, TableCell, IconButton, Chip } from "@mui/material";
+import { TableRow, TableCell, IconButton, Chip, Tooltip } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import { AttendanceActivity, updateSessionTracking } from "../../../services/attendanceApis";
+import {
+  AttendanceActivity,
+  updateSessionTracking,
+} from "../../../services/attendanceApis";
 import SessionTrackingModal from "./SessionTrackingModal";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, FileText } from "lucide-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useToast } from "../../../contexts/ToastContext";
 
@@ -17,16 +20,18 @@ interface SessionTrackingData {
 interface ActivityTableRowProps {
   activity: AttendanceActivity;
   onViewRecords: (activity: AttendanceActivity) => void;
+  onShowSummary: (activity: AttendanceActivity, forceRefresh?: boolean) => void;
 }
 
 const ActivityTableRow: React.FC<ActivityTableRowProps> = ({
   activity,
   onViewRecords,
+  onShowSummary,
 }) => {
   const [trackingModalOpen, setTrackingModalOpen] = useState(false);
   const queryClient = useQueryClient();
   const { success, error } = useToast();
-  const clientId = import.meta.env.VITE_CLIENT_ID;
+  const clientId = Number(import.meta.env.VITE_CLIENT_ID);
 
   const trackingMutation = useMutation({
     mutationFn: async (data: SessionTrackingData) => {
@@ -38,10 +43,15 @@ const ActivityTableRow: React.FC<ActivityTableRowProps> = ({
       });
     },
     onSuccess: () => {
-      // Invalidate and refetch the attendance activities list
-      queryClient.invalidateQueries({ queryKey: ["attendanceActivities", clientId] });
+      queryClient.invalidateQueries({
+        queryKey: ["attendance-activities", clientId],
+      });
       setTrackingModalOpen(false);
-      success("Session Tracking Saved", "Session tracking data has been saved successfully.");
+      success(
+        "Session Tracking Saved",
+        "Session tracking data has been saved successfully."
+      );
+      onShowSummary(activity, true);
     },
     onError: (err) => {
       console.error("Failed to save session tracking:", err);
@@ -104,30 +114,61 @@ const ActivityTableRow: React.FC<ActivityTableRowProps> = ({
         </TableCell>
         <TableCell align="center" sx={{ fontFamily: "inherit" }}>
           <div className="flex gap-1 justify-center">
-            <IconButton
-              size="small"
-              color="primary"
-              onClick={() => setTrackingModalOpen(true)}
-              title="Session Tracker"
-              sx={{
-                color: hasTrackingData ? "var(--primary-600)" : "#9CA3AF",
-                backgroundColor: hasTrackingData ? "var(--primary-50)" : "transparent",
-                "&:hover": {
-                  backgroundColor: "var(--primary-50)",
-                  color: "var(--primary-600)",
-                },
-              }}
-            >
-              <ClipboardList size={18} />
-            </IconButton>
-            <IconButton
-              size="small"
-              color="primary"
-              onClick={() => onViewRecords(activity)}
-              title="View Attendees"
-            >
-              <VisibilityIcon fontSize="small" />
-            </IconButton>
+            <Tooltip title="Edit Session Tracking" arrow>
+              <IconButton
+                size="small"
+                onClick={() => setTrackingModalOpen(true)}
+                sx={{
+                  color: hasTrackingData ? "var(--primary-600)" : "#9CA3AF",
+                  backgroundColor: hasTrackingData
+                    ? "rgba(23, 98, 122, 0.08)"
+                    : "transparent",
+                  border: hasTrackingData ? "1px solid rgba(23, 98, 122, 0.12)" : "1px solid transparent",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    backgroundColor: "rgba(23, 98, 122, 0.12)",
+                    color: "var(--primary-600)",
+                    borderColor: "rgba(23, 98, 122, 0.24)",
+                  },
+                }}
+              >
+                <ClipboardList size={18} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="View Session Summary" arrow>
+              <IconButton
+                size="small"
+                onClick={() => onShowSummary(activity)}
+                sx={{
+                  color: hasTrackingData ? "var(--primary-500)" : "#9CA3AF",
+                  border: "1px solid rgba(148, 163, 184, 0.3)",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    backgroundColor: "rgba(23, 98, 122, 0.08)",
+                    color: "var(--primary-600)",
+                  },
+                }}
+              >
+                <FileText size={18} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="View Attendance Records" arrow>
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={() => onViewRecords(activity)}
+                sx={{
+                  color: "var(--primary-500)",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    backgroundColor: "rgba(23, 98, 122, 0.08)",
+                    color: "var(--primary-600)",
+                  },
+                }}
+              >
+                <VisibilityIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </div>
         </TableCell>
       </TableRow>

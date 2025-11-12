@@ -22,6 +22,7 @@ import {
 import CreateAttendanceDialog from "./CreateAttendanceDialog";
 import AttendanceRecordsDialog from "./AttendanceRecordsDialog";
 import ActivityTableRow from "./ActivityTableRow";
+import SessionTrackingSummaryPanel from "./SessionTrackingSummaryPanel";
 
 interface AttendanceManagementProps {
   courseId?: number; // Optional for future use
@@ -38,6 +39,7 @@ const AttendanceManagement: React.FC<AttendanceManagementProps> = () => {
     useState<AttendanceActivityDetail | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showRecordsModal, setShowRecordsModal] = useState(false);
+  const [showSummaryPanel, setShowSummaryPanel] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -70,7 +72,7 @@ const AttendanceManagement: React.FC<AttendanceManagementProps> = () => {
 
   // Fetch attendance activities
   const { data: activities, isLoading } = useQuery({
-    queryKey: ["attendance-activities"],
+    queryKey: ["attendance-activities", clientId],
     queryFn: () => getAttendanceActivities(clientId),
   });
 
@@ -80,7 +82,7 @@ const AttendanceManagement: React.FC<AttendanceManagementProps> = () => {
       createAttendanceActivity(clientId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["attendance-activities"],
+        queryKey: ["attendance-activities", clientId],
       });
       setShowCreateModal(false);
       setErrorMessage("");
@@ -101,11 +103,32 @@ const AttendanceManagement: React.FC<AttendanceManagementProps> = () => {
     },
   });
 
-  const handleViewRecords = async (activity: AttendanceActivity) => {
+  const loadActivityDetail = async (
+    activity: AttendanceActivity,
+    forceRefresh = false
+  ) => {
+    if (!forceRefresh && activityDetail && activityDetail.id === activity.id) {
+      setSelectedActivity(activity);
+      return activityDetail;
+    }
+
     const detail = await getAttendanceActivityDetail(clientId, activity.id);
     setActivityDetail(detail);
     setSelectedActivity(activity);
+    return detail;
+  };
+
+  const handleViewRecords = async (activity: AttendanceActivity) => {
+    await loadActivityDetail(activity);
     setShowRecordsModal(true);
+  };
+
+  const handleShowSummary = async (
+    activity: AttendanceActivity,
+    forceRefresh = false
+  ) => {
+    await loadActivityDetail(activity, forceRefresh);
+    setShowSummaryPanel(true);
   };
 
   const handleCreateActivity = () => {
@@ -246,6 +269,7 @@ const AttendanceManagement: React.FC<AttendanceManagementProps> = () => {
                         key={activity.id}
                         activity={activity}
                         onViewRecords={handleViewRecords}
+                        onShowSummary={handleShowSummary}
                       />
                     ))
                 ) : (
@@ -290,16 +314,21 @@ const AttendanceManagement: React.FC<AttendanceManagementProps> = () => {
       {/* Records Modal */}
       {showRecordsModal && activityDetail && selectedActivity && (
         <AttendanceRecordsDialog
-          open={true}
+          open={showRecordsModal}
           activity={selectedActivity}
           records={activityDetail.attendees}
           onClose={() => {
             setShowRecordsModal(false);
-            setActivityDetail(null);
-            setSelectedActivity(null);
           }}
         />
       )}
+
+      <SessionTrackingSummaryPanel
+        open={showSummaryPanel}
+        onClose={() => setShowSummaryPanel(false)}
+        activity={activityDetail}
+        activityMeta={selectedActivity}
+      />
     </div>
   );
 };

@@ -1,50 +1,73 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { StreakData } from "../services/dashboardApis";
 
-const STORAGE_KEY = "streak_congratulated_date";
+const STORAGE_KEY_PREFIX = "streak_congratulated_date";
+
+const getLocalDateString = (date: Date) => {
+  const offsetMs = date.getTimezoneOffset() * 60 * 1000;
+  const localTime = new Date(date.getTime() - offsetMs);
+  return localTime.toISOString().split("T")[0];
+};
+
+interface UseStreakCongratulationsOptions {
+  streakData?: StreakData;
+  userId?: number | string | null;
+}
 
 /**
- * Hook to manage streak congratulations modal
- * Shows congratulations only once per day when streak is updated
+ * Hook to manage streak congratulations modal.
+ * Shows congratulations only once per user per day when streak is updated.
  */
-export const useStreakCongratulations = (currentStreak: number | undefined) => {
+export const useStreakCongratulations = ({
+  streakData,
+  userId,
+}: UseStreakCongratulationsOptions) => {
   const [showCongratulations, setShowCongratulations] = useState(false);
-  const [previousStreak, setPreviousStreak] = useState<number | null>(null);
 
-  // Check if we've already shown congratulations today
-  const hasShownTodaysCongratulations = useCallback(() => {
-    const lastDate = localStorage.getItem(STORAGE_KEY);
-    const today = new Date().toDateString();
-    return lastDate === today;
-  }, []);
+  const storageKey = useMemo(() => {
+    return `${STORAGE_KEY_PREFIX}_${userId ?? "anonymous"}`;
+  }, [userId]);
 
-  // Mark that we've shown congratulations today
-  const markCongratulationsShown = useCallback(() => {
-    const today = new Date().toDateString();
-    localStorage.setItem(STORAGE_KEY, today);
-  }, []);
+  const latestCompletionDate = useMemo(() => {
+    if (!streakData?.streak) return null;
 
-  // Check if streak increased and we haven't shown congratulations today
+    const completedDates = Object.entries(streakData.streak)
+      .filter(([, completed]) => completed)
+      .map(([date]) => date)
+      .sort();
+
+    return completedDates[completedDates.length - 1] ?? null;
+  }, [streakData?.streak]);
+
+  const today = useMemo(() => getLocalDateString(new Date()), []);
+
   useEffect(() => {
-    if (currentStreak !== undefined) {
-      // If this is the first time we're seeing the streak, just store it
-      if (previousStreak === null) {
-        setPreviousStreak(currentStreak);
-        return;
-      }
-
-      // If streak increased and we haven't shown congratulations today
-      if (
-        currentStreak > previousStreak &&
-        !hasShownTodaysCongratulations()
-      ) {
-        setShowCongratulations(true);
-        markCongratulationsShown();
-      }
-
-      // Update previous streak
-      setPreviousStreak(currentStreak);
+    if (!streakData?.current_streak || !latestCompletionDate) {
+      return;
     }
-  }, [currentStreak, previousStreak, hasShownTodaysCongratulations, markCongratulationsShown]);
+
+    const lastCelebratedDate = localStorage.getItem(storageKey);
+
+    // Only celebrate when the latest completion is for today and we haven't celebrated it yet
+    if (
+      latestCompletionDate === today &&
+      lastCelebratedDate !== latestCompletionDate
+    ) {
+      setShowCongratulations(true);
+      localStorage.setItem(storageKey, latestCompletionDate);
+    }
+
+    // Ensure we do not re-show for previous days
+    if (!showCongratulations && lastCelebratedDate === null) {
+      localStorage.setItem(storageKey, latestCompletionDate);
+    }
+  }, [
+    latestCompletionDate,
+    storageKey,
+    streakData?.current_streak,
+    today,
+    showCongratulations,
+  ]);
 
   const handleClose = useCallback(() => {
     setShowCongratulations(false);
@@ -53,5 +76,6 @@ export const useStreakCongratulations = (currentStreak: number | undefined) => {
   return {
     showCongratulations,
     handleClose,
+    latestCompletionDate,
   };
 };
