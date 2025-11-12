@@ -1,6 +1,7 @@
 import AIAgent from "./AIAgent";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import React from "react";
+import "./InterviewRoom.css";
 
 interface ActiveInterviewSessionProps {
   topic: string;
@@ -52,49 +53,84 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
 }) => {
   void difficulty;
 
-  const [activeTab, setActiveTab] = useState<
-    "transcript" | "scorecard" | "outputs" | "notes"
-  >("transcript");
-
-  // Generate question list
-  const questionsList = Array.from({ length: totalQuestions }, (_, i) => ({
-    number: i + 1,
-    text: `Question ${i + 1}`,
-    isActive: i === currentQuestionIndex,
-    isCompleted: i < currentQuestionIndex,
-  }));
-
-  // Disable right-click
+  // Disable right-click, trackpad gestures, and zoom
   useEffect(() => {
     const preventContextMenu = (e: MouseEvent) => {
       e.preventDefault();
       return false;
     };
 
+    // Enhanced gesture prevention
     const preventGestures = (e: WheelEvent) => {
+      // Prevent zoom with Ctrl+wheel
       if (e.ctrlKey) {
+        e.preventDefault();
+        return false;
+      }
+      // Prevent pinch zoom on trackpad
+      if (e.deltaY && Math.abs(e.deltaY) > 10) {
         e.preventDefault();
         return false;
       }
     };
 
+    // Prevent touch gestures
+    const preventTouchGestures = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+        return false;
+      }
+    };
+
+    // Prevent keyboard zoom
+    const preventKeyboardZoom = (e: KeyboardEvent) => {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        (e.key === '+' || e.key === '-' || e.key === '0' || e.key === '=')
+      ) {
+        e.preventDefault();
+        return false;
+      }
+    };
+
+    // Prevent browser fullscreen controls from appearing at top
+    const preventTopHover = (e: MouseEvent) => {
+      // If mouse is in the top 50px area, prevent default behavior
+      if (e.clientY < 50 && document.fullscreenElement) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
     document.addEventListener("contextmenu", preventContextMenu);
     document.addEventListener("wheel", preventGestures, { passive: false });
+    document.addEventListener("touchmove", preventTouchGestures, { passive: false });
+    document.addEventListener("gesturestart", (e) => e.preventDefault());
+    document.addEventListener("gesturechange", (e) => e.preventDefault());
+    document.addEventListener("gestureend", (e) => e.preventDefault());
+    document.addEventListener("keydown", preventKeyboardZoom);
+    document.addEventListener("mousemove", preventTopHover, true);
 
     return () => {
       document.removeEventListener("contextmenu", preventContextMenu);
       document.removeEventListener("wheel", preventGestures as any);
+      document.removeEventListener("touchmove", preventTouchGestures as any);
+      document.removeEventListener("gesturestart", (e) => e.preventDefault());
+      document.removeEventListener("gesturechange", (e) => e.preventDefault());
+      document.removeEventListener("gestureend", (e) => e.preventDefault());
+      document.removeEventListener("keydown", preventKeyboardZoom);
+      document.removeEventListener("mousemove", preventTopHover, true);
     };
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-white flex flex-col">
-      {/* Top Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+    <div className="interview-room-container fixed inset-0 bg-white flex flex-col select-none">
+      {/* Top Header with Exit Button */}
+      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4 flex items-center justify-between shadow-lg">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
+          <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
             <svg
-              className="w-5 h-5 text-gray-600"
+              className="w-6 h-6 text-white"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -107,30 +143,142 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
             </svg>
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900">
+            <h1 className="text-xl font-bold text-white">
               {topic} Interview
             </h1>
-            <p className="text-xs text-gray-500">
-              Candidate Name -{" "}
-              <span className="text-blue-600">In progress</span>
+            <p className="text-xs text-white/80">
+              <span className="inline-flex items-center gap-1">
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                In Progress
+              </span>
             </p>
           </div>
         </div>
 
         <div className="flex items-center space-x-4">
+          <div className="text-white text-sm font-semibold bg-white/20 px-4 py-2 rounded-lg backdrop-blur-sm">
+            {formatTime(elapsedTime)}
+          </div>
           <button
             onClick={onExitInterview}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors"
+            className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg font-semibold transition-all duration-200 flex items-center space-x-2 shadow-lg"
           >
-            End Interview
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+            <span>EXIT</span>
           </button>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Side - Video Feed */}
+        {/* Left Side - Questions & Content */}
+        <div className="w-1/2 flex flex-col bg-gray-50">
+          {/* Current Question - Large Display */}
+          <div className="bg-white border-b border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-purple-600 uppercase tracking-wide">
+                Question {currentQuestionIndex + 1} of {totalQuestions}
+              </span>
+              <span className="text-xs text-gray-500 font-medium">
+                {formatTime(elapsedTime)}
+              </span>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 leading-tight">
+              {currentQuestion}
+            </h2>
+          </div>
+
+          {/* Tabs Header */}
+          <div className="bg-white border-b border-gray-200 px-6 flex space-x-1">
+            <button
+              className="px-4 py-3 text-sm font-medium border-b-2 border-purple-600 text-purple-600"
+            >
+              Live Transcript
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="tab-content space-y-4">
+              {isListening && (
+                <div className="bg-green-50 rounded-lg p-5 border-l-4 border-green-500 shadow-sm">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm font-bold text-green-700 uppercase tracking-wide">
+                      Recording Your Answer
+                    </span>
+                  </div>
+                  <p className="text-gray-800 text-base leading-relaxed min-h-[100px]">
+                    {currentTranscript ||
+                      "Start speaking... Your answer is being recorded."}
+                  </p>
+                </div>
+              )}
+
+              {lastSavedAnswer && (
+                <div className="bg-blue-50 rounded-lg p-5 border-l-4 border-blue-500 shadow-sm">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <svg
+                      className="w-5 h-5 text-blue-600"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">
+                      Last Saved Answer
+                    </span>
+                  </div>
+                  <p className="text-gray-800 text-base leading-relaxed">
+                    {lastSavedAnswer}
+                  </p>
+                </div>
+              )}
+
+              {isListening && onStopSpeaking && (
+                <button
+                  onClick={onStopSpeaking}
+                  className="next-question-btn w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-4 px-6 rounded-xl font-bold flex items-center justify-center space-x-3 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                    />
+                  </svg>
+                  <span>Next Question</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side - Video Feed with Controls Inside */}
         <div className="w-1/2 bg-gray-900 relative">
+          {/* Video */}
           <video
             ref={videoRef}
             autoPlay
@@ -145,336 +293,50 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
           <canvas ref={audioCanvasRef} className="hidden" />
 
           {/* AI Avatar Overlay - Top Right */}
-          <div className="absolute top-4 right-4 z-30">
-            <div className="w-32 h-32 rounded-2xl overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-white/30 shadow-2xl">
+          <div className="absolute top-6 right-6 z-30">
+            <div className={`w-40 h-40 rounded-2xl overflow-hidden bg-gradient-to-br from-purple-600 to-indigo-700 border-4 border-white/30 shadow-2xl ${isAgentSpeaking ? 'ai-avatar-speaking' : ''}`}>
               <AIAgent isSpeaking={isAgentSpeaking} />
             </div>
-            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-white px-3 py-1 rounded-full text-xs font-semibold text-gray-900 shadow-lg">
-              Alex
+          </div>
+
+          {/* Status Indicators - Top Left */}
+          <div className="absolute top-6 left-6 z-20 space-y-3">
+            {/* Recording Status */}
+            <div className="recording-indicator bg-red-500/90 backdrop-blur-md px-4 py-2 rounded-full flex items-center space-x-2 shadow-lg">
+              <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+              <span className="text-white text-sm font-bold">Recording</span>
+            </div>
+            
+            {/* Face Status */}
+            <div className={`face-status-indicator backdrop-blur-md px-4 py-2 rounded-full flex items-center space-x-2 shadow-lg ${
+              faceStatus === "single"
+                ? "bg-green-500/90"
+                : "bg-yellow-500/90"
+            }`}>
+              <span className="text-white text-sm font-bold">
+                {faceStatus === "single"
+                  ? "✓ Face Detected"
+                  : faceStatus === "none"
+                  ? "⚠ No Face"
+                  : "⚠ Multiple Faces"}
+              </span>
             </div>
           </div>
 
-          {/* Control Buttons - Bottom Center */}
-          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center space-x-3 z-20">
-            <button className="w-12 h-12 bg-gray-800/80 hover:bg-gray-700/80 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 transition-all">
-              <svg
-                className="w-6 h-6 text-white"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </button>
-            <button className="w-12 h-12 bg-red-600/90 hover:bg-red-700/90 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 transition-all">
-              <svg
-                className="w-6 h-6 text-white"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </button>
-            <button className="w-12 h-12 bg-gray-800/80 hover:bg-gray-700/80 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 transition-all">
-              <svg
-                className="w-6 h-6 text-white"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-              </svg>
-            </button>
-            <button className="w-12 h-12 bg-gray-800/80 hover:bg-gray-700/80 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 transition-all">
-              <svg
-                className="w-6 h-6 text-white"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </button>
-          </div>
-
-          {/* Question List - Bottom Left */}
-          <div className="absolute bottom-6 left-6 w-64 max-h-96 bg-white rounded-2xl shadow-2xl overflow-hidden z-20">
-            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-              <h3 className="text-sm font-bold text-gray-900">Question List</h3>
-            </div>
-            <div className="max-h-80 overflow-y-auto">
-              {questionsList.map((q) => (
+          {/* Audio Visualizer - Bottom */}
+          <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 z-10">
+            <div className="flex items-end space-x-1">
+              {[...Array(20)].map((_, i) => (
                 <div
-                  key={q.number}
-                  className={`flex items-center space-x-3 px-4 py-3 border-b border-gray-100 ${
-                    q.isActive
-                      ? "bg-purple-50 border-l-4 border-l-purple-600"
-                      : ""
-                  } ${q.isCompleted ? "bg-green-50" : ""}`}
-                >
-                  <div
-                    className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      q.isCompleted
-                        ? "bg-green-500 text-white"
-                        : q.isActive
-                        ? "bg-purple-600 text-white"
-                        : "bg-gray-200 text-gray-600"
-                    }`}
-                  >
-                    {q.isCompleted ? "✓" : q.number}
-                  </div>
-                  <span
-                    className={`text-sm ${
-                      q.isActive
-                        ? "font-semibold text-gray-900"
-                        : "text-gray-600"
-                    }`}
-                  >
-                    What inspired you to become a {topic}?
-                  </span>
-                </div>
+                  key={i}
+                  className="w-1 bg-gradient-to-t from-purple-500 to-pink-500 rounded-full animate-pulse"
+                  style={{
+                    height: `${Math.random() * 40 + 10}px`,
+                    animationDelay: `${i * 0.1}s`,
+                  }}
+                ></div>
               ))}
             </div>
-          </div>
-        </div>
-
-        {/* Right Side - Content Tabs */}
-        <div className="w-1/2 flex flex-col bg-gray-50">
-          {/* Tabs Header */}
-          <div className="bg-white border-b border-gray-200 px-6 flex space-x-1">
-            <button
-              onClick={() => setActiveTab("transcript")}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "transcript"
-                  ? "border-purple-600 text-purple-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Live Transcript
-            </button>
-            <button
-              onClick={() => setActiveTab("scorecard")}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "scorecard"
-                  ? "border-purple-600 text-purple-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Scorecard
-            </button>
-            <button
-              onClick={() => setActiveTab("outputs")}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "outputs"
-                  ? "border-purple-600 text-purple-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Outputs
-            </button>
-            <button
-              onClick={() => setActiveTab("notes")}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "notes"
-                  ? "border-purple-600 text-purple-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Notes
-            </button>
-          </div>
-
-          {/* Tab Content */}
-          <div className="flex-1 overflow-y-auto p-6">
-            {activeTab === "transcript" && (
-              <div className="space-y-4">
-                <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-gray-500 uppercase">
-                      Current Question
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      {formatTime(elapsedTime)}
-                    </span>
-                  </div>
-                  <p className="text-gray-900 font-medium">{currentQuestion}</p>
-                </div>
-
-                {isListening && (
-                  <div className="bg-green-50 rounded-lg p-4 border-l-4 border-green-500">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <span className="text-xs font-semibold text-green-700 uppercase">
-                        Recording Your Answer
-                      </span>
-                    </div>
-                    <p className="text-gray-700 text-sm leading-relaxed">
-                      {currentTranscript ||
-                        "Start speaking... Your answer is being recorded."}
-                    </p>
-                  </div>
-                )}
-
-                {lastSavedAnswer && (
-                  <div className="bg-blue-50 rounded-lg p-4 border-l-4 border-blue-500">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <svg
-                        className="w-4 h-4 text-blue-600"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <span className="text-xs font-semibold text-blue-700 uppercase">
-                        Last Saved Answer
-                      </span>
-                    </div>
-                    <p className="text-gray-700 text-sm leading-relaxed">
-                      {lastSavedAnswer}
-                    </p>
-                  </div>
-                )}
-
-                {isListening && onStopSpeaking && (
-                  <button
-                    onClick={onStopSpeaking}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2 transition-all shadow-lg"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 5l7 7-7 7M5 5l7 7-7 7"
-                      />
-                    </svg>
-                    <span>Next Question</span>
-                  </button>
-                )}
-              </div>
-            )}
-
-            {activeTab === "scorecard" && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-                  <div className="text-center mb-6">
-                    <div className="inline-flex items-center justify-center w-24 h-24 bg-purple-100 rounded-full mb-3">
-                      <span className="text-3xl font-bold text-purple-600">
-                        {currentQuestionIndex}/{totalQuestions}
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-900">
-                      Overall Score
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      Questions answered so far
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {[
-                    "English Proficiency",
-                    "Communication Skill",
-                    "Design Thinking",
-                    "Collaboration",
-                  ].map((skill, idx) => (
-                    <div
-                      key={skill}
-                      className="bg-white rounded-lg p-4 shadow-sm border border-gray-200"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-gray-700">
-                          {skill}
-                        </span>
-                        <span className="text-sm font-bold text-purple-600">
-                          {[5, 6, 8, 9][idx]}/10
-                        </span>
-                      </div>
-                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
-                          style={{ width: `${[50, 60, 80, 90][idx]}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {activeTab === "outputs" && (
-              <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">
-                  Session Outputs
-                </h3>
-                <div className="space-y-3 text-sm text-gray-600">
-                  <div className="flex justify-between">
-                    <span>Recording Status:</span>
-                    <span className="font-semibold text-green-600">Active</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Questions Asked:</span>
-                    <span className="font-semibold">
-                      {currentQuestionIndex} / {totalQuestions}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Total Duration:</span>
-                    <span className="font-semibold">
-                      {formatTime(elapsedTime)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Face Status:</span>
-                    <span
-                      className={`font-semibold ${
-                        faceStatus === "single"
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {faceStatus === "single"
-                        ? "✓ Verified"
-                        : faceStatus === "none"
-                        ? "⚠ No Face"
-                        : "⚠ Multiple"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === "notes" && (
-              <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">
-                  Interview Notes
-                </h3>
-                <textarea
-                  placeholder="Add your notes here..."
-                  className="w-full h-64 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                  defaultValue=""
-                />
-              </div>
-            )}
           </div>
         </div>
       </div>
