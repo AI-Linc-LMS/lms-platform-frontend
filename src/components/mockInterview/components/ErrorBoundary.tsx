@@ -20,7 +20,7 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Mock Interview Error:", error, errorInfo);
+    // Error logged to error boundary state
   }
 
   public render() {

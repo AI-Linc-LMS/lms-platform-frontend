@@ -107,7 +107,7 @@ const useMediaCapture = (): UseMediaCaptureReturn => {
 
     // Handle speech recognition errors
     recognition.onerror = (event: any) => {
-      console.error("Speech recognition error:", event.error);
+      // Speech recognition error
       setError(`Speech recognition error: ${event.error}`);
       setIsSpeechListening(false);
     };
@@ -164,7 +164,7 @@ const useMediaCapture = (): UseMediaCaptureReturn => {
         speechRecognitionRef.current = initializeSpeechRecognition();
       }
     } catch (err) {
-      console.error("Error accessing media devices:", err);
+      // Error accessing media devices
       setError(
         "Failed to access camera or microphone. Please check permissions."
       );
@@ -245,7 +245,7 @@ const useMediaCapture = (): UseMediaCaptureReturn => {
       mediaRecorder.start(1000); // Record in 1-second chunks
       setIsRecording(true);
     } catch (err) {
-      console.error("Error starting recording:", err);
+      // Error starting recording
       setError("Failed to start recording");
     }
   }, [videoStream, audioStream]);
@@ -271,7 +271,7 @@ const useMediaCapture = (): UseMediaCaptureReturn => {
       setIsSpeechListening(true);
       setSpeechResult(null);
     } catch (err) {
-      console.error("Error starting speech recognition:", err);
+      // Error starting speech recognition
       setError("Failed to start speech recognition");
     }
   }, []);

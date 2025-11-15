@@ -99,6 +99,7 @@ export interface RouteConfig {
   component: React.ComponentType;
   isPrivate: boolean;
   requiredRole?: string;
+  hasNestedRoutes?: boolean;
 }
 
 const routes: RouteConfig[] = [
@@ -194,9 +195,10 @@ const routes: RouteConfig[] = [
     isPrivate: true,
   },
   {
-    path: "/mock-interview",
+    path: "/mock-interview/*",
     component: mockInterview,
     isPrivate: true,
+    hasNestedRoutes: true, // Special flag for routes with their own routing
   },
   {
     path: "/courses/:courseId",
