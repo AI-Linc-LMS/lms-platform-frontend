@@ -46,21 +46,39 @@ const useFullscreenControl = (
     }
 
     try {
-      const element = getTargetElement();
+      const el = getTargetElement();
 
-      if (element.requestFullscreen) {
-        await element.requestFullscreen({ navigationUI: "hide" });
-      } else if ((element as any).webkitRequestFullscreen) {
-        await (element as any).webkitRequestFullscreen();
-      } else if ((element as any).mozRequestFullScreen) {
-        await (element as any).mozRequestFullScreen();
-      } else if ((element as any).msRequestFullscreen) {
-        await (element as any).msRequestFullscreen();
+      // Modern API with navigationUI: "hide" - preferred method
+      if (el.requestFullscreen) {
+        try {
+          await el.requestFullscreen({ navigationUI: "hide" });
+        } catch (err: any) {
+          // If navigationUI option fails, try without it
+          if (
+            err.name === "TypeError" ||
+            err.message?.includes("navigationUI")
+          ) {
+            await el.requestFullscreen();
+          } else {
+            throw err;
+          }
+        }
+      }
+      // WebKit (Safari, Chrome < 69)
+      else if ((el as any).webkitRequestFullscreen) {
+        await (el as any).webkitRequestFullscreen();
+      }
+      // Mozilla (Firefox)
+      else if ((el as any).mozRequestFullScreen) {
+        await (el as any).mozRequestFullScreen();
+      }
+      // Microsoft (IE/Edge)
+      else if ((el as any).msRequestFullscreen) {
+        await (el as any).msRequestFullscreen();
       }
 
       setError(null);
     } catch (err) {
-      console.error("Error entering fullscreen:", err);
       setError("Failed to enter fullscreen mode");
     }
   }, [isFullscreenSupported, getTargetElement]);
@@ -80,7 +98,6 @@ const useFullscreenControl = (
 
       setError(null);
     } catch (err) {
-      console.error("Error exiting fullscreen:", err);
       setError("Failed to exit fullscreen mode");
     }
   }, []);
@@ -255,7 +272,6 @@ const useFullscreenControl = (
 
       setIsInteractionDisabled(true);
     } catch (err) {
-      console.error("Error enabling interaction block:", err);
       setError("Failed to disable interactions");
     }
   }, [isInteractionDisabled, createInteractionOverlay, preventDefaultHandler]);
@@ -286,17 +302,12 @@ const useFullscreenControl = (
 
       setIsInteractionDisabled(false);
     } catch (err) {
-      console.error("Error disabling interaction block:", err);
       setError("Failed to re-enable interactions");
     }
   }, [isInteractionDisabled]);
 
-  // Listen for fullscreen changes with re-entry mechanism
+  // Listen for fullscreen changes - no auto re-entry
   useEffect(() => {
-    let isLocked = false;
-    let reEntryCount = 0;
-    const maxReEntries = 5;
-    
     const handleFullscreenChange = () => {
       const isCurrentlyFullscreen = !!(
         document.fullscreenElement ||
@@ -306,27 +317,6 @@ const useFullscreenControl = (
       );
 
       setIsFullscreen(isCurrentlyFullscreen);
-      
-      // If fullscreen exited and we're in locked mode, force re-entry
-      if (!isCurrentlyFullscreen && isLocked && reEntryCount < maxReEntries) {
-        reEntryCount++;
-        
-        // Small delay before re-entering
-        setTimeout(async () => {
-          try {
-            await enterFullscreen();
-            
-            // Show warning on first exit attempt
-            if (reEntryCount === 1) {
-              setTimeout(() => {
-                alert("⚠️ Interview Security: Please stay in fullscreen mode. Exiting fullscreen may result in interview termination.");
-              }, 500);
-            }
-          } catch (err) {
-            console.error("Failed to re-enter fullscreen:", err);
-          }
-        }, 300);
-      }
     };
 
     // Listen for fullscreen changes
@@ -335,24 +325,22 @@ const useFullscreenControl = (
     document.addEventListener("mozfullscreenchange", handleFullscreenChange);
     document.addEventListener("MSFullscreenChange", handleFullscreenChange);
 
-    // Expose lock control
-    (window as any).__lockFullscreen = () => {
-      isLocked = true;
-      reEntryCount = 0;
-    };
-    (window as any).__unlockFullscreen = () => {
-      isLocked = false;
-    };
-
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
-      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
-      document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
-      document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
-      delete (window as any).__lockFullscreen;
-      delete (window as any).__unlockFullscreen;
+      document.removeEventListener(
+        "webkitfullscreenchange",
+        handleFullscreenChange
+      );
+      document.removeEventListener(
+        "mozfullscreenchange",
+        handleFullscreenChange
+      );
+      document.removeEventListener(
+        "MSFullscreenChange",
+        handleFullscreenChange
+      );
     };
-  }, [enterFullscreen]);
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {

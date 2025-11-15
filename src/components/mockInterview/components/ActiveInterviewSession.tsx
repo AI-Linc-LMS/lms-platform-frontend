@@ -53,6 +53,13 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
 }) => {
   void difficulty;
 
+  const toTitleCase = (str: string) => {
+    return str
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  };
+
   // Disable right-click, trackpad gestures, and zoom
   useEffect(() => {
     const preventContextMenu = (e: MouseEvent) => {
@@ -86,7 +93,7 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
     const preventKeyboardZoom = (e: KeyboardEvent) => {
       if (
         (e.ctrlKey || e.metaKey) &&
-        (e.key === '+' || e.key === '-' || e.key === '0' || e.key === '=')
+        (e.key === "+" || e.key === "-" || e.key === "0" || e.key === "=")
       ) {
         e.preventDefault();
         return false;
@@ -104,7 +111,9 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
 
     document.addEventListener("contextmenu", preventContextMenu);
     document.addEventListener("wheel", preventGestures, { passive: false });
-    document.addEventListener("touchmove", preventTouchGestures, { passive: false });
+    document.addEventListener("touchmove", preventTouchGestures, {
+      passive: false,
+    });
     document.addEventListener("gesturestart", (e) => e.preventDefault());
     document.addEventListener("gesturechange", (e) => e.preventDefault());
     document.addEventListener("gestureend", (e) => e.preventDefault());
@@ -125,7 +134,7 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
 
   return (
     <div className="interview-room-container fixed inset-0 bg-white flex flex-col select-none">
-      {/* Top Header with Exit Button */}
+      {/* Top Header - No Exit Controls */}
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4 flex items-center justify-between shadow-lg">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
@@ -144,7 +153,7 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">
-              {topic} Interview
+              {toTitleCase(topic)} Interview
             </h1>
             <p className="text-xs text-white/80">
               <span className="inline-flex items-center gap-1">
@@ -176,7 +185,7 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
                 d="M6 18L18 6M6 6l12 12"
               />
             </svg>
-            <span>EXIT</span>
+            <span>End Interview</span>
           </button>
         </div>
       </div>
@@ -202,9 +211,7 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
 
           {/* Tabs Header */}
           <div className="bg-white border-b border-gray-200 px-6 flex space-x-1">
-            <button
-              className="px-4 py-3 text-sm font-medium border-b-2 border-purple-600 text-purple-600"
-            >
+            <button className="px-4 py-3 text-sm font-medium border-b-2 border-purple-600 text-purple-600">
               Live Transcript
             </button>
           </div>
@@ -254,6 +261,7 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
               {isListening && onStopSpeaking && (
                 <button
                   onClick={onStopSpeaking}
+                  data-recording-active="true"
                   className="next-question-btn w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-4 px-6 rounded-xl font-bold flex items-center justify-center space-x-3 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
                   <svg
@@ -294,7 +302,11 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
 
           {/* AI Avatar Overlay - Top Right */}
           <div className="absolute top-6 right-6 z-30">
-            <div className={`w-40 h-40 rounded-2xl overflow-hidden bg-gradient-to-br from-purple-600 to-indigo-700 border-4 border-white/30 shadow-2xl ${isAgentSpeaking ? 'ai-avatar-speaking' : ''}`}>
+            <div
+              className={`w-70 h-70 rounded-2xl overflow-hidden bg-gradient-to-br from-purple-600 to-indigo-700 border-4 border-white/30 shadow-2xl ${
+                isAgentSpeaking ? "ai-avatar-speaking" : ""
+              }`}
+            >
               <AIAgent isSpeaking={isAgentSpeaking} />
             </div>
           </div>
@@ -306,13 +318,13 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
               <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
               <span className="text-white text-sm font-bold">Recording</span>
             </div>
-            
+
             {/* Face Status */}
-            <div className={`face-status-indicator backdrop-blur-md px-4 py-2 rounded-full flex items-center space-x-2 shadow-lg ${
-              faceStatus === "single"
-                ? "bg-green-500/90"
-                : "bg-yellow-500/90"
-            }`}>
+            <div
+              className={`face-status-indicator backdrop-blur-md px-4 py-2 rounded-full flex items-center space-x-2 shadow-lg ${
+                faceStatus === "single" ? "bg-green-500/90" : "bg-yellow-500/90"
+              }`}
+            >
               <span className="text-white text-sm font-bold">
                 {faceStatus === "single"
                   ? "✓ Face Detected"

@@ -1,9 +1,17 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import type { ProctoringContextType, ProctoringEvent, ProctoringEventType } from "./types";
+import type {
+  ProctoringContextType,
+  ProctoringEvent,
+  ProctoringEventType,
+} from "./types";
 
-export const ProctoringContext = createContext<ProctoringContextType | undefined>(undefined);
+export const ProctoringContext = createContext<
+  ProctoringContextType | undefined
+>(undefined);
 
-export const ProctoringProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ProctoringProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [eventLog, setEventLog] = useState<ProctoringEvent[]>([]);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
 
@@ -11,7 +19,7 @@ export const ProctoringProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   useEffect(() => {
     const interviewId = getInterviewId();
     // Clear any existing events for this interview
-    localStorage.removeItem(`proctoring_events_${interviewId}`);
+    sessionStorage.removeItem(`proctoring_events_${interviewId}`);
     setEventLog([]);
   }, []);
 
@@ -19,7 +27,7 @@ export const ProctoringProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const clearProctoringEvents = () => {
     const interviewId = getInterviewId();
     setEventLog([]);
-    localStorage.removeItem(`proctoring_events_${interviewId}`);
+    sessionStorage.removeItem(`proctoring_events_${interviewId}`);
   };
 
   // Start screen sharing
@@ -43,24 +51,30 @@ export const ProctoringProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const getInterviewId = () => {
     const path = window.location.pathname;
     const match = path.match(/\/mock-interview/);
-    return match ? `mock-interview-${Date.now()}` : 'current_interview';
+    return match ? `mock-interview-${Date.now()}` : "current_interview";
   };
 
-  // Helper to log events and persist to localStorage
-  const logEvent = (type: ProctoringEventType, details?: Record<string, any>) => {
+  // Helper to log events and persist to sessionStorage
+  const logEvent = (
+    type: ProctoringEventType,
+    details?: Record<string, any>
+  ) => {
     const newEvent = { type, timestamp: Date.now(), details };
-    
+
     setEventLog((prev) => {
       const updated = [...prev, newEvent];
-      
-      // Persist to localStorage for post-interview analysis
+
+      // Persist to sessionStorage for post-interview analysis
       const interviewId = getInterviewId();
       try {
-        localStorage.setItem(`proctoring_events_${interviewId}`, JSON.stringify(updated));
+        sessionStorage.setItem(
+          `proctoring_events_${interviewId}`,
+          JSON.stringify(updated)
+        );
       } catch (error) {
         // Silently fail
       }
-      
+
       return updated;
     });
   };
@@ -78,7 +92,7 @@ export const ProctoringProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const handleWindowBlur = () => {
       logEvent("WINDOW_BLUR");
     };
-    
+
     const handleWindowFocus = () => {
       logEvent("WINDOW_FOCUS");
     };
@@ -115,7 +129,9 @@ export const ProctoringProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
 export const useProctoringContext = () => {
   const ctx = useContext(ProctoringContext);
-  if (!ctx) throw new Error("useProctoringContext must be used within ProctoringProvider");
+  if (!ctx)
+    throw new Error(
+      "useProctoringContext must be used within ProctoringProvider"
+    );
   return ctx;
 };
-

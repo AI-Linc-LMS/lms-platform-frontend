@@ -2,7 +2,11 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import useFullscreenControl from "../hooks/useFullscreenControl";
 import InterviewSetup from "./InterviewSetup";
 import ActiveInterviewSession from "./ActiveInterviewSession";
-import { mockInterviewAPI, InterviewEvent } from "../services/api";
+import {
+  mockInterviewAPI,
+  InterviewEvent,
+  InterviewQuestion,
+} from "../services/api";
 import { getQuestions } from "../utils/questionGenerator";
 import { useProctoring } from "../proctoring/useProctoring";
 import {
@@ -14,7 +18,9 @@ interface InterviewRoomProps {
   topic: string;
   difficulty: string;
   onBack: () => void;
-  onComplete: () => void;
+  onComplete: (submissionSuccess?: boolean) => void;
+  interviewId?: string | null;
+  questions?: any[];
 }
 
 const InterviewRoom = ({
@@ -22,23 +28,41 @@ const InterviewRoom = ({
   difficulty,
   onBack,
   onComplete,
+  interviewId: providedInterviewId,
 }: InterviewRoomProps) => {
   // Proctoring
   const { eventLog, getEventLog } = useProctoring();
 
-  // Interview attempt ID
-  const [attemptId, setAttemptId] = useState<string | null>(null);
+  // Interview attempt ID - use provided ID or null
+  const [attemptId, setAttemptId] = useState<string | null>(
+    providedInterviewId || null
+  );
 
   // State management
   const [isRecording, setIsRecording] = useState(false);
   const [exitDialogOpen, setExitDialogOpen] = useState(false);
-  const [elapsedTime, setElapsedTime] = useState(0);
+  const [fullscreenExitWarningOpen, setFullscreenExitWarningOpen] =
+    useState(false);
+  const [elapsedTime, setElapsedTime] = useState(0); // Keep for submission
+  const [remainingTime, setRemainingTime] = useState(0); // Countdown timer
   const [audioLevel, setAudioLevel] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isAvatarAsking, setIsAvatarAsking] = useState(false);
   const [userResponse, setUserResponse] = useState("");
   const [isVideoReady, setIsVideoReady] = useState(false);
+  const [interviewQuestions, setInterviewQuestions] = useState<
+    InterviewQuestion[]
+  >([]);
   const [interviewEvents, setInterviewEvents] = useState<InterviewEvent[]>([]);
+  const [savedAnswers, setSavedAnswers] = useState<
+    Array<{
+      questionId: number | string;
+      questionText: string;
+      answerText: string;
+      timestamp: number;
+      duration: number;
+    }>
+  >([]);
   const [submissionData, setSubmissionData] = useState({
     warnings: [] as string[],
     events: [] as InterviewEvent[],
@@ -52,6 +76,7 @@ const InterviewRoom = ({
   });
   const [preInitializedStream, setPreInitializedStream] =
     useState<MediaStream | null>(null);
+  const preInitializedStreamRef = useRef<MediaStream | null>(null);
 
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -61,16 +86,14 @@ const InterviewRoom = ({
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioCanvasRef = useRef<HTMLCanvasElement>(null);
-  const recordedChunksRef = useRef<Blob[]>([]);
-  const chunkIndexRef = useRef<number>(0);
   const answerStartTimeRef = useRef<number>(0);
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
   const [hasGivenIntroduction, setHasGivenIntroduction] = useState(false);
   const [isRecordingAnswer, setIsRecordingAnswer] = useState(false);
   const [currentTranscript, setCurrentTranscript] = useState("");
   const recognitionRef = useRef<any>(null);
+  const isRecordingAnswerRef = useRef<boolean>(false);
 
   // Lightweight face detection (no canvas overlay)
   const [faceStatus, setFaceStatus] = useState<"single" | "none" | "multiple">(
@@ -89,7 +112,6 @@ const InterviewRoom = ({
       (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      console.warn("⚠️ Speech Recognition not supported in this browser");
       alert(
         "Speech recognition is not supported in your browser. Please use Chrome or Edge."
       );
@@ -100,10 +122,9 @@ const InterviewRoom = ({
     navigator.mediaDevices
       .getUserMedia({ audio: true })
       .then(() => {
-        console.log("✅ Microphone access granted");
+        // Microphone access granted
       })
-      .catch((error) => {
-        console.error("❌ Microphone access denied:", error);
+      .catch(() => {
         alert(
           "Microphone access is required for speech-to-text. Please allow microphone access."
         );
@@ -117,11 +138,10 @@ const InterviewRoom = ({
       recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
-        console.log("🎤 Speech recognition started successfully");
+        // Speech recognition started
       };
 
       recognition.onresult = (event: any) => {
-        console.log("🎙️ Speech detected!");
         let finalTranscript = "";
         let interimTranscript = "";
 
@@ -129,7 +149,6 @@ const InterviewRoom = ({
           const transcript = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
             finalTranscript += transcript + " ";
-            console.log("✅ Final transcript:", transcript);
           } else {
             interimTranscript += transcript;
           }
@@ -138,15 +157,12 @@ const InterviewRoom = ({
         if (finalTranscript) {
           setCurrentTranscript((prev) => {
             const updated = prev + finalTranscript;
-            console.log("📝 Updated transcript:", updated);
             return updated;
           });
         }
       };
 
       recognition.onerror = (event: any) => {
-        console.error("❌ Speech recognition error:", event.error);
-
         if (
           event.error === "not-allowed" ||
           event.error === "service-not-allowed"
@@ -155,37 +171,30 @@ const InterviewRoom = ({
             "Microphone permission denied. Please enable microphone access in your browser settings."
           );
         } else if (event.error === "no-speech") {
-          console.log("⚠️ No speech detected, continuing to listen...");
+          // No speech detected, continuing to listen
         } else if (event.error === "network") {
-          console.error(
-            "Network error - speech recognition may not work offline"
-          );
+          // Network error - speech recognition may not work offline
         }
       };
 
       recognition.onend = () => {
-        console.log("🔇 Speech recognition ended");
-        // Auto-restart if still in recording mode
+        // Auto-restart if still in recording mode - use ref to check state
         setTimeout(() => {
-          if (recognitionRef.current && isRecordingAnswer) {
-            try {
-              console.log("🔄 Restarting speech recognition automatically...");
+          try {
+            // Check if we should still be recording using ref
+            if (recognitionRef.current && isRecordingAnswerRef.current) {
               recognitionRef.current.start();
-            } catch (error: any) {
-              if (error.message.includes("already started")) {
-                console.log("ℹ️ Recognition already running");
-              } else {
-                console.error("Failed to restart recognition:", error);
-              }
+            }
+          } catch (error: any) {
+            if (error.message && error.message.includes("already started")) {
+              // Recognition already running
             }
           }
         }, 100);
       };
 
       recognitionRef.current = recognition;
-      console.log("✅ Speech Recognition initialized and ready");
     } catch (error) {
-      console.error("❌ Failed to initialize speech recognition:", error);
       alert(
         "Failed to initialize speech recognition. Please refresh and try again."
       );
@@ -195,7 +204,6 @@ const InterviewRoom = ({
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
-          console.log("🛑 Speech recognition stopped on cleanup");
         } catch (e) {
           // Silent
         }
@@ -210,38 +218,23 @@ const InterviewRoom = ({
   useEffect(() => {
     const initFaceDetection = async (retryCount = 0) => {
       try {
-        console.log(
-          `🔄 Initializing face detection (attempt ${
-            retryCount + 1
-          }/${MAX_DETECTION_RETRIES})...`
-        );
-
         // Load TensorFlow.js
         const tf = await import("@tensorflow/tfjs");
         await tf.setBackend("webgl");
         await tf.ready();
-        console.log("✅ TensorFlow.js ready");
 
         // Load BlazeFace model
         const blazeface = await import("@tensorflow-models/blazeface");
         const model = await blazeface.load();
         blazeFaceModelRef.current = model;
         setFaceDetectionReady(true);
-        console.log("✅ Face detection model loaded successfully");
       } catch (error) {
-        console.error(
-          `❌ Failed to load face detection (attempt ${retryCount + 1}):`,
-          error
-        );
-
         // Retry loading
         if (retryCount < MAX_DETECTION_RETRIES - 1) {
-          console.log(`🔄 Retrying in 2 seconds...`);
           setTimeout(() => {
             initFaceDetection(retryCount + 1);
           }, 2000);
         } else {
-          console.error("❌ Face detection failed after all retries");
           alert(
             "Face detection could not be initialized. Interview will continue without face monitoring."
           );
@@ -252,251 +245,360 @@ const InterviewRoom = ({
     initFaceDetection();
   }, []);
 
+  // Track previous fullscreen state to detect exits
+  const wasFullscreenRef = useRef<boolean>(false);
+  // Preserve recording state when fullscreen exits
+  const wasRecordingAnswerBeforeExitRef = useRef<boolean>(false);
+  const transcriptBeforeExitRef = useRef<string>("");
+
+  // Listen for fullscreen exit during interview - stop AI, camera, and audio
+  useEffect(() => {
+    if (!isRecording) {
+      wasFullscreenRef.current = false;
+      return;
+    }
+
+    // Initialize the ref when recording starts
+    const checkInitialFullscreen = !!(
+      document.fullscreenElement ||
+      (document as any).webkitFullscreenElement ||
+      (document as any).mozFullScreenElement ||
+      (document as any).msFullscreenElement
+    );
+    wasFullscreenRef.current = checkInitialFullscreen;
+
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      );
+
+      // If we were in fullscreen and now we're not, stop everything
+      if (!isCurrentlyFullscreen && wasFullscreenRef.current && isRecording) {
+        // Preserve recording state before stopping
+        wasRecordingAnswerBeforeExitRef.current = isRecordingAnswerRef.current;
+        transcriptBeforeExitRef.current = currentTranscript;
+
+        // Pause the interview - stop timer
+        stopTimer();
+
+        // Stop AI speaking immediately
+        aiInterviewerVoice.stop();
+        setIsAgentSpeaking(false);
+        setIsAvatarAsking(false);
+
+        // Stop speech recognition
+        if (recognitionRef.current) {
+          try {
+            recognitionRef.current.stop();
+            isRecordingAnswerRef.current = false;
+            setIsRecordingAnswer(false);
+          } catch (e) {
+            // Ignore errors
+          }
+        }
+
+        // Turn off camera and audio - stop ALL streams immediately
+        const stopAllStreams = (stream: MediaStream | null) => {
+          if (stream) {
+            stream.getTracks().forEach((track) => {
+              if (track.readyState === "live") {
+                track.stop();
+              }
+            });
+          }
+        };
+
+        // Stop all possible streams
+        stopAllStreams(streamRef.current);
+        stopAllStreams(preInitializedStreamRef.current);
+        stopAllStreams(preInitializedStream);
+
+        // Also check video element for any attached stream
+        if (videoRef.current && videoRef.current.srcObject) {
+          const videoStream = videoRef.current.srcObject as MediaStream;
+          stopAllStreams(videoStream);
+          videoRef.current.srcObject = null;
+          videoRef.current.pause();
+        }
+
+        // Track fullscreen exit
+        setSubmissionData((prev) => ({
+          ...prev,
+          fullscreenExits: prev.fullscreenExits + 1,
+        }));
+
+        if (logEventRef.current) {
+          logEventRef.current(
+            "fullscreen_exit",
+            {
+              timestamp: Date.now(),
+              message:
+                "User exited fullscreen mode - AI speech, camera, and audio stopped",
+            },
+            "warning"
+          );
+        }
+
+        // Show warning modal
+        setFullscreenExitWarningOpen(true);
+      }
+
+      // Update the ref for next check
+      wasFullscreenRef.current = isCurrentlyFullscreen;
+    };
+
+    // Listen for fullscreen changes
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener(
+        "webkitfullscreenchange",
+        handleFullscreenChange
+      );
+      document.removeEventListener(
+        "mozfullscreenchange",
+        handleFullscreenChange
+      );
+      document.removeEventListener(
+        "MSFullscreenChange",
+        handleFullscreenChange
+      );
+    };
+  }, [isRecording, preInitializedStream]);
+
   // Track face detection violations
   const lastFaceStatusRef = useRef<string>("single");
   const noFaceCountRef = useRef<number>(0);
   const multipleFaceCountRef = useRef<number>(0);
+  const logEventRef = useRef<
+    | ((
+        type: InterviewEvent["type"],
+        data: any,
+        severity?: InterviewEvent["severity"]
+      ) => void)
+    | null
+  >(null);
 
   // Start face detection when recording - MAXIMUM ROBUSTNESS
   useEffect(() => {
     if (
       isRecording &&
+      isVideoReady &&
       videoRef.current &&
+      videoRef.current.srcObject &&
       blazeFaceModelRef.current &&
       faceDetectionReady
     ) {
-      console.log(
-        "👀 Starting ROBUST face detection with violation tracking..."
-      );
+      // Wait a bit for video to be fully ready before starting detection
+      const startDetection = setTimeout(() => {
+        let consecutiveErrors = 0;
+        const MAX_CONSECUTIVE_ERRORS = 3; // Reduced for faster recovery
+        let detectionActive = true;
+        let lastSuccessfulDetection = Date.now();
 
-      let consecutiveErrors = 0;
-      const MAX_CONSECUTIVE_ERRORS = 3; // Reduced for faster recovery
-      let detectionActive = true;
-      let lastSuccessfulDetection = Date.now();
+        const detectFaces = async () => {
+          if (!detectionActive) return;
 
-      const detectFaces = async () => {
-        if (!detectionActive) return;
-
-        try {
-          // Comprehensive video validation
-          if (!videoRef.current || !videoRef.current.srcObject) {
-            console.log("⚠️ Video or stream not available");
-            return;
-          }
-
-          // Check video readiness
-          if (videoRef.current.readyState < 2) {
-            console.log(
-              "⚠️ Video not ready, readyState:",
-              videoRef.current.readyState
-            );
-            return;
-          }
-
-          // Check video dimensions
-          const width = videoRef.current.videoWidth;
-          const height = videoRef.current.videoHeight;
-
-          if (width === 0 || height === 0) {
-            console.log("⚠️ Invalid video dimensions:", width, height);
-            return;
-          }
-
-          // Ensure video is playing
-          if (videoRef.current.paused) {
-            try {
-              await videoRef.current.play();
-            } catch (playError) {
-              console.error("Failed to play video:", playError);
+          try {
+            // Comprehensive video validation
+            if (!videoRef.current || !videoRef.current.srcObject) {
               return;
             }
-          }
 
-          // Perform face detection
-          const predictions = await blazeFaceModelRef.current.estimateFaces(
-            videoRef.current,
-            false
-          );
-          const faceCount = predictions.length;
-
-          // Reset error counter and update last successful detection
-          consecutiveErrors = 0;
-          lastSuccessfulDetection = Date.now();
-
-          // Update face status dynamically
-          const newStatus =
-            faceCount === 0 ? "none" : faceCount === 1 ? "single" : "multiple";
-
-          // Log status changes
-          if (newStatus !== lastFaceStatusRef.current) {
-            console.log(
-              `👤 Face status changed: ${lastFaceStatusRef.current} → ${newStatus} (${faceCount} faces)`
-            );
-            lastFaceStatusRef.current = newStatus;
-
-            // Log proctoring violations
-            if (newStatus === "none") {
-              noFaceCountRef.current++;
-              logEvent(
-                "no_face",
-                {
-                  timestamp: Date.now(),
-                  count: noFaceCountRef.current,
-                  message: "No face detected in camera view",
-                },
-                "warning"
-              );
-
-              setSubmissionData((prev) => ({
-                ...prev,
-                faceValidationFailures: prev.faceValidationFailures + 1,
-              }));
-
-              console.warn(
-                `⚠️ NO FACE DETECTED (Total violations: ${noFaceCountRef.current})`
-              );
-            } else if (newStatus === "multiple") {
-              multipleFaceCountRef.current++;
-              logEvent(
-                "multiple_faces",
-                {
-                  timestamp: Date.now(),
-                  count: multipleFaceCountRef.current,
-                  faceCount: faceCount,
-                  message: "Multiple faces detected",
-                },
-                "warning"
-              );
-
-              setSubmissionData((prev) => ({
-                ...prev,
-                multipleFaceDetections: prev.multipleFaceDetections + 1,
-              }));
-
-              console.warn(
-                `⚠️ MULTIPLE FACES DETECTED: ${faceCount} (Total violations: ${multipleFaceCountRef.current})`
-              );
-            } else {
-              console.log("✅ Single face detected - OK");
+            // Check video readiness
+            if (videoRef.current.readyState < 2) {
+              return;
             }
-          }
 
-          setFaceStatus(newStatus);
-        } catch (error) {
-          consecutiveErrors++;
-          const timeSinceLastSuccess = Date.now() - lastSuccessfulDetection;
+            // Check video dimensions
+            const width = videoRef.current.videoWidth;
+            const height = videoRef.current.videoHeight;
 
-          console.error(
-            `❌ Face detection error (${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS}, ${Math.round(
-              timeSinceLastSuccess / 1000
-            )}s since last success):`,
-            error
-          );
+            if (width === 0 || height === 0) {
+              return;
+            }
 
-          // If too many consecutive errors OR too long without success, try to recover
-          if (
-            consecutiveErrors >= MAX_CONSECUTIVE_ERRORS ||
-            timeSinceLastSuccess > 10000
-          ) {
-            console.warn(
-              "⚠️ Face detection failing, attempting FULL recovery..."
+            // Ensure video is playing
+            if (videoRef.current.paused) {
+              try {
+                await videoRef.current.play();
+              } catch (playError) {
+                return;
+              }
+            }
+
+            // Perform face detection
+            const predictions = await blazeFaceModelRef.current.estimateFaces(
+              videoRef.current,
+              false
             );
+            const faceCount = predictions.length;
+
+            // Reset error counter and update last successful detection
             consecutiveErrors = 0;
-            detectionActive = false; // Pause detection during recovery
+            lastSuccessfulDetection = Date.now();
 
-            // Comprehensive recovery strategy
-            try {
-              // Step 1: Clear the old model
-              blazeFaceModelRef.current = null;
+            // Update face status dynamically
+            const newStatus =
+              faceCount === 0
+                ? "none"
+                : faceCount === 1
+                ? "single"
+                : "multiple";
 
-              // Step 2: Give it a moment to cleanup
-              await new Promise((resolve) => setTimeout(resolve, 500));
+            // Log status changes
+            if (newStatus !== lastFaceStatusRef.current) {
+              lastFaceStatusRef.current = newStatus;
 
-              // Step 3: Reload TensorFlow backend
-              const tf = await import("@tensorflow/tfjs");
-              await tf.setBackend("webgl");
-              await tf.ready();
-              console.log("✅ TensorFlow backend reinitialized");
-
-              // Step 4: Reload BlazeFace model
-              const blazeface = await import("@tensorflow-models/blazeface");
-              const model = await blazeface.load();
-              blazeFaceModelRef.current = model;
-
-              console.log("✅ Face detection model FULLY reloaded");
-
-              // Step 5: Resume detection
-              detectionActive = true;
-              lastSuccessfulDetection = Date.now();
-            } catch (reloadError) {
-              console.error(
-                "❌ Failed to recover face detection:",
-                reloadError
-              );
-              // Try one more time after a longer wait
-              setTimeout(async () => {
-                try {
-                  const blazeface = await import(
-                    "@tensorflow-models/blazeface"
+              // Log proctoring violations
+              if (newStatus === "none") {
+                noFaceCountRef.current++;
+                if (logEventRef.current) {
+                  logEventRef.current(
+                    "no_face",
+                    {
+                      timestamp: Date.now(),
+                      count: noFaceCountRef.current,
+                      message: "No face detected in camera view",
+                    },
+                    "warning"
                   );
-                  const model = await blazeface.load();
-                  blazeFaceModelRef.current = model;
-                  detectionActive = true;
-                  console.log("✅ Face detection recovered on retry");
-                } catch (e) {
-                  console.error("❌ Final recovery attempt failed:", e);
                 }
-              }, 2000);
+
+                setSubmissionData((prev) => ({
+                  ...prev,
+                  faceValidationFailures: prev.faceValidationFailures + 1,
+                }));
+              } else if (newStatus === "multiple") {
+                multipleFaceCountRef.current++;
+                if (logEventRef.current) {
+                  logEventRef.current(
+                    "multiple_faces",
+                    {
+                      timestamp: Date.now(),
+                      count: multipleFaceCountRef.current,
+                      faceCount: faceCount,
+                      message: "Multiple faces detected",
+                    },
+                    "warning"
+                  );
+                }
+
+                setSubmissionData((prev) => ({
+                  ...prev,
+                  multipleFaceDetections: prev.multipleFaceDetections + 1,
+                }));
+              }
+            }
+
+            setFaceStatus(newStatus);
+          } catch (error) {
+            consecutiveErrors++;
+            const timeSinceLastSuccess = Date.now() - lastSuccessfulDetection;
+
+            // If too many consecutive errors OR too long without success, try to recover
+            if (
+              consecutiveErrors >= MAX_CONSECUTIVE_ERRORS ||
+              timeSinceLastSuccess > 10000
+            ) {
+              consecutiveErrors = 0;
+              detectionActive = false; // Pause detection during recovery
+
+              // Comprehensive recovery strategy
+              try {
+                // Step 1: Clear the old model
+                blazeFaceModelRef.current = null;
+
+                // Step 2: Give it a moment to cleanup
+                await new Promise((resolve) => setTimeout(resolve, 500));
+
+                // Step 3: Reload TensorFlow backend
+                const tf = await import("@tensorflow/tfjs");
+                await tf.setBackend("webgl");
+                await tf.ready();
+
+                // Step 4: Reload BlazeFace model
+                const blazeface = await import("@tensorflow-models/blazeface");
+                const model = await blazeface.load();
+                blazeFaceModelRef.current = model;
+
+                // Step 5: Resume detection
+                detectionActive = true;
+                lastSuccessfulDetection = Date.now();
+              } catch (reloadError) {
+                // Try one more time after a longer wait
+                setTimeout(async () => {
+                  try {
+                    const blazeface = await import(
+                      "@tensorflow-models/blazeface"
+                    );
+                    const model = await blazeface.load();
+                    blazeFaceModelRef.current = model;
+                    detectionActive = true;
+                  } catch (e) {
+                    // Final recovery attempt failed
+                  }
+                }, 2000);
+              }
             }
           }
-        }
-      };
+        };
 
-      // Run detection at optimal frequency (300ms for stability)
-      faceDetectionIntervalRef.current = window.setInterval(detectFaces, 300);
+        // Run detection at optimal frequency (300ms for stability)
+        faceDetectionIntervalRef.current = window.setInterval(detectFaces, 300);
 
-      // Run first detection after a brief delay to ensure video is fully ready
-      setTimeout(detectFaces, 500);
+        // Run first detection after a brief delay to ensure video is fully ready
+        setTimeout(detectFaces, 500);
 
-      // Health check interval - monitor detection health
-      const healthCheckInterval = setInterval(() => {
-        const timeSinceLastSuccess = Date.now() - lastSuccessfulDetection;
-        if (timeSinceLastSuccess > 15000) {
-          console.warn(
-            `⚠️ No successful face detection in ${Math.round(
-              timeSinceLastSuccess / 1000
-            )}s - detection may be stalled`
-          );
-        }
-      }, 5000);
+        // Health check interval - monitor detection health
+        const healthCheckInterval = setInterval(() => {
+          const timeSinceLastSuccess = Date.now() - lastSuccessfulDetection;
+          if (timeSinceLastSuccess > 15000) {
+            // No successful face detection in a while - detection may be stalled
+          }
+        }, 5000);
+
+        return () => {
+          detectionActive = false;
+
+          if (faceDetectionIntervalRef.current) {
+            clearInterval(faceDetectionIntervalRef.current);
+          }
+
+          if (healthCheckInterval) {
+            clearInterval(healthCheckInterval);
+          }
+        };
+      }, 1000); // Wait 1 second for video to be fully ready
 
       return () => {
-        detectionActive = false;
-
+        clearTimeout(startDetection);
         if (faceDetectionIntervalRef.current) {
           clearInterval(faceDetectionIntervalRef.current);
-          console.log("👀 Face detection stopped");
-          console.log(
-            `📊 Final face violation stats: No face: ${noFaceCountRef.current}, Multiple faces: ${multipleFaceCountRef.current}`
-          );
-        }
-
-        if (healthCheckInterval) {
-          clearInterval(healthCheckInterval);
         }
       };
     }
-  }, [isRecording]); // logEvent is stable, no need in deps
+  }, [isRecording, isVideoReady, faceDetectionReady]); // Added dependencies for video readiness
 
-  // Get questions - MEMOIZED to prevent re-generation
+  // Get questions - Use provided questions or generate locally as fallback
   const questions = useMemo(() => {
+    if (interviewQuestions && interviewQuestions.length > 0) {
+      return interviewQuestions;
+    }
     return getQuestions(topic, difficulty, 10);
-  }, [topic, difficulty]);
+  }, [interviewQuestions, topic, difficulty]);
 
   // Current question - MEMOIZED to prevent re-triggering avatar speech
   const currentQuestion = useMemo(() => {
-    return questions[currentQuestionIndex];
-  }, [questions, currentQuestionIndex]);
+    return interviewQuestions[currentQuestionIndex];
+  }, [interviewQuestions, currentQuestionIndex]);
 
   // Helper function to log events
   const logEvent = useCallback(
@@ -523,12 +625,15 @@ const InterviewRoom = ({
             : prev.warnings,
       }));
 
-      if (attemptId) {
-        mockInterviewAPI.trackEvent(attemptId, event).catch(() => {});
-      }
+      // Events are tracked locally and will be submitted at the end
     },
     [attemptId]
   );
+
+  // Update logEvent ref whenever logEvent changes
+  useEffect(() => {
+    logEventRef.current = logEvent;
+  }, [logEvent]);
 
   // Track proctoring events - LIVE
   useEffect(() => {
@@ -579,12 +684,13 @@ const InterviewRoom = ({
   const handleCameraReady = useCallback(
     (stream: MediaStream) => {
       setPreInitializedStream(stream);
+      preInitializedStreamRef.current = stream; // Also store in ref
       logEvent("camera_ready", { status: "pre_initialized" }, "info");
     },
     [logEvent]
   );
 
-  // Format time
+  // Format time (for countdown display)
   const formatTime = (seconds: number): string => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -594,11 +700,17 @@ const InterviewRoom = ({
       .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Timer functions
+  // Timer functions - countdown timer
   const startTimer = () => {
     if (timerIntervalRef.current === null) {
       timerIntervalRef.current = window.setInterval(() => {
-        setElapsedTime((prev) => prev + 1);
+        setElapsedTime((prev) => prev + 1); // Keep for submission
+        setRemainingTime((prev) => {
+          if (prev <= 0) {
+            return 0; // Don't go negative
+          }
+          return prev - 1; // Countdown
+        });
       }, 1000);
     }
   };
@@ -611,9 +723,15 @@ const InterviewRoom = ({
   };
 
   // Audio visualization
-  const setupAudioVisualization = (stream: MediaStream) => {
+  const setupAudioVisualization = async (stream: MediaStream) => {
     try {
       const audioContext = new AudioContext();
+
+      // Resume audio context if suspended (required by some browsers)
+      if (audioContext.state === "suspended") {
+        await audioContext.resume();
+      }
+
       const analyser = audioContext.createAnalyser();
       const source = audioContext.createMediaStreamSource(stream);
 
@@ -626,7 +744,7 @@ const InterviewRoom = ({
 
       visualizeAudio();
     } catch (error) {
-      // Failed
+      // Failed to setup audio visualization
     }
   };
 
@@ -687,31 +805,40 @@ const InterviewRoom = ({
       return;
     }
 
-    // Initialize with backend
-    try {
-      const { attemptId: newAttemptId } = await mockInterviewAPI.startInterview(
-        topic,
-        difficulty
-      );
-      setAttemptId(newAttemptId);
-      logEvent(
-        "question_change",
-        { action: "interview_started", attemptId: newAttemptId },
-        "info"
-      );
-    } catch (error) {
-      const localId = `local-${Date.now()}`;
-      setAttemptId(localId);
-      logEvent(
-        "question_change",
-        { action: "interview_started", attemptId: localId },
-        "info"
-      );
+    // Use provided interview ID or create fallback
+    const currentAttemptId =
+      providedInterviewId || attemptId || `local-${Date.now()}`;
+
+    if (!attemptId) {
+      setAttemptId(currentAttemptId);
     }
+    const {
+      attemptId: newAttemptId,
+      questions: newQuestions,
+      duration_minutes,
+    } = await mockInterviewAPI.startInterviewById(currentAttemptId);
+    setAttemptId(newAttemptId);
+    setInterviewQuestions(newQuestions);
+
+    // Set countdown timer from duration_minutes
+    const durationSeconds = (duration_minutes || 25) * 60; // Default to 25 minutes if not provided
+    setRemainingTime(durationSeconds);
+    setElapsedTime(0); // Reset elapsed time
+
+    logEvent(
+      "question_change",
+      {
+        action: "interview_started",
+        attemptId: newAttemptId,
+        questions: newQuestions,
+        duration_minutes: duration_minutes || 25,
+      },
+      "info"
+    );
 
     streamRef.current = preInitializedStream;
     setIsRecording(true);
-    startTimer();
+    // Timer will start after AI introduction
 
     // Setup video
     if (videoRef.current) {
@@ -726,7 +853,7 @@ const InterviewRoom = ({
     // Enter fullscreen
     try {
       await fullscreenControl.enterFullscreen();
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Reduced from 1000ms
       await lockKeyboard();
       if ((window as any).__lockFullscreen) {
         (window as any).__lockFullscreen();
@@ -735,63 +862,34 @@ const InterviewRoom = ({
       // Continue anyway
     }
 
-    // Setup MediaRecorder with chunk uploading
-    const mediaRecorder = new MediaRecorder(preInitializedStream, {
-      mimeType: "video/webm;codecs=vp8,opus",
-    });
+    // Note: Media recording is not performed - only visual indicators shown to user
+    await setupAudioVisualization(preInitializedStream);
 
-    recordedChunksRef.current = [];
-
-    mediaRecorder.ondataavailable = async (event) => {
-      if (event.data.size > 0) {
-        recordedChunksRef.current.push(event.data);
-
-        if (attemptId) {
-          try {
-            await mockInterviewAPI.uploadMediaChunk(
-              attemptId,
-              event.data,
-              chunkIndexRef.current,
-              "video"
-            );
-            chunkIndexRef.current++;
-          } catch (error) {
-            // Continue
-          }
-        }
-      }
-    };
-
-    mediaRecorder.onstop = () => {
-      new Blob(recordedChunksRef.current, { type: "video/webm" });
-    };
-
-    mediaRecorder.start(5000);
-    mediaRecorderRef.current = mediaRecorder;
-
-    setupAudioVisualization(preInitializedStream);
-
-    // Give AI introduction and then ask first question
+    // Give AI introduction and then ask first question - start immediately
     const startInterviewFlow = async () => {
       if (!hasGivenIntroduction) {
         await giveVoiceIntroduction();
         setHasGivenIntroduction(true);
+        // Start timer after introduction
+        startTimer();
         // Wait a bit before first question
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
 
-      // Speak first question
-      logEvent(
-        "question_change",
-        { questionIndex: currentQuestionIndex, question: currentQuestion },
-        "info"
-      );
-      await speakQuestion(currentQuestion);
+      // Speak first question - ensure we have questions loaded
+      const firstQuestion = newQuestions[0];
+      if (firstQuestion) {
+        logEvent(
+          "question_change",
+          { questionIndex: 0, question: firstQuestion },
+          "info"
+        );
+        await speakQuestion(firstQuestion.question_text || "");
+      }
     };
 
-    setTimeout(() => {
-      startInterviewFlow();
-    }, 2000);
+    // Start immediately without delay
+    startInterviewFlow();
   };
 
   // Monitor video
@@ -829,35 +927,139 @@ const InterviewRoom = ({
 
   // Handle exit
   const handleExitInterview = () => {
-    console.log("🚪 Exit button clicked - opening confirmation dialog");
     if ((window as any).__unlockFullscreen) {
       (window as any).__unlockFullscreen();
     }
     setExitDialogOpen(true);
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const confirmExit = async () => {
-    console.log("✅ Confirm exit clicked - ending interview");
-    // Close dialog first
+    // Set submitting flag immediately in sessionStorage
+    sessionStorage.setItem("interview_submitting", "true");
+    setIsSubmitting(true);
     setExitDialogOpen(false);
 
-    // Submit to backend
+    // TURN OFF CAMERA AND AUDIO IMMEDIATELY - BEFORE NAVIGATION
+    const stopAllStreams = (stream: MediaStream | null) => {
+      if (stream) {
+        stream.getTracks().forEach((track) => {
+          if (track.readyState === "live" || track.readyState === "ended") {
+            track.stop();
+          }
+        });
+      }
+    };
+
+    // Stop all possible streams
+    stopAllStreams(streamRef.current);
+    stopAllStreams(preInitializedStreamRef.current);
+    stopAllStreams(preInitializedStream);
+
+    // Also check video element for any attached stream
+    if (videoRef.current && videoRef.current.srcObject) {
+      const videoStream = videoRef.current.srcObject as MediaStream;
+      stopAllStreams(videoStream);
+      videoRef.current.srcObject = null;
+      videoRef.current.pause();
+    }
+
+    // Stop speech recognition immediately
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        // Ignore
+      }
+    }
+
+    // Stop audio context and visualization
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    if (audioContextRef.current) {
+      try {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+        analyserRef.current = null;
+      } catch (error) {
+        // Continue
+      }
+    }
+
+    // Stop AI speaking
+    aiInterviewerVoice.stop();
+    setIsAgentSpeaking(false);
+    setIsAvatarAsking(false);
+
+    // Stop recording (visual indicator only)
+    stopTimer();
+    setIsRecording(false);
+
+    // Clear refs
+    streamRef.current = null;
+    preInitializedStreamRef.current = null;
+    setPreInitializedStream(null);
+
+    // Cleanup and exit fullscreen
+    try {
+      if ((window as any).__unlockFullscreen) {
+        (window as any).__unlockFullscreen();
+      }
+      await fullscreenControl.exitFullscreen();
+    } catch (error) {
+      // Continue even if fullscreen exit fails
+    }
+
+    // Navigate to complete page with submitting flag (AFTER stopping everything)
+    onComplete(undefined); // undefined = submitting
+
+    if ("keyboard" in navigator && "unlock" in (navigator as any).keyboard) {
+      try {
+        (navigator as any).keyboard.unlock();
+      } catch (error) {
+        // Continue
+      }
+    }
+
+    // Submit to backend in background
+    let submissionSuccess = false;
     if (attemptId) {
       try {
-        const answers = interviewEvents
-          .filter((e) => e.type === "user_response")
-          .map((e, idx) => ({
-            questionId: `q${idx + 1}`,
-            answerText: e.data.transcript || "",
-            timestamp: e.timestamp,
-            confidence: e.data.confidence,
-          }));
+        // Use savedAnswers array which has proper question IDs
+        const answers = savedAnswers.map((answer) => ({
+          questionId: answer.questionId,
+          answerText: answer.answerText,
+          timestamp: answer.timestamp,
+          duration: answer.duration,
+        }));
 
-        let videoBlob: Blob | undefined;
-        if (recordedChunksRef.current.length > 0) {
-          videoBlob = new Blob(recordedChunksRef.current, {
-            type: "video/webm",
-          });
+        // Also check sessionStorage for any backup answers
+        try {
+          const backupAnswers = sessionStorage.getItem(
+            `interview_${attemptId}_answers`
+          );
+          if (backupAnswers) {
+            const parsed = JSON.parse(backupAnswers);
+            parsed.forEach((backup: any) => {
+              const existingIndex = answers.findIndex(
+                (a) => a.questionId === backup.questionIndex + 1
+              );
+              if (existingIndex < 0) {
+                // Add backup answer if not already in answers
+                answers.push({
+                  questionId: backup.questionIndex + 1,
+                  answerText: backup.answerText,
+                  timestamp: backup.timestamp,
+                  duration: backup.duration || 0,
+                });
+              }
+            });
+          }
+        } catch (e) {
+          // Ignore sessionStorage errors
         }
 
         const proctoringEvents = getEventLog();
@@ -885,8 +1087,7 @@ const InterviewRoom = ({
           multipleFaceDetections: submissionData.multipleFaceDetections,
           fullscreenExits: submissionData.fullscreenExits,
           completedQuestions: currentQuestionIndex + 1,
-          totalQuestions: questions.length,
-          videoBlob,
+          totalQuestions: interviewQuestions.length,
           metadata: {
             userAgent: navigator.userAgent,
             screenResolution: `${window.screen.width}x${window.screen.height}`,
@@ -895,64 +1096,32 @@ const InterviewRoom = ({
             windowSwitches,
           },
         });
+
+        submissionSuccess = true;
       } catch (error) {
-        // Continue even if submission fails
+        submissionSuccess = false;
       }
-    }
 
-    // Exit fullscreen
-    try {
-      if ((window as any).__unlockFullscreen) {
-        (window as any).__unlockFullscreen();
-      }
-      await fullscreenControl.exitFullscreen();
-    } catch (error) {
-      // Continue even if fullscreen exit fails
-    }
+      // Clear submitting flag and set completion status
+      sessionStorage.removeItem("interview_submitting");
+      sessionStorage.setItem(
+        "interview_submission_complete",
+        submissionSuccess ? "true" : "false"
+      );
 
-    // Cleanup
-    stopTimer();
-    setIsRecording(false);
-
-    if (
-      mediaRecorderRef.current &&
-      mediaRecorderRef.current.state !== "inactive"
-    ) {
-      try {
-        mediaRecorderRef.current.stop();
-      } catch (error) {
-        // Continue
-      }
+      // Update submission status after completion
+      // Use a small delay to ensure navigation has happened
+      setTimeout(() => {
+        onComplete(submissionSuccess);
+      }, 100);
+    } else {
+      // No attemptId, mark as completed immediately
+      sessionStorage.removeItem("interview_submitting");
+      sessionStorage.setItem("interview_submission_complete", "true");
+      setTimeout(() => {
+        onComplete(true);
+      }, 100);
     }
-
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-    }
-
-    if (animationFrameRef.current !== null) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-    if (audioContextRef.current) {
-      try {
-        audioContextRef.current.close();
-      } catch (error) {
-        // Continue
-      }
-    }
-
-    if ("keyboard" in navigator && "unlock" in (navigator as any).keyboard) {
-      try {
-        (navigator as any).keyboard.unlock();
-      } catch (error) {
-        // Continue
-      }
-    }
-
-    // Navigate to completion page - DO THIS LAST
-    // Use setTimeout to ensure all cleanup is done
-    setTimeout(() => {
-      onComplete();
-    }, 100);
   };
 
   const cancelExit = () => {
@@ -963,6 +1132,113 @@ const InterviewRoom = ({
         (window as any).__lockFullscreen();
       }
     }, 100);
+  };
+
+  // Handle fullscreen exit warning - continue interview
+  const handleContinueInterview = async () => {
+    setFullscreenExitWarningOpen(false);
+
+    // Re-enter fullscreen
+    try {
+      await fullscreenControl.enterFullscreen();
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await lockKeyboard();
+      if ((window as any).__lockFullscreen) {
+        (window as any).__lockFullscreen();
+      }
+
+      // Update fullscreen ref
+      wasFullscreenRef.current = true;
+
+      // Re-initialize camera and audio
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
+
+        streamRef.current = stream;
+        setPreInitializedStream(stream);
+        preInitializedStreamRef.current = stream;
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+          setIsVideoReady(true);
+        }
+
+        // Clean up old audio context if it exists
+        if (audioContextRef.current) {
+          try {
+            audioContextRef.current.close();
+          } catch (e) {
+            // Ignore errors
+          }
+          audioContextRef.current = null;
+          analyserRef.current = null;
+        }
+
+        // Stop any existing audio visualization animation
+        if (animationFrameRef.current !== null) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+        }
+
+        // Re-setup audio visualization with new stream
+        await setupAudioVisualization(stream);
+
+        // Restart timer
+        startTimer();
+
+        // Restore recording state if we were recording before exit
+        if (wasRecordingAnswerBeforeExitRef.current) {
+          setIsRecordingAnswer(true);
+          isRecordingAnswerRef.current = true;
+          setCurrentTranscript(transcriptBeforeExitRef.current);
+
+          // Restart speech recognition
+          if (recognitionRef.current) {
+            try {
+              recognitionRef.current.start();
+            } catch (e) {
+              // Ignore if already started
+            }
+          }
+        }
+
+        if (logEventRef.current) {
+          logEventRef.current(
+            "camera_ready",
+            { status: "re_initialized_after_fullscreen_exit" },
+            "info"
+          );
+
+          logEventRef.current(
+            "fullscreen_enter",
+            {
+              timestamp: Date.now(),
+              message:
+                "User re-entered fullscreen mode - camera and audio re-initialized",
+            },
+            "info"
+          );
+        }
+      } catch (error) {
+        alert(
+          "Failed to re-initialize camera and microphone. Please check permissions."
+        );
+      }
+    } catch (error) {
+      // Show error or try again
+      alert("Please re-enter fullscreen mode to continue the interview.");
+    }
+  };
+
+  // Handle fullscreen exit warning - exit interview
+  const handleExitFromFullscreenWarning = () => {
+    setFullscreenExitWarningOpen(false);
+    // Open the exit dialog
+    setExitDialogOpen(true);
   };
 
   // Next question - Move to next without saving (already saved in handleStopSpeaking)
@@ -987,7 +1263,7 @@ const InterviewRoom = ({
 
       // Speak the next question
       setTimeout(() => {
-        speakQuestion(questions[nextIndex]);
+        speakQuestion(interviewQuestions[nextIndex]?.question_text || "");
       }, 500);
     } else {
       logEvent(
@@ -1022,7 +1298,6 @@ const InterviewRoom = ({
         },
       });
     } catch (error) {
-      console.error("Error during voice introduction:", error);
       setIsAgentSpeaking(false);
       setIsAvatarAsking(false);
     }
@@ -1051,28 +1326,26 @@ const InterviewRoom = ({
               // Start recording answer and speech recognition
               answerStartTimeRef.current = elapsedTime;
               setIsRecordingAnswer(true);
+              isRecordingAnswerRef.current = true; // Update ref
               setCurrentTranscript(""); // Clear previous transcript
 
               // Start speech recognition
               if (recognitionRef.current) {
                 try {
                   recognitionRef.current.start();
-                  console.log("🎤 Speech recognition started for answer");
                 } catch (error: any) {
                   if (
                     error.message &&
                     error.message.includes("already started")
                   ) {
-                    console.log("ℹ️ Speech recognition already active");
+                    // Speech recognition already active
                   } else {
-                    console.error("Failed to start speech recognition:", error);
                     alert(
                       "Failed to start speech recognition. Please check your microphone permissions."
                     );
                   }
                 }
               } else {
-                console.error("❌ Speech recognition not initialized!");
                 alert(
                   "Speech recognition is not available. Please refresh the page."
                 );
@@ -1091,26 +1364,21 @@ const InterviewRoom = ({
           },
         });
       } catch (error) {
-        console.error("Error speaking question:", error);
         setTimeout(() => {
           setIsAgentSpeaking(false);
           setIsAvatarAsking(false);
           // Track answer start even if speech fails
           answerStartTimeRef.current = elapsedTime;
           setIsRecordingAnswer(true);
+          isRecordingAnswerRef.current = true; // Update ref
           setCurrentTranscript("");
 
           if (recognitionRef.current) {
             try {
               recognitionRef.current.start();
-              console.log(
-                "🎤 Speech recognition started for answer (after error)"
-              );
             } catch (error: any) {
               if (error.message && error.message.includes("already started")) {
-                console.log("ℹ️ Speech recognition already active");
-              } else {
-                console.error("Failed to start speech recognition:", error);
+                // Speech recognition already active
               }
             }
           }
@@ -1122,23 +1390,18 @@ const InterviewRoom = ({
 
   // Stop recording and save answer
   const handleStopSpeaking = async () => {
-    console.log("🔘 Next Question button clicked!", {
-      answerStartTime: answerStartTimeRef.current,
-      isRecordingAnswer,
-      currentTranscript: currentTranscript.substring(0, 50) + "...",
-    });
-
     // Stop speech recognition (if active)
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
       } catch (error) {
-        console.error("Failed to stop speech recognition:", error);
+        // Failed to stop speech recognition
       }
     }
 
     // Disable recording immediately to prevent double-click
     setIsRecordingAnswer(false);
+    isRecordingAnswerRef.current = false; // Update ref
 
     const answerEndTime = elapsedTime;
     const answerStartTime = answerStartTimeRef.current || 0;
@@ -1155,28 +1418,47 @@ const InterviewRoom = ({
     answerStartTimeRef.current = 0;
     setCurrentTranscript("");
 
+    // Get question ID from current question
+    const questionId = currentQuestion?.id || currentQuestionIndex + 1;
+    const questionText = currentQuestion?.question_text || "";
+
+    // Save answer to state array for submission
+    const answerData = {
+      questionId: questionId,
+      questionText: questionText,
+      answerText: transcribedText || "(No answer provided)",
+      timestamp: Date.now(),
+      duration: answerDuration,
+    };
+
+    setSavedAnswers((prev) => {
+      // Update existing answer if question was answered before, otherwise add new
+      const existingIndex = prev.findIndex((a) => a.questionId === questionId);
+      if (existingIndex >= 0) {
+        const updated = [...prev];
+        updated[existingIndex] = answerData;
+        return updated;
+      }
+      return [...prev, answerData];
+    });
+
     // Save answer with video timestamps to backend (with fallback)
     if (attemptId) {
       try {
         await mockInterviewAPI.saveQuestionAnswer(attemptId, {
           questionIndex: currentQuestionIndex,
-          questionText: currentQuestion,
+          questionText: questionText,
           answerText: transcribedText || "(No answer provided)",
           timestamp: Date.now(),
-          duration: answerDuration,
-        });
-
-        console.log("✅ Answer saved:", {
-          questionIndex: currentQuestionIndex,
-          transcript: transcribedText,
           duration: answerDuration,
         });
 
         logEvent(
           "answer_saved",
           {
+            questionId: questionId,
             questionIndex: currentQuestionIndex,
-            questionText: currentQuestion,
+            questionText: questionText,
             answerText: transcribedText,
             videoStartTime: answerStartTime,
             videoEndTime: answerEndTime,
@@ -1185,30 +1467,26 @@ const InterviewRoom = ({
           "info"
         );
       } catch (error) {
-        console.error("❌ Failed to save answer (continuing anyway):", error);
-
         // FALLBACK: Store answer locally if API fails
         const localAnswer = {
           questionIndex: currentQuestionIndex,
-          questionText: currentQuestion,
+          questionText: currentQuestion?.question_text || "",
           answerText: transcribedText || "(No answer provided)",
           timestamp: Date.now(),
           duration: answerDuration,
           savedLocally: true,
         };
 
-        // Store in localStorage as backup
-        const existingAnswers = localStorage.getItem(
+        // Store in sessionStorage as backup
+        const existingAnswers = sessionStorage.getItem(
           `interview_${attemptId}_answers`
         );
         const answers = existingAnswers ? JSON.parse(existingAnswers) : [];
         answers.push(localAnswer);
-        localStorage.setItem(
+        sessionStorage.setItem(
           `interview_${attemptId}_answers`,
           JSON.stringify(answers)
         );
-
-        console.log("💾 Answer saved locally as fallback");
 
         logEvent(
           "answer_save_failed",
@@ -1223,9 +1501,7 @@ const InterviewRoom = ({
     }
 
     // Auto-advance after short delay (ALWAYS advance, even if API fails)
-    console.log("⏭️  Advancing to next question in 300ms...");
     setTimeout(() => {
-      console.log("⏭️  Calling nextQuestion()");
       nextQuestion();
     }, 300);
   };
@@ -1234,13 +1510,6 @@ const InterviewRoom = ({
   useEffect(() => {
     return () => {
       stopTimer();
-
-      if (
-        mediaRecorderRef.current &&
-        mediaRecorderRef.current.state !== "inactive"
-      ) {
-        mediaRecorderRef.current.stop();
-      }
 
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
@@ -1283,12 +1552,12 @@ const InterviewRoom = ({
         <ActiveInterviewSession
           topic={topic}
           difficulty={difficulty}
-          currentQuestion={currentQuestion}
+          currentQuestion={currentQuestion?.question_text || ""}
           currentQuestionIndex={currentQuestionIndex}
-          totalQuestions={questions.length}
+          totalQuestions={interviewQuestions.length}
           isAvatarAsking={isAvatarAsking}
           userResponse={userResponse}
-          elapsedTime={elapsedTime}
+          elapsedTime={remainingTime}
           audioLevel={audioLevel}
           isVideoReady={isVideoReady}
           currentFaceWarning={null}
@@ -1361,7 +1630,7 @@ const InterviewRoom = ({
                     End Interview?
                   </h2>
                   <p className="text-sm text-gray-500">
-                    This action cannot be undone
+                    Submit your interview for evaluation
                   </p>
                 </div>
               </div>
@@ -1387,7 +1656,7 @@ const InterviewRoom = ({
                     />
                   </svg>
                   <p className="text-sm font-semibold text-blue-900">
-                    Time Elapsed: {formatTime(elapsedTime)}
+                    Time Remaining: {formatTime(remainingTime)}
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -1421,9 +1690,130 @@ const InterviewRoom = ({
               </button>
               <button
                 onClick={confirmExit}
-                className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-bold text-base shadow-lg transition-all duration-200 transform hover:scale-105"
+                disabled={isSubmitting}
+                className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-bold text-base shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                End & Submit
+                {isSubmitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Submitting...</span>
+                  </>
+                ) : (
+                  "End & Submit"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fullscreen Exit Warning Dialog */}
+      {fullscreenExitWarningOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 99999999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "rgba(0, 0, 0, 0.85)",
+            animation: "fadeIn 0.2s ease-out",
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              // Clicked on backdrop - do nothing (prevent accidental close)
+            }
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              borderRadius: "16px",
+              maxWidth: "500px",
+              width: "90%",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8)",
+              overflow: "hidden",
+              animation: "scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}
+          >
+            {/* Header */}
+            <div className="bg-white border-b border-gray-200 p-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <svg
+                    className="w-6 h-6 text-yellow-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Fullscreen Exited
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    You exited fullscreen mode
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="bg-white p-6">
+              <p className="text-gray-700 text-base mb-4">
+                The interview must be conducted in fullscreen mode. Please
+                re-enter fullscreen to continue, or exit the interview.
+              </p>
+              <div className="mt-4 p-4 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
+                <div className="flex items-start space-x-3">
+                  <svg
+                    className="w-5 h-5 text-yellow-600 mt-0.5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-semibold text-yellow-900 mb-1">
+                      Important Notice
+                    </p>
+                    <p className="text-sm text-yellow-800">
+                      Exiting fullscreen during the interview is not allowed.
+                      Your session will be monitored for compliance.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-white border-t border-gray-200 p-6 flex justify-end space-x-3">
+              <button
+                onClick={handleExitFromFullscreenWarning}
+                className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-bold text-base hover:bg-gray-50 transition-all duration-200 transform hover:scale-105"
+              >
+                Exit Interview
+              </button>
+              <button
+                onClick={handleContinueInterview}
+                className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold text-base shadow-lg transition-all duration-200 transform hover:scale-105"
+              >
+                Continue Interview
               </button>
             </div>
           </div>
