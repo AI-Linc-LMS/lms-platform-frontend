@@ -51,7 +51,6 @@ export const useFullScreen = (): FullScreenHook => {
 
   const enterFullScreen = useCallback(async (): Promise<void> => {
     if (!isFullScreenSupported) {
-      console.warn('Full screen is not supported by this browser');
       return;
     }
 
@@ -68,7 +67,6 @@ export const useFullScreen = (): FullScreenHook => {
         await (element as any).msRequestFullscreen();
       }
     } catch (error) {
-      console.error('Failed to enter full screen:', error);
       throw error;
     }
   }, [isFullScreenSupported]);
@@ -87,7 +85,6 @@ export const useFullScreen = (): FullScreenHook => {
         await (document as any).msExitFullscreen();
       }
     } catch (error) {
-      console.error('Failed to exit full screen:', error);
       throw error;
     }
   }, [isFullScreen]);

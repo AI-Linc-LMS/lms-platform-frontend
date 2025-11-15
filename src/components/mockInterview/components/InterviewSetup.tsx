@@ -1,5 +1,7 @@
 // components/interview/InterviewSetup.tsx
 import React, { useRef, useEffect, useState } from "react";
+import { CircularProgress } from "@mui/material";
+import BackButton from "./BackButton";
 
 interface InterviewSetupProps {
   topic: string;
@@ -7,6 +9,7 @@ interface InterviewSetupProps {
   onStart: () => void;
   onBack: () => void;
   onCameraReady: (stream: MediaStream) => void;
+  isStarting?: boolean;
 }
 
 const InterviewSetup: React.FC<InterviewSetupProps> = ({
@@ -15,11 +18,15 @@ const InterviewSetup: React.FC<InterviewSetupProps> = ({
   onStart,
   onBack,
   onCameraReady,
+  isStarting = false,
 }) => {
   const previewVideoRef = useRef<HTMLVideoElement>(null);
   const [cameraStatus, setCameraStatus] = useState<
     "initializing" | "ready" | "error"
   >("initializing");
+  const [microphoneStatus, setMicrophoneStatus] = useState<
+    "checking" | "ready" | "error"
+  >("checking");
   const streamSentRef = useRef(false);
 
   useEffect(() => {
@@ -56,6 +63,14 @@ const InterviewSetup: React.FC<InterviewSetupProps> = ({
           // Wait for video to be playing
           const handlePlaying = () => {
             if (!mounted) return;
+
+            // Check if we have audio tracks
+            const audioTracks = stream.getAudioTracks();
+            if (audioTracks.length > 0) {
+              setMicrophoneStatus("ready");
+            } else {
+              setMicrophoneStatus("error");
+            }
 
             setCameraStatus("ready");
 
@@ -101,6 +116,13 @@ const InterviewSetup: React.FC<InterviewSetupProps> = ({
     }
   };
 
+  const toTitleCase = (str: string) => {
+    return str
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  };
+
   return (
     <div className="max-w-4xl mx-auto text-center py-8 px-4">
       <div className="mb-8">
@@ -108,7 +130,10 @@ const InterviewSetup: React.FC<InterviewSetupProps> = ({
           Ready to Start Your Interview?
         </h2>
         <p className="text-gray-600 mb-2">
-          Topic: <span className="font-semibold text-indigo-600">{topic}</span>
+          Topic:{" "}
+          <span className="font-semibold text-indigo-600">
+            {toTitleCase(topic)}
+          </span>
         </p>
         <p className="text-gray-600 mb-6">
           Difficulty:{" "}
@@ -127,33 +152,34 @@ const InterviewSetup: React.FC<InterviewSetupProps> = ({
             className="w-full h-64 object-cover bg-black"
           />
 
-          {/* Camera Status Overlay */}
+          {/* Status Overlay */}
           <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
             <div
               className={`px-4 py-2 rounded-full text-sm font-semibold flex items-center space-x-2 ${
-                cameraStatus === "ready"
+                cameraStatus === "ready" && microphoneStatus === "ready"
                   ? "bg-green-500 text-white"
-                  : cameraStatus === "error"
+                  : cameraStatus === "error" || microphoneStatus === "error"
                   ? "bg-red-500 text-white"
                   : "bg-yellow-500 text-white"
               }`}
             >
-              {cameraStatus === "ready" && (
+              {cameraStatus === "ready" && microphoneStatus === "ready" && (
                 <>
                   <span>✓</span>
-                  <span>Camera Ready</span>
+                  <span>Ready to Start</span>
                 </>
               )}
-              {cameraStatus === "initializing" && (
+              {(cameraStatus === "initializing" ||
+                microphoneStatus === "checking") && (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Initializing Camera...</span>
+                  <span>Initializing...</span>
                 </>
               )}
-              {cameraStatus === "error" && (
+              {(cameraStatus === "error" || microphoneStatus === "error") && (
                 <>
                   <span>✗</span>
-                  <span>Camera Error</span>
+                  <span>Setup Error</span>
                 </>
               )}
             </div>
@@ -190,26 +216,40 @@ const InterviewSetup: React.FC<InterviewSetupProps> = ({
 
       <button
         onClick={handleStartClick}
-        disabled={cameraStatus !== "ready"}
-        className={`px-12 py-4 rounded-xl font-bold text-lg transform transition-all ${
-          cameraStatus === "ready"
-            ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-2xl hover:-translate-y-1 cursor-pointer"
-            : "bg-gray-400 text-gray-200 cursor-not-allowed opacity-50"
+        disabled={
+          cameraStatus !== "ready" || microphoneStatus !== "ready" || isStarting
+        }
+        className={`px-12 py-4 rounded-xl font-bold text-lg transform transition-all  items-center justify-center gap-3 ${
+          cameraStatus === "ready" &&
+          microphoneStatus === "ready" &&
+          !isStarting
+            ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-2xl hover:-translate-y-1 cursor-pointer items-center justify-center"
+            : "bg-gray-400 text-gray-200 cursor-not-allowed opacity-50 items-center justify-center"
         }`}
       >
-        {cameraStatus === "ready"
-          ? "Start Interview Now 🎯"
-          : cameraStatus === "error"
-          ? "Camera Error - Cannot Start"
-          : "Waiting for Camera..."}
+        {isStarting ? (
+          <>
+            <CircularProgress size={20} color="inherit" />
+            <span>Starting Interview...</span>
+          </>
+        ) : cameraStatus === "ready" && microphoneStatus === "ready" ? (
+          "Start Interview Now 🎯"
+        ) : cameraStatus === "error" ? (
+          "Camera Error - Cannot Start"
+        ) : microphoneStatus === "error" ? (
+          "Microphone Error - Cannot Start"
+        ) : cameraStatus !== "ready" ? (
+          "Waiting for Camera..."
+        ) : microphoneStatus !== "ready" ? (
+          "Waiting for Microphone..."
+        ) : (
+          "Initializing..."
+        )}
       </button>
 
-      <button
-        onClick={onBack}
-        className="block mx-auto mt-6 px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors"
-      >
-        ← Go Back
-      </button>
+      <div className="mt-6">
+        <BackButton onClick={onBack} label="Go Back" />
+      </div>
     </div>
   );
 };

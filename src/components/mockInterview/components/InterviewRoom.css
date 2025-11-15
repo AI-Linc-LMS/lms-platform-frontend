@@ -1,12 +1,37 @@
 /* Interview Room Enhanced Styles */
 
-/* Hide fullscreen browser controls */
-::backdrop {
+/* Hide fullscreen browser controls - STRICT MODE */
+*:fullscreen {
+  cursor: auto !important;
+}
+
+*:fullscreen::backdrop {
   background-color: black;
 }
 
-::-webkit-full-screen::backdrop {
+*:-webkit-full-screen {
+  cursor: auto !important;
+}
+
+*:-webkit-full-screen::backdrop {
   background-color: black;
+}
+
+*:-moz-full-screen {
+  cursor: auto !important;
+}
+
+*:-moz-full-screen::backdrop {
+  background-color: black;
+}
+
+/* Prevent fullscreen UI from showing on mouse movement */
+:fullscreen::-webkit-media-controls {
+  display: none !important;
+}
+
+:fullscreen::-webkit-media-controls-enclosure {
+  display: none !important;
 }
 
 /* Prevent user selection and interactions */
@@ -16,11 +41,27 @@
   -moz-user-select: none;
   -ms-user-select: none;
   touch-action: none;
+  /* Prevent overscroll and trackpad swipe navigation */
+  overscroll-behavior: none;
+  -webkit-overscroll-behavior: none;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
+}
+
+/* Prevent overscroll on body when interview is active */
+body.no-scroll {
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-overscroll-behavior: none;
+  position: fixed;
+  width: 100%;
+  height: 100%;
 }
 
 /* Disable double-tap zoom on mobile */
 .interview-room-container * {
   touch-action: manipulation;
+  overscroll-behavior: none;
 }
 
 /* ESC Hold Progress Animation */

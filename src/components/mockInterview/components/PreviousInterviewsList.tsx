@@ -16,69 +16,91 @@ import {
   FormControl,
   InputLabel,
   CircularProgress,
+  TablePagination,
 } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import { InterviewRecord } from "../index";
 import { mockInterviewAPI } from "../services/api";
+import BackButton from "./BackButton";
 
 interface PreviousInterviewsListProps {
   onViewRecord: (record: InterviewRecord) => void;
   onBack: () => void;
+  refreshKey?: number; // Add refresh trigger
 }
 
 const PreviousInterviewsList = ({
   onViewRecord,
   onBack,
+  refreshKey,
 }: PreviousInterviewsListProps) => {
   const [interviews, setInterviews] = useState<InterviewRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDifficulty, setFilterDifficulty] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
   // Fetch interviews from API
   useEffect(() => {
     const fetchInterviews = async () => {
       try {
         setLoading(true);
-        
+
         // Try to fetch from API
         try {
           const data = await mockInterviewAPI.getInterviewAttempts();
-          
+
+          if (!data || data.length === 0) {
+            setInterviews([]);
+            return;
+          }
+
           // Transform API data to match InterviewRecord interface
           const transformedData: InterviewRecord[] = data.map((attempt) => ({
-            id: attempt.id,
+            id: String(attempt.id),
             topic: attempt.topic,
             difficulty: attempt.difficulty,
-            date: new Date(attempt.startedAt),
-            duration: attempt.duration,
-            score: attempt.score || 0,
+            // Use created_at or scheduled_date_time, fallback to current date
+            date: new Date(
+              attempt.created_at || attempt.scheduled_date_time || Date.now()
+            ),
+            // API sends duration_minutes, convert to seconds for internal use
+            duration: attempt.duration_minutes
+              ? attempt.duration_minutes * 60
+              : 0,
+            score: attempt.evaluation_score?.overall_percentage || 0,
             status: attempt.status,
-            questionsAnswered: attempt.questionsAnswered,
-            totalQuestions: attempt.totalQuestions,
+            // Count questions from the API data
+            questionsAnswered:
+              attempt.interview_transcript?.metadata?.completed_questions ||
+              (attempt.status === "completed" ? 10 : 0),
+            totalQuestions: attempt.questions_for_interview?.length || 10,
           }));
-          
+
           setInterviews(transformedData);
-        } catch (apiError) {
-          // If API fails, use mock data for demo
-          setInterviews(mockInterviews);
+        } catch (apiError: any) {
+          // If API fails, show empty state
+          setInterviews([]);
         }
-      } catch (error) {
-        // Fallback to mock data
-        setInterviews(mockInterviews);
+      } catch (error: any) {
+        // Fallback to empty
+        setInterviews([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchInterviews();
-  }, []);
+  }, [refreshKey]); // Re-fetch when refreshKey changes
 
   const formatDuration = (seconds: number): string => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    
+
     if (hrs > 0) {
       return `${hrs}h ${mins}m`;
     }
@@ -95,14 +117,42 @@ const PreviousInterviewsList = ({
     }).format(date);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
+  const getStatusLabel = (status: string): string => {
+    // Normalize status to lowercase for comparison
+    const normalizedStatus = status.toLowerCase().replace(/-/g, "_");
+
+    switch (normalizedStatus) {
       case "completed":
-        return "success";
-      case "in-progress":
-        return "warning";
+        return "Completed";
+      case "in_progress":
+        return "In Progress";
+      case "scheduled":
+        return "Scheduled";
+      case "cancelled":
+      case "canceled":
+        return "Cancelled";
       case "abandoned":
-        return "error";
+        return "Cancelled";
+      default:
+        return toTitleCase(status);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    // Normalize status to lowercase for comparison
+    const normalizedStatus = status.toLowerCase().replace(/-/g, "_");
+
+    switch (normalizedStatus) {
+      case "completed":
+        return "success"; // Maps to "Completed" label
+      case "in_progress":
+        return "warning"; // Maps to "In Progress" label
+      case "scheduled":
+        return "info"; // Maps to "Scheduled" label
+      case "cancelled":
+      case "canceled":
+      case "abandoned":
+        return "error"; // Maps to "Cancelled" label
       default:
         return "default";
     }
@@ -110,22 +160,22 @@ const PreviousInterviewsList = ({
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case "easy":
+      case "Easy":
         return "bg-green-100 text-green-800 border-green-300";
-      case "medium":
+      case "Medium":
         return "bg-orange-100 text-orange-800 border-orange-300";
-      case "hard":
+      case "Hard":
         return "bg-red-100 text-red-800 border-red-300";
       default:
         return "bg-gray-100 text-gray-800 border-gray-300";
     }
   };
 
-  const getScoreColor = (score: number | null) => {
-    if (score === null) return "text-gray-400 font-bold";
-    if (score >= 80) return "text-green-600 font-bold";
-    if (score >= 60) return "text-orange-600 font-bold";
-    return "text-red-600 font-bold";
+  const toTitleCase = (str: string) => {
+    return str
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
   };
 
   // Filter interviews
@@ -140,14 +190,29 @@ const PreviousInterviewsList = ({
     return matchesSearch && matchesDifficulty && matchesStatus;
   });
 
+  // Paginated interviews
+  const paginatedInterviews = filteredInterviews.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  // Handle pagination changes
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   // Calculate stats
-  const completedInterviews = interviews.filter((i) => i.status === "completed");
-  const avgScore = completedInterviews.length > 0
-    ? Math.round(
-        completedInterviews.reduce((acc, i) => acc + (i.score || 0), 0) /
-        completedInterviews.length
-      )
-    : 0;
+  const completedInterviews = interviews.filter(
+    (i) => i.status === "completed"
+  );
+
   const totalTime = Math.round(
     interviews.reduce((acc, i) => acc + i.duration, 0) / 3600
   );
@@ -177,17 +242,10 @@ const PreviousInterviewsList = ({
               {completedInterviews.length}
             </p>
           </div>
-          <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-4">
-            <p className="text-sm text-gray-600 mb-1">Avg Score</p>
-            <p className="text-3xl font-bold text-purple-600">
-              {avgScore}%
-            </p>
-          </div>
+
           <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-xl p-4">
             <p className="text-sm text-gray-600 mb-1">Total Time</p>
-            <p className="text-3xl font-bold text-orange-600">
-              {totalTime}h
-            </p>
+            <p className="text-3xl font-bold text-orange-600">{totalTime}h</p>
           </div>
         </div>
 
@@ -202,7 +260,7 @@ const PreviousInterviewsList = ({
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <span>🔍</span>
+                  <SearchIcon fontSize="small" />
                 </InputAdornment>
               ),
             }}
@@ -215,9 +273,9 @@ const PreviousInterviewsList = ({
               onChange={(e) => setFilterDifficulty(e.target.value)}
             >
               <MenuItem value="all">All Levels</MenuItem>
-              <MenuItem value="easy">Easy</MenuItem>
-              <MenuItem value="medium">Medium</MenuItem>
-              <MenuItem value="hard">Hard</MenuItem>
+              <MenuItem value="Easy">Easy</MenuItem>
+              <MenuItem value="Medium">Medium</MenuItem>
+              <MenuItem value="Hard">Hard</MenuItem>
             </Select>
           </FormControl>
           <FormControl size="small" className="w-full md:w-48">
@@ -228,9 +286,10 @@ const PreviousInterviewsList = ({
               onChange={(e) => setFilterStatus(e.target.value)}
             >
               <MenuItem value="all">All Status</MenuItem>
+              <MenuItem value="scheduled">Scheduled</MenuItem>
+              <MenuItem value="in_progress">In Progress</MenuItem>
               <MenuItem value="completed">Completed</MenuItem>
-              <MenuItem value="in-progress">In Progress</MenuItem>
-              <MenuItem value="abandoned">Abandoned</MenuItem>
+              <MenuItem value="cancelled">Cancelled</MenuItem>
             </Select>
           </FormControl>
         </div>
@@ -245,19 +304,18 @@ const PreviousInterviewsList = ({
               <TableCell className="font-bold">Topic</TableCell>
               <TableCell className="font-bold">Difficulty</TableCell>
               <TableCell className="font-bold">Duration</TableCell>
-              <TableCell className="font-bold">Progress</TableCell>
-              <TableCell className="font-bold">Score</TableCell>
               <TableCell className="font-bold">Status</TableCell>
               <TableCell className="font-bold">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredInterviews.length === 0 ? (
+            {paginatedInterviews.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center" className="py-12">
+                <TableCell colSpan={7} align="center" className="py-12">
                   <div className="text-gray-500">
-                    <p className="text-xl mb-2">📋</p>
-                    <p>No interviews found</p>
+                    <p className="text-lg font-semibold mb-2">
+                      No interviews found
+                    </p>
                     <p className="text-sm mt-2">
                       {interviews.length === 0
                         ? "Start your first interview to see results here"
@@ -267,7 +325,7 @@ const PreviousInterviewsList = ({
                 </TableCell>
               </TableRow>
             ) : (
-              filteredInterviews.map((interview) => (
+              paginatedInterviews.map((interview) => (
                 <TableRow
                   key={interview.id}
                   className="hover:bg-gray-50 transition-colors cursor-pointer"
@@ -276,7 +334,7 @@ const PreviousInterviewsList = ({
                   <TableCell>{formatDate(interview.date)}</TableCell>
                   <TableCell>
                     <span className="font-semibold text-indigo-600">
-                      {interview.topic}
+                      {toTitleCase(interview.topic)}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -289,38 +347,12 @@ const PreviousInterviewsList = ({
                     </span>
                   </TableCell>
                   <TableCell>{formatDuration(interview.duration)}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm">
-                        {interview.questionsAnswered}/{interview.totalQuestions}
-                      </span>
-                      <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-indigo-500"
-                          style={{
-                            width: `${
-                              (interview.questionsAnswered /
-                                interview.totalQuestions) *
-                              100
-                            }%`,
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className={getScoreColor(interview.score)}>
-                      {interview.score === null || interview.status === "abandoned"
-                        ? "-"
-                        : `${interview.score}%`}
-                    </span>
-                  </TableCell>
+
                   <TableCell>
                     <Chip
-                      label={interview.status}
+                      label={getStatusLabel(interview.status)}
                       color={getStatusColor(interview.status) as any}
                       size="small"
-                      className="capitalize"
                     />
                   </TableCell>
                   <TableCell>
@@ -332,7 +364,7 @@ const PreviousInterviewsList = ({
                       }}
                       className="text-indigo-600"
                     >
-                      <span className="text-lg">👁️</span>
+                      <VisibilityIcon fontSize="small" />
                     </IconButton>
                   </TableCell>
                 </TableRow>
@@ -340,56 +372,23 @@ const PreviousInterviewsList = ({
             )}
           </TableBody>
         </Table>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component="div"
+          count={filteredInterviews.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
       </TableContainer>
 
       {/* Back Button */}
       <div className="mt-6">
-        <button
-          onClick={onBack}
-          className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:border-gray-400 hover:shadow-md transition-all"
-        >
-          ← Back to Home
-        </button>
+        <BackButton onClick={onBack} label="Back to Home" />
       </div>
     </div>
   );
 };
-
-// Mock data fallback
-const mockInterviews: InterviewRecord[] = [
-  {
-    id: "1",
-    topic: "React",
-    difficulty: "medium",
-    date: new Date("2025-11-05T14:30:00"),
-    duration: 2400,
-    score: 85,
-    status: "completed",
-    questionsAnswered: 8,
-    totalQuestions: 10,
-  },
-  {
-    id: "2",
-    topic: "JavaScript",
-    difficulty: "easy",
-    date: new Date("2025-11-03T10:15:00"),
-    duration: 1800,
-    score: 92,
-    status: "completed",
-    questionsAnswered: 10,
-    totalQuestions: 10,
-  },
-  {
-    id: "3",
-    topic: "System Design",
-    difficulty: "hard",
-    date: new Date("2025-11-01T16:00:00"),
-    duration: 3600,
-    score: 78,
-    status: "completed",
-    questionsAnswered: 6,
-    totalQuestions: 8,
-  },
-];
 
 export default PreviousInterviewsList;

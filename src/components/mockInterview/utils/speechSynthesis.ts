@@ -70,7 +70,7 @@ export class AIInterviewerVoice {
       this.stop();
 
       if (!this.voice) {
-        console.warn('No suitable voice found for AI interviewer');
+        // No suitable voice found for AI interviewer
         resolve();
         return;
       }

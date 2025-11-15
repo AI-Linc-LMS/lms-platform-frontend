@@ -1,8 +1,9 @@
 interface InterviewTypeSelectorProps {
   onSelect: (type: "fresh" | "history") => void;
+  onViewScheduled: () => void;
 }
 
-const InterviewTypeSelector = ({ onSelect }: InterviewTypeSelectorProps) => {
+const InterviewTypeSelector = ({ onSelect, onViewScheduled }: InterviewTypeSelectorProps) => {
   return (
     <div className="py-8">
       <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">
@@ -11,6 +12,16 @@ const InterviewTypeSelector = ({ onSelect }: InterviewTypeSelectorProps) => {
       <p className="text-center text-gray-600 mb-12">
         Start fresh or continue your progress
       </p>
+
+      {/* Scheduled Interviews Button */}
+      <div className="flex justify-center mb-6">
+        <button
+          onClick={onViewScheduled}
+          className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl shadow-lg transition-all transform hover:scale-105"
+        >
+          View Scheduled Interviews
+        </button>
+      </div>
 
       <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
         {/* Fresh Interview Card */}
