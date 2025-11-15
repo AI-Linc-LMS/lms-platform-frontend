@@ -375,7 +375,10 @@ const MockInterview = () => {
             {step !== 5 && step !== 8 && (
               <div className="bg-white rounded-2xl shadow-xl p-8">
                 {step === 1 && (
-                  <InterviewTypeSelector onSelect={handleTypeSelect} />
+                  <InterviewTypeSelector 
+                    onSelect={handleTypeSelect} 
+                    onViewScheduled={() => setStep(6)}
+                  />
                 )}
                 {step === 2 && (
                   <InterviewModeSelector
@@ -405,7 +408,6 @@ const MockInterview = () => {
                 )}
                 {step === 7 && scheduledInterviewId && !selectedRecord && (
                   <InterviewWaitingRoom
-                    interviewId={scheduledInterviewId}
                     onStartSuccess={handleStartInterview}
                     onBack={handleBackFromWaitingRoom}
                   />
