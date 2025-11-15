@@ -103,7 +103,7 @@ export const getNavigationLinks = (
   {
     id: 7,
     title: t("navigation.mock_interview"),
-    slug: "community_forum",
+    slug: "mock_interview",
     links: [
       {
         id: 1,

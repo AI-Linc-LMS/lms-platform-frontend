@@ -1,15 +1,27 @@
-import { useState } from "react";
+import {
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+import { useState, useEffect } from "react";
 import InterviewTypeSelector from "./components/InterviewTypeSelector";
+import InterviewModeSelector from "./components/InterviewModeSelector";
 import TopicDifficultySelector from "./components/TopicDifficultySelector";
+import InterviewScheduler from "./components/InterviewScheduler";
+import InterviewWaitingRoom from "./components/InterviewWaitingRoom";
 import InterviewRoom from "./components/InterviewRoom";
 import PreviousInterviewsList from "./components/PreviousInterviewsList";
 import InterviewDetailView from "./components/InterviewDetailView";
 import InterviewCompletePage from "./components/InterviewCompletePage";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ProctoringProvider } from "./proctoring/ProctoringProvider";
+import { InterviewQuestion, mockInterviewAPI } from "./services/api";
+import Container from "../../constants/Container";
 
 type InterviewType = "fresh" | "history";
-type Step = 1 | 2 | 3 | 4 | 5 | 6;
+type InterviewMode = "quick" | "scheduled" | null;
 
 export interface InterviewRecord {
   id: string;
@@ -18,7 +30,13 @@ export interface InterviewRecord {
   date: Date;
   duration: number;
   score: number | null;
-  status: "completed" | "in-progress" | "abandoned";
+  status:
+    | "completed"
+    | "in-progress"
+    | "in_progress"
+    | "scheduled"
+    | "cancelled"
+    | "abandoned";
   questionsAnswered: number;
   totalQuestions: number;
   faceValidationIssues?: number;
@@ -26,10 +44,20 @@ export interface InterviewRecord {
 }
 
 const MockInterview = () => {
-  const [step, setStep] = useState<Step>(1);
-  const [interviewType, setInterviewType] = useState<InterviewType | null>(
-    null
-  );
+  const navigate = useNavigate();
+
+  // Check authentication
+  useEffect(() => {
+    const user = localStorage.getItem("user");
+    if (!user) {
+      navigate("/login");
+    }
+  }, [navigate]);
+
+  const [, setScheduledInterviewId] = useState<string | null>(null);
+  const [interviewQuestions, setInterviewQuestions] = useState<
+    InterviewQuestion[]
+  >([]);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(
     null
@@ -37,213 +65,331 @@ const MockInterview = () => {
   const [selectedRecord, setSelectedRecord] = useState<InterviewRecord | null>(
     null
   );
+  const [listRefreshKey, setListRefreshKey] = useState<number>(0);
 
+  // Type selector handlers
   const handleTypeSelect = (type: InterviewType) => {
-    setInterviewType(type);
     if (type === "fresh") {
-      setStep(2);
+      navigate("/mock-interview/mode");
     } else if (type === "history") {
-      setStep(4); // Show previous interviews list
+      setListRefreshKey((prev) => prev + 1);
+      navigate("/mock-interview/previous");
     }
   };
 
-  const handleStartInterview = (topic: string, difficulty: string) => {
-    setSelectedTopic(topic);
-    setSelectedDifficulty(difficulty);
-    setStep(3);
+  // Navigate to scheduled interviews
+  const handleViewScheduled = () => {
+    navigate("/mock-interview/scheduled");
   };
 
-  const handleInterviewComplete = () => {
-    // After interview completion, show success page directly
-    // Reset topic/difficulty but keep them for display if needed
-    setStep(6);
-    setInterviewType(null);
+  // Mode selector handlers
+  const handleModeSelect = (mode: InterviewMode) => {
+    if (mode === "quick") {
+      navigate("/mock-interview/quick-setup");
+    } else if (mode === "scheduled") {
+      navigate("/mock-interview/schedule");
+    }
   };
 
+  // Quick start handler
+  const handleQuickStart = async (topic: string, difficulty: string) => {
+    try {
+      // Create and start the interview immediately
+      const { attemptId, questions } = await mockInterviewAPI.startInterview(
+        topic,
+        difficulty
+      );
+
+      // Set the state with the interview details
+      setSelectedTopic(topic);
+      setSelectedDifficulty(difficulty);
+      setInterviewQuestions(questions || []);
+      setScheduledInterviewId(attemptId);
+
+      // Navigate to interview room with ID
+      navigate(`/mock-interview/interview/${attemptId}`);
+    } catch (error: any) {
+      // Stay on current page if there's an error
+      // Error handling can be added here (e.g., show error toast)
+    }
+  };
+
+  // Schedule interview handler
+  const handleInterviewScheduled = (interviewId: string) => {
+    setScheduledInterviewId(interviewId);
+    navigate(`/mock-interview/scheduled`);
+  };
+
+  // Start interview from waiting room
+  const handleStartInterview = (
+    questions: InterviewQuestion[],
+    interviewId: string
+  ) => {
+    setInterviewQuestions(questions);
+    setScheduledInterviewId(interviewId);
+    if (questions.length > 0) {
+      setSelectedTopic(questions[0].topic || "Interview");
+      setSelectedDifficulty(questions[0].difficulty || "Medium");
+    }
+    navigate(`/mock-interview/interview/${interviewId}`);
+  };
+
+  // Complete interview
+  const [submissionStatus, setSubmissionStatus] = useState<boolean | null>(
+    () => {
+      // Initialize from sessionStorage if available
+      const submitting = sessionStorage.getItem("interview_submitting");
+      const complete = sessionStorage.getItem("interview_submission_complete");
+
+      if (submitting === "true") {
+        return null; // null = submitting
+      } else if (complete === "true") {
+        return true; // true = success
+      } else if (complete === "false") {
+        return false; // false = failed
+      }
+      return null; // default to submitting
+    }
+  );
+
+  const handleInterviewComplete = (submissionSuccess?: boolean) => {
+    // If undefined, it means submission is in progress
+    // If boolean, submission is complete (true = success, false = failed)
+    if (submissionSuccess === undefined) {
+      // Check sessionStorage flag
+      const submitting = sessionStorage.getItem("interview_submitting");
+      if (submitting === "true") {
+        setSubmissionStatus(null); // null = submitting
+      }
+      navigate("/mock-interview/complete");
+    } else {
+      // Update status after navigation
+      setSubmissionStatus(submissionSuccess);
+    }
+  };
+
+  // Check sessionStorage on mount and when route changes
+  useEffect(() => {
+    const checkSubmissionStatus = () => {
+      const submitting = sessionStorage.getItem("interview_submitting");
+      const complete = sessionStorage.getItem("interview_submission_complete");
+
+      if (submitting === "true") {
+        setSubmissionStatus(null);
+      } else if (complete === "true") {
+        setSubmissionStatus(true);
+      } else if (complete === "false") {
+        setSubmissionStatus(false);
+      }
+    };
+
+    checkSubmissionStatus();
+    // Check periodically in case status updates
+    const interval = setInterval(checkSubmissionStatus, 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  // View history from complete page
   const handleViewHistoryFromComplete = () => {
-    setStep(4);
-    setInterviewType("history");
+    setListRefreshKey((prev) => prev + 1);
+    navigate("/mock-interview/previous");
   };
 
+  // Start new from complete page
   const handleStartNewFromComplete = () => {
-    setStep(1);
-    setInterviewType(null);
+    setScheduledInterviewId(null);
+    setInterviewQuestions([]);
     setSelectedTopic(null);
     setSelectedDifficulty(null);
+    navigate("/mock-interview");
   };
 
+  // View interview record detail
   const handleViewRecord = (record: InterviewRecord) => {
     setSelectedRecord(record);
-    setStep(5); // Show detail view
+    navigate(`/mock-interview/detail/${record.id}`);
   };
 
-  const handleBackFromList = () => {
-    setStep(1);
-    setInterviewType(null);
-  };
-
-  const handleBackFromDetail = () => {
-    setStep(4);
-    setSelectedRecord(null);
-  };
-
-  const handleBack = () => {
-    if (step === 2) {
-      setStep(1);
-      setInterviewType(null);
-    } else if (step === 3) {
-      // When backing out of interview (not completing), go to step 2
-      setStep(2);
-    }
-  };
-
+  // Interview abort handler
   const handleInterviewAbort = () => {
-    // When user cancels/backs out during setup
-    setStep(2);
-  };
-
-  const getStepTitle = () => {
-    switch (step) {
-      case 1:
-        return "Choose your interview type to get started";
-      case 2:
-        return "Select topic and difficulty level";
-      case 3:
-        return "Interview in progress";
-      case 4:
-        return "Your previous interview sessions";
-      case 5:
-        return "Interview details and review";
-      case 6:
-        return "Interview completed successfully";
-      default:
-        return "";
-    }
+    navigate("/mock-interview");
   };
 
   return (
-    <ProctoringProvider>
-      <ErrorBoundary>
-        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-          <div className="container mx-auto px-4 py-8 max-w-7xl">
-            {/* Header */}
-            <div className="mb-8">
-              <h1 className="text-4xl font-bold text-gray-800 mb-2">
-                Mock Interview Practice
-              </h1>
-              <p className="text-gray-600">{getStepTitle()}</p>
-            </div>
-
-            {/* Progress Indicator - Only show for fresh interview flow */}
-            {interviewType === "fresh" && step >= 1 && step <= 3 && (
-              <div className="mb-8 flex items-center justify-center space-x-4">
-                <div className="flex items-center">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                      step >= 1
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-300 text-gray-600"
-                    }`}
-                  >
-                    1
-                  </div>
-                  <span className="ml-2 text-sm font-medium text-gray-700">
-                    Type
-                  </span>
-                </div>
-                <div
-                  className={`h-1 w-16 ${
-                    step >= 2 ? "bg-indigo-600" : "bg-gray-300"
-                  }`}
-                ></div>
-                <div className="flex items-center">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                      step >= 2
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-300 text-gray-600"
-                    }`}
-                  >
-                    2
-                  </div>
-                  <span className="ml-2 text-sm font-medium text-gray-700">
-                    Setup
-                  </span>
-                </div>
-                <div
-                  className={`h-1 w-16 ${
-                    step >= 3 ? "bg-indigo-600" : "bg-gray-300"
-                  }`}
-                ></div>
-                <div className="flex items-center">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                      step >= 3
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-300 text-gray-600"
-                    }`}
-                  >
-                    3
-                  </div>
-                  <span className="ml-2 text-sm font-medium text-gray-700">
-                    Interview
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Step Content */}
-            {step !== 3 && step !== 6 && (
-              <div className="bg-white rounded-2xl shadow-xl p-8">
-                {step === 1 && (
-                  <InterviewTypeSelector onSelect={handleTypeSelect} />
-                )}
-                {step === 2 && (
-                  <TopicDifficultySelector
-                    interviewType={interviewType}
-                    onStart={handleStartInterview}
-                    onBack={handleBack}
+    <ErrorBoundary>
+      <Container>
+        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-8 px-4">
+          <div className="max-w-7xl mx-auto">
+            <Routes>
+              {/* Default route - Type selector */}
+              <Route
+                index
+                element={
+                  <InterviewTypeSelector
+                    onSelect={handleTypeSelect}
+                    onViewScheduled={handleViewScheduled}
                   />
-                )}
-                {step === 4 && (
+                }
+              />
+
+              {/* Mode selector (Quick Start vs Schedule) */}
+              <Route
+                path="mode"
+                element={
+                  <InterviewModeSelector
+                    onSelectMode={handleModeSelect}
+                    onBack={() => navigate("/mock-interview")}
+                  />
+                }
+              />
+
+              {/* Quick start - Topic/Difficulty selector */}
+              <Route
+                path="quick-setup"
+                element={
+                  <TopicDifficultySelector
+                    interviewType="fresh"
+                    onStart={handleQuickStart}
+                    onBack={() => navigate(-1)}
+                  />
+                }
+              />
+
+              {/* Schedule interview */}
+              <Route
+                path="schedule"
+                element={
+                  <InterviewScheduler
+                    onScheduled={handleInterviewScheduled}
+                    onBack={() => navigate(-1)}
+                  />
+                }
+              />
+
+              {/* Scheduled interviews list / waiting room */}
+              <Route
+                path="scheduled"
+                element={
+                  <InterviewWaitingRoom
+                    onStartSuccess={handleStartInterview}
+                    onBack={() => navigate("/mock-interview")}
+                  />
+                }
+              />
+
+              {/* Interview room */}
+              <Route
+                path="interview/:interviewId"
+                element={
+                  <InterviewRoomWrapper
+                    selectedTopic={selectedTopic}
+                    selectedDifficulty={selectedDifficulty}
+                    interviewQuestions={interviewQuestions}
+                    onComplete={handleInterviewComplete}
+                    onBack={handleInterviewAbort}
+                  />
+                }
+              />
+
+              {/* Previous interviews list */}
+              <Route
+                path="previous"
+                element={
                   <PreviousInterviewsList
                     onViewRecord={handleViewRecord}
-                    onBack={handleBackFromList}
+                    onBack={() => navigate("/mock-interview")}
+                    refreshKey={listRefreshKey}
                   />
-                )}
-                {step === 5 && selectedRecord && (
-                  <InterviewDetailView
-                    record={selectedRecord}
-                    onBack={handleBackFromDetail}
-                  />
-                )}
-              </div>
-            )}
-
-            {/* Interview Room - Full Screen */}
-            {step === 3 && (
-              <InterviewRoom
-                topic={selectedTopic!}
-                difficulty={selectedDifficulty!}
-                onBack={handleInterviewAbort}
-                onComplete={handleInterviewComplete}
+                }
               />
-            )}
 
-            {/* Completion Page - No Container */}
-            {step === 6 && (
-              <div className="bg-white rounded-2xl shadow-xl p-8">
-                <InterviewCompletePage
-                  onViewHistory={handleViewHistoryFromComplete}
-                  onStartNew={handleStartNewFromComplete}
-                />
-              </div>
-            )}
+              {/* Interview detail view */}
+              <Route
+                path="detail/:recordId"
+                element={
+                  <InterviewDetailViewWrapper
+                    selectedRecord={selectedRecord}
+                    onBack={() => {
+                      setListRefreshKey((prev) => prev + 1);
+                      navigate(-1);
+                    }}
+                  />
+                }
+              />
+
+              {/* Complete page */}
+              <Route
+                path="complete"
+                element={
+                  <InterviewCompletePage
+                    onViewHistory={handleViewHistoryFromComplete}
+                    onStartNew={handleStartNewFromComplete}
+                    submissionStatus={submissionStatus}
+                  />
+                }
+              />
+
+              {/* Catch-all - redirect to main page */}
+              <Route
+                path="*"
+                element={<Navigate to="/mock-interview" replace />}
+              />
+            </Routes>
           </div>
         </div>
-      </ErrorBoundary>
+      </Container>
+    </ErrorBoundary>
+  );
+};
+
+// Wrapper component for InterviewRoom to handle URL params
+const InterviewRoomWrapper = ({
+  selectedTopic,
+  selectedDifficulty,
+  interviewQuestions,
+  onComplete,
+  onBack,
+}: {
+  selectedTopic: string | null;
+  selectedDifficulty: string | null;
+  interviewQuestions: InterviewQuestion[];
+  onComplete: () => void;
+  onBack: () => void;
+}) => {
+  const { interviewId } = useParams<{ interviewId: string }>();
+
+  if (!interviewId) {
+    return <Navigate to="/mock-interview" replace />;
+  }
+
+  return (
+    <ProctoringProvider>
+      <InterviewRoom
+        topic={selectedTopic || "General"}
+        difficulty={selectedDifficulty || "Medium"}
+        onComplete={onComplete}
+        onBack={onBack}
+        interviewId={interviewId}
+        questions={interviewQuestions}
+      />
     </ProctoringProvider>
   );
+};
+
+const InterviewDetailViewWrapper = ({
+  selectedRecord,
+  onBack,
+}: {
+  selectedRecord: InterviewRecord | null;
+  onBack: () => void;
+}) => {
+  if (!selectedRecord) {
+    // If no record in state, redirect back to list
+    // In a real app, you'd fetch the record by ID here
+    return <Navigate to="/mock-interview/previous" replace />;
+  }
+
+  return <InterviewDetailView record={selectedRecord} onBack={onBack} />;
 };
 
 export default MockInterview;

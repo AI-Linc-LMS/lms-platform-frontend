@@ -1,37 +1,110 @@
 // API Service for Mock Interview Backend Communication
+import axiosInstance from "../../../services/axiosInstance";
 
+/**
+ * Interview Object - matches API response
+ * List View: id, title, status, topic, subtopic, difficulty, scheduled_date_time
+ * Detail View: All list fields + questions_for_interview, grading_scheme, evaluation_score,
+ *              interview_transcript, started_at, submitted_at, duration_minutes
+ */
 export interface InterviewAttempt {
   id: string;
-  userId: string;
+  title?: string;
+  userId?: string;
   topic: string;
+  subtopic?: string;
   difficulty: string;
-  startedAt: Date;
-  completedAt: Date | null;
-  duration: number; // in seconds
-  status: "in-progress" | "completed" | "abandoned";
-  score: number | null;
-  questionsAnswered: number;
-  totalQuestions: number;
+  status: "scheduled" | "in_progress" | "completed" | "cancelled";
+  scheduled_date_time?: string;
+  started_at?: string;
+  submitted_at?: string;
+  created_at?: string;
+  updated_at?: string;
+  completedAt?: Date | null;
+  duration?: number; // in seconds
+  duration_minutes?: number;
+  score?: number | null;
+  questionsAnswered?: number;
+  totalQuestions?: number;
   videoRecordingUrl?: string;
   audioRecordingUrl?: string;
+  questions_for_interview?: InterviewQuestion[];
+  grading_scheme?: any;
+  evaluation_score?: EvaluationScore;
+  interview_transcript?: InterviewTranscript;
 }
 
+/**
+ * Evaluation Score Object from API
+ */
+export interface EvaluationScore {
+  overall_score: number;
+  overall_percentage: number;
+  max_possible_score: number;
+  question_scores: QuestionScore[];
+  overall_feedback: string;
+  strengths: string[];
+  areas_for_improvement: string[];
+}
+
+/**
+ * Question Score from evaluation
+ */
+export interface QuestionScore {
+  question_id: string | number;
+  score: number;
+  feedback: string;
+  strengths?: string[];
+  improvements?: string[];
+}
+
+/**
+ * Interview Transcript from API
+ */
+export interface InterviewTranscript {
+  responses: TranscriptResponse[];
+  total_duration_seconds: number;
+  logs: any[];
+  metadata?: Record<string, any>;
+}
+
+/**
+ * Question Object from API
+ */
 export interface InterviewQuestion {
-  id: string;
-  questionText: string;
+  id: string | number;
+  question_text: string;
+  questionText?: string; // For backwards compatibility
+  type?: string;
+  expected_key_points?: string[];
   expectedAnswer?: string;
-  topic: string;
-  difficulty: string;
-  order: number;
+  topic?: string;
+  difficulty?: string;
+  order?: number;
 }
 
+/**
+ * Transcript Response (for submission)
+ */
+export interface TranscriptResponse {
+  question_id: string | number;
+  response: string;
+  timestamp: string;
+  duration_seconds: number;
+}
+
+/**
+ * Interview Answer (internal format for collecting answers)
+ */
 export interface InterviewAnswer {
-  questionId: string;
+  questionId: string | number;
   answerText: string;
   audioUrl?: string;
   videoUrl?: string;
   timestamp: number;
+  duration?: number;
   confidence?: number;
+  questionText?: string;
 }
 
 export interface InterviewEvent {
@@ -55,7 +128,9 @@ export interface InterviewEvent {
     | "audio_issue"
     | "video_issue"
     | "answer_saved"
-    | "answer_save_failed";
+    | "answer_save_failed"
+    | "tab_switch"
+    | "window_switch";
   data: any;
   severity: "info" | "warning" | "error";
 }
@@ -102,77 +177,148 @@ class MockInterviewAPI {
   private baseUrl: string;
 
   constructor() {
-    // Update this with your actual API base URL
-    this.baseUrl = import.meta.env.VITE_API_URL || "/api";
+    // Mock Interview API base URL
+    this.baseUrl = "/mock-interview/api";
+  }
+
+  /**
+   * Get client ID from environment or localStorage
+   */
+  private getClientId(): string {
+    // Try environment variable first
+    const envClientId = import.meta.env.VITE_CLIENT_ID;
+    if (envClientId) {
+      return envClientId;
+    }
+
+    // Fallback to user data in localStorage
+    try {
+      const user = localStorage.getItem("user");
+      if (user) {
+        const userData = JSON.parse(user);
+        return userData.client_id || userData.id || "1";
+      }
+    } catch (error) {
+      // Silent fail
+    }
+
+    // Default fallback
+    return "1";
   }
 
   /**
    * Fetch all interview attempts for the current user
+   * GET /clients/<id>/mock-interviews/?status=<status>
    */
-  async getInterviewAttempts(): Promise<InterviewAttempt[]> {
+  async getInterviewAttempts(
+    status?: "scheduled" | "in_progress" | "completed" | "cancelled"
+  ): Promise<InterviewAttempt[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/interviews`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          // Add authentication headers here
-          // Authorization: `Bearer ${token}`,
-        },
-      });
+      const clientId = this.getClientId();
+      const statusParam = status ? `?status=${status}` : "";
+      const url = `${this.baseUrl}/clients/${clientId}/mock-interviews/${statusParam}`;
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch interview attempts");
-      }
+      const response = await axiosInstance.get(url);
 
-      return await response.json();
-    } catch (error) {
+      return response.data;
+    } catch (error: any) {
       throw error;
     }
   }
 
   /**
    * Get a specific interview attempt by ID
+   * GET /clients/<id>/mock-interviews/<id>/
    */
   async getInterviewAttempt(attemptId: string): Promise<InterviewAttempt> {
     try {
-      const response = await fetch(`${this.baseUrl}/interviews/${attemptId}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const clientId = this.getClientId();
+      const response = await axiosInstance.get(
+        `${this.baseUrl}/clients/${clientId}/mock-interviews/${attemptId}/`
+      );
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch interview attempt");
-      }
-
-      return await response.json();
+      return response.data;
     } catch (error) {
       throw error;
     }
   }
 
   /**
-   * Start a new interview session
+   * Create a new interview (scheduled)
+   * POST /clients/<id>/mock-interviews/
+   */
+  async createInterview(
+    topic: string,
+    subtopic: string,
+    difficulty: string,
+    scheduledDateTime?: string
+  ): Promise<{ id: string }> {
+    try {
+      const clientId = this.getClientId();
+      const response = await axiosInstance.post(
+        `${this.baseUrl}/clients/${clientId}/mock-interviews/`,
+        {
+          topic,
+          subtopic,
+          difficulty,
+          scheduled_date_time: scheduledDateTime || new Date().toISOString(),
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Start an interview session by ID (changes status from scheduled to in_progress)
+   * POST /clients/<id>/mock-interviews/<id>/start/
+   * Returns questions from the API
+   */
+  async startInterviewById(interviewId: string): Promise<{
+    attemptId: string;
+    questions: InterviewQuestion[];
+    duration_minutes?: number;
+  }> {
+    try {
+      const clientId = this.getClientId();
+      const response = await axiosInstance.post(
+        `${this.baseUrl}/clients/${clientId}/mock-interviews/${interviewId}/start/`
+      );
+
+      const data = response.data;
+      return {
+        attemptId: interviewId,
+        questions: data.questions_for_interview || data.questions || [],
+        duration_minutes: data.duration_minutes,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Legacy method - Creates and starts interview in one call
+   * Use createInterview() + startInterviewById() for proper flow
    */
   async startInterview(
     topic: string,
-    difficulty: string
-  ): Promise<{ attemptId: string; questions: InterviewQuestion[] }> {
+    difficulty: string,
+    subtopic?: string
+  ): Promise<{ attemptId: string; questions?: InterviewQuestion[] }> {
     try {
-      const response = await fetch(`${this.baseUrl}/interviews/start`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ topic, difficulty }),
-      });
+      // First, create the interview
+      const createResponse = await this.createInterview(
+        topic,
+        subtopic || topic,
+        difficulty
+      );
 
-      if (!response.ok) {
-        throw new Error("Failed to start interview");
-      }
+      const interviewId = createResponse.id;
 
-      return await response.json();
+      // Then, start it
+      return await this.startInterviewById(interviewId);
     } catch (error) {
       throw error;
     }
@@ -180,53 +326,60 @@ class MockInterviewAPI {
 
   /**
    * Submit interview answers and events
+   * POST /clients/<id>/mock-interviews/<id>/submit/
    */
   async submitInterview(
     submission: InterviewSubmission
-  ): Promise<{ success: boolean; reportId: string }> {
+  ): Promise<{ success: boolean; reportId?: string; evaluation_score?: any }> {
     try {
-      const formData = new FormData();
+      const clientId = this.getClientId();
 
-      // Add JSON data
-      formData.append("attemptId", submission.attemptId);
-      formData.append("answers", JSON.stringify(submission.answers));
-      formData.append("events", JSON.stringify(submission.events));
-      formData.append("duration", submission.duration.toString());
-      formData.append(
-        "faceValidationFailures",
-        submission.faceValidationFailures.toString()
+      // Transform answers to match API format
+      const responses = submission.answers.map((answer, index) => ({
+        question_id: answer.questionId || index + 1,
+        response: answer.answerText,
+        timestamp: answer.timestamp
+          ? new Date(answer.timestamp).toISOString()
+          : new Date().toISOString(),
+        duration_seconds: answer.duration || 0,
+      }));
+
+      // Transform events to logs format
+      const logs = submission.events.map((event) => ({
+        type: event.type,
+        timestamp: new Date(event.timestamp).toISOString(),
+        severity: event.severity,
+        data: event.data,
+      }));
+
+      // Create transcript object according to API documentation
+      const requestBody = {
+        transcript: {
+          responses,
+          total_duration_seconds: submission.duration,
+          logs,
+          metadata: {
+            ...submission.metadata,
+            face_validation_failures: submission.faceValidationFailures,
+            multiple_face_detections: submission.multipleFaceDetections,
+            fullscreen_exits: submission.fullscreenExits,
+            completed_questions: submission.completedQuestions,
+            total_questions: submission.totalQuestions,
+          },
+        },
+      };
+
+      const response = await axiosInstance.post(
+        `${this.baseUrl}/clients/${clientId}/mock-interviews/${submission.attemptId}/submit/`,
+        requestBody
       );
-      formData.append(
-        "multipleFaceDetections",
-        submission.multipleFaceDetections.toString()
-      );
-      formData.append("fullscreenExits", submission.fullscreenExits.toString());
-      formData.append(
-        "completedQuestions",
-        submission.completedQuestions.toString()
-      );
-      formData.append("totalQuestions", submission.totalQuestions.toString());
-      formData.append("metadata", JSON.stringify(submission.metadata));
 
-      // Add video blob if available
-      if (submission.videoBlob) {
-        formData.append(
-          "video",
-          submission.videoBlob,
-          `interview-${submission.attemptId}.webm`
-        );
-      }
-
-      const response = await fetch(`${this.baseUrl}/interviews/submit`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to submit interview");
-      }
-
-      return await response.json();
+      const data = response.data;
+      return {
+        success: true,
+        reportId: data.id || submission.attemptId,
+        evaluation_score: data.evaluation_score,
+      };
     } catch (error) {
       throw error;
     }
@@ -234,48 +387,44 @@ class MockInterviewAPI {
 
   /**
    * Get interview report/feedback
+   * GET /clients/<id>/mock-interviews/<id>/
+   * The detail view includes evaluation_score
    */
   async getInterviewReport(attemptId: string): Promise<InterviewReport> {
     try {
-      const response = await fetch(
-        `${this.baseUrl}/interviews/${attemptId}/report`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+      const clientId = this.getClientId();
+      const response = await axiosInstance.get(
+        `${this.baseUrl}/clients/${clientId}/mock-interviews/${attemptId}/`
       );
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch interview report");
-      }
+      const data = response.data;
 
-      return await response.json();
+      // Transform API response to InterviewReport format
+      return {
+        attemptId: data.id,
+        overallScore: data.evaluation_score?.overall_score || 0,
+        questionScores:
+          data.evaluation_score?.question_scores?.map((qs: any) => ({
+            questionId: qs.question_id,
+            score: qs.score,
+            feedback: qs.feedback,
+          })) || [],
+        strengths: data.evaluation_score?.strengths || [],
+        improvements: data.evaluation_score?.areas_for_improvement || [],
+        behavioralNotes: [],
+        technicalAccuracy: data.evaluation_score?.overall_percentage || 0,
+        communicationSkills: 0,
+        confidence: 0,
+        recommendation: data.evaluation_score?.overall_feedback || "",
+      };
     } catch (error) {
       throw error;
     }
   }
 
   /**
-   * Track interview event (for real-time monitoring)
-   */
-  async trackEvent(attemptId: string, event: InterviewEvent): Promise<void> {
-    try {
-      await fetch(`${this.baseUrl}/interviews/${attemptId}/events`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(event),
-      });
-    } catch (error) {
-      // Silently fail for tracking events
-    }
-  }
-
-  /**
    * Upload video/audio chunks during interview
+   * Note: The API might not support chunked uploads - video is typically sent with submission
    */
   async uploadMediaChunk(
     attemptId: string,
@@ -284,23 +433,25 @@ class MockInterviewAPI {
     type: "video" | "audio"
   ): Promise<void> {
     try {
+      const clientId = this.getClientId();
       const formData = new FormData();
       formData.append("chunk", chunk);
       formData.append("chunkIndex", chunkIndex.toString());
       formData.append("type", type);
 
-      await fetch(`${this.baseUrl}/interviews/${attemptId}/media`, {
-        method: "POST",
-        body: formData,
-      });
+      await axiosInstance.post(
+        `${this.baseUrl}/clients/${clientId}/mock-interviews/${attemptId}/media/`,
+        formData
+      );
     } catch (error) {
-      throw error;
+      // Silently fail - video will be sent with final submission
     }
   }
 
   /**
    * Save individual question answer (Speech-to-Text result)
-   * This is called after each question is answered
+   * Note: Answers are typically collected and sent all at once during submission
+   * This method stores locally for fallback
    */
   async saveQuestionAnswer(
     attemptId: string,
@@ -314,88 +465,67 @@ class MockInterviewAPI {
     }
   ): Promise<{ success: boolean }> {
     try {
-      const response = await fetch(
-        `${this.baseUrl}/interviews/${attemptId}/answers`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            questionIndex: answer.questionIndex,
-            questionText: answer.questionText,
-            answerText: answer.answerText,
-            timestamp: answer.timestamp,
-            duration: answer.duration,
-            confidence: answer.confidence || 0,
-            metadata: {
-              answerLength: answer.answerText.length,
-              wordCount: answer.answerText.split(/\s+/).length,
-            },
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to save answer");
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      // Fallback: Store locally if API fails
+      // Store locally - answers will be sent during final submission
       const localKey = `interview_${attemptId}_answer_${answer.questionIndex}`;
-      localStorage.setItem(localKey, JSON.stringify(answer));
+      sessionStorage.setItem(localKey, JSON.stringify(answer));
 
+      return { success: true };
+    } catch (error) {
       return { success: false };
     }
   }
 
   /**
    * Get questions for a specific topic and difficulty
+   * Questions are returned when starting an interview
    */
   async getQuestions(
     topic: string,
     difficulty: string
   ): Promise<InterviewQuestion[]> {
     try {
-      const response = await fetch(
-        `${this.baseUrl}/questions?topic=${encodeURIComponent(
+      const clientId = this.getClientId();
+      const response = await axiosInstance.get(
+        `${
+          this.baseUrl
+        }/clients/${clientId}/questions/?topic=${encodeURIComponent(
           topic
-        )}&difficulty=${encodeURIComponent(difficulty)}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+        )}&difficulty=${encodeURIComponent(difficulty)}`
       );
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch questions");
-      }
-
-      return await response.json();
+      return response.data;
     } catch (error) {
       throw error;
     }
   }
 
   /**
-   * Delete an interview attempt
+   * Delete/Cancel an interview attempt
+   * Note: API may use status update to 'cancelled' instead of delete
    */
   async deleteInterview(attemptId: string): Promise<void> {
     try {
-      const response = await fetch(`${this.baseUrl}/interviews/${attemptId}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const clientId = this.getClientId();
+      await axiosInstance.delete(
+        `${this.baseUrl}/clients/${clientId}/mock-interviews/${attemptId}/`
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
 
-      if (!response.ok) {
-        throw new Error("Failed to delete interview");
-      }
+  /**
+   * Cancel an interview (change status to cancelled)
+   */
+  async cancelInterview(attemptId: string): Promise<void> {
+    try {
+      const clientId = this.getClientId();
+      await axiosInstance.patch(
+        `${this.baseUrl}/clients/${clientId}/mock-interviews/${attemptId}/`,
+        {
+          status: "cancelled",
+        }
+      );
     } catch (error) {
       throw error;
     }
