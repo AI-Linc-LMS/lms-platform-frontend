@@ -7,7 +7,7 @@
   flex-direction: column;
   height: 100%;
   min-height: 100vh;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .problem-card-container.dark-mode {
@@ -420,7 +420,7 @@ input:checked + .toggle-slider {
 
 .monaco-editor-wrapper {
   flex: 1;
-  overflow: hidden;
+  overflow: auto;
   position: relative;
 }
 
