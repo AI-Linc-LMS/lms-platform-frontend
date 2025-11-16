@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiX } from "react-icons/fi";
+// import { FiX } from "react-icons/fi";
 
 interface StreakCongratulationsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onContinue?: () => void;
   currentStreak: number;
   completionDate?: string | null;
 }
@@ -12,6 +13,7 @@ interface StreakCongratulationsModalProps {
 const StreakCongratulationsModal: React.FC<StreakCongratulationsModalProps> = ({
   isOpen,
   onClose,
+  onContinue,
   currentStreak,
   completionDate,
 }) => {
@@ -20,11 +22,6 @@ const StreakCongratulationsModal: React.FC<StreakCongratulationsModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setShowConfetti(true);
-      // Auto close after 5 seconds
-      const timer = setTimeout(() => {
-        onClose();
-      }, 5000);
-      return () => clearTimeout(timer);
     } else {
       setShowConfetti(false);
     }
@@ -40,7 +37,6 @@ const StreakCongratulationsModal: React.FC<StreakCongratulationsModalProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
-            onClick={onClose}
           />
 
           {/* Modal */}
@@ -57,14 +53,6 @@ const StreakCongratulationsModal: React.FC<StreakCongratulationsModalProps> = ({
               className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden pointer-events-auto relative"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Close button */}
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-4 z-10 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <FiX size={24} />
-              </button>
-
               {/* Confetti Animation */}
               {showConfetti && (
                 <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -196,10 +184,10 @@ const StreakCongratulationsModal: React.FC<StreakCongratulationsModalProps> = ({
                   transition={{ delay: 0.6 }}
                 >
                   <button
-                    onClick={onClose}
+                    onClick={onContinue ?? onClose}
                     className="px-4 py-2 rounded-full bg-[var(--primary-500)] text-white font-semibold shadow-md hover:bg-[var(--primary-600)] transition-colors"
                   >
-                    Awesome, thanks!
+                    Continue learning
                   </button>
                   <div className="px-4 py-2 rounded-full bg-white/80 border border-orange-200 text-sm text-orange-700 font-medium shadow-sm">
                     Next milestone: {Math.max(1, currentStreak + 1)}-day streak

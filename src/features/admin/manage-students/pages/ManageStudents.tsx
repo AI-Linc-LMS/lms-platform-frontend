@@ -12,7 +12,6 @@ import {
   FiBookOpen,
   FiX,
   FiUser,
-  FiMail,
   FiBarChart2,
   FiTarget,
   FiSettings,
@@ -91,11 +90,11 @@ const ManageStudents = () => {
     // keepPreviousData is v3 option; if using v5, it's removed.
   });
 
-  // Fetch course completion stats when filtering by course
+  // Fetch course completion stats (with or without course filter)
   const { data: courseCompletionData } = useQuery<CourseCompletionStats[]>({
-    queryKey: ["course-completion-stats", clientId, filters.courseId],
+    queryKey: ["course-completion-stats", clientId, filters.courseId ?? null],
     queryFn: () => getCourseCompletionStats(clientId, filters.courseId),
-    enabled: filters.courseId !== undefined,
+    enabled: true,
     refetchOnWindowFocus: false,
   });
 
@@ -103,22 +102,62 @@ const ManageStudents = () => {
     if (!studentsData) return [];
     const baseStudents = studentsData.students || [];
 
-    // If filtering by course and we have completion data, merge it
-    if (filters.courseId && courseCompletionData) {
-      return baseStudents.map((student) => {
-        const completionStats = courseCompletionData.find(
-          (stats) => stats.student_id === student.id
-        );
-        return {
-          ...student,
-          course_progress: completionStats?.completion_percentage,
-          course_marks: completionStats?.completed_contents,
-          attendance_percentage: completionStats?.attendance_percentage,
-        };
-      });
+    if (!courseCompletionData || courseCompletionData.length === 0) {
+      return baseStudents;
     }
 
-    return baseStudents;
+    // Helper to pick best stat when no course filter
+    const pickStatForStudent = (statsForStudent: CourseCompletionStats[]) => {
+      if (filters.courseId) {
+        // When filtered by course, stats returned should already correspond,
+        // but fallback to first item just in case
+        return statsForStudent.find(
+          (s) => s.course_id === filters.courseId
+        ) || statsForStudent[0];
+      }
+      // No filter: try matching most_active_course; else highest completion %
+      return (
+        statsForStudent.find(
+          (s) => s.course_title === (statsByStudentIdMostActive[studentIdKey(s.student_id)] ?? "")
+        ) ||
+        statsForStudent.reduce((best, cur) =>
+          (best?.completion_percentage ?? -1) >= cur.completion_percentage ? best : cur
+        , undefined as CourseCompletionStats | undefined) ||
+        statsForStudent[0]
+      );
+    };
+
+    // Build a map from student id to their most active course title (from base data)
+    const statsByStudentIdMostActive: Record<string, string> = {};
+    baseStudents.forEach((st) => {
+      if (st.id != null && st.most_active_course) {
+        statsByStudentIdMostActive[String(st.id)] = st.most_active_course;
+      }
+    });
+    const studentIdKey = (id: number) => String(id);
+
+    // Group stats by student id for quick lookup
+    const byStudent: Record<string, CourseCompletionStats[]> = {};
+    for (const stat of courseCompletionData) {
+      const key = studentIdKey(stat.student_id);
+      if (!byStudent[key]) byStudent[key] = [];
+      byStudent[key].push(stat);
+    }
+
+    return baseStudents.map((student) => {
+      const sKey = studentIdKey(student.id);
+      const arr = byStudent[sKey];
+      if (!arr || arr.length === 0) {
+        return student;
+      }
+      const chosen = pickStatForStudent(arr);
+      return {
+        ...student,
+        course_progress: chosen?.completion_percentage,
+        course_marks: chosen?.completed_contents,
+        attendance_percentage: chosen?.attendance_percentage,
+      };
+    });
   }, [studentsData, filters.courseId, courseCompletionData]);
 
   const totalCount: number = useMemo(() => {
@@ -154,26 +193,26 @@ const ManageStudents = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Header Section */}
-        <div className="mb-8">
-          <div className="bg-gradient-to-r from-[var(--primary-500)] to-[var(--primary-600)] rounded-2xl shadow-lg p-8 text-white">
+        <div>
+          <div className="bg-gradient-to-r from-[var(--primary-500)] to-[var(--primary-600)] rounded-2xl shadow-md p-6 sm:p-7 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
                   <FiUsers className="w-8 h-8" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold mb-1">Manage Students</h1>
-                  <p className="text-white/80 text-sm">
+                  <h1 className="text-2xl sm:text-3xl font-bold mb-1">Manage Students</h1>
+                  <p className="text-white/85 text-sm">
                     View, manage and track student progress
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold">{totalCount}</div>
+                  <div className="text-2xl sm:text-3xl font-bold">{totalCount}</div>
                   <div className="text-sm text-white/80">Total Students</div>
                 </div>
               </div>
@@ -182,10 +221,10 @@ const ManageStudents = () => {
         </div>
 
         {/* Search and Filter Bar */}
-        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-6">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
             {/* Search Input */}
-            <div className="relative flex-1 w-full lg:max-w-md">
+            <div className="relative lg:col-span-1">
               <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
@@ -194,18 +233,18 @@ const ManageStudents = () => {
                 onChange={(e) =>
                   setFilters((f) => ({ ...f, searchTerm: e.target.value }))
                 }
-                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none transition-all shadow-sm"
+                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none transition-all shadow-sm"
               />
             </div>
 
             {/* Filter and Controls */}
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap lg:justify-end lg:col-span-2">
               <button
                 onClick={() => setIsFilterModalOpen(true)}
-                className={`flex items-center gap-2 px-5 py-3 border-2 rounded-xl transition-all font-medium shadow-sm ${
+                className={`flex items-center gap-2 px-4 py-2.5 border rounded-xl transition-all font-medium shadow-sm ${
                   hasActiveFilters
-                    ? "border-[var(--primary-500)] bg-[var(--primary-500)] text-white shadow-md"
-                    : "border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                    ? "border-[var(--primary-500)] bg-[var(--primary-500)] text-white"
+                    : "border-gray-200 hover:bg-gray-50"
                 }`}
               >
                 <FiFilter className="w-4 h-4" />
@@ -221,7 +260,7 @@ const ManageStudents = () => {
               {/* Sorting */}
               <div className="flex items-center gap-2">
                 <select
-                  className="border-2 border-gray-300 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none transition-all shadow-sm"
+                  className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none transition-all shadow-sm"
                   value={sortBy}
                   onChange={(e) =>
                     setSortBy(e.target.value as ManageStudentsParams["sort_by"])
@@ -237,7 +276,7 @@ const ManageStudents = () => {
                   onClick={() =>
                     setSortOrder(sortOrder === "asc" ? "desc" : "asc")
                   }
-                  className="p-3 border-2 border-gray-300 rounded-xl hover:bg-gray-50 transition-all shadow-sm"
+                  className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all shadow-sm"
                   title={sortOrder === "asc" ? "Ascending" : "Descending"}
                 >
                   {sortOrder === "asc" ? (
@@ -320,61 +359,50 @@ const ManageStudents = () => {
         </div>
 
         {/* Students Table */}
-        <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+            <table className="w-full table-fixed">
+              <colgroup>
+                <col style={{ width: "30%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "22%" }} />
+                <col style={{ width: "18%" }} />
+                <col style={{ width: "18%" }} />
+                <col style={{ width: "12%" }} />
+              </colgroup>
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-white/70">
                 <tr>
-                  <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 text-[var(--primary-500)] focus:ring-[var(--primary-500)]"
-                    />
-                  </th>
-                  <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  <th className="text-left py-3 px-4 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       <FiUser className="w-4 h-4" />
                       Name
                     </div>
                   </th>
-                  <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  <th className="text-left py-3 px-4 text-[11px] font-bold text-gray-700 uppercase tracking-wider hidden sm:table-cell">
                     <div className="flex items-center gap-2">
-                      <FiMail className="w-4 h-4" />
-                      Email
+                      <FiBookOpen className="w-4 h-4" />
+                      Enroll.
                     </div>
                   </th>
-                  {filters.courseId ? (
-                    <>
-                      <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        <div className="flex items-center gap-2">
-                          <FiBarChart2 className="w-4 h-4" />
-                          Completion %
-                        </div>
-                      </th>
-                      <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        <div className="flex items-center gap-2">
-                          <FiBarChart2 className="w-4 h-4" />
-                          Attendance %
-                        </div>
-                      </th>
-                    </>
-                  ) : (
-                    <>
-                      <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        <div className="flex items-center gap-2">
-                          <FiBookOpen className="w-4 h-4" />
-                          Enrollments
-                        </div>
-                      </th>
-                      <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        <div className="flex items-center gap-2">
-                          <FiTarget className="w-4 h-4" />
-                          Most Active Course
-                        </div>
-                      </th>
-                    </>
-                  )}
-                  <th className="text-left py-4 px-6 text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  <th className="text-left py-3 px-4 text-[11px] font-bold text-gray-700 uppercase tracking-wider hidden md:table-cell">
+                    <div className="flex items-center gap-2">
+                      <FiTarget className="w-4 h-4" />
+                      Most Active
+                    </div>
+                  </th>
+                  <th className="text-left py-3 px-4 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      <FiBarChart2 className="w-4 h-4" />
+                      Completion %
+                    </div>
+                  </th>
+                  <th className="text-left py-3 px-4 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      <FiBarChart2 className="w-4 h-4" />
+                      Attendance %
+                    </div>
+                  </th>
+                  <th className="text-left py-3 px-4 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       <FiSettings className="w-4 h-4" />
                       Actions
@@ -386,8 +414,8 @@ const ManageStudents = () => {
                 {isFetching ? (
                   <tr>
                     <td
-                      colSpan={filters.courseId ? 5 : 6}
-                      className="py-12 px-6"
+                      colSpan={6}
+                      className="py-10 px-4"
                     >
                       <div className="flex flex-col items-center justify-center gap-3">
                         <div className="w-12 h-12 border-4 border-[var(--primary-200)] border-t-[var(--primary-500)] rounded-full animate-spin"></div>
@@ -400,8 +428,8 @@ const ManageStudents = () => {
                 ) : students.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={filters.courseId ? 5 : 6}
-                      className="py-12 px-6 text-center"
+                      colSpan={6}
+                      className="py-10 px-4 text-center"
                     >
                       <div className="flex flex-col items-center gap-3">
                         <FiUsers className="w-16 h-16 text-gray-300" />
@@ -431,108 +459,90 @@ const ManageStudents = () => {
                   students.map((student) => (
                     <tr
                       key={student.id}
-                      className="hover:bg-gradient-to-r hover:from-[var(--primary-50)] hover:to-transparent transition-all duration-200 group"
+                      className="even:bg-gray-50 hover:bg-[var(--primary-50)]/50 transition-colors duration-150 group"
                     >
-                      <td className="py-4 px-6">
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300 text-[var(--primary-500)] focus:ring-[var(--primary-500)]"
-                        />
-                      </td>
-                      <td className="py-4 px-6">
+                      <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-[var(--primary-500)] to-[var(--primary-600)] text-white rounded-full flex items-center justify-center font-semibold text-sm shadow-md">
-                            {(student.name ||
-                              student.first_name ||
-                              student.email)[0].toUpperCase()}
+                          <div className="shrink-0 relative">
+                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-[var(--primary-500)] to-[var(--primary-600)] text-white flex items-center justify-center shadow-md ring-2 ring-white ring-offset-2 ring-offset-gray-100">
+                              <span className="font-semibold text-sm leading-none">
+                                {(student.name ||
+                                  student.first_name ||
+                                  student.email)[0].toUpperCase()}
+                              </span>
+                            </div>
                           </div>
                           <div>
-                            <div className="font-medium text-gray-900">
+                            <div className="font-medium text-gray-900 truncate max-w-[260px]" title={student.name || `${student.first_name ?? ""} ${student.last_name ?? ""}`.trim() || student.email}>
                               {student.name ||
                                 `${student.first_name ?? ""} ${
                                   student.last_name ?? ""
                                 }`.trim() ||
                                 student.email}
                             </div>
-                            <div className="text-xs text-gray-500">
-                              ID: {student.id}
+                            <div className="text-xs text-gray-500 truncate max-w-[260px]" title={student.email}>
+                              {student.email}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="py-4 px-6">
-                        <span className="text-sm text-gray-700">
-                          {student.email}
+                      <td className="py-3 px-4 hidden sm:table-cell">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                          <FiBookOpen className="w-3 h-3" />
+                          {student.enrollment_count ?? 0}
                         </span>
                       </td>
-                      {filters.courseId ? (
-                        <>
-                          <td className="py-4 px-6">
-                            {student.course_progress !== undefined ? (
-                              <div className="flex items-center gap-3">
-                                <div className="flex-1 bg-gray-200 rounded-full h-2.5 max-w-[140px] overflow-hidden shadow-inner">
-                                  <div
-                                    className="h-full bg-gradient-to-r from-[var(--primary-500)] to-[var(--primary-600)] rounded-full transition-all duration-500"
-                                    style={{
-                                      width: `${student.course_progress}%`,
-                                    }}
-                                  ></div>
-                                </div>
-                                <span className="text-sm font-semibold text-gray-700 min-w-[45px]">
-                                  {student.course_progress.toFixed(2)}%
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-gray-400 text-xs italic">
-                                No progress
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-4 px-6">
-                            {student.attendance_percentage !== undefined ? (
-                              <div className="flex items-center gap-3">
-                                <div className="flex-1 bg-gray-200 rounded-full h-2.5 max-w-[140px] overflow-hidden shadow-inner">
-                                  <div
-                                    className="h-full bg-gradient-to-r from-[var(--primary-500)] to-[var(--primary-600)] rounded-full transition-all duration-500"
-                                    style={{
-                                      width: `${student.attendance_percentage}%`,
-                                    }}
-                                  ></div>
-                                </div>
-                                <span className="text-sm font-semibold text-gray-700 min-w-[45px]">
-                                  {student.attendance_percentage.toFixed(2)}%
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-gray-400 text-xs italic">
-                                No progress
-                              </span>
-                            )}
-                          </td>
-                        </>
-                      ) : (
-                        <>
-                          <td className="py-4 px-6">
-                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                              <FiBookOpen className="w-3 h-3" />
-                              {student.enrollment_count ?? 0}
+                      <td className="py-3 px-4 hidden md:table-cell">
+                        <span className="text-sm text-gray-700 truncate block max-w-[200px]" title={student.most_active_course || "-"}>
+                          {student.most_active_course || "-"}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        {student.course_progress !== undefined ? (
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[120px] overflow-hidden shadow-inner">
+                              <div
+                                className="h-full bg-gradient-to-r from-[var(--primary-500)] to-[var(--primary-600)] rounded-full transition-all duration-500"
+                                style={{
+                                  width: `${student.course_progress}%`,
+                                }}
+                              ></div>
+                            </div>
+                            <span className="text-xs sm:text-sm font-semibold text-gray-700 min-w-[45px]">
+                              {student.course_progress.toFixed(2)}%
                             </span>
-                          </td>
-                          <td className="py-4 px-6">
-                            <span className="text-sm text-gray-700">
-                              {student.most_active_course || "-"}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-xs italic">—</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        {student.attendance_percentage !== undefined ? (
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[120px] overflow-hidden shadow-inner">
+                              <div
+                                className="h-full bg-gradient-to-r from-[var(--primary-500)] to-[var(--primary-600)] rounded-full transition-all duration-500"
+                                style={{
+                                  width: `${student.attendance_percentage}%`,
+                                }}
+                              ></div>
+                            </div>
+                            <span className="text-xs sm:text-sm font-semibold text-gray-700 min-w-[45px]">
+                              {student.attendance_percentage.toFixed(2)}%
                             </span>
-                          </td>
-                        </>
-                      )}
-                      <td className="py-4 px-6">
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-xs italic">—</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
                         <button
                           onClick={() => handleEditStudent(student.id)}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[var(--primary-500)] to-[var(--primary-600)] text-white rounded-lg hover:shadow-lg transition-all duration-200 font-medium text-sm group-hover:scale-105"
+                          className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-[var(--primary-500)] to-[var(--primary-600)] text-white rounded-md hover:shadow-lg transition-all duration-200 font-medium text-sm group-hover:scale-105"
                           title="View Student Details"
                         >
                           <FiEdit2 className="w-4 h-4" />
-                          View
+                          <span className="hidden sm:inline">View</span>
                         </button>
                       </td>
                     </tr>
