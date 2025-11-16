@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import PrimaryButton from "../../../commonComponents/common-buttons/primary-button/PrimaryButton";
@@ -11,12 +11,27 @@ import {
   getCourseDashboard,
 } from "../../../services/enrolled-courses-content/courseContentApis";
 import { useQuery } from "@tanstack/react-query";
+import StreakCongratulationsModal from "../../../components/StreakCongratulationsModal";
+import { useMonthlyStreakCongrats } from "../../../hooks/useMonthlyStreakCongrats";
 
 const EnrolledCourseDetailPage: React.FC = () => {
   const { t } = useTranslation();
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
+  const {
+    shouldShow,
+    markShown,
+    currentStreak,
+    completionDate,
+  } = useMonthlyStreakCongrats();
+  const [showCongrats, setShowCongrats] = useState(false);
+
+  useEffect(() => {
+    if (shouldShow) {
+      setShowCongrats(true);
+    }
+  }, [shouldShow]);
 
   const {
     data: course,
@@ -309,6 +324,19 @@ const EnrolledCourseDetailPage: React.FC = () => {
   return (
     <>
       <BackToHomeButton />
+      <StreakCongratulationsModal
+        isOpen={showCongrats}
+        onClose={() => {
+          markShown();
+          setShowCongrats(false);
+        }}
+        onContinue={() => {
+          markShown();
+          setShowCongrats(false);
+        }}
+        currentStreak={currentStreak}
+        completionDate={completionDate}
+      />
       <div className="flex flex-col md:flex-row w-full gap-4 p-4">
         <div className="w-full">
           <CourseContent course={course} isLoading={isLoading} error={error} />
