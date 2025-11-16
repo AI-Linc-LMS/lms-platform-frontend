@@ -8,7 +8,8 @@ import {
   CustomRunCodeResult,
   SubmitCodeResult,
 } from "../../../../../services/enrolled-courses-content/submitApis";
-import Editor from "@monaco-editor/react";
+import { LANGUAGE_ID_MAPPING } from "../../../../../services/enrolled-courses-content/submitApis";
+import AppEditor from "../../../../../commonComponents/editor/AppEditor";
 import descriptionIcon from "../../../../../commonComponents/icons/enrolled-courses/problem/descriptionIcon.svg";
 import commentsIcon from "../../../../../commonComponents/icons/enrolled-courses/problem/commentsIcon.svg";
 import submissionIcon from "../../../../../commonComponents/icons/enrolled-courses/problem/submissionIcon.svg";
@@ -16,11 +17,11 @@ import "./ProblemCard.css";
 import Comments from "../../../../../commonComponents/components/Comments";
 import Submissions from "./components/Submissions";
 import Description from "./components/Description";
-import { useEffect, useState } from "react";
-import "./ProblemCard.css";
-import { CustomTestCase, ProblemData, TestCase } from "./problem.types";
-import ConsoleTestCases from "./components/ConsoleTestCases";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { ProblemData, TestCase } from "./problem.types";
 import React from "react";
+import { Code, Play, Moon, Sun } from "lucide-react";
+import { Tooltip } from "@mui/material";
 
 interface ProblemCardProps {
   contentId: number;
@@ -43,20 +44,52 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     queryKey: ["problem", courseId, contentId],
     queryFn: () => getCourseContent(clientId, courseId, contentId),
     enabled: !!contentId && !!courseId,
-    // Ensure fresh data when switching between content
     staleTime: 0,
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes but always refetch
+    gcTime: 5 * 60 * 1000,
   });
 
+  const [code, setCode] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState("");
+  const [isEditorReady, setIsEditorReady] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState(() => {
+    const saved = localStorage.getItem("ide-theme");
+    return saved ? saved === "dark" : true;
+  });
+  const [, setResults] = useState<{ success: boolean; message: string } | null>(
+    null
+  );
+  const [isRunning, setIsRunning] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState("description");
+  const [testCases, setTestCases] = useState<TestCase[]>([]);
+  const [activeTestCase, setActiveTestCase] = useState<number>(0);
+  const [customInput, setCustomInput] = useState("");
+  const [stdOut, setStdOut] = useState("");
+  const [isSubmitSuccess, setIsSubmitSuccess] = useState(false);
+  const [submitResult, setSubmitResult] = useState<{
+    status: string;
+    passed: number;
+    failed: number;
+    total_test_cases: number;
+  } | null>(null);
+  const [disabled, setDisabled] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [showResults, setShowResults] = useState("");
+  const [resultStatus, setResultStatus] = useState("");
+  const [consoleTab, setConsoleTab] = useState<"testcases" | "custom">(
+    "testcases"
+  );
+  const editorRef = useRef<any>(null);
+  const monacoRef = useRef<any>(null);
+
   // Get available languages from template codes
-  const availableLanguages = React.useMemo(() => {
+  const availableLanguages = useMemo(() => {
     if (!data?.details?.template_code) return [];
 
-    // Handle template_code as object
     if (!Array.isArray(data.details.template_code)) {
       return Object.entries(data.details.template_code).map(
         ([language, details]) => {
-          // Use type assertion for the details object
           const detailsObj = details as Record<string, unknown>;
           const languageValue = language.toLowerCase().replace(/\s+/g, "");
 
@@ -78,7 +111,6 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       );
     }
 
-    // Handle template_code as array (original implementation)
     return (
       data.details.template_code.map(
         (tc: {
@@ -98,112 +130,123 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     );
   }, [data?.details?.template_code]);
 
-  const [code, setCode] = useState("");
-  const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(true);
-  const [isDarkTheme, setIsDarkTheme] = useState(() => {
-    const saved = localStorage.getItem("ide-theme");
-    return saved ? saved === "dark" : false;
-  });
-  const [, setResults] = useState<{ success: boolean; message: string } | null>(
-    null
+  // Helper to get template string for a given normalized language
+  const getTemplateForLanguage = useCallback(
+    (lookupLanguage: string): string => {
+      if (!data?.details?.template_code) return "";
+      const lookup = lookupLanguage.toLowerCase().replace(/\s+/g, "");
+      const lookupAlt =
+        lookup === "cpp" ? "c++" : lookup === "c++" ? "cpp" : "";
+      const isLangMatch = (lang: string) =>
+        lang === lookup ||
+        (lookupAlt && lang === lookupAlt) ||
+        ((lang === "python" || lang === "python3") &&
+          (lookup === "python" || lookup === "python3"));
+
+      const pickFromMaybeJsonMapping = (
+        maybeString: unknown
+      ): string | null => {
+        if (typeof maybeString !== "string") return null;
+        try {
+          const parsed = JSON.parse(maybeString) as Record<string, string>;
+          if (parsed && typeof parsed === "object") {
+            if (parsed[lookup] != null) return parsed[lookup];
+            if (lookupAlt && parsed[lookupAlt] != null)
+              return parsed[lookupAlt];
+            if (
+              (lookup === "python" || lookup === "python3") &&
+              (parsed.python != null || parsed.python3 != null)
+            ) {
+              return parsed.python ?? parsed.python3 ?? null;
+            }
+          }
+        } catch {
+          return maybeString;
+        }
+        return null;
+      };
+
+      const tc = data.details.template_code as unknown;
+
+      if (typeof tc === "string") {
+        const picked = pickFromMaybeJsonMapping(tc);
+        return picked ?? "";
+      }
+
+      if (Array.isArray(tc)) {
+        const entry = tc.find((t: any) => {
+          const lang = String(t?.language ?? "")
+            .toLowerCase()
+            .replace(/\s+/g, "");
+          return isLangMatch(lang);
+        });
+        if (!entry) return "";
+        const fromMapping = pickFromMaybeJsonMapping(entry.template_code);
+        if (fromMapping != null) return fromMapping;
+        if (typeof entry.template_code === "string") return entry.template_code;
+        return "";
+      }
+
+      for (const [language, details] of Object.entries(
+        tc as Record<string, unknown>
+      )) {
+        const lang = language.toLowerCase().replace(/\s+/g, "");
+        if (!isLangMatch(lang)) continue;
+        const jsonPick = pickFromMaybeJsonMapping(details as any);
+        if (jsonPick != null) return jsonPick;
+        if (typeof details === "string") return details;
+        const detailsObj = details as Record<string, unknown>;
+        const fromNestedMapping = pickFromMaybeJsonMapping(
+          detailsObj?.template_code as any
+        );
+        if (fromNestedMapping != null) return fromNestedMapping;
+        if (typeof detailsObj?.template_code === "string")
+          return detailsObj.template_code as string;
+        if (typeof detailsObj?.template === "string")
+          return detailsObj.template as string;
+        return "";
+      }
+
+      return "";
+    },
+    [data?.details?.template_code]
   );
-  const [isRunning, setIsRunning] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState("description");
-  const [isconsoleOpen, setIsconsoleOpen] = useState(true);
-  const [consoleHeight, setconsoleHeight] = useState(200);
-  const [testCases, setTestCases] = useState<TestCase[]>([]);
-  const [isResizing, setIsResizing] = useState(false);
-  const [isDropdownHovered, setIsDropdownHovered] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState("");
-  const [activeTestCase, setActiveTestCase] = useState<number>(0);
-  const [customInput, setCustomInput] = useState("");
-  const [customTestCase, setCustomTestCase] = useState<CustomTestCase>({
-    input: "",
-  });
-  const [isSubmitSuccess, setIsSubmitSuccess] = useState(false);
-  const [submitResult, setSubmitResult] = useState<{
-    status: string;
-    passed: number;
-    failed: number;
-    total_test_cases: number;
-  } | null>(null);
 
-  // Set default language when data is loaded
+  // Initialize language and code ONCE when data loads
   useEffect(() => {
-    if (data?.details?.template_code) {
+    if (data?.details?.template_code && !isInitialized) {
       let defaultLanguage;
-
-      if (Array.isArray(data.details.template_code)) {
-        defaultLanguage = data.details.template_code[0]?.language
+      const apiDefault =
+        (data as any)?.details?.default_language &&
+        String((data as any).details.default_language)
           .toLowerCase()
           .replace(/\s+/g, "");
+
+      if (apiDefault) {
+        defaultLanguage = apiDefault;
       } else {
-        defaultLanguage = Object.keys(data.details.template_code)[0]
-          ?.toLowerCase()
-          .replace(/\s+/g, "");
-      }
-
-      // Handle special cases for Python 3
-      if (defaultLanguage === "python3") {
-        setSelectedLanguage("python3");
-      } else {
-        setSelectedLanguage(defaultLanguage || "");
-      }
-    }
-  }, [data]);
-
-  // Initialize code with template when data is loaded or language changes
-  useEffect(() => {
-    if (data?.details?.template_code && selectedLanguage) {
-      // Normalize language for lookups
-      const lookupLanguage = selectedLanguage;
-
-      if (Array.isArray(data.details.template_code)) {
-        const template = data.details.template_code.find(
-          (tc: { language: string }) => {
-            const tcLang = tc.language.toLowerCase().replace(/\s+/g, "");
-            // Match Python 3 and Python interchangeably
-            if (
-              (tcLang === "python" || tcLang === "python3") &&
-              (lookupLanguage === "python" || lookupLanguage === "python3")
-            ) {
-              return true;
-            }
-            return tcLang === lookupLanguage;
-          }
-        );
-        if (template) {
-          setCode(template.template_code);
+        if (Array.isArray(data.details.template_code)) {
+          defaultLanguage = data.details.template_code[0]?.language
+            .toLowerCase()
+            .replace(/\s+/g, "");
+        } else {
+          defaultLanguage = Object.keys(data.details.template_code)[0]
+            ?.toLowerCase()
+            .replace(/\s+/g, "");
         }
-      } else {
-        // Handle object structure
-        Object.entries(data.details.template_code).forEach(
-          ([language, details]) => {
-            const lang = language.toLowerCase().replace(/\s+/g, "");
+      }
 
-            // Match Python 3 and Python interchangeably
-            const isPythonMatch =
-              (lang === "python" || lang === "python3") &&
-              (lookupLanguage === "python" || lookupLanguage === "python3");
+      const normalizedLanguage =
+        defaultLanguage === "python3" ? "python3" : defaultLanguage || "";
+      const tpl = getTemplateForLanguage(normalizedLanguage);
 
-            if (lang === lookupLanguage || isPythonMatch) {
-              // Use type assertion for details
-              const detailsObj = details as Record<string, unknown>;
-              const templateCode =
-                typeof detailsObj.template_code === "string"
-                  ? detailsObj.template_code
-                  : typeof detailsObj.template === "string"
-                  ? detailsObj.template
-                  : "";
-
-              setCode(templateCode);
-            }
-          }
-        );
+      if (normalizedLanguage && tpl) {
+        setSelectedLanguage(normalizedLanguage);
+        setCode(tpl);
+        setIsInitialized(true);
       }
     }
-  }, [data, selectedLanguage]);
+  }, [data, isInitialized, getTemplateForLanguage]);
 
   // Initialize test cases when data is loaded
   useEffect(() => {
@@ -232,51 +275,16 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       setTestCases(formattedTestCases);
     }
   }, [data]);
-  //console.log('testCases', testCases);
 
   const getSelectedLanguageId = () => {
-    if (!data?.details?.template_code || !selectedLanguage) return 0;
-
-    // Normalize language for lookups
-    const lookupLanguage = selectedLanguage;
-
-    if (Array.isArray(data.details.template_code)) {
-      const template = data.details.template_code.find(
-        (tc: { language: string }) => {
-          const tcLang = tc.language.toLowerCase().replace(/\s+/g, "");
-          // Match Python 3 and Python interchangeably
-          if (
-            (tcLang === "python" || tcLang === "python3") &&
-            (lookupLanguage === "python" || lookupLanguage === "python3")
-          ) {
-            return true;
-          }
-          return tcLang === lookupLanguage;
-        }
-      );
-      return template?.language_id || 0;
-    } else {
-      // Handle object structure
-      for (const [language, details] of Object.entries(
-        data.details.template_code
-      )) {
-        const lang = language.toLowerCase().replace(/\s+/g, "");
-
-        // Match Python 3 and Python interchangeably
-        const isPythonMatch =
-          (lang === "python" || lang === "python3") &&
-          (lookupLanguage === "python" || lookupLanguage === "python3");
-
-        if (lang === lookupLanguage || isPythonMatch) {
-          // Use type assertion for details
-          const detailsObj = details as Record<string, unknown>;
-          return typeof detailsObj.language_id === "number"
-            ? detailsObj.language_id
-            : 0;
-        }
-      }
-      return 0;
-    }
+    if (!selectedLanguage) return 0;
+    const normalized =
+      selectedLanguage === "python3"
+        ? "python"
+        : selectedLanguage === "c++"
+        ? "cpp"
+        : selectedLanguage;
+    return (LANGUAGE_ID_MAPPING as Record<string, number>)[normalized] ?? 0;
   };
 
   // Run code mutation
@@ -302,14 +310,19 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         success,
         message: success ? "All test cases passed!" : "Some test cases failed.",
       });
+      setResultStatus(success ? "S" : "F");
+      setShowResults(
+        success ? "All test cases passed!" : "Some test cases failed."
+      );
       setIsRunning(false);
     },
     onError: () => {
-      //console.error("Error running code:", error);
       setResults({
         success: false,
         message: "Error running code. Please try again.",
       });
+      setResultStatus("F");
+      setShowResults("Error running code. Please try again.");
       setIsRunning(false);
     },
   });
@@ -327,22 +340,19 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       );
     },
     onSuccess: (data: CustomRunCodeResult) => {
-      setCustomTestCase({
-        input: data.input,
-        output: data.actual_output,
-        status: data.status === "Accepted" ? "passed" : "failed",
-        time: data.time,
-        memory: data.memory,
-      });
+      setStdOut(data.actual_output);
+      setResultStatus(data.status === "Accepted" ? "S" : "F");
+      setShowResults(
+        data.status === "Accepted"
+          ? "Custom test passed!"
+          : "Custom test failed."
+      );
       setIsRunning(false);
     },
     onError: () => {
-      //console.error("Error running custom code:", error);
-      setCustomTestCase({
-        input: customInput,
-        status: "failed",
-        output: "Error running code",
-      });
+      setStdOut("Error running code");
+      setResultStatus("F");
+      setShowResults("Error running code");
       setIsRunning(false);
     },
   });
@@ -361,16 +371,12 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           : `Failed ${data.failed}/${data.total_test_cases} test cases.`,
       });
 
-      // Call onSubmit to notify the parent that code was submitted
       onSubmit(code);
 
-      // If the submission was successful, call onComplete to mark the problem as complete
       if (success && onComplete) {
-        //console.log("Solution was accepted! Calling onComplete callback");
-        onComplete(); // Call onComplete to mark problem as complete
+        onComplete();
         setIsSubmitSuccess(true);
 
-        // Invalidate streak data to update streak immediately after problem completion
         await queryClient.invalidateQueries({
           queryKey: ["streakTable", parseInt(clientId)],
         });
@@ -387,7 +393,6 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       setIsRunning(false);
     },
     onError: () => {
-      //console.error("Error submitting code:", error);
       setResults({
         success: false,
         message: "Error submitting code. Please try again.",
@@ -397,20 +402,53 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     },
   });
 
-  // Log results for debugging
-  //console.log("Results:", results);
-  //console.log("Custom Test Case:", customTestCase);
-  //console.log("Coding Problem", data);
+  // Timer for submit cooldown
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (timeLeft > 0) {
+        setTimeLeft(timeLeft - 1);
+        localStorage.setItem("timeLeft", JSON.stringify(timeLeft - 1));
+      }
+    }, 1000);
 
-  if (isLoading) {
+    return () => clearInterval(timer);
+  }, [timeLeft]);
+
+  // Check for existing cooldown on mount
+  useEffect(() => {
+    if (localStorage.getItem("buttonDisabled")) {
+      const timeLeftOnRefresh =
+        JSON.parse(localStorage?.getItem("timeLeft") as any) -
+        Math.floor(
+          (Date.now() - JSON.parse(localStorage?.getItem("timestamp") as any)) /
+            1000
+        );
+
+      if (timeLeftOnRefresh > 0) {
+        setDisabled(true);
+        setTimeLeft(timeLeftOnRefresh);
+        setTimeout(() => {
+          setDisabled(false);
+          setTimeLeft(0);
+          localStorage.removeItem("buttonDisabled");
+          localStorage.removeItem("timeLeft");
+        }, timeLeftOnRefresh * 1000);
+      } else {
+        localStorage.removeItem("buttonDisabled");
+        localStorage.removeItem("timeLeft");
+      }
+    }
+  }, []);
+
+  if (isLoading || !isInitialized) {
     return (
-      <div className="animate-pulse bg-white rounded-lg shadow-lg p-6">
-        <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
-        <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-5/6 mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-4/6 mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-5/6 mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-3/6 mb-2"></div>
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-pulse space-y-4 w-full max-w-4xl p-6">
+          <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-4 bg-gray-200 rounded w-full"></div>
+          <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+          <div className="h-64 bg-gray-200 rounded"></div>
+        </div>
       </div>
     );
   }
@@ -432,7 +470,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   }
 
   const handleCodeChange = (value: string | undefined) => {
-    if (value) {
+    if (value !== undefined) {
       setCode(value);
     }
   };
@@ -440,8 +478,9 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const handleRunCode = () => {
     setIsRunning(true);
     setResults(null);
+    setShowResults("");
+    setResultStatus("");
 
-    // Update test case status to running
     setTestCases(
       testCases.map((tc) => ({
         ...tc,
@@ -449,8 +488,11 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       }))
     );
 
-    // Run the code with the API
-    runCodeMutation.mutate();
+    if (consoleTab === "testcases") {
+      runCodeMutation.mutate();
+    } else {
+      handleCustomRunCode();
+    }
   };
 
   const handleCustomRunCode = () => {
@@ -459,41 +501,46 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         success: false,
         message: "Please provide custom input",
       });
+      setResultStatus("F");
+      setShowResults("Please provide custom input");
       return;
     }
 
     setIsRunning(true);
     setResults(null);
 
-    // Run the code with custom input
     runCustomCodeMutation.mutate(customInput);
   };
 
   const handleSubmitCode = async () => {
+    const tenSeconds = 10;
+
+    setDisabled(true);
+    setTimeLeft(tenSeconds);
+    localStorage.setItem("buttonDisabled", "true");
+    localStorage.setItem("timeLeft", tenSeconds.toString());
+    localStorage.setItem("timestamp", Date.now().toString());
+
     setIsSubmitting(true);
     setResults(null);
-
-    // First run the code to check test cases
     setIsRunning(true);
 
     try {
-      // Run the code first using mutation
       const runResult = await runCodeMutation.mutateAsync();
 
-      // Check if all test cases passed
       const allTestsPassed = runResult.results.every(
         (result) => result.status === "Accepted"
       );
 
       if (allTestsPassed) {
-        // If all tests passed, proceed with submission
         submitCodeMutation.mutate();
       } else {
-        // If any test failed, show error and don't submit
         setResults({
           success: false,
           message: "Please fix the failing test cases before submitting.",
         });
+        setResultStatus("F");
+        setShowResults("Please fix the failing test cases before submitting.");
         setIsSubmitting(false);
         setIsRunning(false);
       }
@@ -502,182 +549,218 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         success: false,
         message: "Error running code. Please try again.",
       });
+      setResultStatus("F");
+      setShowResults("Error running code. Please try again.");
       setIsSubmitting(false);
       setIsRunning(false);
     }
+
+    setTimeout(() => {
+      setDisabled(false);
+      setTimeLeft(0);
+      localStorage.removeItem("buttonDisabled");
+      localStorage.removeItem("timeLeft");
+      localStorage.removeItem("timestamp");
+    }, 10000);
   };
 
-  // Save theme preference
   const handleThemeChange = () => {
     const newTheme = !isDarkTheme;
     setIsDarkTheme(newTheme);
     localStorage.setItem("ide-theme", newTheme ? "dark" : "light");
   };
 
-  // Handle //console resize
-  const startResizing = (e: React.MouseEvent) => {
-    setIsResizing(true);
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", stopResizing);
-    e.preventDefault();
+  const handleEditorDidMount = (editor: any, monaco: any) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+    setIsEditorReady(true);
+
+    const normalized =
+      selectedLanguage === "python3"
+        ? "python"
+        : selectedLanguage === "c++"
+        ? "cpp"
+        : selectedLanguage || "javascript";
+
+    try {
+      monaco.editor.setTheme(isDarkTheme ? "vs-dark" : "light");
+      const model = editor.getModel?.();
+      if (model && normalized) {
+        monaco.editor.setModelLanguage(model, normalized);
+      }
+    } catch (error) {
+      console.error("Error in editor mount:", error);
+    }
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (isResizing) {
-      const container = document.querySelector(
-        ".code-editor-panel"
-      ) as HTMLElement;
-      if (container) {
-        const containerRect = container.getBoundingClientRect();
-        const newHeight = containerRect.bottom - e.clientY;
-
-        // Set minimum and maximum heights
-        if (newHeight >= 100 && newHeight <= containerRect.height - 100) {
-          setconsoleHeight(newHeight);
+  const handleLanguageChange = (newLang: string) => {
+    setSelectedLanguage(newLang);
+    const tpl = getTemplateForLanguage(newLang);
+    if (tpl) {
+      setCode(tpl);
+      if (isEditorReady && editorRef.current && monacoRef.current) {
+        const normalized =
+          newLang === "python3"
+            ? "python"
+            : newLang === "c++"
+            ? "cpp"
+            : newLang || "javascript";
+        try {
+          const model = editorRef.current.getModel?.();
+          if (model) {
+            monacoRef.current.editor.setModelLanguage(model, normalized);
+          }
+        } catch (error) {
+          console.error("Error updating language:", error);
         }
       }
     }
   };
 
-  const stopResizing = () => {
-    setIsResizing(false);
-    document.removeEventListener("mousemove", handleMouseMove);
-    document.removeEventListener("mouseup", stopResizing);
-  };
-
-  const toggleconsole = () => {
-    setIsconsoleOpen(!isconsoleOpen);
-  };
+  const shouldRenderEditor = selectedLanguage && code && isInitialized;
 
   return (
     <div
-      className={`problem-card-container rounded-2xl ${
-        isDarkTheme ? "dark-mode" : ""
+      className={`overflow-hidden ${
+        isDarkTheme ? "bg-gray-900" : "bg-gray-50"
       }`}
     >
+      {/* Success Modal */}
       {isSubmitSuccess && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-white/30">
-          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md">
-            <h3 className="text-xl font-bold text-green-600 mb-4">
-              🎉 Problem Completed!
-            </h3>
-            <p className="text-gray-700 mb-6">
-              Great job! Your solution has been accepted and the problem is
-              marked as complete.
-            </p>
-            <div className="flex justify-center">
+        <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-black/30">
+          <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md border-t-4 border-green-500">
+            <div className="text-center">
+              <div className="text-6xl mb-4">🎉</div>
+              <h3 className="text-2xl font-bold text-green-600 mb-3">
+                Problem Completed!
+              </h3>
+              <p className="text-gray-700 mb-6">
+                Great job! Your solution has been accepted and the problem is
+                marked as complete.
+              </p>
               <button
                 onClick={() => setIsSubmitSuccess(false)}
-                className="px-4 py-2 bg-green-600 text-[var(--font-light)] rounded-md hover:bg-green-700 transition-colors"
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold shadow-md"
               >
-                Continue
+                Continue Learning
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Failure Modal */}
       {submitResult && !isSubmitSuccess && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-white/30">
-          <div className="flex flex-col bg-white p-6 px-8 rounded-lg shadow-xl max-w-md w-[400px]">
-            <h3 className="text-xl font-bold text-red-600 mb-4">
+        <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-black/30">
+          <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md border-t-4 border-red-500">
+            <h3 className="text-2xl font-bold text-red-600 mb-6 text-center">
               Submission Failed
             </h3>
-            <div className="flex flex-row justify-between text-gray-700 mb-6 ">
-              <div>
-                <p className="mb-2">Status: {submitResult.status}</p>
-                <p className="mb-2">
-                  Total Test Cases: {submitResult.total_test_cases}
-                </p>
+            <div className="space-y-3 mb-6">
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <span className="text-gray-600 font-medium">Status:</span>
+                <span className="text-red-600 font-bold">
+                  {submitResult.status}
+                </span>
               </div>
-              <div className="flex flex-col">
-                <p className="mb-2">Failed: {submitResult.failed}</p>
-                <p className="mb-2">Passed: {submitResult.passed}</p>
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <span className="text-gray-600 font-medium">Passed:</span>
+                <span className="text-green-600 font-bold">
+                  {submitResult.passed}/{submitResult.total_test_cases}
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <span className="text-gray-600 font-medium">Failed:</span>
+                <span className="text-red-600 font-bold">
+                  {submitResult.failed}/{submitResult.total_test_cases}
+                </span>
               </div>
             </div>
-            <div className="flex justify-center">
-              <button
-                onClick={() => setSubmitResult(null)}
-                className="px-4 py-2 bg-red-600 text-[var(--font-light)] rounded-md hover:bg-red-700 transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
+            <button
+              onClick={() => setSubmitResult(null)}
+              className="w-full px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold shadow-md"
+            >
+              Try Again
+            </button>
           </div>
         </div>
       )}
 
       {/* Loading Overlay */}
       {isSubmitting && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-white/30">
-          <div className="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-700">Submitting your solution...</p>
+        <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-black/30">
+          <div className="bg-white p-8 rounded-xl shadow-2xl flex flex-col items-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary-500 mb-4"></div>
+            <p className="text-gray-700 text-lg font-medium">
+              Submitting your solution...
+            </p>
           </div>
         </div>
       )}
 
-      <div className="leetcode-layout">
-        {/* Left panel with problem description */}
+      <div className="grid grid-cols-12 gap-3 p-3 h-screen">
+        {/* Left Panel - Problem Description */}
         {!isSidebarContentOpen && (
-          <div className="description-panel">
-            <div className="flex flex-row text-[var(--secondary-700)] text-sm">
+          <div className="col-span-12 lg:col-span-6 !rounded-xl border border-primary-100 overflow-hidden bg-white">
+            <div className="flex flex-row text-secondary-700 text-sm border-b border-gray-200">
               <button
-                className={`flex flex-row items-center gap-2 px-4 py-2 rounded-t-md ${
+                className={`flex flex-row items-center gap-2 px-4 py-3 transition-all ${
                   activeTab === "description"
                     ? `${
                         isDarkTheme
-                          ? "bg-gray-800 text-[var(--font-light)] border-gray-600"
-                          : "bg-[var(--primary-50)]  text-gray-500 border-gray-300"
-                      } font-semibold shadow-inner`
-                    : `text-gray-500`
-                }
-              }`}
+                          ? "bg-gray-800 text-white"
+                          : "bg-primary-50 text-primary-700"
+                      } font-semibold border-b-2 border-primary-500`
+                    : `text-gray-500 hover:bg-gray-50`
+                }`}
                 onClick={() => setActiveTab("description")}
               >
-                <img src={descriptionIcon} className="w-4 h-4" />
+                <img
+                  src={descriptionIcon}
+                  className="w-4 h-4"
+                  alt="Description"
+                />
                 Description
               </button>
               <button
-                className={`text-md flex flex-row items-center gap-2 px-4 py-2 rounded-t-md ${
+                className={`flex flex-row items-center gap-2 px-4 py-3 transition-all ${
                   activeTab === "submission"
                     ? `${
                         isDarkTheme
-                          ? "bg-gray-800 text-[var(--font-light)] border-gray-600"
-                          : "bg-[var(--primary-50)]  text-gray-500 border-gray-300"
-                      } bg-[var(--primary-50)] font-semibold shadow-inner`
-                    : "text-gray-500 dark:text-gray-400"
+                          ? "bg-gray-800 text-white"
+                          : "bg-primary-50 text-primary-700"
+                      } font-semibold border-b-2 border-primary-500`
+                    : "text-gray-500 hover:bg-gray-50"
                 }`}
                 onClick={() => setActiveTab("submission")}
               >
-                <img src={submissionIcon} className="w-4 h-4" />
+                <img
+                  src={submissionIcon}
+                  className="w-4 h-4"
+                  alt="Submissions"
+                />
                 Submissions
               </button>
               <button
-                className={`flex flex-row items-center gap-2 px-4 py-2 rounded-t-md ${
+                className={`flex flex-row items-center gap-2 px-4 py-3 transition-all ${
                   activeTab === "comments"
-                    ? `bg-[var(--primary-50)] ${
+                    ? `${
                         isDarkTheme
-                          ? "bg-gray-800 text-[var(--font-light)] border-gray-600"
-                          : "bg-[var(--primary-50)] text-gray-500 border-gray-300"
-                      } font-semibold shadow-inner`
-                    : "text-gray-500 dark:text-gray-400"
+                          ? "bg-gray-800 text-white"
+                          : "bg-primary-50 text-primary-700"
+                      } font-semibold border-b-2 border-primary-500`
+                    : "text-gray-500 hover:bg-gray-50"
                 }`}
                 onClick={() => setActiveTab("comments")}
               >
-                <img src={commentsIcon} className="w-4 h-4" />
+                <img src={commentsIcon} className="w-4 h-4" alt="Comments" />
                 Comments
               </button>
             </div>
 
-            <div className="description-content">
+            <div className="h-[calc(100%-48px)] overflow-y-auto p-4">
               {activeTab === "description" && (
-                <>
-                  <Description
-                    problem={data.details}
-                    isDarkTheme={isDarkTheme}
-                  />
-                </>
+                <Description problem={data.details} isDarkTheme={isDarkTheme} />
               )}
 
               {activeTab === "submission" && (
@@ -700,191 +783,407 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           </div>
         )}
 
-        {/* Right panel with code editor */}
-        <div className="code-editor-panel">
-          <div className="flex flex-col px-3 w-full">
-            <div className="flex flex-row w-full justify-between">
-              <div className="flex flex-row gap-1">
-                {/* Language Dropdown */}
-                <div
-                  className="relative inline-block text-sm"
-                  onClick={() => setIsDropdownHovered(!isDropdownHovered)}
-                >
-                  <div
-                    className={`border text-center px-2 py-1 text-gray-700 text-xs cursor-pointer flex justify-between items-center w-full rounded-md gap-1 h-9 ${
-                      isDarkTheme
-                        ? "bg-gray-800 text-[var(--font-light)] border-gray-600"
-                        : "bg-white text-[var(--font-dark)] border-gray-300"
-                    }`}
-                  >
-                    <span>
-                      {availableLanguages.find(
-                        (opt) => opt.value === selectedLanguage
-                      )?.label || "Select Language"}
-                    </span>
-                    <span className="text-[13px]">
-                      {isDropdownHovered ? "▲" : "▼"}
-                    </span>
-                  </div>
-
-                  {/* Dropdown options */}
-                  {isDropdownHovered && (
-                    <ul
-                      className={`absolute left-0 mt-1 w-40 rounded-md shadow-md z-10 text-xs border ${
-                        isDarkTheme
-                          ? "bg-gray-800 border-gray-600 text-[var(--font-light)]"
-                          : "bg-white border-gray-300 text-[var(--font-dark)]"
-                      }`}
-                    >
-                      {availableLanguages.map((option) => (
-                        <li
-                          key={option.value}
-                          onClick={() => {
-                            setSelectedLanguage(option.value);
-                            setIsDropdownHovered(false);
-                          }}
-                          className={`px-3 py-1 cursor-pointer hover:bg-gray-100  ${
-                            isDarkTheme ? "hover:bg-gray-700" : ""
-                          }`}
-                        >
-                          {option.label}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                {/* Autocomplete and Dark Mode Toggles */}
-                <div className="flex flex-row gap-3">
-                  <div className="flex flex-row gap-2">
-                    <div
-                      className={`border text-center px-2 text-gray-700 cursor-pointer flex justify-between items-center w-full h-9 rounded-md ${
-                        isDarkTheme
-                          ? "bg-gray-800 text-[var(--font-light)] border-gray-600"
-                          : "bg-white text-[var(--font-dark)] border-gray-300"
-                      }`}
-                    >
-                      <label className="toggle-label">
-                        <span>Autocomplete</span>
-                        <div className="toggle-switch">
-                          <input
-                            type="checkbox"
-                            checked={isAutocompleteEnabled}
-                            onChange={() =>
-                              setIsAutocompleteEnabled(!isAutocompleteEnabled)
-                            }
-                          />
-                          <span className="toggle-slider"></span>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-                  <div
-                    className={`border text-center px-2 py-1 text-gray-700 cursor-pointer flex justify-between items-center w-full h-9 mb-2 rounded-md ${
-                      isDarkTheme
-                        ? "bg-gray-800 text-[var(--font-light)] border-gray-600"
-                        : "bg-white text-[var(--font-dark)] border-gray-300"
-                    }`}
-                  >
-                    <label className="toggle-label">
-                      <span>Dark Mode</span>
-                      <div className="toggle-switch">
-                        <input
-                          type="checkbox"
-                          checked={isDarkTheme}
-                          onChange={handleThemeChange}
-                        />
-                        <span className="toggle-slider"></span>
-                      </div>
-                    </label>
-                  </div>
-                </div>
+        {/* Right Panel - Code Editor and Console */}
+        <div
+          className={`${
+            isSidebarContentOpen ? "col-span-12" : "col-span-12 lg:col-span-6"
+          } border border-primary-100 rounded-xl overflow-hidden ${
+            isDarkTheme ? "bg-gray-900" : "bg-white"
+          }`}
+        >
+          {/* Editor Header */}
+          <div
+            className={`flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-3 border-b ${
+              isDarkTheme
+                ? "border-gray-700 bg-gray-800"
+                : "border-gray-200 bg-white"
+            }`}
+          >
+            <div className="flex flex-row gap-3 items-center flex-wrap">
+              <div
+                className={`flex items-center font-semibold hidden md:flex ${
+                  isDarkTheme ? "text-white" : "text-secondary-950"
+                }`}
+              >
+                <Code className="mr-2 w-4 h-4" />
+                Code
               </div>
+              <select
+                id="language"
+                name="language"
+                value={selectedLanguage}
+                className={`form-select rounded-md px-3 py-2 h-9 focus:outline-none transition-colors ${
+                  isDarkTheme
+                    ? "bg-gray-700 text-white border border-gray-600 hover:bg-gray-600"
+                    : "bg-primary-50 text-secondary-950 border border-primary-200 hover:bg-primary-100"
+                }`}
+                onChange={(e) => handleLanguageChange(e.target.value)}
+              >
+                {availableLanguages.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
 
-              {/* Run and Submit Buttons */}
-              <div className="flex gap-3">
-                <button
-                  onClick={handleRunCode}
-                  disabled={isRunning}
-                  className={`run-button md:text-xs xl:text-md bg-[var(--success-500)] h-9 ${
-                    isRunning ? "button-loading" : ""
-                  }`}
-                >
-                  {isRunning ? "Running..." : "Run Code"}
-                </button>
+              {/* Theme Toggle */}
+              <label
+                className={`flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer transition-colors h-9 ${
+                  isDarkTheme
+                    ? "bg-gray-700 text-white border border-gray-600 hover:bg-gray-600"
+                    : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                {isDarkTheme ? (
+                  <Moon className="w-4 h-4" />
+                ) : (
+                  <Sun className="w-4 h-4" />
+                )}
+                <span className="text-sm">
+                  {isDarkTheme ? "Dark" : "Light"}
+                </span>
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={isDarkTheme}
+                    onChange={handleThemeChange}
+                    className="sr-only"
+                  />
+                  <div
+                    className={`w-10 h-5 rounded-full transition-colors ${
+                      isDarkTheme ? "bg-primary-500" : "bg-gray-300"
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                        isDarkTheme ? "transform translate-x-5" : ""
+                      }`}
+                    />
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={handleRunCode}
+                disabled={isRunning}
+                style={{
+                  backgroundColor: isRunning ? "#9ca3af" : "#22c55e",
+                  color: "#ffffff",
+                  cursor: isRunning ? "not-allowed" : "pointer",
+                }}
+                className="px-4 py-2 rounded-md font-semibold transition-all h-9 text-sm flex items-center gap-2 shadow-md hover:shadow-lg"
+                onMouseEnter={(e) => {
+                  if (!isRunning) {
+                    e.currentTarget.style.backgroundColor = "#16a34a";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isRunning) {
+                    e.currentTarget.style.backgroundColor = "#22c55e";
+                  }
+                }}
+              >
+                <Play className="w-3 h-3" />
+                {isRunning ? "Running..." : "Run Code"}
+              </button>
+              {disabled ? (
+                <Tooltip title={`You can try again in ${timeLeft} seconds`}>
+                  <button
+                    disabled
+                    style={{
+                      backgroundColor: "#9ca3af",
+                      color: "#ffffff",
+                      cursor: "not-allowed",
+                    }}
+                    className="px-4 py-2 rounded-md font-semibold h-9 text-sm"
+                  >
+                    Submit ({timeLeft}s)
+                  </button>
+                </Tooltip>
+              ) : (
                 <button
                   onClick={handleSubmitCode}
                   disabled={isSubmitting}
-                  className={`submit-button md:text-xs xl:text-md ${
-                    isSubmitting ? "button-loading opacity-70" : ""
-                  } ${"bg-gray-200"} h-9`}
+                  style={{
+                    backgroundColor: isSubmitting ? "#9ca3af" : "#3b82f6",
+                    color: "#ffffff",
+                    cursor: isSubmitting ? "not-allowed" : "pointer",
+                  }}
+                  className="px-4 py-2 rounded-md font-semibold transition-all h-9 text-sm shadow-md hover:shadow-lg"
+                  onMouseEnter={(e) => {
+                    if (!isSubmitting) {
+                      e.currentTarget.style.backgroundColor = "#2563eb";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSubmitting) {
+                      e.currentTarget.style.backgroundColor = "#3b82f6";
+                    }
+                  }}
                 >
                   {isSubmitting ? "Submitting..." : "Submit"}
                 </button>
-              </div>
+              )}
             </div>
           </div>
 
-          <div
-            className="monaco-editor-wrapper"
-            style={{
-              height: isconsoleOpen
-                ? `calc(100% - ${consoleHeight}px)`
-                : "100%",
-            }}
-          >
-            <Editor
-              height="100%"
-              language={
-                selectedLanguage === "python"
-                  ? "python"
-                  : selectedLanguage === "python3"
-                  ? "python"
-                  : selectedLanguage === "cpp"
-                  ? "cpp"
-                  : selectedLanguage === "c++"
-                  ? "cpp"
-                  : selectedLanguage === "java"
-                  ? "java"
-                  : selectedLanguage
-              }
-              value={code}
-              onChange={handleCodeChange}
-              theme={isDarkTheme ? "vs-dark" : "light"}
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-                wordWrap: "on",
-                suggestOnTriggerCharacters: isAutocompleteEnabled,
-                lineNumbers: "on",
-                roundedSelection: true,
-                selectOnLineNumbers: true,
-                quickSuggestions: isAutocompleteEnabled,
-              }}
-            />
-          </div>
+          {/* Editor and Console Grid */}
+          <div className="grid grid-cols-12 h-[calc(100%-64px)]">
+            {/* Code Editor - Left Side */}
+            <div
+              className={`col-span-12 md:col-span-7 ${
+                isDarkTheme
+                  ? "border-r border-gray-700"
+                  : "border-r border-gray-200"
+              }`}
+            >
+              {shouldRenderEditor ? (
+                <AppEditor
+                  height="100%"
+                  language={
+                    selectedLanguage === "python3"
+                      ? "python"
+                      : selectedLanguage === "c++"
+                      ? "cpp"
+                      : selectedLanguage || "javascript"
+                  }
+                  value={code}
+                  onChange={(v) => handleCodeChange(v)}
+                  theme={isDarkTheme ? "vs-dark" : "light"}
+                  disableCopyPaste={true}
+                  onMount={handleEditorDidMount}
+                  className="w-full h-full"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+                </div>
+              )}
+            </div>
 
-          {/* Resizable //console panel */}
-          <div className="console-toggle" onClick={toggleconsole}>
-            {isconsoleOpen ? "▼" : "▲"} console
-          </div>
+            {/* Console Panel - Right Side */}
+            <div
+              className={`col-span-12 md:col-span-5 flex flex-col ${
+                isDarkTheme ? "bg-gray-900" : "bg-white"
+              }`}
+            >
+              {/* Console Tabs */}
+              <div
+                className={`flex border-b ${
+                  isDarkTheme ? "border-gray-700" : "border-gray-200"
+                }`}
+              >
+                <button
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    consoleTab === "testcases"
+                      ? isDarkTheme
+                        ? "border-b-2 border-primary-500 text-white"
+                        : "border-b-2 border-primary-500 text-primary-600"
+                      : isDarkTheme
+                      ? "text-gray-400 hover:text-white"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                  onClick={() => setConsoleTab("testcases")}
+                >
+                  Test Cases
+                </button>
+                <button
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    consoleTab === "custom"
+                      ? isDarkTheme
+                        ? "border-b-2 border-primary-500 text-white"
+                        : "border-b-2 border-primary-500 text-primary-600"
+                      : isDarkTheme
+                      ? "text-gray-400 hover:text-white"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                  onClick={() => setConsoleTab("custom")}
+                >
+                  Custom Input
+                </button>
+              </div>
 
-          {isconsoleOpen && (
-            <ConsoleTestCases
-              testCases={testCases}
-              activeTestCase={activeTestCase}
-              setActiveTestCase={setActiveTestCase}
-              customInput={customInput}
-              setCustomInput={setCustomInput}
-              customTestCase={customTestCase}
-              isRunning={isRunning}
-              handleCustomRunCode={handleCustomRunCode}
-              isDarkTheme={isDarkTheme}
-              startResizing={startResizing}
-            />
-          )}
+              {/* Console Content */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {consoleTab === "testcases" ? (
+                  <div className="space-y-3">
+                    {/* Test Case Tabs */}
+                    <div className="flex gap-2 flex-wrap">
+                      {testCases.map((tc, index) => (
+                        <button
+                          key={index}
+                          className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                            activeTestCase === index
+                              ? isDarkTheme
+                                ? "bg-gray-700 text-white"
+                                : "bg-primary-100 text-primary-700"
+                              : isDarkTheme
+                              ? "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          } ${
+                            tc.status === "passed"
+                              ? "border-l-4 border-green-500"
+                              : tc.status === "failed"
+                              ? "border-l-4 border-red-500"
+                              : ""
+                          }`}
+                          onClick={() => setActiveTestCase(index)}
+                        >
+                          Case {index + 1}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Active Test Case Display */}
+                    {testCases[activeTestCase] && (
+                      <div className="space-y-3">
+                        <div>
+                          <div
+                            className={`text-sm font-semibold mb-2 ${
+                              isDarkTheme ? "text-gray-300" : "text-gray-700"
+                            }`}
+                          >
+                            Input:
+                          </div>
+                          <div
+                            className={`p-3 rounded-md font-mono text-sm ${
+                              isDarkTheme
+                                ? "bg-gray-800 text-gray-300"
+                                : "bg-gray-50 text-gray-800"
+                            }`}
+                          >
+                            {testCases[activeTestCase].sample_input}
+                          </div>
+                        </div>
+
+                        <div>
+                          <div
+                            className={`text-sm font-semibold mb-2 ${
+                              isDarkTheme ? "text-gray-300" : "text-gray-700"
+                            }`}
+                          >
+                            Expected Output:
+                          </div>
+                          <div
+                            className={`p-3 rounded-md font-mono text-sm ${
+                              isDarkTheme
+                                ? "bg-gray-800 text-gray-300"
+                                : "bg-gray-50 text-gray-800"
+                            }`}
+                          >
+                            {testCases[activeTestCase].sample_output}
+                          </div>
+                        </div>
+
+                        {testCases[activeTestCase].userOutput !== undefined && (
+                          <div>
+                            <div
+                              className={`text-sm font-semibold mb-2 ${
+                                testCases[activeTestCase].status === "passed"
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              Your Output:
+                            </div>
+                            <div
+                              className={`p-3 rounded-md font-mono text-sm ${
+                                isDarkTheme
+                                  ? "bg-gray-800 text-gray-300"
+                                  : "bg-gray-50 text-gray-800"
+                              }`}
+                            >
+                              {testCases[activeTestCase].userOutput}
+                            </div>
+                          </div>
+                        )}
+
+                        {testCases[activeTestCase].status && (
+                          <div
+                            className={`p-3 rounded-md text-sm font-medium ${
+                              testCases[activeTestCase].status === "passed"
+                                ? "bg-green-100 text-green-800"
+                                : testCases[activeTestCase].status === "failed"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {testCases[activeTestCase].status === "passed"
+                              ? "✓ Passed"
+                              : testCases[activeTestCase].status === "failed"
+                              ? "✗ Failed"
+                              : "⟳ Running..."}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {/* Custom Input Area */}
+                    <div>
+                      <label
+                        className={`text-sm font-semibold mb-2 block ${
+                          isDarkTheme ? "text-gray-300" : "text-gray-700"
+                        }`}
+                      >
+                        Input (stdin):
+                      </label>
+                      <textarea
+                        value={customInput}
+                        onChange={(e) => setCustomInput(e.target.value)}
+                        placeholder="Enter custom input..."
+                        rows={6}
+                        className={`w-full p-3 rounded-md font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                          isDarkTheme
+                            ? "bg-gray-800 text-gray-300 border border-gray-700"
+                            : "bg-gray-50 text-gray-800 border border-gray-300"
+                        }`}
+                      />
+                    </div>
+
+                    {/* Custom Output Area */}
+                    <div>
+                      <label
+                        className={`text-sm font-semibold mb-2 block ${
+                          isDarkTheme ? "text-gray-300" : "text-gray-700"
+                        }`}
+                      >
+                        Output (stdout):
+                      </label>
+                      <div
+                        className={`w-full p-3 rounded-md font-mono text-sm min-h-[100px] ${
+                          isDarkTheme
+                            ? "bg-gray-800 text-gray-300 border border-gray-700"
+                            : "bg-gray-50 text-gray-800 border border-gray-300"
+                        }`}
+                      >
+                        {stdOut || "Run code to see output..."}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Results Display */}
+                {showResults && (
+                  <div
+                    className={`mt-4 p-3 rounded-md text-sm font-medium ${
+                      resultStatus === "S"
+                        ? "bg-green-100 text-green-800"
+                        : resultStatus === "F"
+                        ? "bg-red-100 text-red-800"
+                        : "bg-yellow-100 text-yellow-800"
+                    }`}
+                  >
+                    {showResults}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

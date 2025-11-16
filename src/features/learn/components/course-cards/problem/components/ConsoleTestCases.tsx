@@ -32,6 +32,7 @@ interface ConsoleTestCasesProps {
   handleCustomRunCode: () => void;
   isDarkTheme: boolean;
   startResizing: (e: React.MouseEvent) => void;
+  consoleHeight: number;
 }
 
 const ConsoleTestCases: React.FC<ConsoleTestCasesProps> = ({
@@ -45,6 +46,7 @@ const ConsoleTestCases: React.FC<ConsoleTestCasesProps> = ({
   handleCustomRunCode,
   isDarkTheme,
   startResizing,
+  consoleHeight,
 }) => {
   const consoleRef = useRef<HTMLDivElement>(null);
 
@@ -75,6 +77,7 @@ const ConsoleTestCases: React.FC<ConsoleTestCasesProps> = ({
     <div
       className={`mb-10 ${isDarkTheme ? "bg-[#252526]" : ""}`}
       ref={consoleRef}
+      style={{ height: `${consoleHeight}px`, overflowY: "auto" }}
     >
       <div className="console-resize-handle" onMouseDown={startResizing}></div>
       <div className="flex items-center text-center gap-2 p-4 text-xl font-semibold">
