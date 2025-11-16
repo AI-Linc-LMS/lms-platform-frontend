@@ -203,89 +203,82 @@ const CourseTopicDetailPage: React.FC = () => {
     }
   }, [submoduleData, isSwitchingTopic]);
 
-  // Set default selected content when submodule data changes
+  // Set default selected content only on initial load (preserve selection across updates)
   useEffect(() => {
-    if (submoduleData?.data && submoduleData.data.length > 0) {
-      // Set the first content item as the default selected content
-      const firstContent = submoduleData.data[0];
-      setSelectedContentId(firstContent.id);
-      setCurrentContentIndex(0);
+    if (!submoduleData?.data || submoduleData.data.length === 0) return;
+    // If we already have a selected content, do not override it
+    if (selectedContentId) return;
 
-      // Only set the first video as selected if we're in the Videos section
-      if (activeSidebarLabel === "Videos") {
-        const firstVideo = submoduleData.data.find(
-          (content) => content.content_type === "VideoTutorial"
-        );
-        if (firstVideo) {
-          setSelectedVideoId(firstVideo.id.toString());
-          setCurrentContentIndex(submoduleData.data.indexOf(firstVideo));
-          setSelectedContentId(firstVideo.id);
-        }
-      } else {
-        // For other tabs or "All" tab, set the appropriate selected content based on the first item
-        switch (firstContent.content_type) {
-          case "VideoTutorial":
-            setSelectedVideoId(firstContent.id.toString());
-            break;
-          case "CodingProblem":
-            setSelectedProblemId(firstContent.id.toString());
-            break;
-          case "Development":
-            setSelectedProjectId(firstContent.id.toString());
-            break;
-          case "Assignment":
-            setSelectedAssignmentId(firstContent.id);
-            break;
-          case "Article":
-            setSelectedArticleId(firstContent.id);
-            break;
-          case "Quiz":
-            setSelectedQuizId(firstContent.id);
-            break;
-        }
-      }
+    const firstContent = submoduleData.data[0];
+    setSelectedContentId(firstContent.id);
+    setCurrentContentIndex(0);
 
-      // Find the first problem
+    // Initialize selection per content type only if not already chosen
+    switch (firstContent.content_type) {
+      case "VideoTutorial":
+        if (!selectedVideoId) setSelectedVideoId(firstContent.id.toString());
+        break;
+      case "CodingProblem":
+        if (!selectedProblemId)
+          setSelectedProblemId(firstContent.id.toString());
+        break;
+      case "Development":
+        if (!selectedProjectId)
+          setSelectedProjectId(firstContent.id.toString());
+        break;
+      case "Assignment":
+        if (!selectedAssignmentId) setSelectedAssignmentId(firstContent.id);
+        break;
+      case "Article":
+        if (!selectedArticleId) setSelectedArticleId(firstContent.id);
+        break;
+      case "Quiz":
+        if (!selectedQuizId) setSelectedQuizId(firstContent.id);
+        break;
+    }
+
+    // Pre-populate first instances for quick navigation if those aren't set yet
+    if (!selectedProblemId) {
       const firstProblem = submoduleData.data.find(
         (content) => content.content_type === "CodingProblem"
       );
-      if (firstProblem) {
-        setSelectedProblemId(firstProblem.id.toString());
-      }
-
-      // Find the first quiz
+      if (firstProblem) setSelectedProblemId(firstProblem.id.toString());
+    }
+    if (!selectedQuizId) {
       const firstQuiz = submoduleData.data.find(
         (content) => content.content_type === "Quiz"
       );
-      if (firstQuiz) {
-        setSelectedQuizId(firstQuiz.id);
-      }
-
-      // Find the first article
+      if (firstQuiz) setSelectedQuizId(firstQuiz.id);
+    }
+    if (!selectedArticleId) {
       const firstArticle = submoduleData.data.find(
         (content) => content.content_type === "Article"
       );
-      if (firstArticle) {
-        setSelectedArticleId(firstArticle.id);
-      }
-
-      // Find the first assignment
+      if (firstArticle) setSelectedArticleId(firstArticle.id);
+    }
+    if (!selectedAssignmentId) {
       const firstAssignment = submoduleData.data.find(
         (content) => content.content_type === "Assignment"
       );
-      if (firstAssignment) {
-        setSelectedAssignmentId(firstAssignment.id);
-      }
-
-      // Find the first development project
+      if (firstAssignment) setSelectedAssignmentId(firstAssignment.id);
+    }
+    if (!selectedProjectId) {
       const firstDevelopment = submoduleData.data.find(
         (content) => content.content_type === "Development"
       );
-      if (firstDevelopment) {
+      if (firstDevelopment)
         setSelectedProjectId(firstDevelopment.id.toString());
-      }
     }
-  }, [submoduleData]); // Removed activeSidebarLabel dependency to prevent resetting index when switching tabs
+  }, [
+    submoduleData,
+    selectedContentId,
+    selectedVideoId,
+    selectedProblemId,
+    selectedProjectId,
+    selectedAssignmentId,
+    selectedArticleId,
+    selectedQuizId,
+  ]);
 
   // Props objects for each content type
   const videoProps = {
