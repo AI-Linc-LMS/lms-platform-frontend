@@ -35,6 +35,9 @@ export interface TestCase {
   status?: "passed" | "failed" | "running";
   time?: string;
   memory?: number;
+  stderr?: string | null;
+  compile_output?: string | null;
+  verdict?: string;
 }
 
 export interface CustomTestCase {
@@ -43,4 +46,7 @@ export interface CustomTestCase {
   status?: "passed" | "failed" | "running";
   time?: string;
   memory?: number;
+  stderr?: string | null;
+  compile_output?: string | null;
+  verdict?: string;
 }
