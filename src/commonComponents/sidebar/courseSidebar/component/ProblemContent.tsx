@@ -32,7 +32,6 @@ const ProblemContent: React.FC<ProblemContentProps> = ({
 
       <div className="border border-gray-200 rounded-lg overflow-hidden">
         {problems.map((problem, idx) => {
-          console.log("problem", problem);
           const isSelected = selectedProblemId === problem.id;
           const isLast = idx === problems.length - 1;
 
