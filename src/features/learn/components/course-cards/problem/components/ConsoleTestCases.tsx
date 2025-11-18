@@ -1,25 +1,6 @@
 import { useEffect, useRef } from "react";
 import testcaseIcon from "../../../../../../commonComponents/icons/enrolled-courses/problem/testcaseIcon.png";
-
-interface TestCase {
-  test_case?: number;
-  input: string;
-  expected_output: string;
-  sample_input: string;
-  sample_output: string;
-  userOutput?: string;
-  status?: "passed" | "failed" | "running" | undefined;
-  time?: string;
-  memory?: number;
-}
-
-interface CustomTestCase {
-  input: string;
-  output?: string;
-  status?: "passed" | "failed" | "running" | undefined;
-  time?: string;
-  memory?: number;
-}
+import { TestCase, CustomTestCase } from "../problem.types";
 
 interface ConsoleTestCasesProps {
   testCases: TestCase[];
@@ -194,9 +175,45 @@ const ConsoleTestCases: React.FC<ConsoleTestCasesProps> = ({
                                   : "text-yellow-600"
                               }`}
                             >
-                              {testCases[activeTestCase]?.status || "failed"}
+                              {testCases[activeTestCase]?.verdict || testCases[activeTestCase]?.status || "failed"}
                             </span>
                           </div>
+
+                          {testCases[activeTestCase]?.stderr && (
+                            <div className="mt-3">
+                              <div className="text-sm text-gray-700 mb-1">
+                                <strong>Error (stderr):</strong>
+                              </div>
+                              <pre
+                                className={`p-2 mt-2 rounded text-sm text-red-600 ${
+                                  isDarkTheme
+                                    ? "bg-gray-800 text-red-400 border-gray-600"
+                                    : "bg-red-50 text-red-800 border-red-200"
+                                }`}
+                                style={{ whiteSpace: "pre-wrap" }}
+                              >
+                                {testCases[activeTestCase]?.stderr}
+                              </pre>
+                            </div>
+                          )}
+
+                          {testCases[activeTestCase]?.compile_output && (
+                            <div className="mt-3">
+                              <div className="text-sm text-gray-700 mb-1">
+                                <strong>Compile Output:</strong>
+                              </div>
+                              <pre
+                                className={`p-2 mt-2 rounded text-sm text-orange-600 ${
+                                  isDarkTheme
+                                    ? "bg-gray-800 text-orange-400 border-gray-600"
+                                    : "bg-orange-50 text-orange-800 border-orange-200"
+                                }`}
+                                style={{ whiteSpace: "pre-wrap" }}
+                              >
+                                {testCases[activeTestCase]?.compile_output}
+                              </pre>
+                            </div>
+                          )}
 
                           {testCases[activeTestCase]?.time && (
                             <div className="mt-1 text-sm text-gray-600">
@@ -244,7 +261,11 @@ const ConsoleTestCases: React.FC<ConsoleTestCasesProps> = ({
                             <strong>Output:</strong>
                           </div>
                           <pre
-                            className={`bg-gray-100 p-2 mt-2 rounded text-sm ${
+                            className={`p-2 mt-2 rounded text-sm ${
+                              isDarkTheme
+                                ? "bg-gray-800 text-[var(--font-light)] border-gray-600"
+                                : "bg-gray-200 text-[var(--font-dark)] border-gray-300"
+                            } ${
                               customTestCase.status === "passed"
                                 ? "text-green-600"
                                 : customTestCase.status === "failed"
@@ -252,8 +273,61 @@ const ConsoleTestCases: React.FC<ConsoleTestCasesProps> = ({
                                 : "text-yellow-600"
                             }`}
                           >
-                            {customTestCase.output}
+                            {customTestCase.output || " "}
                           </pre>
+
+                          {customTestCase.verdict && (
+                            <div className="mt-2 font-medium">
+                              Status:{" "}
+                              <span
+                                className={`${
+                                  customTestCase.status === "passed"
+                                    ? "text-green-700"
+                                    : customTestCase.status === "failed"
+                                    ? "text-red-700"
+                                    : "text-yellow-600"
+                                }`}
+                              >
+                                {customTestCase.verdict}
+                              </span>
+                            </div>
+                          )}
+
+                          {customTestCase.stderr && (
+                            <div className="mt-3">
+                              <div className="text-sm text-gray-700 mb-1">
+                                <strong>Error (stderr):</strong>
+                              </div>
+                              <pre
+                                className={`p-2 mt-2 rounded text-sm text-red-600 ${
+                                  isDarkTheme
+                                    ? "bg-gray-800 text-red-400 border-gray-600"
+                                    : "bg-red-50 text-red-800 border-red-200"
+                                }`}
+                                style={{ whiteSpace: "pre-wrap" }}
+                              >
+                                {customTestCase.stderr}
+                              </pre>
+                            </div>
+                          )}
+
+                          {customTestCase.compile_output && (
+                            <div className="mt-3">
+                              <div className="text-sm text-gray-700 mb-1">
+                                <strong>Compile Output:</strong>
+                              </div>
+                              <pre
+                                className={`p-2 mt-2 rounded text-sm text-orange-600 ${
+                                  isDarkTheme
+                                    ? "bg-gray-800 text-orange-400 border-gray-600"
+                                    : "bg-orange-50 text-orange-800 border-orange-200"
+                                }`}
+                                style={{ whiteSpace: "pre-wrap" }}
+                              >
+                                {customTestCase.compile_output}
+                              </pre>
+                            </div>
+                          )}
 
                           {customTestCase.time && (
                             <div className="mt-1 text-sm text-gray-600">

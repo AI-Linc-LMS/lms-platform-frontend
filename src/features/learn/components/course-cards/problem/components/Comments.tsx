@@ -77,7 +77,11 @@ const Comments: React.FC<CommentsProps> = ({
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
           placeholder="Add a comment..."
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[border-gray-300] focus:border-transparent resize-none"
+          className={`w-full p-3 border rounded-lg focus:ring-2 focus:outline-none resize-none transition-colors ${
+            isDarkTheme
+              ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400 focus:ring-primary-500 focus:border-primary-500"
+              : "bg-white border-gray-300 text-gray-800 placeholder-gray-500 focus:ring-primary-500 focus:border-primary-500"
+          }`}
           rows={3}
         />
         <div className="flex justify-end">
