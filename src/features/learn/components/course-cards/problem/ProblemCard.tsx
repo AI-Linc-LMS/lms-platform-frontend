@@ -18,7 +18,7 @@ import Comments from "../../../../../commonComponents/components/Comments";
 import Submissions from "./components/Submissions";
 import Description from "./components/Description";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { ProblemData, TestCase } from "./problem.types";
+import { ProblemData, TestCase, CustomTestCase } from "./problem.types";
 import React from "react";
 import { Code, Play, Moon, Sun } from "lucide-react";
 import { Tooltip } from "@mui/material";
@@ -66,6 +66,9 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const [activeTestCase, setActiveTestCase] = useState<number>(0);
   const [customInput, setCustomInput] = useState("");
   const [stdOut, setStdOut] = useState("");
+  const [customTestCase, setCustomTestCase] = useState<CustomTestCase>({
+    input: "",
+  });
   const [isSubmitSuccess, setIsSubmitSuccess] = useState(false);
   const [submitResult, setSubmitResult] = useState<{
     status: string;
@@ -82,6 +85,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   );
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
+  const consoleContentRef = useRef<HTMLDivElement>(null);
 
   // Get available languages from template codes
   const availableLanguages = useMemo(() => {
@@ -276,6 +280,121 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     }
   }, [data]);
 
+  // Update error message when active test case changes
+  useEffect(() => {
+    // Don't update if we're submitting (submit handler will set its own message)
+    if (isSubmitting) return;
+
+    if (testCases.length > 0 && testCases[activeTestCase]) {
+      const currentCase = testCases[activeTestCase];
+
+      // Build error message for the active test case
+      const buildTestCaseErrorMessage = (tc: TestCase, index: number) => {
+        const caseNum = tc.test_case || index + 1;
+        const parts: string[] = [];
+
+        parts.push(
+          `━━━ Test Case ${caseNum}: ${
+            tc.verdict || tc.status || "Pending"
+          } ━━━`
+        );
+
+        // Show input/output comparison
+        if (tc.sample_input) {
+          parts.push(`\nInput: ${tc.sample_input}`);
+        }
+        if (tc.sample_output) {
+          parts.push(`Expected Output: ${tc.sample_output}`);
+        }
+        if (tc.userOutput !== undefined) {
+          parts.push(`Your Output: ${tc.userOutput || "(empty)"}`);
+        }
+
+        // Show error details
+        if (tc.stderr) {
+          parts.push(`\n❌ Error (stderr):\n${tc.stderr}`);
+        }
+
+        if (tc.compile_output) {
+          parts.push(`\n⚠️ Compile Output:\n${tc.compile_output}`);
+        }
+
+        // Show time and memory if available
+        if (tc.time) {
+          parts.push(`\n⏱️ Time: ${tc.time}s | Memory: ${tc.memory || 0} KB`);
+        }
+
+        return parts.join("\n");
+      };
+
+      if (currentCase.status === "passed") {
+        setShowResults("✓ Test case passed!");
+        setResultStatus("S");
+      } else if (currentCase.status === "failed") {
+        setShowResults(buildTestCaseErrorMessage(currentCase, activeTestCase));
+        setResultStatus("F");
+      } else if (currentCase.status === "running") {
+        setShowResults("⟳ Running test case...");
+        setResultStatus("");
+      } else {
+        // No status yet, clear results
+        setShowResults("");
+        setResultStatus("");
+      }
+    }
+  }, [activeTestCase, testCases, isSubmitting]);
+
+  // Clear all errors when switching between Test Cases and Custom Input tabs
+  useEffect(() => {
+    setShowResults("");
+    setResultStatus("");
+    // Clear test case execution results but keep original test case data
+    setTestCases((prev) =>
+      prev.map((tc) => ({
+        ...tc,
+        stderr: undefined,
+        compile_output: undefined,
+        userOutput: undefined,
+        status: undefined,
+        time: undefined,
+        memory: undefined,
+        verdict: undefined,
+      }))
+    );
+    // Clear custom test case errors
+    setCustomTestCase({
+      input: customInput, // Keep the input value
+      output: undefined,
+      status: undefined,
+      time: undefined,
+      memory: undefined,
+      stderr: undefined,
+      compile_output: undefined,
+      verdict: undefined,
+    });
+    setStdOut("");
+  }, [consoleTab, customInput]);
+
+  // Auto-scroll console content to bottom when content changes
+  useEffect(() => {
+    if (consoleContentRef.current) {
+      // Use setTimeout to ensure DOM is updated
+      setTimeout(() => {
+        if (consoleContentRef.current) {
+          consoleContentRef.current.scrollTop =
+            consoleContentRef.current.scrollHeight;
+        }
+      }, 100);
+    }
+  }, [testCases, customTestCase, showResults, stdOut, activeTestCase]);
+
+  // Scroll to top when switching tabs
+  useEffect(() => {
+    if (consoleContentRef.current) {
+      consoleContentRef.current.scrollTop = 0;
+    }
+  }, [consoleTab]);
+
   const getSelectedLanguageId = () => {
     if (!selectedLanguage) return 0;
     const normalized =
@@ -287,10 +406,26 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     return (LANGUAGE_ID_MAPPING as Record<string, number>)[normalized] ?? 0;
   };
 
+  // Check if all test cases have passed
+  const allTestCasesPassed = useMemo(() => {
+    if (testCases.length === 0) return false;
+    // Check if any test case has been run and has a status
+    const hasRunTests = testCases.some((tc) => tc.status !== undefined);
+    if (!hasRunTests) return false;
+    // Check if all test cases have passed
+    return testCases.every((tc) => tc.status === "passed");
+  }, [testCases]);
+
   // Run code mutation
   const runCodeMutation = useMutation({
     mutationFn: () => {
-      return runCode(1, courseId, contentId, code, getSelectedLanguageId());
+      return runCode(
+        parseInt(clientId),
+        courseId,
+        contentId,
+        code,
+        getSelectedLanguageId()
+      );
     },
     onSuccess: (data: RunCodeResult) => {
       const updatedTestCases = data.results.map((result) => ({
@@ -301,19 +436,33 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         status: result.status === "Accepted" ? "passed" : "failed",
         time: result.time,
         memory: result.memory,
+        stderr: result.stderr,
+        compile_output: result.compile_output,
+        verdict: result.verdict,
       })) as TestCase[];
 
       setTestCases(updatedTestCases);
 
       const success = updatedTestCases.every((tc) => tc.status === "passed");
+
+      // The useEffect will handle updating showResults based on activeTestCase
+      // Just set the overall results here
       setResults({
         success,
-        message: success ? "All test cases passed!" : "Some test cases failed.",
+        message: success
+          ? "All test cases passed!"
+          : `${
+              updatedTestCases.filter((tc) => tc.status === "failed").length
+            } test case(s) failed`,
       });
-      setResultStatus(success ? "S" : "F");
-      setShowResults(
-        success ? "All test cases passed!" : "Some test cases failed."
-      );
+
+      // If all passed, show success message
+      if (success) {
+        setShowResults("All test cases passed!");
+        setResultStatus("S");
+      }
+      // Otherwise, the useEffect will update showResults based on activeTestCase
+
       setIsRunning(false);
     },
     onError: () => {
@@ -331,7 +480,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const runCustomCodeMutation = useMutation({
     mutationFn: (input: string) => {
       return runCustomCode(
-        1,
+        parseInt(clientId),
         courseId,
         contentId,
         code,
@@ -342,11 +491,78 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     onSuccess: (data: CustomRunCodeResult) => {
       setStdOut(data.actual_output);
       setResultStatus(data.status === "Accepted" ? "S" : "F");
-      setShowResults(
-        data.status === "Accepted"
-          ? "Custom test passed!"
-          : "Custom test failed."
-      );
+
+      setCustomTestCase({
+        input: data.input,
+        output: data.actual_output,
+        status: data.status === "Accepted" ? "passed" : "failed",
+        time: data.time,
+        memory: data.memory,
+        stderr: data.stderr,
+        compile_output: data.compile_output,
+        verdict: data.status,
+      });
+
+      // Build detailed error message with creative messages
+      let errorMessage = "";
+      if (data.status === "Accepted") {
+        errorMessage = "✓ Correct - Code executed successfully!";
+        setResultStatus("S");
+      } else {
+        // Check if it's a syntax/compilation error
+        const isSyntaxError =
+          data.stderr?.toLowerCase().includes("syntax") ||
+          data.stderr?.toLowerCase().includes("indentation") ||
+          data.stderr?.toLowerCase().includes("compile") ||
+          data.compile_output !== null ||
+          data.status?.toLowerCase().includes("compilation") ||
+          data.status?.toLowerCase().includes("compile");
+
+        if (isSyntaxError) {
+          errorMessage = "✗ Syntax Error";
+          if (data.stderr) {
+            errorMessage += `\n\n${data.stderr}`;
+          } else if (data.compile_output) {
+            errorMessage += `\n\n${data.compile_output}`;
+          } else {
+            errorMessage += `\n\n${data.status}`;
+          }
+          setResultStatus("F");
+        } else {
+          // Runtime or other errors
+          const statusLower = data.status?.toLowerCase() || "";
+          if (
+            statusLower.includes("time limit") ||
+            statusLower.includes("tle")
+          ) {
+            errorMessage = "⏱️ Time Limit Exceeded";
+            if (data.stderr) {
+              errorMessage += `\n\n${data.stderr}`;
+            }
+          } else if (
+            statusLower.includes("memory") ||
+            statusLower.includes("mle")
+          ) {
+            errorMessage = "💾 Memory Limit Exceeded";
+            if (data.stderr) {
+              errorMessage += `\n\n${data.stderr}`;
+            }
+          } else if (statusLower.includes("runtime")) {
+            errorMessage = `✗ Runtime Error: ${data.status}`;
+            if (data.stderr) {
+              errorMessage += `\n\n${data.stderr}`;
+            }
+          } else {
+            errorMessage = `✗ ${data.status}`;
+            if (data.stderr) {
+              errorMessage += `\n\n${data.stderr}`;
+            }
+          }
+          setResultStatus("F");
+        }
+      }
+
+      setShowResults(errorMessage);
       setIsRunning(false);
     },
     onError: () => {
@@ -360,7 +576,13 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   // Submit code mutation
   const submitCodeMutation = useMutation({
     mutationFn: () => {
-      return submitCode(1, courseId, contentId, code, getSelectedLanguageId());
+      return submitCode(
+        parseInt(clientId),
+        courseId,
+        contentId,
+        code,
+        getSelectedLanguageId()
+      );
     },
     onSuccess: async (data: SubmitCodeResult) => {
       const success = data.status === "Accepted";
@@ -497,6 +719,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
   const handleCustomRunCode = () => {
     if (!customInput.trim()) {
+      setIsRunning(false);
       setResults({
         success: false,
         message: "Please provide custom input",
@@ -535,22 +758,77 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       if (allTestsPassed) {
         submitCodeMutation.mutate();
       } else {
+        // Build detailed error message for failed test cases
+        const buildSubmitErrorMessage = (results: RunCodeResult["results"]) => {
+          const failedResults = results.filter(
+            (result) => result.status !== "Accepted"
+          );
+          if (failedResults.length === 0) return "All test cases passed!";
+
+          const errorMessages = failedResults.map((result, idx) => {
+            const parts: string[] = [];
+            const caseNum = result.test_case || idx + 1;
+            parts.push(
+              `━━━ Test Case ${caseNum}: ${result.verdict || result.status} ━━━`
+            );
+
+            // Show input/output comparison
+            if (result.input) {
+              parts.push(`\nInput: ${result.input}`);
+            }
+            if (result.expected_output) {
+              parts.push(`Expected Output: ${result.expected_output}`);
+            }
+            if (result.actual_output !== undefined) {
+              parts.push(`Your Output: ${result.actual_output || "(empty)"}`);
+            }
+
+            // Show error details
+            if (result.stderr) {
+              parts.push(`\n❌ Error (stderr):\n${result.stderr}`);
+            }
+
+            if (result.compile_output) {
+              parts.push(`\n⚠️ Compile Output:\n${result.compile_output}`);
+            }
+
+            // Show time and memory if available
+            if (result.time) {
+              parts.push(
+                `\n⏱️ Time: ${result.time}s | Memory: ${result.memory || 0} KB`
+              );
+            }
+
+            return parts.join("\n");
+          });
+
+          return `❌ Please fix the failing test cases before submitting:\n${errorMessages.join(
+            "\n\n"
+          )}`;
+        };
+
+        const errorMessage = buildSubmitErrorMessage(runResult.results);
+
+        // Test cases are already updated by runCodeMutation.onSuccess
+        // Set error message (useEffect is prevented from running when isSubmitting is true)
         setResults({
           success: false,
-          message: "Please fix the failing test cases before submitting.",
+          message: errorMessage,
         });
         setResultStatus("F");
-        setShowResults("Please fix the failing test cases before submitting.");
+        setShowResults(errorMessage);
         setIsSubmitting(false);
         setIsRunning(false);
       }
-    } catch {
+    } catch (error: any) {
+      const errorMessage =
+        error?.message || "Error running code. Please try again.";
       setResults({
         success: false,
-        message: "Error running code. Please try again.",
+        message: errorMessage,
       });
       setResultStatus("F");
-      setShowResults("Error running code. Please try again.");
+      setShowResults(`❌ ${errorMessage}`);
       setIsSubmitting(false);
       setIsRunning(false);
     }
@@ -870,19 +1148,19 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                 onClick={handleRunCode}
                 disabled={isRunning}
                 style={{
-                  backgroundColor: isRunning ? "#9ca3af" : "#22c55e",
+                  backgroundColor: isRunning ? "#9ca3af" : "var(--course-cta)",
                   color: "#ffffff",
                   cursor: isRunning ? "not-allowed" : "pointer",
                 }}
                 className="px-4 py-2 rounded-md font-semibold transition-all h-9 text-sm flex items-center gap-2 shadow-md hover:shadow-lg"
                 onMouseEnter={(e) => {
                   if (!isRunning) {
-                    e.currentTarget.style.backgroundColor = "#16a34a";
+                    e.currentTarget.style.backgroundColor = "var(--course-cta)";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!isRunning) {
-                    e.currentTarget.style.backgroundColor = "#22c55e";
+                    e.currentTarget.style.backgroundColor = "var(--course-cta)";
                   }
                 }}
               >
@@ -903,24 +1181,44 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                     Submit ({timeLeft}s)
                   </button>
                 </Tooltip>
+              ) : !allTestCasesPassed ? (
+                <Tooltip title="Pass all test cases to submit">
+                  <span>
+                    <button
+                      disabled
+                      style={{
+                        backgroundColor: "#9ca3af",
+                        color: "#ffffff",
+                        cursor: "not-allowed",
+                      }}
+                      className="px-4 py-2 rounded-md font-semibold h-9 text-sm"
+                    >
+                      Submit
+                    </button>
+                  </span>
+                </Tooltip>
               ) : (
                 <button
                   onClick={handleSubmitCode}
                   disabled={isSubmitting}
                   style={{
-                    backgroundColor: isSubmitting ? "#9ca3af" : "#3b82f6",
+                    backgroundColor: isSubmitting
+                      ? "#9ca3af"
+                      : "var(--primary-500)",
                     color: "#ffffff",
                     cursor: isSubmitting ? "not-allowed" : "pointer",
                   }}
                   className="px-4 py-2 rounded-md font-semibold transition-all h-9 text-sm shadow-md hover:shadow-lg"
                   onMouseEnter={(e) => {
                     if (!isSubmitting) {
-                      e.currentTarget.style.backgroundColor = "#2563eb";
+                      e.currentTarget.style.backgroundColor =
+                        "var(--primary-600)";
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isSubmitting) {
-                      e.currentTarget.style.backgroundColor = "#3b82f6";
+                      e.currentTarget.style.backgroundColor =
+                        "var(--primary-500)";
                     }
                   }}
                 >
@@ -966,13 +1264,13 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
             {/* Console Panel - Right Side */}
             <div
-              className={`col-span-12 md:col-span-5 flex flex-col ${
+              className={`col-span-12 md:col-span-5 flex flex-col overflow-hidden h-full ${
                 isDarkTheme ? "bg-gray-900" : "bg-white"
               }`}
             >
               {/* Console Tabs */}
               <div
-                className={`flex border-b ${
+                className={`flex border-b flex-shrink-0 ${
                   isDarkTheme ? "border-gray-700" : "border-gray-200"
                 }`}
               >
@@ -1007,34 +1305,55 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
               </div>
 
               {/* Console Content */}
-              <div className="flex-1 overflow-y-auto p-4">
+              <div
+                ref={consoleContentRef}
+                className="flex-1 overflow-y-auto p-4"
+                style={{
+                  minHeight: 0,
+                  maxHeight: "100%",
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                }}
+              >
                 {consoleTab === "testcases" ? (
                   <div className="space-y-3">
                     {/* Test Case Tabs */}
                     <div className="flex gap-2 flex-wrap">
-                      {testCases.map((tc, index) => (
-                        <button
-                          key={index}
-                          className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                            activeTestCase === index
-                              ? isDarkTheme
-                                ? "bg-gray-700 text-white"
-                                : "bg-primary-100 text-primary-700"
-                              : isDarkTheme
-                              ? "bg-gray-800 text-gray-400 hover:bg-gray-700"
-                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                          } ${
-                            tc.status === "passed"
-                              ? "border-l-4 border-green-500"
-                              : tc.status === "failed"
-                              ? "border-l-4 border-red-500"
-                              : ""
-                          }`}
-                          onClick={() => setActiveTestCase(index)}
-                        >
-                          Case {index + 1}
-                        </button>
-                      ))}
+                      {testCases.map((tc, index) => {
+                        const hasError = tc.stderr || tc.compile_output;
+                        return (
+                          <button
+                            key={index}
+                            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                              activeTestCase === index
+                                ? isDarkTheme
+                                  ? "bg-gray-700 text-white"
+                                  : "bg-primary-100 text-primary-700"
+                                : isDarkTheme
+                                ? "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            } ${
+                              tc.status === "passed"
+                                ? "border-l-4 border-green-500"
+                                : tc.status === "failed" || hasError
+                                ? "border-l-4 border-red-500"
+                                : ""
+                            } ${
+                              hasError && tc.status === "failed"
+                                ? isDarkTheme
+                                  ? "bg-red-900/20"
+                                  : "bg-red-50"
+                                : ""
+                            }`}
+                            onClick={() => setActiveTestCase(index)}
+                          >
+                            Case {index + 1}
+                            {hasError && (
+                              <span className="ml-1 text-red-500">⚠</span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
 
                     {/* Active Test Case Display */}
@@ -1102,21 +1421,85 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                         )}
 
                         {testCases[activeTestCase].status && (
-                          <div
-                            className={`p-3 rounded-md text-sm font-medium ${
-                              testCases[activeTestCase].status === "passed"
-                                ? "bg-green-100 text-green-800"
-                                : testCases[activeTestCase].status === "failed"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-yellow-100 text-yellow-800"
-                            }`}
-                          >
-                            {testCases[activeTestCase].status === "passed"
-                              ? "✓ Passed"
-                              : testCases[activeTestCase].status === "failed"
-                              ? "✗ Failed"
-                              : "⟳ Running..."}
-                          </div>
+                          <>
+                            <div
+                              className={`p-3 rounded-md text-sm font-small ${
+                                testCases[activeTestCase].status === "passed"
+                                  ? "bg-green-100 text-green-800"
+                                  : testCases[activeTestCase].status ===
+                                    "failed"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              Status:{" "}
+                              {testCases[activeTestCase].verdict ||
+                                (testCases[activeTestCase].status === "passed"
+                                  ? "✓ Passed"
+                                  : testCases[activeTestCase].status ===
+                                    "failed"
+                                  ? "✗ Failed"
+                                  : "⟳ Running...")}
+                            </div>
+
+                            {/* Error Display - stderr */}
+                            {testCases[activeTestCase].stderr && (
+                              <div>
+                                <div
+                                  className={`text-sm font-semibold mb-2 text-red-600 ${
+                                    isDarkTheme
+                                      ? "text-red-400"
+                                      : "text-red-700"
+                                  }`}
+                                >
+                                  Error (stderr):
+                                </div>
+                                <div
+                                  className={`p-3 rounded-md font-mono text-sm text-red-600 ${
+                                    isDarkTheme
+                                      ? "bg-red-900/30 text-red-400 border border-red-700"
+                                      : "bg-red-50 text-red-800 border border-red-200"
+                                  }`}
+                                  style={{ whiteSpace: "pre-wrap" }}
+                                >
+                                  {testCases[activeTestCase].stderr}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Compile Output Display */}
+                            {testCases[activeTestCase].compile_output && (
+                              <div>
+                                <div
+                                  className={`text-sm font-semibold mb-2 text-orange-600 ${
+                                    isDarkTheme
+                                      ? "text-orange-400"
+                                      : "text-orange-700"
+                                  }`}
+                                >
+                                  Compile Output:
+                                </div>
+                                <div
+                                  className={`p-3 rounded-md font-mono text-sm text-orange-600 ${
+                                    isDarkTheme
+                                      ? "bg-orange-900/30 text-orange-400 border border-orange-700"
+                                      : "bg-orange-50 text-orange-800 border border-orange-200"
+                                  }`}
+                                  style={{ whiteSpace: "pre-wrap" }}
+                                >
+                                  {testCases[activeTestCase].compile_output}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Time and Memory */}
+                            {testCases[activeTestCase].time && (
+                              <div className="text-sm text-gray-600">
+                                Time: {testCases[activeTestCase].time}s |
+                                Memory: {testCases[activeTestCase].memory} KB
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     )}
@@ -1160,10 +1543,78 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                             ? "bg-gray-800 text-gray-300 border border-gray-700"
                             : "bg-gray-50 text-gray-800 border border-gray-300"
                         }`}
+                        style={{ whiteSpace: "pre-wrap" }}
                       >
                         {stdOut || "Run code to see output..."}
                       </div>
                     </div>
+
+                    {/* Error Display for Custom Input */}
+                    {customTestCase.stderr && (
+                      <div>
+                        <label
+                          className={`text-sm font-semibold mb-2 block text-red-600 ${
+                            isDarkTheme ? "text-red-400" : "text-red-700"
+                          }`}
+                        >
+                          Error (stderr):
+                        </label>
+                        <div
+                          className={`w-full p-3 rounded-md font-mono text-sm text-red-600 ${
+                            isDarkTheme
+                              ? "bg-red-900/30 text-red-400 border border-red-700"
+                              : "bg-red-50 text-red-800 border border-red-200"
+                          }`}
+                          style={{ whiteSpace: "pre-wrap" }}
+                        >
+                          {customTestCase.stderr}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Compile Output Display for Custom Input */}
+                    {customTestCase.compile_output && (
+                      <div>
+                        <label
+                          className={`text-sm font-semibold mb-2 block text-orange-600 ${
+                            isDarkTheme ? "text-orange-400" : "text-orange-700"
+                          }`}
+                        >
+                          Compile Output:
+                        </label>
+                        <div
+                          className={`w-full p-3 rounded-md font-mono text-sm text-orange-600 ${
+                            isDarkTheme
+                              ? "bg-orange-900/30 text-orange-400 border border-orange-700"
+                              : "bg-orange-50 text-orange-800 border border-orange-200"
+                          }`}
+                          style={{ whiteSpace: "pre-wrap" }}
+                        >
+                          {customTestCase.compile_output}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Status and Metrics for Custom Input */}
+                    {customTestCase.verdict && (
+                      <div className="mt-3">
+                        <div
+                          className={`text-sm font-medium ${
+                            customTestCase.status === "passed"
+                              ? "text-green-700"
+                              : "text-red-700"
+                          }`}
+                        >
+                          Status: {customTestCase.verdict}
+                        </div>
+                        {customTestCase.time && (
+                          <div className="mt-1 text-sm text-gray-600">
+                            Time: {customTestCase.time}s | Memory:{" "}
+                            {customTestCase.memory} KB
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1177,6 +1628,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                         ? "bg-red-100 text-red-800"
                         : "bg-yellow-100 text-yellow-800"
                     }`}
+                    style={{ whiteSpace: "pre-wrap", fontFamily: "monospace" }}
                   >
                     {showResults}
                   </div>
