@@ -203,7 +203,7 @@ const CourseTopicDetailPage: React.FC = () => {
     }
   }, [submoduleData, isSwitchingTopic]);
 
-  // Set default selected content when submodule data changes
+  // Set default selected content only on initial load (preserve selection across updates)
   useEffect(() => {
     if (!submoduleData?.data || submoduleData.data.length === 0) return;
     // If we already have a selected content, do not override it
