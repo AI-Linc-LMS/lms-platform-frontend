@@ -24,7 +24,11 @@ function injectEnvPlugin() {
             `${apiUrl}/api/clients/${clientId}/client-info/`
           );
           if (response.ok) {
-            const clientData = await response.json();
+            const clientData = (await response.json()) as {
+              is_active?: boolean;
+              name?: string;
+              app_icon_url?: string;
+            };
             if (clientData.is_active && clientData.name) {
               clientName = clientData.name;
               if (clientData.app_icon_url) {
