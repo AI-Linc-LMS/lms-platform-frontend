@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
+import { useQuery } from "@tanstack/react-query";
 import { RootState } from "../redux/store";
 import { getMonthlyStreak } from "../services/activityTrackingApi";
 
 /**
  * Determines whether to show the streak congratulations modal for today,
  * and ensures it only shows once per day per user via localStorage gating.
+ * Uses useQuery for automatic refetching capability.
  */
 export function useMonthlyStreakCongrats() {
   const user = useSelector((state: RootState) => state.user);
@@ -14,8 +16,6 @@ export function useMonthlyStreakCongrats() {
   const [shouldShow, setShouldShow] = useState(false);
   const [currentStreak, setCurrentStreak] = useState<number>(0);
   const [completionDate, setCompletionDate] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
 
   const todayKey = useMemo(() => {
     const today = new Date();
@@ -30,42 +30,42 @@ export function useMonthlyStreakCongrats() {
     return `streakCongratsShown:${userId}:${todayKey}`;
   }, [todayKey, user?.id]);
 
+  const clientId =
+    clientInfo?.data?.id ?? Number(import.meta.env.VITE_CLIENT_ID);
+
+  // Use useQuery for automatic refetching capability
+  const {
+    data: streakData,
+    isLoading: loading,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: ["monthlyStreak", clientId],
+    queryFn: () => getMonthlyStreak(Number(clientId)),
+    enabled: !!clientId,
+    staleTime: 0, // Always refetch to get latest streak data
+    gcTime: 0, // Don't cache to ensure fresh data
+  });
+
+  // Automatically re-evaluate shouldShow whenever query data changes
   useEffect(() => {
-    let isMounted = true;
-    const fetchStreak = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const clientId =
-          clientInfo?.data?.id ?? Number(import.meta.env.VITE_CLIENT_ID);
-        if (!clientId) {
-          setLoading(false);
-          return;
-        }
-        const data = await getMonthlyStreak(Number(clientId));
-        if (!isMounted) return;
-        setCurrentStreak(data.current_streak ?? 0);
-        const didCompleteToday = Boolean(data.streak?.[todayKey]);
-        const alreadyShown = localStorage.getItem(storageKey) === "1";
-        if (didCompleteToday && !alreadyShown) {
-          setCompletionDate(todayKey);
-          setShouldShow(true);
-        } else {
-          setShouldShow(false);
-        }
-      } catch (e: any) {
-        if (!isMounted) return;
-        setError(e?.message || "Failed to load monthly streak");
-        setShouldShow(false);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-    fetchStreak();
-    return () => {
-      isMounted = false;
-    };
-  }, [clientInfo?.data?.id, storageKey, todayKey]);
+    if (!streakData) {
+      setShouldShow(false);
+      setCurrentStreak(0);
+      return;
+    }
+
+    setCurrentStreak(streakData.current_streak ?? 0);
+    const didCompleteToday = Boolean(streakData.streak?.[todayKey]);
+    const alreadyShown = localStorage.getItem(storageKey) === "1";
+
+    if (didCompleteToday && !alreadyShown) {
+      setCompletionDate(todayKey);
+      setShouldShow(true);
+    } else {
+      setShouldShow(false);
+    }
+  }, [streakData, todayKey, storageKey]);
 
   const markShown = useCallback(() => {
     try {
@@ -76,6 +76,10 @@ export function useMonthlyStreakCongrats() {
     setShouldShow(false);
   }, [storageKey]);
 
+  const error = queryError
+    ? (queryError as Error)?.message || "Failed to load monthly streak"
+    : null;
+
   return {
     shouldShow,
     markShown,
@@ -83,6 +87,7 @@ export function useMonthlyStreakCongrats() {
     completionDate,
     loading,
     error,
+    refetch, // Expose refetch function for manual triggering after content completion
   };
 }
 
