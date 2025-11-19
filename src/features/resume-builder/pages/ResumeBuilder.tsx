@@ -1,54 +1,133 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   ResumeData,
   PersonalInfo,
   Experience,
   Education,
   Skill,
+  SkillCategory,
   Project,
+  Activity,
+  Volunteering,
+  Award,
+  ColorScheme,
 } from "../types/resume";
-import PersonalInfoForm from "../components/PersonalInfoForm";
-
-import SkillsForm from "../components/SkillsForm";
-import ProjectsForm from "../components/ProjectsForm";
 import ResumePreview from "../components/ResumePreview";
 import { useToast } from "../../../contexts/ToastContext";
-import ExperienceForm from "../components/ExperienceForm";
-import EducationForm from "../components/EducationForm";
-import TemplateSelector from "../components/TemplateSelector";
-import { printWithoutHeaders } from "../utils/printUtils";
+import ResumeHeader from "../components/ResumeHeader";
+import ResumeSidebar from "../components/ResumeSidebar";
+import { getDummyResumeData } from "../utils/dummyData";
+import { getColorsFromScheme } from "../utils/colorUtils";
+import { processElementStylesForPDF, convertColorToHex } from "../utils/pdfColorUtils";
+import html2pdf from "html2pdf.js";
 
 const ResumeBuilder: React.FC = () => {
   const { success: showSuccessToast, error: showErrorToast } = useToast();
   const printRef = useRef<HTMLDivElement>(null);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
 
-  const [activeTab, setActiveTab] = useState("personal");
+  // Handle scroll to skills category in preview
+  const handlePreviewCategory = (_category: SkillCategory) => {
+    if (previewContainerRef.current) {
+      // Find skills section in preview
+      const skillsSection = previewContainerRef.current.querySelector('[data-section="skills"]');
+      if (skillsSection) {
+        // Scroll to skills section
+        skillsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Add temporary highlight
+        skillsSection.classList.add('ring-4', 'ring-blue-400', 'ring-opacity-50');
+        setTimeout(() => {
+          skillsSection.classList.remove('ring-4', 'ring-blue-400', 'ring-opacity-50');
+        }, 2000);
+        // TODO: In future, we can add specific category highlighting within skills section
+      }
+    }
+  };
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [activeSection, setActiveSection] = useState("personal");
+  const [activeSubsection, setActiveSubsection] = useState<string | undefined>(undefined);
+  const [zoom, setZoom] = useState(1);
   const [resumeData, setResumeData] = useState<ResumeData>({
     personalInfo: {
       firstName: "",
       lastName: "",
+      imageUrl: "",
+      title: "",
       email: "",
       phone: "",
       address: "",
+      location: "",
+      website: "",
       linkedin: "",
       github: "",
-      website: "",
+      twitter: "",
+      hackerrank: "",
+      hackerearth: "",
+      codechef: "",
+      leetcode: "",
+      cssbattle: "",
+      relevantExperience: "",
+      totalExperience: "",
       summary: "",
+      careerObjective: "",
     },
     experience: [],
     education: [],
     skills: [],
     projects: [],
+    activities: [],
+    volunteering: [],
+    awards: [],
     selectedTemplate: "modern",
+    themeColor: "#3b82f6",
+    colorScheme: "Professional Blue",
+    sectionOrder: ["personal", "skills", "experience", "education", "projects", "activities", "volunteering", "awards"],
   });
 
-  const updatePersonalInfo = (personalInfo: PersonalInfo) => {
-    console.log("Updating personal info:", personalInfo);
+  // Load from localStorage on mount
+  useEffect(() => {
     try {
-      setResumeData((prev) => ({ ...prev, personalInfo }));
+      const savedData = localStorage.getItem("resumeData");
+      const savedZoom = localStorage.getItem("resumeZoom");
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        // Ensure new sections exist
+        if (!parsed.activities) parsed.activities = [];
+        if (!parsed.volunteering) parsed.volunteering = [];
+        if (!parsed.awards) parsed.awards = [];
+        if (!parsed.themeColor) parsed.themeColor = "#3b82f6";
+        if (!parsed.colorScheme) parsed.colorScheme = "Professional Blue";
+        if (!parsed.sectionOrder) parsed.sectionOrder = ["personal", "skills", "experience", "education", "projects", "activities", "volunteering", "awards"];
+        if (!parsed.personalInfo.careerObjective) parsed.personalInfo.careerObjective = "";
+        if (!parsed.personalInfo.twitter) parsed.personalInfo.twitter = "";
+        if (!parsed.personalInfo.hackerrank) parsed.personalInfo.hackerrank = "";
+        if (!parsed.personalInfo.hackerearth) parsed.personalInfo.hackerearth = "";
+        if (!parsed.personalInfo.codechef) parsed.personalInfo.codechef = "";
+        if (!parsed.personalInfo.leetcode) parsed.personalInfo.leetcode = "";
+        if (!parsed.personalInfo.cssbattle) parsed.personalInfo.cssbattle = "";
+        setResumeData(parsed);
+      }
+      if (savedZoom) {
+        setZoom(parseFloat(savedZoom));
+      }
     } catch (error) {
-      console.error("Error updating personal info:", error);
+      console.error("Failed to load resume data:", error);
     }
+  }, []);
+
+  // Auto-save to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem("resumeData", JSON.stringify(resumeData));
+      localStorage.setItem("resumeZoom", zoom.toString());
+    } catch (error) {
+      console.error("Failed to save resume data:", error);
+    }
+  }, [resumeData, zoom]);
+
+  const updatePersonalInfo = (personalInfo: PersonalInfo) => {
+    setResumeData((prev) => ({ ...prev, personalInfo }));
   };
 
   const updateExperience = (experience: Experience[]) => {
@@ -67,458 +146,420 @@ const ResumeBuilder: React.FC = () => {
     setResumeData((prev) => ({ ...prev, projects }));
   };
 
+  const updateActivities = (activities: Activity[]) => {
+    setResumeData((prev) => ({ ...prev, activities }));
+  };
+
+  const updateVolunteering = (volunteering: Volunteering[]) => {
+    setResumeData((prev) => ({ ...prev, volunteering }));
+  };
+
+  const updateAwards = (awards: Award[]) => {
+    setResumeData((prev) => ({ ...prev, awards }));
+  };
+
   const updateTemplate = (templateId: string) => {
     setResumeData((prev) => ({ ...prev, selectedTemplate: templateId }));
   };
 
-  const handlePrint = () => {
-    console.log("Print button clicked");
+  const updateColorScheme = (scheme: ColorScheme, themeColor: string) => {
+    setResumeData((prev) => ({ 
+      ...prev, 
+      colorScheme: scheme,
+      themeColor: themeColor 
+    }));
+  };
+
+  const updateSectionOrder = (newOrder: string[]) => {
+    setResumeData((prev) => ({ ...prev, sectionOrder: newOrder }));
+  };
+
+  const handleLoadSampleData = () => {
+    const sampleData = getDummyResumeData();
+    setResumeData(sampleData);
+    showSuccessToast("Sample Data Loaded", "Resume has been populated with sample data!");
+  };
+
+  const handleSectionChange = (sectionId: string, subsection?: string) => {
+    setActiveSection(sectionId);
+    setActiveSubsection(subsection);
+  };
+
+  const handleExport = () => {
+    try {
+      const dataStr = JSON.stringify(resumeData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `resume-${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showSuccessToast("Exported", "Resume data exported successfully!");
+    } catch (error) {
+      showErrorToast("Error", "Failed to export resume data.");
+    }
+  };
+
+  const handleImport = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const imported = JSON.parse(content) as ResumeData;
+        
+        // Ensure all required fields exist
+        if (!imported.activities) imported.activities = [];
+        if (!imported.volunteering) imported.volunteering = [];
+        if (!imported.awards) imported.awards = [];
+        if (!imported.themeColor) imported.themeColor = "#3b82f6";
+        if (!imported.selectedTemplate) imported.selectedTemplate = "modern";
+        
+        setResumeData(imported);
+        showSuccessToast("Imported", "Resume data imported successfully!");
+      } catch (error) {
+        showErrorToast("Error", "Failed to import resume data. Invalid file format.");
+      }
+    };
+    reader.readAsText(file);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDownloadPDF = async () => {
     if (!printRef.current) {
       showErrorToast("Error", "Resume content not found. Please try again.");
       return;
     }
 
-    // Use the new print utility
-    const success = printWithoutHeaders(printRef.current, "Resume");
-    if (!success) {
-      showErrorToast("Error", "Failed to open print dialog. Please try again.");
+    const element = printRef.current;
+    if (!element) {
+      showErrorToast("Error", "Resume content not found. Please try again.");
+      return;
     }
-  };
 
-  //   const handleDownloadPDF = () => {
-  //     console.log("Download PDF button clicked");
-  //     if (!printRef.current) {
-  //       showErrorToast("Error", "Resume content not found. Please try again.");
-  //       return;
-  //     }
-
-  //     // Use a simpler approach that opens print dialog with instructions
-  //     const element = printRef.current;
-  //     const content = element.innerHTML;
-
-  //     // Create a new window with print-optimized styling
-  //     const printWindow = window.open("", "_blank", "width=800,height=600");
-
-  //     if (!printWindow) {
-  //       showErrorToast(
-  //         "Error",
-  //         "Unable to open print window. Please check popup blocker settings."
-  //       );
-  //       return;
-  //     }
-
-  //     const filename = `${resumeData.personalInfo.firstName || "Resume"}_${
-  //       resumeData.personalInfo.lastName || "Document"
-  //     }`;
-
-  //     printWindow.document.write(`
-  //       <!DOCTYPE html>
-  //       <html>
-  //       <head>
-  //         <title>${filename}</title>
-  //         <style>
-  //           @media print {
-  //             @page { size: A4; margin: 0.5in; }
-  //             body { font-family: Arial, sans-serif; font-size: 12pt; line-height: 1.4; }
-  //             svg { width: 12px !important; height: 12px !important; }
-  //             .no-print { display: none !important; }
-  //           }
-  //           body {
-  //             font-family: Arial, sans-serif;
-  //             max-width: 800px;
-  //             margin: 20px auto;
-  //             padding: 20px;
-  //           }
-  //           .download-instructions {
-  //             background: #e3f2fd;
-  //             border: 1px solid #2196f3;
-  //             border-radius: 8px;
-  //             padding: 15px;
-  //             margin-bottom: 20px;
-  //             text-align: center;
-  //           }
-  //           .download-instructions h3 {
-  //             color: #1976d2;
-  //             margin: 0 0 10px 0;
-  //           }
-  //           .download-instructions p {
-  //             margin: 5px 0;
-  //             font-size: 14px;
-  //           }
-  //           .download-instructions strong {
-  //             color: #d32f2f;
-  //           }
-  //           @media print {
-  //             .download-instructions { display: none !important; }
-  //           }
-  //         </style>
-  //       </head>
-  //       <body>
-  //         <div class="download-instructions no-print">
-  //           <h3>📄 Download as PDF Instructions</h3>
-  //           <p><strong>Press Ctrl+P (Windows/Linux) or Cmd+P (Mac)</strong></p>
-  //           <p>In the print dialog:</p>
-  //           <p>1. Select "Save as PDF" as destination</p>
-  //           <p>2. Choose "More settings" → "Paper size: A4"</p>
-  //           <p>3. Uncheck "Headers and footers"</p>
-  //           <p>4. Set margins to "Minimum" or "Custom: 0.5"</p>
-  //           <p>5. Click "Save" and choose your filename</p>
-  //         </div>
-  //         ${content}
-  //       </body>
-  //       </html>
-  //     `);
-
-  //     printWindow.document.close();
-  //     printWindow.focus();
-
-  //     // Show instructions to user
-  //     showSuccessToast(
-  //       "Print Dialog",
-  //       "A new window opened with print instructions. Use Ctrl+P (Cmd+P on Mac) and 'Save as PDF' to download."
-  //     );
-  //   };
-
-  const saveToLocalStorage = () => {
-    console.log("Save button clicked");
     try {
-      localStorage.setItem("resumeData", JSON.stringify(resumeData));
-      showSuccessToast("Saved", "Resume data saved locally!");
-    } catch (error) {
-      showErrorToast("Error", "Failed to save resume data.");
-    }
-  };
+      const firstName = resumeData.personalInfo.firstName || "resume";
+      const lastName = resumeData.personalInfo.lastName || "";
+      const filename = `resume-${firstName}-${lastName}`.replace(/\s+/g, "-").toLowerCase().replace(/[^a-z0-9-]/g, "");
+      
+      // Show loading message
+      showSuccessToast("Generating PDF", "Please wait while we generate your resume PDF...");
+      
+      // Get the actual content element with data-resume-content
+      const contentElement = element.querySelector('[data-resume-content]') as HTMLElement || element;
+      
+      if (!contentElement) {
+        showErrorToast("Error", "Resume content element not found.");
+        return;
+      }
 
-  const loadFromLocalStorage = () => {
-    console.log("Load button clicked");
-    try {
-      const savedData = localStorage.getItem("resumeData");
-      if (savedData) {
-        setResumeData(JSON.parse(savedData));
-        showSuccessToast("Loaded", "Resume data loaded successfully!");
-      } else {
-        showErrorToast("No Data", "No saved resume data found.");
+      // Store original styles that might interfere with PDF generation
+      const originalOverflow = contentElement.style.overflow;
+      const originalTransform = contentElement.style.transform;
+      const originalMaxHeight = contentElement.style.maxHeight;
+      const originalPosition = contentElement.style.position;
+      
+      // Get preview container to remove zoom transform
+      const previewContainer = previewContainerRef.current;
+      const originalContainerTransform = previewContainer ? previewContainer.style.transform : "";
+      
+      // Temporarily remove zoom transform from preview container
+      if (previewContainer) {
+        previewContainer.style.transform = 'none';
+      }
+      
+      // Temporarily adjust styles for clean PDF capture
+      contentElement.style.overflow = "visible";
+      contentElement.style.transform = "none";
+      contentElement.style.maxHeight = "none";
+      contentElement.style.position = "relative";
+      
+      // Wait a bit for styles to apply
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Simple and reliable PDF options
+      const opt = {
+        margin: [5, 5, 5, 5] as [number, number, number, number],
+        filename: `${filename}.pdf`,
+        image: { 
+          type: "jpeg", 
+          quality: 0.98,
+        },
+        html2canvas: { 
+          scale: 2,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: "#ffffff",
+          logging: false,
+          letterRendering: true,
+          onclone: (clonedDoc: Document) => {
+            try {
+              const clonedElement = clonedDoc.querySelector('[data-resume-content]') || clonedDoc.body;
+              
+              // Add color preservation CSS
+              const style = clonedDoc.createElement('style');
+              style.textContent = `
+                *, *::before, *::after {
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                  color-adjust: exact !important;
+                }
+                body, html {
+                  margin: 0;
+                  padding: 0;
+                  background: white !important;
+                }
+                [data-resume-content] {
+                  transform: none !important;
+                  zoom: 1 !important;
+                }
+              `;
+              clonedDoc.head.appendChild(style);
+              
+              // Convert oklch colors in stylesheets
+              try {
+                const styleSheets = clonedDoc.styleSheets;
+                for (let i = 0; i < styleSheets.length; i++) {
+                  try {
+                    const sheet = styleSheets[i];
+                    if (!sheet.cssRules) continue;
+                    
+                    for (let j = 0; j < sheet.cssRules.length; j++) {
+                      const rule = sheet.cssRules[j];
+                      if (rule instanceof CSSStyleRule) {
+                        const ruleStyle = rule.style;
+                        ['color', 'backgroundColor', 'borderColor', 'borderTopColor', 
+                         'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(prop => {
+                          try {
+                            const value = ruleStyle.getPropertyValue(prop);
+                            if (value && (value.includes('oklch') || value.includes('lab') || value.includes('lch'))) {
+                              const hexColor = convertColorToHex(value);
+                              if (hexColor && hexColor !== '#000000') {
+                                ruleStyle.setProperty(prop, hexColor, 'important');
+                              }
+                            }
+                          } catch (e) {
+                            // Ignore errors
+                          }
+                        });
+                      }
+                    }
+                  } catch (e) {
+                    // Some stylesheets may not be accessible
+                  }
+                }
+              } catch (e) {
+                // Ignore stylesheet processing errors
+              }
+              
+              // Process all elements for color conversion
+              if (clonedElement) {
+                const allElements = clonedElement.querySelectorAll('*');
+                allElements.forEach((el) => {
+                  const htmlEl = el as HTMLElement;
+                  htmlEl.style.setProperty('-webkit-print-color-adjust', 'exact', 'important');
+                  htmlEl.style.setProperty('print-color-adjust', 'exact', 'important');
+                  htmlEl.style.setProperty('color-adjust', 'exact', 'important');
+                  
+                  try {
+                    processElementStylesForPDF(htmlEl);
+                  } catch (e) {
+                    // Ignore individual element errors
+                  }
+                });
+                
+                // Process root element
+                if (clonedElement instanceof HTMLElement) {
+                  try {
+                    processElementStylesForPDF(clonedElement);
+                  } catch (e) {
+                    // Ignore
+                  }
+                }
+              }
+            } catch (error) {
+              console.error("Error in onclone:", error);
+            }
+          },
+        },
+        jsPDF: { 
+          unit: "mm",
+          format: "a4",
+          orientation: "portrait" as const,
+          compress: true,
+        },
+        pagebreak: { mode: ["avoid-all", "css"], avoid: ['.resume-section'] },
+      };
+      
+      // Helper function to restore styles
+      const restoreStyles = () => {
+        contentElement.style.overflow = originalOverflow;
+        contentElement.style.transform = originalTransform;
+        contentElement.style.maxHeight = originalMaxHeight;
+        contentElement.style.position = originalPosition;
+        
+        if (previewContainer) {
+          previewContainer.style.transform = originalContainerTransform;
+        }
+      };
+      
+      try {
+        // Generate and download PDF
+        await html2pdf().set(opt).from(contentElement).save();
+        
+        restoreStyles();
+        
+        setTimeout(() => {
+          showSuccessToast("PDF Downloaded", "Your resume PDF has been downloaded successfully!");
+        }, 500);
+      } catch (error) {
+        restoreStyles();
+        console.error("PDF generation error:", error);
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        showErrorToast("PDF Generation Failed", `Failed to generate PDF: ${errorMessage}. Please try again.`);
       }
     } catch (error) {
-      showErrorToast("Error", "Failed to load resume data.");
+      console.error("PDF setup error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      showErrorToast("PDF Generation Failed", `Failed to setup PDF generation: ${errorMessage}. Please try again.`);
     }
   };
 
-  const tabs = [
-    {
-      id: "personal",
-      label: "Personal Info",
-      icon: (
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "experience",
-      label: "Experience",
-      icon: (
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0H8m8 0v2a2 2 0 01-2 2H10a2 2 0 01-2-2V6"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "education",
-      label: "Education",
-      icon: (
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 14l9-5-9-5-9 5 9 5z"
-          />
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "skills",
-      label: "Skills",
-      icon: (
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M13 10V3L4 14h7v7l9-11h-7z"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "projects",
-      label: "Projects",
-      icon: (
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "template",
-      label: "Template",
-      icon: (
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z"
-          />
-        </svg>
-      ),
-    },
-  ];
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case "personal":
-        return (
-          <PersonalInfoForm
-            data={resumeData.personalInfo}
-            onChange={updatePersonalInfo}
-          />
-        );
-      case "experience":
-        return (
-          <ExperienceForm
-            data={resumeData.experience}
-            onChange={updateExperience}
-          />
-        );
-      case "education":
-        return (
-          <EducationForm
-            data={resumeData.education}
-            onChange={updateEducation}
-          />
-        );
-      case "skills":
-        return <SkillsForm data={resumeData.skills} onChange={updateSkills} />;
-      case "projects":
-        return (
-          <ProjectsForm data={resumeData.projects} onChange={updateProjects} />
-        );
-      case "template":
-        return (
-          <TemplateSelector
-            selectedTemplate={resumeData.selectedTemplate}
-            onChange={updateTemplate}
-            resumeData={resumeData}
-          />
-        );
-      default:
-        return null;
-    }
+  const handleReset = () => {
+    setResumeData({
+      personalInfo: {
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        address: "",
+        linkedin: "",
+        github: "",
+        website: "",
+        summary: "",
+      },
+      experience: [],
+      education: [],
+      skills: [],
+      projects: [],
+      activities: [],
+      volunteering: [],
+      awards: [],
+      selectedTemplate: "modern",
+      themeColor: "#3b82f6",
+      colorScheme: "Professional Blue",
+      sectionOrder: ["personal", "skills", "experience", "education", "projects", "activities", "volunteering", "awards"],
+    });
+    setZoom(1);
+    showSuccessToast("Reset", "All resume data has been reset.");
   };
+
+  // Sections are now rendered in ResumeSidebar component
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-[#257195] mb-2">
-            Resume Builder
-          </h1>
-          <p className="text-gray-600">
-            Create your professional resume with our easy-to-use builder
-          </p>
-        </div>
+    <div className="flex flex-col h-screen bg-gray-50 overflow-hidden" style={{ overflowX: 'hidden', maxWidth: '100vw' }}>
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept=".json"
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+      />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Panel - Form */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            {/* Action Buttons */}
-            <div className="flex flex-wrap gap-2 mb-6">
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handlePrint();
-                }}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm hover:bg-blue-700 transition-colors"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-                  />
+      {/* Header */}
+      <ResumeHeader
+        selectedTemplate={resumeData.selectedTemplate}
+        onTemplateChange={updateTemplate}
+        colorScheme={resumeData.colorScheme || "Professional Blue"}
+        onColorSchemeChange={updateColorScheme}
+        onExport={handleExport}
+        onImport={handleImport}
+        onDownloadPDF={handleDownloadPDF}
+        onLoadSampleData={handleLoadSampleData}
+        zoom={zoom}
+        onZoomChange={setZoom}
+        resumeData={resumeData}
+      />
+
+      {/* Main Content */}
+      <div className="flex flex-1 overflow-hidden" style={{ overflowX: 'hidden', maxWidth: '100%' }}>
+        {/* Preview - Left Side (75%) */}
+        <div className="w-3/4 border-r border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 overflow-y-auto" style={{ overflowX: 'hidden', maxWidth: '75%' }}>
+          <div className="p-4">
+            <div className="sticky top-4">
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4" style={{ overflowX: 'hidden', maxWidth: '100%' }}>
+                <div className="mb-3 flex items-center justify-between pb-2 border-b border-gray-100">
+                  <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Live Preview</h3>
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
-                Print
-              </button>
-              {/* <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleDownloadPDF();
-                }}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm hover:bg-green-700 transition-colors"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                Download PDF
-              </button> */}
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  saveToLocalStorage();
-                }}
-                className="bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm hover:bg-purple-700 transition-colors"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
-                  />
-                </svg>
-                Save
-              </button>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  loadFromLocalStorage();
-                }}
-                className="bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm hover:bg-orange-700 transition-colors"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"
-                  />
-                </svg>
-                Load
-              </button>
+                    <span className="font-medium">{Math.round(zoom * 100)}%</span>
+                  </div>
             </div>
-
-            {/* Tabs */}
-            <div className="flex flex-wrap gap-1 mb-6 border-b border-gray-200">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log("Tab clicked:", tab.id);
-                    setActiveTab(tab.id);
+                <div
+                  ref={previewContainerRef}
+                  className="bg-white rounded-lg"
+                  style={{
+                    transform: `scale(${zoom})`,
+                    transformOrigin: "top center",
+                    transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                    maxHeight: "calc(100vh - 180px)",
+                    width: `${100 / zoom}%`,
+                    maxWidth: "100%",
+                    overflowX: 'hidden',
+                    overflowY: 'auto',
                   }}
-                  className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-                    activeTab === tab.id
-                      ? "bg-[#257195] text-white border-b-2 border-[#257195]"
-                      : "text-gray-600 hover:text-[#257195] hover:bg-gray-50"
-                  }`}
                 >
-                  <span className="mr-2">{tab.icon}</span>
-                  {tab.label}
-                </button>
-              ))}
+                      <div ref={printRef} style={{ width: "100%", maxWidth: "100%", overflowX: 'hidden' }}>
+                        <ResumePreview
+                          key={`${resumeData.colorScheme}-${resumeData.themeColor}-${resumeData.selectedTemplate}`}
+                          data={resumeData}
+                          zoom={zoom}
+                          themeColor={resumeData.themeColor || getColorsFromScheme(resumeData.colorScheme || "Professional Blue").primary}
+                          colorScheme={resumeData.colorScheme || "Professional Blue"}
+                        />
             </div>
-
-            {/* Tab Content */}
-            <div className="min-h-[500px]">{renderTabContent()}</div>
           </div>
-
-          {/* Right Panel - Preview */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-[#257195] mb-4">
-              Preview
-            </h2>
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div ref={printRef}>
-                <ResumePreview data={resumeData} />
               </div>
             </div>
           </div>
         </div>
+
+        {/* Sidebar with Forms - Right Side (~40%) */}
+        <ResumeSidebar
+          activeSection={activeSection}
+          activeSubsection={activeSubsection}
+          onSectionChange={handleSectionChange}
+          onReset={handleReset}
+          sectionOrder={resumeData.sectionOrder}
+          onSectionOrderChange={updateSectionOrder}
+          // Pass form data and handlers
+          resumeData={resumeData}
+          onPersonalInfoChange={updatePersonalInfo}
+          onExperienceChange={updateExperience}
+          onEducationChange={updateEducation}
+          onSkillsChange={updateSkills}
+          onProjectsChange={updateProjects}
+          onActivitiesChange={updateActivities}
+          onVolunteeringChange={updateVolunteering}
+          onAwardsChange={updateAwards}
+          onPreviewCategory={handlePreviewCategory}
+        />
       </div>
     </div>
   );
