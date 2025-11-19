@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Course } from "../../../types/final-course.types";
 import { useTranslation } from "react-i18next";
 import { useTranslatedDifficulty } from "../../../utils/courseTranslationUtils";
@@ -10,6 +10,26 @@ import {
   getEffectiveDuration,
 } from "./utils/courseDataUtils";
 import { CompanyLogosSection } from "./components";
+import {
+  CURRENCY_CHANGED_EVENT,
+  CURRENCY_STORAGE_KEY,
+  CurrencyCode,
+} from "../../../../../components/ui/CurrencySwithcer";
+
+const USD_CONVERSION_RATE =
+  Number(import.meta.env.VITE_INR_TO_USD_RATE) || 0.013;
+
+const usdFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
+
+const convertAmountFromINR = (amountInINR: number, currency: CurrencyCode) => {
+  if (currency === "USD") {
+    return Number((amountInINR * USD_CONVERSION_RATE).toFixed(2));
+  }
+  return amountInINR;
+};
 
 // Enhanced 3D Star Rating Component
 const StarRating = ({
@@ -78,6 +98,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
   //   navigate(`/courses/${course.id}`);
   // };
   const formattedPrice = formatPrice(course?.price || "0");
+  const baseCoursePrice = Number(course?.price) || 0;
   const isFree = course?.is_free === true || formattedPrice === "0";
   const courseRating = (() => {
     const effectiveRating = getEffectiveRating(course);
@@ -97,6 +118,48 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
     id: course.id,
     duration_in_hours: course.duration_in_hours,
   });
+
+  const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>("INR");
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const storedCurrency =
+      (localStorage.getItem(CURRENCY_STORAGE_KEY) as CurrencyCode | null) ??
+      "INR";
+    setSelectedCurrency(storedCurrency);
+
+    const handleCurrencyChange = (event: Event) => {
+      const detail = (event as CustomEvent<CurrencyCode>).detail;
+      if (detail) {
+        setSelectedCurrency(detail);
+      }
+    };
+
+    window.addEventListener(CURRENCY_CHANGED_EVENT, handleCurrencyChange);
+    return () => {
+      window.removeEventListener(CURRENCY_CHANGED_EVENT, handleCurrencyChange);
+    };
+  }, []);
+
+  const priceInSelectedCurrency = useMemo(
+    () => convertAmountFromINR(baseCoursePrice, selectedCurrency),
+    [baseCoursePrice, selectedCurrency]
+  );
+
+  const displayPriceLabel = useMemo(() => {
+    if (isFree) {
+      return t("courses.free");
+    }
+
+    if (selectedCurrency === "USD") {
+      return usdFormatter.format(priceInSelectedCurrency);
+    }
+
+    return `₹${formattedPrice}`;
+  }, [formattedPrice, isFree, priceInSelectedCurrency, selectedCurrency, t]);
 
   return (
     <div
@@ -142,7 +205,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
 
       {/* Course Info Pills */}
       <div className="p-3 sm:p-4 md:p-6">
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-4 items-center">
           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-full text-xs font-medium text-gray-700 whitespace-nowrap">
             <svg
               className="w-3 h-3 text-yellow-500"
@@ -166,7 +229,7 @@ const NotEnrolledCollapsedCard: React.FC<NotEnrolledCollapsedCardProps> = ({
             {courseDuration} {t("courses.hours")}
           </span>
           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-full text-xs font-medium text-yellow-800 whitespace-nowrap">
-            {isFree ? t("courses.free") : `₹${formattedPrice}`}
+            {displayPriceLabel}
           </span>
 
           {/* Rating */}
