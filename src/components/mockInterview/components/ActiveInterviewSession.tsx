@@ -1,5 +1,5 @@
 import AIAgent from "./AIAgent";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import React from "react";
 import "./InterviewRoom.css";
 
@@ -31,6 +31,8 @@ interface ActiveInterviewSessionProps {
   formatTime: (seconds: number) => string;
   onStopSpeaking?: () => void;
   lastSavedAnswer?: string;
+  onTypedTextChange?: (text: string) => void;
+  typedText?: string;
 }
 
 const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
@@ -50,8 +52,35 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
   formatTime,
   onStopSpeaking,
   lastSavedAnswer,
+  onTypedTextChange,
+  typedText: typedTextProp = "",
 }) => {
   void difficulty;
+
+  // Local state for typed text if not controlled by parent
+  const [localTypedText, setLocalTypedText] = useState("");
+  const typedText = typedTextProp || localTypedText;
+
+  // Handle typed text changes
+  const handleTypedTextChange = (text: string) => {
+    if (onTypedTextChange) {
+      onTypedTextChange(text);
+    } else {
+      setLocalTypedText(text);
+    }
+  };
+
+  // Merge typed text with speech transcript
+  const combinedAnswer = React.useMemo(() => {
+    const parts: string[] = [];
+    if (typedText.trim()) {
+      parts.push(typedText.trim());
+    }
+    if (currentTranscript.trim()) {
+      parts.push(currentTranscript.trim());
+    }
+    return parts.join(" ");
+  }, [typedText, currentTranscript]);
 
   const toTitleCase = (str: string) => {
     return str
@@ -212,24 +241,79 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
           {/* Tabs Header */}
           <div className="bg-white border-b border-gray-200 px-6 flex space-x-1">
             <button className="px-4 py-3 text-sm font-medium border-b-2 border-purple-600 text-purple-600">
-              Live Transcript
+              Your Answer
             </button>
           </div>
 
           {/* Tab Content */}
           <div className="flex-1 overflow-y-auto p-6">
             <div className="tab-content space-y-4">
+              {/* Typing Input Area */}
+              <div className="bg-white rounded-lg p-5 border-2 border-purple-200 shadow-sm">
+                <div className="flex items-center space-x-2 mb-3">
+                  <svg
+                    className="w-5 h-5 text-purple-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                  <span className="text-sm font-bold text-purple-700 uppercase tracking-wide">
+                    Type Your Answer
+                  </span>
+                </div>
+                <textarea
+                  value={typedText}
+                  onChange={(e) => handleTypedTextChange(e.target.value)}
+                  placeholder="Type your answer here... You can also speak your answer."
+                  className="w-full min-h-[150px] p-4 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none resize-none text-gray-800 text-base leading-relaxed"
+                  disabled={!isListening}
+                />
+              </div>
+
+              {/* Speech Transcript Display */}
               {isListening && (
                 <div className="bg-green-50 rounded-lg p-5 border-l-4 border-green-500 shadow-sm">
                   <div className="flex items-center space-x-2 mb-3">
                     <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                     <span className="text-sm font-bold text-green-700 uppercase tracking-wide">
-                      Recording Your Answer
+                      Live Speech Transcript
                     </span>
                   </div>
-                  <p className="text-gray-800 text-base leading-relaxed min-h-[100px]">
+                  <p className="text-gray-800 text-base leading-relaxed min-h-[80px]">
                     {currentTranscript ||
-                      "Start speaking... Your answer is being recorded."}
+                      "Start speaking... Your speech will appear here."}
+                  </p>
+                </div>
+              )}
+
+              {/* Combined Answer Preview */}
+              {combinedAnswer && (
+                <div className="bg-indigo-50 rounded-lg p-5 border-l-4 border-indigo-500 shadow-sm">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <svg
+                      className="w-5 h-5 text-indigo-600"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="text-sm font-bold text-indigo-700 uppercase tracking-wide">
+                      Combined Answer Preview
+                    </span>
+                  </div>
+                  <p className="text-gray-800 text-base leading-relaxed min-h-[60px]">
+                    {combinedAnswer}
                   </p>
                 </div>
               )}

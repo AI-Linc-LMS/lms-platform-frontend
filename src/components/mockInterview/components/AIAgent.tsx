@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { Volume2, VolumeX } from "lucide-react";
 
 interface AIAgentProps {
   isSpeaking: boolean;
@@ -10,17 +9,24 @@ const AIAgent: React.FC<AIAgentProps> = ({ isSpeaking }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const faceRef = useRef<THREE.Mesh | null>(null);
+  const headGroupRef = useRef<THREE.Group | null>(null);
+  const leftEyeRef = useRef<THREE.Group | null>(null);
+  const rightEyeRef = useRef<THREE.Group | null>(null);
+  const leftEyelidRef = useRef<THREE.Mesh | null>(null);
+  const rightEyelidRef = useRef<THREE.Mesh | null>(null);
+  const mouthGroupRef = useRef<THREE.Group | null>(null);
+  const upperLipRef = useRef<THREE.Mesh | null>(null);
+  const lowerLipRef = useRef<THREE.Mesh | null>(null);
   const animationIdRef = useRef<number | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
+  const lastBlinkTimeRef = useRef<number>(0);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     if (!mountRef.current) return;
 
-    // Scene setup - BRIGHTER for visibility
+    // Scene setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1a2e); // Lighter dark blue
+    scene.background = new THREE.Color(0x1a1a2e); // Dark but neutral background
     sceneRef.current = scene;
 
     // Camera setup
@@ -30,178 +36,250 @@ const AIAgent: React.FC<AIAgentProps> = ({ isSpeaking }) => {
       0.1,
       1000
     );
-    camera.position.set(0, 0, 250);
+    camera.position.set(0, 0, 200);
 
     // Renderer setup
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      powerPreference: "high-performance",
+    });
     renderer.setSize(
       mountRef.current.clientWidth,
       mountRef.current.clientHeight
     );
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     rendererRef.current = renderer;
     mountRef.current.appendChild(renderer.domElement);
 
-    // Create realistic 3D face head (oval shaped)
-    const faceGeometry = new THREE.SphereGeometry(50, 64, 64);
-    faceGeometry.scale(0.9, 1.1, 1); // Make it more oval/face-shaped
+    // Main head group
+    const headGroup = new THREE.Group();
+    headGroupRef.current = headGroup;
+    scene.add(headGroup);
 
-    // Create morph target for mouth movement (speaking)
-    const positionAttribute = faceGeometry.attributes.position;
-    const mouthMorphPositions = new Float32Array(positionAttribute.count * 3);
+    // Create human-like head (rounded, face-like shape)
+    const headGeometry = new THREE.SphereGeometry(55, 64, 64);
+    // Make it more oval/face-shaped
+    headGeometry.scale(0.95, 1.1, 1);
 
-    for (let i = 0; i < positionAttribute.count; i++) {
-      const x = positionAttribute.getX(i);
-      const y = positionAttribute.getY(i);
-      const z = positionAttribute.getZ(i);
-
-      // Deform vertices in mouth area (lower front part of sphere)
-      if (y < -10 && z > 30 && Math.abs(x) < 20) {
-        mouthMorphPositions[i * 3] = x * 1.1;
-        mouthMorphPositions[i * 3 + 1] = y - 5;
-        mouthMorphPositions[i * 3 + 2] = z;
-      } else {
-        mouthMorphPositions[i * 3] = x;
-        mouthMorphPositions[i * 3 + 1] = y;
-        mouthMorphPositions[i * 3 + 2] = z;
-      }
-    }
-
-    faceGeometry.morphAttributes.position = [
-      new THREE.Float32BufferAttribute(mouthMorphPositions, 3),
-    ];
-
-    // Realistic skin material - BRIGHTER with gradient
-    const faceMaterial = new THREE.MeshPhongMaterial({
-      color: 0x8b8cf1, // Lighter indigo/blue (skin tone)
-      emissive: 0x3f3f8f, // Slight glow
-      emissiveIntensity: 0.15,
-      specular: 0xaaaaaa,
-      shininess: 60,
-      flatShading: false,
+    // Human skin-like material
+    const headMaterial = new THREE.MeshStandardMaterial({
+      color: 0xfdbcb4, // Skin tone
+      metalness: 0.1,
+      roughness: 0.8,
+      emissive: 0x000000,
+      emissiveIntensity: 0,
     });
 
-    const face = new THREE.Mesh(faceGeometry, faceMaterial);
-    face.position.set(0, 0, 0);
-    face.rotation.y = Math.PI;
-    faceRef.current = face;
-    scene.add(face);
+    const head = new THREE.Mesh(headGeometry, headMaterial);
+    head.castShadow = true;
+    head.receiveShadow = true;
+    headGroup.add(head);
 
-    // Add eyes (more realistic)
-    const eyeWhiteGeometry = new THREE.SphereGeometry(6, 32, 32);
-    const eyeWhiteMaterial = new THREE.MeshPhongMaterial({
+    // Add hair on top of head - more visible
+    const hairGeometry = new THREE.SphereGeometry(
+      60,
+      32,
+      32,
+      0,
+      Math.PI * 2,
+      0,
+      Math.PI / 2.2
+    );
+    const hairMaterial = new THREE.MeshStandardMaterial({
+      color: 0x1a1a1a, // Dark black hair - more visible
+      metalness: 0.1,
+      roughness: 0.9,
+    });
+    const hair = new THREE.Mesh(hairGeometry, hairMaterial);
+    hair.position.y = 38;
+    hair.rotation.x = Math.PI;
+    hair.position.z = -5; // Slightly forward
+    headGroup.add(hair);
+
+    // Add left ear - more visible
+    const earGeometry = new THREE.SphereGeometry(10, 20, 20);
+    const earMaterial = new THREE.MeshStandardMaterial({
+      color: 0xfdbcb4, // Match skin color
+      metalness: 0.1,
+      roughness: 0.8,
+    });
+    const leftEar = new THREE.Mesh(earGeometry, earMaterial);
+    leftEar.position.set(-54, 5, 15);
+    leftEar.scale.set(0.5, 1, 0.4);
+    leftEar.rotation.y = -Math.PI / 2;
+    headGroup.add(leftEar);
+
+    // Add right ear - more visible
+    const rightEar = new THREE.Mesh(earGeometry, earMaterial);
+    rightEar.position.set(54, 5, 15);
+    rightEar.scale.set(0.5, 1, 0.4);
+    rightEar.rotation.y = Math.PI / 2;
+    headGroup.add(rightEar);
+
+    // Create left eye group
+    const leftEyeGroup = new THREE.Group();
+    leftEyeGroup.position.set(-22, 18, 48);
+    leftEyeRef.current = leftEyeGroup;
+    headGroup.add(leftEyeGroup);
+
+    // Left eye socket (skin-colored) - larger to accommodate bigger eyes
+    const eyeSocketGeometry = new THREE.SphereGeometry(12, 32, 32);
+    const eyeSocketMaterial = new THREE.MeshStandardMaterial({
+      color: 0xfdbcb4, // Match skin color
+      metalness: 0.1,
+      roughness: 0.8,
+    });
+    const leftEyeSocket = new THREE.Mesh(eyeSocketGeometry, eyeSocketMaterial);
+    leftEyeSocket.scale.set(1, 1, 0.3);
+    leftEyeGroup.add(leftEyeSocket);
+
+    // Left eye white (sclera) - much more prominent
+    const eyeGeometry = new THREE.SphereGeometry(10, 32, 32);
+    const eyeWhiteMaterial = new THREE.MeshStandardMaterial({
       color: 0xffffff,
-      emissive: 0xccffff,
-      emissiveIntensity: 0.3,
-      shininess: 100,
+      metalness: 0.1,
+      roughness: 0.9,
     });
+    const leftEyeWhite = new THREE.Mesh(eyeGeometry, eyeWhiteMaterial);
+    leftEyeWhite.position.z = 4;
+    leftEyeWhite.scale.set(1.1, 1.2, 0.8);
+    leftEyeGroup.add(leftEyeWhite);
 
-    const leftEyeWhite = new THREE.Mesh(eyeWhiteGeometry, eyeWhiteMaterial);
-    leftEyeWhite.position.set(-18, 12, 42);
-    leftEyeWhite.scale.set(0.8, 1, 0.6);
-    face.add(leftEyeWhite);
-
-    const rightEyeWhite = new THREE.Mesh(eyeWhiteGeometry, eyeWhiteMaterial);
-    rightEyeWhite.position.set(18, 12, 42);
-    rightEyeWhite.scale.set(0.8, 1, 0.6);
-    face.add(rightEyeWhite);
-
-    // Add irises (colored part)
-    const irisGeometry = new THREE.SphereGeometry(3.5, 32, 32);
-    const irisMaterial = new THREE.MeshPhongMaterial({
-      color: 0x00ccff,
-      emissive: 0x0099cc,
-      emissiveIntensity: 0.6,
-      shininess: 80,
+    // Left iris (colored part) - much more visible
+    const irisGeometry = new THREE.SphereGeometry(4.5, 32, 32);
+    const irisMaterial = new THREE.MeshStandardMaterial({
+      color: 0x4a5568, // Brown/dark gray iris
+      metalness: 0.2,
+      roughness: 0.7,
     });
-
     const leftIris = new THREE.Mesh(irisGeometry, irisMaterial);
-    leftIris.position.set(0, 0, 6);
-    leftEyeWhite.add(leftIris);
+    leftIris.position.z = 5.5;
+    leftEyeGroup.add(leftIris);
 
-    const rightIris = new THREE.Mesh(irisGeometry, irisMaterial);
-    rightIris.position.set(0, 0, 6);
-    rightEyeWhite.add(rightIris);
-
-    // Add pupils
-    const pupilGeometry = new THREE.SphereGeometry(1.8, 32, 32);
-    const pupilMaterial = new THREE.MeshBasicMaterial({
+    // Left pupil (black) - much more visible
+    const pupilGeometry = new THREE.SphereGeometry(2.2, 16, 16);
+    const pupilMaterial = new THREE.MeshStandardMaterial({
       color: 0x000000,
     });
-
     const leftPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
-    leftPupil.position.set(0, 0, 3.5);
-    leftIris.add(leftPupil);
+    leftPupil.position.z = 6.5;
+    leftEyeGroup.add(leftPupil);
 
+    // Left upper eyelid (skin-colored) - larger to match bigger eyes
+    const eyelidGeometry = new THREE.SphereGeometry(
+      12,
+      32,
+      32,
+      0,
+      Math.PI * 2,
+      0,
+      Math.PI / 2
+    );
+    const eyelidMaterial = new THREE.MeshStandardMaterial({
+      color: 0xfdbcb4, // Match skin color
+      metalness: 0.1,
+      roughness: 0.8,
+    });
+    const leftEyelid = new THREE.Mesh(eyelidGeometry, eyelidMaterial);
+    leftEyelid.position.set(0, 2, 0);
+    leftEyelid.rotation.x = Math.PI;
+    leftEyelidRef.current = leftEyelid;
+    leftEyeGroup.add(leftEyelid);
+
+    // Create right eye group
+    const rightEyeGroup = new THREE.Group();
+    rightEyeGroup.position.set(22, 18, 48);
+    rightEyeRef.current = rightEyeGroup;
+    headGroup.add(rightEyeGroup);
+
+    // Right eye socket
+    const rightEyeSocket = new THREE.Mesh(eyeSocketGeometry, eyeSocketMaterial);
+    rightEyeSocket.scale.set(1, 1, 0.3);
+    rightEyeGroup.add(rightEyeSocket);
+
+    // Right eye white (sclera) - much more prominent
+    const rightEyeWhite = new THREE.Mesh(eyeGeometry, eyeWhiteMaterial);
+    rightEyeWhite.position.z = 4;
+    rightEyeWhite.scale.set(1.1, 1.2, 0.8);
+    rightEyeGroup.add(rightEyeWhite);
+
+    // Right iris - much more visible
+    const rightIris = new THREE.Mesh(irisGeometry, irisMaterial);
+    rightIris.position.z = 5.5;
+    rightEyeGroup.add(rightIris);
+
+    // Right pupil - much more visible
     const rightPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
-    rightPupil.position.set(0, 0, 3.5);
-    rightIris.add(rightPupil);
+    rightPupil.position.z = 6.5;
+    rightEyeGroup.add(rightPupil);
+
+    // Right upper eyelid
+    const rightEyelid = new THREE.Mesh(eyelidGeometry, eyelidMaterial);
+    rightEyelid.position.set(0, 2, 0);
+    rightEyelid.rotation.x = Math.PI;
+    rightEyelidRef.current = rightEyelid;
+    rightEyeGroup.add(rightEyelid);
 
     // Add eyebrows
-    const eyebrowGeometry = new THREE.BoxGeometry(12, 2, 1);
-    const eyebrowMaterial = new THREE.MeshPhongMaterial({
-      color: 0x4444ff,
-      emissive: 0x2222aa,
-      emissiveIntensity: 0.3,
+    const eyebrowGeometry = new THREE.BoxGeometry(14, 2, 1);
+    const eyebrowMaterial = new THREE.MeshStandardMaterial({
+      color: 0x2d3748, // Dark brown/black for eyebrows
+      metalness: 0.1,
+      roughness: 0.9,
     });
 
     const leftEyebrow = new THREE.Mesh(eyebrowGeometry, eyebrowMaterial);
-    leftEyebrow.position.set(-18, 25, 45);
-    leftEyebrow.rotation.z = -0.2;
-    face.add(leftEyebrow);
+    leftEyebrow.position.set(-22, 28, 47);
+    leftEyebrow.rotation.z = -0.1;
+    headGroup.add(leftEyebrow);
 
     const rightEyebrow = new THREE.Mesh(eyebrowGeometry, eyebrowMaterial);
-    rightEyebrow.position.set(18, 25, 45);
-    rightEyebrow.rotation.z = 0.2;
-    face.add(rightEyebrow);
+    rightEyebrow.position.set(22, 28, 47);
+    rightEyebrow.rotation.z = 0.1;
+    headGroup.add(rightEyebrow);
 
-    // Add nose
-    const noseGeometry = new THREE.ConeGeometry(3, 8, 8);
-    const noseMaterial = new THREE.MeshPhongMaterial({
-      color: 0x7878dd,
-      emissive: 0x3f3f8f,
-      emissiveIntensity: 0.1,
-      shininess: 40,
-    });
-
-    const nose = new THREE.Mesh(noseGeometry, noseMaterial);
-    nose.position.set(0, 0, 48);
-    nose.rotation.x = Math.PI / 2;
-    face.add(nose);
-
-    // Add visible MOUTH with lips
+    // Create mouth group
     const mouthGroup = new THREE.Group();
-    mouthGroup.position.set(0, -15, 45);
-    mouthGroup.name = "mouthGroup";
-    face.add(mouthGroup);
+    mouthGroup.position.set(0, -12, 48);
+    mouthGroupRef.current = mouthGroup;
+    headGroup.add(mouthGroup);
 
-    // Upper lip
-    const upperLipGeometry = new THREE.TorusGeometry(8, 1.5, 16, 32, Math.PI);
-    const lipMaterial = new THREE.MeshPhongMaterial({
-      color: 0xff6699,
-      emissive: 0xcc3366,
-      emissiveIntensity: 0.4,
-      shininess: 60,
+    // Upper lip (natural pink/red) - much more prominent
+    const upperLipGeometry = new THREE.TorusGeometry(11, 2.5, 16, 32, Math.PI);
+    const lipMaterial = new THREE.MeshStandardMaterial({
+      color: 0xd9777f, // Natural lip color - brighter
+      metalness: 0.2,
+      roughness: 0.7,
+      emissive: 0x000000,
+      emissiveIntensity: 0,
     });
-
     const upperLip = new THREE.Mesh(upperLipGeometry, lipMaterial);
     upperLip.rotation.x = Math.PI;
+    upperLip.position.y = 2;
+    upperLip.position.z = 2;
+    upperLipRef.current = upperLip;
     mouthGroup.add(upperLip);
 
-    // Lower lip
-    const lowerLipGeometry = new THREE.TorusGeometry(8, 1.5, 16, 32, Math.PI);
+    // Lower lip - much more prominent
+    const lowerLipGeometry = new THREE.TorusGeometry(11, 2.5, 16, 32, Math.PI);
     const lowerLip = new THREE.Mesh(lowerLipGeometry, lipMaterial);
-    lowerLip.position.y = -1.5;
+    lowerLip.position.y = -2.5;
+    lowerLip.position.z = 2;
+    lowerLipRef.current = lowerLip;
     mouthGroup.add(lowerLip);
 
-    // Mouth interior (dark)
-    const mouthInteriorGeometry = new THREE.CircleGeometry(6, 32);
-    const mouthInteriorMaterial = new THREE.MeshBasicMaterial({
-      color: 0x220022,
-      transparent: true,
-      opacity: 0.8,
+    // Mouth interior (dark opening)
+    const mouthInteriorGeometry = new THREE.CircleGeometry(7, 32);
+    const mouthInteriorMaterial = new THREE.MeshStandardMaterial({
+      color: 0x1a1a1a, // Dark mouth interior
+      emissive: 0xff6b6b, // Subtle glow when speaking
+      emissiveIntensity: 0,
+      metalness: 0.1,
+      roughness: 0.9,
     });
-
     const mouthInterior = new THREE.Mesh(
       mouthInteriorGeometry,
       mouthInteriorMaterial
@@ -209,24 +287,69 @@ const AIAgent: React.FC<AIAgentProps> = ({ isSpeaking }) => {
     mouthInterior.position.z = -1;
     mouthGroup.add(mouthInterior);
 
-    // Floating particles for tech effect
-    const particlesGeometry = new THREE.BufferGeometry();
-    const particlesCount = 1000;
-    const posArray = new Float32Array(particlesCount * 3);
+    // Add nose (human-like) - much more prominent
+    const noseGeometry = new THREE.ConeGeometry(3.5, 9, 12);
+    const noseMaterial = new THREE.MeshStandardMaterial({
+      color: 0xfdbcb4, // Match skin color
+      metalness: 0.1,
+      roughness: 0.8,
+    });
+    const nose = new THREE.Mesh(noseGeometry, noseMaterial);
+    nose.position.set(0, 5, 54);
+    nose.rotation.x = Math.PI / 2;
+    headGroup.add(nose);
 
-    for (let i = 0; i < particlesCount * 3; i++) {
-      posArray[i] = (Math.random() - 0.5) * 400;
+    // Add nostrils for more realism - more visible
+    const nostrilGeometry = new THREE.SphereGeometry(1.5, 16, 16);
+    const nostrilMaterial = new THREE.MeshStandardMaterial({
+      color: 0x1a1a1a,
+      metalness: 0.1,
+      roughness: 0.9,
+    });
+    const leftNostril = new THREE.Mesh(nostrilGeometry, nostrilMaterial);
+    leftNostril.position.set(-2, 1.5, 54);
+    headGroup.add(leftNostril);
+
+    const rightNostril = new THREE.Mesh(nostrilGeometry, nostrilMaterial);
+    rightNostril.position.set(2, 1.5, 54);
+    headGroup.add(rightNostril);
+
+    // Create subtle particle system (reduced for human-like appearance)
+    const particlesGeometry = new THREE.BufferGeometry();
+    const particlesCount = 100; // Reduced count
+    const posArray = new Float32Array(particlesCount * 3);
+    const colorArray = new Float32Array(particlesCount * 3);
+
+    for (let i = 0; i < particlesCount * 3; i += 3) {
+      const radius = 100 + Math.random() * 50;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(Math.random() * 2 - 1);
+
+      posArray[i] = radius * Math.sin(phi) * Math.cos(theta);
+      posArray[i + 1] = radius * Math.sin(phi) * Math.sin(theta);
+      posArray[i + 2] = radius * Math.cos(phi);
+
+      const color = new THREE.Color();
+      color.setHSL(0.1 + Math.random() * 0.05, 0.3, 0.6); // Warmer, more subtle colors
+      colorArray[i] = color.r;
+      colorArray[i + 1] = color.g;
+      colorArray[i + 2] = color.b;
     }
 
     particlesGeometry.setAttribute(
       "position",
       new THREE.BufferAttribute(posArray, 3)
     );
+    particlesGeometry.setAttribute(
+      "color",
+      new THREE.BufferAttribute(colorArray, 3)
+    );
+
     const particlesMaterial = new THREE.PointsMaterial({
-      size: 1.5,
-      color: 0x4f46e5,
+      size: 1.0,
+      vertexColors: true,
       transparent: true,
-      opacity: 0.6,
+      opacity: 0.3, // More subtle
       blending: THREE.AdditiveBlending,
     });
 
@@ -236,38 +359,25 @@ const AIAgent: React.FC<AIAgentProps> = ({ isSpeaking }) => {
     );
     scene.add(particlesMesh);
 
-    // Lighting setup for realistic face - BRIGHTER
-    const ambientLight = new THREE.AmbientLight(0x666666, 2);
+    // Lighting setup (natural lighting for human face)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
 
-    // Key light (main light) - MUCH BRIGHTER
-    const keyLight = new THREE.DirectionalLight(0xffffff, 3);
-    keyLight.position.set(100, 200, 100);
-    scene.add(keyLight);
+    // Main light (key light)
+    const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    mainLight.position.set(50, 80, 50);
+    mainLight.castShadow = true;
+    scene.add(mainLight);
 
-    // Fill light (softer, opposite side) - BRIGHTER
-    const fillLight = new THREE.DirectionalLight(0x8888ff, 2);
-    fillLight.position.set(-100, 100, -100);
+    // Fill light (softer, opposite side)
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    fillLight.position.set(-50, 30, -50);
     scene.add(fillLight);
 
-    // Rim light (back light for edge definition) - BRIGHTER
-    const rimLight = new THREE.DirectionalLight(0x00ffff, 1.5);
-    rimLight.position.set(0, 50, -200);
+    // Rim light (subtle backlight)
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.3);
+    rimLight.position.set(0, 0, -100);
     scene.add(rimLight);
-
-    // Point lights for eye highlights - BRIGHTER
-    const eyeLight1 = new THREE.PointLight(0x00ffff, 2, 300);
-    eyeLight1.position.set(0, 50, 100);
-    scene.add(eyeLight1);
-
-    const eyeLight2 = new THREE.PointLight(0x6666ff, 1.5, 300);
-    eyeLight2.position.set(0, -30, 50);
-    scene.add(eyeLight2);
-
-    // Additional front light for face visibility
-    const frontLight = new THREE.PointLight(0xffffff, 2, 400);
-    frontLight.position.set(0, 0, 200);
-    scene.add(frontLight);
 
     setIsLoaded(true);
 
@@ -277,117 +387,146 @@ const AIAgent: React.FC<AIAgentProps> = ({ isSpeaking }) => {
 
       const time = Date.now() * 0.001;
 
-      // Animate face
-      if (faceRef.current) {
-        // Gentle head movement
-        faceRef.current.rotation.y = Math.sin(time * 0.3) * 0.1;
-        faceRef.current.rotation.x = Math.sin(time * 0.2) * 0.05;
+      // Animate head
+      if (headGroupRef.current) {
+        // Gentle floating
+        headGroupRef.current.position.y = Math.sin(time * 0.4) * 2;
+        headGroupRef.current.rotation.y = Math.sin(time * 0.2) * 0.08;
+        headGroupRef.current.rotation.x = Math.sin(time * 0.15) * 0.03;
 
-        // Subtle breathing/idle animation
-        const breathScale = 1 + Math.sin(time * 0.5) * 0.02;
-        faceRef.current.scale.set(breathScale, breathScale, breathScale);
+        // Subtle breathing
+        const breathScale = 1 + Math.sin(time * 0.6) * 0.01;
+        headGroupRef.current.scale.set(breathScale, breathScale, breathScale);
+      }
 
-        // Speaking animation with mouth and morph targets
-        const mouthGroup = faceRef.current.getObjectByName(
-          "mouthGroup"
-        ) as THREE.Group;
+      // Natural blinking animation (every 2-5 seconds)
+      const timeSinceLastBlink = time - lastBlinkTimeRef.current;
+      const blinkInterval = 2 + (Math.sin(time * 0.1) * 0.5 + 0.5) * 3; // Varies between 2-5 seconds
+      const shouldBlink = timeSinceLastBlink > blinkInterval;
 
-        if (isSpeaking) {
-          // Animate morph targets
-          if (faceRef.current.morphTargetInfluences) {
-            const mouthInfluence = (Math.sin(time * 20) * 0.5 + 0.5) * 0.7;
-            faceRef.current.morphTargetInfluences[0] = mouthInfluence;
-          }
+      if (shouldBlink && leftEyelidRef.current && rightEyelidRef.current) {
+        lastBlinkTimeRef.current = time;
+      }
 
-          // Animate visible mouth
-          if (mouthGroup) {
-            const openAmount = (Math.sin(time * 18) * 0.5 + 0.5) * 0.4;
-            mouthGroup.scale.y = 1 + openAmount;
-            mouthGroup.scale.x = 1 + openAmount * 0.3;
+      // Animate eyes
+      if (
+        leftEyeRef.current &&
+        rightEyeRef.current &&
+        leftEyelidRef.current &&
+        rightEyelidRef.current
+      ) {
+        // Blinking animation
+        const blinkDuration = 0.15;
+        const timeSinceBlink = time - lastBlinkTimeRef.current;
+        const isBlinking = timeSinceBlink < blinkDuration;
 
-            // Open mouth vertically
-            mouthGroup.children.forEach((child, index) => {
-              if (index === 0) {
-                // Upper lip
-                child.position.y = openAmount * 2;
-              } else if (index === 1) {
-                // Lower lip
-                child.position.y = -1.5 - openAmount * 2;
-              }
-            });
-          }
-        } else {
-          // Smooth return to neutral
-          if (faceRef.current.morphTargetInfluences) {
-            faceRef.current.morphTargetInfluences[0] *= 0.95;
-          }
-
-          if (mouthGroup) {
-            mouthGroup.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
-
-            // Return lips to neutral
-            mouthGroup.children.forEach((child, index) => {
-              if (index === 0) {
-                // Upper lip
-                child.position.y *= 0.9;
-              } else if (index === 1) {
-                // Lower lip
-                child.position.y = child.position.y * 0.9 - 1.5 * 0.1;
-              }
-            });
-          }
+        let blinkProgress = 0;
+        if (isBlinking) {
+          blinkProgress = Math.sin((timeSinceBlink / blinkDuration) * Math.PI);
         }
 
-        // Eye blink animation (only for eye whites)
-        const blinkTime = time % 4;
-        if (blinkTime < 0.15) {
-          const blinkAmount = Math.sin((blinkTime / 0.15) * Math.PI);
-          faceRef.current.children.forEach((child: any) => {
-            if (
-              child.material &&
-              child.material.color &&
-              child.material.color.getHex() === 0xffffff
-            ) {
-              // This is an eye white
-              child.scale.y = 1 - blinkAmount * 0.9;
+        // Animate eyelids closing/opening
+        const eyelidRotation = (blinkProgress * Math.PI) / 2;
+        leftEyelidRef.current.rotation.z = -eyelidRotation;
+        rightEyelidRef.current.rotation.z = eyelidRotation;
+
+        // Eye movement (looking around) - only when not blinking
+        if (!isBlinking) {
+          const lookX = Math.sin(time * 0.3) * 1.5;
+          const lookY = Math.sin(time * 0.2) * 1.2;
+
+          // Move iris and pupil together
+          leftEyeRef.current.children.forEach((child, index) => {
+            if (index === 2) {
+              // Iris
+              (child as THREE.Mesh).position.x = lookX;
+              (child as THREE.Mesh).position.y = lookY;
+            } else if (index === 3) {
+              // Pupil
+              (child as THREE.Mesh).position.x = lookX;
+              (child as THREE.Mesh).position.y = lookY;
             }
           });
-        } else {
-          faceRef.current.children.forEach((child: any) => {
-            if (
-              child.material &&
-              child.material.color &&
-              child.material.color.getHex() === 0xffffff
-            ) {
-              child.scale.y = 1;
+
+          rightEyeRef.current.children.forEach((child, index) => {
+            if (index === 2) {
+              // Iris
+              (child as THREE.Mesh).position.x = lookX;
+              (child as THREE.Mesh).position.y = lookY;
+            } else if (index === 3) {
+              // Pupil
+              (child as THREE.Mesh).position.x = lookX;
+              (child as THREE.Mesh).position.y = lookY;
             }
           });
         }
       }
 
-      // Animate particles
-      if (particlesMesh) {
-        particlesMesh.rotation.y = time * 0.05;
-        particlesMesh.rotation.x = time * 0.02;
+      // Animate mouth and lips
+      if (mouthGroupRef.current && upperLipRef.current && lowerLipRef.current) {
+        if (isSpeaking) {
+          // Lip movement when speaking
+          const lipMovement = Math.sin(time * 18) * 0.5 + 0.5;
+          const openAmount = lipMovement * 0.6;
 
-        // Pulse particles when speaking
+          // Move upper lip up
+          upperLipRef.current.position.y = 2 - openAmount * 2.5;
+          // Move lower lip down
+          lowerLipRef.current.position.y = -2.5 - openAmount * 2.5;
+
+          // Slight scale change for more natural movement
+          const lipScale = 1 + openAmount * 0.1;
+          upperLipRef.current.scale.set(lipScale, lipScale, 1);
+          lowerLipRef.current.scale.set(lipScale, lipScale, 1);
+
+          // Glow mouth interior when speaking
+          const mouthInterior = mouthGroupRef.current.children.find(
+            (child) =>
+              child instanceof THREE.Mesh &&
+              child.geometry.type === "CircleGeometry"
+          ) as THREE.Mesh;
+          if (mouthInterior && mouthInterior.material) {
+            const mat = mouthInterior.material as THREE.MeshStandardMaterial;
+            mat.emissiveIntensity = 0.8 + Math.sin(time * 18) * 0.3;
+          }
+        } else {
+          // Return lips to neutral position smoothly
+          upperLipRef.current.position.y = THREE.MathUtils.lerp(
+            upperLipRef.current.position.y,
+            2,
+            0.1
+          );
+          lowerLipRef.current.position.y = THREE.MathUtils.lerp(
+            lowerLipRef.current.position.y,
+            -2.5,
+            0.1
+          );
+          upperLipRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+          lowerLipRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+
+          const mouthInterior = mouthGroupRef.current.children.find(
+            (child) =>
+              child instanceof THREE.Mesh &&
+              child.geometry.type === "CircleGeometry"
+          ) as THREE.Mesh;
+          if (mouthInterior && mouthInterior.material) {
+            const mat = mouthInterior.material as THREE.MeshStandardMaterial;
+            mat.emissiveIntensity *= 0.95;
+          }
+        }
+      }
+
+      // Animate particles (subtle movement)
+      if (particlesMesh) {
+        particlesMesh.rotation.y = time * 0.02;
+        particlesMesh.rotation.x = time * 0.01;
+
         if (isSpeaking) {
           (particlesMesh.material as THREE.PointsMaterial).size =
-            1.5 + Math.sin(time * 10) * 0.5;
+            1.0 + Math.sin(time * 6) * 0.2;
         } else {
-          (particlesMesh.material as THREE.PointsMaterial).size = 1.5;
+          (particlesMesh.material as THREE.PointsMaterial).size = 1.0;
         }
-      }
-
-      // Animate lights for speaking effect
-      if (isSpeaking) {
-        eyeLight1.intensity = 2 + Math.sin(time * 15) * 0.5;
-        eyeLight2.intensity = 1.5 + Math.sin(time * 12) * 0.3;
-        frontLight.intensity = 2 + Math.sin(time * 10) * 0.4;
-      } else {
-        eyeLight1.intensity = 2;
-        eyeLight2.intensity = 1.5;
-        frontLight.intensity = 2;
       }
 
       renderer.render(scene, camera);
@@ -425,51 +564,47 @@ const AIAgent: React.FC<AIAgentProps> = ({ isSpeaking }) => {
   // Update speaking state
   useEffect(() => {
     // Speaking animation is handled in the main animation loop
-    // This effect can be used for additional state changes if needed
   }, [isSpeaking]);
 
-  const handleMuteToggle = () => {
-    setIsMuted(!isMuted);
-  };
-
   return (
-    <div className="relative w-full h-full bg-gradient-to-b from-slate-800 to-slate-900 overflow-hidden">
+    <div className="relative w-full h-full bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 overflow-hidden">
       {/* 3D Canvas Container */}
       <div ref={mountRef} className="w-full h-full" />
 
       {/* Loading State */}
       {!isLoaded && (
-        <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900 to-indigo-950 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-            <p className="text-white text-sm">Loading AI Agent...</p>
+            <div className="relative w-16 h-16 mx-auto mb-4">
+              <div className="absolute inset-0 border-4 border-indigo-500/30 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-transparent border-t-indigo-500 rounded-full animate-spin"></div>
+            </div>
+            <p className="text-indigo-300 text-sm font-medium">
+              Initializing AI Agent...
+            </p>
           </div>
         </div>
       )}
 
       {/* Agent Controls */}
-      <div className="absolute bottom-0 right-0 p-4">
-        <button
-          onClick={handleMuteToggle}
-          className="p-1 rounded hover:bg-white/10 transition-colors text-white"
-        >
-          {isMuted ? (
-            <VolumeX className="w-4 h-4" />
-          ) : (
-            <Volume2 className="w-4 h-4" />
-          )}
-        </button>
-      </div>
 
       {/* Speaking Indicator */}
       {isSpeaking && (
-        <div className="absolute top-4 left-4">
-          <div className="flex items-center space-x-2 bg-green-600 px-3 py-1 rounded-full">
-            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-            <span className="text-white text-xs font-medium">AI SPEAKING</span>
+        <div className="absolute top-4 left-4 z-10 animate-fade-in">
+          <div className="flex items-center space-x-2 bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 rounded-full shadow-lg border border-indigo-400/50">
+            <div className="relative">
+              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+              <div className="absolute inset-0 w-2 h-2 bg-white rounded-full animate-ping opacity-75"></div>
+            </div>
+            <span className="text-white text-xs font-semibold tracking-wide">
+              AI SPEAKING
+            </span>
           </div>
         </div>
       )}
+
+      {/* Subtle gradient overlay */}
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-transparent via-transparent to-indigo-950/20"></div>
     </div>
   );
 };
