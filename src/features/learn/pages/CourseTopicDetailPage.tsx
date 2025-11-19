@@ -16,6 +16,8 @@ import DevelopmentCard from "../components/course-cards/development/DevelopmentC
 import useMediaQuery from "../../../hooks/useMediaQuery";
 import { ContentType } from "../../../commonComponents/sidebar/courseSidebar/component/AllContent";
 import { ContentAvailability } from "../../../commonComponents/sidebar/courseSidebar/CourseSidebar";
+import StreakCongratulationsModal from "../../../components/StreakCongratulationsModal";
+import { useMonthlyStreakCongrats } from "../../../hooks/useMonthlyStreakCongrats";
 
 export interface SubmoduleContent {
   content_type: ContentType;
@@ -169,12 +171,28 @@ const CourseTopicDetailPage: React.FC = () => {
   const clientId = Number(import.meta.env.VITE_CLIENT_ID);
   const streakQueryKey = clientId ? ["streakTable", clientId] : null;
 
+  // Hook for streak congratulations modal
+  const {
+    shouldShow: shouldShowStreakCongrats,
+    markShown: markStreakCongratsShown,
+    currentStreak,
+    completionDate,
+    refetch: refetchMonthlyStreak,
+  } = useMonthlyStreakCongrats();
+
   const triggerStreakRefresh = useCallback(() => {
     if (!streakQueryKey) return;
 
     queryClient.invalidateQueries({ queryKey: streakQueryKey });
     queryClient.refetchQueries({ queryKey: streakQueryKey, type: "active" });
   }, [queryClient, streakQueryKey]);
+
+  // Refetch monthly streak after content completion with a small delay
+  const refetchStreakAfterCompletion = useCallback(async () => {
+    // Wait a bit for backend to process the completion and update streak
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await refetchMonthlyStreak();
+  }, [refetchMonthlyStreak]);
   // Fetch submodule data
   const {
     data: submoduleData,
@@ -949,6 +967,7 @@ const CourseTopicDetailPage: React.FC = () => {
                 onComplete={() => {
                   updateVideoProgress(currentContent.id.toString(), 100);
                   triggerStreakRefresh();
+                  refetchStreakAfterCompletion();
                 }}
                 onProgressUpdate={(videoId, progress) => {
                   updateVideoProgress(videoId, progress);
@@ -967,6 +986,7 @@ const CourseTopicDetailPage: React.FC = () => {
                 onComplete={() => {
                   updateProblemStatus(currentContent.id.toString(), "complete");
                   triggerStreakRefresh();
+                  refetchStreakAfterCompletion();
                 }}
               />
             )}
@@ -981,6 +1001,7 @@ const CourseTopicDetailPage: React.FC = () => {
                 onComplete={() => {
                   updateQuizStatus(currentContent.id, "complete");
                   triggerStreakRefresh();
+                  refetchStreakAfterCompletion();
                 }}
               />
             )}
@@ -1034,6 +1055,19 @@ const CourseTopicDetailPage: React.FC = () => {
           />
         </div>
       )}
+
+      {/* Streak Congratulations Modal */}
+      <StreakCongratulationsModal
+        isOpen={shouldShowStreakCongrats}
+        onClose={() => {
+          markStreakCongratsShown();
+        }}
+        onContinue={() => {
+          markStreakCongratsShown();
+        }}
+        currentStreak={currentStreak}
+        completionDate={completionDate}
+      />
     </div>
   );
 };
