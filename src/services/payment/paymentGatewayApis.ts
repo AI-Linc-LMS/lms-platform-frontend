@@ -21,6 +21,7 @@ interface ApiError {
 interface CreateOrderRequest {
   amount: string;
   payment_type: string;
+  currency?: string;
   type_id?: string;
 }
 
@@ -51,6 +52,10 @@ export const createOrder = async (
     if (typeId) {
       requestPayload.type_id = typeId;
     }
+    const currency = metadata?.currency as string;
+    if (currency) {
+      requestPayload.currency = currency;
+    }
 
     // Legacy specific handling for backward compatibility
     if (paymentType === PaymentType.ASSESSMENT && metadata?.assessmentId) {
@@ -69,7 +74,7 @@ export const createOrder = async (
       };
     }
 
-    //console.log('Creating order with payload:', requestPayload);
+    console.log("Creating order with payload:", requestPayload);
 
     const response = await axiosInstance.post(
       `/payment-gateway/api/clients/${clientId}/create-order/`,

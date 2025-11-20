@@ -23,7 +23,7 @@
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
-    <meta name="apple-mobile-web-app-title" content="Loading..." />
+    <meta name="apple-mobile-web-app-title" content="" />
     <meta name="msapplication-TileColor" content="#ffffff" />
     <meta name="msapplication-config" content="/browserconfig.xml" />
 
@@ -168,8 +168,138 @@
     <link rel="mask-icon" href="/pwa-512x512.svg" color="#ffffff" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <title data-branding="title">Loading...</title>
-    <link rel="icon" data-branding="favicon" href="/placeholder.png" />
+    <title data-branding="title"></title>
+    <link rel="icon" data-branding="favicon" href="/pwa-512x512.png" />
+    
+    <!-- Open Graph / Social Media Meta Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" id="og-title" content="" />
+    <meta property="og:description" id="og-description" content="AI-powered learning and assessment platform" />
+    <meta property="og:image" id="og-image" content="/pwa-512x512.png" />
+    <meta property="og:url" id="og-url" content="" />
+    <script>
+      // Set og:url immediately before page loads
+      (function() {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', function() {
+            const ogUrl = document.getElementById('og-url');
+            if (ogUrl) ogUrl.setAttribute('content', window.location.href);
+          });
+        } else {
+          const ogUrl = document.getElementById('og-url');
+          if (ogUrl) ogUrl.setAttribute('content', window.location.href);
+        }
+      })();
+    </script>
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" id="twitter-title" content="" />
+    <meta name="twitter:description" id="twitter-description" content="AI-powered learning and assessment platform" />
+    <meta name="twitter:image" id="twitter-image" content="/pwa-512x512.png" />
+    
+    <!-- Client ID and API URL (set via script data attribute for build-time injection) -->
+    <script id="app-config" data-client-id="" data-api-url="https://be-app.ailinc.com"></script>
+    
+    <!-- Script to update meta tags before social scrapers read them -->
+    <script>
+      (function() {
+        // Set default og:url immediately
+        (function() {
+          const ogUrl = document.getElementById('og-url');
+          if (ogUrl && !ogUrl.getAttribute('content')) {
+            ogUrl.setAttribute('content', window.location.href);
+          }
+        })();
+        
+        // Get client ID from script data attribute
+        function getClientId() {
+          const configScript = document.getElementById('app-config');
+          if (configScript && configScript.dataset.clientId) {
+            return configScript.dataset.clientId;
+          }
+          // Try localStorage (set by previous visit)
+          try {
+            const stored = localStorage.getItem('__client_id__');
+            if (stored) return stored;
+          } catch(e) {}
+          return null;
+        }
+        
+        function getApiUrl() {
+          const configScript = document.getElementById('app-config');
+          if (configScript && configScript.dataset.apiUrl) {
+            return configScript.dataset.apiUrl.replace(/\/$/, '');
+          }
+          return 'https://be-app.ailinc.com';
+        }
+        
+        const clientId = getClientId();
+        const apiBaseUrl = getApiUrl();
+        
+        if (!clientId) {
+          // No client ID available, skip fetching
+          return;
+        }
+        
+        // Store client ID for future use
+        try {
+          localStorage.setItem('__client_id__', clientId);
+        } catch(e) {}
+        
+        // Function to update meta tags
+        function updateMetaTags(data) {
+          if (!data || !data.is_active || !data.name) return;
+          
+          const origin = window.location.origin;
+          const appName = data.name;
+          const appIcon = data.app_icon_url || origin + '/pwa-512x512.png';
+          const currentUrl = window.location.href;
+          
+          // Update title
+          const titleEl = document.querySelector('title[data-branding="title"]');
+          if (titleEl) titleEl.textContent = appName;
+          
+          // Update Open Graph tags
+          const ogTitle = document.getElementById('og-title');
+          if (ogTitle) ogTitle.setAttribute('content', appName);
+          
+          const ogImage = document.getElementById('og-image');
+          if (ogImage) ogImage.setAttribute('content', appIcon);
+          
+          const ogUrl = document.getElementById('og-url');
+          if (ogUrl) ogUrl.setAttribute('content', currentUrl);
+          
+          // Update Twitter tags
+          const twitterTitle = document.getElementById('twitter-title');
+          if (twitterTitle) twitterTitle.setAttribute('content', appName);
+          
+          const twitterImage = document.getElementById('twitter-image');
+          if (twitterImage) twitterImage.setAttribute('content', appIcon);
+          
+          // Update favicon
+          const faviconEl = document.querySelector('link[data-branding="favicon"]');
+          if (faviconEl && data.app_icon_url) {
+            faviconEl.href = data.app_icon_url;
+          }
+          
+          // Update apple-mobile-web-app-title
+          const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+          if (appleTitle) appleTitle.setAttribute('content', appName);
+        }
+        
+        // Fetch client info immediately (non-blocking)
+        fetch(apiBaseUrl + '/api/clients/' + clientId + '/client-info/')
+          .then(function(response) {
+            if (!response.ok) throw new Error('Failed to fetch');
+            return response.json();
+          })
+          .then(function(data) {
+            updateMetaTags(data);
+          })
+          .catch(function() {
+            // Silently fail - use defaults
+          });
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
