@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Course } from "../../../types/final-course.types";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -34,6 +34,26 @@ import {
 import { IconActionsNotEnrolledSection } from "./components/IconNotEnrolledActionSection";
 import { enrollInCourse } from "../../../../../services/continue-course-learning/continueCourseApis";
 import { RootState } from "../../../../../redux/store";
+import {
+  CURRENCY_CHANGED_EVENT,
+  CURRENCY_STORAGE_KEY,
+  CurrencyCode,
+} from "../../../../../components/ui/CurrencySwithcer";
+
+const USD_CONVERSION_RATE =
+  Number(import.meta.env.VITE_INR_TO_USD_RATE) || 0.013;
+
+const usdFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
+
+const convertAmountFromINR = (amountInINR: number, currency: CurrencyCode) => {
+  if (currency === "USD") {
+    return Number((amountInINR * USD_CONVERSION_RATE).toFixed(2));
+  }
+  return amountInINR;
+};
 
 // Enhanced 3D Star Rating Component
 const StarRating = ({
@@ -120,6 +140,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
   };
 
   const formattedPrice = formatPrice(course?.price || "0");
+  const baseCoursePrice = Number(course?.price) || 0;
   const isFree = course?.is_free === true || formattedPrice === "0";
   const courseDuration = getEffectiveDuration({
     id: course.id,
@@ -148,6 +169,48 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
     orderId?: string;
     amount: number;
   } | null>(null);
+
+  const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>("INR");
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const storedCurrency =
+      (localStorage.getItem(CURRENCY_STORAGE_KEY) as CurrencyCode | null) ??
+      "INR";
+    setSelectedCurrency(storedCurrency);
+
+    const handleCurrencyChange = (event: Event) => {
+      const detail = (event as CustomEvent<CurrencyCode>).detail;
+      if (detail) {
+        setSelectedCurrency(detail);
+      }
+    };
+
+    window.addEventListener(CURRENCY_CHANGED_EVENT, handleCurrencyChange);
+    return () => {
+      window.removeEventListener(CURRENCY_CHANGED_EVENT, handleCurrencyChange);
+    };
+  }, []);
+
+  const priceInSelectedCurrency = useMemo(
+    () => convertAmountFromINR(baseCoursePrice, selectedCurrency),
+    [baseCoursePrice, selectedCurrency]
+  );
+
+  const displayPriceLabel = useMemo(() => {
+    if (isFree) {
+      return t("courses.free");
+    }
+
+    if (selectedCurrency === "USD") {
+      return usdFormatter.format(priceInSelectedCurrency);
+    }
+
+    return `₹${formattedPrice}`;
+  }, [formattedPrice, isFree, priceInSelectedCurrency, selectedCurrency, t]);
 
   const loadRazorpayScript = () =>
     new Promise<boolean>((resolve, reject) => {
@@ -190,10 +253,11 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
       // 1. Create order from backend - IMPORTANT: Specify COURSE payment type
       const orderData = await createOrder(
         clientId,
-        Number(course.price),
+        priceInSelectedCurrency,
         PaymentType.COURSE, // Explicitly specify this is a COURSE payment
         {
           type_id: course.id.toString(), // Pass course ID for reference
+          currency: selectedCurrency,
         }
       );
 
@@ -203,11 +267,13 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
         );
       }
 
+      console.log("priceInSelectedCurrency", priceInSelectedCurrency);
+      console.log("selectedCurrency", selectedCurrency);
       // 2. Launch Razorpay
       const options: RazorpayOptions = {
         key: orderData.key,
-        amount: Number(course.price),
-        currency: orderData.currency || "INR",
+        amount: priceInSelectedCurrency,
+        currency: selectedCurrency || "INR",
         name: clientInfo?.data?.name || "AI LINC",
         description: "Course Access Payment",
         order_id: orderData.order_id,
@@ -239,7 +305,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
               setPaymentResult({
                 paymentId: response.razorpay_payment_id,
                 orderId: response.razorpay_order_id,
-                amount: Number(course.price),
+                amount: priceInSelectedCurrency,
               });
 
               // Wait a moment to show completion, then show success modal
@@ -323,7 +389,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
 
       {/* Course Info Pills */}
       <div className="p-3 sm:p-4 md:p-6">
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-4 items-center">
           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-full text-xs font-medium text-gray-700 whitespace-nowrap">
             <svg
               className="w-3 h-3 text-yellow-500"
@@ -347,7 +413,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
             {courseDuration} {t("courses.hours")}
           </span>
           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-full text-xs font-medium text-yellow-800 whitespace-nowrap">
-            {isFree ? t("courses.free") : `₹${formattedPrice}`}
+            {displayPriceLabel}
           </span>
 
           {/* Rating */}
@@ -359,9 +425,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
             onClick={isFree ? handlePrimaryClick : handlePayment}
             className={`px-5 py-3 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[var(--course-cta)] text-[var(--font-light)] hover:bg-[var(--course-cta)] hover:-translate-y-0.5 ${"w-full"} ${className}`}
           >
-            {`${t("courses.enrollNow")} - ${
-              isFree ? t("courses.free") : `₹${formattedPrice}`
-            }`}
+            {`${t("courses.enrollNow")} - ${displayPriceLabel}`}
           </button>
         </div>
       </div>
