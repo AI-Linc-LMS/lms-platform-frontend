@@ -565,3 +565,63 @@ body {
   --chart-subjective: #a8e6cf;
   --chart-development: #ff8b94;
 }
+/* =============================== Hide Fullscreen Controls ================================== */
+/* Hide browser's native fullscreen exit button/controls */
+*:fullscreen {
+  -webkit-appearance: none;
+}
+
+*:fullscreen::backdrop {
+  background: transparent;
+}
+
+/* Prevent hover controls from showing */
+:fullscreen button[aria-label*="Exit"] {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Hide webkit fullscreen controls */
+::-webkit-media-controls-overlay-enclosure {
+  display: none !important;
+}
+
+/* Hide all fullscreen overlay elements */
+:fullscreen > * {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Prevent context menu in fullscreen */
+:fullscreen {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+/* =============================== Hide Fullscreen Controls - END ================================== */
+
+/* =============================== Dialog Animations ================================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+/* =============================== Dialog Animations - END ================================== */

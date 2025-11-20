@@ -16,6 +16,8 @@ import DevelopmentCard from "../components/course-cards/development/DevelopmentC
 import useMediaQuery from "../../../hooks/useMediaQuery";
 import { ContentType } from "../../../commonComponents/sidebar/courseSidebar/component/AllContent";
 import { ContentAvailability } from "../../../commonComponents/sidebar/courseSidebar/CourseSidebar";
+import StreakCongratulationsModal from "../../../components/StreakCongratulationsModal";
+import { useMonthlyStreakCongrats } from "../../../hooks/useMonthlyStreakCongrats";
 
 export interface SubmoduleContent {
   content_type: ContentType;
@@ -169,12 +171,28 @@ const CourseTopicDetailPage: React.FC = () => {
   const clientId = Number(import.meta.env.VITE_CLIENT_ID);
   const streakQueryKey = clientId ? ["streakTable", clientId] : null;
 
+  // Hook for streak congratulations modal
+  const {
+    shouldShow: shouldShowStreakCongrats,
+    markShown: markStreakCongratsShown,
+    currentStreak,
+    completionDate,
+    refetch: refetchMonthlyStreak,
+  } = useMonthlyStreakCongrats();
+
   const triggerStreakRefresh = useCallback(() => {
     if (!streakQueryKey) return;
 
     queryClient.invalidateQueries({ queryKey: streakQueryKey });
     queryClient.refetchQueries({ queryKey: streakQueryKey, type: "active" });
   }, [queryClient, streakQueryKey]);
+
+  // Refetch monthly streak after content completion with a small delay
+  const refetchStreakAfterCompletion = useCallback(async () => {
+    // Wait a bit for backend to process the completion and update streak
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await refetchMonthlyStreak();
+  }, [refetchMonthlyStreak]);
   // Fetch submodule data
   const {
     data: submoduleData,
@@ -278,7 +296,7 @@ const CourseTopicDetailPage: React.FC = () => {
     selectedAssignmentId,
     selectedArticleId,
     selectedQuizId,
-  ]);
+  ]); // Removed activeSidebarLabel dependency to prevent resetting index when switching tabs
 
   // Props objects for each content type
   const videoProps = {
@@ -659,7 +677,7 @@ const CourseTopicDetailPage: React.FC = () => {
       const quizIndex = updatedData.findIndex(
         (content) => content.content_type === "Quiz" && content.id === quizId
       );
-      console.log("Quiz Index:", quizIndex, quizId);
+
       if (quizIndex !== -1) {
         updatedData[quizIndex] = {
           ...updatedData[quizIndex],
@@ -689,11 +707,7 @@ const CourseTopicDetailPage: React.FC = () => {
     }
   };
   // Update the updateProblemStatus function to take an optional parameter to skip API calls
-  const updateProblemStatus = (
-    problemId: string,
-    status: string,
-    updateBackend: boolean = true
-  ): void => {
+  const updateProblemStatus = (problemId: string, status: string): void => {
     //console.log(`Updating problem ${problemId} status to ${status}, updateBackend=${updateBackend}`);
 
     if (submoduleData?.data) {
@@ -719,22 +733,23 @@ const CourseTopicDetailPage: React.FC = () => {
             data: updatedData,
           };
 
-          // Local update for immediate UI feedback
+          // Update the query cache immediately for instant UI update
+          queryClient.setQueryData<SubmoduleData>(
+            ["submodule", courseId, submoduleId],
+            newSubmoduleData
+          );
+
+          // Also update temporary data for sidebar refresh mechanism
           const w = window as unknown as {
             temporarySubmoduleData: SubmoduleData;
           };
           w.temporarySubmoduleData = newSubmoduleData;
 
-          // Force re-render sidebar components
+          // Trigger immediate sidebar refresh by updating a state that CourseSidebarContent watches
           setSelectedProblemId((prevId) => {
-            if (prevId === problemId) return prevId; // No change to avoid unnecessary re-renders
-            return problemId; // Change to force re-render
+            // Force a change to trigger re-render
+            return prevId === problemId ? `${problemId}-updated` : problemId;
           });
-
-          // Then make API call to persist the change in the backend if requested
-          if (updateBackend) {
-            //console.log(`Making API call to update problem ${problemId} status to ${status}`);
-          }
         }
       } else {
         //console.error(`Problem with ID ${problemId} not found in submoduleData`);
@@ -952,6 +967,7 @@ const CourseTopicDetailPage: React.FC = () => {
                 onComplete={() => {
                   updateVideoProgress(currentContent.id.toString(), 100);
                   triggerStreakRefresh();
+                  refetchStreakAfterCompletion();
                 }}
                 onProgressUpdate={(videoId, progress) => {
                   updateVideoProgress(videoId, progress);
@@ -968,8 +984,9 @@ const CourseTopicDetailPage: React.FC = () => {
                   //console.log("Submitted code:", code);
                 }}
                 onComplete={() => {
-                  //console.log("Problem completed!");
                   updateProblemStatus(currentContent.id.toString(), "complete");
+                  triggerStreakRefresh();
+                  refetchStreakAfterCompletion();
                 }}
               />
             )}
@@ -984,6 +1001,7 @@ const CourseTopicDetailPage: React.FC = () => {
                 onComplete={() => {
                   updateQuizStatus(currentContent.id, "complete");
                   triggerStreakRefresh();
+                  refetchStreakAfterCompletion();
                 }}
               />
             )}
@@ -1037,6 +1055,19 @@ const CourseTopicDetailPage: React.FC = () => {
           />
         </div>
       )}
+
+      {/* Streak Congratulations Modal */}
+      <StreakCongratulationsModal
+        isOpen={shouldShowStreakCongrats}
+        onClose={() => {
+          markStreakCongratsShown();
+        }}
+        onContinue={() => {
+          markStreakCongratsShown();
+        }}
+        currentStreak={currentStreak}
+        completionDate={completionDate}
+      />
     </div>
   );
 };

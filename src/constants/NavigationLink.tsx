@@ -100,6 +100,19 @@ export const getNavigationLinks = (
       },
     ],
   },
+  {
+    id: 7,
+    title: t("navigation.mock_interview"),
+    slug: "mock_interview",
+    links: [
+      {
+        id: 1,
+        title: t("navigation.mock_interview"),
+        href: "/mock-interview",
+        icon: <CommunityIconController />,
+      },
+    ],
+  },
 ];
 
 // Fallback static links for backward compatibility
@@ -191,6 +204,19 @@ export const NavigationLinks: SidebarLinkInfo[] = [
         id: 1,
         title: "Community",
         href: "/community",
+        icon: <CommunityIconController />,
+      },
+    ],
+  },
+  {
+    id: 7,
+    title: "Mock Interview",
+    slug: "community_forum",
+    links: [
+      {
+        id: 1,
+        title: "Mock Interview",
+        href: "/mock-interview",
         icon: <CommunityIconController />,
       },
     ],

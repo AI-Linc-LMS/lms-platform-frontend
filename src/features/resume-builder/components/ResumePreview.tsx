@@ -1,23 +1,36 @@
 import React from "react";
-import { ResumeData } from "../types/resume";
+import { ResumeData, ColorScheme } from "../types/resume";
 import ModernTemplate from "../templates/ModernTemplate";
 import ClassicTemplate from "../templates/ClassicTemplate";
 import MinimalTemplate from "../templates/MinimalTemplate";
 
 interface ResumePreviewProps {
   data: ResumeData;
+  zoom?: number;
+  themeColor?: string;
+  colorScheme?: ColorScheme;
 }
 
-const ResumePreview: React.FC<ResumePreviewProps> = ({ data }) => {
+const ResumePreview: React.FC<ResumePreviewProps> = ({ data, themeColor, colorScheme }) => {
   const renderTemplate = () => {
+    // Prioritize props over data to ensure updates are reflected
+    const activeColorScheme = colorScheme || data.colorScheme || "Professional Blue";
+    const activeThemeColor = themeColor || data.themeColor || "#3b82f6";
+    
+    const templateProps = {
+      data,
+      themeColor: activeThemeColor,
+      colorScheme: activeColorScheme,
+    };
+
     switch (data.selectedTemplate) {
       case "classic":
-        return <ClassicTemplate data={data} />;
+        return <ClassicTemplate {...templateProps} />;
       case "minimal":
-        return <MinimalTemplate data={data} />;
+        return <MinimalTemplate {...templateProps} />;
       case "modern":
       default:
-        return <ModernTemplate data={data} />;
+        return <ModernTemplate {...templateProps} />;
     }
   };
 
@@ -30,7 +43,10 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data }) => {
       data.experience.length > 0 ||
       data.education.length > 0 ||
       data.skills.length > 0 ||
-      data.projects.length > 0
+      data.projects.length > 0 ||
+      data.activities?.length > 0 ||
+      data.volunteering?.length > 0 ||
+      data.awards?.length > 0
     );
   };
 
@@ -64,8 +80,16 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data }) => {
   }
 
   return (
-    <div className="h-full overflow-auto bg-white border border-gray-200 rounded-lg">
-      <div className="min-h-full">{renderTemplate()}</div>
+    <div 
+      className="h-full overflow-y-auto overflow-x-hidden bg-white border border-gray-200 rounded-lg" 
+      data-resume-content
+      style={{
+        WebkitPrintColorAdjust: 'exact',
+        printColorAdjust: 'exact',
+        colorAdjust: 'exact',
+      }}
+    >
+      <div className="min-h-full max-w-full overflow-x-hidden">{renderTemplate()}</div>
     </div>
   );
 };

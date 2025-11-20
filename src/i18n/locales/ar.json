@@ -45,6 +45,8 @@
     "admin": "المدير",
     "logout": "تسجيل الخروج",
     "login": "تسجيل الدخول",
+
+    "mock_interview": "المقابلة التجريبية",
     "attendance": "الحضور"
   },
   "notifications": {

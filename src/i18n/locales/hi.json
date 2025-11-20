@@ -45,6 +45,8 @@
     "admin": "एडमिन",
     "logout": "लॉगआउट",
     "login": "लॉगिन",
+    "attendance": "उपस्थिति",
+    "mock_interview": "मॉक साक्षात्कार",
     "attendance": "उपस्थिति"
   },
   "notifications": {

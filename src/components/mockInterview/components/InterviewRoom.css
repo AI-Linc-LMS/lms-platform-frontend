@@ -1,0 +1,243 @@
+/* Interview Room Enhanced Styles */
+
+/* Hide fullscreen browser controls - STRICT MODE */
+*:fullscreen {
+  cursor: auto !important;
+}
+
+*:fullscreen::backdrop {
+  background-color: black;
+}
+
+*:-webkit-full-screen {
+  cursor: auto !important;
+}
+
+*:-webkit-full-screen::backdrop {
+  background-color: black;
+}
+
+*:-moz-full-screen {
+  cursor: auto !important;
+}
+
+*:-moz-full-screen::backdrop {
+  background-color: black;
+}
+
+/* Prevent fullscreen UI from showing on mouse movement */
+:fullscreen::-webkit-media-controls {
+  display: none !important;
+}
+
+:fullscreen::-webkit-media-controls-enclosure {
+  display: none !important;
+}
+
+/* Prevent user selection and interactions */
+.interview-room-container {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  touch-action: none;
+  /* Prevent overscroll and trackpad swipe navigation */
+  overscroll-behavior: none;
+  -webkit-overscroll-behavior: none;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
+}
+
+/* Prevent overscroll on body when interview is active */
+body.no-scroll {
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-overscroll-behavior: none;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+/* Disable double-tap zoom on mobile */
+.interview-room-container * {
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
+
+/* ESC Hold Progress Animation */
+@keyframes esc-progress {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.esc-progress-bar {
+  animation: esc-progress 3s linear forwards;
+}
+
+/* Audio Visualizer Animation */
+@keyframes audio-pulse {
+  0%, 100% {
+    height: 10px;
+  }
+  50% {
+    height: 40px;
+  }
+}
+
+.audio-bar {
+  animation: audio-pulse 0.8s ease-in-out infinite;
+}
+
+/* Control Button Hover Effects */
+.control-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.control-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+}
+
+.control-button:active {
+  transform: scale(0.95);
+}
+
+/* Smooth transitions for tab switching */
+.tab-content {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Recording indicator pulse */
+@keyframes recording-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+.recording-indicator {
+  animation: recording-pulse 2s ease-in-out infinite;
+}
+
+/* Face status indicator */
+.face-status-indicator {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Video overlay smooth transitions */
+.video-overlay {
+  transition: opacity 0.3s ease-in-out;
+}
+
+.video-overlay:hover {
+  opacity: 1;
+}
+
+/* Question card animations */
+.question-card {
+  transition: all 0.3s ease-in-out;
+}
+
+.question-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Gradient text effect */
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Smooth scrollbar for question list */
+.question-list-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.question-list-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.question-list-scroll::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.question-list-scroll::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* AI Avatar glow effect when speaking */
+.ai-avatar-speaking {
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.6),
+              0 0 60px rgba(139, 92, 246, 0.4),
+              0 0 90px rgba(139, 92, 246, 0.2);
+  animation: avatar-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes avatar-glow {
+  0%, 100% {
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.6),
+                0 0 60px rgba(139, 92, 246, 0.4),
+                0 0 90px rgba(139, 92, 246, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(139, 92, 246, 0.8),
+                0 0 80px rgba(139, 92, 246, 0.6),
+                0 0 120px rgba(139, 92, 246, 0.4);
+  }
+}
+
+/* Prevent image dragging */
+img {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+}
+
+/* Disable text selection on buttons and controls */
+button, .control-button, .tab-button {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Next Question Button Pulse */
+.next-question-btn {
+  animation: button-pulse 2s ease-in-out infinite;
+}
+
+@keyframes button-pulse {
+  0%, 100% {
+    box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 20px 25px -5px rgba(139, 92, 246, 0.6);
+  }
+}
+
+

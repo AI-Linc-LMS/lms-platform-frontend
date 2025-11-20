@@ -224,3 +224,26 @@ export const recoverAndSendEmergencyData = async (): Promise<void> => {
     localStorage.removeItem("emergencySessionData");
   }
 };
+
+/**
+ * Monthly streak API response shape
+ */
+export interface MonthlyStreakResponse {
+  year: number;
+  month: number;
+  streak: Record<string, boolean>;
+  current_streak: number;
+}
+
+/**
+ * Fetch the student's monthly streak for a client
+ * GET /api/clients/{client_id}/student/monthly-streak/
+ */
+export const getMonthlyStreak = async (
+  clientId: number
+): Promise<MonthlyStreakResponse> => {
+  const { data } = await activityTrackingInstance.get<
+    MonthlyStreakResponse
+  >(`/api/clients/${clientId}/student/monthly-streak/`);
+  return data;
+};

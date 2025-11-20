@@ -329,6 +329,26 @@ function AppContent() {
         <Routes>
           {routes.map((route) => {
             if (route.isPrivate) {
+              // Special handling for routes with nested routing
+              if (route.hasNestedRoutes) {
+                return (
+                  <Route
+                    key={route.path}
+                    path={route.path}
+                    element={
+                      route.requiredRole === "admin_or_instructor" ? (
+                        <AdminRoute>
+                          <route.component />
+                        </AdminRoute>
+                      ) : (
+                        <route.component />
+                      )
+                    }
+                  />
+                );
+              }
+              
+              // Standard private route with Container
               return (
                 <Route
                   key={route.path}
