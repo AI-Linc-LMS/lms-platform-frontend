@@ -16,6 +16,7 @@ import {
   getStreakTableData,
   StreakData,
 } from "../services/dashboardApis";
+import CurrencySwitcher from "../components/ui/CurrencySwithcer.tsx";
 
 interface UserState {
   profile_picture?: string;
@@ -453,7 +454,7 @@ const TopNav: React.FC = () => {
                 <div className="relative">
                   {/* Tooltip arrow */}
                   <div className="absolute left-1/2 -translate-x-1/2 -top-2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[6px] border-b-white"></div>
-                  
+
                   {/* Tooltip content */}
                   <div className="bg-white rounded-lg px-3 py-2 shadow-xl whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
@@ -547,6 +548,7 @@ const TopNav: React.FC = () => {
               )}
             </div>
 
+            <CurrencySwitcher />
             {/* Language Switcher */}
             <LanguageSwitcher />
 
