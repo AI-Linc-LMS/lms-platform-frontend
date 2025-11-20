@@ -62,6 +62,72 @@ const withAppInitializer = <P extends object>(
       document.head.appendChild(maskIcon);
     }
 
+    function updateOpenGraphTags(data: ClientData) {
+      if (!data.name) return; // Only update if we have a client name
+
+      const origin = window.location.origin;
+      const appName = data.name;
+      const appIcon = data.app_icon_url || `${origin}/pwa-512x512.png`;
+      const currentUrl = window.location.href;
+
+      // Update or create Open Graph tags
+      const updateOrCreateMeta = (property: string, content: string) => {
+        let meta = document.querySelector(
+          `meta[property="${property}"]`
+        ) as HTMLMetaElement;
+        if (!meta) {
+          meta = document.createElement("meta");
+          meta.setAttribute("property", property);
+          document.head.appendChild(meta);
+        }
+        meta.setAttribute("content", content);
+      };
+
+      const updateOrCreateMetaName = (name: string, content: string) => {
+        let meta = document.querySelector(
+          `meta[name="${name}"]`
+        ) as HTMLMetaElement;
+        if (!meta) {
+          meta = document.createElement("meta");
+          meta.setAttribute("name", name);
+          document.head.appendChild(meta);
+        }
+        meta.setAttribute("content", content);
+      };
+
+      // Open Graph tags
+      updateOrCreateMeta("og:title", appName);
+      updateOrCreateMeta("og:image", appIcon);
+      updateOrCreateMeta("og:url", currentUrl);
+      updateOrCreateMeta(
+        "og:description",
+        "AI-powered learning and assessment platform"
+      );
+
+      // Twitter Card tags
+      updateOrCreateMetaName("twitter:title", appName);
+      updateOrCreateMetaName("twitter:image", appIcon);
+      updateOrCreateMetaName(
+        "twitter:description",
+        "AI-powered learning and assessment platform"
+      );
+
+      // Store client ID for future page loads
+      try {
+        const configScript = document.getElementById(
+          "app-config"
+        ) as HTMLScriptElement;
+        if (configScript && import.meta.env.VITE_CLIENT_ID) {
+          configScript.dataset.clientId = import.meta.env.VITE_CLIENT_ID;
+        }
+        if (import.meta.env.VITE_CLIENT_ID) {
+          localStorage.setItem("__client_id__", import.meta.env.VITE_CLIENT_ID);
+        }
+      } catch (e) {
+        // Silently fail
+      }
+    }
+
     useEffect(() => {
       const initialize = async () => {
         try {
@@ -73,9 +139,10 @@ const withAppInitializer = <P extends object>(
           if (result.is_active) {
             setResponse(result);
             /* Primary Colors */
-            document.title = result.name || "AI Linc|App";
+            document.title = result.name || "";
 
             setAppIcons(result.app_icon_url);
+            updateOpenGraphTags(result);
             if (
               result.theme_settings &&
               Object.keys(result.theme_settings).length > 0
