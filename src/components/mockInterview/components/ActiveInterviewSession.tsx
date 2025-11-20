@@ -53,34 +53,28 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
   onStopSpeaking,
   lastSavedAnswer,
   onTypedTextChange,
-  typedText: typedTextProp = "",
+  typedText: typedTextProp,
 }) => {
   void difficulty;
 
-  // Local state for typed text if not controlled by parent
-  const [localTypedText, setLocalTypedText] = useState("");
-  const typedText = typedTextProp || localTypedText;
+  // Local state for answer text if not controlled by parent
+  const [localAnswer, setLocalAnswer] = useState<string>("");
+  const answerText = typedTextProp ?? localAnswer;
 
-  // Handle typed text changes
-  const handleTypedTextChange = (text: string) => {
+  const setAnswerText = (text: string) => {
     if (onTypedTextChange) {
       onTypedTextChange(text);
     } else {
-      setLocalTypedText(text);
+      setLocalAnswer(text);
     }
   };
 
-  // Merge typed text with speech transcript
-  const combinedAnswer = React.useMemo(() => {
-    const parts: string[] = [];
-    if (typedText.trim()) {
-      parts.push(typedText.trim());
+  // Keep transcript synced while listening; allow edits afterwards
+  useEffect(() => {
+    if (isListening) {
+      setAnswerText(currentTranscript);
     }
-    if (currentTranscript.trim()) {
-      parts.push(currentTranscript.trim());
-    }
-    return parts.join(" ");
-  }, [typedText, currentTranscript]);
+  }, [currentTranscript, isListening]);
 
   const toTitleCase = (str: string) => {
     return str
@@ -248,7 +242,7 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
           {/* Tab Content */}
           <div className="flex-1 overflow-y-auto p-6">
             <div className="tab-content space-y-4">
-              {/* Typing Input Area */}
+              {/* Editable Transcript / Answer */}
               <div className="bg-white rounded-lg p-5 border-2 border-purple-200 shadow-sm">
                 <div className="flex items-center space-x-2 mb-3">
                   <svg
@@ -265,58 +259,26 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
                     />
                   </svg>
                   <span className="text-sm font-bold text-purple-700 uppercase tracking-wide">
-                    Type Your Answer
+                    Review & Edit Your Answer
                   </span>
                 </div>
                 <textarea
-                  value={typedText}
-                  onChange={(e) => handleTypedTextChange(e.target.value)}
-                  placeholder="Type your answer here... You can also speak your answer."
-                  className="w-full min-h-[150px] p-4 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none resize-none text-gray-800 text-base leading-relaxed"
-                  disabled={!isListening}
+                  value={answerText}
+                  onChange={(e) => setAnswerText(e.target.value)}
+                  placeholder={
+                    isListening
+                      ? "Listening... transcript will appear here."
+                      : "You can edit your response before moving to the next question."
+                  }
+                  className="w-full min-h-[180px] p-4 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none resize-none text-gray-800 text-base leading-relaxed"
+                  disabled={false}
                 />
+                <p className="text-xs text-gray-500 mt-2">
+                  {isListening
+                    ? "Capturing your speech. You can fine-tune this answer once recording stops."
+                    : "Please validate this answer before proceeding."}
+                </p>
               </div>
-
-              {/* Speech Transcript Display */}
-              {isListening && (
-                <div className="bg-green-50 rounded-lg p-5 border-l-4 border-green-500 shadow-sm">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm font-bold text-green-700 uppercase tracking-wide">
-                      Live Speech Transcript
-                    </span>
-                  </div>
-                  <p className="text-gray-800 text-base leading-relaxed min-h-[80px]">
-                    {currentTranscript ||
-                      "Start speaking... Your speech will appear here."}
-                  </p>
-                </div>
-              )}
-
-              {/* Combined Answer Preview */}
-              {combinedAnswer && (
-                <div className="bg-indigo-50 rounded-lg p-5 border-l-4 border-indigo-500 shadow-sm">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <svg
-                      className="w-5 h-5 text-indigo-600"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="text-sm font-bold text-indigo-700 uppercase tracking-wide">
-                      Combined Answer Preview
-                    </span>
-                  </div>
-                  <p className="text-gray-800 text-base leading-relaxed min-h-[60px]">
-                    {combinedAnswer}
-                  </p>
-                </div>
-              )}
 
               {lastSavedAnswer && (
                 <div className="bg-blue-50 rounded-lg p-5 border-l-4 border-blue-500 shadow-sm">
@@ -342,27 +304,33 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
                 </div>
               )}
 
-              {isListening && onStopSpeaking && (
-                <button
-                  onClick={onStopSpeaking}
-                  data-recording-active="true"
-                  className="next-question-btn w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-4 px-6 rounded-xl font-bold flex items-center justify-center space-x-3 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+              {onStopSpeaking && (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-600 text-center">
+                    Review and validate your answer before moving to the next
+                    question. Edit if needed, then continue.
+                  </p>
+                  <button
+                    onClick={onStopSpeaking}
+                    data-recording-active={isListening ? "true" : "false"}
+                    className="next-question-btn w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-4 px-6 rounded-xl font-bold flex items-center justify-center space-x-3 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 5l7 7-7 7M5 5l7 7-7 7"
-                    />
-                  </svg>
-                  <span>Next Question</span>
-                </button>
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                      />
+                    </svg>
+                    <span>Next Question</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>
