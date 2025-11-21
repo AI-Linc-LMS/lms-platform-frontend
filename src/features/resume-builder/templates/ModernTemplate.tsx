@@ -70,7 +70,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
       case "personal":
         // Personal info is rendered in header, but we can add summary/career objective here
         return (personalInfo.summary || personalInfo.careerObjective) ? (
-          <section className="resume-section mb-8">
+          <section className="resume-section mb-8" data-section="personal">
             <h2 className="text-2xl font-bold mb-4 pb-2" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
               {personalInfo.summary ? "Professional Summary" : "Career Objective"}
             </h2>
@@ -101,7 +101,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
                 if (categorySkills.length === 0) return null;
 
                 return (
-                  <div key={category} className="mb-4">
+                  <div key={category} id={`skill-category-${category}`} className="mb-4">
                     <h4 className="font-semibold mb-2" style={{ color: theme.primary }}>
                       {category}
                     </h4>
@@ -127,7 +127,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
         ) : null;
       case "experience":
         return experience.length > 0 ? (
-          <section className="resume-section mb-8">
+          <section className="resume-section mb-8" data-section="experience">
             <h2 className="text-2xl font-bold mb-4 pb-2" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
               Professional Experience
             </h2>
@@ -164,7 +164,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
         ) : null;
       case "education":
         return education.length > 0 ? (
-          <section className="resume-section mb-8">
+          <section className="resume-section mb-8" data-section="education">
             <h2 className="text-2xl font-bold mb-4 pb-2" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
               Education
             </h2>
@@ -204,7 +204,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
         ) : null;
       case "projects":
         return projects.length > 0 ? (
-          <section className="resume-section mb-8">
+          <section className="resume-section mb-8" data-section="projects">
             <h2 className="text-2xl font-bold mb-4 pb-2" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
               Projects
             </h2>
@@ -259,7 +259,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
         ) : null;
       case "activities":
         return activities && activities.length > 0 ? (
-          <section className="resume-section mb-8">
+          <section className="resume-section mb-8" data-section="activities">
             <h2 className="text-2xl font-bold mb-4 pb-2" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
               Activities
             </h2>
@@ -307,7 +307,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
         ) : null;
       case "volunteering":
         return volunteering && volunteering.length > 0 ? (
-          <section className="resume-section mb-8">
+          <section className="resume-section mb-8" data-section="volunteering">
             <h2 className="text-2xl font-bold mb-4 pb-2" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
               Volunteering
             </h2>
@@ -340,7 +340,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
         ) : null;
       case "awards":
         return awards && awards.length > 0 ? (
-          <section className="resume-section mb-8">
+          <section className="resume-section mb-8" data-section="awards">
             <h2 className="text-2xl font-bold mb-4 pb-2" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
               Awards
             </h2>
@@ -401,8 +401,8 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
           )}
           <div className="flex-1">
             <h1 className="text-4xl font-bold text-gray-900 mb-1">
-              {personalInfo.firstName} {personalInfo.lastName}
-            </h1>
+          {personalInfo.firstName} {personalInfo.lastName}
+        </h1>
             {personalInfo.title && (
               <p className="text-xl font-medium mb-2" style={{ color: theme.primary }}>
                 {personalInfo.title}
@@ -611,17 +611,17 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
             </a>
           )}
           {personalInfo.cssbattle && (
-            <a
+                      <a
               href={personalInfo.cssbattle}
               className="flex items-center gap-1 hover:opacity-80"
               style={{ color: theme.secondary }}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
               CSSBattle
-            </a>
-          )}
-        </div>
+                      </a>
+                    )}
+                  </div>
       </header>
 
       {/* Render sections in order */}
