@@ -193,15 +193,165 @@ export const convertColorToHex = (color: string): string => {
 };
 
 /**
+ * Resolves CSS variable references (e.g., var(--primary-500)) to their computed hex values
+ * @param cssVar The CSS variable reference string (e.g., "var(--primary-500)")
+ * @param element Optional element to use for computing the variable value
+ * @returns The computed hex color value or null if not resolvable
+ */
+export const resolveCSSVariableToHex = (cssVar: string, element?: HTMLElement): string | null => {
+  if (!cssVar || !cssVar.includes('var(')) return null;
+  
+  try {
+    // Create a temporary element if none provided
+    const tempEl = element || document.createElement('div');
+    tempEl.style.position = 'absolute';
+    tempEl.style.visibility = 'hidden';
+    if (!element) {
+      document.body.appendChild(tempEl);
+    }
+    
+    // Set the CSS variable value and get computed style
+    tempEl.style.color = cssVar;
+    const computed = window.getComputedStyle(tempEl).color;
+    
+    // Clean up temporary element if we created it
+    if (!element && tempEl.parentNode) {
+      document.body.removeChild(tempEl);
+    }
+    
+    // Convert computed RGB value to hex
+    if (computed && computed.startsWith('rgb')) {
+      const rgbMatch = computed.match(/\d+/g);
+      if (rgbMatch && rgbMatch.length >= 3) {
+        const r = parseInt(rgbMatch[0], 10);
+        const g = parseInt(rgbMatch[1], 10);
+        const b = parseInt(rgbMatch[2], 10);
+        return `#${[r, g, b].map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
+      }
+    }
+  } catch (e) {
+    console.warn('Error resolving CSS variable:', cssVar, e);
+  }
+  
+  return null;
+};
+
+/**
+ * Processes ALL stylesheets in the document and converts all color values to hex
+ * This must run before html2canvas processes the document
+ */
+export const convertAllStylesheetColorsToHex = (): void => {
+  try {
+    const styleSheets = document.styleSheets;
+    
+    for (let i = 0; i < styleSheets.length; i++) {
+      try {
+        const sheet = styleSheets[i];
+        if (!sheet.cssRules) continue;
+        
+        for (let j = 0; j < sheet.cssRules.length; j++) {
+          const rule = sheet.cssRules[j];
+          
+          if (rule instanceof CSSStyleRule) {
+            const ruleStyle = rule.style;
+            
+            // Process all color properties
+            const colorProps = [
+              'color', 'backgroundColor', 'borderColor', 
+              'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor',
+              'outlineColor', 'columnRuleColor', 'textDecorationColor', 'textEmphasisColor'
+            ];
+            
+            colorProps.forEach(prop => {
+              try {
+                const value = ruleStyle.getPropertyValue(prop);
+                if (value && typeof value === 'string' && value !== 'transparent' && value !== 'rgba(0, 0, 0, 0)') {
+                  let valueToConvert = value;
+                  
+                  // Resolve CSS variables first
+                  if (value.includes('var(')) {
+                    const resolved = resolveCSSVariableToHex(value);
+                    if (resolved) {
+                      valueToConvert = resolved;
+                    } else {
+                      // If we can't resolve, skip this property
+                      return;
+                    }
+                  }
+                  
+                  // Convert any color format to hex
+                  if (valueToConvert.includes('oklch') || valueToConvert.includes('lab(') || valueToConvert.includes('lch(') ||
+                      (valueToConvert.includes('rgb') && !valueToConvert.startsWith('#')) || valueToConvert.includes('hsl')) {
+                    const hexColor = convertColorToHex(valueToConvert);
+                    if (hexColor && hexColor !== '#000000') {
+                      ruleStyle.setProperty(prop, hexColor, 'important');
+                    }
+                  }
+                }
+              } catch (e) {
+                // Ignore errors for individual properties
+              }
+            });
+            
+            // Process border shorthand
+            ['border', 'borderTop', 'borderRight', 'borderBottom', 'borderLeft'].forEach(borderProp => {
+              try {
+                const borderValue = ruleStyle.getPropertyValue(borderProp);
+                if (borderValue && (borderValue.includes('oklch') || borderValue.includes('lab(') || 
+                    borderValue.includes('lch(') || borderValue.includes('rgb') || borderValue.includes('hsl') ||
+                    borderValue.includes('var('))) {
+                  let updatedBorder = borderValue;
+                  
+                  // Resolve CSS variables in border
+                  if (updatedBorder.includes('var(')) {
+                    const varMatch = updatedBorder.match(/var\([^)]+\)/g);
+                    if (varMatch) {
+                      varMatch.forEach(varRef => {
+                        const resolved = resolveCSSVariableToHex(varRef);
+                        if (resolved) {
+                          updatedBorder = updatedBorder.replace(varRef, resolved);
+                        }
+                      });
+                    }
+                  }
+                  
+                  // Convert any color formats in border
+                  updatedBorder = updatedBorder.replace(/(oklch|lab|lch|rgb|rgba|hsl|hsla)\([^)]+\)/gi, (match) => {
+                    const hex = convertColorToHex(match);
+                    return hex && hex !== '#000000' ? hex : match;
+                  });
+                  
+                  if (updatedBorder !== borderValue) {
+                    ruleStyle.setProperty(borderProp, updatedBorder, 'important');
+                  }
+                }
+              } catch (e) {
+                // Ignore border errors
+              }
+            });
+          }
+        }
+      } catch (e) {
+        // Some stylesheets may not be accessible (CORS)
+        // This is expected for external stylesheets
+      }
+    }
+  } catch (e) {
+    console.warn('Error processing stylesheets:', e);
+  }
+};
+
+/**
  * Processes inline styles on an element and converts all color values to hex format
  * Also handles computed styles that might contain oklch or other unsupported formats
+ * This is more aggressive - converts ALL color properties to hex, not just oklch ones
  */
 export const processElementStylesForPDF = (element: HTMLElement): void => {
   if (!element || !element.style) return;
   
   const style = element.style;
   
-  // Also get computed styles to catch oklch from CSS classes
+  // Get computed styles to catch colors from CSS classes
   let computedStyle: CSSStyleDeclaration | null = null;
   try {
     computedStyle = window.getComputedStyle(element);
@@ -209,97 +359,106 @@ export const processElementStylesForPDF = (element: HTMLElement): void => {
     // Ignore if we can't get computed styles
   }
   
-  // Helper to convert color from either inline or computed style
-  const convertColorProperty = (property: keyof CSSStyleDeclaration, computedProperty?: string) => {
+  // Helper to convert ANY color value to hex
+  const convertAnyColorToHex = (value: string | null | undefined): string | null => {
+    if (!value || typeof value !== 'string') return null;
+    if (value === 'transparent' || value === 'rgba(0, 0, 0, 0)') return null;
+    
+    // Convert any color format to hex
     try {
-      const inlineValue = style[property as any];
-      const computedValue = computedStyle?.[property as any] || computedProperty;
-      
-      // Prefer inline style, but check computed if inline doesn't exist or contains oklch
-      let valueToConvert = inlineValue || computedValue;
-      
-      if (!valueToConvert || typeof valueToConvert !== 'string') return;
-      
-      // If value contains oklch or other unsupported formats, convert it
-      if (valueToConvert.includes('oklch') || valueToConvert.includes('lab') || valueToConvert.includes('lch')) {
-        const hexColor = convertColorToHex(valueToConvert);
-        if (hexColor && hexColor !== '#000000') {
-          (style as any)[property] = hexColor;
+      const hexColor = convertColorToHex(value);
+      if (hexColor && hexColor !== '#000000') {
+        return hexColor;
+      }
+    } catch (e) {
+      // Ignore conversion errors
+    }
+    return null;
+  };
+  
+  // List of all color properties to convert
+  const colorProperties = [
+    'color', 'backgroundColor', 'borderColor', 
+    'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor',
+    'outlineColor', 'columnRuleColor', 'textDecorationColor', 'textEmphasisColor'
+  ];
+  
+  // Convert all color properties
+  colorProperties.forEach(prop => {
+    try {
+      // Check inline style first
+      const inlineValue = (style as any)[prop];
+      if (inlineValue) {
+        const hexColor = convertAnyColorToHex(inlineValue);
+        if (hexColor) {
+          (style as any)[prop] = hexColor;
+          return;
         }
-      } else if (inlineValue && inlineValue !== 'transparent' && inlineValue !== 'rgba(0, 0, 0, 0)') {
-        // Convert inline style even if it doesn't contain oklch
-        const hexColor = convertColorToHex(inlineValue as string);
-        if (hexColor && hexColor !== '#000000') {
-          (style as any)[property] = hexColor;
+      }
+      
+      // If no inline style or conversion failed, check computed style
+      if (computedStyle) {
+        let computedValue = (computedStyle as any)[prop];
+        
+        // Resolve CSS variables in computed style
+        if (computedValue && typeof computedValue === 'string' && computedValue.includes('var(')) {
+          const resolved = resolveCSSVariableToHex(computedValue, element);
+          if (resolved) {
+            computedValue = resolved;
+          }
+        }
+        
+        if (computedValue) {
+          const hexColor = convertAnyColorToHex(computedValue);
+          if (hexColor) {
+            (style as any)[prop] = hexColor;
+          }
         }
       }
     } catch (e) {
       // Silently ignore errors for individual properties
     }
-  };
-  
-  // Convert color
-  convertColorProperty('color');
-  
-  // Convert backgroundColor
-  if (style.backgroundColor && style.backgroundColor !== 'transparent' && style.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-    convertColorProperty('backgroundColor');
-  } else if (computedStyle?.backgroundColor && computedStyle.backgroundColor.includes('oklch')) {
-    // If computed style has oklch but inline doesn't, set it
-    const hexColor = convertColorToHex(computedStyle.backgroundColor);
-    if (hexColor && hexColor !== '#000000') {
-      style.backgroundColor = hexColor;
-    }
-  }
-  
-  // Convert borderColor
-  convertColorProperty('borderColor');
-  
-  // Convert borderTopColor, borderRightColor, borderBottomColor, borderLeftColor
-  ['borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(prop => {
-    if (style[prop as keyof CSSStyleDeclaration]) {
-      try {
-        (style as any)[prop] = convertColorToHex(style[prop as keyof CSSStyleDeclaration] as string);
-      } catch (e) {
-        // Ignore errors
-      }
-    }
   });
   
-  // Convert borderBottom (template literal like "2px solid #color" or "4px solid #color")
-  if (style.borderBottom && style.borderBottom.includes('solid')) {
+  // Convert border shorthand properties
+  const borderProps = ['border', 'borderTop', 'borderRight', 'borderBottom', 'borderLeft'];
+  borderProps.forEach(prop => {
     try {
-      // Match patterns like "2px solid #color" or "4px solid #color"
-      const match = style.borderBottom.match(/(\d+px)\s+solid\s+(.+?)(?:\s|;|$)/);
-      if (match) {
-        const width = match[1];
-        const colorValue = match[2].trim().replace(/['"]/g, ''); // Remove quotes
-        const hexColor = convertColorToHex(colorValue);
-        if (hexColor !== 'transparent') {
-          style.borderBottom = `${width} solid ${hexColor}`;
-        }
-      }
-    } catch (e) {
-      console.warn('Error converting borderBottom:', e);
-    }
-  }
-  
-  // Convert border (if it includes a color)
-  if (style.border && (style.border.includes('rgb') || style.border.includes('#') || style.border.match(/\b(solid|dashed|dotted)\s+[a-z]|#[0-9a-f]/i))) {
-    try {
-      // Try to extract and convert color from border
-      const parts = style.border.split(/\s+/);
-      for (let i = 0; i < parts.length; i++) {
-        if (parts[i].match(/^(rgb|rgba|hsl|hsla|#[0-9a-f]|[a-z]+)/i)) {
-          const hex = convertColorToHex(parts[i]);
-          if (hex !== 'transparent') {
-            parts[i] = hex;
+      const borderValue = (style as any)[prop];
+      if (borderValue && typeof borderValue === 'string') {
+        // Check if border contains a color (oklch, lab, lch, rgb, hsl, hex, or named color)
+        if (borderValue.includes('oklch') || borderValue.includes('lab(') || borderValue.includes('lch(') ||
+            borderValue.match(/\b(rgb|rgba|hsl|hsla|#[0-9a-fA-F]{3,6}|[a-z]+)\b/i)) {
+          // Extract color from border value
+          const colorMatch = borderValue.match(/\b(oklch|lab|lch|rgb|rgba|hsl|hsla|#[0-9a-fA-F]{3,6}|[a-z]+)\(?[^)\s]*\)?/gi);
+          if (colorMatch && colorMatch.length > 0) {
+            let updatedBorder = borderValue;
+            colorMatch.forEach(colorValue => {
+              const hexColor = convertAnyColorToHex(colorValue);
+              if (hexColor) {
+                updatedBorder = updatedBorder.replace(colorValue, hexColor);
+              }
+            });
+            (style as any)[prop] = updatedBorder;
           }
         }
       }
-      style.border = parts.join(' ');
     } catch (e) {
-      // Ignore errors for border
+      // Ignore border conversion errors
+    }
+  });
+  
+  // Also check style attribute directly for any oklch/lab/lch
+  const styleAttr = element.getAttribute('style');
+  if (styleAttr && (styleAttr.includes('oklch') || styleAttr.includes('lab(') || styleAttr.includes('lch('))) {
+    try {
+      const updatedStyle = styleAttr.replace(/(oklch|lab|lch)\([^)]+\)/gi, (match) => {
+        const hexColor = convertAnyColorToHex(match);
+        return hexColor || match;
+      });
+      element.setAttribute('style', updatedStyle);
+    } catch (e) {
+      // Ignore style attribute conversion errors
     }
   }
 };
