@@ -267,7 +267,7 @@ export const getDummyResumeData = (): ResumeData => {
           "Won first place in annual hackathon competition for developing an innovative healthcare management system.",
       },
     ],
-    selectedTemplate: "modern",
+    selectedTemplate: "minimal",
     colorScheme: "Professional Blue" as ColorScheme,
     sectionOrder: ["personal", "skills", "experience", "education", "projects", "activities", "volunteering", "awards"],
   };

@@ -14,7 +14,7 @@ const ClassicTemplate: React.FC<ClassicTemplateProps> = ({
   isPrint = false,
   colorScheme = "Professional Blue",
 }) => {
-  const { personalInfo, experience, education, skills, projects, activities, volunteering, awards } = data;
+  const { personalInfo, experience, education, skills, projects, activities, volunteering, awards, sectionOrder } = data;
   // Use prop colorScheme first, then data.colorScheme, then default
   const activeColorScheme = colorScheme || data.colorScheme || "Professional Blue";
   const theme = getThemeColors(activeColorScheme);
@@ -57,6 +57,310 @@ const ClassicTemplate: React.FC<ClassicTemplateProps> = ({
         </p>
       ) : null;
     });
+  };
+
+  const getSectionOrder = (): string[] => {
+    const defaultOrder = ["personal", "skills", "experience", "education", "projects", "activities", "volunteering", "awards"];
+    return sectionOrder || defaultOrder;
+  };
+
+  const renderSection = (sectionId: string) => {
+    switch (sectionId) {
+      case "personal":
+        // Personal info is rendered in header, but we can add summary/career objective here
+        return (personalInfo.summary || personalInfo.careerObjective) ? (
+          <section className="mb-6" data-section="personal">
+            <h2 className="text-xl font-bold text-gray-900 mb-3 uppercase tracking-wide pb-1" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
+              {personalInfo.summary ? "Professional Summary" : "Career Objective"}
+            </h2>
+            {personalInfo.summary && (
+              <div className="text-gray-800 leading-relaxed text-justify mb-3">
+                {renderHTML(personalInfo.summary)}
+              </div>
+            )}
+            {personalInfo.careerObjective && (
+              <div className="text-gray-800 leading-relaxed text-justify">
+                <strong>Career Objective:</strong>{" "}
+                <span dangerouslySetInnerHTML={{ __html: personalInfo.careerObjective }} />
+              </div>
+            )}
+          </section>
+        ) : null;
+      case "experience":
+        return experience.length > 0 ? (
+          <section className="mb-6" data-section="experience">
+            <h2 className="text-xl font-bold text-gray-900 mb-3 uppercase tracking-wide pb-1" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
+              Professional Experience
+            </h2>
+            <div className="space-y-5">
+              {experience.map((exp) => (
+                <div key={exp.id}>
+                  <div className="flex justify-between items-start mb-1">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">
+                        {exp.jobTitle}
+                      </h3>
+                      <p className="font-semibold text-gray-800">{exp.company}</p>
+                      {exp.location && (
+                        <p className="text-sm text-gray-700 italic">
+                          {exp.location}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right text-sm text-gray-700">
+                      <p className="font-semibold">
+                        {formatDate(exp.startDate)} -{" "}
+                        {exp.isCurrentJob ? "Present" : formatDate(exp.endDate)}
+                      </p>
+                      {exp.years !== undefined && (
+                        <p className="text-xs">{exp.years} {exp.years === 1 ? "year" : "years"}</p>
+                      )}
+                    </div>
+                  </div>
+                  {exp.description && (
+                    <div className="text-gray-800 mt-2">
+                      {renderHTML(exp.description)}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      case "projects":
+        return projects.length > 0 ? (
+          <section className="mb-6" data-section="projects">
+            <h2 className="text-xl font-bold text-gray-900 mb-3 uppercase tracking-wide pb-1" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
+              Notable Projects
+            </h2>
+            <div className="space-y-5">
+              {projects.map((project) => (
+                <div key={project.id}>
+                  <div className="flex justify-between items-start mb-1">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">
+                        {project.name}
+                      </h3>
+                      {project.technologies.length > 0 && (
+                        <p className="text-sm text-gray-700 italic">
+                          Technologies: {project.technologies.join(", ")}
+                        </p>
+                      )}
+                      {project.link && (
+                        <a
+                          href={project.link}
+                          className="text-sm text-gray-700 hover:text-gray-900 underline"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          View Project
+                        </a>
+                      )}
+                    </div>
+                    <div className="text-right text-sm text-gray-700">
+                      <p className="font-semibold">
+                        {formatDate(project.startDate)} -{" "}
+                        {formatDate(project.endDate)}
+                      </p>
+                    </div>
+                  </div>
+                  {project.description && (
+                    <div className="text-gray-800 mt-2">
+                      {renderHTML(project.description)}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      case "education":
+        return education.length > 0 ? (
+          <section className="mb-6" data-section="education">
+            <h2 className="text-xl font-bold text-gray-900 mb-3 uppercase tracking-wide pb-1" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
+              Education
+            </h2>
+            <div className="space-y-4">
+              {education.map((edu) => (
+                <div key={edu.id}>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-gray-900">
+                        {edu.degree}
+                      </h3>
+                      <p className="font-semibold text-gray-800">
+                        {edu.institution}
+                      </p>
+                      {edu.area && (
+                        <p className="text-sm text-gray-700 italic">{edu.area}</p>
+                      )}
+                      {edu.location && (
+                        <p className="text-sm text-gray-700 italic">
+                          {edu.location}
+                        </p>
+                      )}
+                      {edu.description && (
+                        <div className="text-gray-800 mt-2">
+                          {renderHTML(edu.description)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right text-sm text-gray-700 ml-4">
+                      <p className="font-semibold">
+                        {edu.startDate && formatDate(edu.startDate)} -{" "}
+                        {edu.isCurrentlyStudying ? "Present" : (edu.graduationDate && formatDate(edu.graduationDate))}
+                      </p>
+                      {(edu.gpa || edu.grade) && (
+                        <p>{edu.grade || `GPA: ${edu.gpa}`}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      case "skills":
+        return skills.length > 0 ? (
+          <section className="mb-6" data-section="skills">
+            <h2 className="text-xl font-bold text-gray-900 mb-3 uppercase tracking-wide pb-1" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
+              Technical Skills
+            </h2>
+            <div className="space-y-3">
+              {["Language", "Framework", "Technologies", "Libraries", "Database", "Practices", "Tools"].map((category) => {
+                const categorySkills = skills
+                  .filter((skill) => skill.category === category)
+                  .sort((a, b) => (a.priority || 0) - (b.priority || 0));
+                if (categorySkills.length === 0) return null;
+
+                return (
+                  <div key={category} id={`skill-category-${category}`}>
+                    <span className="font-bold text-gray-900" style={{ color: theme.primary }}>{category}: </span>
+                    <span className="text-gray-800">
+                      {categorySkills.map((skill) => skill.name).join(", ")}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        ) : null;
+      case "activities":
+        return activities && activities.length > 0 ? (
+          <section className="mb-6" data-section="activities">
+            <h2 className="text-xl font-bold text-gray-900 mb-3 uppercase tracking-wide pb-1" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
+              Activities
+            </h2>
+            <div className="space-y-5">
+              {activities.map((activity) => (
+                <div key={activity.id}>
+                  <div className="flex justify-between items-start mb-1">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">
+                        {activity.name}
+                      </h3>
+                      <p className="font-semibold text-gray-800">{activity.organization}</p>
+                    </div>
+                    <div className="text-right text-sm text-gray-700">
+                      <p className="font-semibold">
+                        {formatDate(activity.startDate)} -{" "}
+                        {activity.isCurrent ? "Present" : formatDate(activity.endDate)}
+                      </p>
+                    </div>
+                  </div>
+                  {(activity.involvements && activity.involvements.length > 0) && (
+                    <div className="text-gray-800 mt-2 mb-2">
+                      <p className="font-semibold text-sm mb-1">Involvements:</p>
+                      <ul className="list-disc list-outside space-y-1 ml-4">
+                        {activity.involvements.map((inv, idx) => (
+                          <li key={idx}>{inv}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {(activity.achievements && activity.achievements.length > 0) && (
+                    <div className="text-gray-800 mt-2">
+                      <p className="font-semibold text-sm mb-1">Achievements:</p>
+                      <ul className="list-disc list-outside space-y-1 ml-4">
+                        {activity.achievements.map((ach, idx) => (
+                          <li key={idx}>{ach}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      case "volunteering":
+        return volunteering && volunteering.length > 0 ? (
+          <section className="mb-6" data-section="volunteering">
+            <h2 className="text-xl font-bold text-gray-900 mb-3 uppercase tracking-wide pb-1" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
+              Volunteering
+            </h2>
+            <div className="space-y-5">
+              {volunteering.map((vol) => (
+                <div key={vol.id}>
+                  <div className="flex justify-between items-start mb-1">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">
+                        {vol.role}
+                      </h3>
+                      <p className="font-semibold text-gray-800">{vol.organization}</p>
+                    </div>
+                    <div className="text-right text-sm text-gray-700">
+                      <p className="font-semibold">
+                        {formatDate(vol.startDate)} -{" "}
+                        {vol.isCurrent ? "Present" : formatDate(vol.endDate)}
+                      </p>
+                    </div>
+                  </div>
+                  {vol.description && (
+                    <div className="text-gray-800 mt-2">
+                      {renderHTML(vol.description)}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      case "awards":
+        return awards && awards.length > 0 ? (
+          <section className="mb-6" data-section="awards">
+            <h2 className="text-xl font-bold text-gray-900 mb-3 uppercase tracking-wide pb-1" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
+              Awards
+            </h2>
+            <div className="space-y-4">
+              {awards.map((award) => (
+                <div key={award.id}>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-gray-900">
+                        {award.title}
+                      </h3>
+                      <p className="font-semibold text-gray-800">
+                        {award.organization}
+                      </p>
+                      {award.description && (
+                        <div className="text-gray-800 mt-2" dangerouslySetInnerHTML={{ __html: award.description }} />
+                      )}
+                    </div>
+                    <div className="text-right text-sm text-gray-700 ml-4">
+                      <p className="font-semibold">
+                        {formatDate(award.date)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -212,304 +516,8 @@ const ClassicTemplate: React.FC<ClassicTemplateProps> = ({
         </div>
       </header>
 
-      {/* Professional Summary / Career Objective */}
-      {(personalInfo.summary || personalInfo.careerObjective) && (
-        <section className="mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-3 uppercase tracking-wide pb-1" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
-            {personalInfo.summary ? "Professional Summary" : "Career Objective"}
-          </h2>
-          {personalInfo.summary && (
-            <div className="text-gray-800 leading-relaxed text-justify mb-3">
-              {renderHTML(personalInfo.summary)}
-            </div>
-          )}
-          {personalInfo.careerObjective && (
-            <div className="text-gray-800 leading-relaxed text-justify">
-              <strong>Career Objective:</strong>{" "}
-              <span dangerouslySetInnerHTML={{ __html: personalInfo.careerObjective }} />
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Experience */}
-      {experience.length > 0 && (
-        <section className="mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-3 uppercase tracking-wide pb-1" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
-            Professional Experience
-          </h2>
-          <div className="space-y-5">
-            {experience.map((exp) => (
-              <div key={exp.id}>
-                <div className="flex justify-between items-start mb-1">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">
-                      {exp.jobTitle}
-                    </h3>
-                    <p className="font-semibold text-gray-800">{exp.company}</p>
-                    {exp.location && (
-                      <p className="text-sm text-gray-700 italic">
-                        {exp.location}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right text-sm text-gray-700">
-                    <p className="font-semibold">
-                      {formatDate(exp.startDate)} -{" "}
-                      {exp.isCurrentJob ? "Present" : formatDate(exp.endDate)}
-                    </p>
-                    {exp.years !== undefined && (
-                      <p className="text-xs">{exp.years} {exp.years === 1 ? "year" : "years"}</p>
-                    )}
-                  </div>
-                </div>
-                {exp.description && (
-                  <div className="text-gray-800 mt-2">
-                    {renderHTML(exp.description)}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Projects */}
-      {projects.length > 0 && (
-        <section className="mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-3 uppercase tracking-wide pb-1" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
-            Notable Projects
-          </h2>
-          <div className="space-y-5">
-            {projects.map((project) => (
-              <div key={project.id}>
-                <div className="flex justify-between items-start mb-1">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">
-                      {project.name}
-                    </h3>
-                    {project.technologies.length > 0 && (
-                      <p className="text-sm text-gray-700 italic">
-                        Technologies: {project.technologies.join(", ")}
-                      </p>
-                    )}
-                    {project.link && (
-                      <a
-                        href={project.link}
-                        className="text-sm text-gray-700 hover:text-gray-900 underline"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        View Project
-                      </a>
-                    )}
-                  </div>
-                  <div className="text-right text-sm text-gray-700">
-                    <p className="font-semibold">
-                      {formatDate(project.startDate)} -{" "}
-                      {formatDate(project.endDate)}
-                    </p>
-                  </div>
-                </div>
-                {project.description && (
-                  <div className="text-gray-800 mt-2">
-                    {renderHTML(project.description)}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Education */}
-      {education.length > 0 && (
-        <section className="mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-3 uppercase tracking-wide pb-1" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
-            Education
-          </h2>
-          <div className="space-y-4">
-            {education.map((edu) => (
-              <div key={edu.id}>
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-bold text-gray-900">
-                      {edu.degree}
-                    </h3>
-                    <p className="font-semibold text-gray-800">
-                      {edu.institution}
-                    </p>
-                    {edu.area && (
-                      <p className="text-sm text-gray-700 italic">{edu.area}</p>
-                    )}
-                    {edu.location && (
-                      <p className="text-sm text-gray-700 italic">
-                        {edu.location}
-                      </p>
-                    )}
-                    {edu.description && (
-                      <div className="text-gray-800 mt-2">
-                        {renderHTML(edu.description)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-right text-sm text-gray-700 ml-4">
-                    <p className="font-semibold">
-                      {edu.startDate && formatDate(edu.startDate)} -{" "}
-                      {edu.isCurrentlyStudying ? "Present" : (edu.graduationDate && formatDate(edu.graduationDate))}
-                    </p>
-                    {(edu.gpa || edu.grade) && (
-                      <p>{edu.grade || `GPA: ${edu.gpa}`}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Skills */}
-      {skills.length > 0 && (
-        <section className="mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-3 uppercase tracking-wide pb-1" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
-            Technical Skills
-          </h2>
-          <div className="space-y-3">
-            {["Language", "Framework", "Technologies", "Libraries", "Database", "Practices", "Tools"].map((category) => {
-              const categorySkills = skills
-                .filter((skill) => skill.category === category)
-                .sort((a, b) => (a.priority || 0) - (b.priority || 0));
-              if (categorySkills.length === 0) return null;
-
-              return (
-                <div key={category}>
-                  <span className="font-bold text-gray-900" style={{ color: theme.primary }}>{category}: </span>
-                  <span className="text-gray-800">
-                    {categorySkills.map((skill) => skill.name).join(", ")}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* Activities */}
-      {activities && activities.length > 0 && (
-        <section className="mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-3 uppercase tracking-wide pb-1" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
-            Activities
-          </h2>
-          <div className="space-y-5">
-            {activities.map((activity) => (
-              <div key={activity.id}>
-                <div className="flex justify-between items-start mb-1">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">
-                      {activity.name}
-                    </h3>
-                    <p className="font-semibold text-gray-800">{activity.organization}</p>
-                  </div>
-                  <div className="text-right text-sm text-gray-700">
-                    <p className="font-semibold">
-                      {formatDate(activity.startDate)} -{" "}
-                      {activity.isCurrent ? "Present" : formatDate(activity.endDate)}
-                    </p>
-                  </div>
-                </div>
-                {(activity.involvements && activity.involvements.length > 0) && (
-                  <div className="text-gray-800 mt-2 mb-2">
-                    <p className="font-semibold text-sm mb-1">Involvements:</p>
-                    <ul className="list-disc list-outside space-y-1 ml-4">
-                      {activity.involvements.map((inv, idx) => (
-                        <li key={idx}>{inv}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {(activity.achievements && activity.achievements.length > 0) && (
-                  <div className="text-gray-800 mt-2">
-                    <p className="font-semibold text-sm mb-1">Achievements:</p>
-                    <ul className="list-disc list-outside space-y-1 ml-4">
-                      {activity.achievements.map((ach, idx) => (
-                        <li key={idx}>{ach}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Volunteering */}
-      {volunteering && volunteering.length > 0 && (
-        <section className="mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-3 uppercase tracking-wide pb-1" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
-            Volunteering
-          </h2>
-          <div className="space-y-5">
-            {volunteering.map((vol) => (
-              <div key={vol.id}>
-                <div className="flex justify-between items-start mb-1">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">
-                      {vol.role}
-                    </h3>
-                    <p className="font-semibold text-gray-800">{vol.organization}</p>
-                  </div>
-                  <div className="text-right text-sm text-gray-700">
-                    <p className="font-semibold">
-                      {formatDate(vol.startDate)} -{" "}
-                      {vol.isCurrent ? "Present" : formatDate(vol.endDate)}
-                    </p>
-                  </div>
-                </div>
-                {vol.description && (
-                  <div className="text-gray-800 mt-2">
-                    {renderHTML(vol.description)}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Awards */}
-      {awards && awards.length > 0 && (
-        <section className="mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-3 uppercase tracking-wide pb-1" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
-            Awards
-          </h2>
-          <div className="space-y-4">
-            {awards.map((award) => (
-              <div key={award.id}>
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-bold text-gray-900">
-                      {award.title}
-                    </h3>
-                    <p className="font-semibold text-gray-800">
-                      {award.organization}
-                    </p>
-                    {award.description && (
-                      <div className="text-gray-800 mt-2" dangerouslySetInnerHTML={{ __html: award.description }} />
-                    )}
-                  </div>
-                  <div className="text-right text-sm text-gray-700 ml-4">
-                    <p className="font-semibold">
-                      {formatDate(award.date)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      {/* Render sections in order */}
+      {getSectionOrder().map((sectionId) => renderSection(sectionId))}
     </div>
   );
 };

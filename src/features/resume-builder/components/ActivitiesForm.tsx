@@ -224,17 +224,21 @@ const ActivitiesForm: React.FC<ActivitiesFormProps> = ({ data, onChange }) => {
                         editingId === activity.id ? null : activity.id
                       )
                     }
-                    className="p-1 text-blue-600 hover:text-blue-800"
+                    className="p-2 text-blue-600 hover:text-white hover:bg-blue-600 rounded-lg transition-all duration-200 border-2 border-blue-200 hover:border-blue-600 shadow-sm hover:shadow-md"
                     title="Edit"
                   >
-                    ✏️
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
                   </button>
                   <button
                     onClick={() => deleteActivity(activity.id)}
-                    className="p-1 text-red-600 hover:text-red-800"
+                    className="p-2 text-red-600 hover:text-white hover:bg-red-600 rounded-lg transition-all duration-200 border-2 border-red-200 hover:border-red-600 shadow-sm hover:shadow-md"
                     title="Delete"
                   >
-                    🗑️
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -251,7 +255,7 @@ const ActivitiesForm: React.FC<ActivitiesFormProps> = ({ data, onChange }) => {
                         Activity Details
                       </h5>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                           Activity Name *
@@ -310,7 +314,7 @@ const ActivitiesForm: React.FC<ActivitiesFormProps> = ({ data, onChange }) => {
                         Duration
                       </h5>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                           Start Date *
@@ -330,7 +334,23 @@ const ActivitiesForm: React.FC<ActivitiesFormProps> = ({ data, onChange }) => {
                       </div>
 
                       <div>
-                        <div className="flex items-center gap-3 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          End Date *
+                        </label>
+                        <input
+                          type="month"
+                          value={activity.endDate}
+                          onChange={(e) =>
+                            updateActivity(
+                              activity.id,
+                              "endDate",
+                              e.target.value
+                            )
+                          }
+                          disabled={activity.isCurrent}
+                          className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300 text-gray-900 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        />
+                        <div className="flex items-center gap-3 mt-3">
                           <label className="flex items-center gap-2">
                             <input
                               type="checkbox"
@@ -349,26 +369,6 @@ const ActivitiesForm: React.FC<ActivitiesFormProps> = ({ data, onChange }) => {
                             </span>
                           </label>
                         </div>
-
-                        {!activity.isCurrent && (
-                          <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                              End Date *
-                            </label>
-                            <input
-                              type="month"
-                              value={activity.endDate}
-                              onChange={(e) =>
-                                updateActivity(
-                                  activity.id,
-                                  "endDate",
-                                  e.target.value
-                                )
-                              }
-                              className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300 text-gray-900 placeholder:text-gray-400"
-                            />
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -396,21 +396,21 @@ const ActivitiesForm: React.FC<ActivitiesFormProps> = ({ data, onChange }) => {
                         <p className="text-sm text-gray-500 italic">No involvements added yet.</p>
                       ) : (
                         (activity.involvements || []).map((involvement, idx) => (
-                          <div key={idx} className="flex gap-2 items-start">
+                          <div key={idx} className="flex gap-2 items-start pr-1">
                             <input
                               type="text"
                               value={involvement}
                               onChange={(e) => updateInvolvement(activity.id, idx, e.target.value)}
-                              className="flex-1 border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300 text-gray-900 placeholder:text-gray-400"
+                              className="flex-1 min-w-0 border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300 text-gray-900 placeholder:text-gray-400"
                               placeholder="e.g., Led a team of 15 council members to organize campus-wide events"
                             />
                             <button
                               onClick={() => removeInvolvement(activity.id, idx)}
-                              className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                              className="p-1.5 text-red-600 hover:text-white hover:bg-red-600 rounded-lg transition-all duration-200 border-2 border-red-200 hover:border-red-600 shadow-sm hover:shadow-md flex-shrink-0"
                               title="Remove"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                               </svg>
                             </button>
                           </div>
@@ -448,21 +448,21 @@ const ActivitiesForm: React.FC<ActivitiesFormProps> = ({ data, onChange }) => {
                         <p className="text-sm text-gray-500 italic">No achievements added yet.</p>
                       ) : (
                         (activity.achievements || []).map((achievement, idx) => (
-                          <div key={idx} className="flex gap-2 items-start">
+                          <div key={idx} className="flex gap-2 items-start pr-1">
                             <input
                               type="text"
                               value={achievement}
                               onChange={(e) => updateAchievement(activity.id, idx, e.target.value)}
-                              className="flex-1 border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300 text-gray-900 placeholder:text-gray-400"
+                              className="flex-1 min-w-0 border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300 text-gray-900 placeholder:text-gray-400"
                               placeholder="e.g., Increased student participation by 40%"
                             />
                             <button
                               onClick={() => removeAchievement(activity.id, idx)}
-                              className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                              className="p-1.5 text-red-600 hover:text-white hover:bg-red-600 rounded-lg transition-all duration-200 border-2 border-red-200 hover:border-red-600 shadow-sm hover:shadow-md flex-shrink-0"
                               title="Remove"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                               </svg>
                             </button>
                           </div>
@@ -489,6 +489,17 @@ const ActivitiesForm: React.FC<ActivitiesFormProps> = ({ data, onChange }) => {
               )}
             </div>
           ))}
+          <div className="flex justify-center pt-4">
+            <button
+              onClick={addActivity}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Activity
+            </button>
+          </div>
         </div>
       )}
     </div>
