@@ -50,6 +50,7 @@ interface ResumeSidebarProps {
   onVolunteeringChange: (data: Volunteering[]) => void;
   onAwardsChange: (data: Award[]) => void;
   onPreviewCategory?: (category: SkillCategory) => void;
+  onPreviewSection?: (sectionId: string) => void;
 }
 
 const allSections: Section[] = [
@@ -87,6 +88,7 @@ const SortableSection: React.FC<{
   onMoveDown?: () => void;
   canMoveUp?: boolean;
   canMoveDown?: boolean;
+  onPreviewSection?: (sectionId: string) => void;
 }> = ({
   section,
   isActive,
@@ -99,6 +101,7 @@ const SortableSection: React.FC<{
   onMoveDown,
   canMoveUp = true,
   canMoveDown = true,
+  onPreviewSection,
 }) => {
   const {
     attributes,
@@ -180,16 +183,17 @@ const SortableSection: React.FC<{
           <div
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1 text-gray-400 hover:text-gray-600 transition-colors"
+            className="cursor-grab active:cursor-grabbing p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors touch-none"
+            onClick={(e) => e.stopPropagation()}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
             </svg>
           </div>
           <button
             onClick={onClick}
             onDoubleClick={onToggle}
-            className={`flex-1 flex items-center justify-between px-4 py-3 text-left rounded-lg transition-all duration-200 font-medium ${
+            className={`flex-1 flex items-center justify-between px-4 py-3 text-left rounded-lg transition-all duration-200 font-medium select-none ${
               isActive && !activeSubsection
                 ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md transform scale-[1.02]"
                 : "text-gray-700 hover:bg-blue-50 hover:text-blue-700 border border-transparent hover:border-blue-200"
@@ -200,6 +204,26 @@ const SortableSection: React.FC<{
               <span className="text-sm font-semibold">{section.label}</span>
             </div>
             <div className="flex items-center gap-1">
+              {/* Eye/Preview Button */}
+              {onPreviewSection && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPreviewSection(section.id);
+                  }}
+                  className={`p-1.5 rounded-lg transition-all duration-200 ${
+                    isActive && !activeSubsection
+                      ? "text-white hover:bg-white/20"
+                      : "text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+                  }`}
+                  title={`Preview ${section.label} in resume`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+              )}
               {/* Inline Up/Down Arrows */}
               <div className="flex flex-col gap-0.5">
                 <button
@@ -304,6 +328,7 @@ const ResumeSidebar: React.FC<ResumeSidebarProps> = ({
   onVolunteeringChange,
   onAwardsChange,
   onPreviewCategory,
+  onPreviewSection,
 }) => {
   const [viewMode, setViewMode] = useState<"sections" | "form">("sections");
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
@@ -312,7 +337,11 @@ const ResumeSidebar: React.FC<ResumeSidebarProps> = ({
   // formRefs removed - not currently used
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px movement before drag starts
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -527,6 +556,7 @@ const ResumeSidebar: React.FC<ResumeSidebarProps> = ({
                         canMoveDown={index < orderedSections.length - 1}
                         onMoveUp={() => moveSection(section.id, "up")}
                         onMoveDown={() => moveSection(section.id, "down")}
+                        onPreviewSection={onPreviewSection}
                       />
                     </div>
                   </div>
