@@ -19,6 +19,7 @@ import ResumeSidebar from "../components/ResumeSidebar";
 import { getDummyResumeData } from "../utils/dummyData";
 import { getColorsFromScheme } from "../utils/colorUtils";
 import { printResumeToPDF } from "../utils/printUtils";
+import { getCurrentUserId } from "../../../utils/userIdHelper";
 
 const ResumeBuilder: React.FC = () => {
   const { success: showSuccessToast, error: showErrorToast } = useToast();
@@ -63,6 +64,7 @@ const ResumeBuilder: React.FC = () => {
   const [activeSection, setActiveSection] = useState("personal");
   const [activeSubsection, setActiveSubsection] = useState<string | undefined>(undefined);
   const [zoom, setZoom] = useState(1);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [resumeData, setResumeData] = useState<ResumeData>({
     personalInfo: {
       firstName: "",
@@ -100,46 +102,103 @@ const ResumeBuilder: React.FC = () => {
     sectionOrder: ["personal", "skills", "experience", "education", "projects", "activities", "volunteering", "awards"],
   });
 
-  // Load from localStorage on mount
+  // Helper function to get user-specific storage keys
+  const getStorageKeys = (userId: string) => ({
+    resumeData: `resumeData_${userId}`,
+    resumeZoom: `resumeZoom_${userId}`,
+  });
+
+  // Helper function to migrate old global data to user-specific storage
+  const migrateGlobalDataToUserStorage = (userId: string) => {
+    try {
+      const globalDataKey = "resumeData";
+      const globalZoomKey = "resumeZoom";
+      const { resumeData: userDataKey, resumeZoom: userZoomKey } = getStorageKeys(userId);
+
+      // Check if global data exists and user-specific data doesn't
+      const globalData = localStorage.getItem(globalDataKey);
+      const globalZoom = localStorage.getItem(globalZoomKey);
+      const userData = localStorage.getItem(userDataKey);
+
+      if (globalData && !userData) {
+        // Migrate global data to user-specific storage
+        localStorage.setItem(userDataKey, globalData);
+        if (globalZoom) {
+          localStorage.setItem(userZoomKey, globalZoom);
+        }
+        // Keep global data for backward compatibility (or remove if desired)
+        // localStorage.removeItem(globalDataKey);
+        // localStorage.removeItem(globalZoomKey);
+        console.log("Migrated global resume data to user-specific storage");
+      }
+    } catch (error) {
+      console.error("Failed to migrate resume data:", error);
+    }
+  };
+
+  // Initialize user ID and load user-specific data
   useEffect(() => {
     try {
-      const savedData = localStorage.getItem("resumeData");
-      const savedZoom = localStorage.getItem("resumeZoom");
-      if (savedData) {
-        const parsed = JSON.parse(savedData);
-        // Ensure new sections exist
-        if (!parsed.activities) parsed.activities = [];
-        if (!parsed.volunteering) parsed.volunteering = [];
-        if (!parsed.awards) parsed.awards = [];
-        if (!parsed.themeColor) parsed.themeColor = "#3b82f6";
-        if (!parsed.colorScheme) parsed.colorScheme = "Professional Blue";
-        if (!parsed.sectionOrder) parsed.sectionOrder = ["personal", "skills", "experience", "education", "projects", "activities", "volunteering", "awards"];
-        if (!parsed.personalInfo.careerObjective) parsed.personalInfo.careerObjective = "";
-        if (!parsed.personalInfo.twitter) parsed.personalInfo.twitter = "";
-        if (!parsed.personalInfo.hackerrank) parsed.personalInfo.hackerrank = "";
-        if (!parsed.personalInfo.hackerearth) parsed.personalInfo.hackerearth = "";
-        if (!parsed.personalInfo.codechef) parsed.personalInfo.codechef = "";
-        if (!parsed.personalInfo.leetcode) parsed.personalInfo.leetcode = "";
-        if (!parsed.personalInfo.cssbattle) parsed.personalInfo.cssbattle = "";
-        setResumeData(parsed);
-      }
-      if (savedZoom) {
-        setZoom(parseFloat(savedZoom));
+      const userId = getCurrentUserId();
+      setCurrentUserId(userId);
+
+      if (userId) {
+        // Migrate old global data if exists
+        migrateGlobalDataToUserStorage(userId);
+
+        const { resumeData: dataKey, resumeZoom: zoomKey } = getStorageKeys(userId);
+        const savedData = localStorage.getItem(dataKey);
+        const savedZoom = localStorage.getItem(zoomKey);
+
+        if (savedData) {
+          const parsed = JSON.parse(savedData);
+          // Ensure new sections exist
+          if (!parsed.activities) parsed.activities = [];
+          if (!parsed.volunteering) parsed.volunteering = [];
+          if (!parsed.awards) parsed.awards = [];
+          if (!parsed.themeColor) parsed.themeColor = "#3b82f6";
+          if (!parsed.colorScheme) parsed.colorScheme = "Professional Blue";
+          if (!parsed.sectionOrder) parsed.sectionOrder = ["personal", "skills", "experience", "education", "projects", "activities", "volunteering", "awards"];
+          if (!parsed.personalInfo) parsed.personalInfo = {};
+          if (!parsed.personalInfo.careerObjective) parsed.personalInfo.careerObjective = "";
+          if (!parsed.personalInfo.twitter) parsed.personalInfo.twitter = "";
+          if (!parsed.personalInfo.hackerrank) parsed.personalInfo.hackerrank = "";
+          if (!parsed.personalInfo.hackerearth) parsed.personalInfo.hackerearth = "";
+          if (!parsed.personalInfo.codechef) parsed.personalInfo.codechef = "";
+          if (!parsed.personalInfo.leetcode) parsed.personalInfo.leetcode = "";
+          if (!parsed.personalInfo.cssbattle) parsed.personalInfo.cssbattle = "";
+          setResumeData(parsed);
+        }
+
+        if (savedZoom) {
+          setZoom(parseFloat(savedZoom));
+        }
       }
     } catch (error) {
       console.error("Failed to load resume data:", error);
+      showErrorToast("Failed to load resume data. Please refresh the page.");
     }
   }, []);
 
-  // Auto-save to localStorage
+  // Auto-save to user-specific localStorage
   useEffect(() => {
+    if (!currentUserId) return;
+
     try {
-      localStorage.setItem("resumeData", JSON.stringify(resumeData));
-      localStorage.setItem("resumeZoom", zoom.toString());
+      const { resumeData: dataKey, resumeZoom: zoomKey } = getStorageKeys(currentUserId);
+      localStorage.setItem(dataKey, JSON.stringify(resumeData));
+      localStorage.setItem(zoomKey, zoom.toString());
     } catch (error) {
-      console.error("Failed to save resume data:", error);
+      // Handle quota exceeded error
+      if (error instanceof DOMException && error.name === "QuotaExceededError") {
+        console.error("Storage quota exceeded. Please clear some data or use export to backup your resume.");
+        showErrorToast("Storage quota exceeded. Please export your resume to backup your data.");
+      } else {
+        console.error("Failed to save resume data:", error);
+        showErrorToast("Failed to save resume data. Your changes may not persist.");
+      }
     }
-  }, [resumeData, zoom]);
+  }, [resumeData, zoom, currentUserId, showErrorToast]);
 
   const updatePersonalInfo = (personalInfo: PersonalInfo) => {
     setResumeData((prev) => ({ ...prev, personalInfo }));
@@ -304,14 +363,26 @@ const ResumeBuilder: React.FC = () => {
       personalInfo: {
         firstName: "",
         lastName: "",
+        imageUrl: "",
+        title: "",
         email: "",
         phone: "",
         address: "",
+        location: "",
+        website: "",
         linkedin: "",
         github: "",
-        website: "",
+        twitter: "",
+        hackerrank: "",
+        hackerearth: "",
+        codechef: "",
+        leetcode: "",
+        cssbattle: "",
+        relevantExperience: "",
+        totalExperience: "",
         summary: "",
-    },
+        careerObjective: "",
+      },
       experience: [],
       education: [],
       skills: [],
