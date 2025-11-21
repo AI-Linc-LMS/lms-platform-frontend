@@ -14,7 +14,7 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
   isPrint = false,
   colorScheme = "Professional Blue",
 }) => {
-  const { personalInfo, experience, education, skills, projects, activities, volunteering, awards } = data;
+  const { personalInfo, experience, education, skills, projects, activities, volunteering, awards, sectionOrder } = data;
   // Use prop colorScheme first, then data.colorScheme, then default
   const activeColorScheme = colorScheme || data.colorScheme || "Professional Blue";
   const theme = getThemeColors(activeColorScheme);
@@ -57,6 +57,291 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
         </p>
       ) : null;
     });
+  };
+
+  const getSectionOrder = (): string[] => {
+    const defaultOrder = ["personal", "skills", "experience", "education", "projects", "activities", "volunteering", "awards"];
+    return sectionOrder || defaultOrder;
+  };
+
+  const renderSection = (sectionId: string) => {
+    switch (sectionId) {
+      case "personal":
+        // Personal info is rendered in header, but we can add summary/career objective here
+        return (personalInfo.summary || personalInfo.careerObjective) ? (
+          <section className="mb-8" data-section="personal">
+            {personalInfo.summary && (
+              <div className="text-gray-800 leading-relaxed mb-2">
+                {renderHTML(personalInfo.summary)}
+              </div>
+            )}
+            {personalInfo.careerObjective && (
+              <div className="text-gray-700 leading-relaxed italic">
+                <strong>Career Objective:</strong>{" "}
+                <span dangerouslySetInnerHTML={{ __html: personalInfo.careerObjective }} />
+              </div>
+            )}
+          </section>
+        ) : null;
+      case "experience":
+        return experience.length > 0 ? (
+          <section className="mb-8" data-section="experience">
+            <h2 className="text-lg font-medium text-gray-900 mb-4 pb-1" style={{ color: theme.primary, borderBottom: `1px solid ${theme.border}` }}>
+              Experience
+            </h2>
+            <div className="space-y-6">
+              {experience.map((exp) => (
+                <div key={exp.id}>
+                  <div className="flex justify-between items-baseline mb-1">
+                    <h3 className="text-base font-medium text-gray-900">
+                      {exp.jobTitle}
+                    </h3>
+                    <div className="text-sm text-gray-600">
+                      <div>
+                        {formatDate(exp.startDate)} -{" "}
+                        {exp.isCurrentJob ? "Present" : formatDate(exp.endDate)}
+                      </div>
+                      {exp.years !== undefined && (
+                        <div className="text-xs">{exp.years} {exp.years === 1 ? "year" : "years"}</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-baseline mb-2">
+                    <p className="text-sm text-gray-700">{exp.company}</p>
+                    {exp.location && (
+                      <span className="text-sm text-gray-600">
+                        {exp.location}
+                      </span>
+                    )}
+                  </div>
+                  {exp.description && (
+                    <div className="text-sm text-gray-700">
+                      {renderHTML(exp.description)}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      case "projects":
+        return projects.length > 0 ? (
+          <section className="mb-8" data-section="projects">
+            <h2 className="text-lg font-medium text-gray-900 mb-4 pb-1" style={{ color: theme.primary, borderBottom: `1px solid ${theme.border}` }}>
+              Projects
+            </h2>
+            <div className="space-y-6">
+              {projects.map((project) => (
+                <div key={project.id}>
+                  <div className="flex justify-between items-baseline mb-1">
+                    <h3 className="text-base font-medium text-gray-900">
+                      {project.name}
+                    </h3>
+                    <span className="text-sm text-gray-600">
+                      {formatDate(project.startDate)} -{" "}
+                      {formatDate(project.endDate)}
+                    </span>
+                  </div>
+                  <div className="mb-2">
+                    {project.technologies.length > 0 && (
+                      <p className="text-sm text-gray-600">
+                        {project.technologies.join(" • ")}
+                      </p>
+                    )}
+                    {project.link && (
+                      <a
+                        href={project.link}
+                        className="text-sm text-gray-600 hover:text-gray-800"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {project.link.replace(/^https?:\/\//, "")}
+                      </a>
+                    )}
+                  </div>
+                  {project.description && (
+                    <div className="text-sm text-gray-700">
+                      {renderHTML(project.description)}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      case "education":
+        return education.length > 0 ? (
+          <section className="mb-8" data-section="education">
+            <h2 className="text-lg font-medium text-gray-900 mb-4 pb-1" style={{ color: theme.primary, borderBottom: `1px solid ${theme.border}` }}>
+              Education
+            </h2>
+            <div className="space-y-4">
+              {education.map((edu) => (
+                <div key={edu.id}>
+                  <div className="flex justify-between items-baseline mb-1">
+                    <h3 className="text-base font-medium text-gray-900">
+                      {edu.degree}
+                    </h3>
+                    <span className="text-sm text-gray-600">
+                      {edu.startDate && formatDate(edu.startDate)} -{" "}
+                      {edu.isCurrentlyStudying ? "Present" : (edu.graduationDate && formatDate(edu.graduationDate))}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-baseline mb-2">
+                    <div>
+                      <p className="text-sm text-gray-700">{edu.institution}</p>
+                      {edu.area && (
+                        <p className="text-xs text-gray-600 italic">{edu.area}</p>
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {edu.location && <span>{edu.location}</span>}
+                      {(edu.gpa || edu.grade) && (
+                        <span className="ml-2">{edu.grade || `GPA: ${edu.gpa}`}</span>
+                      )}
+                    </div>
+                  </div>
+                  {edu.description && (
+                    <div className="text-sm text-gray-700">
+                      {renderHTML(edu.description)}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      case "skills":
+        return skills.length > 0 ? (
+          <section className="mb-8" data-section="skills">
+            <h2 className="text-lg font-medium text-gray-900 mb-4 pb-1" style={{ color: theme.primary, borderBottom: `1px solid ${theme.border}` }}>
+              Skills
+            </h2>
+            <div className="space-y-2 text-sm text-gray-700">
+              {["Language", "Framework", "Technologies", "Libraries", "Database", "Practices", "Tools"].map((category) => {
+                const categorySkills = skills
+                  .filter((skill) => skill.category === category)
+                  .sort((a, b) => (a.priority || 0) - (b.priority || 0));
+                if (categorySkills.length === 0) return null;
+
+                return (
+                  <div key={category} id={`skill-category-${category}`}>
+                    <span className="font-medium" style={{ color: theme.primary }}>{category}: </span>
+                    <span>{categorySkills.map((skill) => skill.name).join(" • ")}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        ) : null;
+      case "activities":
+        return activities && activities.length > 0 ? (
+          <section className="mb-8" data-section="activities">
+            <h2 className="text-lg font-medium text-gray-900 mb-4 pb-1" style={{ color: theme.primary, borderBottom: `1px solid ${theme.border}` }}>
+              Activities
+            </h2>
+            <div className="space-y-6">
+              {activities.map((activity) => (
+                <div key={activity.id}>
+                  <div className="flex justify-between items-baseline mb-1">
+                    <h3 className="text-base font-medium text-gray-900">
+                      {activity.name}
+                    </h3>
+                    <span className="text-sm text-gray-600">
+                      {formatDate(activity.startDate)} -{" "}
+                      {activity.isCurrent ? "Present" : formatDate(activity.endDate)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-baseline mb-2">
+                    <p className="text-sm text-gray-700">{activity.organization}</p>
+                  </div>
+                  {(activity.involvements && activity.involvements.length > 0) && (
+                    <div className="text-sm text-gray-700 mb-2">
+                      <p className="font-medium mb-1">Involvements:</p>
+                      <ul className="list-disc list-outside space-y-1 ml-4">
+                        {activity.involvements.map((inv, idx) => (
+                          <li key={idx}>{inv}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {(activity.achievements && activity.achievements.length > 0) && (
+                    <div className="text-sm text-gray-700">
+                      <p className="font-medium mb-1">Achievements:</p>
+                      <ul className="list-disc list-outside space-y-1 ml-4">
+                        {activity.achievements.map((ach, idx) => (
+                          <li key={idx}>{ach}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      case "volunteering":
+        return volunteering && volunteering.length > 0 ? (
+          <section className="mb-8" data-section="volunteering">
+            <h2 className="text-lg font-medium text-gray-900 mb-4 pb-1" style={{ color: theme.primary, borderBottom: `1px solid ${theme.border}` }}>
+              Volunteering
+            </h2>
+            <div className="space-y-6">
+              {volunteering.map((vol) => (
+                <div key={vol.id}>
+                  <div className="flex justify-between items-baseline mb-1">
+                    <h3 className="text-base font-medium text-gray-900">
+                      {vol.role}
+                    </h3>
+                    <span className="text-sm text-gray-600">
+                      {formatDate(vol.startDate)} -{" "}
+                      {vol.isCurrent ? "Present" : formatDate(vol.endDate)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-baseline mb-2">
+                    <p className="text-sm text-gray-700">{vol.organization}</p>
+                  </div>
+                  {vol.description && (
+                    <div className="text-sm text-gray-700">
+                      {renderHTML(vol.description)}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      case "awards":
+        return awards && awards.length > 0 ? (
+          <section className="mb-8" data-section="awards">
+            <h2 className="text-lg font-medium text-gray-900 mb-4 pb-1" style={{ color: theme.primary, borderBottom: `1px solid ${theme.border}` }}>
+              Awards
+            </h2>
+            <div className="space-y-4">
+              {awards.map((award) => (
+                <div key={award.id}>
+                  <div className="flex justify-between items-baseline mb-1">
+                    <h3 className="text-base font-medium text-gray-900">
+                      {award.title}
+                    </h3>
+                    <span className="text-sm text-gray-600">
+                      {formatDate(award.date)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-baseline mb-2">
+                    <p className="text-sm text-gray-700">{award.organization}</p>
+                  </div>
+                  {award.description && (
+                    <div className="text-sm text-gray-700" dangerouslySetInnerHTML={{ __html: award.description }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -181,285 +466,8 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
         </div>
       </header>
 
-      {/* Professional Summary / Career Objective */}
-      {(personalInfo.summary || personalInfo.careerObjective) && (
-        <section className="mb-8">
-          {personalInfo.summary && (
-            <div className="text-gray-800 leading-relaxed mb-2">
-              {renderHTML(personalInfo.summary)}
-            </div>
-          )}
-          {personalInfo.careerObjective && (
-            <div className="text-gray-700 leading-relaxed italic">
-              <strong>Career Objective:</strong>{" "}
-              <span dangerouslySetInnerHTML={{ __html: personalInfo.careerObjective }} />
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Experience */}
-      {experience.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-lg font-medium text-gray-900 mb-4 pb-1" style={{ color: theme.primary, borderBottom: `1px solid ${theme.border}` }}>
-            Experience
-          </h2>
-          <div className="space-y-6">
-            {experience.map((exp) => (
-              <div key={exp.id}>
-                <div className="flex justify-between items-baseline mb-1">
-                  <h3 className="text-base font-medium text-gray-900">
-                    {exp.jobTitle}
-                  </h3>
-                  <div className="text-sm text-gray-600">
-                    <div>
-                      {formatDate(exp.startDate)} -{" "}
-                      {exp.isCurrentJob ? "Present" : formatDate(exp.endDate)}
-                    </div>
-                    {exp.years !== undefined && (
-                      <div className="text-xs">{exp.years} {exp.years === 1 ? "year" : "years"}</div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex justify-between items-baseline mb-2">
-                  <p className="text-sm text-gray-700">{exp.company}</p>
-                  {exp.location && (
-                    <span className="text-sm text-gray-600">
-                      {exp.location}
-                    </span>
-                  )}
-                </div>
-                {exp.description && (
-                  <div className="text-sm text-gray-700">
-                    {renderHTML(exp.description)}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Projects */}
-      {projects.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-lg font-medium text-gray-900 mb-4 pb-1" style={{ color: theme.primary, borderBottom: `1px solid ${theme.border}` }}>
-            Projects
-          </h2>
-          <div className="space-y-6">
-            {projects.map((project) => (
-              <div key={project.id}>
-                <div className="flex justify-between items-baseline mb-1">
-                  <h3 className="text-base font-medium text-gray-900">
-                    {project.name}
-                  </h3>
-                  <span className="text-sm text-gray-600">
-                    {formatDate(project.startDate)} -{" "}
-                    {formatDate(project.endDate)}
-                  </span>
-                </div>
-                <div className="mb-2">
-                  {project.technologies.length > 0 && (
-                    <p className="text-sm text-gray-600">
-                      {project.technologies.join(" • ")}
-                    </p>
-                  )}
-                  {project.link && (
-                    <a
-                      href={project.link}
-                      className="text-sm text-gray-600 hover:text-gray-800"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {project.link.replace(/^https?:\/\//, "")}
-                    </a>
-                  )}
-                </div>
-                {project.description && (
-                  <div className="text-sm text-gray-700">
-                    {renderHTML(project.description)}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Education */}
-      {education.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-lg font-medium text-gray-900 mb-4 pb-1" style={{ color: theme.primary, borderBottom: `1px solid ${theme.border}` }}>
-            Education
-          </h2>
-          <div className="space-y-4">
-            {education.map((edu) => (
-              <div key={edu.id}>
-                <div className="flex justify-between items-baseline mb-1">
-                  <h3 className="text-base font-medium text-gray-900">
-                    {edu.degree}
-                  </h3>
-                  <span className="text-sm text-gray-600">
-                    {edu.startDate && formatDate(edu.startDate)} -{" "}
-                    {edu.isCurrentlyStudying ? "Present" : (edu.graduationDate && formatDate(edu.graduationDate))}
-                  </span>
-                </div>
-                <div className="flex justify-between items-baseline mb-2">
-                  <div>
-                    <p className="text-sm text-gray-700">{edu.institution}</p>
-                    {edu.area && (
-                      <p className="text-xs text-gray-600 italic">{edu.area}</p>
-                    )}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {edu.location && <span>{edu.location}</span>}
-                    {(edu.gpa || edu.grade) && (
-                      <span className="ml-2">{edu.grade || `GPA: ${edu.gpa}`}</span>
-                    )}
-                  </div>
-                </div>
-                {edu.description && (
-                  <div className="text-sm text-gray-700">
-                    {renderHTML(edu.description)}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Skills */}
-      {skills.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-lg font-medium text-gray-900 mb-4 pb-1" style={{ color: theme.primary, borderBottom: `1px solid ${theme.border}` }}>
-            Skills
-          </h2>
-          <div className="space-y-2 text-sm text-gray-700">
-            {["Language", "Framework", "Technologies", "Libraries", "Database", "Practices", "Tools"].map((category) => {
-              const categorySkills = skills
-                .filter((skill) => skill.category === category)
-                .sort((a, b) => (a.priority || 0) - (b.priority || 0));
-              if (categorySkills.length === 0) return null;
-
-              return (
-                <div key={category}>
-                  <span className="font-medium" style={{ color: theme.primary }}>{category}: </span>
-                  <span>{categorySkills.map((skill) => skill.name).join(" • ")}</span>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* Activities */}
-      {activities && activities.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-lg font-medium text-gray-900 mb-4 pb-1" style={{ color: theme.primary, borderBottom: `1px solid ${theme.border}` }}>
-            Activities
-          </h2>
-          <div className="space-y-6">
-            {activities.map((activity) => (
-              <div key={activity.id}>
-                <div className="flex justify-between items-baseline mb-1">
-                  <h3 className="text-base font-medium text-gray-900">
-                    {activity.name}
-                  </h3>
-                  <span className="text-sm text-gray-600">
-                    {formatDate(activity.startDate)} -{" "}
-                    {activity.isCurrent ? "Present" : formatDate(activity.endDate)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-baseline mb-2">
-                  <p className="text-sm text-gray-700">{activity.organization}</p>
-                </div>
-                {(activity.involvements && activity.involvements.length > 0) && (
-                  <div className="text-sm text-gray-700 mb-2">
-                    <p className="font-medium mb-1">Involvements:</p>
-                    <ul className="list-disc list-outside space-y-1 ml-4">
-                      {activity.involvements.map((inv, idx) => (
-                        <li key={idx}>{inv}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {(activity.achievements && activity.achievements.length > 0) && (
-                  <div className="text-sm text-gray-700">
-                    <p className="font-medium mb-1">Achievements:</p>
-                    <ul className="list-disc list-outside space-y-1 ml-4">
-                      {activity.achievements.map((ach, idx) => (
-                        <li key={idx}>{ach}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Volunteering */}
-      {volunteering && volunteering.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-lg font-medium text-gray-900 mb-4 pb-1" style={{ color: theme.primary, borderBottom: `1px solid ${theme.border}` }}>
-            Volunteering
-          </h2>
-          <div className="space-y-6">
-            {volunteering.map((vol) => (
-              <div key={vol.id}>
-                <div className="flex justify-between items-baseline mb-1">
-                  <h3 className="text-base font-medium text-gray-900">
-                    {vol.role}
-                  </h3>
-                  <span className="text-sm text-gray-600">
-                    {formatDate(vol.startDate)} -{" "}
-                    {vol.isCurrent ? "Present" : formatDate(vol.endDate)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-baseline mb-2">
-                  <p className="text-sm text-gray-700">{vol.organization}</p>
-                </div>
-                {vol.description && (
-                  <div className="text-sm text-gray-700">
-                    {renderHTML(vol.description)}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Awards */}
-      {awards && awards.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-lg font-medium text-gray-900 mb-4 pb-1" style={{ color: theme.primary, borderBottom: `1px solid ${theme.border}` }}>
-            Awards
-          </h2>
-          <div className="space-y-4">
-            {awards.map((award) => (
-              <div key={award.id}>
-                <div className="flex justify-between items-baseline mb-1">
-                  <h3 className="text-base font-medium text-gray-900">
-                    {award.title}
-                  </h3>
-                  <span className="text-sm text-gray-600">
-                    {formatDate(award.date)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-baseline mb-2">
-                  <p className="text-sm text-gray-700">{award.organization}</p>
-                </div>
-                {award.description && (
-                  <div className="text-sm text-gray-700" dangerouslySetInnerHTML={{ __html: award.description }} />
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      {/* Render sections in order */}
+      {getSectionOrder().map((sectionId) => renderSection(sectionId))}
     </div>
   );
 };

@@ -70,13 +70,13 @@ const SortableSkillItem: React.FC<{
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-2 p-3 border-2 border-gray-200 rounded-xl bg-white hover:border-blue-300 hover:shadow-sm transition-all duration-200"
+      className="flex items-center gap-2 p-3 pr-2 border-2 border-gray-200 rounded-xl bg-white hover:border-blue-300 hover:shadow-sm transition-all duration-200"
     >
       {/* Drag Handle */}
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing p-1 text-gray-400 hover:text-gray-600 transition-colors"
+        className="cursor-grab active:cursor-grabbing p-1 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
@@ -87,17 +87,17 @@ const SortableSkillItem: React.FC<{
         type="text"
         value={skill.name}
         onChange={(e) => onUpdate(skill.id, "name", e.target.value)}
-        className="flex-1 border-none outline-none font-semibold text-gray-900 bg-transparent"
+        className="flex-1 border-none outline-none font-semibold text-gray-900 bg-transparent min-w-0"
         placeholder="Skill name"
       />
 
       <button
         onClick={() => onDelete(skill.id)}
-        className="p-2 text-red-600 hover:text-white hover:bg-red-500 rounded-lg transition-all duration-200 border-2 border-red-200 hover:border-red-500 shadow-sm hover:shadow-md"
-        title="Delete skill"
+        className="p-1.5 text-red-600 hover:text-white hover:bg-red-600 rounded-lg transition-all duration-200 border-2 border-red-200 hover:border-red-600 shadow-sm hover:shadow-md flex-shrink-0"
+        title="Remove skill"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
       </button>
     </div>
@@ -356,7 +356,7 @@ const SkillsForm: React.FC<SkillsFormProps> = ({ data, onChange, onPreviewCatego
                       <div className="text-gray-500 text-sm">
                         <p>No skills in this category yet.</p>
                         <p className="text-xs mt-1">Click "Add More" to add a skill.</p>
-                      </div>
+          </div>
                       {/* Add More Button - Moved here */}
                       {addingToCategory !== category ? (
                         <button
@@ -404,8 +404,8 @@ const SkillsForm: React.FC<SkillsFormProps> = ({ data, onChange, onPreviewCatego
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                           </button>
-                        </div>
-                      )}
+        </div>
+      )}
                     </div>
                   ) : (
                     <>

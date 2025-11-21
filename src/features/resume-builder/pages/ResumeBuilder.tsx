@@ -18,8 +18,7 @@ import ResumeHeader from "../components/ResumeHeader";
 import ResumeSidebar from "../components/ResumeSidebar";
 import { getDummyResumeData } from "../utils/dummyData";
 import { getColorsFromScheme } from "../utils/colorUtils";
-import { processElementStylesForPDF, convertColorToHex } from "../utils/pdfColorUtils";
-import html2pdf from "html2pdf.js";
+import { printResumeToPDF } from "../utils/printUtils";
 
 const ResumeBuilder: React.FC = () => {
   const { success: showSuccessToast, error: showErrorToast } = useToast();
@@ -27,19 +26,35 @@ const ResumeBuilder: React.FC = () => {
   const previewContainerRef = useRef<HTMLDivElement>(null);
 
   // Handle scroll to skills category in preview
-  const handlePreviewCategory = (_category: SkillCategory) => {
+  const handlePreviewCategory = (category: SkillCategory) => {
     if (previewContainerRef.current) {
-      // Find skills section in preview
-      const skillsSection = previewContainerRef.current.querySelector('[data-section="skills"]');
-      if (skillsSection) {
-        // Scroll to skills section
-        skillsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        // Add temporary highlight
-        skillsSection.classList.add('ring-4', 'ring-blue-400', 'ring-opacity-50');
+      // Find specific category element in preview
+      const categoryElement = previewContainerRef.current.querySelector(`#skill-category-${category}`);
+      if (categoryElement) {
+        // Scroll to specific category
+        categoryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Add temporary highlight to the category
+        categoryElement.classList.add('ring-4', 'ring-blue-400', 'ring-opacity-50', 'rounded-lg', 'p-2');
         setTimeout(() => {
-          skillsSection.classList.remove('ring-4', 'ring-blue-400', 'ring-opacity-50');
+          categoryElement.classList.remove('ring-4', 'ring-blue-400', 'ring-opacity-50', 'rounded-lg', 'p-2');
         }, 2000);
-        // TODO: In future, we can add specific category highlighting within skills section
+      }
+    }
+  };
+
+  // Handle scroll to section in preview
+  const handlePreviewSection = (sectionId: string) => {
+    if (previewContainerRef.current) {
+      // Find section element in preview
+      const sectionElement = previewContainerRef.current.querySelector(`[data-section="${sectionId}"]`);
+      if (sectionElement) {
+        // Scroll to section
+        sectionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Add temporary highlight to the section
+        sectionElement.classList.add('ring-4', 'ring-blue-400', 'ring-opacity-50', 'rounded-lg');
+        setTimeout(() => {
+          sectionElement.classList.remove('ring-4', 'ring-blue-400', 'ring-opacity-50', 'rounded-lg');
+        }, 2000);
       }
     }
   };
@@ -79,7 +94,7 @@ const ResumeBuilder: React.FC = () => {
     activities: [],
     volunteering: [],
     awards: [],
-    selectedTemplate: "modern",
+    selectedTemplate: "minimal",
     themeColor: "#3b82f6",
     colorScheme: "Professional Blue",
     sectionOrder: ["personal", "skills", "experience", "education", "projects", "activities", "volunteering", "awards"],
@@ -238,7 +253,12 @@ const ResumeBuilder: React.FC = () => {
     }
   };
 
-  const handleDownloadPDF = async () => {
+  const handleDownloadPDF = () => {
+    // Prevent multiple simultaneous downloads
+    if ((handleDownloadPDF as any).isGenerating) {
+      return;
+    }
+    
     if (!printRef.current) {
       showErrorToast("Error", "Resume content not found. Please try again.");
       return;
@@ -250,191 +270,32 @@ const ResumeBuilder: React.FC = () => {
       return;
     }
 
+    const firstName = resumeData.personalInfo.firstName || "resume";
+    const lastName = resumeData.personalInfo.lastName || "";
+    const filename = `resume-${firstName}-${lastName}`.replace(/\s+/g, "-").toLowerCase().replace(/[^a-z0-9-]/g, "");
+    
+    // Mark as generating to prevent multiple calls
+    (handleDownloadPDF as any).isGenerating = true;
+    
+    // SIMPLIFIED: Use print window directly - no heavy processing, no style modifications
+    // This prevents page freezing
     try {
-      const firstName = resumeData.personalInfo.firstName || "resume";
-      const lastName = resumeData.personalInfo.lastName || "";
-      const filename = `resume-${firstName}-${lastName}`.replace(/\s+/g, "-").toLowerCase().replace(/[^a-z0-9-]/g, "");
+      // Show info message immediately
+      showSuccessToast("Opening Print Dialog", "Please select 'Save as PDF' in the print dialog.");
       
-      // Show loading message
-      showSuccessToast("Generating PDF", "Please wait while we generate your resume PDF...");
+      // Use browser's native print-to-PDF (handles all modern CSS including oklch)
+      // This approach doesn't freeze the page and doesn't modify any styles
+      const printSuccess = printResumeToPDF(element, filename);
       
-      // Get the actual content element with data-resume-content
-      const contentElement = element.querySelector('[data-resume-content]') as HTMLElement || element;
-      
-      if (!contentElement) {
-        showErrorToast("Error", "Resume content element not found.");
-        return;
+      if (!printSuccess) {
+        showErrorToast("Print Window Failed", "Failed to open print window. Please check popup blocker settings.");
       }
-
-      // Store original styles that might interfere with PDF generation
-      const originalOverflow = contentElement.style.overflow;
-      const originalTransform = contentElement.style.transform;
-      const originalMaxHeight = contentElement.style.maxHeight;
-      const originalPosition = contentElement.style.position;
-      
-      // Get preview container to remove zoom transform
-      const previewContainer = previewContainerRef.current;
-      const originalContainerTransform = previewContainer ? previewContainer.style.transform : "";
-      
-      // Temporarily remove zoom transform from preview container
-      if (previewContainer) {
-        previewContainer.style.transform = 'none';
-      }
-      
-      // Temporarily adjust styles for clean PDF capture
-      contentElement.style.overflow = "visible";
-      contentElement.style.transform = "none";
-      contentElement.style.maxHeight = "none";
-      contentElement.style.position = "relative";
-      
-      // Wait a bit for styles to apply
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Simple and reliable PDF options
-      const opt = {
-        margin: [5, 5, 5, 5] as [number, number, number, number],
-        filename: `${filename}.pdf`,
-        image: { 
-          type: "jpeg", 
-          quality: 0.98,
-        },
-        html2canvas: { 
-          scale: 2,
-          useCORS: true,
-          allowTaint: false,
-          backgroundColor: "#ffffff",
-          logging: false,
-          letterRendering: true,
-          onclone: (clonedDoc: Document) => {
-            try {
-              const clonedElement = clonedDoc.querySelector('[data-resume-content]') || clonedDoc.body;
-              
-              // Add color preservation CSS
-              const style = clonedDoc.createElement('style');
-              style.textContent = `
-                *, *::before, *::after {
-                  -webkit-print-color-adjust: exact !important;
-                  print-color-adjust: exact !important;
-                  color-adjust: exact !important;
-                }
-                body, html {
-                  margin: 0;
-                  padding: 0;
-                  background: white !important;
-                }
-                [data-resume-content] {
-                  transform: none !important;
-                  zoom: 1 !important;
-                }
-              `;
-              clonedDoc.head.appendChild(style);
-              
-              // Convert oklch colors in stylesheets
-              try {
-                const styleSheets = clonedDoc.styleSheets;
-                for (let i = 0; i < styleSheets.length; i++) {
-                  try {
-                    const sheet = styleSheets[i];
-                    if (!sheet.cssRules) continue;
-                    
-                    for (let j = 0; j < sheet.cssRules.length; j++) {
-                      const rule = sheet.cssRules[j];
-                      if (rule instanceof CSSStyleRule) {
-                        const ruleStyle = rule.style;
-                        ['color', 'backgroundColor', 'borderColor', 'borderTopColor', 
-                         'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(prop => {
-                          try {
-                            const value = ruleStyle.getPropertyValue(prop);
-                            if (value && (value.includes('oklch') || value.includes('lab') || value.includes('lch'))) {
-                              const hexColor = convertColorToHex(value);
-                              if (hexColor && hexColor !== '#000000') {
-                                ruleStyle.setProperty(prop, hexColor, 'important');
-                              }
-                            }
-                          } catch (e) {
-                            // Ignore errors
-                          }
-                        });
-                      }
-                    }
-                  } catch (e) {
-                    // Some stylesheets may not be accessible
-                  }
-                }
-              } catch (e) {
-                // Ignore stylesheet processing errors
-              }
-              
-              // Process all elements for color conversion
-              if (clonedElement) {
-                const allElements = clonedElement.querySelectorAll('*');
-                allElements.forEach((el) => {
-                  const htmlEl = el as HTMLElement;
-                  htmlEl.style.setProperty('-webkit-print-color-adjust', 'exact', 'important');
-                  htmlEl.style.setProperty('print-color-adjust', 'exact', 'important');
-                  htmlEl.style.setProperty('color-adjust', 'exact', 'important');
-                  
-                  try {
-                    processElementStylesForPDF(htmlEl);
-                  } catch (e) {
-                    // Ignore individual element errors
-                  }
-                });
-                
-                // Process root element
-                if (clonedElement instanceof HTMLElement) {
-                  try {
-                    processElementStylesForPDF(clonedElement);
-                  } catch (e) {
-                    // Ignore
-                  }
-                }
-              }
-            } catch (error) {
-              console.error("Error in onclone:", error);
-            }
-          },
-        },
-        jsPDF: { 
-          unit: "mm",
-          format: "a4",
-          orientation: "portrait" as const,
-          compress: true,
-        },
-        pagebreak: { mode: ["avoid-all", "css"], avoid: ['.resume-section'] },
-      };
-      
-      // Helper function to restore styles
-      const restoreStyles = () => {
-        contentElement.style.overflow = originalOverflow;
-        contentElement.style.transform = originalTransform;
-        contentElement.style.maxHeight = originalMaxHeight;
-        contentElement.style.position = originalPosition;
-        
-        if (previewContainer) {
-          previewContainer.style.transform = originalContainerTransform;
-        }
-      };
-      
-      try {
-        // Generate and download PDF
-        await html2pdf().set(opt).from(contentElement).save();
-        
-        restoreStyles();
-        
-        setTimeout(() => {
-          showSuccessToast("PDF Downloaded", "Your resume PDF has been downloaded successfully!");
-        }, 500);
-      } catch (error) {
-        restoreStyles();
-        console.error("PDF generation error:", error);
-        const errorMessage = error instanceof Error ? error.message : "Unknown error";
-        showErrorToast("PDF Generation Failed", `Failed to generate PDF: ${errorMessage}. Please try again.`);
-      }
-    } catch (error) {
-      console.error("PDF setup error:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      showErrorToast("PDF Generation Failed", `Failed to setup PDF generation: ${errorMessage}. Please try again.`);
+    } catch (printError) {
+      console.error("Error opening print window:", printError);
+      showErrorToast("PDF Generation Failed", "Failed to open print dialog. Please try again.");
+    } finally {
+      // Clear generating flag
+      (handleDownloadPDF as any).isGenerating = false;
     }
   };
 
@@ -450,7 +311,7 @@ const ResumeBuilder: React.FC = () => {
         github: "",
         website: "",
         summary: "",
-      },
+    },
       experience: [],
       education: [],
       skills: [],
@@ -458,7 +319,7 @@ const ResumeBuilder: React.FC = () => {
       activities: [],
       volunteering: [],
       awards: [],
-      selectedTemplate: "modern",
+      selectedTemplate: "minimal",
       themeColor: "#3b82f6",
       colorScheme: "Professional Blue",
       sectionOrder: ["personal", "skills", "experience", "education", "projects", "activities", "volunteering", "awards"],
@@ -513,19 +374,25 @@ const ResumeBuilder: React.FC = () => {
             </div>
                 <div
                   ref={previewContainerRef}
-                  className="bg-white rounded-lg"
+                  className="bg-white rounded-lg w-full overflow-auto flex items-start justify-center"
                   style={{
-                    transform: `scale(${zoom})`,
-                    transformOrigin: "top center",
-                    transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                    maxHeight: "calc(100vh - 180px)",
-                    width: `${100 / zoom}%`,
-                    maxWidth: "100%",
-                    overflowX: 'hidden',
-                    overflowY: 'auto',
+                    height: "calc(100vh - 180px)",
+                    minHeight: "calc(100vh - 180px)",
+                    padding: '20px',
                   }}
                 >
-                      <div ref={printRef} style={{ width: "100%", maxWidth: "100%", overflowX: 'hidden' }}>
+                      <div 
+                        ref={printRef} 
+                        style={{ 
+                          width: `${100 / zoom}%`,
+                          maxWidth: "100%",
+                          overflowX: 'hidden',
+                          transform: `scale(${zoom})`,
+                          transformOrigin: "center top",
+                          transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                          margin: '0 auto',
+                        }}
+                      >
                         <ResumePreview
                           key={`${resumeData.colorScheme}-${resumeData.themeColor}-${resumeData.selectedTemplate}`}
                           data={resumeData}
@@ -559,6 +426,7 @@ const ResumeBuilder: React.FC = () => {
           onVolunteeringChange={updateVolunteering}
           onAwardsChange={updateAwards}
           onPreviewCategory={handlePreviewCategory}
+          onPreviewSection={handlePreviewSection}
         />
       </div>
     </div>

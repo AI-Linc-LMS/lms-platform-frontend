@@ -97,22 +97,24 @@ const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
         <label className="block text-sm font-semibold text-gray-700 mb-2">
           Image URL
         </label>
-        <div className="flex gap-4 items-start">
+        <div className="space-y-3">
           <input
             type="url"
             value={data.imageUrl || ""}
             onChange={(e) => handleImageUrlChange(e.target.value)}
-            className="flex-1 border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300 text-gray-900 placeholder:text-gray-400"
+            className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300 text-gray-900 placeholder:text-gray-400"
             placeholder="https://example.com/profile.jpg"
           />
           {imagePreview && (
-            <div className="w-24 h-24 rounded-full border-4 border-blue-200 shadow-md overflow-hidden flex-shrink-0 ring-2 ring-blue-100">
-              <img
-                src={imagePreview}
-                alt="Profile preview"
-                className="w-full h-full object-cover"
-                onError={() => setImagePreview(null)}
-              />
+            <div className="flex justify-center">
+              <div className="relative w-32 h-32 rounded-full border-4 border-blue-200 shadow-lg overflow-hidden ring-4 ring-blue-100 bg-white p-1">
+                <img
+                  src={imagePreview}
+                  alt="Profile preview"
+                  className="w-full h-full object-cover rounded-full"
+                  onError={() => setImagePreview(null)}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -394,9 +396,9 @@ const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
       {/* Tab Navigation */}
       <div className="flex gap-2 border-b border-gray-200 mb-4">
         {[
-          { id: "contacts", label: "Contacts", icon: "📞" },
-          { id: "links", label: "Links", icon: "🔗" },
-          { id: "about", label: "About", icon: "📝" },
+          { id: "contacts", label: "Contacts" },
+          { id: "links", label: "Links" },
+          { id: "about", label: "About" },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -407,7 +409,6 @@ const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
                 : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
           >
-            <span className="mr-2">{tab.icon}</span>
             {tab.label}
           </button>
         ))}
