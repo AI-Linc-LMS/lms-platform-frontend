@@ -31,7 +31,7 @@ const StreakCongratulationsModal: React.FC<StreakCongratulationsModalProps> = ({
     <AnimatePresence mode="wait">
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop with enhanced blur */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -50,6 +50,9 @@ const StreakCongratulationsModal: React.FC<StreakCongratulationsModalProps> = ({
               transition={{ duration: 0.3, ease: "easeOut" }}
               className="bg-white rounded-xl shadow-lg max-w-2xl w-full mx-auto border border-[var(--neutral-200)] pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
+              style={{
+                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05), 0 0 100px rgba(251, 146, 60, 0.15)",
+              }}
             >
               {/* Content */}
               <div className="p-6">
@@ -100,7 +103,7 @@ const StreakCongratulationsModal: React.FC<StreakCongratulationsModalProps> = ({
                   {completionDate && (
                     <p className="text-xs text-[var(--neutral-400)] mt-3">
                       Marked on {new Date(completionDate).toLocaleDateString()}
-                    </p>
+                    </motion.p>
                   )}
                 </div>
 

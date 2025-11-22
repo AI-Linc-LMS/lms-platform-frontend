@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Editor from "@monaco-editor/react";
 
-type MonacoType = typeof import("monaco-editor");
+type MonacoType = any;
 
 export interface AppEditorProps {
   language: string;

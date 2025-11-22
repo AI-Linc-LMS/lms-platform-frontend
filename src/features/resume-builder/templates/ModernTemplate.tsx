@@ -1,16 +1,24 @@
 import React from "react";
-import { ResumeData } from "../types/resume";
+import { ResumeData, ColorScheme } from "../types/resume";
+import { getThemeColors } from "../utils/colorUtils";
 
 interface ModernTemplateProps {
   data: ResumeData;
   isPrint?: boolean;
+  themeColor?: string;
+  colorScheme?: ColorScheme;
 }
 
 const ModernTemplate: React.FC<ModernTemplateProps> = ({
   data,
   isPrint = false,
+  themeColor = "#3b82f6",
+  colorScheme = "Professional Blue",
 }) => {
-  const { personalInfo, experience, education, skills, projects } = data;
+  const { personalInfo, experience, education, skills, projects, activities, volunteering, awards, sectionOrder } = data;
+  // Use prop colorScheme first, then data.colorScheme, then default
+  const activeColorScheme = colorScheme || data.colorScheme || "Professional Blue";
+  const theme = getThemeColors(activeColorScheme);
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
@@ -20,6 +28,18 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
       month: "short",
       year: "numeric",
     });
+  };
+
+  // Helper function to render HTML content safely
+  const renderHTML = (html: string) => {
+    if (!html) return null;
+    // Check if content contains HTML tags
+    const hasHTML = /<[^>]+>/.test(html);
+    if (hasHTML) {
+      return <div dangerouslySetInnerHTML={{ __html: html }} />;
+    }
+    // If no HTML, use the bullet points renderer
+    return renderBulletPoints(html);
   };
 
   const renderBulletPoints = (text: string) => {
@@ -40,18 +60,367 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
     });
   };
 
+  const getSectionOrder = (): string[] => {
+    const defaultOrder = ["personal", "skills", "experience", "education", "projects", "activities", "volunteering", "awards"];
+    return sectionOrder || defaultOrder;
+  };
+
+  const renderSection = (sectionId: string) => {
+    switch (sectionId) {
+      case "personal":
+        // Personal info is rendered in header, but we can add summary/career objective here
+        return (personalInfo.summary || personalInfo.careerObjective) ? (
+          <section className="resume-section mb-8" data-section="personal">
+            <h2 className="text-2xl font-bold mb-4 pb-2" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
+              {personalInfo.summary ? "Professional Summary" : "Career Objective"}
+            </h2>
+            {personalInfo.summary && (
+              <div className="leading-relaxed mb-4" style={{ color: theme.textPrimary }}>
+                {renderHTML(personalInfo.summary)}
+              </div>
+            )}
+            {personalInfo.careerObjective && (
+              <div className="leading-relaxed" style={{ color: theme.textPrimary }}>
+                <strong>Career Objective:</strong>{" "}
+                <span dangerouslySetInnerHTML={{ __html: personalInfo.careerObjective }} />
+              </div>
+            )}
+          </section>
+        ) : null;
+      case "skills":
+        return skills.length > 0 ? (
+          <section className="resume-section mb-8" data-section="skills">
+            <h2 className="text-2xl font-bold mb-4 pb-2" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
+              Technical Skills
+            </h2>
+            <div className="space-y-4">
+              {["Language", "Framework", "Technologies", "Libraries", "Database", "Practices", "Tools"].map((category) => {
+                const categorySkills = skills
+                  .filter((skill) => skill.category === category)
+                  .sort((a, b) => (a.priority || 0) - (b.priority || 0));
+                if (categorySkills.length === 0) return null;
+
+                return (
+                  <div key={category} id={`skill-category-${category}`} className="mb-4">
+                    <h4 className="font-semibold mb-2" style={{ color: theme.primary }}>
+                      {category}
+                    </h4>
+                    <div className="flex flex-wrap gap-1">
+                      {categorySkills.map((skill) => (
+                        <span
+                          key={skill.id}
+                          className="px-2 py-1 text-sm rounded-full"
+                          style={{ 
+                            backgroundColor: theme.skillBg,
+                            color: theme.primary 
+                          }}
+                        >
+                          {skill.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        ) : null;
+      case "experience":
+        return experience.length > 0 ? (
+          <section className="resume-section mb-8" data-section="experience">
+            <h2 className="text-2xl font-bold mb-4 pb-2" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
+              Professional Experience
+            </h2>
+            <div className="space-y-6">
+              {experience.map((exp) => (
+                <div key={exp.id} className="entry relative">
+                  <div className="entry-header flex justify-between items-start mb-2">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {exp.jobTitle}
+                      </h3>
+                      <p className="font-medium" style={{ color: theme.secondary }}>{exp.company}</p>
+                    </div>
+                    <div className="text-right text-sm text-gray-600">
+                      <p className="font-medium">
+                        {formatDate(exp.startDate)} -{" "}
+                        {exp.isCurrentJob ? "Present" : formatDate(exp.endDate)}
+                      </p>
+                      {exp.years !== undefined && (
+                        <p className="text-xs">{exp.years} {exp.years === 1 ? "year" : "years"}</p>
+                      )}
+                      {exp.location && <p>{exp.location}</p>}
+                    </div>
+                  </div>
+                  {exp.description && (
+                    <div className="ml-0" style={{ color: theme.textPrimary }}>
+                      {renderHTML(exp.description)}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      case "education":
+        return education.length > 0 ? (
+          <section className="resume-section mb-8" data-section="education">
+            <h2 className="text-2xl font-bold mb-4 pb-2" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
+              Education
+            </h2>
+            <div className="space-y-4">
+              {education.map((edu) => (
+                <div key={edu.id} className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {edu.degree}
+                    </h3>
+                    <p className="font-medium" style={{ color: theme.secondary }}>{edu.institution}</p>
+                    {edu.area && (
+                      <p className="text-sm text-gray-600 italic">{edu.area}</p>
+                    )}
+                    {edu.location && (
+                      <p className="text-sm text-gray-600">{edu.location}</p>
+                    )}
+                    {edu.description && (
+                    <div className="mt-2" style={{ color: theme.textPrimary }}>
+                      {renderHTML(edu.description)}
+                    </div>
+                    )}
+                  </div>
+                  <div className="text-right text-sm text-gray-600 ml-4">
+                    <p className="font-medium">
+                      {edu.startDate && formatDate(edu.startDate)} -{" "}
+                      {edu.isCurrentlyStudying ? "Present" : (edu.graduationDate && formatDate(edu.graduationDate))}
+                    </p>
+                    {(edu.gpa || edu.grade) && (
+                      <p>{edu.grade || `GPA: ${edu.gpa}`}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      case "projects":
+        return projects.length > 0 ? (
+          <section className="resume-section mb-8" data-section="projects">
+            <h2 className="text-2xl font-bold mb-4 pb-2" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
+              Projects
+            </h2>
+            <div className="space-y-6">
+              {projects.map((project) => (
+                <div key={project.id}>
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {project.name}
+                      </h3>
+                      {project.technologies.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {project.technologies.map((tech, index) => (
+                            <span
+                              key={index}
+                              className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+                            >
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right text-sm text-gray-600">
+                      <p className="font-medium">
+                        {formatDate(project.startDate)} -{" "}
+                        {formatDate(project.endDate)}
+                      </p>
+                      {project.link && (
+                        <a
+                          href={project.link}
+                          className="hover:opacity-80"
+                          style={{ color: theme.secondary }}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          View Project
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                    {project.description && (
+                      <div className="ml-0" style={{ color: theme.textPrimary }}>
+                        {renderHTML(project.description)}
+                      </div>
+                    )}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      case "activities":
+        return activities && activities.length > 0 ? (
+          <section className="resume-section mb-8" data-section="activities">
+            <h2 className="text-2xl font-bold mb-4 pb-2" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
+              Activities
+            </h2>
+            <div className="space-y-6">
+              {activities.map((activity) => (
+                <div key={activity.id} className="entry relative">
+                  <div className="entry-header flex justify-between items-start mb-2">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {activity.name}
+                      </h3>
+                      <p className="font-medium" style={{ color: theme.secondary }}>{activity.organization}</p>
+                    </div>
+                    <div className="text-right text-sm text-gray-600">
+                      <p className="font-medium">
+                        {formatDate(activity.startDate)} -{" "}
+                        {activity.isCurrent ? "Present" : formatDate(activity.endDate)}
+                      </p>
+                    </div>
+                  </div>
+                  {(activity.involvements && activity.involvements.length > 0) && (
+                  <div className="ml-0 mb-2" style={{ color: theme.textPrimary }}>
+                    <p className="font-semibold text-sm mb-1" style={{ color: theme.primary }}>Involvements:</p>
+                    <ul className="list-disc list-outside space-y-1 ml-4">
+                      {activity.involvements.map((inv, idx) => (
+                        <li key={idx}>{inv}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {(activity.achievements && activity.achievements.length > 0) && (
+                  <div className="ml-0" style={{ color: theme.textPrimary }}>
+                    <p className="font-semibold text-sm mb-1" style={{ color: theme.primary }}>Achievements:</p>
+                    <ul className="list-disc list-outside space-y-1 ml-4">
+                      {activity.achievements.map((ach, idx) => (
+                        <li key={idx}>{ach}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      case "volunteering":
+        return volunteering && volunteering.length > 0 ? (
+          <section className="resume-section mb-8" data-section="volunteering">
+            <h2 className="text-2xl font-bold mb-4 pb-2" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
+              Volunteering
+            </h2>
+            <div className="space-y-6">
+              {volunteering.map((vol) => (
+                <div key={vol.id} className="entry relative">
+                  <div className="entry-header flex justify-between items-start mb-2">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {vol.role}
+                      </h3>
+                      <p className="font-medium" style={{ color: theme.secondary }}>{vol.organization}</p>
+                    </div>
+                    <div className="text-right text-sm text-gray-600">
+                      <p className="font-medium">
+                        {formatDate(vol.startDate)} -{" "}
+                        {vol.isCurrent ? "Present" : formatDate(vol.endDate)}
+                      </p>
+                    </div>
+                  </div>
+                  {vol.description && (
+                  <div className="ml-0" style={{ color: theme.textPrimary }}>
+                    {renderHTML(vol.description)}
+                  </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      case "awards":
+        return awards && awards.length > 0 ? (
+          <section className="resume-section mb-8" data-section="awards">
+            <h2 className="text-2xl font-bold mb-4 pb-2" style={{ color: theme.primary, borderBottom: `2px solid ${theme.border}` }}>
+              Awards
+            </h2>
+            <div className="space-y-4">
+              {awards.map((award) => (
+                <div key={award.id} className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {award.title}
+                    </h3>
+                    <p className="font-medium" style={{ color: theme.secondary }}>{award.organization}</p>
+                  {award.description && (
+                    <div className="mt-2" style={{ color: theme.textPrimary }} dangerouslySetInnerHTML={{ __html: award.description }} />
+                  )}
+                  </div>
+                  <div className="text-right text-sm text-gray-600 ml-4">
+                    <p className="font-medium">
+                      {formatDate(award.date)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div
       className={`max-w-4xl mx-auto bg-white ${
         isPrint ? "p-6" : "p-8"
       } text-gray-800 leading-relaxed`}
+      style={{ 
+        maxWidth: '100%', 
+        width: '100%', 
+        overflowX: 'hidden',
+        WebkitPrintColorAdjust: 'exact',
+        printColorAdjust: 'exact',
+        colorAdjust: 'exact',
+      }}
     >
       {/* Header */}
-      <header className="mb-8 text-center border-b-4 border-blue-600 pb-6">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">
+      <header className="mb-8 text-center pb-6" style={{ borderBottom: `4px solid ${theme.primary}` }}>
+        <div className="flex items-center justify-center gap-4 mb-3">
+          {personalInfo.imageUrl && (
+            <img
+              src={personalInfo.imageUrl}
+              alt={`${personalInfo.firstName} ${personalInfo.lastName}`}
+              className="w-24 h-24 rounded-full object-cover border-4"
+              style={{ borderColor: theme.primary }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
+          )}
+          <div className="flex-1">
+            <h1 className="text-4xl font-bold text-gray-900 mb-1">
           {personalInfo.firstName} {personalInfo.lastName}
         </h1>
-        <div className="contact-info flex flex-wrap justify-center gap-4 text-sm text-gray-600">
+            {personalInfo.title && (
+              <p className="text-xl font-medium mb-2" style={{ color: theme.primary }}>
+                {personalInfo.title}
+              </p>
+            )}
+            {(personalInfo.relevantExperience || personalInfo.totalExperience) && (
+              <div className="flex flex-wrap justify-center gap-3 text-sm mb-2" style={{ color: theme.textSecondary }}>
+                {personalInfo.relevantExperience && (
+                  <span>Relevant Experience: {personalInfo.relevantExperience} years</span>
+                )}
+                {personalInfo.totalExperience && (
+                  <span>Total Experience: {personalInfo.totalExperience} years</span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="contact-info flex flex-wrap justify-center gap-4 text-sm" style={{ color: theme.textSecondary }}>
           {personalInfo.email && (
             <span className="contact-item flex items-center gap-1">
               <svg
@@ -88,7 +457,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
               {personalInfo.phone}
             </span>
           )}
-          {personalInfo.address && (
+          {(personalInfo.location || personalInfo.address) && (
             <span className="contact-item flex items-center gap-1">
               <svg
                 className="contact-icon w-4 h-4"
@@ -109,7 +478,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
                   d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                 />
               </svg>
-              {personalInfo.address}
+              {personalInfo.location || personalInfo.address}
             </span>
           )}
         </div>
@@ -117,7 +486,8 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
           {personalInfo.linkedin && (
             <a
               href={personalInfo.linkedin}
-              className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              className="flex items-center gap-1 hover:opacity-80"
+              style={{ color: themeColor }}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -140,7 +510,8 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
           {personalInfo.github && (
             <a
               href={personalInfo.github}
-              className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              className="flex items-center gap-1 hover:opacity-80"
+              style={{ color: themeColor }}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -163,7 +534,8 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
           {personalInfo.website && (
             <a
               href={personalInfo.website}
-              className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              className="flex items-center gap-1 hover:opacity-80"
+              style={{ color: theme.secondary }}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -183,184 +555,77 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
               Website
             </a>
           )}
-        </div>
-      </header>
-
-      {/* Professional Summary */}
-      {personalInfo.summary && (
-        <section className="resume-section mb-8">
-          <h2 className="text-2xl font-bold text-blue-600 mb-4 border-b border-gray-300 pb-2">
-            Professional Summary
-          </h2>
-          <p className="text-gray-700 leading-relaxed">
-            {personalInfo.summary}
-          </p>
-        </section>
-      )}
-
-      {/* Experience */}
-      {experience.length > 0 && (
-        <section className="resume-section mb-8">
-          <h2 className="text-2xl font-bold text-blue-600 mb-4 border-b border-gray-300 pb-2">
-            Professional Experience
-          </h2>
-          <div className="space-y-6">
-            {experience.map((exp) => (
-              <div key={exp.id} className="entry relative">
-                <div className="entry-header flex justify-between items-start mb-2">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {exp.jobTitle}
-                    </h3>
-                    <p className="text-blue-600 font-medium">{exp.company}</p>
-                  </div>
-                  <div className="text-right text-sm text-gray-600">
-                    <p className="font-medium">
-                      {formatDate(exp.startDate)} -{" "}
-                      {exp.isCurrentJob ? "Present" : formatDate(exp.endDate)}
-                    </p>
-                    {exp.location && <p>{exp.location}</p>}
-                  </div>
-                </div>
-                {exp.description && (
-                  <div className="text-gray-700 ml-0">
-                    <ul className="list-disc list-outside space-y-1">
-                      {renderBulletPoints(exp.description)}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Projects */}
-      {projects.length > 0 && (
-        <section className="resume-section mb-8">
-          <h2 className="text-2xl font-bold text-blue-600 mb-4 border-b border-gray-300 pb-2">
-            Projects
-          </h2>
-          <div className="space-y-6">
-            {projects.map((project) => (
-              <div key={project.id}>
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {project.name}
-                    </h3>
-                    {project.technologies.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {project.technologies.map((tech, index) => (
-                          <span
-                            key={index}
-                            className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
-                          >
-                            {tech}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-right text-sm text-gray-600">
-                    <p className="font-medium">
-                      {formatDate(project.startDate)} -{" "}
-                      {formatDate(project.endDate)}
-                    </p>
-                    {project.link && (
+          {personalInfo.twitter && (
+            <a
+              href={personalInfo.twitter}
+              className="flex items-center gap-1 hover:opacity-80"
+              style={{ color: theme.secondary }}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Twitter
+            </a>
+          )}
+          {personalInfo.hackerrank && (
+            <a
+              href={personalInfo.hackerrank}
+              className="flex items-center gap-1 hover:opacity-80"
+              style={{ color: theme.secondary }}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Hackerrank
+            </a>
+          )}
+          {personalInfo.hackerearth && (
+            <a
+              href={personalInfo.hackerearth}
+              className="flex items-center gap-1 hover:opacity-80"
+              style={{ color: theme.secondary }}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Hackerearth
+            </a>
+          )}
+          {personalInfo.codechef && (
+            <a
+              href={personalInfo.codechef}
+              className="flex items-center gap-1 hover:opacity-80"
+              style={{ color: theme.secondary }}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Codechef
+            </a>
+          )}
+          {personalInfo.leetcode && (
+            <a
+              href={personalInfo.leetcode}
+              className="flex items-center gap-1 hover:opacity-80"
+              style={{ color: theme.secondary }}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Leetcode
+            </a>
+          )}
+          {personalInfo.cssbattle && (
                       <a
-                        href={project.link}
-                        className="text-blue-600 hover:text-blue-800"
+              href={personalInfo.cssbattle}
+              className="flex items-center gap-1 hover:opacity-80"
+              style={{ color: theme.secondary }}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        View Project
+              CSSBattle
                       </a>
                     )}
                   </div>
-                </div>
-                {project.description && (
-                  <div className="text-gray-700 ml-0">
-                    <ul className="list-disc list-outside space-y-1">
-                      {renderBulletPoints(project.description)}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      </header>
 
-      {/* Education */}
-      {education.length > 0 && (
-        <section className="resume-section mb-8">
-          <h2 className="text-2xl font-bold text-blue-600 mb-4 border-b border-gray-300 pb-2">
-            Education
-          </h2>
-          <div className="space-y-4">
-            {education.map((edu) => (
-              <div key={edu.id} className="flex justify-between items-start">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {edu.degree}
-                  </h3>
-                  <p className="text-blue-600 font-medium">{edu.institution}</p>
-                  {edu.location && (
-                    <p className="text-sm text-gray-600">{edu.location}</p>
-                  )}
-                  {edu.description && (
-                    <div className="text-gray-700 mt-2">
-                      <ul className="list-disc list-outside space-y-1">
-                        {renderBulletPoints(edu.description)}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-                <div className="text-right text-sm text-gray-600 ml-4">
-                  <p className="font-medium">
-                    {formatDate(edu.graduationDate)}
-                  </p>
-                  {edu.gpa && <p>GPA: {edu.gpa}</p>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Skills */}
-      {skills.length > 0 && (
-        <section className="resume-section mb-8">
-          <h2 className="text-2xl font-bold text-blue-600 mb-4 border-b border-gray-300 pb-2">
-            Technical Skills
-          </h2>
-          <div className="grid grid-cols-2 gap-4">
-            {["Expert", "Advanced", "Intermediate", "Beginner"].map((level) => {
-              const skillsAtLevel = skills.filter(
-                (skill) => skill.level === level
-              );
-              if (skillsAtLevel.length === 0) return null;
-
-              return (
-                <div key={level} className="mb-4">
-                  <h4 className="font-semibold text-gray-800 mb-2">{level}</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {skillsAtLevel.map((skill) => (
-                      <span
-                        key={skill.id}
-                        className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
-                      >
-                        {skill.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
+      {/* Render sections in order */}
+      {getSectionOrder().map((sectionId) => renderSection(sectionId))}
     </div>
   );
 };

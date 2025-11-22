@@ -216,8 +216,8 @@ const ProfileSettings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--primary-50)] via-[var(--primary-100)] to-[var(--secondary-50)] py-6 sm:py-10 px-3 sm:px-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-[var(--primary-50)] via-[var(--primary-100)] to-[var(--secondary-50)] py-6 sm:py-10 px-3 sm:px-6" style={{ overflowX: 'hidden', maxWidth: '100%', width: '100%' }}>
+      <div className="max-w-7xl mx-auto" style={{ overflowX: 'hidden', maxWidth: '100%' }}>
         {/* Tab Navigation */}
         <div className="mb-8">
           <div className="bg-white/70 backdrop-blur-md border border-[var(--primary-100)] rounded-2xl p-2 shadow-xl inline-flex gap-2">
@@ -294,7 +294,7 @@ const ProfileSettings = () => {
         </div>
 
         {/* Tab Content */}
-        <div className="relative">
+        <div className="relative" style={{ overflowX: 'hidden', maxWidth: '100%', width: '100%' }}>
           {/* Activity Tab Content */}
           <div
             className={`transition-all duration-500 ${
@@ -909,8 +909,10 @@ const ProfileSettings = () => {
 
           {/* Resume Tab Content */}
           {activeTab === "resume" && (
-            <div className="w-full min-h-screen">
-              <ResumeBuilder />
+            <div className="w-full min-h-screen" style={{ overflowX: 'hidden', maxWidth: '100%', width: '100%' }}>
+              <div style={{ overflowX: 'hidden', maxWidth: '100%', width: '100%' }}>
+                <ResumeBuilder />
+              </div>
             </div>
           )}
         </div>

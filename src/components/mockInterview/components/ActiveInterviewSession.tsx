@@ -1,5 +1,5 @@
 import AIAgent from "./AIAgent";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import React from "react";
 import "./InterviewRoom.css";
 
@@ -31,6 +31,8 @@ interface ActiveInterviewSessionProps {
   formatTime: (seconds: number) => string;
   onStopSpeaking?: () => void;
   lastSavedAnswer?: string;
+  onTypedTextChange?: (text: string) => void;
+  typedText?: string;
 }
 
 const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
@@ -50,8 +52,29 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
   formatTime,
   onStopSpeaking,
   lastSavedAnswer,
+  onTypedTextChange,
+  typedText: typedTextProp,
 }) => {
   void difficulty;
+
+  // Local state for answer text if not controlled by parent
+  const [localAnswer, setLocalAnswer] = useState<string>("");
+  const answerText = typedTextProp ?? localAnswer;
+
+  const setAnswerText = (text: string) => {
+    if (onTypedTextChange) {
+      onTypedTextChange(text);
+    } else {
+      setLocalAnswer(text);
+    }
+  };
+
+  // Keep transcript synced while listening; allow edits afterwards
+  useEffect(() => {
+    if (isListening) {
+      setAnswerText(currentTranscript);
+    }
+  }, [currentTranscript, isListening]);
 
   const toTitleCase = (str: string) => {
     return str
@@ -212,27 +235,50 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
           {/* Tabs Header */}
           <div className="bg-white border-b border-gray-200 px-6 flex space-x-1">
             <button className="px-4 py-3 text-sm font-medium border-b-2 border-purple-600 text-purple-600">
-              Live Transcript
+              Your Answer
             </button>
           </div>
 
           {/* Tab Content */}
           <div className="flex-1 overflow-y-auto p-6">
             <div className="tab-content space-y-4">
-              {isListening && (
-                <div className="bg-green-50 rounded-lg p-5 border-l-4 border-green-500 shadow-sm">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm font-bold text-green-700 uppercase tracking-wide">
-                      Recording Your Answer
-                    </span>
-                  </div>
-                  <p className="text-gray-800 text-base leading-relaxed min-h-[100px]">
-                    {currentTranscript ||
-                      "Start speaking... Your answer is being recorded."}
-                  </p>
+              {/* Editable Transcript / Answer */}
+              <div className="bg-white rounded-lg p-5 border-2 border-purple-200 shadow-sm">
+                <div className="flex items-center space-x-2 mb-3">
+                  <svg
+                    className="w-5 h-5 text-purple-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                  <span className="text-sm font-bold text-purple-700 uppercase tracking-wide">
+                    Review & Edit Your Answer
+                  </span>
                 </div>
-              )}
+                <textarea
+                  value={answerText}
+                  onChange={(e) => setAnswerText(e.target.value)}
+                  placeholder={
+                    isListening
+                      ? "Listening... transcript will appear here."
+                      : "You can edit your response before moving to the next question."
+                  }
+                  className="w-full min-h-[180px] p-4 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none resize-none text-gray-800 text-base leading-relaxed"
+                  disabled={false}
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  {isListening
+                    ? "Capturing your speech. You can fine-tune this answer once recording stops."
+                    : "Please validate this answer before proceeding."}
+                </p>
+              </div>
 
               {lastSavedAnswer && (
                 <div className="bg-blue-50 rounded-lg p-5 border-l-4 border-blue-500 shadow-sm">
@@ -258,27 +304,33 @@ const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
                 </div>
               )}
 
-              {isListening && onStopSpeaking && (
-                <button
-                  onClick={onStopSpeaking}
-                  data-recording-active="true"
-                  className="next-question-btn w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-4 px-6 rounded-xl font-bold flex items-center justify-center space-x-3 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+              {onStopSpeaking && (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-600 text-center">
+                    Review and validate your answer before moving to the next
+                    question. Edit if needed, then continue.
+                  </p>
+                  <button
+                    onClick={onStopSpeaking}
+                    data-recording-active={isListening ? "true" : "false"}
+                    className="next-question-btn w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-4 px-6 rounded-xl font-bold flex items-center justify-center space-x-3 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 5l7 7-7 7M5 5l7 7-7 7"
-                    />
-                  </svg>
-                  <span>Next Question</span>
-                </button>
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                      />
+                    </svg>
+                    <span>Next Question</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>

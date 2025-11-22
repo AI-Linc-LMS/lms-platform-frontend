@@ -92,6 +92,7 @@ const InterviewRoom = ({
   const [hasGivenIntroduction, setHasGivenIntroduction] = useState(false);
   const [isRecordingAnswer, setIsRecordingAnswer] = useState(false);
   const [currentTranscript, setCurrentTranscript] = useState("");
+  const [typedText, setTypedText] = useState("");
   const recognitionRef = useRef<any>(null);
   const isRecordingAnswerRef = useRef<boolean>(false);
 
@@ -1328,6 +1329,7 @@ const InterviewRoom = ({
               setIsRecordingAnswer(true);
               isRecordingAnswerRef.current = true; // Update ref
               setCurrentTranscript(""); // Clear previous transcript
+              setTypedText(""); // Clear previous typed text
 
               // Start speech recognition
               if (recognitionRef.current) {
@@ -1372,6 +1374,7 @@ const InterviewRoom = ({
           setIsRecordingAnswer(true);
           isRecordingAnswerRef.current = true; // Update ref
           setCurrentTranscript("");
+          setTypedText("");
 
           if (recognitionRef.current) {
             try {
@@ -1407,8 +1410,12 @@ const InterviewRoom = ({
     const answerStartTime = answerStartTimeRef.current || 0;
     const answerDuration = answerEndTime - answerStartTime;
 
-    // Get the transcribed text (or use empty if no speech)
-    const transcribedText = currentTranscript.trim() || "";
+    // Merge typed text with transcribed text
+    const typedPart = typedText.trim();
+    const spokenPart = currentTranscript.trim();
+    const transcribedText = [typedPart, spokenPart]
+      .filter((part) => part.length > 0)
+      .join(" ") || "";
 
     // Always set user response (even if empty - indicates they skipped)
     const displayResponse = transcribedText || "(Answer skipped)";
@@ -1417,6 +1424,7 @@ const InterviewRoom = ({
     // Reset for next answer
     answerStartTimeRef.current = 0;
     setCurrentTranscript("");
+    setTypedText("");
 
     // Get question ID from current question
     const questionId = currentQuestion?.id || currentQuestionIndex + 1;
@@ -1564,6 +1572,8 @@ const InterviewRoom = ({
           submissionData={submissionData}
           isListening={isRecordingAnswer}
           currentTranscript={currentTranscript}
+          typedText={typedText}
+          onTypedTextChange={setTypedText}
           faceStatus={faceStatus}
           videoRef={videoRef}
           audioCanvasRef={audioCanvasRef}
