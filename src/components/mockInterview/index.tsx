@@ -383,13 +383,31 @@ const InterviewDetailViewWrapper = ({
   selectedRecord: InterviewRecord | null;
   onBack: () => void;
 }) => {
-  if (!selectedRecord) {
-    // If no record in state, redirect back to list
-    // In a real app, you'd fetch the record by ID here
+  const { recordId } = useParams<{ recordId: string }>();
+
+  // If we have selectedRecord from state, use it
+  // Otherwise, create a minimal record from the URL param for navigation
+  const record =
+    selectedRecord ||
+    (recordId
+      ? {
+          id: recordId,
+          topic: "",
+          difficulty: "",
+          date: new Date(),
+          duration: 0,
+          score: null,
+          status: "completed" as const,
+          questionsAnswered: 0,
+          totalQuestions: 0,
+        }
+      : null);
+
+  if (!record) {
     return <Navigate to="/mock-interview/previous" replace />;
   }
 
-  return <InterviewDetailView record={selectedRecord} onBack={onBack} />;
+  return <InterviewDetailView record={record} onBack={onBack} />;
 };
 
 export default MockInterview;
