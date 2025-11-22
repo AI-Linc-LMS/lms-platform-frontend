@@ -18,8 +18,7 @@ export const liveServicesApis = async (clientId: string) => {
     );
     return res.data;
   } catch (error) {
-    console.error("Error in liveServicesApis:", error);
-    throw error; // Re-throw the error after logging it
+    throw error;
   }
 };
 
@@ -34,8 +33,7 @@ export const createLiveSession = async (
     );
     return res.data;
   } catch (error) {
-    console.error("Error in createLiveSession:", error);
-    throw error; // Re-throw the error after logging it
+    throw error;
   }
 };
 
@@ -51,7 +49,6 @@ export const updateLiveSession = async (
     );
     return res.data;
   } catch (error) {
-    console.error("Error in updateLiveSession:", error);
-    throw error; // Re-throw the error after logging it
+    throw error;
   }
 };

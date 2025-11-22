@@ -1,37 +1,34 @@
 import React, { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import {
-  getStreakTableData,
-  StreakData,
-} from "../../../services/dashboardApis";
+import type { StreakData } from "../../../services/dashboardApis";
 import Streak from "./Streak";
+import { useStreakData } from "../hooks/useStreakData";
 
 interface StreakTableProps {
   clientId: number;
+  dataOverride?: StreakData | null;
 }
 
-const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
+const StreakTable: React.FC<StreakTableProps> = ({
+  clientId,
+  dataOverride,
+}) => {
   const [activeDays, setActiveDays] = useState<number[]>([]);
 
-  const { data, isLoading, error } = useQuery<StreakData>({
-    queryKey: ["streakTable", clientId],
-    queryFn: () => getStreakTableData(clientId),
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
+  const { data, isLoading, error } = useStreakData(clientId, {
+    enabled: !dataOverride,
   });
+
+  const streakData = dataOverride ?? data;
 
   // Extract active days from the streak data
   useEffect(() => {
-    if (!data || !data.streak) return;
+    if (!streakData || !streakData.streak) return;
 
     // Convert the streak object to an array of active days
     const days: number[] = [];
 
     // Loop through the streak object
-    Object.entries(data.streak).forEach(([date, isActive]) => {
+    Object.entries(streakData.streak).forEach(([date, isActive]) => {
       // Skip the 'month' and 'year' properties
       if (date === "month" || date === "year") return;
 
@@ -77,22 +74,27 @@ const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
   }
 
   const days = Array.from({ length: totalDays }, (_, i) => i + 1);
-  ////console.log("days", days);
 
-  if (
-    isLoading ||
-    error ||
-    !data ||
-    !data.streak ||
-    Object.keys(data.streak).length === 0
-  ) {
+  const isLoadingState =
+    (!dataOverride && isLoading) ||
+    !streakData ||
+    !streakData.streak ||
+    Object.keys(streakData.streak).length === 0;
+
+  if (isLoadingState || error) {
     return (
       <div className="flex flex-col w-full  transition-all duration-300 px-0 md:p-4 rounded-3xl md:mt-6">
-        <Streak showProgress={false} clientId={clientId} />
+        <Streak
+          showProgress={false}
+          clientId={clientId}
+          dataOverride={streakData}
+        />
         <h2 className="text-xl font-semibold text-gray-800 mb-3">
           Weekly Streaks
         </h2>
-        {!data || !data.streak || Object.keys(data.streak).length === 0 ? (
+        {!streakData ||
+        !streakData.streak ||
+        Object.keys(streakData.streak).length === 0 ? (
           <p className="text-[14px] text-[var(--neutral-400)] mb-8">
             No Streak data available
           </p>
@@ -116,7 +118,11 @@ const StreakTable: React.FC<StreakTableProps> = ({ clientId }) => {
 
   return (
     <div className="flex flex-col w-full lg:min-w-[270px] xl:min-w-[350px] transition-all duration-300 px-0 md:p-4 rounded-3xl md:mt-6">
-      <Streak showProgress={false} clientId={clientId} />
+      <Streak
+        showProgress={false}
+        clientId={clientId}
+        dataOverride={streakData}
+      />
       <h2 className="text-xl font-semibold text-gray-800 mb-3">
         Weekly Streaks
       </h2>

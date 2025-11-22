@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
@@ -12,11 +12,11 @@ interface LeaderboardResponse {
 
 const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
   const { t } = useTranslation();
+  const normalizedClientId = Number(clientId) || 0;
   const { data, isLoading, error } = useQuery<LeaderboardItem[]>({
-    queryKey: ["leaderboard", clientId],
+    queryKey: ["leaderboard", normalizedClientId],
     queryFn: async () => {
-      const response = await getLeaderboardData(clientId);
-      console.log("Leaderboard response:", response);
+      const response = await getLeaderboardData(normalizedClientId);
       // Handle both array and object with leaderboard property
       if (Array.isArray(response)) {
         return response;
@@ -29,10 +29,12 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
       }
       return [];
     },
+    enabled: normalizedClientId > 0,
   });
 
-  // Filter out specific backend users that should not be displayed
-  const filteredData = data?.filter((item: LeaderboardItem) => {
+  // Filter out specific backend users that should not be displayed (memoized)
+  const filteredData = useMemo(() => {
+    if (!data) return undefined;
     const namesToExclude = [
       "shubham lal",
       "balbir",
@@ -45,8 +47,11 @@ const Leaderboard: React.FC<{ clientId: number }> = ({ clientId }) => {
       "Soumic Sarkar",
       "i learning",
     ];
-    return !namesToExclude.includes(item.name.toLowerCase());
-  });
+    return data.filter(
+      (item: LeaderboardItem) =>
+        !namesToExclude.includes(item.name.toLowerCase())
+    );
+  }, [data]);
 
   if (isLoading || error || !filteredData || filteredData.length === 0) {
     return (

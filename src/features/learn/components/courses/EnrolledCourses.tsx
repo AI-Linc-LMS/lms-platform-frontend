@@ -1,10 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useDispatch, useSelector } from "react-redux";
+import React, { useRef, useState } from "react";
+import { useSelector } from "react-redux";
 import { useTranslation } from "react-i18next";
-import { useLocation } from "react-router-dom";
-import { getEnrolledCourses } from "../../../../services/enrolled-courses-content/coursesApis";
-import { setCourses } from "../../../../redux/slices/courseSlice";
 import { RootState } from "../../../../redux/store";
 import { Course } from "../../types/final-course.types";
 import PrimaryButton from "../../../../commonComponents/common-buttons/primary-button/PrimaryButton";
@@ -12,6 +8,7 @@ import CourseCardV2 from "./course-card-v2/CourseCardV2";
 
 interface EnrolledCoursesProps {
   className?: string;
+  isLoading?: boolean;
 }
 
 export const transformCourseData = (backendCourse: Course): Course => {
@@ -97,63 +94,14 @@ const EmptyCoursesState = () => {
 
 const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
   className = "",
+  isLoading = false,
 }) => {
-  const clientId = import.meta.env.VITE_CLIENT_ID;
-  const dispatch = useDispatch();
   const { t } = useTranslation();
-  const location = useLocation();
-  const queryClient = useQueryClient();
-  const Courses = useSelector(
+  const courses = useSelector(
     (state: RootState) => state.courses.courses
   ) as unknown as Course[];
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["Courses"],
-    queryFn: () => getEnrolledCourses(clientId),
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    refetchOnReconnect: true,
-    staleTime: 0, // Consider data stale immediately
-    gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
-  });
-
-  //console.log("enrolled courses data:", data);
-
-  useEffect(() => {
-    if (data) {
-      dispatch(setCourses(data));
-    }
-  }, [data, dispatch]);
-
-  // Force refetch when page becomes visible (user returns from another page)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        // Page is now visible, invalidate and refetch courses
-        queryClient.invalidateQueries({ queryKey: ["Courses"] });
-        // Also refresh streak data when courses are refreshed
-        queryClient.invalidateQueries({ queryKey: ["streakTable", clientId] });
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [queryClient, clientId]);
-
-  // Refetch when navigating back to this component
-  useEffect(() => {
-    // Only invalidate if we're on a dashboard/learn page
-    if (location.pathname === "/" || location.pathname.includes("/learn")) {
-      queryClient.invalidateQueries({ queryKey: ["Courses"] });
-      // Also refresh streak data when navigating back to dashboard/learn
-      queryClient.invalidateQueries({ queryKey: ["streakTable", clientId] });
-    }
-  }, [location.pathname, queryClient, clientId]);
 
   const handleCarouselScroll = () => {
     const sc = scrollContainerRef.current;
@@ -189,10 +137,9 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
   };
 
   if (isLoading) return <p>{t("courses.loading")}</p>;
-  if (error) return <p>{t("courses.error")}</p>;
 
   // Handle empty courses array
-  const hasNoCourses = !Courses || Courses.length === 0;
+  const hasNoCourses = !courses || courses.length === 0;
 
   return (
     <div className="overflow-visible">
@@ -219,7 +166,7 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
             className={`flex overflow-x-auto overflow-y-visible scroll-smooth space-x-4 transition-all duration-300 md:pt-8 pt-3 ${className}`}
             style={{ scrollSnapType: "x mandatory" }}
           >
-            {Courses.map((course: Course) => (
+            {courses.map((course: Course) => (
               <div
                 key={course.id}
                 className="flex-shrink-0 w-full md:w-1/2 scroll-snap-align-start transition-transform duration-300 overflow-visible"
@@ -231,7 +178,7 @@ const EnrolledCourses: React.FC<EnrolledCoursesProps> = ({
           </div>
           {!hasNoCourses && (
             <div className="flex justify-center items-center space-x-3 pt-4">
-              {Courses.map((_, index) => (
+              {courses.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => handleDotClick(index)}
