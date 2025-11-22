@@ -13,8 +13,6 @@ interface ResumeHeaderProps {
   onColorChange?: (color: string) => void; // Optional, for compatibility
   colorScheme?: ColorScheme;
   onColorSchemeChange?: (scheme: ColorScheme, themeColor: string) => void;
-  onExport: () => void;
-  onImport: () => void;
   onDownloadPDF: () => void;
   onLoadSampleData?: () => void;
   zoom: number;
@@ -27,8 +25,6 @@ const ResumeHeader: React.FC<ResumeHeaderProps> = ({
   onTemplateChange,
   colorScheme = "Professional Blue",
   onColorSchemeChange,
-  onExport,
-  onImport,
   onDownloadPDF,
   onLoadSampleData,
   zoom,
@@ -115,32 +111,6 @@ const ResumeHeader: React.FC<ResumeHeaderProps> = ({
             <span className="hidden sm:inline">Load Sample</span>
           </button>
         )}
-
-        <div className="h-5 w-px bg-gray-200" />
-
-        {/* Export/Import Group */}
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={onImport}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 text-xs font-medium shadow-sm hover:shadow-md"
-            title="Import Resume Data"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
-            <span className="hidden sm:inline">Import</span>
-          </button>
-          <button
-            onClick={onExport}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 text-xs font-medium shadow-sm hover:shadow-md"
-            title="Export Resume Data"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            <span className="hidden sm:inline">Export</span>
-          </button>
-        </div>
 
         <div className="h-5 w-px bg-gray-200" />
 

@@ -64,6 +64,26 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
     return sectionOrder || defaultOrder;
   };
 
+  // Helper function to get platform label from URL
+  const getPlatformLabel = (url: string): string => {
+    if (!url) return "";
+    const lowerUrl = url.toLowerCase();
+    if (lowerUrl.includes("linkedin")) return "LinkedIn";
+    if (lowerUrl.includes("github")) return "GitHub";
+    if (lowerUrl.includes("twitter") || lowerUrl.includes("x.com")) return "Twitter";
+    if (lowerUrl.includes("hackerrank")) return "HackerRank";
+    if (lowerUrl.includes("leetcode")) return "LeetCode";
+    if (lowerUrl.includes("codechef")) return "CodeChef";
+    if (lowerUrl.includes("hackerearth")) return "HackerEarth";
+    if (lowerUrl.includes("cssbattle")) return "CSSBattle";
+    // For website, extract domain name or return "Website"
+    if (url.match(/^https?:\/\//)) {
+      const domain = url.replace(/^https?:\/\//, "").split("/")[0];
+      return domain.replace(/^www\./, "");
+    }
+    return "Website";
+  };
+
   const renderSection = (sectionId: string) => {
     switch (sectionId) {
       case "personal":
@@ -405,61 +425,91 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
             {personalInfo.linkedin && (
               <a
                 href={personalInfo.linkedin}
-                className="text-gray-600 hover:text-gray-800"
+                className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                linkedin.com/in/{personalInfo.linkedin.split("/").pop()}
+                {getPlatformLabel(personalInfo.linkedin)}
               </a>
             )}
             {personalInfo.github && (
               <a
                 href={personalInfo.github}
-                className="text-gray-600 hover:text-gray-800"
+                className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                github.com/{personalInfo.github.split("/").pop()}
+                {getPlatformLabel(personalInfo.github)}
               </a>
             )}
             {personalInfo.website && (
               <a
                 href={personalInfo.website}
-                className="text-gray-600 hover:text-gray-800"
+                className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {personalInfo.website.replace(/^https?:\/\//, "")}
+                {getPlatformLabel(personalInfo.website)}
               </a>
             )}
             {personalInfo.twitter && (
               <a
                 href={personalInfo.twitter}
-                className="text-gray-600 hover:text-gray-800"
+                className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                twitter.com/{personalInfo.twitter.split("/").pop()}
+                {getPlatformLabel(personalInfo.twitter)}
               </a>
             )}
             {personalInfo.hackerrank && (
               <a
                 href={personalInfo.hackerrank}
-                className="text-gray-600 hover:text-gray-800"
+                className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                hackerrank.com/{personalInfo.hackerrank.split("/").pop()}
+                {getPlatformLabel(personalInfo.hackerrank)}
               </a>
             )}
             {personalInfo.leetcode && (
               <a
                 href={personalInfo.leetcode}
-                className="text-gray-600 hover:text-gray-800"
+                className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                leetcode.com/{personalInfo.leetcode.split("/").pop()}
+                {getPlatformLabel(personalInfo.leetcode)}
+              </a>
+            )}
+            {personalInfo.codechef && (
+              <a
+                href={personalInfo.codechef}
+                className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {getPlatformLabel(personalInfo.codechef)}
+              </a>
+            )}
+            {personalInfo.hackerearth && (
+              <a
+                href={personalInfo.hackerearth}
+                className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {getPlatformLabel(personalInfo.hackerearth)}
+              </a>
+            )}
+            {personalInfo.cssbattle && (
+              <a
+                href={personalInfo.cssbattle}
+                className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {getPlatformLabel(personalInfo.cssbattle)}
               </a>
             )}
           </div>
