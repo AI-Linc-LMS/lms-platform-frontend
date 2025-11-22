@@ -30,6 +30,34 @@ const queryClient = new QueryClient({
 
 const isPWAEnabled = import.meta.env.VITE_ENABLE_PWA === "true";
 
+// Unregister all service workers and clear caches to prevent API caching issues
+// This runs asynchronously and non-blocking to avoid delays
+const unregisterServiceWorkers = () => {
+  // Use setTimeout to make it non-blocking
+  setTimeout(async () => {
+    if ("serviceWorker" in navigator) {
+      try {
+        // Unregister all service workers
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(
+          registrations.map((registration) => registration.unregister())
+        );
+
+        // Clear all caches
+        if ("caches" in window) {
+          const cacheNames = await caches.keys();
+          await Promise.all(cacheNames.map((name) => caches.delete(name)));
+        }
+      } catch (error) {
+        // Silently fail if service worker operations fail
+      }
+    }
+  }, 0);
+};
+
+// Unregister service workers immediately on app start (non-blocking)
+unregisterServiceWorkers();
+
 if (isPWAEnabled) {
   void import("./pwa").then(({ initializePWA }) => {
     initializePWA({
@@ -40,15 +68,13 @@ if (isPWAEnabled) {
   });
 }
 
-const registerModulePath = isPWAEnabled
-  ? "virtual:pwa-register"
-  : "./pwa/register-sw-stub";
-
-void import(/* @vite-ignore */ registerModulePath).then(({ registerSW }) => {
-  if (isPWAEnabled) {
+// Skip service worker registration when PWA flag is enabled
+if (!isPWAEnabled) {
+  const registerModulePath = "./pwa/register-sw-stub";
+  void import(/* @vite-ignore */ registerModulePath).then(({ registerSW }) => {
     registerSW({ immediate: true });
-  }
-});
+  });
+}
 
 startPerfMonitoring();
 

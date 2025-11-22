@@ -72,6 +72,11 @@ export class PWAManager {
 
   // ✅ Enhanced service worker registration with proper reload guards
   async registerServiceWorker(): Promise<void> {
+    // Disable service worker when PWA flag is enabled
+    if (import.meta.env.VITE_ENABLE_PWA === "true") {
+      return;
+    }
+
     if ("serviceWorker" in navigator) {
       try {
         // ✅ Check if we just reloaded due to SW update
@@ -638,6 +643,31 @@ export const pwaManager = new PWAManager();
 
 // ✅ Initialization function
 export const initializePWA = async (config?: PWAConfig): Promise<void> => {
+  // Disable service worker when PWA flag is enabled
+  if (import.meta.env.VITE_ENABLE_PWA === "true") {
+    // Unregister any existing service workers (non-blocking)
+    // Use setTimeout to avoid blocking initialization
+    setTimeout(async () => {
+      if ("serviceWorker" in navigator) {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(
+            registrations.map((registration) => registration.unregister())
+          );
+          
+          // Clear all caches
+          if ("caches" in window) {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map((name) => caches.delete(name)));
+          }
+        } catch (error) {
+          // Silently fail
+        }
+      }
+    }, 0);
+    return;
+  }
+
   if (config) {
     pwaManager.setConfig(config);
   }
