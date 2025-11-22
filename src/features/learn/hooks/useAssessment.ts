@@ -70,10 +70,11 @@ export const useAssessment = (assessmentId?: string) => {
   } = useQuery({
     queryKey: ["questionsData", currentAssessmentId],
     queryFn: () => startAssessment(clientId, currentAssessmentId),
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    staleTime: 0,
-    gcTime: 0,
+    refetchOnWindowFocus: false, // Disabled to prevent refetch during assessment
+    refetchOnMount: false, // Only refetch if data is stale (assessment questions shouldn't change during session)
+    refetchOnReconnect: true, // Refetch on network reconnect
+    staleTime: 1000 * 60 * 30, // 30 minutes - assessment questions shouldn't change during active session
+    gcTime: 1000 * 60 * 60, // 60 minutes - keep in cache
   });
 
   const finalAssessmentId = questions?.slug ?? currentAssessmentId;
@@ -87,9 +88,7 @@ export const useAssessment = (assessmentId?: string) => {
         referralCode || undefined
       ),
     onSuccess: (data) => {
-      //console.log("Final assessment submitted successfully:", data);
       if (referralCode) {
-        //console.log("Assessment submitted with referral code:", referralCode);
         // Clear the referral code after successful submission
         clearStoredReferralCode();
       }
@@ -192,7 +191,7 @@ export const useAssessment = (assessmentId?: string) => {
         const answer = userAnswers.quizSectionId[0][sectionId][questionId];
         setSelectedOption(answer || null);
       } catch {
-        //console.error("Error setting selected option:", error);
+        // Error setting selected option
         setSelectedOption(null);
       }
     } else {
@@ -208,9 +207,7 @@ export const useAssessment = (assessmentId?: string) => {
         if (prev <= 1) {
           finalSubmitMutation.mutate(userAnswers, {
             onSuccess: (data) => {
-              //console.log("Assessment auto-submitted successfully:", data);
               if (referralCode) {
-                //console.log("Assessment auto-submitted with referral code:", referralCode);
               }
               if (data) {
                 setAssessmentResult({
@@ -221,7 +218,7 @@ export const useAssessment = (assessmentId?: string) => {
               }
             },
             onError: () => {
-              //console.error("Error auto-submitting assessment:", error);
+              // Error auto-submitting assessment
               setIsCompleted(true);
             },
           });
@@ -249,7 +246,7 @@ export const useAssessment = (assessmentId?: string) => {
         };
         return { quizSectionId: [updatedSection] };
       } catch {
-        //console.error("Error updating user answers:", error);
+        // Error updating user answers
         return prev;
       }
     });
@@ -270,17 +267,14 @@ export const useAssessment = (assessmentId?: string) => {
   };
 
   const handleFinishAssessment = () => {
-    //console.log("Submitted userAnswers:", userAnswers);
     if (referralCode) {
-      //console.log("Finishing assessment with referral code:", referralCode);
     }
     finalSubmitMutation.mutate(userAnswers, {
       onSuccess: () => {
-        //console.log("Final assessment submitted successfully");
         setIsCompleted(true);
       },
       onError: () => {
-        //console.error("Error submitting final assessment:", error);
+        // Error submitting final assessment
         setIsCompleted(true);
       },
     });
@@ -304,7 +298,7 @@ export const useAssessment = (assessmentId?: string) => {
       }
       return "bg-white border-gray-300 text-gray-600";
     } catch {
-      //console.error("Error getting question button style:", error);
+      // Error getting question button style
       return "bg-white border-gray-300 text-gray-600";
     }
   };

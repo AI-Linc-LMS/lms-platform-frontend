@@ -210,16 +210,12 @@ export const recoverAndSendEmergencyData = async (): Promise<void> => {
         recoveryPayload
       );
 
-      console.log("Emergency session data recovered and sent:", {
-        sessionDuration: emergencyData.sessionDuration,
-        recoveredAt: new Date().toISOString(),
-      });
     }
 
     // Clear the emergency data after successful recovery
     localStorage.removeItem("emergencySessionData");
   } catch (error) {
-    console.error("Failed to recover emergency session data:", error);
+    // Error recovering emergency session data
     // Clear potentially corrupted data
     localStorage.removeItem("emergencySessionData");
   }

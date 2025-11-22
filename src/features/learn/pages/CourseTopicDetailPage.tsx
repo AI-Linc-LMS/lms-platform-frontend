@@ -18,6 +18,7 @@ import { ContentType } from "../../../commonComponents/sidebar/courseSidebar/com
 import { ContentAvailability } from "../../../commonComponents/sidebar/courseSidebar/CourseSidebar";
 import StreakCongratulationsModal from "../../../components/StreakCongratulationsModal";
 import { useMonthlyStreakCongrats } from "../../../hooks/useMonthlyStreakCongrats";
+import { STREAK_QUERY_KEY } from "../hooks/useStreakData";
 
 export interface SubmoduleContent {
   content_type: ContentType;
@@ -111,34 +112,35 @@ const CourseTopicDetailPage: React.FC = () => {
   >();
   const [isSwitchingTopic, setIsSwitchingTopic] = useState(false);
 
-  //console.log("activeSidebarLabel", activeSidebarLabel);
 
   // Effect to clear all cached content when switching topics/submodules
   useEffect(() => {
     if (courseId && submoduleId) {
       setIsSwitchingTopic(true);
 
-      // Clear all content-related queries when switching to a new topic
-      queryClient.removeQueries({
-        predicate: (query) => {
-          const queryKey = query.queryKey;
-          return (
-            Array.isArray(queryKey) &&
-            queryKey.length >= 2 &&
-            (queryKey[0] === "video" ||
-              queryKey[0] === "quiz" ||
-              queryKey[0] === "article" ||
-              queryKey[0] === "problem" ||
-              queryKey[0] === "assignment" ||
-              queryKey[0] === "comments" ||
-              queryKey[0] === "submodule")
-          );
-        },
+      // Only clear content-related queries for the specific course/submodule
+      // This is more targeted than invalidating all queries
+      const contentQueryKeys = [
+        "video",
+        "quiz",
+        "article",
+        "problem",
+        "assignment",
+        "comments",
+      ];
+      contentQueryKeys.forEach((key) => {
+        queryClient.removeQueries({
+          predicate: (query) => {
+            const queryKey = query.queryKey;
+            return (
+              Array.isArray(queryKey) &&
+              queryKey.length >= 2 &&
+              queryKey[0] === key &&
+              queryKey[1] === courseId
+            );
+          },
+        });
       });
-
-      // Also clear cache more aggressively
-      queryClient.invalidateQueries();
-      queryClient.refetchQueries();
 
       // Clear window temporary data that causes stale sidebar content
       const w = window as unknown as { temporarySubmoduleData?: SubmoduleData };
@@ -169,7 +171,7 @@ const CourseTopicDetailPage: React.FC = () => {
   }, [isMobile]);
 
   const clientId = Number(import.meta.env.VITE_CLIENT_ID);
-  const streakQueryKey = clientId ? ["streakTable", clientId] : null;
+  const streakQueryKey = clientId ? [STREAK_QUERY_KEY, clientId] : null;
 
   // Hook for streak congratulations modal
   const {
@@ -207,9 +209,8 @@ const CourseTopicDetailPage: React.FC = () => {
         parseInt(submoduleId || "0")
       ),
     enabled: !!courseId && !!submoduleId,
-    // Ensure fresh data when switching between topics
-    staleTime: 0,
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes but always refetch
+    staleTime: 1000 * 60 * 5, // 5 minutes - cache data to reduce unnecessary refetches
+    gcTime: 1000 * 60 * 10, // 10 minutes - keep in cache for faster navigation
   });
   // Calculate content availability
   const contentAvailability = getContentAvailability(submoduleData);
@@ -302,7 +303,6 @@ const CourseTopicDetailPage: React.FC = () => {
   const videoProps = {
     selectedVideoId,
     onVideoClick: (id: string) => {
-      //console.log("Video Clicked - ID:", id);
       setSelectedVideoId(id);
       setSelectedContentId(parseInt(id));
       const videoIndex = submoduleData?.data?.findIndex(
@@ -318,7 +318,6 @@ const CourseTopicDetailPage: React.FC = () => {
   const quizProps = {
     selectedQuizId,
     onSelectQuiz: (id: number) => {
-      //console.log("Quiz Selected - ID:", id);
       setSelectedQuizId(id);
       setSelectedContentId(id);
       const quizIndex = submoduleData?.data?.findIndex(
@@ -334,7 +333,6 @@ const CourseTopicDetailPage: React.FC = () => {
   const problemProps = {
     selectedProblemId,
     onProblemSelect: (id: string) => {
-      //console.log("Problem Selected - ID:", id);
       setSelectedProblemId(id);
       setSelectedContentId(parseInt(id));
       const problemIndex = submoduleData?.data?.findIndex(
@@ -350,7 +348,6 @@ const CourseTopicDetailPage: React.FC = () => {
   const articleProps = {
     selectedArticleId,
     onArticleClick: (id: number) => {
-      //console.log("Article Selected - ID:", id);
       setSelectedArticleId(id);
       setSelectedContentId(id);
       const articleIndex = submoduleData?.data?.findIndex(
@@ -366,7 +363,6 @@ const CourseTopicDetailPage: React.FC = () => {
   const developmentProps = {
     selectedProjectId,
     onProjectSelect: (id: string) => {
-      //console.log("Project Selected - ID:", id);
       setSelectedProjectId(id);
       setSelectedContentId(parseInt(id));
       const projectIndex = submoduleData?.data?.findIndex(
@@ -381,7 +377,6 @@ const CourseTopicDetailPage: React.FC = () => {
   const subjectiveProps = {
     selectedAssignmentId,
     onAssignmentClick: (id: number) => {
-      //console.log("Assignment Selected - ID:", id);
       setSelectedAssignmentId(id);
       setSelectedContentId(id);
       const assignmentIndex = submoduleData?.data?.findIndex(
@@ -708,7 +703,6 @@ const CourseTopicDetailPage: React.FC = () => {
   };
   // Update the updateProblemStatus function to take an optional parameter to skip API calls
   const updateProblemStatus = (problemId: string, status: string): void => {
-    //console.log(`Updating problem ${problemId} status to ${status}, updateBackend=${updateBackend}`);
 
     if (submoduleData?.data) {
       const updatedData = [...submoduleData.data];
@@ -719,7 +713,6 @@ const CourseTopicDetailPage: React.FC = () => {
       );
 
       if (problemIndex !== -1) {
-        //console.log(`Found problem at index ${problemIndex}`);
         // First update the state in memory for immediate UI feedback
         updatedData[problemIndex] = {
           ...updatedData[problemIndex],
@@ -752,10 +745,8 @@ const CourseTopicDetailPage: React.FC = () => {
           });
         }
       } else {
-        //console.error(`Problem with ID ${problemId} not found in submoduleData`);
       }
     } else {
-      //console.error("No submoduleData available");
     }
   };
 
@@ -981,7 +972,6 @@ const CourseTopicDetailPage: React.FC = () => {
                 contentId={currentContent.id}
                 courseId={parseInt(courseId || "0")}
                 onSubmit={() => {
-                  //console.log("Submitted code:", code);
                 }}
                 onComplete={() => {
                   updateProblemStatus(currentContent.id.toString(), "complete");
@@ -1011,7 +1001,6 @@ const CourseTopicDetailPage: React.FC = () => {
                 contentId={currentContent.id}
                 courseId={parseInt(courseId || "0")}
                 onMarkComplete={() => {
-                  //console.log("Marked as completed");
                   updateProblemStatus(currentContent.id.toString(), "complete");
                 }}
               />
@@ -1032,12 +1021,8 @@ const CourseTopicDetailPage: React.FC = () => {
                 initialCss=""
                 initialJs=""
                 difficulty="Medium"
-                onSubmit={(html, css, js) => {
-                  console.log("Submitted development project:", {
-                    html,
-                    css,
-                    js,
-                  });
+                onSubmit={() => {
+                  // Development project submission handled by component
                 }}
               />
             )}

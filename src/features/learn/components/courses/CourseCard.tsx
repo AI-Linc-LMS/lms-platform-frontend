@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, memo } from "react";
 import CourseCardV2 from "./course-card-v2/CourseCardV2";
 
 import { CourseData } from "../../types/final-course.types";
@@ -14,7 +14,7 @@ interface CourseCardProps {
   onToggleExpand: () => void; // ✅ controlled by parent
 }
 
-const CourseCard: React.FC<CourseCardProps> = ({
+const CourseCard: React.FC<CourseCardProps> = memo(({
   course,
   className = "",
   isLoading = false,
@@ -73,6 +73,8 @@ const CourseCard: React.FC<CourseCardProps> = ({
       <CourseCardV2 course={course} enrolled={false} className={className} />
     </>
   );
-};
+});
+
+CourseCard.displayName = "CourseCard";
 
 export default CourseCard;

@@ -114,10 +114,9 @@ export const handleUserLogin = (): void => {
     // Log the account switch for debugging
     const authenticatedUserId = getAuthenticatedUserId();
     if (authenticatedUserId) {
-      console.log(`User logged in with account ID: ${authenticatedUserId}`);
     }
   } catch {
-    console.error('Error handling user login');
+    // Error handling user login
   }
 };
 
@@ -131,9 +130,8 @@ export const handleUserLogout = (): void => {
     // We'll generate a new anonymous ID for the next session
     regenerateAnonymousUserId();
     
-    console.log('User logged out, generated new anonymous ID');
   } catch {
-    console.error('Error handling user logout');
+    // Error handling user logout
   }
 };
 

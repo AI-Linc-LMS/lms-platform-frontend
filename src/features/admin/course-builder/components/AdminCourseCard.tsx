@@ -455,10 +455,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
     const normalizedNew = title.toLowerCase().replace(/[^a-z0-9]/g, "");
 
     if (originalSlug && normalizedOriginal === normalizedNew) {
-      console.log(
-        "Title change is just formatting, keeping original slug:",
-        originalSlug
-      );
       return originalSlug;
     }
 
@@ -472,7 +468,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
       finalSlug = `${baseSlug}-${timestamp}`;
     }
 
-    console.log("Generated slug:", { title, originalSlug, finalSlug });
     return finalSlug;
   };
 
@@ -505,24 +500,16 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
         }),
       };
 
-      console.log("Updating course with data:", updateData);
-      console.log("Original course data:", {
-        id: course.id,
-        title: course.title,
-        rating: course.rating,
-        difficulty_level: course.difficulty_level,
-      });
       return updateCourse(clientId, course.id, updateData);
     },
-    onSuccess: (updatedCourse) => {
-      console.log("Course updated successfully:", updatedCourse);
+    onSuccess: () => {
       // Invalidate admin dashboard courses
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.refetchQueries({ queryKey: ["courses"] });
 
       // Invalidate ALL frontend course queries to update course cards v2
       queryClient.invalidateQueries({ queryKey: ["all-courses"] });
-      queryClient.invalidateQueries({ queryKey: ["Courses"] }); // Enrolled courses
+      queryClient.invalidateQueries({ queryKey: ["courses"] }); // Enrolled courses
       queryClient.invalidateQueries({
         queryKey: ["course", course.id.toString()],
       });
@@ -540,12 +527,12 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
 
       // Refetch the main frontend courses queries
       queryClient.refetchQueries({ queryKey: ["all-courses"] });
-      queryClient.refetchQueries({ queryKey: ["Courses"] });
+      queryClient.refetchQueries({ queryKey: ["courses"] });
 
       success("Course Updated", "Course has been successfully updated.");
     },
     onError: (error: Error) => {
-      console.error("Course update failed:", error);
+      // Course update failed
       showError("Update Failed", error.message);
 
       // Rollback optimistic updates by refetching
@@ -590,10 +577,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
     }
 
     if (trimmedTitle !== course.title) {
-      console.log("Saving title change:", {
-        from: course.title,
-        to: trimmedTitle,
-      });
       updateCourseMutation.mutate({ title: trimmedTitle });
     }
     setIsEditingTitle(false);
@@ -627,10 +610,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
     }
 
     if (trimmedDescription !== course.description) {
-      console.log("Saving description change:", {
-        from: course.description,
-        to: trimmedDescription,
-      });
       updateCourseMutation.mutate({ description: trimmedDescription });
     }
     setIsEditingDescription(false);
@@ -661,10 +640,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
 
     if (Math.abs(numericRating - courseRating) > 0.01) {
       // Allow for small floating point differences
-      console.log("Saving rating change:", {
-        from: courseRating,
-        to: numericRating,
-      });
 
       // Store rating locally for immediate persistence
       setStoredRating(course.id, numericRating);
@@ -679,7 +654,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
 
       updateCourseMutation.mutate({ rating: numericRating });
     } else {
-      console.log("Rating unchanged, not saving");
     }
     setIsEditingRating(false);
   };
@@ -699,10 +673,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
 
   const handleDifficultySave = () => {
     if (tempDifficulty !== courseDifficulty) {
-      console.log("Saving difficulty change:", {
-        from: courseDifficulty,
-        to: tempDifficulty,
-      });
 
       // Store difficulty locally for immediate persistence
       setStoredDifficulty(course.id, tempDifficulty);
@@ -717,7 +687,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
 
       updateCourseMutation.mutate({ difficulty_level: tempDifficulty });
     } else {
-      console.log("Difficulty unchanged, not saving");
     }
     setIsEditingDifficulty(false);
   };
@@ -743,10 +712,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
     });
 
     if (numericDuration !== currentDuration && numericDuration > 0) {
-      console.log("Saving duration change:", {
-        from: currentDuration,
-        to: numericDuration,
-      });
 
       // Store duration locally for immediate persistence
       setStoredDuration(course.id, numericDuration);
@@ -761,7 +726,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
 
       updateCourseMutation.mutate({ duration_in_hours: numericDuration });
     } else {
-      console.log("Duration unchanged or invalid, not saving");
     }
     setIsEditingDuration(false);
   };
@@ -833,10 +797,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
       JSON.stringify(tempCompanies.sort()) !==
       JSON.stringify(currentCompanies.sort())
     ) {
-      console.log("Saving companies change:", {
-        from: currentCompanies,
-        to: tempCompanies,
-      });
 
       // Store companies locally for immediate persistence
       setStoredCompanies(course.id, tempCompanies);
@@ -854,7 +814,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
         "Company selection has been updated and will be reflected in the frontend."
       );
     } else {
-      console.log("Companies unchanged, not saving");
     }
     setIsEditingCompanies(false);
   };
@@ -886,10 +845,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
       JSON.stringify(tempLearningObjectives) !==
       JSON.stringify(currentObjectives)
     ) {
-      console.log("Saving learning objectives change:", {
-        from: currentObjectives,
-        to: tempLearningObjectives,
-      });
 
       // Store learning objectives locally for immediate persistence
       setStoredLearningObjectives(course.id, tempLearningObjectives);
@@ -906,7 +861,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
         "Learning objectives have been updated and will be reflected in the frontend."
       );
     } else {
-      console.log("Learning objectives unchanged, not saving");
     }
     setIsEditingLearningObjectives(false);
   };
@@ -950,7 +904,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
     if (
       JSON.stringify(tempTags.sort()) !== JSON.stringify(currentTags.sort())
     ) {
-      console.log("Saving tags change:", { from: currentTags, to: tempTags });
 
       // Store tags locally for immediate persistence
       setStoredCourseTags(course.id, tempTags);
@@ -967,7 +920,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
         "Course tags have been updated and will be reflected in the frontend."
       );
     } else {
-      console.log("Tags unchanged, not saving");
     }
     setIsEditingTags(false);
   };
@@ -997,10 +949,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
       enrolled_students: course.enrolled_students,
     });
     if (JSON.stringify(tempStudentStats) !== JSON.stringify(currentStats)) {
-      console.log("Saving student stats change:", {
-        from: currentStats,
-        to: tempStudentStats,
-      });
 
       // Store student stats locally for immediate persistence
       setStoredStudentStats(course.id, tempStudentStats);
@@ -1017,7 +965,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
         "Student rating statistics have been updated and will be reflected in the frontend."
       );
     } else {
-      console.log("Student stats unchanged, not saving");
     }
     setIsEditingStudentStats(false);
   };
@@ -1038,10 +985,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
       enrolled_students: course.enrolled_students,
     });
     if (JSON.stringify(tempJobPlacement) !== JSON.stringify(currentPlacement)) {
-      console.log("Saving job placement change:", {
-        from: currentPlacement,
-        to: tempJobPlacement,
-      });
 
       // Store job placement locally for immediate persistence
       setStoredJobPlacement(course.id, tempJobPlacement);
@@ -1058,7 +1001,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
         "Job placement information has been updated and will be reflected in the frontend."
       );
     } else {
-      console.log("Job placement unchanged, not saving");
     }
     setIsEditingJobPlacement(false);
   };
@@ -1072,11 +1014,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
   const handleWhatsIncludedSave = () => {
     if (whatsIncludedError) return;
 
-    console.log(
-      "🗂️ Admin: Saving what's included for course:",
-      course.id,
-      tempWhatsIncluded
-    );
 
     try {
       setStoredWhatsIncluded(course.id, tempWhatsIncluded);
@@ -1087,9 +1024,8 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
       queryClient.invalidateQueries({ queryKey: ["course", course.id] });
       queryClient.invalidateQueries({ queryKey: ["courses"] });
 
-      console.log("✅ Admin: What's included saved successfully");
     } catch (error) {
-      console.error("❌ Admin: Failed to save what's included:", error);
+      // Failed to save what's included
     }
   };
 
@@ -1135,11 +1071,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
   const handleFeaturesSave = () => {
     if (featuresError) return;
 
-    console.log(
-      "🎯 Admin: Saving features for course:",
-      course.id,
-      tempFeatures
-    );
 
     try {
       setStoredFeatures(course.id, tempFeatures);
@@ -1150,9 +1081,8 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
       queryClient.invalidateQueries({ queryKey: ["course", course.id] });
       queryClient.invalidateQueries({ queryKey: ["courses"] });
 
-      console.log("✅ Admin: Features saved successfully");
     } catch (error) {
-      console.error("❌ Admin: Failed to save features:", error);
+      // Failed to save features
     }
   };
 
@@ -1198,11 +1128,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
   const handleRequirementsSave = () => {
     if (requirementsError) return;
 
-    console.log(
-      "📋 Admin: Saving requirements for course:",
-      course.id,
-      tempRequirements
-    );
 
     try {
       setStoredRequirements(course.id, tempRequirements);
@@ -1213,9 +1138,8 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
       queryClient.invalidateQueries({ queryKey: ["course", course.id] });
       queryClient.invalidateQueries({ queryKey: ["courses"] });
 
-      console.log("✅ Admin: Requirements saved successfully");
     } catch (error) {
-      console.error("❌ Admin: Failed to save requirements:", error);
+      // Failed to save requirements
     }
   };
 
@@ -1256,10 +1180,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
       JSON.stringify(tempInstructors?.sort((a: any, b: any) => a.id - b.id)) !==
       JSON.stringify(currentInstructors.sort((a: any, b: any) => a.id - b.id))
     ) {
-      console.log("💾 Saving instructors change:", {
-        from: currentInstructors,
-        to: tempInstructors,
-      });
 
       // Store instructors in centralized localStorage that frontend can access
       setStoredInstructors(course.id, tempInstructors as any);
@@ -1281,7 +1201,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
         "Course instructors have been updated and will reflect in frontend immediately."
       );
     } else {
-      console.log("Instructors unchanged, not saving");
     }
     setIsEditingInstructors(false);
   };
@@ -1319,9 +1238,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
   // Get rating and difficulty using centralized logic
   const courseRating = React.useMemo(() => {
     const effectiveRating = getEffectiveRating(course);
-    console.log(
-      `[AdminCard] Course ${course.id} (${course.title}): backend_rating=${course.rating}, effective=${effectiveRating}`
-    );
     return effectiveRating;
   }, [course]);
 
@@ -1330,21 +1246,11 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
       id: course.id,
       difficulty_level: course.difficulty_level,
     });
-    console.log(
-      `[AdminCard] Course ${course.id} (${course.title}): backend_difficulty=${course.difficulty_level}, effective=${effectiveDifficulty}`
-    );
     return effectiveDifficulty;
   }, [course]);
 
   const courseCompanies = React.useMemo(() => {
     const effectiveCompanies = getEffectiveCompanies({ id: course.id });
-    console.log(
-      `[AdminCard] Course ${course.id} (${
-        course.title
-      }): effective_companies=${effectiveCompanies
-        .map((c) => c.name)
-        .join(", ")}`
-    );
     return effectiveCompanies;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, companiesRefreshKey]); // companiesRefreshKey needed to force re-render after localStorage changes
@@ -1354,11 +1260,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
       id: course.id,
       learning_objectives: course.learning_objectives,
     });
-    console.log(
-      `[AdminCard] Course ${course.id} (${
-        course.title
-      }): effective_learning_objectives=${effectiveObjectives.join(", ")}`
-    );
     return effectiveObjectives;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, learningObjectivesRefreshKey]);
@@ -1369,9 +1270,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
       rating: course.rating,
       enrolled_students: course.enrolled_students,
     });
-    console.log(
-      `[AdminCard] Course ${course.id} (${course.title}): effective_student_stats=${effectiveStats.rating}/5 from ${effectiveStats.totalLearners} learners`
-    );
     return effectiveStats;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, studentStatsRefreshKey]);
@@ -1381,13 +1279,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
       id: course.id,
       enrolled_students: course.enrolled_students,
     });
-    console.log(
-      `[AdminCard] Course ${course.id} (${
-        course.title
-      }): effective_job_placement=${
-        effectivePlacement.totalLearners
-      } learners at ${effectivePlacement.companies.join(", ")}`
-    );
     return effectivePlacement;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, jobPlacementRefreshKey]);
@@ -1398,11 +1289,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
       whats_included: course.whats_included,
       stats: course.stats,
     });
-    console.log(
-      `[AdminCard] Course ${course.id} (${
-        course.title
-      }): effective_whats_included=${effectiveIncluded.join(", ")}`
-    );
     return effectiveIncluded;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, whatsIncludedRefreshKey]);
@@ -1414,11 +1300,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
       title: course.title,
       difficulty_level: course.difficulty_level,
     });
-    console.log(
-      `[AdminCard] Course ${course.id} (${
-        course.title
-      }): effective_tags=${effectiveTags.join(", ")}`
-    );
     return effectiveTags;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, tagsRefreshKey]);
@@ -1429,11 +1310,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
       features: course.features,
       stats: course.stats,
     });
-    console.log(
-      `[AdminCard] Course ${course.id} (${
-        course.title
-      }): effective_features=${effectiveFeatures.join(", ")}`
-    );
     return effectiveFeatures;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, featuresRefreshKey]);
@@ -1451,13 +1327,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
 
   const courseInstructors = React.useMemo(() => {
     const effectiveInstructors = getEffectiveInstructors(course);
-    console.log(
-      `[AdminCard] Course ${course.id} (${
-        course.title
-      }): effective_instructors=${effectiveInstructors
-        .map((i) => i.name)
-        .join(", ")}`
-    );
     return effectiveInstructors;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, instructorsRefreshKey]);
@@ -2085,7 +1954,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
               <button
                 onClick={async () => {
                   try {
-                    console.log("🚀 Starting comprehensive tag cleanup...");
 
                     // Step 1: Clear all tags for this course immediately
                     setTempTags([]);
@@ -2119,7 +1987,6 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
                       setTagsRefreshKey((prev) => prev + 1);
                     }, 200);
 
-                    console.log("✅ Comprehensive tag cleanup completed");
                     success(
                       "All Tags Cleared",
                       "Removed all tags from this course and cleaned up problematic tags globally. Changes are now reflected in both admin and frontend."
@@ -2128,7 +1995,7 @@ const AdminCourseCard: React.FC<AdminCourseCardProps> = ({
                     // Exit edit mode since changes are saved
                     setIsEditingTags(false);
                   } catch (error) {
-                    console.error("❌ Error during tag cleanup:", error);
+                    // Error during tag cleanup
                     success(
                       "Cleanup Error",
                       "There was an issue during cleanup. Please try again."

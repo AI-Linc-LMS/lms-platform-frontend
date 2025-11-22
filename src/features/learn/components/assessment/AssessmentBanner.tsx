@@ -28,10 +28,10 @@ const AssessmentBanner: React.FC<AssessmentBannerProps> = ({
   const { data, isLoading, error } = useQuery({
     queryKey: ["assessment-banner", assessmentId],
     queryFn: () => getAssessmentStatus(clientId, assessmentId),
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    staleTime: 0, // Data is always considered stale, so it will refetch
-    gcTime: 0, // Don't cache the data
+    refetchOnWindowFocus: false, // Disabled to reduce unnecessary refetches
+    refetchOnMount: false, // Only refetch if data is stale
+    staleTime: 1000 * 60 * 5, // 5 minutes - cache assessment status
+    gcTime: 1000 * 60 * 10, // 10 minutes - keep in cache
   });
 
   const handleTakeAssessment = async () => {
@@ -57,7 +57,7 @@ const AssessmentBanner: React.FC<AssessmentBannerProps> = ({
         navigate(urlWithReferral);
       }
     } catch (error) {
-      console.error("Error fetching assessment status:", error);
+      // Error handling - navigate to assessment even if status fetch fails
     }
   };
 

@@ -65,13 +65,11 @@ const ShortAssessment: React.FC = () => {
 
 
 
-    // After completion, invalidate the ["Courses"] query.
+    // After completion, invalidate the ["courses"] query.
 
     // This tells React Query that the course data is stale and needs to be refetched.
 
-    console.log("Assessment finished. Triggering refresh of enrolled courses...");
-
-    queryClient.invalidateQueries({ queryKey: ["Courses"] });
+    queryClient.invalidateQueries({ queryKey: ["courses"] });
 
   };
 

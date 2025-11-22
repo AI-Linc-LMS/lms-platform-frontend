@@ -49,11 +49,12 @@ const EnrolledCourseDetailPage: React.FC = () => {
   } = useQuery({
     queryKey: ["DashboardPieChart", courseId],
     queryFn: () => getCourseDashboard(clientId, parseInt(courseId!)),
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchOnWindowFocus: false, // Disabled to reduce unnecessary refetches
+    refetchOnMount: false, // Only refetch if data is stale
+    staleTime: 1000 * 60 * 5, // 5 minutes - cache data
+    gcTime: 1000 * 60 * 10, // 10 minutes - keep in cache
   });
 
-  //console.log("course", course);
   // Check if course data is empty or missing required fields
   const isCourseDataEmpty =
     !course ||

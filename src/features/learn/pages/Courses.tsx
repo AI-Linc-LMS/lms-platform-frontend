@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
 import { getAllCourse } from "../../../services/enrolled-courses-content/courseContentApis";
@@ -68,9 +68,17 @@ const Courses = () => {
     }
   }, [location.state]);
 
-  // Adapt API data to include fields needed for filtering
-  const courses = adaptCourses(apiCourses || []);
+  // Adapt API data to include fields needed for filtering (memoized)
+  const courses = useMemo(
+    () => adaptCourses(apiCourses || []),
+    [apiCourses]
+  );
   const [expandedCourseId, setExpandedCourseId] = useState<number | null>(null);
+
+  // Memoize toggle handler to prevent unnecessary re-renders
+  const handleToggleExpand = useCallback((courseId: number) => {
+    setExpandedCourseId((prev) => (prev === courseId ? null : courseId));
+  }, []);
 
   const {
     searchQuery,
@@ -201,11 +209,7 @@ const Courses = () => {
                     course={course as any}
                     clientId={clientId}
                     isExpanded={expandedCourseId === course.id}
-                    onToggleExpand={() =>
-                      setExpandedCourseId((prev) =>
-                        prev === course.id ? null : course.id
-                      )
-                    }
+                    onToggleExpand={() => handleToggleExpand(course.id)}
                   />
                 </>
               ))}
