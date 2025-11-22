@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { PersonalInfo } from "../types/resume";
 import FormHeader from "./FormHeader";
 import RichTextEditor from "./RichTextEditor";
@@ -19,6 +19,12 @@ const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
   const [imagePreview, setImagePreview] = useState<string | null>(
     data.imageUrl || null
   );
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync imagePreview with data.imageUrl when it changes externally
+  useEffect(() => {
+    setImagePreview(data.imageUrl || null);
+  }, [data.imageUrl]);
 
   const handleChange = (field: keyof PersonalInfo, value: string) => {
     onChange({ ...data, [field]: value });
@@ -27,6 +33,47 @@ const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
   const handleImageUrlChange = (url: string) => {
     handleChange("imageUrl", url);
     setImagePreview(url);
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file.");
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+    if (file.size > maxSize) {
+      alert("Image size should be less than 2MB. Please select a smaller image.");
+      return;
+    }
+
+    // Read file and convert to base64 data URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (dataUrl) {
+        handleChange("imageUrl", dataUrl);
+        setImagePreview(dataUrl);
+      }
+    };
+    reader.onerror = () => {
+      alert("Failed to read image file. Please try again.");
+    };
+    reader.readAsDataURL(file);
+
+    // Reset file input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
   };
 
   const loadSampleData = () => {
@@ -92,27 +139,67 @@ const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
         </div>
       </div>
 
-      {/* Image URL with Preview */}
+      {/* Image Upload with Preview */}
       <div>
         <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Image URL
+          Profile Image
         </label>
-        <div className="flex gap-4 items-start">
+        <div className="space-y-3">
+          {/* Hidden file input */}
           <input
-            type="url"
-            value={data.imageUrl || ""}
-            onChange={(e) => handleImageUrlChange(e.target.value)}
-            className="flex-1 border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300 text-gray-900 placeholder:text-gray-400"
-            placeholder="https://example.com/profile.jpg"
+            type="file"
+            ref={fileInputRef}
+            accept="image/*"
+            onChange={handleFileUpload}
+            className="hidden"
           />
+          
+          {/* Paste Image URL */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">
+              Paste Image URL
+            </label>
+            <input
+              type="url"
+              value={data.imageUrl || ""}
+              onChange={(e) => handleImageUrlChange(e.target.value)}
+              className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300 text-gray-900 placeholder:text-gray-400"
+              placeholder="https://example.com/profile.jpg"
+            />
+          </div>
+
+          {/* Upload from Local */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">
+              Or Upload from Local
+            </label>
+            <button
+              type="button"
+              onClick={handleUploadClick}
+              className="w-full px-4 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 text-sm font-semibold shadow-sm hover:shadow-md flex items-center justify-center gap-2"
+              title="Upload from local device"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <span>Upload from Local Device</span>
+            </button>
+          </div>
+
+          {/* Image Preview */}
           {imagePreview && (
-            <div className="w-24 h-24 rounded-full border-4 border-blue-200 shadow-md overflow-hidden flex-shrink-0 ring-2 ring-blue-100">
-              <img
-                src={imagePreview}
-                alt="Profile preview"
-                className="w-full h-full object-cover"
-                onError={() => setImagePreview(null)}
-              />
+            <div className="flex justify-center pt-2">
+              <div className="relative w-32 h-32 rounded-full border-4 border-blue-200 shadow-lg overflow-hidden ring-4 ring-blue-100 bg-white p-1">
+                <img
+                  src={imagePreview}
+                  alt="Profile preview"
+                  className="w-full h-full object-cover rounded-full"
+                  onError={() => {
+                    setImagePreview(null);
+                    handleChange("imageUrl", "");
+                  }}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -120,7 +207,7 @@ const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Enter a URL to your profile image. Image will be displayed in a circular format.
+          Enter an image URL or upload from your device. Max size: 2MB. Image will be displayed in a circular format.
         </p>
       </div>
 
@@ -394,9 +481,9 @@ const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
       {/* Tab Navigation */}
       <div className="flex gap-2 border-b border-gray-200 mb-4">
         {[
-          { id: "contacts", label: "Contacts", icon: "📞" },
-          { id: "links", label: "Links", icon: "🔗" },
-          { id: "about", label: "About", icon: "📝" },
+          { id: "contacts", label: "Contacts" },
+          { id: "links", label: "Links" },
+          { id: "about", label: "About" },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -407,7 +494,6 @@ const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
                 : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
           >
-            <span className="mr-2">{tab.icon}</span>
             {tab.label}
           </button>
         ))}
