@@ -17,12 +17,18 @@ const InterviewDetailView = ({ record, onBack }: InterviewDetailViewProps) => {
 
   useEffect(() => {
     const fetchInterviewDetails = async () => {
+      if (!record.id) {
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         const data = await mockInterviewAPI.getInterviewAttempt(record.id);
         setInterviewData(data);
       } catch (error) {
-        // Handle error
+        // Set error state, will be handled by the null check below
+        setInterviewData(null);
       } finally {
         setLoading(false);
       }
