@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "analyze": "cross-env ANALYZE=true vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "gen:pwa-assets": "node scripts/generate-pwa-assets.mjs"
@@ -27,6 +28,7 @@
     "@tailwindcss/vite": "^4.0.17",
     "@tanstack/react-query": "^5.74.4",
     "@tanstack/react-query-devtools": "^5.74.6",
+    "@tanstack/react-virtual": "^3.13.12",
     "@tensorflow-models/blazeface": "^0.1.0",
     "@tensorflow/tfjs": "^4.22.0",
     "@tensorflow/tfjs-backend-webgl": "^4.22.0",
@@ -64,6 +66,7 @@
     "sanitize-html": "^2.17.0",
     "three": "^0.181.0",
     "uuid": "^11.1.0",
+    "web-vitals": "^4.2.4",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
@@ -73,11 +76,13 @@
     "@types/serviceworker": "^0.0.152",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.21",
+    "cross-env": "^10.1.0",
     "eslint": "^9.21.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^15.15.0",
     "postcss": "^8.5.3",
+    "rollup-plugin-visualizer": "^5.12.0",
     "sharp": "^0.33.5",
     "tailwindcss": "^4.0.17",
     "typescript": "~5.7.2",

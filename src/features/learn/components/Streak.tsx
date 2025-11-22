@@ -1,35 +1,25 @@
 import { PieChart, Pie, Cell } from "recharts";
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import {
-  getStreakTableData,
-  StreakData,
-} from "../../../services/dashboardApis.ts";
-
+import type { StreakData } from "../../../services/dashboardApis.ts";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store.ts";
+import { useStreakData } from "../hooks/useStreakData";
 
-const Streak = ({
-  showProgress = true,
-  clientId,
-}: {
+interface StreakProps {
   showProgress?: boolean;
   clientId: number;
-}) => {
+  dataOverride?: StreakData | null;
+}
+
+const Streak = ({ showProgress = true, clientId, dataOverride }: StreakProps) => {
   const [progress, setProgress] = useState<number>(0);
   const { t } = useTranslation();
   const courses = useSelector((state: RootState) => state.courses);
-
-  const { data } = useQuery<StreakData>({
-    queryKey: ["streakTable", clientId],
-    queryFn: () => getStreakTableData(clientId),
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
+  const { data } = useStreakData(clientId, {
+    enabled: !dataOverride,
   });
+  const streakData = dataOverride ?? data;
 
   useEffect(() => {
     let completedVideos = 0;
@@ -87,7 +77,7 @@ const Streak = ({
           </span>{" "}
           {t("dashboard.streak.title")}:{" "}
           <span className="font-bold">
-            {t("dashboard.streak.days", { count: data?.current_streak })}
+            {t("dashboard.streak.days", { count: streakData?.current_streak })}
           </span>
         </p>
         <p className="text-gray-500 text-sm md:text-base text-wrap">

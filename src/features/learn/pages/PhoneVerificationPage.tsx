@@ -282,11 +282,9 @@ const PhoneVerificationPage: React.FC = () => {
       referralCode: string | undefined;
     }) => startAssessment(clientId, assessmentId, phone, referralCode),
     onSuccess: () => {
-      //console.log("Assessment started successfully:", data);
       navigate("/assessment/quiz", { state: { assessmentId } });
     },
     onError: () => {
-      //console.error("Error starting assessment:", error);
       alert("Failed to start assessment. Please try again.");
     },
   });

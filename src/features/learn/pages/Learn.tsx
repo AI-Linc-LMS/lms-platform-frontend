@@ -7,36 +7,68 @@ import BasedLearningCourses from "../components/based-learning/BasedLearningCour
 import WelcomeSection from "../components/WelcomeSection";
 import EnrolledCourses from "../components/courses/EnrolledCourses";
 import { RootState } from "../../../redux/store";
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import NoCourse from "../components/courses/NoCourse.tsx";
-import { useQuery } from "@tanstack/react-query";
-import { getEnrolledCourses } from "../../../services/enrolled-courses-content/coursesApis.ts";
+import { useEnrolledCourses } from "../hooks/useEnrolledCourses";
 import { setCourses } from "../../../redux/slices/courseSlice.ts";
 import SkeletonLoader from "../components/SkeletonLoader.tsx";
 import Streak from "../components/Streak.tsx";
 // import DailyProgress from "../components/DailyProgressTable.tsx";
 import StreakTable from "../components/StreakTable.tsx";
+import { useStreakData } from "../hooks/useStreakData";
 
 const Learn = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const numericClientId = Number(clientId) || 0;
   const courses = useSelector((state: RootState) => state.courses.courses);
   // Check if user has no enrolled courses
   const hasNoCourses = !courses || courses.length === 0;
 
   const dispatch = useDispatch();
+  const lastManualRefreshRef = useRef(0);
+  const MIN_REFRESH_WINDOW = 30_000;
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["Courses"],
-    queryFn: () => getEnrolledCourses(clientId),
-  });
+  const {
+    data,
+    isLoading,
+    refetch: refetchCourses,
+  } = useEnrolledCourses(numericClientId);
 
-  //console.log("enrolled courses data:", data);
+  const { data: streakData, isLoading: isStreakLoading } = useStreakData(
+    numericClientId || null
+  );
 
   useEffect(() => {
     if (data) {
       dispatch(setCourses(data));
     }
   }, [data, dispatch]);
+
+  const throttledRefetch = useCallback(() => {
+    const now = Date.now();
+    if (now - lastManualRefreshRef.current < MIN_REFRESH_WINDOW) {
+      return;
+    }
+    lastManualRefreshRef.current = now;
+    void refetchCourses();
+  }, [refetchCourses]);
+
+  // Only refetch on visibility change when tab becomes visible (throttled)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        throttledRefetch();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [throttledRefetch]);
+
+  // Remove route-based refetch to avoid unnecessary API calls
+  // Courses are cached and will refetch based on staleTime
 
   return (
     <div className="w-full min-h-screen">
@@ -57,13 +89,16 @@ const Learn = () => {
               <WelcomeSection />
 
               <div className="relative">
-                {isLoading ? (
+                {isStreakLoading ? (
                   <SkeletonLoader />
                 ) : (
-                  <Streak clientId={parseInt(clientId, 10)} />
+                  <Streak
+                    clientId={numericClientId}
+                    dataOverride={streakData ?? null}
+                  />
                 )}
               </div>
-              <EnrolledCourses />
+              <EnrolledCourses isLoading={isLoading} />
 
               <div className="space-y-4">
                 {/* <ContinueCourses />
@@ -71,18 +106,21 @@ const Learn = () => {
               </div>
 
               <div className="space-y-4">
-                <BasedLearningCourses clientId={clientId} />
+                <BasedLearningCourses clientId={numericClientId} />
               </div>
             </div>
 
             {/* Right Column - Free-flowing sidebar */}
             <div className="w-full space-y-6">
               <div className="space-y-6">
-                <Leaderboard clientId={clientId} />
+                <Leaderboard clientId={numericClientId} />
 
                 <div className="space-y-6">
                   <div className="bg-white/80 backdrop-blur-md border border-[var(--primary-100)] rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
-                    <StreakTable clientId={parseInt(clientId, 10)} />
+                    <StreakTable
+                      clientId={numericClientId}
+                      dataOverride={streakData ?? null}
+                    />
                   </div>
                 </div>
               </div>

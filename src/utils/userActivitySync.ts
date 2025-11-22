@@ -206,13 +206,11 @@ export const setupActivitySyncListeners = (): void => {
         }
       }
       
-      console.log('Beforeunload - Session data found:', sessionData);
       
       if (sessionData && sessionData.isActive && sessionData.startTime) {
         const now = Date.now();
         const sessionDuration = Math.floor((now - sessionData.startTime) / 1000);
         
-        console.log('Beforeunload - Session duration:', sessionDuration);
         
         if (sessionDuration > 0) {
           const { device_info } = getDeviceFingerprint();
@@ -230,7 +228,6 @@ export const setupActivitySyncListeners = (): void => {
             source: 'beforeunload'
           };
           
-          console.log('Saving emergency data:', emergencyData);
           
           // Save to localStorage
           localStorage.setItem('emergencySessionData', JSON.stringify(emergencyData));
@@ -251,17 +248,16 @@ export const setupActivitySyncListeners = (): void => {
             
             // Use beacon for immediate send
             const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
-            const success = navigator.sendBeacon(
+            navigator.sendBeacon(
               `${apiUrl}/activity/clients/${clientId}/track-time/`,
               blob
             );
             
-            console.log('Beacon send result:', success);
           }
         }
       }
     } catch (error) {
-      console.error("Error in beforeunload handler:", error);
+      // Error in beforeunload handler
     }
   });
 
@@ -293,7 +289,7 @@ export const setupActivitySyncListeners = (): void => {
         }
       }
     } catch (error) {
-      console.error("Error in pagehide handler:", error);
+      // Error in pagehide handler
     }
   });
 };
@@ -1040,7 +1036,6 @@ export const recoverEmergencySession = (): {
  * Call this when your app starts up
  */
 export const initializeActivityTracking = async (): Promise<void> => {
-  console.log('Initializing activity tracking...');
   
   try {
     // Set up event listeners first
@@ -1048,12 +1043,10 @@ export const initializeActivityTracking = async (): Promise<void> => {
     
     // Check for emergency data immediately
     const emergencyDataStr = localStorage.getItem('emergencySessionData');
-    console.log('Emergency data found:', emergencyDataStr);
     
     if (emergencyDataStr) {
       try {
         const emergencyData = JSON.parse(emergencyDataStr);
-        console.log('Parsed emergency data:', emergencyData);
         
         if (
           typeof emergencyData.sessionDuration === 'number' &&
@@ -1062,7 +1055,6 @@ export const initializeActivityTracking = async (): Promise<void> => {
           const apiUrl = import.meta.env.VITE_API_URL;
           const clientId = import.meta.env.VITE_CLIENT_ID;
           
-          console.log('API URL:', apiUrl, 'Client ID:', clientId);
           
           if (apiUrl && clientId) {
             const payload = {
@@ -1074,7 +1066,6 @@ export const initializeActivityTracking = async (): Promise<void> => {
               "event_type": "recovered_session"
             };
             
-            console.log('Sending recovery payload:', payload);
             
             const response = await fetch(
               `${apiUrl}/activity/clients/${clientId}/track-time/`,
@@ -1092,33 +1083,29 @@ export const initializeActivityTracking = async (): Promise<void> => {
               }
             );
             
-            console.log('Recovery response status:', response.status);
             
             if (response.ok) {
               const responseData = await response.json();
-              console.log('Emergency session recovered successfully:', responseData);
               logActivityEvent("Emergency session data recovered and sent successfully", {
                 sessionDuration: emergencyData.sessionDuration,
                 response: responseData
               });
             } else {
-              console.error('Failed to send recovery data, response not ok');
+              // Failed to send recovery data
             }
           }
         }
       } catch (parseError) {
-        console.error('Error parsing emergency data:', parseError);
+        // Error parsing emergency data
       }
       
       // Always clear emergency data after processing attempt
       localStorage.removeItem('emergencySessionData');
-      console.log('Emergency data cleared');
     }
     
-    console.log('Activity tracking initialized successfully');
     logActivityEvent("Activity tracking initialized successfully");
   } catch (error) {
-    console.error('Error initializing activity tracking:', error);
+    // Error initializing activity tracking
     logActivityEvent("Error initializing activity tracking", {
       error: (error as Error).message,
     });

@@ -31,14 +31,20 @@ import {
 import { CommunityPage, ThreadDetailPage } from "./features/community";
 import LoadingSpinner from "./commonComponents/loading-spinner/LoadingSpinner";
 
+const isPWAEnabled = import.meta.env.VITE_ENABLE_PWA === "true";
+
 function App() {
   return (
     <AuthRedirectProvider>
       <ToastProvider>
         <Router>
-          <PWAProvider>
+          {isPWAEnabled ? (
+            <PWAProvider>
+              <AppContent />
+            </PWAProvider>
+          ) : (
             <AppContent />
-          </PWAProvider>
+          )}
           <ToastContainer />
         </Router>
       </ToastProvider>
@@ -262,12 +268,6 @@ function AppContent() {
   const { totalTimeSpent, activityHistory } = useUserActivityTracking();
   const { setIntendedPath } = useAuthRedirect();
 
-  // Add debugging logs
-  //console.log("[App] Current path:", location.pathname);
-  //console.log("[App] User in localStorage:", !!user);
-  //console.log("[App] Token in localStorage:", !!token);
-  //console.log("[App] isAuthenticated:", isAuthenticated);
-
   // Use the token expiration handler
   useTokenExpirationHandler();
 
@@ -278,39 +278,27 @@ function AppContent() {
     }
   }, [isAuthenticated]);
 
-  // Log activity data periodically
+  // Activity sync (future implementation)
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const logInterval = setInterval(() => {
-      //console.log("Current session stats:");
-      //console.log("Total time spent:", totalTimeSpent, "seconds");
-      //console.log("Session history:", activityHistory);
+    const syncInterval = setInterval(() => {
       // In the future, this is where you would sync with backend
       // syncUserActivity(userId, totalTimeSpent, activityHistory);
-    }, 60000); // Log every minute
+    }, 60000); // Sync every minute
 
-    return () => clearInterval(logInterval);
+    return () => clearInterval(syncInterval);
   }, [isAuthenticated, totalTimeSpent, activityHistory]);
 
   useEffect(() => {
-    //console.log("[App] Authentication check useEffect triggered");
-    //console.log("[App] isAuthenticated:", isAuthenticated);
-    //console.log("[App] Current path:", location.pathname);
-
     if (!isAuthenticated) {
       // Don't redirect if user is already on login or auth-related pages
       const currentPath = location.pathname;
       const authPages = ["/login", "/signup", "/forgot-password", "/otp"];
 
-      //console.log("[App] User not authenticated, current path:", currentPath);
-
       if (authPages.includes(currentPath)) {
-        //console.log("[App] Already on auth page, not redirecting");
         return; // Don't redirect if already on an auth page
       }
-
-      //console.log("[App] Not on auth page, redirecting to login");
 
       // Store the current path as intended destination before redirecting to login
       const fullPath = getFullPath(location.pathname, location.search);
@@ -318,81 +306,104 @@ function AppContent() {
         setIntendedPath(fullPath);
       }
       handleMobileNavigation("/login", navigate, true, false);
-    } else {
-      //console.log("[App] User is authenticated, staying on current page");
     }
   }, [isAuthenticated, navigate, location, setIntendedPath]);
 
+  // Helper component to wrap route with Suspense for better loading states
+  const SuspenseRoute = ({ children }: { children: React.ReactNode }) => (
+    <Suspense fallback={<LoadingSpinner />}>{children}</Suspense>
+  );
+
   return (
     <>
-      <Suspense fallback={<LoadingSpinner />}>
-        <Routes>
-          {routes.map((route) => {
-            if (route.isPrivate) {
-              // Special handling for routes with nested routing
-              if (route.hasNestedRoutes) {
-                return (
-                  <Route
-                    key={route.path}
-                    path={route.path}
-                    element={
-                      route.requiredRole === "admin_or_instructor" ? (
-                        <AdminRoute>
-                          <route.component />
-                        </AdminRoute>
-                      ) : (
-                        <route.component />
-                      )
-                    }
-                  />
-                );
-              }
-              
-              // Standard private route with Container
+      <Routes>
+        {routes.map((route) => {
+          const RouteComponent = route.component;
+
+          if (route.isPrivate) {
+            // Special handling for routes with nested routing
+            if (route.hasNestedRoutes) {
               return (
                 <Route
                   key={route.path}
                   path={route.path}
                   element={
-                    <Container>
-                      <Outlet />
-                    </Container>
-                  }
-                >
-                  <Route
-                    index
-                    element={
-                      route.requiredRole === "admin_or_instructor" ? (
+                    <SuspenseRoute>
+                      {route.requiredRole === "admin_or_instructor" ? (
                         <AdminRoute>
-                          <route.component />
+                          <RouteComponent />
                         </AdminRoute>
                       ) : (
-                        <route.component />
-                      )
-                    }
-                  />
-                </Route>
+                        <RouteComponent />
+                      )}
+                    </SuspenseRoute>
+                  }
+                />
               );
             }
 
+            // Standard private route with Container
             return (
               <Route
                 key={route.path}
                 path={route.path}
-                element={<route.component />}
-              />
+                element={
+                  <Container>
+                    <Outlet />
+                  </Container>
+                }
+              >
+                <Route
+                  index
+                  element={
+                    <SuspenseRoute>
+                      {route.requiredRole === "admin_or_instructor" ? (
+                        <AdminRoute>
+                          <RouteComponent />
+                        </AdminRoute>
+                      ) : (
+                        <RouteComponent />
+                      )}
+                    </SuspenseRoute>
+                  }
+                />
+              </Route>
             );
-          })}
-          <Route path="/community" element={<CommunityPage />} />
-          <Route
-            path="/community/thread/:threadId"
-            element={<ThreadDetailPage />}
-          />
+          }
 
-          {/* Handle unknown routes - keeps authenticated users on the app */}
-          <Route path="*" element={<InvalidRoute />} />
-        </Routes>
-      </Suspense>
+          // Public routes
+          return (
+            <Route
+              key={route.path}
+              path={route.path}
+              element={
+                <SuspenseRoute>
+                  <RouteComponent />
+                </SuspenseRoute>
+              }
+            />
+          );
+        })}
+        <Route
+          path="/community"
+          element={
+            <SuspenseRoute>
+              <CommunityPage />
+            </SuspenseRoute>
+          }
+        />
+        <Route
+          path="/community/thread/:threadId"
+          element={
+            <SuspenseRoute>
+              <ThreadDetailPage />
+            </SuspenseRoute>
+          }
+        />
+
+        {/* Handle unknown routes - keeps authenticated users on the app */}
+        <Route path="*" element={<InvalidRoute />} />
+      </Routes>
 
       {/* Only show FloatingActivityTimer when authenticated and not on login/register pages */}
       {/* Commented out per instructions */}
@@ -406,7 +417,7 @@ function AppContent() {
       )} */}
 
       {/* iOS PWA Installation Prompt */}
-      <IOSPWAInstallPrompt appName="AiLinc" />
+      {isPWAEnabled && <IOSPWAInstallPrompt appName="AiLinc" />}
     </>
   );
 }

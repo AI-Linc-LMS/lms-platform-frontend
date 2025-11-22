@@ -12,6 +12,7 @@ import leftbg from "../../../../../commonComponents/icons/enrolled-courses/quiz/
 import tickicon from "../../../../../commonComponents/icons/enrolled-courses/quiz/doneicon.png";
 import trophy from "../../../../../commonComponents/icons/enrolled-courses/quiz/trophy.png";
 import challenge from "../../../../../commonComponents/icons/enrolled-courses/quiz/challenge.png";
+import { STREAK_QUERY_KEY } from "../../../hooks/useStreakData";
 
 interface MCQ {
   id: number;
@@ -73,6 +74,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
   isVisible = true,
 }) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const numericClientId = Number(clientId) || 0;
   const queryClient = useQueryClient();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -100,7 +102,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
     error,
   } = useQuery<QuizData>({
     queryKey: ["quiz", courseId, contentId],
-    queryFn: () => getCourseContent(clientId, courseId, contentId),
+    queryFn: () => getCourseContent(numericClientId, courseId, contentId),
     enabled: !!contentId && !!courseId && !injectedData,
     staleTime: 30 * 1000, // Cache for 30 seconds to prevent unnecessary refetches
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
@@ -109,7 +111,6 @@ const QuizCard: React.FC<QuizCardProps> = ({
   });
 
   useEffect(() => {
-    //console.log("fetchedData", fetchedData?.status);
     if (fetchedData?.status === "complete") {
       setAlreadyCompleted(true);
     }
@@ -119,7 +120,6 @@ const QuizCard: React.FC<QuizCardProps> = ({
   const data = injectedData || fetchedData;
   const optionLetters = ["A", "B", "C", "D"];
 
-  ////console.log("userAnswers", userAnswers);
   useEffect(() => {
     // Reset data ready state when content changes
     setIsDataReady(false);
@@ -167,7 +167,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
   useEffect(() => {
     if (quizCompleted || alreadyCompleted) {
       setLoadingAttempts(true);
-      pastSubmissions(clientId, courseId, contentId)
+      pastSubmissions(numericClientId, courseId, contentId)
         .then((data) => {
           // Sort by id ascending (lowest id first), take first 8
           const sorted = [...data].sort((a, b) => a.id - b.id);
@@ -179,7 +179,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
         .catch(() => setPastAttempts([]))
         .finally(() => setLoadingAttempts(false));
     }
-  }, [quizCompleted, alreadyCompleted, courseId, contentId]);
+  }, [quizCompleted, alreadyCompleted, courseId, contentId, numericClientId]);
 
   // Use selected attempt's answers for review
   const reviewUserAnswers =
@@ -305,7 +305,6 @@ const QuizCard: React.FC<QuizCardProps> = ({
     setSelectedOption(option);
     const isCorrect = option === currentQuestion.correct_option;
     updateUserAnswer(currentQuestionIndex, option, isCorrect);
-    ////console.log("option", option);
     // Update userAnswers state
   };
 
@@ -315,13 +314,9 @@ const QuizCard: React.FC<QuizCardProps> = ({
     setTotalSubmissions((prev) => prev + 1);
 
     const isCorrect = selectedOption === currentQuestion.correct_option;
-    ////console.log("isCorrect", isCorrect);
-    ////console.log("selectedOption", selectedOption);
-    ////console.log("currentQuestion", currentQuestion);
     // Update userAnswers state with selection
     updateUserAnswer(currentQuestionIndex, selectedOption!, isCorrect);
 
-    ////console.log("userAnswers", userAnswers);
 
     // Notify parent component about submission
     if (onSubmission) {
@@ -339,8 +334,6 @@ const QuizCard: React.FC<QuizCardProps> = ({
   const handleFinish = () => {
     setSubmitted(true);
     setTotalSubmissions((prev) => prev + 1);
-    ////console.log("selectedOption", selectedOption);
-    ////console.log("currentQuestion", currentQuestion);
     const isCorrect = selectedOption === currentQuestion.correct_option;
 
     // Update userAnswers state with selection
@@ -364,7 +357,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
   const finishQuiz = async () => {
     // Calculate total score when quiz is completed
     const response = await submitContent(
-      clientId,
+      numericClientId,
       courseId,
       contentId,
       "Quiz",
@@ -372,7 +365,6 @@ const QuizCard: React.FC<QuizCardProps> = ({
         userAnswers,
       }
     );
-    ////console.log("response", response);
     if (response === 201) {
       onComplete();
       setQuizCompleted(true);
@@ -386,10 +378,9 @@ const QuizCard: React.FC<QuizCardProps> = ({
 
       // Invalidate streak data to update streak immediately after quiz completion
       await queryClient.invalidateQueries({
-        queryKey: ["streakTable", parseInt(clientId)],
+        queryKey: [STREAK_QUERY_KEY, numericClientId],
       });
     } else {
-      ////console.log("error", response);
     }
   };
 

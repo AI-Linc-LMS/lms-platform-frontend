@@ -74,8 +74,6 @@ export const createOrder = async (
       };
     }
 
-    console.log("Creating order with payload:", requestPayload);
-
     const response = await axiosInstance.post(
       `/payment-gateway/api/clients/${clientId}/create-order/`,
       requestPayload
@@ -123,7 +121,6 @@ export const verifyPayment = async (
       }
     );
 
-    //console.log("Verify Payment API Response:", response);
     return response;
   } catch (error) {
     if (error instanceof Error) {

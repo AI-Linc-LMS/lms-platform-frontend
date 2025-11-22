@@ -13,6 +13,7 @@ import {
   aiInterviewerVoice,
   AI_INTERVIEWER_SCRIPTS,
 } from "../utils/speechSynthesis";
+import { loadBlazeFaceModel } from "../utils/faceDetectionLoader";
 
 interface InterviewRoomProps {
   topic: string;
@@ -219,14 +220,7 @@ const InterviewRoom = ({
   useEffect(() => {
     const initFaceDetection = async (retryCount = 0) => {
       try {
-        // Load TensorFlow.js
-        const tf = await import("@tensorflow/tfjs");
-        await tf.setBackend("webgl");
-        await tf.ready();
-
-        // Load BlazeFace model
-        const blazeface = await import("@tensorflow-models/blazeface");
-        const model = await blazeface.load();
+        const model = await loadBlazeFaceModel();
         blazeFaceModelRef.current = model;
         setFaceDetectionReady(true);
       } catch (error) {
@@ -520,14 +514,8 @@ const InterviewRoom = ({
                 // Step 2: Give it a moment to cleanup
                 await new Promise((resolve) => setTimeout(resolve, 500));
 
-                // Step 3: Reload TensorFlow backend
-                const tf = await import("@tensorflow/tfjs");
-                await tf.setBackend("webgl");
-                await tf.ready();
-
-                // Step 4: Reload BlazeFace model
-                const blazeface = await import("@tensorflow-models/blazeface");
-                const model = await blazeface.load();
+                // Step 3: Reload BlazeFace model via dynamic loader
+                const model = await loadBlazeFaceModel();
                 blazeFaceModelRef.current = model;
 
                 // Step 5: Resume detection
@@ -537,10 +525,7 @@ const InterviewRoom = ({
                 // Try one more time after a longer wait
                 setTimeout(async () => {
                   try {
-                    const blazeface = await import(
-                      "@tensorflow-models/blazeface"
-                    );
-                    const model = await blazeface.load();
+                    const model = await loadBlazeFaceModel();
                     blazeFaceModelRef.current = model;
                     detectionActive = true;
                   } catch (e) {

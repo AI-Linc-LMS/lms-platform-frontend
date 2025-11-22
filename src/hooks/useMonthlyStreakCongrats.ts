@@ -34,6 +34,7 @@ export function useMonthlyStreakCongrats() {
     clientInfo?.data?.id ?? Number(import.meta.env.VITE_CLIENT_ID);
 
   // Use useQuery for automatic refetching capability
+  // Optimized: Only refetch when needed, not on every page load
   const {
     data: streakData,
     isLoading: loading,
@@ -43,8 +44,11 @@ export function useMonthlyStreakCongrats() {
     queryKey: ["monthlyStreak", clientId],
     queryFn: () => getMonthlyStreak(Number(clientId)),
     enabled: !!clientId,
-    staleTime: 0, // Always refetch to get latest streak data
-    gcTime: 0, // Don't cache to ensure fresh data
+    staleTime: 1000 * 60 * 15, // 15 minutes - cache data to reduce unnecessary calls
+    gcTime: 1000 * 60 * 60, // 60 minutes - keep in cache
+    refetchOnWindowFocus: false, // Disabled to avoid refetch on every focus
+    refetchOnMount: false, // Only refetch if data is stale
+    refetchOnReconnect: false, // Disabled to reduce unnecessary refetches
   });
 
   // Automatically re-evaluate shouldShow whenever query data changes

@@ -8,7 +8,6 @@ export const getAllThreads = async (clientId: number) => {
     );
     return response.data;
   } catch (error) {
-    console.error("Error fetching threads:", error);
     throw error;
   }
 };
@@ -24,7 +23,6 @@ export const createThread = async (
     );
     return response.data;
   } catch (error) {
-    console.error("Error creating thread:", error);
     throw error;
   }
 };
@@ -36,7 +34,6 @@ export const getAllTags = async (clientId: number) => {
     );
     return response.data;
   } catch (error) {
-    console.error("Error fetching tags:", error);
     throw error;
   }
 };
@@ -49,7 +46,6 @@ export const createTag = async (clientId: number, tagName: string) => {
     );
     return response.data;
   } catch (error) {
-    console.error("Error creating tag:", error);
     throw error;
   }
 };
@@ -61,7 +57,6 @@ export const getThreadData = async (clientId: number, threadId: number) => {
     );
     return response.data;
   } catch (error) {
-    console.error("Error fetching thread data:", error);
     throw error;
   }
 };
@@ -79,7 +74,6 @@ export const updateThread = async (
     );
     return response.data;
   } catch (error) {
-    console.error("Error updating thread:", error);
     throw error;
   }
 };
@@ -91,7 +85,6 @@ export const deleteThread = async (clientId: number, threadId: string) => {
     );
     return response.data;
   } catch (error) {
-    console.error("Error deleting thread:", error);
     throw error;
   }
 };
@@ -104,7 +97,6 @@ export const addVoteOnThread = async (clientId: number, threadId: number, voteTy
     );
     return response.data;
   } catch (error) {
-    console.error("Error adding vote on thread:", error);
     throw error;
   }
 };
@@ -116,7 +108,6 @@ export const removeVoteOnThread = async (clientId: number, threadId: number) => 
     );
     return response.data;
   } catch (error) {
-    console.error("Error removing vote on thread:", error);
     throw error;
   }
 };

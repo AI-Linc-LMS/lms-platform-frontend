@@ -79,9 +79,10 @@ const PaymentCardSection: React.FC<{
     useQuery({
       queryKey: ["roadmap-payment-status", clientId, assessmentId],
       queryFn: () => getRoadmapPaymentStatus(clientId, "nanodegree"),
-      refetchOnWindowFocus: true,
-      refetchOnMount: true,
-      staleTime: 0,
+      refetchOnWindowFocus: false, // Disabled to reduce unnecessary refetches
+      refetchOnMount: false, // Only refetch if data is stale
+      staleTime: 1000 * 60 * 2, // 2 minutes - cache payment status
+      gcTime: 1000 * 60 * 5, // 5 minutes - keep in cache
       enabled: !!clientId,
     });
 
@@ -102,9 +103,10 @@ const PaymentCardSection: React.FC<{
     useQuery({
       queryKey: ["roadmap-payment-status-flagship", clientId, assessmentId],
       queryFn: () => getRoadmapPaymentStatus(clientId, "flagship"),
-      refetchOnWindowFocus: true,
-      refetchOnMount: true,
-      staleTime: 0,
+      refetchOnWindowFocus: false, // Disabled to reduce unnecessary refetches
+      refetchOnMount: false, // Only refetch if data is stale
+      staleTime: 1000 * 60 * 2, // 2 minutes - cache payment status
+      gcTime: 1000 * 60 * 5, // 5 minutes - keep in cache
       enabled: !!clientId,
     });
 
@@ -133,7 +135,6 @@ const PaymentCardSection: React.FC<{
   const { paymentState: nanodegreePaymentState, initiateNanodegreePayment } =
     useNanodegreePayment({
       onSuccess: (result: PaymentResult) => {
-        //console.log("Nanodegree seat booking successful:", result);
         setPaymentResult({
           paymentId: result.paymentId,
           orderId: result.orderId,
@@ -159,11 +160,9 @@ const PaymentCardSection: React.FC<{
         }, 2000);
       },
       onError: (error: string) => {
-        //console.error("Nanodegree seat booking failed:", error);
         showToast("error", "Payment Failed", error);
       },
       onDismiss: () => {
-        //console.log("Nanodegree seat booking dismissed");
         showToast(
           "warning",
           "Payment Cancelled",
@@ -175,7 +174,6 @@ const PaymentCardSection: React.FC<{
   const { paymentState: nanodegreeCoursePaymentState, initiateCoursePayment } =
     useCoursePayment({
       onSuccess: (result: PaymentResult) => {
-        //console.log("Nanodegree course payment successful:", result);
         setPaymentResult({
           paymentId: result.paymentId,
           orderId: result.orderId,
@@ -205,11 +203,9 @@ const PaymentCardSection: React.FC<{
         }, 2000);
       },
       onError: (error: string) => {
-        //console.error("Nanodegree course payment failed:", error);
         showToast("error", "Payment Failed", error);
       },
       onDismiss: () => {
-        //console.log("Nanodegree course payment dismissed");
         showToast(
           "warning",
           "Payment Cancelled",
@@ -221,7 +217,6 @@ const PaymentCardSection: React.FC<{
   const { paymentState: flagshipPaymentState, initiateFlagshipPayment } =
     useFlagshipPayment({
       onSuccess: (result: PaymentResult) => {
-        //console.log("Flagship seat booking successful:", result);
         setPaymentResult({
           paymentId: result.paymentId,
           orderId: result.orderId,
@@ -247,11 +242,9 @@ const PaymentCardSection: React.FC<{
         }, 2000);
       },
       onError: (error: string) => {
-        //console.error("Flagship seat booking failed:", error);
         showToast("error", "Payment Failed", error);
       },
       onDismiss: () => {
-        //console.log("Flagship seat booking dismissed");
         showToast(
           "warning",
           "Payment Cancelled",
@@ -266,7 +259,6 @@ const PaymentCardSection: React.FC<{
     initiateCoursePayment: initiateFlagshipCoursePayment,
   } = useCoursePayment({
     onSuccess: (result: PaymentResult) => {
-      //console.log("Flagship course payment successful:", result);
       setPaymentResult({
         paymentId: result.paymentId,
         orderId: result.orderId,
@@ -292,11 +284,9 @@ const PaymentCardSection: React.FC<{
       }, 2000);
     },
     onError: (error: string) => {
-      //console.error("Flagship course payment failed:", error);
       showToast("error", "Payment Failed", error);
     },
     onDismiss: () => {
-      //console.log("Flagship course payment dismissed");
       showToast(
         "warning",
         "Payment Cancelled",

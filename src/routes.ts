@@ -91,8 +91,8 @@ const AttendanceManagementPage = lazy(
 const AttendancePage = lazy(
   () => import("./features/learn/pages/AttendancePage")
 );
-import { PWATestPage } from "./components/PWATestPage";
-import { IOSPWATestPage } from "./components/IOSPWATestPage";
+const PWATestPage = lazy(() => import("./components/PWATestPage").then(module => ({ default: module.PWATestPage })));
+const IOSPWATestPage = lazy(() => import("./components/IOSPWATestPage"));
 
 export interface RouteConfig {
   path: string;

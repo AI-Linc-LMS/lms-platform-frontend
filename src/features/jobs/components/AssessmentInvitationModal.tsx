@@ -28,9 +28,9 @@ const AssessmentInvitationModal: React.FC<AssessmentInvitationModalProps> = ({
     queryKey: ["assessment-status", assessmentId],
     queryFn: () => getAssessmentStatus(clientId, assessmentId),
     enabled: isOpen, // Only fetch when modal is open
-    refetchOnWindowFocus: true,
-    staleTime: 0,
-    gcTime: 0,
+    refetchOnWindowFocus: false, // Disabled to reduce unnecessary refetches
+    staleTime: 1000 * 60 * 5, // 5 minutes - cache assessment status
+    gcTime: 1000 * 60 * 10, // 10 minutes - keep in cache
   });
 
   const handleTakeAssessment = () => {
