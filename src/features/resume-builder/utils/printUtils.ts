@@ -60,19 +60,43 @@ export const createResumePrintWindow = (
       }
     }
     
-    // Get all stylesheets (simplified approach)
-    let allStyles = '';
+    // Get all CSS link tags from the main document
+    let cssLinks = '';
+    try {
+      const linkTags = document.querySelectorAll('link[rel="stylesheet"]');
+      linkTags.forEach((link: Element) => {
+        const href = link.getAttribute('href');
+        if (href) {
+          // Use absolute URL or relative path
+          const absoluteHref = href.startsWith('http') ? href : new URL(href, window.location.origin).href;
+          cssLinks += `<link rel="stylesheet" href="${absoluteHref}">\n`;
+        }
+      });
+    } catch (e) {
+      console.warn("Could not extract CSS link tags:", e);
+    }
+
+    // Get all inline style tags from the main document
+    let inlineStyles = '';
+    try {
+      const styleTags = document.querySelectorAll('style');
+      styleTags.forEach((style: Element) => {
+        inlineStyles += `<style>${style.innerHTML}</style>\n`;
+      });
+    } catch (e) {
+      console.warn("Could not extract inline style tags:", e);
+    }
+
+    // Also extract styles from stylesheets that can be accessed
+    let extractedStyles = '';
     try {
       Array.from(document.styleSheets).forEach(sheet => {
         try {
-          if (sheet.cssRules && sheet.href) {
-            // Only include external stylesheets via link tag
-            // Skip for now to avoid CORS issues
-          } else if (sheet.cssRules) {
-            // Include inline stylesheets
+          if (sheet.cssRules && !sheet.href) {
+            // Include inline stylesheets (already processed as style tags)
             Array.from(sheet.cssRules).forEach(rule => {
               try {
-                allStyles += rule.cssText + '\n';
+                extractedStyles += rule.cssText + '\n';
               } catch (e) {
                 // Skip rules that can't be accessed
               }
@@ -93,6 +117,8 @@ export const createResumePrintWindow = (
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${title}</title>
+        ${cssLinks}
+        ${inlineStyles}
         <style>
           /* Base reset */
           * {
@@ -105,7 +131,7 @@ export const createResumePrintWindow = (
           }
           
           /* Include extracted styles (if any) */
-          ${allStyles || '/* No inline styles extracted */'}
+          ${extractedStyles || '/* No additional styles extracted */'}
           
           @media print {
             @page {
@@ -164,9 +190,48 @@ export const createResumePrintWindow = (
       <body>
         ${contentHTML}
         <script>
-          // Auto-trigger print dialog when window loads
+          // Wait for all stylesheets to load before printing
+          function waitForStylesheets(callback) {
+            const stylesheets = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
+            if (stylesheets.length === 0) {
+              callback();
+              return;
+            }
+            
+            // Check which stylesheets are already loaded
+            const alreadyLoaded = stylesheets.filter(link => link.sheet !== null);
+            const notLoaded = stylesheets.filter(link => link.sheet === null);
+            
+            // If all are already loaded, call callback immediately
+            if (notLoaded.length === 0) {
+              callback();
+              return;
+            }
+            
+            let loadedCount = alreadyLoaded.length;
+            const totalCount = stylesheets.length;
+            
+            function checkComplete() {
+              loadedCount++;
+              if (loadedCount >= totalCount) {
+                callback();
+              }
+            }
+            
+            // Set up load handlers for stylesheets that aren't loaded yet
+            notLoaded.forEach(function(link) {
+              link.onload = checkComplete;
+              link.onerror = checkComplete; // Continue even if some fail
+            });
+            
+            // Fallback timeout in case stylesheets don't load
+            setTimeout(callback, 2000);
+          }
+          
+          // Auto-trigger print dialog when window loads and styles are ready
           try {
             window.onload = function() {
+              waitForStylesheets(function() {
               // Use requestAnimationFrame to ensure DOM is ready
               requestAnimationFrame(function() {
                 setTimeout(function() {
@@ -177,7 +242,8 @@ export const createResumePrintWindow = (
                   } catch (printError) {
                     console.error("Error triggering print:", printError);
                   }
-                }, 300);
+                  }, 500);
+                });
               });
             };
           } catch (e) {
