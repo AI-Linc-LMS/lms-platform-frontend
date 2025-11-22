@@ -231,7 +231,8 @@ export const printResumeToPDF = (
   title: string = "Resume"
 ): boolean => {
   try {
-    // Get the actual resume content element
+    // Get the actual resume content element - this is the exact same element shown in preview
+    // The preview uses data-resume-content attribute, so we find it to ensure perfect match
     const contentElement = element.querySelector('[data-resume-content]') as HTMLElement || element;
     
     if (!contentElement) {

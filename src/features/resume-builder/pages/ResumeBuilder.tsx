@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useSelector } from "react-redux";
 import {
   ResumeData,
   PersonalInfo,
@@ -20,11 +21,23 @@ import { getDummyResumeData } from "../utils/dummyData";
 import { getColorsFromScheme } from "../utils/colorUtils";
 import { printResumeToPDF } from "../utils/printUtils";
 import { getCurrentUserId } from "../../../utils/userIdHelper";
+import { RootState } from "../../../redux/store";
+
+// Default fallback image URL
+const DEFAULT_PROFILE_IMAGE_URL = "https://static.vecteezy.com/system/resources/thumbnails/037/098/807/small/ai-generated-a-happy-smiling-professional-man-light-blurry-office-background-closeup-view-photo.jpg";
 
 const ResumeBuilder: React.FC = () => {
   const { success: showSuccessToast, error: showErrorToast } = useToast();
   const printRef = useRef<HTMLDivElement>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Get user profile picture from Redux store
+  const userProfilePicture = useSelector((state: RootState) => state.user.profile_picture);
+  
+  // Helper function to get default image URL
+  const getDefaultImageUrl = (): string => {
+    return userProfilePicture || DEFAULT_PROFILE_IMAGE_URL || "";
+  };
 
   // Handle scroll to skills category in preview
   const handlePreviewCategory = (category: SkillCategory) => {
@@ -34,10 +47,10 @@ const ResumeBuilder: React.FC = () => {
       if (categoryElement) {
         // Scroll to specific category
         categoryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Add temporary highlight to the category
-        categoryElement.classList.add('ring-4', 'ring-blue-400', 'ring-opacity-50', 'rounded-lg', 'p-2');
+        // Add temporary highlight to the category with lighter blue and smaller border radius
+        categoryElement.classList.add('ring-4', 'ring-blue-300', 'ring-opacity-50', 'rounded-md', 'p-2');
         setTimeout(() => {
-          categoryElement.classList.remove('ring-4', 'ring-blue-400', 'ring-opacity-50', 'rounded-lg', 'p-2');
+          categoryElement.classList.remove('ring-4', 'ring-blue-300', 'ring-opacity-50', 'rounded-md', 'p-2');
         }, 2000);
       }
     }
@@ -51,25 +64,26 @@ const ResumeBuilder: React.FC = () => {
       if (sectionElement) {
         // Scroll to section
         sectionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Add temporary highlight to the section
-        sectionElement.classList.add('ring-4', 'ring-blue-400', 'ring-opacity-50', 'rounded-lg');
+        // Add temporary highlight to the section with lighter blue and smaller border radius
+        sectionElement.classList.add('ring-4', 'ring-blue-300', 'ring-opacity-50', 'rounded-md');
         setTimeout(() => {
-          sectionElement.classList.remove('ring-4', 'ring-blue-400', 'ring-opacity-50', 'rounded-lg');
+          sectionElement.classList.remove('ring-4', 'ring-blue-300', 'ring-opacity-50', 'rounded-md');
         }, 2000);
       }
     }
   };
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [activeSection, setActiveSection] = useState("personal");
   const [activeSubsection, setActiveSubsection] = useState<string | undefined>(undefined);
   const [zoom, setZoom] = useState(1);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  
+  // Initialize resumeData with default image
   const [resumeData, setResumeData] = useState<ResumeData>({
     personalInfo: {
       firstName: "",
       lastName: "",
-      imageUrl: "",
+      imageUrl: userProfilePicture || DEFAULT_PROFILE_IMAGE_URL || "",
       title: "",
       email: "",
       phone: "",
@@ -96,11 +110,32 @@ const ResumeBuilder: React.FC = () => {
     activities: [],
     volunteering: [],
     awards: [],
-    selectedTemplate: "minimal",
+    selectedTemplate: "classic",
     themeColor: "#3b82f6",
     colorScheme: "Professional Blue",
     sectionOrder: ["personal", "skills", "experience", "education", "projects", "activities", "volunteering", "awards"],
   });
+  
+  // Update imageUrl when userProfilePicture changes (if no custom imageUrl is set)
+  useEffect(() => {
+    // Only set default image if imageUrl is empty or matches the default fallback
+    // This ensures we don't override user's custom image
+    const currentImageUrl = resumeData.personalInfo.imageUrl;
+    const defaultImage = getDefaultImageUrl();
+    
+    // If no image set, or it's the old default fallback, update to new default
+    if (!currentImageUrl || currentImageUrl === DEFAULT_PROFILE_IMAGE_URL) {
+      if (defaultImage && currentImageUrl !== defaultImage) {
+        setResumeData((prev) => ({
+          ...prev,
+          personalInfo: {
+            ...prev.personalInfo,
+            imageUrl: defaultImage,
+          },
+        }));
+      }
+    }
+  }, [userProfilePicture]);
 
   // Helper function to get user-specific storage keys
   const getStorageKeys = (userId: string) => ({
@@ -167,7 +202,20 @@ const ResumeBuilder: React.FC = () => {
           if (!parsed.personalInfo.codechef) parsed.personalInfo.codechef = "";
           if (!parsed.personalInfo.leetcode) parsed.personalInfo.leetcode = "";
           if (!parsed.personalInfo.cssbattle) parsed.personalInfo.cssbattle = "";
+          // Set default image if imageUrl is empty
+          if (!parsed.personalInfo.imageUrl) {
+            parsed.personalInfo.imageUrl = getDefaultImageUrl();
+          }
           setResumeData(parsed);
+        } else {
+          // No saved data, set default image
+          setResumeData((prev) => ({
+            ...prev,
+            personalInfo: {
+              ...prev.personalInfo,
+              imageUrl: getDefaultImageUrl(),
+            },
+          }));
         }
 
         if (savedZoom) {
@@ -259,59 +307,6 @@ const ResumeBuilder: React.FC = () => {
     setActiveSubsection(subsection);
   };
 
-  const handleExport = () => {
-    try {
-      const dataStr = JSON.stringify(resumeData, null, 2);
-      const dataBlob = new Blob([dataStr], { type: "application/json" });
-      const url = URL.createObjectURL(dataBlob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `resume-${new Date().toISOString().split("T")[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      showSuccessToast("Exported", "Resume data exported successfully!");
-    } catch (error) {
-      showErrorToast("Error", "Failed to export resume data.");
-    }
-  };
-
-  const handleImport = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string;
-        const imported = JSON.parse(content) as ResumeData;
-        
-        // Ensure all required fields exist
-        if (!imported.activities) imported.activities = [];
-        if (!imported.volunteering) imported.volunteering = [];
-        if (!imported.awards) imported.awards = [];
-        if (!imported.themeColor) imported.themeColor = "#3b82f6";
-        if (!imported.selectedTemplate) imported.selectedTemplate = "modern";
-        
-        setResumeData(imported);
-        showSuccessToast("Imported", "Resume data imported successfully!");
-      } catch (error) {
-        showErrorToast("Error", "Failed to import resume data. Invalid file format.");
-      }
-    };
-    reader.readAsText(file);
-    
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
   const handleDownloadPDF = () => {
     // Prevent multiple simultaneous downloads
     if ((handleDownloadPDF as any).isGenerating) {
@@ -323,6 +318,10 @@ const ResumeBuilder: React.FC = () => {
       return;
     }
 
+    // IMPORTANT: printRef points to the exact same element that's displayed in the preview.
+    // The element contains ResumePreview component which has data-resume-content attribute.
+    // printResumeToPDF will use querySelector('[data-resume-content]') to find the preview element,
+    // ensuring the downloaded PDF is exactly the same as what the user sees in the preview.
     const element = printRef.current;
     if (!element) {
       showErrorToast("Error", "Resume content not found. Please try again.");
@@ -337,13 +336,15 @@ const ResumeBuilder: React.FC = () => {
     (handleDownloadPDF as any).isGenerating = true;
     
     // SIMPLIFIED: Use print window directly - no heavy processing, no style modifications
-    // This prevents page freezing
+    // This prevents page freezing. The PDF uses the exact same element structure as the preview,
+    // ensuring pixel-perfect match between preview and downloaded PDF.
     try {
       // Show info message immediately
       showSuccessToast("Opening Print Dialog", "Please select 'Save as PDF' in the print dialog.");
       
       // Use browser's native print-to-PDF (handles all modern CSS including oklch)
-      // This approach doesn't freeze the page and doesn't modify any styles
+      // This approach doesn't freeze the page and doesn't modify any styles.
+      // The printed PDF will be exactly the same as the preview shown on screen.
       const printSuccess = printResumeToPDF(element, filename);
       
       if (!printSuccess) {
@@ -363,7 +364,7 @@ const ResumeBuilder: React.FC = () => {
       personalInfo: {
         firstName: "",
         lastName: "",
-        imageUrl: "",
+        imageUrl: getDefaultImageUrl(),
         title: "",
         email: "",
         phone: "",
@@ -390,7 +391,7 @@ const ResumeBuilder: React.FC = () => {
       activities: [],
       volunteering: [],
       awards: [],
-      selectedTemplate: "minimal",
+      selectedTemplate: "classic",
       themeColor: "#3b82f6",
       colorScheme: "Professional Blue",
       sectionOrder: ["personal", "skills", "experience", "education", "projects", "activities", "volunteering", "awards"],
@@ -403,22 +404,12 @@ const ResumeBuilder: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-50 overflow-hidden" style={{ overflowX: 'hidden', maxWidth: '100vw' }}>
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept=".json"
-        style={{ display: "none" }}
-        onChange={handleFileChange}
-      />
-
       {/* Header */}
       <ResumeHeader
         selectedTemplate={resumeData.selectedTemplate}
         onTemplateChange={updateTemplate}
         colorScheme={resumeData.colorScheme || "Professional Blue"}
         onColorSchemeChange={updateColorScheme}
-        onExport={handleExport}
-        onImport={handleImport}
         onDownloadPDF={handleDownloadPDF}
         onLoadSampleData={handleLoadSampleData}
         zoom={zoom}
