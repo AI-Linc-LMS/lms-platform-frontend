@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiX } from "react-icons/fi";
 
 interface StreakCongratulationsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onContinue?: () => void;
   currentStreak: number;
   completionDate?: string | null;
 }
@@ -12,26 +12,23 @@ interface StreakCongratulationsModalProps {
 const StreakCongratulationsModal: React.FC<StreakCongratulationsModalProps> = ({
   isOpen,
   onClose,
+  onContinue,
   currentStreak,
   completionDate,
 }) => {
-  const [showConfetti, setShowConfetti] = useState(false);
-
   useEffect(() => {
     if (isOpen) {
-      setShowConfetti(true);
-      // Auto close after 5 seconds
-      const timer = setTimeout(() => {
-        onClose();
-      }, 5000);
-      return () => clearTimeout(timer);
-    } else {
-      setShowConfetti(false);
+      // Prevent body scroll when modal is open
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
     }
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isOpen && (
         <>
           {/* Backdrop */}
@@ -39,172 +36,92 @@ const StreakCongratulationsModal: React.FC<StreakCongratulationsModalProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/40 z-[9998]"
             onClick={onClose}
           />
 
-          {/* Modal */}
-          <div className="fixed inset-0 flex items-center justify-center z-50 p-4 pointer-events-none">
+          {/* Modal Container - Positioned at top */}
+          <div className="fixed top-0 left-0 right-0 z-[9999] p-4 pointer-events-none overflow-hidden">
             <motion.div
-              initial={{ scale: 0.5, opacity: 0, y: 50 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.5, opacity: 0, y: 50 }}
-              transition={{
-                type: "spring",
-                duration: 0.5,
-                bounce: 0.4,
-              }}
-              className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden pointer-events-auto relative"
+              initial={{ opacity: 0, y: -50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -50 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="bg-white rounded-xl shadow-lg max-w-2xl w-full mx-auto border border-[var(--neutral-200)] pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Close button */}
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-4 z-10 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <FiX size={24} />
-              </button>
-
-              {/* Confetti Animation */}
-              {showConfetti && (
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                  {[...Array(30)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      className="absolute text-2xl"
-                      initial={{
-                        top: "-10%",
-                        left: `${Math.random() * 100}%`,
-                        rotate: 0,
-                      }}
-                      animate={{
-                        top: "110%",
-                        rotate: 360,
-                        transition: {
-                          duration: 2 + Math.random() * 2,
-                          delay: Math.random() * 0.5,
-                          ease: "easeOut",
-                        },
-                      }}
-                    >
-                      {["🎉", "✨", "🔥", "⭐", "💪"][Math.floor(Math.random() * 5)]}
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-
               {/* Content */}
-              <div className="relative p-8 text-center">
-                {/* Fire emoji with animation */}
-                <motion.div
-                  className="text-8xl mb-4"
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    rotate: [0, 10, -10, 0],
-                  }}
-                  transition={{
-                    duration: 1,
-                    repeat: Infinity,
-                    repeatDelay: 0.5,
-                  }}
+              <div className="p-6">
+                {/* Close Button */}
+                <button
+                  onClick={onClose}
+                  className="absolute top-4 right-4 text-[var(--neutral-400)] hover:text-[var(--neutral-600)] p-1 rounded transition-colors"
+                  aria-label="Close"
                 >
-                  🔥
-                </motion.div>
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
 
                 {/* Title */}
-                <motion.h2
-                  className="text-3xl font-black bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 bg-clip-text text-transparent mb-2"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  Congratulations, well done!
-                </motion.h2>
+                <h2 className="text-2xl font-bold text-[var(--neutral-700)] mb-3 pr-8">
+                  Congratulations!
+                </h2>
 
                 {/* Subtitle */}
-                <motion.p
-                  className="text-gray-600 text-lg mb-6"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
+                <p className="text-[var(--neutral-500)] text-base mb-6">
                   You've kept your learning streak alive for today.
-                </motion.p>
+                </p>
 
                 {/* Streak count display */}
-                <motion.div
-                  className="bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50 rounded-2xl p-6 border-2 border-orange-300 shadow-lg mb-6"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.4, type: "spring" }}
-                >
-                  <p className="text-sm text-gray-600 mb-2">Current Streak</p>
-                  <div className="flex items-center justify-center gap-2">
-                    <motion.span
-                      className="text-5xl font-black bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent"
-                      animate={{
-                        scale: [1, 1.1, 1],
-                      }}
-                      transition={{
-                        duration: 0.8,
-                        repeat: Infinity,
-                        repeatDelay: 1,
-                      }}
-                    >
-                      {currentStreak}
-                    </motion.span>
-                    <motion.span
-                      className="text-4xl"
-                      animate={{
-                        rotate: [0, 12, -12, 0],
-                        scale: [1, 1.2, 1],
-                      }}
-                      transition={{
-                        duration: 1,
-                        repeat: Infinity,
-                        repeatDelay: 0.5,
-                      }}
-                    >
-                      🔥
-                    </motion.span>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-2 font-semibold">
-                    {currentStreak === 1 ? "day" : "days"} in a row!
+                <div className="bg-[var(--neutral-50)] rounded-lg p-6 border border-[var(--neutral-200)] mb-6">
+                  <p className="text-sm font-semibold text-[var(--neutral-500)] mb-2 uppercase tracking-wide">
+                    Current Streak
                   </p>
+                  <div className="flex items-baseline justify-center gap-2">
+                    <span className="text-5xl font-bold text-[var(--primary-500)]">
+                      {currentStreak}
+                    </span>
+                    <span className="text-lg text-[var(--neutral-500)] font-medium">
+                      {currentStreak === 1 ? "day" : "days"} in a row
+                    </span>
+                  </div>
                   {completionDate && (
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-[var(--neutral-400)] mt-3">
                       Marked on {new Date(completionDate).toLocaleDateString()}
                     </p>
                   )}
-                </motion.div>
+                </div>
 
                 {/* Motivational message */}
-                <motion.p
-                  className="text-gray-700 font-medium"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  You're building an amazing habit—keep pushing and come back
-                  tomorrow to go even further! 💪
-                </motion.p>
+                <p className="text-[var(--neutral-600)] text-base leading-relaxed mb-6">
+                  You're building an amazing habit—keep pushing and come back tomorrow to go even further!
+                </p>
 
-                <motion.div
-                  className="mt-6 flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                >
+                {/* Action buttons */}
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
-                    onClick={onClose}
-                    className="px-4 py-2 rounded-full bg-[var(--primary-500)] text-white font-semibold shadow-md hover:bg-[var(--primary-600)] transition-colors"
+                    onClick={onContinue ?? onClose}
+                    className="flex-1 px-6 py-3 bg-[var(--primary-500)] hover:bg-[var(--primary-600)] text-[var(--font-light)] font-semibold rounded-lg transition-colors duration-200"
                   >
-                    Awesome, thanks!
+                    Continue learning
                   </button>
-                  <div className="px-4 py-2 rounded-full bg-white/80 border border-orange-200 text-sm text-orange-700 font-medium shadow-sm">
+                  
+                  <div className="px-6 py-3 bg-[var(--neutral-100)] text-[var(--neutral-600)] text-sm font-medium rounded-lg text-center">
                     Next milestone: {Math.max(1, currentStreak + 1)}-day streak
                   </div>
-                </motion.div>
+                </div>
               </div>
             </motion.div>
           </div>
