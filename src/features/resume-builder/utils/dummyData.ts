@@ -1,12 +1,15 @@
 import { v4 as uuidv4 } from "uuid";
 import { ResumeData, ColorScheme, SkillCategory } from "../types/resume";
 
+// Default profile image URL (same as in ResumeBuilder)
+const DEFAULT_PROFILE_IMAGE_URL = "https://static.vecteezy.com/system/resources/thumbnails/037/098/807/small/ai-generated-a-happy-smiling-professional-man-light-blurry-office-background-closeup-view-photo.jpg";
+
 export const getDummyResumeData = (): ResumeData => {
   return {
     personalInfo: {
       firstName: "Alex",
       lastName: "Johnson",
-      imageUrl: "https://via.placeholder.com/150?text=AJ",
+      imageUrl: DEFAULT_PROFILE_IMAGE_URL,
       title: "Senior Full Stack Developer",
       email: "alex.johnson@example.com",
       phone: "+1 (555) 987-6543",
@@ -267,7 +270,7 @@ export const getDummyResumeData = (): ResumeData => {
           "Won first place in annual hackathon competition for developing an innovative healthcare management system.",
       },
     ],
-    selectedTemplate: "modern",
+    selectedTemplate: "classic",
     colorScheme: "Professional Blue" as ColorScheme,
     sectionOrder: ["personal", "skills", "experience", "education", "projects", "activities", "volunteering", "awards"],
   };
