@@ -47,7 +47,7 @@ export const decodePaymentLink = (encodedData: string): PaymentLinkData | null =
     // Verify HMAC
     const expectedHmac = CryptoJS.HmacSHA256(compactData, ENCRYPTION_KEY).toString().slice(0, 8);
     if (hmac !== expectedHmac) {
-      console.error('Invalid HMAC');
+      // Invalid HMAC
       return null;
     }
 
@@ -55,7 +55,7 @@ export const decodePaymentLink = (encodedData: string): PaymentLinkData | null =
     const [amountStr, timestampStr, type] = compactData.split('_');
     
     if (!amountStr || !timestampStr || !type) {
-      console.error('Invalid data format');
+      // Invalid data format
       return null;
     }
 
@@ -81,7 +81,7 @@ export const decodePaymentLink = (encodedData: string): PaymentLinkData | null =
       generatedBy: 'system' // Since we don't store this in compact format
     };
   } catch (error) {
-    console.error('Error decoding payment link:', error);
+    // Error decoding payment link
     return null;
   }
 }; 

@@ -61,18 +61,20 @@ const ScholarshipCountdown: React.FC<ScholarshipCountdownProps> = ({
   const { data: flagshipPaymentStatus } = useQuery({
     queryKey: ["roadmap-payment-status-flagship", clientId, assessmentId],
     queryFn: () => getRoadmapPaymentStatus(clientId, "flagship"),
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    staleTime: 0,
+    refetchOnWindowFocus: false, // Disabled to reduce unnecessary refetches
+    refetchOnMount: false, // Only refetch if data is stale
+    staleTime: 1000 * 60 * 2, // 2 minutes - cache payment status
+    gcTime: 1000 * 60 * 5, // 5 minutes - keep in cache
     enabled: !!clientId,
   });
 
   const { data: flagshipCoursePaymentStatus } = useQuery({
     queryKey: ["flagship-course-payment-status", clientId, assessmentId],
     queryFn: () => getRoadmapPaymentStatus(clientId, "flagship-course"),
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    staleTime: 0,
+    refetchOnWindowFocus: false, // Disabled to reduce unnecessary refetches
+    refetchOnMount: false, // Only refetch if data is stale
+    staleTime: 1000 * 60 * 2, // 2 minutes - cache payment status
+    gcTime: 1000 * 60 * 5, // 5 minutes - keep in cache
     enabled: !!clientId,
   });
 

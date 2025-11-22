@@ -29,8 +29,9 @@ const AssessmentsList: React.FC = () => {
   } = useQuery<AssessmentListItem[]>({
     queryKey: ["assessments-list", clientId],
     queryFn: () => getAllAssessments(clientId),
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchOnWindowFocus: false, // Disabled to reduce unnecessary refetches
+    refetchOnMount: false, // Only refetch if data is stale
+    refetchOnReconnect: true, // Refetch on network reconnect
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });

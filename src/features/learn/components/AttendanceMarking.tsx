@@ -58,11 +58,18 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
     }
   }, [i18n.language]);
 
-  // Fetch live attendance activities
+  // Fetch live attendance activities - only refetch when tab is visible
   const { data: liveActivities, isLoading: isLoadingActivities } = useQuery({
     queryKey: ["live-attendance"],
     queryFn: () => getLiveAttendanceActivities(clientId),
-    refetchInterval: 60000, // Refetch every 60 seconds
+    refetchInterval: () => {
+      // Only refetch if tab is visible
+      return !document.hidden ? 60000 : false; // Refetch every 60 seconds when visible
+    },
+    refetchOnWindowFocus: false, // Disabled to avoid unnecessary refetches
+    refetchOnMount: false, // Only refetch if data is stale
+    staleTime: 1000 * 60 * 2, // 2 minutes - data is fresh for 2 min
+    gcTime: 1000 * 60 * 5, // 5 minutes - keep in cache
   });
 
   // Mark attendance mutation
@@ -89,7 +96,6 @@ const AttendanceMarking: React.FC<AttendanceMarkingProps> = () => {
       }, 5000);
     },
     onError: (error: any) => {
-      console.log(error);
       setMessage({
         type: "error",
         text:
