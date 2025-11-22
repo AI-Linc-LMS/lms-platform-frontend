@@ -120,6 +120,19 @@ axiosInstance.interceptors.request.use(
       config.headers['Authorization'] = `Bearer ${token}`;
     }
 
+    // Only add cache-busting headers if service worker is active (to prevent caching)
+    // This avoids unnecessary headers when service worker is disabled
+    if (
+      "serviceWorker" in navigator &&
+      navigator.serviceWorker.controller &&
+      config.url &&
+      (config.url.startsWith("/api/") || config.url.startsWith("api/"))
+    ) {
+      config.headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+      config.headers["Pragma"] = "no-cache";
+      config.headers["Expires"] = "0";
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
