@@ -68,7 +68,7 @@ const CongratsModal: React.FC<CongratsModalProps> = ({ open, onClose }) => {
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex items-center justify-center transition-all duration-300 ${
+      className={`fixed inset-0 z-[9999] flex items-start justify-center pt-16 transition-all duration-300 ${
         isVisible ? "bg-black/50" : "bg-black/0"
       }`}
     >
