@@ -7,6 +7,7 @@ import { submitContent } from "../../../../../services/enrolled-courses-content/
 import Comments from "../../../../../commonComponents/components/Comments";
 import ReportIssueModal from "../../enrolled-courses/ReportIssueModal";
 import parse from "html-react-parser";
+import { STREAK_QUERY_KEY } from "../../../hooks/useStreakData";
 
 interface VideoCardProps {
   currentWeek: { title: string };
@@ -67,6 +68,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
   onProgressUpdate,
 }) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const numericClientId = Number(clientId) || 0;
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"description" | "comments">(
     "description"
@@ -80,16 +82,14 @@ const VideoCard: React.FC<VideoCardProps> = ({
   useEffect(() => {
     // Check for potential issues with the API parameters
     if (contentId === undefined || contentId === null || contentId <= 0) {
-      //console.error("VideoCard - Invalid contentId:", contentId);
     }
     if (courseId === undefined || courseId === null || courseId <= 0) {
-      //console.error("VideoCard - Invalid courseId:", courseId);
     }
   }, [contentId, courseId]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["video", courseId, contentId],
-    queryFn: () => getCourseContent(clientId, courseId, contentId),
+    queryFn: () => getCourseContent(numericClientId, courseId, contentId),
     enabled: !!contentId && !!courseId,
     retry: 3,
     retryDelay: 1000,
@@ -107,7 +107,6 @@ const VideoCard: React.FC<VideoCardProps> = ({
     }
 
     if (!data) {
-      //console.log("VideoCard - No data returned from API");
       return;
     }
 
@@ -116,18 +115,15 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
     // Check if details object exists
     if (!responseData.details) {
-      //console.log("VideoCard - Missing details object in response data");
       return;
     }
 
     // Process video URL from response data
     if (!responseData.details.video_url) {
-      //console.log("VideoCard - Missing video_url in details object");
       return;
     }
 
     const videoUrl = String(responseData.details.video_url);
-    //console.log("VideoCard - Original Video URL:", videoUrl);
 
     // Process the URL
     let processedUrl = videoUrl;
@@ -146,11 +142,9 @@ const VideoCard: React.FC<VideoCardProps> = ({
       if (match && match[1]) {
         const videoId = match[1];
         processedUrl = `https://player.vimeo.com/video/${videoId}?badge=0&autopause=0&player_id=0&app_id=58479`;
-        //console.log("VideoCard - Converted to player URL:", processedUrl);
       }
     }
 
-    //console.log("VideoCard - Final Processed URL:", processedUrl);
     setProcessedVideoUrl(processedUrl);
   }, [data, useDebugMode]);
 
@@ -174,15 +168,20 @@ const VideoCard: React.FC<VideoCardProps> = ({
     }
 
     // Continue with existing completion logic
-    if (clientId && courseId && contentId) {
-      await submitContent(clientId, courseId, contentId, "VideoTutorial", {});
+    if (numericClientId && courseId && contentId) {
+      await submitContent(
+        numericClientId,
+        courseId,
+        contentId,
+        "VideoTutorial",
+        {}
+      );
 
       // Invalidate streak data to update streak immediately after video completion
       await queryClient.invalidateQueries({
-        queryKey: ["streakTable", parseInt(clientId)],
+        queryKey: [STREAK_QUERY_KEY, numericClientId],
       });
     }
-    //console.log("Video completed! Loading next video...");
     setTimeout(() => {
       nextContent();
     }, 1500);
@@ -216,7 +215,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
       return parse(wrapWithDiv(processedContent));
     } catch {
-      //console.error("Error parsing HTML content:", error);
+      // Error parsing HTML content
       return (
         <div className="p-3 bg-red-100 border border-red-300 rounded text-red-700">
           Error rendering content. Please try refreshing the page.
@@ -245,7 +244,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
   // If API error, show error message with debug option
   if (error && !useDebugMode) {
-    //console.error("VideoCard - Error loading data:", error);
+    // Error loading data
     return (
       <div className="text-red-500 p-4">
         <div>Error loading video: {String(error)}</div>
@@ -552,7 +551,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
             contentId={contentId}
             courseId={courseId}
             isDarkTheme={false}
-            clientId={Number(clientId)}
+            clientId={numericClientId}
           />
         )}
       </div>
@@ -564,7 +563,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
       <ReportIssueModal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
-        clientId={Number(clientId)}
+        clientId={numericClientId}
       />
     </div>
   );

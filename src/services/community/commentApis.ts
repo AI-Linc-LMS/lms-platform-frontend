@@ -8,7 +8,6 @@ export const addBookmark = async (clientId: number, threadId: number) => {
     );
     return response.data;
   } catch (error) {
-    console.error("Error creating bookmark:", error);
     throw error;
   }
 };
@@ -20,7 +19,6 @@ export const removeBookmark = async (clientId: number, threadId: number) => {
     );
     return response.data;
   } catch (error) {
-    console.error("Error removing bookmark:", error);
     throw error;
   }
 };
@@ -32,7 +30,6 @@ export const getAllComments = async (clientId: number, threadId: number) => {
     );
     return response.data;
   } catch (error) {
-    console.error("Error fetching comments:", error);
     throw error;
   }
 };
@@ -49,7 +46,6 @@ export const createComment = async (
     );
     return response.data;
   } catch (error) {
-    console.error("Error creating comment:", error);
     throw error;
   }
 };
@@ -67,7 +63,6 @@ export const updateComment = async (
     );
     return response.data;
   } catch (error) {
-    console.error("Error updating comment:", error);
     throw error;
   }
 };
@@ -83,7 +78,6 @@ export const deleteComment = async (
     );
     return response.data;
   } catch (error) {
-    console.error("Error deleting comment:", error);
     throw error;
   }
 };
@@ -101,7 +95,6 @@ export const addVoteOnComment = async (
     );
     return response.data;
   } catch (error) {
-    console.error("Error adding vote on comment:", error);
     throw error;
   }
 };
@@ -117,7 +110,6 @@ export const removeVoteOnComment = async (
     );
     return response.data;
   } catch (error) {
-    console.error("Error removing vote on comment:", error);
     throw error;
   }
 };

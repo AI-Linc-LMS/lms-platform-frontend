@@ -4,11 +4,10 @@ import TopNav from "../constants/TopNav";
 import MobileNavBar from "../commonComponents/mobileNavigation/MobileNavBar";
 import AdminMobileNavBar from "../commonComponents/mobileNavigation/AdminMobileNavBar";
 import StreakCongratulationsModal from "../components/StreakCongratulationsModal";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { getStreakTableData } from "../services/dashboardApis";
 import { useStreakCongratulations } from "../hooks/useStreakCongratulations";
+import { useStreakData } from "../features/learn/hooks/useStreakData";
 
 function Container({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -17,18 +16,31 @@ function Container({ children }: { children: React.ReactNode }) {
   const [showMobileNav, setShowMobileNav] = useState(true);
   const [isAdminRoute, setIsAdminRoute] = useState(false);
 
-  // Get client ID from localStorage
-  const user = localStorage.getItem("user");
-  const parsedUser = user ? JSON.parse(user) : null;
-  const clientId = parsedUser?.client_id ?? null;
-  const userId = parsedUser?.id ?? null;
+  // Memoize localStorage parsing to avoid re-parsing on every render
+  const { clientId, userId } = useMemo(() => {
+    try {
+      const user = localStorage.getItem("user");
+      if (!user) return { clientId: null, userId: null };
+      const parsedUser = JSON.parse(user);
+      const rawClientId = parsedUser?.client_id ?? null;
+      const parsedClientId =
+        typeof rawClientId === "number"
+          ? rawClientId
+          : rawClientId
+          ? Number(rawClientId)
+          : null;
+      return {
+        clientId: parsedClientId,
+        userId: parsedUser?.id ?? null,
+      };
+    } catch {
+      return { clientId: null, userId: null };
+    }
+  }, [location.pathname]); // Only re-parse if route changes (user might change on login)
 
   // Query streak data
-  const { data: streakData } = useQuery({
-    queryKey: ["streakTable", clientId],
-    queryFn: () => getStreakTableData(clientId),
+  const { data: streakData } = useStreakData(clientId, {
     enabled: !!clientId,
-    refetchInterval: 10000, // Refetch every 10 seconds to catch streak updates
   });
 
   // Use the streak congratulations hook

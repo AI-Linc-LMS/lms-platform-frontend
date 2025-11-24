@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import * as tf from "@tensorflow/tfjs";
-import "@tensorflow/tfjs-backend-webgl";
-import * as blazeface from "@tensorflow-models/blazeface";
+import type { BlazeFaceModel } from "@tensorflow-models/blazeface";
+import { loadBlazeFaceModel } from "../utils/faceDetectionLoader";
 
 interface FaceDetectionResult {
   faceCount: number;
@@ -33,7 +32,7 @@ const useFaceDetection = (videoRef: {
   const [error, setError] = useState<string | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
 
-  const modelRef = useRef<blazeface.BlazeFaceModel | null>(null);
+  const modelRef = useRef<BlazeFaceModel | null>(null);
   const animationRef = useRef<number | null>(null);
 
   // Initialize TensorFlow and load BlazeFace model
@@ -42,12 +41,7 @@ const useFaceDetection = (videoRef: {
       setIsModelLoading(true);
       setError(null);
 
-      // Initialize TensorFlow backend with WebGL
-      await tf.setBackend("webgl");
-      await tf.ready();
-
-      // Load BlazeFace model
-      const model = await blazeface.load();
+      const model = await loadBlazeFaceModel();
       modelRef.current = model;
     } catch (err) {
       setError(
@@ -167,9 +161,8 @@ const useFaceDetection = (videoRef: {
       if (animationRef.current) {
         clearTimeout(animationRef.current);
       }
-      if (modelRef.current) {
-        modelRef.current.dispose();
-      }
+      modelRef.current?.dispose?.();
+      modelRef.current = null;
     };
   }, [initializeModel]);
 

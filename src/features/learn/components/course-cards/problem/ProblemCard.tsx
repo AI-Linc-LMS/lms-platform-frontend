@@ -22,6 +22,7 @@ import { ProblemData, TestCase, CustomTestCase } from "./problem.types";
 import React from "react";
 import { Code, Play, Moon, Sun } from "lucide-react";
 import { Tooltip } from "@mui/material";
+import { STREAK_QUERY_KEY } from "../../../hooks/useStreakData";
 
 interface ProblemCardProps {
   contentId: number;
@@ -39,10 +40,11 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   isSidebarContentOpen,
 }) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const numericClientId = Number(clientId) || 0;
   const queryClient = useQueryClient();
   const { data, isLoading, error } = useQuery<ProblemData>({
     queryKey: ["problem", courseId, contentId],
-    queryFn: () => getCourseContent(clientId, courseId, contentId),
+    queryFn: () => getCourseContent(numericClientId, courseId, contentId),
     enabled: !!contentId && !!courseId,
     staleTime: 0,
     gcTime: 5 * 60 * 1000,
@@ -420,7 +422,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const runCodeMutation = useMutation({
     mutationFn: () => {
       return runCode(
-        parseInt(clientId),
+        numericClientId,
         courseId,
         contentId,
         code,
@@ -480,7 +482,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const runCustomCodeMutation = useMutation({
     mutationFn: (input: string) => {
       return runCustomCode(
-        parseInt(clientId),
+        numericClientId,
         courseId,
         contentId,
         code,
@@ -577,7 +579,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const submitCodeMutation = useMutation({
     mutationFn: () => {
       return submitCode(
-        parseInt(clientId),
+        numericClientId,
         courseId,
         contentId,
         code,
@@ -600,7 +602,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         setIsSubmitSuccess(true);
 
         await queryClient.invalidateQueries({
-          queryKey: ["streakTable", parseInt(clientId)],
+          queryKey: [STREAK_QUERY_KEY, numericClientId],
         });
       } else {
         setSubmitResult({
@@ -867,7 +869,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         monaco.editor.setModelLanguage(model, normalized);
       }
     } catch (error) {
-      console.error("Error in editor mount:", error);
+      // Error in editor mount
     }
   };
 
@@ -889,7 +891,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
             monacoRef.current.editor.setModelLanguage(model, normalized);
           }
         } catch (error) {
-          console.error("Error updating language:", error);
+          // Error updating language
         }
       }
     }

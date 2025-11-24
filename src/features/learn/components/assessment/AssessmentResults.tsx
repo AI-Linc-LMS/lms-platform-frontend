@@ -27,10 +27,10 @@ const AssessmentResults: React.FC<AssessmentResultsProps> = ({
       assessmentId
         ? redeemScholarship(clientId, assessmentId)
         : Promise.reject(new Error("No assessment ID")),
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    staleTime: 0,
-    gcTime: 0,
+    refetchOnWindowFocus: false, // Disabled to reduce unnecessary refetches
+    refetchOnMount: false, // Only refetch if data is stale
+    staleTime: 1000 * 60 * 5, // 5 minutes - cache assessment results
+    gcTime: 1000 * 60 * 10, // 10 minutes - keep in cache
     enabled: !!clientId && !!assessmentId,
   });
 

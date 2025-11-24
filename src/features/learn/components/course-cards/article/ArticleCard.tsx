@@ -13,6 +13,7 @@ import {
   mergeLayoutConfigs,
   validateLayoutConfig,
 } from "./ArticleLayoutUtils";
+import { STREAK_QUERY_KEY } from "../../../hooks/useStreakData";
 
 interface ArticleCardProps {
   contentId: number;
@@ -50,6 +51,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
 }) => {
   const navigate = useNavigate();
   const clientId = import.meta.env.VITE_CLIENT_ID;
+  const numericClientId = Number(clientId) || 0;
   const queryClient = useQueryClient();
 
   const {
@@ -58,7 +60,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
     error,
   } = useQuery<ArticleData>({
     queryKey: ["article", courseId, contentId],
-    queryFn: () => getCourseContent(clientId, courseId, contentId),
+    queryFn: () => getCourseContent(numericClientId, courseId, contentId),
     enabled: !!contentId && !!courseId,
     // Ensure fresh data when switching between content
     staleTime: 0,
@@ -96,18 +98,17 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
 
   const handleMarkComplete = async () => {
     try {
-      await submitContent(clientId, courseId, contentId, "Article", {});
+      await submitContent(numericClientId, courseId, contentId, "Article", {});
       setIsCompleted(!isCompleted);
       onMarkComplete();
 
       // Invalidate streak data to update streak immediately after article completion
       await queryClient.invalidateQueries({
-        queryKey: ["streakTable", parseInt(clientId)],
+        queryKey: [STREAK_QUERY_KEY, numericClientId],
       });
 
       navigate(0);
     } catch {
-      //console.log(err);
       // handle error
     }
   };
@@ -153,11 +154,10 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
       }
 
       // For debugging
-      //console.log('Processed article content:', processedContent.substring(0, 100) + '...');
 
       return parse(wrapWithDiv(processedContent));
     } catch {
-      //console.error('Error parsing HTML content:', error);
+      // Error parsing HTML content
       return (
         <div className="p-3 bg-red-100 border border-red-300 rounded text-red-700">
           Error rendering content. Please try refreshing the page.
@@ -183,7 +183,6 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
     // Check for template first
     const templateName = articleData.details?.template || articleData.template;
     if (templateName && templateName in ARTICLE_LAYOUT_TEMPLATES) {
-      //console.log(`Using template: ${templateName}`);
       baseConfig = getLayoutTemplate(templateName);
     } else {
       baseConfig = ARTICLE_LAYOUT_TEMPLATES.DEFAULT;
@@ -193,7 +192,6 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
     const backendConfig =
       articleData.details?.layout_config || articleData.layout_config;
     if (backendConfig && validateLayoutConfig(backendConfig)) {
-      //console.log('Using custom layout config from backend');
       customConfig = backendConfig;
     }
 
