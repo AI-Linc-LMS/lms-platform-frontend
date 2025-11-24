@@ -271,7 +271,7 @@ export const getCompanyByName = (name: string): CompanyLogo | null => {
 };
 
 // Frontend companies (original default)
-const FRONTEND_DEFAULT_COMPANIES = ["Microsoft", "IBM", "Cisco"];
+const FRONTEND_DEFAULT_COMPANIES = ["Microsoft", "Google", "Amazon"];
 
 export const getEffectiveCompanies = (course: {
   id: number;
