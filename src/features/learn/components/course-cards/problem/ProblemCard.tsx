@@ -30,6 +30,8 @@ interface ProblemCardProps {
   onSubmit: (code: string) => void;
   onComplete?: () => void;
   isSidebarContentOpen: boolean;
+  isFullScreen?: boolean;
+  onToggleFullScreen?: () => void;
 }
 
 const ProblemCard: React.FC<ProblemCardProps> = ({
@@ -38,6 +40,8 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   onSubmit,
   onComplete,
   isSidebarContentOpen,
+  isFullScreen = false,
+  onToggleFullScreen,
 }) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const numericClientId = Number(clientId) || 0;
@@ -902,7 +906,11 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   return (
     <div
       className={`overflow-hidden ${
-        isDarkTheme ? "bg-gray-900" : "bg-gray-50"
+        isFullScreen
+          ? "fixed inset-0 z-50 bg-gray-900"
+          : isDarkTheme
+          ? "bg-gray-900"
+          : "bg-gray-50"
       }`}
     >
       {/* Success Modal */}
@@ -978,11 +986,41 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-12 gap-3 p-3 h-screen">
+      <div
+        className={`grid grid-cols-12 gap-3 p-3 ${
+          isFullScreen ? "h-screen" : "h-screen"
+        }`}
+      >
         {/* Left Panel - Problem Description */}
-        {!isSidebarContentOpen && (
-          <div className="col-span-12 lg:col-span-6 !rounded-xl border border-primary-100 overflow-hidden bg-white">
-            <div className="flex flex-row text-secondary-700 text-sm border-b border-gray-200">
+        {(isFullScreen || !isSidebarContentOpen) && (
+          <div
+            className={`col-span-12 ${
+              isFullScreen ? "lg:col-span-5" : "lg:col-span-5"
+            } !rounded-xl border border-primary-100 overflow-hidden bg-white flex flex-col h-full`}
+          >
+            <div className="flex flex-row text-secondary-700 text-sm border-b border-gray-200 flex-shrink-0">
+              {isFullScreen && onToggleFullScreen && (
+                <button
+                  onClick={onToggleFullScreen}
+                  className="flex flex-row items-center gap-2 px-4 py-3 text-gray-500 hover:bg-gray-50 transition-all"
+                  title="Exit Full Screen"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              )}
               <button
                 className={`flex flex-row items-center gap-2 px-4 py-3 transition-all ${
                   activeTab === "description"
@@ -1066,8 +1104,12 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         {/* Right Panel - Code Editor and Console */}
         <div
           className={`${
-            isSidebarContentOpen ? "col-span-12" : "col-span-12 lg:col-span-6"
-          } border border-primary-100 rounded-xl overflow-hidden ${
+            isFullScreen
+              ? "col-span-12 lg:col-span-7"
+              : isSidebarContentOpen
+              ? "col-span-12"
+              : "col-span-12 lg:col-span-7"
+          } border border-primary-100 rounded-xl overflow-hidden flex flex-col h-full ${
             isDarkTheme ? "bg-gray-900" : "bg-white"
           }`}
         >
@@ -1230,43 +1272,45 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
             </div>
           </div>
 
-          {/* Editor and Console Grid */}
-          <div className="grid grid-cols-12 h-[calc(100%-64px)]">
-            {/* Code Editor - Left Side */}
+          {/* Editor and Console - Vertical Layout */}
+          <div className="flex flex-col h-[calc(100%-0px)] overflow-hidden">
+            {/* Code Editor - Full Width Top */}
             <div
-              className={`col-span-12 md:col-span-7 ${
+              className={`flex-1 min-h-0 flex flex-col ${
                 isDarkTheme
-                  ? "border-r border-gray-700"
-                  : "border-r border-gray-200"
+                  ? "border-b border-gray-700"
+                  : "border-b border-gray-200"
               }`}
             >
               {shouldRenderEditor ? (
-                <AppEditor
-                  height="100%"
-                  language={
-                    selectedLanguage === "python3"
-                      ? "python"
-                      : selectedLanguage === "c++"
-                      ? "cpp"
-                      : selectedLanguage || "javascript"
-                  }
-                  value={code}
-                  onChange={(v) => handleCodeChange(v)}
-                  theme={isDarkTheme ? "vs-dark" : "light"}
-                  disableCopyPaste={true}
-                  onMount={handleEditorDidMount}
-                  className="w-full h-full"
-                />
+                <div className="flex-1 min-h-0 w-full overflow-hidden">
+                  <AppEditor
+                    height="100%"
+                    language={
+                      selectedLanguage === "python3"
+                        ? "python"
+                        : selectedLanguage === "c++"
+                        ? "cpp"
+                        : selectedLanguage || "javascript"
+                    }
+                    value={code}
+                    onChange={(v) => handleCodeChange(v)}
+                    theme={isDarkTheme ? "vs-dark" : "light"}
+                    disableCopyPaste={true}
+                    onMount={handleEditorDidMount}
+                    className="w-full h-full"
+                  />
+                </div>
               ) : (
-                <div className="flex items-center justify-center h-full">
+                <div className="flex items-center justify-center flex-1">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
                 </div>
               )}
             </div>
 
-            {/* Console Panel - Right Side */}
+            {/* Console Panel - Full Width Bottom */}
             <div
-              className={`col-span-12 md:col-span-5 flex flex-col overflow-hidden h-full ${
+              className={`flex flex-col overflow-hidden flex-1 min-h-10 ${
                 isDarkTheme ? "bg-gray-900" : "bg-white"
               }`}
             >
