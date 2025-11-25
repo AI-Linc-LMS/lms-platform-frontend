@@ -106,12 +106,13 @@ const CourseTopicDetailPage: React.FC = () => {
   const [activeSidebarLabel, setActiveSidebarLabel] = useState<string>("All");
   const [isSidebarContentOpen, setIsSidebarContentOpen] =
     useState<boolean>(true);
+  const [isProblemFullScreen, setIsProblemFullScreen] =
+    useState<boolean>(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [selectedContentId, setSelectedContentId] = useState<
     number | undefined
   >();
   const [isSwitchingTopic, setIsSwitchingTopic] = useState(false);
-
 
   // Effect to clear all cached content when switching topics/submodules
   useEffect(() => {
@@ -540,10 +541,26 @@ const CourseTopicDetailPage: React.FC = () => {
       | "Article"
       | "Quiz"
   ) => {
-    // Close sidebar on second click of the same content (for all tabs)
-    if (selectedContentId === contentId) {
+    // Special handling for CodingProblem - expand to full screen
+    if (contentType === "CodingProblem") {
+      // If clicking the same problem, toggle full screen
+      if (selectedContentId === contentId) {
+        setIsProblemFullScreen((prev) => !prev);
+        setIsSidebarContentOpen(false); // Close sidebar when expanding to full screen
+        return;
+      }
+      // If clicking a different problem, expand to full screen and select it
+      setIsProblemFullScreen(true);
       setIsSidebarContentOpen(false);
-      return; // Don't proceed if it's the same content
+    } else {
+      // For other content types, close sidebar on second click
+      if (selectedContentId === contentId) {
+        setIsSidebarContentOpen(false);
+        setIsProblemFullScreen(false); // Reset full screen for other content types
+        return;
+      }
+      // Reset full screen when switching to different content
+      setIsProblemFullScreen(false);
     }
 
     // Clear cache for the previous content to prevent stale data
@@ -703,7 +720,6 @@ const CourseTopicDetailPage: React.FC = () => {
   };
   // Update the updateProblemStatus function to take an optional parameter to skip API calls
   const updateProblemStatus = (problemId: string, status: string): void => {
-
     if (submoduleData?.data) {
       const updatedData = [...submoduleData.data];
       const problemIndex = updatedData.findIndex(
@@ -969,10 +985,13 @@ const CourseTopicDetailPage: React.FC = () => {
               <ProblemCard
                 key={`problem-${submoduleId}-${currentContent.id}`}
                 isSidebarContentOpen={isSidebarContentOpen}
+                isFullScreen={isProblemFullScreen}
+                onToggleFullScreen={() =>
+                  setIsProblemFullScreen((prev) => !prev)
+                }
                 contentId={currentContent.id}
                 courseId={parseInt(courseId || "0")}
-                onSubmit={() => {
-                }}
+                onSubmit={() => {}}
                 onComplete={() => {
                   updateProblemStatus(currentContent.id.toString(), "complete");
                   triggerStreakRefresh();

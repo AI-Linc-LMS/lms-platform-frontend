@@ -151,8 +151,17 @@ const MockInterview = () => {
       return null; // default to submitting
     }
   );
+  const [submittedAttemptId, setSubmittedAttemptId] = useState<string | null>(
+    () => {
+      // Get attemptId from sessionStorage if available
+      return sessionStorage.getItem("interview_attempt_id");
+    }
+  );
 
-  const handleInterviewComplete = (submissionSuccess?: boolean) => {
+  const handleInterviewComplete = (
+    submissionSuccess?: boolean,
+    attemptId?: string
+  ) => {
     // If undefined, it means submission is in progress
     // If boolean, submission is complete (true = success, false = failed)
     if (submissionSuccess === undefined) {
@@ -161,10 +170,20 @@ const MockInterview = () => {
       if (submitting === "true") {
         setSubmissionStatus(null); // null = submitting
       }
+      // Store attemptId in sessionStorage and state
+      if (attemptId) {
+        sessionStorage.setItem("interview_attempt_id", attemptId);
+        setSubmittedAttemptId(attemptId);
+      }
       navigate("/mock-interview/complete");
     } else {
       // Update status after navigation
       setSubmissionStatus(submissionSuccess);
+      // Store attemptId if provided
+      if (attemptId) {
+        sessionStorage.setItem("interview_attempt_id", attemptId);
+        setSubmittedAttemptId(attemptId);
+      }
     }
   };
 
@@ -188,21 +207,6 @@ const MockInterview = () => {
     const interval = setInterval(checkSubmissionStatus, 500);
     return () => clearInterval(interval);
   }, []);
-
-  // View history from complete page
-  const handleViewHistoryFromComplete = () => {
-    setListRefreshKey((prev) => prev + 1);
-    navigate("/mock-interview/previous");
-  };
-
-  // Start new from complete page
-  const handleStartNewFromComplete = () => {
-    setScheduledInterviewId(null);
-    setInterviewQuestions([]);
-    setSelectedTopic(null);
-    setSelectedDifficulty(null);
-    navigate("/mock-interview");
-  };
 
   // View interview record detail
   const handleViewRecord = (record: InterviewRecord) => {
@@ -309,10 +313,6 @@ const MockInterview = () => {
                 element={
                   <InterviewDetailViewWrapper
                     selectedRecord={selectedRecord}
-                    onBack={() => {
-                      setListRefreshKey((prev) => prev + 1);
-                      navigate(-1);
-                    }}
                   />
                 }
               />
@@ -322,9 +322,8 @@ const MockInterview = () => {
                 path="complete"
                 element={
                   <InterviewCompletePage
-                    onViewHistory={handleViewHistoryFromComplete}
-                    onStartNew={handleStartNewFromComplete}
                     submissionStatus={submissionStatus}
+                    attemptId={submittedAttemptId}
                   />
                 }
               />
@@ -378,10 +377,8 @@ const InterviewRoomWrapper = ({
 
 const InterviewDetailViewWrapper = ({
   selectedRecord,
-  onBack,
 }: {
   selectedRecord: InterviewRecord | null;
-  onBack: () => void;
 }) => {
   const { recordId } = useParams<{ recordId: string }>();
 
@@ -407,7 +404,7 @@ const InterviewDetailViewWrapper = ({
     return <Navigate to="/mock-interview/previous" replace />;
   }
 
-  return <InterviewDetailView record={record} onBack={onBack} />;
+  return <InterviewDetailView record={record} />;
 };
 
 export default MockInterview;
