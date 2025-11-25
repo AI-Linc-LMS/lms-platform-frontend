@@ -106,22 +106,6 @@ const MockInterview = () => {
     setInterviewMode(null);
   };
 
-  const handleViewHistoryFromComplete = () => {
-    setListRefreshKey((prev) => prev + 1); // Trigger refresh
-    setStep(6);
-    setInterviewType("history");
-  };
-
-  const handleStartNewFromComplete = () => {
-    setStep(1);
-    setInterviewType(null);
-    setInterviewMode(null);
-    setScheduledInterviewId(null);
-    setInterviewQuestions([]);
-    setSelectedTopic(null);
-    setSelectedDifficulty(null);
-  };
-
   const handleViewRecord = (record: InterviewRecord) => {
     setSelectedRecord(record);
     setStep(7); // Show detail view (reusing step 7 for both waiting room and detail view)
@@ -130,12 +114,6 @@ const MockInterview = () => {
   const handleBackFromList = () => {
     setStep(1);
     setInterviewType(null);
-  };
-
-  const handleBackFromDetail = () => {
-    setListRefreshKey((prev) => prev + 1); // Trigger refresh
-    setStep(6);
-    setSelectedRecord(null);
   };
 
   const handleBackFromModeSelector = () => {
@@ -415,7 +393,6 @@ const MockInterview = () => {
                 {step === 7 && selectedRecord && (
                   <InterviewDetailView
                     record={selectedRecord}
-                    onBack={handleBackFromDetail}
                   />
                 )}
               </div>
@@ -436,10 +413,7 @@ const MockInterview = () => {
             {/* Completion Page - No Container */}
             {step === 8 && (
               <div className="bg-white rounded-2xl shadow-xl p-8">
-                <InterviewCompletePage
-                  onViewHistory={handleViewHistoryFromComplete}
-                  onStartNew={handleStartNewFromComplete}
-                />
+                <InterviewCompletePage />
               </div>
             )}
           </div>

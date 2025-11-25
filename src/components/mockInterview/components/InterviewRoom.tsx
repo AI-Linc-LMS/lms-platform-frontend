@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { CircularProgress } from "@mui/material";
 import useFullscreenControl from "../hooks/useFullscreenControl";
 import InterviewSetup from "./InterviewSetup";
 import ActiveInterviewSession from "./ActiveInterviewSession";
@@ -19,7 +20,7 @@ interface InterviewRoomProps {
   topic: string;
   difficulty: string;
   onBack: () => void;
-  onComplete: (submissionSuccess?: boolean) => void;
+  onComplete: (submissionSuccess?: boolean, attemptId?: string) => void;
   interviewId?: string | null;
   questions?: any[];
 }
@@ -30,6 +31,7 @@ const InterviewRoom = ({
   onBack,
   onComplete,
   interviewId: providedInterviewId,
+  questions: providedQuestions,
 }: InterviewRoomProps) => {
   // Proctoring
   const { eventLog, getEventLog } = useProctoring();
@@ -573,6 +575,13 @@ const InterviewRoom = ({
     }
   }, [isRecording, isVideoReady, faceDetectionReady]); // Added dependencies for video readiness
 
+  // Initialize provided questions on mount
+  useEffect(() => {
+    if (providedQuestions && providedQuestions.length > 0) {
+      setInterviewQuestions(providedQuestions);
+    }
+  }, [providedQuestions]);
+
   // Get questions - Use provided questions or generate locally as fallback
   const questions = useMemo(() => {
     if (interviewQuestions && interviewQuestions.length > 0) {
@@ -675,6 +684,131 @@ const InterviewRoom = ({
     },
     [logEvent]
   );
+
+  // Auto-initialize camera and auto-start interview when questions are provided (from waiting room)
+  useEffect(() => {
+    if (
+      providedQuestions &&
+      providedQuestions.length > 0 &&
+      !isRecording &&
+      !preInitializedStream &&
+      providedInterviewId
+    ) {
+      // Auto-initialize camera in background
+      const initializeCamera = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 640, max: 1280 },
+              height: { ideal: 480, max: 720 },
+              facingMode: "user",
+              frameRate: { ideal: 30, max: 30 },
+            },
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+              sampleRate: 44100,
+            },
+          });
+
+          handleCameraReady(stream);
+
+          // Auto-start interview once camera is ready
+          setTimeout(() => {
+            if (preInitializedStreamRef.current && providedInterviewId) {
+              // Use provided questions and interview ID to start immediately
+              const startWithProvidedData = async () => {
+                setAttemptId(providedInterviewId);
+                setInterviewQuestions(providedQuestions);
+
+                // Get duration from API
+                try {
+                  const { duration_minutes } =
+                    await mockInterviewAPI.startInterviewById(
+                      providedInterviewId
+                    );
+                  const durationSeconds = (duration_minutes || 25) * 60;
+                  setRemainingTime(durationSeconds);
+                  setElapsedTime(0);
+                } catch (error) {
+                  // Use default duration if API fails
+                  setRemainingTime(25 * 60);
+                  setElapsedTime(0);
+                }
+
+                streamRef.current = preInitializedStreamRef.current;
+                setIsRecording(true);
+
+                // Setup video
+                if (videoRef.current) {
+                  const video = videoRef.current;
+                  video.srcObject = preInitializedStreamRef.current;
+                  video.playsInline = true;
+                  video.muted = true;
+                  video.play().catch(() => {});
+                  setTimeout(() => setIsVideoReady(true), 300);
+                }
+
+                // Enter fullscreen
+                try {
+                  await fullscreenControl.enterFullscreen();
+                  await new Promise((resolve) => setTimeout(resolve, 500));
+                  await lockKeyboard();
+                  if ((window as any).__lockFullscreen) {
+                    (window as any).__lockFullscreen();
+                  }
+                } catch (err) {
+                  // Continue anyway
+                }
+
+                // Setup audio visualization
+                if (preInitializedStreamRef.current) {
+                  await setupAudioVisualization(
+                    preInitializedStreamRef.current
+                  );
+                }
+
+                // Start interview flow
+                const startInterviewFlow = async () => {
+                  if (!hasGivenIntroduction) {
+                    await giveVoiceIntroduction();
+                    setHasGivenIntroduction(true);
+                    startTimer();
+                    await new Promise((resolve) => setTimeout(resolve, 1000));
+                  }
+
+                  const firstQuestion = providedQuestions[0];
+                  if (firstQuestion) {
+                    logEvent(
+                      "question_change",
+                      { questionIndex: 0, question: firstQuestion },
+                      "info"
+                    );
+                    await speakQuestion(firstQuestion.question_text || "");
+                  }
+                };
+
+                startInterviewFlow();
+              };
+
+              startWithProvidedData();
+            }
+          }, 500);
+        } catch (error) {
+          // Camera initialization failed - will show setup page
+        }
+      };
+
+      initializeCamera();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    providedQuestions,
+    providedInterviewId,
+    isRecording,
+    preInitializedStream,
+  ]);
 
   // Format time (for countdown display)
   const formatTime = (seconds: number): string => {
@@ -1000,7 +1134,7 @@ const InterviewRoom = ({
     }
 
     // Navigate to complete page with submitting flag (AFTER stopping everything)
-    onComplete(undefined); // undefined = submitting
+    onComplete(undefined, attemptId || undefined); // undefined = submitting, pass attemptId
 
     if ("keyboard" in navigator && "unlock" in (navigator as any).keyboard) {
       try {
@@ -1098,14 +1232,14 @@ const InterviewRoom = ({
       // Update submission status after completion
       // Use a small delay to ensure navigation has happened
       setTimeout(() => {
-        onComplete(submissionSuccess);
+        onComplete(submissionSuccess, attemptId || undefined);
       }, 100);
     } else {
       // No attemptId, mark as completed immediately
       sessionStorage.removeItem("interview_submitting");
       sessionStorage.setItem("interview_submission_complete", "true");
       setTimeout(() => {
-        onComplete(true);
+        onComplete(true, undefined);
       }, 100);
     }
   };
@@ -1398,9 +1532,8 @@ const InterviewRoom = ({
     // Merge typed text with transcribed text
     const typedPart = typedText.trim();
     const spokenPart = currentTranscript.trim();
-    const transcribedText = [typedPart, spokenPart]
-      .filter((part) => part.length > 0)
-      .join(" ") || "";
+    const transcribedText =
+      [typedPart, spokenPart].filter((part) => part.length > 0).join(" ") || "";
 
     // Always set user response (even if empty - indicates they skipped)
     const displayResponse = transcribedText || "(Answer skipped)";
@@ -1533,7 +1666,8 @@ const InterviewRoom = ({
       className="min-h-screen bg-white"
       style={{ position: "relative" }}
     >
-      {!isRecording ? (
+      {!isRecording &&
+      (!providedQuestions || providedQuestions.length === 0) ? (
         <InterviewSetup
           topic={topic}
           difficulty={difficulty}
@@ -1541,6 +1675,14 @@ const InterviewRoom = ({
           onBack={onBack}
           onCameraReady={handleCameraReady}
         />
+      ) : !isRecording && providedQuestions && providedQuestions.length > 0 ? (
+        // Show loading while auto-initializing camera
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <CircularProgress size={60} />
+            <p className="mt-4 text-gray-600">Initializing camera...</p>
+          </div>
+        </div>
       ) : (
         <ActiveInterviewSession
           topic={topic}

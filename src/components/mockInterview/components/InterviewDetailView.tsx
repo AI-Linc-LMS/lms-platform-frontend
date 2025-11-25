@@ -3,17 +3,18 @@ import { InterviewRecord } from "../index";
 import { mockInterviewAPI, InterviewAttempt } from "../services/api";
 import { CircularProgress, Chip } from "@mui/material";
 import BackButton from "./BackButton";
+import { useNavigate } from "react-router-dom";
 
 interface InterviewDetailViewProps {
   record: InterviewRecord;
-  onBack: () => void;
 }
 
-const InterviewDetailView = ({ record, onBack }: InterviewDetailViewProps) => {
+const InterviewDetailView = ({ record }: InterviewDetailViewProps) => {
   const [interviewData, setInterviewData] = useState<InterviewAttempt | null>(
     null
   );
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchInterviewDetails = async () => {
@@ -83,7 +84,12 @@ const InterviewDetailView = ({ record, onBack }: InterviewDetailViewProps) => {
     return (
       <>
         <div className="mb-4">
-          <BackButton onClick={onBack} label="Back to List" />
+          <BackButton
+            onClick={() => {
+              navigate("/mock-interview/previous");
+            }}
+            label="Back to List"
+          />
         </div>
         <div className="flex items-center justify-center py-20">
           <p className="text-gray-600">Interview details not found.</p>
@@ -99,7 +105,12 @@ const InterviewDetailView = ({ record, onBack }: InterviewDetailViewProps) => {
       {/* Header */}
       <div className="mb-8">
         <div className="mb-4">
-          <BackButton onClick={onBack} label="Back to List" />
+          <BackButton
+            onClick={() => {
+              navigate("/mock-interview/previous");
+            }}
+            label="Back to List"
+          />
         </div>
 
         <div
