@@ -23,7 +23,7 @@ export const IOSPWATestPage: React.FC = () => {
   const clearAllDismissals = () => {
     localStorage.removeItem("ios-pwa-install-dismissed");
     localStorage.removeItem("ios-pwa-install-temp-dismissed");
-    window.location.reload();
+    // window.location.reload();
   };
 
   return (

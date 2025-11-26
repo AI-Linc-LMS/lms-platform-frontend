@@ -10,11 +10,13 @@ const MAX_DEBUG_EVENTS = 100;
  */
 export const logActivityEvent = (event: string, data?: unknown): void => {
   const timestamp = new Date().toISOString();
-  const logEntry = `[${timestamp}] ${event}${data ? ': ' + JSON.stringify(data) : ''}`;
-  
+  const logEntry = `[${timestamp}] ${event}${
+    data ? ": " + JSON.stringify(data) : ""
+  }`;
+
   // Store in memory for retrieval
   activeDebugEvents.push(logEntry);
-  
+
   // Keep array size manageable
   if (activeDebugEvents.length > MAX_DEBUG_EVENTS) {
     activeDebugEvents = activeDebugEvents.slice(-MAX_DEBUG_EVENTS);
@@ -38,28 +40,30 @@ export const clearActivityDebugEvents = (): void => {
 /**
  * Test activity tracking events by simulating browser actions
  */
-export const simulateActivityEvent = (eventType: 'focus' | 'blur' | 'visibility' | 'unload'): void => {
+export const simulateActivityEvent = (
+  eventType: "focus" | "blur" | "visibility" | "unload"
+): void => {
   logActivityEvent(`Simulating ${eventType} event`);
-  
+
   switch (eventType) {
-    case 'focus':
-      window.dispatchEvent(new Event('focus'));
+    case "focus":
+      window.dispatchEvent(new Event("focus"));
       break;
-    case 'blur':
-      window.dispatchEvent(new Event('blur'));
+    case "blur":
+      window.dispatchEvent(new Event("blur"));
       break;
-    case 'visibility':
+    case "visibility":
       // This is a hack to simulate visibility change - not perfect
-      Object.defineProperty(document, 'visibilityState', {
+      Object.defineProperty(document, "visibilityState", {
         configurable: true,
-        get: function() {
-          return document.visibilityState === 'visible' ? 'hidden' : 'visible';
-        }
+        get: function () {
+          return document.visibilityState === "visible" ? "hidden" : "visible";
+        },
       });
-      document.dispatchEvent(new Event('visibilitychange'));
+      document.dispatchEvent(new Event("visibilitychange"));
       break;
-    case 'unload':
-      window.dispatchEvent(new Event('beforeunload'));
+    case "unload":
+      window.dispatchEvent(new Event("beforeunload"));
       break;
   }
 };
@@ -70,19 +74,18 @@ export const simulateActivityEvent = (eventType: 'focus' | 'blur' | 'visibility'
 export const simulateDailyReset = (): void => {
   try {
     // Get yesterday's date
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    // Set the last reset date to yesterday to force a reset
-    localStorage.setItem('lastActivityResetDate', yesterday.toISOString());
-    
-    logActivityEvent('Simulated day boundary for testing daily reset', {
-      setLastResetDateTo: yesterday.toISOString()
-    });
-    
+    // const yesterday = new Date();
+    // yesterday.setDate(yesterday.getDate() - 1);
+    // // Set the last reset date to yesterday to force a reset
+    // localStorage.setItem("lastActivityResetDate", yesterday.toISOString());
+    // logActivityEvent("Simulated day boundary for testing daily reset", {
+    //   setLastResetDateTo: yesterday.toISOString(),
+    // });
     // For convenience, reload the page to trigger the reset immediately
-    window.location.reload();
+    // window.location.reload();
   } catch (error) {
-    logActivityEvent('Error simulating daily reset', { error: (error as Error).message });
+    logActivityEvent("Error simulating daily reset", {
+      error: (error as Error).message,
+    });
   }
-}; 
+};

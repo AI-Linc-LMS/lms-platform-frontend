@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSubmoduleById } from "../../../services/enrolled-courses-content/courseContentApis";
@@ -109,56 +109,82 @@ const CourseTopicDetailPage: React.FC = () => {
   const [isProblemFullScreen, setIsProblemFullScreen] =
     useState<boolean>(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  // Get stored selectedContentId from sessionStorage on mount
+  const getStoredContentId = (): number | undefined => {
+    if (!courseId || !submoduleId) return undefined;
+    const key = `selectedContent-${courseId}-${submoduleId}`;
+    const stored = sessionStorage.getItem(key);
+    return stored ? parseInt(stored, 10) : undefined;
+  };
+
   const [selectedContentId, setSelectedContentId] = useState<
     number | undefined
-  >();
+  >(() => getStoredContentId());
   const [isSwitchingTopic, setIsSwitchingTopic] = useState(false);
+  // Track if we've initialized for the current submodule to prevent resetting
+  const initializedSubmoduleRef = useRef<string | null>(null);
+  const hasInitializedRef = useRef<boolean>(false);
+  // Track the data hash to detect actual data changes (not just refetches)
+  const lastDataHashRef = useRef<string | null>(null);
+
+  // Store selectedContentId in sessionStorage whenever it changes
+  useEffect(() => {
+    if (courseId && submoduleId && selectedContentId) {
+      const key = `selectedContent-${courseId}-${submoduleId}`;
+      sessionStorage.setItem(key, selectedContentId.toString());
+    }
+  }, [selectedContentId, courseId, submoduleId]);
 
   // Effect to clear all cached content when switching topics/submodules
   useEffect(() => {
     if (courseId && submoduleId) {
-      setIsSwitchingTopic(true);
+      const submoduleKey = `${courseId}-${submoduleId}`;
 
-      // Only clear content-related queries for the specific course/submodule
-      // This is more targeted than invalidating all queries
-      const contentQueryKeys = [
-        "video",
-        "quiz",
-        "article",
-        "problem",
-        "assignment",
-        "comments",
-      ];
-      contentQueryKeys.forEach((key) => {
-        queryClient.removeQueries({
-          predicate: (query) => {
-            const queryKey = query.queryKey;
-            return (
-              Array.isArray(queryKey) &&
-              queryKey.length >= 2 &&
-              queryKey[0] === key &&
-              queryKey[1] === courseId
-            );
-          },
+      // Only reset if we're actually switching to a different submodule
+      if (initializedSubmoduleRef.current !== submoduleKey) {
+        setIsSwitchingTopic(true);
+        hasInitializedRef.current = false; // Reset initialization flag for new submodule
+        lastDataHashRef.current = null; // Reset data hash for new submodule
+
+        // Only clear content-related queries for the specific course/submodule
+        // This is more targeted than invalidating all queries
+        const contentQueryKeys = [
+          "video",
+          "quiz",
+          "article",
+          "problem",
+          "assignment",
+          "comments",
+        ];
+        contentQueryKeys.forEach((key) => {
+          queryClient.removeQueries({
+            predicate: (query) => {
+              const queryKey = query.queryKey;
+              return (
+                Array.isArray(queryKey) &&
+                queryKey.length >= 2 &&
+                queryKey[0] === key &&
+                queryKey[1] === courseId
+              );
+            },
+          });
         });
-      });
 
-      // Clear window temporary data that causes stale sidebar content
-      const w = window as unknown as { temporarySubmoduleData?: SubmoduleData };
-      if (w.temporarySubmoduleData) {
-        delete w.temporarySubmoduleData;
+        // Clear window temporary data that causes stale sidebar content
+        const w = window as unknown as {
+          temporarySubmoduleData?: SubmoduleData;
+        };
+        if (w.temporarySubmoduleData) {
+          delete w.temporarySubmoduleData;
+        }
+
+        // DON'T reset selectedContentId here - let the initialization effect handle it
+        // This preserves selection when navigating back to the same submodule
+        setActiveSidebarLabel("All");
+
+        // Update the ref to track current submodule
+        initializedSubmoduleRef.current = submoduleKey;
       }
-
-      // Reset component state when switching topics
-      setCurrentContentIndex(0);
-      setSelectedVideoId(null);
-      setSelectedQuizId(1);
-      setSelectedArticleId(1);
-      setSelectedProblemId(undefined);
-      setSelectedProjectId(undefined);
-      setSelectedAssignmentId(0);
-      setSelectedContentId(undefined);
-      setActiveSidebarLabel("All");
     }
   }, [courseId, submoduleId, queryClient]);
 
@@ -226,35 +252,133 @@ const CourseTopicDetailPage: React.FC = () => {
   // Set default selected content only on initial load (preserve selection across updates)
   useEffect(() => {
     if (!submoduleData?.data || submoduleData.data.length === 0) return;
-    // If we already have a selected content, do not override it
-    if (selectedContentId) return;
+    if (!courseId || !submoduleId) return;
 
-    const firstContent = submoduleData.data[0];
-    setSelectedContentId(firstContent.id);
-    setCurrentContentIndex(0);
+    const submoduleKey = `${courseId}-${submoduleId}`;
+    const storageKey = `selectedContent-${courseId}-${submoduleId}`;
 
-    // Initialize selection per content type only if not already chosen
-    switch (firstContent.content_type) {
-      case "VideoTutorial":
-        if (!selectedVideoId) setSelectedVideoId(firstContent.id.toString());
-        break;
-      case "CodingProblem":
-        if (!selectedProblemId)
-          setSelectedProblemId(firstContent.id.toString());
-        break;
-      case "Development":
-        if (!selectedProjectId)
-          setSelectedProjectId(firstContent.id.toString());
-        break;
-      case "Assignment":
-        if (!selectedAssignmentId) setSelectedAssignmentId(firstContent.id);
-        break;
-      case "Article":
-        if (!selectedArticleId) setSelectedArticleId(firstContent.id);
-        break;
-      case "Quiz":
-        if (!selectedQuizId) setSelectedQuizId(firstContent.id);
-        break;
+    // Create a stable hash of the data to detect actual changes (not just refetches)
+    const dataHash = submoduleData.data.map((c) => c.id).join(",");
+    const isDataChanged = lastDataHashRef.current !== dataHash;
+
+    // If we've already initialized for this submodule AND data hasn't changed, just sync - NEVER reset
+    if (
+      hasInitializedRef.current &&
+      initializedSubmoduleRef.current === submoduleKey &&
+      !isDataChanged
+    ) {
+      // Always sync index with selectedContentId, but NEVER change selectedContentId
+      if (selectedContentId) {
+        const foundIndex = submoduleData.data.findIndex(
+          (content) => content.id === selectedContentId
+        );
+        if (foundIndex !== -1 && foundIndex !== currentContentIndex) {
+          setCurrentContentIndex(foundIndex);
+        }
+      }
+      return; // CRITICAL: Exit early - never reset after initialization
+    }
+
+    // Update data hash
+    lastDataHashRef.current = dataHash;
+
+    // SAFEGUARD: If we have a valid selectedContentId that exists in data,
+    // and it matches sessionStorage, we've already initialized - just mark as initialized
+    const storedId = sessionStorage.getItem(storageKey);
+    if (storedId && selectedContentId) {
+      const parsedStoredId = parseInt(storedId, 10);
+      if (parsedStoredId === selectedContentId) {
+        const contentExists = submoduleData.data.some(
+          (content) => content.id === selectedContentId
+        );
+        if (contentExists) {
+          // We have a valid selection that matches storage - just sync and mark as initialized
+          const foundIndex = submoduleData.data.findIndex(
+            (content) => content.id === selectedContentId
+          );
+          if (foundIndex !== -1) {
+            setCurrentContentIndex(foundIndex);
+            hasInitializedRef.current = true;
+            initializedSubmoduleRef.current = submoduleKey;
+            return; // Don't reset, we're already good
+          }
+        }
+      }
+    }
+
+    // Only initialize once per submodule - this is the ONLY place we set initial values
+    hasInitializedRef.current = true;
+    initializedSubmoduleRef.current = submoduleKey;
+
+    // ALWAYS check sessionStorage first, then state, then default to first
+    let contentToSelect: number | undefined;
+
+    if (storedId) {
+      const parsedId = parseInt(storedId, 10);
+      // Verify stored content still exists in data
+      const contentExists = submoduleData.data.some(
+        (content) => content.id === parsedId
+      );
+      if (contentExists) {
+        contentToSelect = parsedId;
+      }
+    }
+
+    // If no valid stored selection, check current state
+    if (!contentToSelect && selectedContentId) {
+      const contentExists = submoduleData.data.some(
+        (content) => content.id === selectedContentId
+      );
+      if (contentExists) {
+        contentToSelect = selectedContentId;
+      }
+    }
+
+    // If still no valid selection, use first content (only on true initial load)
+    if (!contentToSelect) {
+      contentToSelect = submoduleData.data[0].id;
+    }
+
+    // Set the selection
+    const foundIndex = submoduleData.data.findIndex(
+      (content) => content.id === contentToSelect
+    );
+    if (foundIndex !== -1) {
+      setCurrentContentIndex(foundIndex);
+      setSelectedContentId(contentToSelect);
+      // Also store in sessionStorage
+      sessionStorage.setItem(storageKey, contentToSelect.toString());
+    }
+
+    // Initialize type-specific selections only if not set
+    const selectedContent = submoduleData.data.find(
+      (c) => c.id === contentToSelect
+    );
+    if (selectedContent) {
+      switch (selectedContent.content_type) {
+        case "VideoTutorial":
+          if (!selectedVideoId)
+            setSelectedVideoId(selectedContent.id.toString());
+          break;
+        case "CodingProblem":
+          if (!selectedProblemId)
+            setSelectedProblemId(selectedContent.id.toString());
+          break;
+        case "Development":
+          if (!selectedProjectId)
+            setSelectedProjectId(selectedContent.id.toString());
+          break;
+        case "Assignment":
+          if (!selectedAssignmentId)
+            setSelectedAssignmentId(selectedContent.id);
+          break;
+        case "Article":
+          if (!selectedArticleId) setSelectedArticleId(selectedContent.id);
+          break;
+        case "Quiz":
+          if (!selectedQuizId) setSelectedQuizId(selectedContent.id);
+          break;
+      }
     }
 
     // Pre-populate first instances for quick navigation if those aren't set yet
@@ -289,16 +413,7 @@ const CourseTopicDetailPage: React.FC = () => {
       if (firstDevelopment)
         setSelectedProjectId(firstDevelopment.id.toString());
     }
-  }, [
-    submoduleData,
-    selectedContentId,
-    selectedVideoId,
-    selectedProblemId,
-    selectedProjectId,
-    selectedAssignmentId,
-    selectedArticleId,
-    selectedQuizId,
-  ]); // Removed activeSidebarLabel dependency to prevent resetting index when switching tabs
+  }, [submoduleData, courseId, submoduleId]); // Only depend on these - no state dependencies!
 
   // Props objects for each content type
   const videoProps = {
@@ -444,11 +559,46 @@ const CourseTopicDetailPage: React.FC = () => {
     // Make sure the sidebar is open when switching tabs
     setIsSidebarContentOpen(true);
 
+    // For "All" tab, don't change selection - just keep current
+    if (label === "All") {
+      return; // Don't reset to first content when clicking "All"
+    }
+
+    // Check if current content matches the selected tab type - if so, don't change
+    if (selectedContentId && submoduleData?.data) {
+      const currentContent = submoduleData.data.find(
+        (content) => content.id === selectedContentId
+      );
+      if (currentContent) {
+        const typeMatches = (() => {
+          switch (label) {
+            case "Videos":
+              return currentContent.content_type === "VideoTutorial";
+            case "Problems":
+              return currentContent.content_type === "CodingProblem";
+            case "Development":
+              return currentContent.content_type === "Development";
+            case "Subjective":
+              return currentContent.content_type === "Assignment";
+            case "Article":
+              return currentContent.content_type === "Article";
+            case "Quiz":
+              return currentContent.content_type === "Quiz";
+            default:
+              return false;
+          }
+        })();
+
+        // If current content matches the tab type, keep it selected
+        if (typeMatches) {
+          return; // Don't reset, keep current selection
+        }
+      }
+    }
+
     // Find the first content of the selected type
     const firstContent = submoduleData?.data?.find((content) => {
       switch (label) {
-        case "All":
-          return true;
         case "Videos":
           return content.content_type === "VideoTutorial";
         case "Problems":
@@ -541,21 +691,21 @@ const CourseTopicDetailPage: React.FC = () => {
       | "Article"
       | "Quiz"
   ) => {
-    // Special handling for CodingProblem - expand to full screen
+    // Special handling for CodingProblem - close sidebar to show question + code side-by-side
     if (contentType === "CodingProblem") {
-      // If clicking the same problem, toggle full screen
+      // If clicking the same problem, just close sidebar (don't toggle full screen)
       if (selectedContentId === contentId) {
-        setIsProblemFullScreen((prev) => !prev);
-        setIsSidebarContentOpen(false); // Close sidebar when expanding to full screen
+        setIsSidebarContentOpen(true); // Close sidebar to show question + code side-by-side
+        setIsProblemFullScreen(false); // Don't use full screen
         return;
       }
-      // If clicking a different problem, expand to full screen and select it
-      setIsProblemFullScreen(true);
-      setIsSidebarContentOpen(false);
+      // If clicking a different problem, close sidebar and select it
+      setIsSidebarContentOpen(true);
+      setIsProblemFullScreen(false); // Don't use full screen
     } else {
       // For other content types, close sidebar on second click
       if (selectedContentId === contentId) {
-        setIsSidebarContentOpen(false);
+        setIsSidebarContentOpen(true);
         setIsProblemFullScreen(false); // Reset full screen for other content types
         return;
       }
@@ -989,6 +1139,7 @@ const CourseTopicDetailPage: React.FC = () => {
                 onToggleFullScreen={() =>
                   setIsProblemFullScreen((prev) => !prev)
                 }
+                onCloseSidebar={() => setIsSidebarContentOpen(false)}
                 contentId={currentContent.id}
                 courseId={parseInt(courseId || "0")}
                 onSubmit={() => {}}

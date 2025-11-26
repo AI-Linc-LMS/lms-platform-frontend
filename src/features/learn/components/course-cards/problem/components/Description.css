@@ -1,0 +1,246 @@
+/* Description.css */
+
+/* Problem Description - Light Mode */
+.problem-description p,
+.problem-description div,
+.problem-description span,
+.problem-description li,
+.problem-description td,
+.problem-description th {
+  color: #374151 !important;
+}
+
+.problem-description h1,
+.problem-description h2,
+.problem-description h3,
+.problem-description h4,
+.problem-description h5,
+.problem-description h6 {
+  color: #111827 !important;
+}
+
+.problem-description strong,
+.problem-description b {
+  color: #1f2937 !important;
+}
+
+.problem-description code {
+  background-color: #f3f4f6 !important;
+  color: #1f2937 !important;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.problem-description pre {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+.problem-description table {
+  border-color: #d1d5db !important;
+}
+
+.problem-description table td,
+.problem-description table th {
+  border-color: #d1d5db !important;
+}
+
+/* Problem Description - Dark Mode */
+.problem-description.dark-mode p,
+.problem-description.dark-mode div,
+.problem-description.dark-mode span,
+.problem-description.dark-mode li,
+.problem-description.dark-mode td,
+.problem-description.dark-mode th {
+  color: #d1d5db !important;
+}
+
+.problem-description.dark-mode h1,
+.problem-description.dark-mode h2,
+.problem-description.dark-mode h3,
+.problem-description.dark-mode h4,
+.problem-description.dark-mode h5,
+.problem-description.dark-mode h6 {
+  color: #e5e7eb !important;
+}
+
+.problem-description.dark-mode strong,
+.problem-description.dark-mode b {
+  color: #f3f4f6 !important;
+}
+
+.problem-description.dark-mode code {
+  background-color: #1f2937 !important;
+  color: #e5e7eb !important;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.problem-description.dark-mode pre {
+  background-color: #111827 !important;
+  color: #e5e7eb !important;
+  border: 1px solid #374151 !important;
+}
+
+.problem-description.dark-mode table {
+  border-color: #374151 !important;
+}
+
+.problem-description.dark-mode table td,
+.problem-description.dark-mode table th {
+  border-color: #374151 !important;
+}
+
+/* Section Content - Light Mode */
+.section-content p,
+.section-content div,
+.section-content span,
+.section-content li,
+.section-content td,
+.section-content th {
+  color: #374151 !important;
+}
+
+.section-content h1,
+.section-content h2,
+.section-content h3,
+.section-content h4,
+.section-content h5,
+.section-content h6 {
+  color: #111827 !important;
+}
+
+.section-content strong,
+.section-content b {
+  color: #1f2937 !important;
+}
+
+.section-content code {
+  background-color: #f3f4f6 !important;
+  color: #1f2937 !important;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.section-content pre {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+.section-content table {
+  border-color: #d1d5db !important;
+}
+
+.section-content table td,
+.section-content table th {
+  border-color: #d1d5db !important;
+}
+
+/* Section Content - Dark Mode */
+.section-content.dark-mode p,
+.section-content.dark-mode div,
+.section-content.dark-mode span,
+.section-content.dark-mode li,
+.section-content.dark-mode td,
+.section-content.dark-mode th {
+  color: #d1d5db !important;
+}
+
+.section-content.dark-mode h1,
+.section-content.dark-mode h2,
+.section-content.dark-mode h3,
+.section-content.dark-mode h4,
+.section-content.dark-mode h5,
+.section-content.dark-mode h6 {
+  color: #e5e7eb !important;
+}
+
+.section-content.dark-mode strong,
+.section-content.dark-mode b {
+  color: #f3f4f6 !important;
+}
+
+.section-content.dark-mode code {
+  background-color: #1f2937 !important;
+  color: #e5e7eb !important;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.section-content.dark-mode pre {
+  background-color: #111827 !important;
+  color: #e5e7eb !important;
+  border: 1px solid #374151 !important;
+}
+
+.section-content.dark-mode table {
+  border-color: #374151 !important;
+}
+
+.section-content.dark-mode table td,
+.section-content.dark-mode table th {
+  border-color: #374151 !important;
+}
+
+/* Section Title - Light Mode */
+.section-title {
+  color: #111827 !important;
+}
+
+/* Section Title - Dark Mode */
+.section-title.dark-mode {
+  color: #e5e7eb !important;
+}
+
+/* Example Title - Light Mode */
+.example-title {
+  color: #111827 !important;
+}
+
+/* Example Title - Dark Mode */
+.example-title.dark-mode {
+  color: #e5e7eb !important;
+}
+
+/* Example Box - Light Mode */
+.example-box {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  padding: 1rem;
+}
+
+/* Example Box - Dark Mode */
+.example-box.dark-mode {
+  background-color: #1f2937;
+  border: 1px solid #374151;
+}
+
+/* Example Label - Light Mode */
+.example-label {
+  color: #374151 !important;
+}
+
+/* Example Label - Dark Mode */
+.example-label.dark-mode {
+  color: #d1d5db !important;
+}
+
+/* Example Code - Light Mode */
+.example-code {
+  background-color: #ffffff;
+  color: #1f2937;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+}
+
+/* Example Code - Dark Mode */
+.example-code.dark-mode {
+  background-color: #111827;
+  color: #e5e7eb;
+  border: 1px solid #374151;
+}
+
