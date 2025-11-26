@@ -100,7 +100,11 @@ const Comments: React.FC<CommentsProps> = ({
           ))}
         </div>
       ) : commentsData?.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
+        <div
+          className={`text-center py-8 ${
+            isDarkTheme ? "text-gray-400" : "text-gray-500"
+          }`}
+        >
           <p>{t("community.noComments.title")}</p>
         </div>
       ) : Array.isArray(commentsData) && commentsData.length > 0 ? (
@@ -149,7 +153,13 @@ const Comments: React.FC<CommentsProps> = ({
                           {comment.user_profile?.user_name || "Anonymous User"}
                         </span>
                         {comment.user_profile?.role && (
-                          <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full whitespace-nowrap">
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
+                              isDarkTheme
+                                ? "bg-blue-900/50 text-blue-300"
+                                : "bg-blue-100 text-blue-800"
+                            }`}
+                          >
                             {comment.user_profile.role}
                           </span>
                         )}
@@ -181,7 +191,13 @@ const Comments: React.FC<CommentsProps> = ({
                       {comment.text}
                     </p>
                     <div className="flex items-center gap-4 mt-2">
-                      <button className="flex items-center text-gray-500 hover:text-blue-500 text-xs">
+                      <button
+                        className={`flex items-center text-xs transition-colors ${
+                          isDarkTheme
+                            ? "text-gray-400 hover:text-blue-400"
+                            : "text-gray-500 hover:text-blue-500"
+                        }`}
+                      >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="h-4 w-4 mr-1"
@@ -198,7 +214,13 @@ const Comments: React.FC<CommentsProps> = ({
                         </svg>
                         {comment.likes || 0}
                       </button>
-                      <button className="flex items-center text-gray-500 hover:text-red-500 text-xs">
+                      <button
+                        className={`flex items-center text-xs transition-colors ${
+                          isDarkTheme
+                            ? "text-gray-400 hover:text-red-400"
+                            : "text-gray-500 hover:text-red-500"
+                        }`}
+                      >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="h-4 w-4 mr-1"
@@ -224,7 +246,11 @@ const Comments: React.FC<CommentsProps> = ({
             <div className="flex justify-center mt-4">
               <button
                 onClick={() => setVisibleComments((prev) => prev + 5)}
-                className="w-full sm:w-auto px-4 py-2 text-sm text-[var(--primary-500)] hover:text-[#1e4a61] font-medium flex items-center justify-center rounded-lg border border-[var(--primary-500)] hover:bg-gray-50"
+                className={`w-full sm:w-auto px-4 py-2 text-sm font-medium flex items-center justify-center rounded-lg border transition-colors ${
+                  isDarkTheme
+                    ? "text-primary-400 border-primary-400 hover:bg-gray-800 hover:text-primary-300"
+                    : "text-[var(--primary-500)] border-[var(--primary-500)] hover:bg-gray-50 hover:text-[#1e4a61]"
+                }`}
               >
                 <span>See more comments</span>
                 <svg
@@ -246,7 +272,11 @@ const Comments: React.FC<CommentsProps> = ({
           )}
         </div>
       ) : (
-        <div className="text-center py-8 text-gray-500">
+        <div
+          className={`text-center py-8 ${
+            isDarkTheme ? "text-gray-400" : "text-gray-500"
+          }`}
+        >
           <p>No comments available</p>
         </div>
       )}

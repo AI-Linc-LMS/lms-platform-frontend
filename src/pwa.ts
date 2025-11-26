@@ -285,9 +285,9 @@ export class PWAManager {
         );
 
         // ✅ Small delay to ensure session storage is written
-        setTimeout(() => {
-          window.location.reload();
-        }, 100);
+        // setTimeout(() => {
+        //   window.location.reload();
+        // }, 100);
       },
       { once: true }
     ); // ✅ Critical: only fire once per registration
@@ -650,11 +650,12 @@ export const initializePWA = async (config?: PWAConfig): Promise<void> => {
     setTimeout(async () => {
       if ("serviceWorker" in navigator) {
         try {
-          const registrations = await navigator.serviceWorker.getRegistrations();
+          const registrations =
+            await navigator.serviceWorker.getRegistrations();
           await Promise.all(
             registrations.map((registration) => registration.unregister())
           );
-          
+
           // Clear all caches
           if ("caches" in window) {
             const cacheNames = await caches.keys();

@@ -238,16 +238,36 @@ const Submissions: React.FC<SubmissionsProps> = ({
         </div>
       ) : historyError ? (
         <div className="text-center py-8">
-          <div className="text-red-500 mb-2">Failed to load submissions</div>
-          <p className="text-gray-500 text-sm">
+          <div
+            className={`mb-2 ${
+              isDarkTheme ? "text-red-400" : "text-red-500"
+            }`}
+          >
+            Failed to load submissions
+          </div>
+          <p
+            className={`text-sm ${
+              isDarkTheme ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
             Please try refreshing the page or contact support if the problem
             persists.
           </p>
         </div>
       ) : !submissionHistory || submissionHistory.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-gray-500 mb-2">No submissions found</p>
-          <p className="text-gray-400 text-sm">
+          <p
+            className={`mb-2 ${
+              isDarkTheme ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
+            No submissions found
+          </p>
+          <p
+            className={`text-sm ${
+              isDarkTheme ? "text-gray-500" : "text-gray-400"
+            }`}
+          >
             Start by submitting your first solution!
           </p>
         </div>
@@ -257,38 +277,38 @@ const Submissions: React.FC<SubmissionsProps> = ({
             <thead>
               <tr
                 className={`text-sm font-extralight border-b ${
-                  isDarkTheme ? "border-gray-700" : "border-gray-200"
+                  isDarkTheme ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-gray-50"
                 }`}
               >
                 <th
                   className={`text-left py-3 px-4 capitalize w-16 ${
-                    isDarkTheme ? "text-gray-300" : "text-gray-500"
+                    isDarkTheme ? "text-gray-300" : "text-gray-700"
                   }`}
                 ></th>
                 <th
                   className={`text-left py-3 px-4 capitalize font-extralight ${
-                    isDarkTheme ? "text-gray-300" : "text-gray-500"
+                    isDarkTheme ? "text-gray-300" : "text-gray-700"
                   }`}
                 >
                   Status
                 </th>
                 <th
                   className={`text-left py-3 px-4 capitalize font-extralight ${
-                    isDarkTheme ? "text-gray-300" : "text-gray-500"
+                    isDarkTheme ? "text-gray-300" : "text-gray-700"
                   }`}
                 >
                   Language
                 </th>
                 <th
                   className={`text-left py-3 px-4 capitalize font-extralight ${
-                    isDarkTheme ? "text-gray-300" : "text-gray-500"
+                    isDarkTheme ? "text-gray-300" : "text-gray-700"
                   }`}
                 >
                   Runtime
                 </th>
                 <th
                   className={`text-left py-3 px-4 capitalize font-extralight ${
-                    isDarkTheme ? "text-gray-300" : "text-gray-500"
+                    isDarkTheme ? "text-gray-300" : "text-gray-700"
                   }`}
                 >
                   Memory
@@ -311,15 +331,13 @@ const Submissions: React.FC<SubmissionsProps> = ({
                       key={submission.id}
                       className={`text-xs ${
                         isDarkTheme
-                          ? "border-b border-gray-700 hover:bg-gray-800"
-                          : "border-b border-gray-200 hover:bg-gray-100"
+                          ? "border-b border-gray-700 hover:bg-gray-800/50"
+                          : "border-b border-gray-200 hover:bg-gray-50"
                       }`}
                     >
                       <td
                         className={`py-4 px-4 text-center font-medium ${
-                          isDarkTheme
-                            ? "text-[var(--font-light)]"
-                            : "text-gray-500"
+                          isDarkTheme ? "text-gray-300" : "text-gray-600"
                         }`}
                       >
                         {submissionHistory.length - index}
@@ -341,16 +359,20 @@ const Submissions: React.FC<SubmissionsProps> = ({
                           >
                             {customDimension.status || "Unknown"}
                           </span>
-                          <span className="text-gray-500">
+                          <span
+                            className={`text-xs mt-1 ${
+                              isDarkTheme ? "text-gray-400" : "text-gray-500"
+                            }`}
+                          >
                             {formatDate(safeSubmission.created_at)}
                           </span>
                         </div>
                       </td>
                       <td className="py-4 px-4">
                         <span
-                          className={`rounded px-2 py-1 ${
+                          className={`rounded px-2 py-1 text-xs ${
                             isDarkTheme
-                              ? "bg-[var(--primary-50)] text-[var(--secondary-700)]"
+                              ? "bg-gray-700 text-gray-300"
                               : "bg-[var(--primary-50)] text-[var(--secondary-700)]"
                           }`}
                         >
@@ -359,14 +381,14 @@ const Submissions: React.FC<SubmissionsProps> = ({
                       </td>
                       <td
                         className={`py-4 px-4 ${
-                          isDarkTheme ? "text-gray-300" : ""
+                          isDarkTheme ? "text-gray-300" : "text-gray-600"
                         }`}
                       >
                         {formatTime(customDimension.time)}
                       </td>
                       <td
                         className={`py-4 px-4 ${
-                          isDarkTheme ? "text-gray-300" : ""
+                          isDarkTheme ? "text-gray-300" : "text-gray-600"
                         }`}
                       >
                         {formatMemory(customDimension.memory)}
