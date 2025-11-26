@@ -20,8 +20,8 @@ import Description from "./components/Description";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { ProblemData, TestCase, CustomTestCase } from "./problem.types";
 import React from "react";
-import { Code, Play, Moon, Sun } from "lucide-react";
-import { Tooltip } from "@mui/material";
+import { Code, Play, Moon, Sun, Maximize2, Minimize2 } from "lucide-react";
+import { Tooltip, Select, MenuItem, FormControl } from "@mui/material";
 import { STREAK_QUERY_KEY } from "../../../hooks/useStreakData";
 
 interface ProblemCardProps {
@@ -32,6 +32,7 @@ interface ProblemCardProps {
   isSidebarContentOpen: boolean;
   isFullScreen?: boolean;
   onToggleFullScreen?: () => void;
+  onCloseSidebar?: () => void;
 }
 
 const ProblemCard: React.FC<ProblemCardProps> = ({
@@ -42,6 +43,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   isSidebarContentOpen,
   isFullScreen = false,
   onToggleFullScreen,
+  onCloseSidebar,
 }) => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const numericClientId = Number(clientId) || 0;
@@ -89,6 +91,8 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const [consoleTab, setConsoleTab] = useState<"testcases" | "custom">(
     "testcases"
   );
+  // Show editor by default only in full screen, otherwise show description
+  const [showEditor, setShowEditor] = useState(() => isFullScreen);
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
   const consoleContentRef = useRef<HTMLDivElement>(null);
@@ -225,24 +229,44 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   // Initialize language and code ONCE when data loads
   useEffect(() => {
     if (data?.details?.template_code && !isInitialized) {
-      let defaultLanguage;
-      const apiDefault =
-        (data as any)?.details?.default_language &&
-        String((data as any).details.default_language)
-          .toLowerCase()
-          .replace(/\s+/g, "");
+      // First, check localStorage for saved language preference
+      const languageStorageKey = `problem-language-${courseId}-${contentId}`;
+      const savedLanguage = localStorage.getItem(languageStorageKey);
 
-      if (apiDefault) {
-        defaultLanguage = apiDefault;
-      } else {
-        if (Array.isArray(data.details.template_code)) {
-          defaultLanguage = data.details.template_code[0]?.language
+      let defaultLanguage;
+
+      // If we have a saved language, try to use it
+      if (savedLanguage) {
+        // Verify the saved language is still available
+        const normalizedSaved = savedLanguage.toLowerCase().replace(/\s+/g, "");
+        const isAvailable = availableLanguages.some(
+          (lang) => lang.value === normalizedSaved
+        );
+        if (isAvailable) {
+          defaultLanguage = normalizedSaved;
+        }
+      }
+
+      // If no saved language or saved language not available, use API default or first available
+      if (!defaultLanguage) {
+        const apiDefault =
+          (data as any)?.details?.default_language &&
+          String((data as any).details.default_language)
             .toLowerCase()
             .replace(/\s+/g, "");
+
+        if (apiDefault) {
+          defaultLanguage = apiDefault;
         } else {
-          defaultLanguage = Object.keys(data.details.template_code)[0]
-            ?.toLowerCase()
-            .replace(/\s+/g, "");
+          if (Array.isArray(data.details.template_code)) {
+            defaultLanguage = data.details.template_code[0]?.language
+              .toLowerCase()
+              .replace(/\s+/g, "");
+          } else {
+            defaultLanguage = Object.keys(data.details.template_code)[0]
+              ?.toLowerCase()
+              .replace(/\s+/g, "");
+          }
         }
       }
 
@@ -252,11 +276,26 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
       if (normalizedLanguage && tpl) {
         setSelectedLanguage(normalizedLanguage);
-        setCode(tpl);
+        // Save language preference
+        localStorage.setItem(languageStorageKey, normalizedLanguage);
+
+        // Check localStorage for saved code in this language
+        const storageKey = `problem-code-${courseId}-${contentId}-${normalizedLanguage}`;
+        const savedCode = localStorage.getItem(storageKey);
+
+        // Use saved code if available, otherwise use template
+        setCode(savedCode || tpl);
         setIsInitialized(true);
       }
     }
-  }, [data, isInitialized, getTemplateForLanguage]);
+  }, [
+    data,
+    isInitialized,
+    getTemplateForLanguage,
+    courseId,
+    contentId,
+    availableLanguages,
+  ]);
 
   // Initialize test cases when data is loaded
   useEffect(() => {
@@ -421,6 +460,38 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     // Check if all test cases have passed
     return testCases.every((tc) => tc.status === "passed");
   }, [testCases]);
+
+  // Helper function to format test case values for 2-line display
+  const formatTestCaseValue = useCallback(
+    (value: string | undefined): string => {
+      if (!value) return "";
+
+      const trimmed = value.trim();
+
+      // Check if value already has exactly 2 lines (one newline)
+      const lines = trimmed.split("\n");
+      if (lines.length === 2) {
+        // If it's exactly 2 lines, return as is with proper formatting
+        return lines.join("\n");
+      }
+
+      // Check if value can be split into 2 meaningful parts
+      // Look for space-separated values that could be displayed on 2 lines
+      const spaceIndex = trimmed.indexOf(" ");
+      if (spaceIndex > 0 && spaceIndex < trimmed.length - 1) {
+        // Split by spaces and check if we have exactly 2 parts
+        const parts = trimmed.split(/\s+/).filter((p) => p.length > 0);
+        if (parts.length === 2) {
+          // Display on 2 lines
+          return parts.join("\n");
+        }
+      }
+
+      // Otherwise return as is
+      return trimmed;
+    },
+    []
+  );
 
   // Run code mutation
   const runCodeMutation = useMutation({
@@ -668,6 +739,17 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     }
   }, []);
 
+  // Update showEditor when full screen or sidebar changes - MUST be before any early returns
+  useEffect(() => {
+    if (isFullScreen) {
+      setShowEditor(true); // Always show editor in full screen
+    } else if (!isSidebarContentOpen) {
+      setShowEditor(true); // When sidebar is closed, show editor (question on left, code on right)
+    } else {
+      setShowEditor(false); // When sidebar is open, show description by default
+    }
+  }, [isFullScreen, isSidebarContentOpen]);
+
   if (isLoading || !isInitialized) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -700,6 +782,11 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const handleCodeChange = (value: string | undefined) => {
     if (value !== undefined) {
       setCode(value);
+      // Save to localStorage whenever code changes
+      if (selectedLanguage && isInitialized) {
+        const storageKey = `problem-code-${courseId}-${contentId}-${selectedLanguage}`;
+        localStorage.setItem(storageKey, value);
+      }
     }
   };
 
@@ -878,10 +965,26 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   };
 
   const handleLanguageChange = (newLang: string) => {
+    // Save current code before switching languages
+    if (selectedLanguage && code && isInitialized) {
+      const currentStorageKey = `problem-code-${courseId}-${contentId}-${selectedLanguage}`;
+      localStorage.setItem(currentStorageKey, code);
+    }
+
     setSelectedLanguage(newLang);
+    // Save language preference
+    const languageStorageKey = `problem-language-${courseId}-${contentId}`;
+    localStorage.setItem(languageStorageKey, newLang);
+
     const tpl = getTemplateForLanguage(newLang);
     if (tpl) {
-      setCode(tpl);
+      // Check localStorage for saved code in new language
+      const newStorageKey = `problem-code-${courseId}-${contentId}-${newLang}`;
+      const savedCode = localStorage.getItem(newStorageKey);
+
+      // Use saved code if available, otherwise use template
+      setCode(savedCode || tpl);
+
       if (isEditorReady && editorRef.current && monacoRef.current) {
         const normalized =
           newLang === "python3"
@@ -991,34 +1094,49 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           isFullScreen ? "h-screen" : "h-screen"
         }`}
       >
-        {/* Left Panel - Problem Description */}
-        {(isFullScreen || !isSidebarContentOpen) && (
+        {/* Left Panel - Problem Description (shown when sidebar is closed or in full screen) */}
+        {(!isSidebarContentOpen || isFullScreen) && (
           <div
             className={`col-span-12 ${
               isFullScreen ? "lg:col-span-5" : "lg:col-span-5"
-            } !rounded-xl border border-primary-100 overflow-hidden bg-white flex flex-col h-full`}
+            } !rounded-xl border overflow-hidden flex flex-col h-full ${
+              isDarkTheme
+                ? "border-gray-700 bg-gray-900"
+                : "border-primary-100 bg-white"
+            }`}
           >
-            <div className="flex flex-row text-secondary-700 text-sm border-b border-gray-200 flex-shrink-0">
+            <div
+              className={`flex flex-row text-sm border-b flex-shrink-0 ${
+                isDarkTheme
+                  ? "text-gray-300 border-gray-700"
+                  : "text-secondary-700 border-gray-200"
+              }`}
+            >
               {isFullScreen && onToggleFullScreen && (
                 <button
                   onClick={onToggleFullScreen}
-                  className="flex flex-row items-center gap-2 px-4 py-3 text-gray-500 hover:bg-gray-50 transition-all"
+                  className={`flex flex-row items-center gap-2 px-4 py-3 transition-all ${
+                    isDarkTheme
+                      ? "text-gray-400 hover:bg-gray-800 hover:text-white"
+                      : "text-gray-500 hover:bg-gray-50"
+                  }`}
                   title="Exit Full Screen"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+                  <Minimize2 className="w-4 h-4" />
+                </button>
+              )}
+              {!isFullScreen && onToggleFullScreen && (
+                <button
+                  onClick={onToggleFullScreen}
+                  className={`flex flex-row items-center gap-2 px-4 py-3 transition-all font-semibold ${
+                    isDarkTheme
+                      ? "text-primary-400 hover:bg-gray-800 hover:text-primary-300"
+                      : "text-primary-600 hover:bg-primary-50"
+                  }`}
+                  title="Expand to Full Screen"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Full Screen</span>
                 </button>
               )}
               <button
@@ -1026,10 +1144,12 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                   activeTab === "description"
                     ? `${
                         isDarkTheme
-                          ? "bg-gray-800 text-white"
-                          : "bg-primary-50 text-primary-700"
-                      } font-semibold border-b-2 border-primary-500`
-                    : `text-gray-500 hover:bg-gray-50`
+                          ? "bg-gray-800 text-white border-b-2 border-primary-400"
+                          : "bg-primary-50 text-primary-700 border-b-2 border-primary-500"
+                      } font-semibold`
+                    : isDarkTheme
+                    ? "text-gray-400 hover:bg-gray-800 hover:text-white"
+                    : "text-gray-500 hover:bg-gray-50"
                 }`}
                 onClick={() => setActiveTab("description")}
               >
@@ -1045,16 +1165,20 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                   activeTab === "submission"
                     ? `${
                         isDarkTheme
-                          ? "bg-gray-800 text-white"
-                          : "bg-primary-50 text-primary-700"
-                      } font-semibold border-b-2 border-primary-500`
+                          ? "bg-gray-800 text-white border-b-2 border-primary-400"
+                          : "bg-primary-50 text-primary-700 border-b-2 border-primary-500"
+                      } font-semibold`
+                    : isDarkTheme
+                    ? "text-gray-400 hover:bg-gray-800 hover:text-white"
                     : "text-gray-500 hover:bg-gray-50"
                 }`}
                 onClick={() => setActiveTab("submission")}
               >
                 <img
                   src={submissionIcon}
-                  className="w-4 h-4"
+                  className={`w-4 h-4 ${
+                    isDarkTheme ? "brightness-0 invert opacity-90" : ""
+                  }`}
                   alt="Submissions"
                 />
                 Submissions
@@ -1064,9 +1188,11 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                   activeTab === "comments"
                     ? `${
                         isDarkTheme
-                          ? "bg-gray-800 text-white"
-                          : "bg-primary-50 text-primary-700"
-                      } font-semibold border-b-2 border-primary-500`
+                          ? "bg-gray-800 text-white border-b-2 border-primary-400"
+                          : "bg-primary-50 text-primary-700 border-b-2 border-primary-500"
+                      } font-semibold`
+                    : isDarkTheme
+                    ? "text-gray-400 hover:bg-gray-800 hover:text-white"
                     : "text-gray-500 hover:bg-gray-50"
                 }`}
                 onClick={() => setActiveTab("comments")}
@@ -1076,7 +1202,11 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
               </button>
             </div>
 
-            <div className="h-[calc(100%-48px)] overflow-y-auto p-4">
+            <div
+              className={`h-[calc(100%-48px)] overflow-y-auto p-4 ${
+                isDarkTheme ? "bg-gray-900" : "bg-white"
+              }`}
+            >
               {activeTab === "description" && (
                 <Description problem={data.details} isDarkTheme={isDarkTheme} />
               )}
@@ -1101,56 +1231,54 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           </div>
         )}
 
-        {/* Right Panel - Code Editor and Console */}
-        <div
-          className={`${
-            isFullScreen
-              ? "col-span-12 lg:col-span-7"
-              : isSidebarContentOpen
-              ? "col-span-12"
-              : "col-span-12 lg:col-span-7"
-          } border border-primary-100 rounded-xl overflow-hidden flex flex-col h-full ${
-            isDarkTheme ? "bg-gray-900" : "bg-white"
-          }`}
-        >
-          {/* Editor Header */}
+        {/* Right Panel - Code Editor and Console OR Description when sidebar is open */}
+        {isSidebarContentOpen && !showEditor ? (
+          /* Show Description Panel when sidebar is open and editor is hidden */
           <div
-            className={`flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-3 border-b ${
+            className={`col-span-12 border rounded-xl overflow-hidden flex flex-col h-full ${
               isDarkTheme
-                ? "border-gray-700 bg-gray-800"
-                : "border-gray-200 bg-white"
+                ? "border-gray-700 bg-gray-900"
+                : "border-primary-100 bg-white"
             }`}
           >
-            <div className="flex flex-row gap-3 items-center flex-wrap">
-              <div
-                className={`flex items-center font-semibold hidden md:flex ${
-                  isDarkTheme ? "text-white" : "text-secondary-950"
-                }`}
-              >
-                <Code className="mr-2 w-4 h-4" />
-                Code
-              </div>
-              <select
-                id="language"
-                name="language"
-                value={selectedLanguage}
-                className={`form-select rounded-md px-3 py-2 h-9 focus:outline-none transition-colors ${
+            <div
+              className={`flex flex-row text-sm border-b flex-shrink-0 ${
+                isDarkTheme
+                  ? "text-gray-300 border-gray-700"
+                  : "text-secondary-700 border-gray-200"
+              }`}
+            >
+              {!isFullScreen && onToggleFullScreen && (
+                <button
+                  onClick={onToggleFullScreen}
+                  className={`flex flex-row items-center gap-2 px-4 py-3 transition-all font-semibold ${
+                    isDarkTheme
+                      ? "text-primary-400 hover:bg-gray-800 hover:text-primary-300"
+                      : "text-primary-600 hover:bg-primary-50"
+                  }`}
+                  title="Expand to Full Screen"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Full Screen</span>
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setShowEditor(true);
+                  onCloseSidebar?.(); // Close sidebar when starting to code
+                }}
+                className={`flex flex-row items-center gap-2 px-4 py-3 transition-all font-semibold ml-auto ${
                   isDarkTheme
-                    ? "bg-gray-700 text-white border border-gray-600 hover:bg-gray-600"
-                    : "bg-primary-50 text-secondary-950 border border-primary-200 hover:bg-primary-100"
+                    ? "text-primary-400 hover:bg-gray-800 hover:text-primary-300"
+                    : "text-primary-600 hover:bg-primary-50"
                 }`}
-                onChange={(e) => handleLanguageChange(e.target.value)}
+                title="Start Coding"
               >
-                {availableLanguages.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-
-              {/* Theme Toggle */}
+                <Code className="w-4 h-4" />
+                <span>Start Coding</span>
+              </button>
               <label
-                className={`flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer transition-colors h-9 ${
+                className={`flex items-center gap-3 px-3 m-1 py-3 rounded-md cursor-pointer transition-colors h-9 ${
                   isDarkTheme
                     ? "bg-gray-700 text-white border border-gray-600 hover:bg-gray-600"
                     : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
@@ -1185,49 +1313,212 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                 </div>
               </label>
             </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={handleRunCode}
-                disabled={isRunning}
-                style={{
-                  backgroundColor: isRunning ? "#9ca3af" : "var(--course-cta)",
-                  color: "#ffffff",
-                  cursor: isRunning ? "not-allowed" : "pointer",
-                }}
-                className="px-4 py-2 rounded-md font-semibold transition-all h-9 text-sm flex items-center gap-2 shadow-md hover:shadow-lg"
-                onMouseEnter={(e) => {
-                  if (!isRunning) {
-                    e.currentTarget.style.backgroundColor = "var(--course-cta)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isRunning) {
-                    e.currentTarget.style.backgroundColor = "var(--course-cta)";
-                  }
-                }}
-              >
-                <Play className="w-3 h-3" />
-                {isRunning ? "Running..." : "Run Code"}
-              </button>
-              {disabled ? (
-                <Tooltip title={`You can try again in ${timeLeft} seconds`}>
+            <div
+              className={`h-[calc(100%-48px)] overflow-y-auto p-4 ${
+                isDarkTheme ? "bg-gray-900" : "bg-white"
+              }`}
+            >
+              <Description problem={data.details} isDarkTheme={isDarkTheme} />
+            </div>
+          </div>
+        ) : (
+          /* Show Code Editor when sidebar is closed or when showEditor is true */
+          <div
+            className={`${
+              isFullScreen
+                ? "col-span-12 lg:col-span-7"
+                : !isSidebarContentOpen
+                ? "col-span-12 lg:col-span-7"
+                : "col-span-12"
+            } border border-primary-100 rounded-xl overflow-hidden flex flex-col h-full ${
+              isDarkTheme ? "bg-gray-900" : "bg-white"
+            }`}
+          >
+            {/* Editor Header */}
+            <div
+              className={`flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-3 border-b ${
+                isDarkTheme
+                  ? "border-gray-700 bg-gray-800"
+                  : "border-gray-200 bg-white"
+              }`}
+            >
+              <div className="flex flex-row gap-3 items-center flex-wrap">
+                {!isFullScreen && (
                   <button
-                    disabled
-                    style={{
-                      backgroundColor: "#9ca3af",
-                      color: "#ffffff",
-                      cursor: "not-allowed",
-                    }}
-                    className="px-4 py-2 rounded-md font-semibold h-9 text-sm"
+                    onClick={() => setShowEditor(false)}
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                    title="Show Problem Description"
                   >
-                    Submit ({timeLeft}s)
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                      />
+                    </svg>
+                    <span className="hidden sm:inline">Description</span>
                   </button>
-                </Tooltip>
-              ) : !allTestCasesPassed ? (
-                <Tooltip title="Pass all test cases to submit">
-                  <span>
+                )}
+                <div
+                  className={`flex items-center font-semibold hidden md:flex ${
+                    isDarkTheme ? "text-white" : "text-secondary-950"
+                  }`}
+                >
+                  <Code className="mr-2 w-4 h-4" />
+                  Code
+                </div>
+                <FormControl
+                  size="small"
+                  sx={{
+                    minWidth: 120,
+                    height: "36px",
+                    "& .MuiOutlinedInput-root": {
+                      height: "36px",
+                      backgroundColor: isDarkTheme ? "#374151" : "#f0f9ff",
+                      color: isDarkTheme ? "#ffffff" : "#1e293b",
+                      borderColor: isDarkTheme ? "#4b5563" : "#bfdbfe",
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: isDarkTheme ? "#6b7280" : "#93c5fd",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: isDarkTheme ? "#60a5fa" : "#3b82f6",
+                        borderWidth: "1px",
+                      },
+                      "& .MuiSelect-select": {
+                        padding: "8px 14px",
+                        textAlign: "center",
+                        display: "flex",
+                        alignItems: "center",
+                      },
+                    },
+                    "& .MuiSvgIcon-root": {
+                      color: isDarkTheme ? "#d1d5db" : "#64748b",
+                    },
+                  }}
+                >
+                  <Select
+                    value={selectedLanguage}
+                    onChange={(e) => handleLanguageChange(e.target.value)}
+                    displayEmpty
+                    sx={{
+                      height: "36px",
+                      "& .MuiSelect-select": {
+                        textAlign: "center",
+                      },
+                    }}
+                    MenuProps={{
+                      PaperProps: {
+                        sx: {
+                          backgroundColor: isDarkTheme ? "#1f2937" : "#ffffff",
+                          "& .MuiMenuItem-root": {
+                            color: isDarkTheme ? "#e5e7eb" : "#1f2937",
+                            textAlign: "center",
+                            justifyContent: "center",
+                            "&:hover": {
+                              backgroundColor: isDarkTheme
+                                ? "#374151"
+                                : "#f3f4f6",
+                            },
+                            "&.Mui-selected": {
+                              backgroundColor: isDarkTheme
+                                ? "#4b5563"
+                                : "#dbeafe",
+                              color: isDarkTheme ? "#ffffff" : "#1e40af",
+                              "&:hover": {
+                                backgroundColor: isDarkTheme
+                                  ? "#4b5563"
+                                  : "#dbeafe",
+                              },
+                            },
+                          },
+                        },
+                      },
+                    }}
+                  >
+                    {availableLanguages.map((opt) => (
+                      <MenuItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* Theme Toggle */}
+                <label
+                  className={`flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer transition-colors h-9 ${
+                    isDarkTheme
+                      ? "bg-gray-700 text-white border border-gray-600 hover:bg-gray-600"
+                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  {isDarkTheme ? (
+                    <Moon className="w-4 h-4" />
+                  ) : (
+                    <Sun className="w-4 h-4" />
+                  )}
+                  <span className="text-sm">
+                    {isDarkTheme ? "Dark" : "Light"}
+                  </span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={isDarkTheme}
+                      onChange={handleThemeChange}
+                      className="sr-only"
+                    />
+                    <div
+                      className={`w-10 h-5 rounded-full transition-colors ${
+                        isDarkTheme ? "bg-primary-500" : "bg-gray-300"
+                      }`}
+                    >
+                      <div
+                        className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                          isDarkTheme ? "transform translate-x-5" : ""
+                        }`}
+                      />
+                    </div>
+                  </div>
+                </label>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={handleRunCode}
+                  disabled={isRunning}
+                  style={{
+                    backgroundColor: isRunning
+                      ? "#9ca3af"
+                      : "var(--course-cta)",
+                    color: "#ffffff",
+                    cursor: isRunning ? "not-allowed" : "pointer",
+                  }}
+                  className="px-4 py-2 rounded-md font-semibold transition-all h-9 text-sm flex items-center gap-2 shadow-md hover:shadow-lg"
+                  onMouseEnter={(e) => {
+                    if (!isRunning) {
+                      e.currentTarget.style.backgroundColor =
+                        "var(--course-cta)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isRunning) {
+                      e.currentTarget.style.backgroundColor =
+                        "var(--course-cta)";
+                    }
+                  }}
+                >
+                  <Play className="w-3 h-3" />
+                  {isRunning ? "Running..." : "Run Code"}
+                </button>
+                {disabled ? (
+                  <Tooltip title={`You can try again in ${timeLeft} seconds`}>
                     <button
                       disabled
                       style={{
@@ -1237,222 +1528,196 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                       }}
                       className="px-4 py-2 rounded-md font-semibold h-9 text-sm"
                     >
-                      Submit
+                      Submit ({timeLeft}s)
                     </button>
-                  </span>
-                </Tooltip>
-              ) : (
-                <button
-                  onClick={handleSubmitCode}
-                  disabled={isSubmitting}
-                  style={{
-                    backgroundColor: isSubmitting
-                      ? "#9ca3af"
-                      : "var(--primary-500)",
-                    color: "#ffffff",
-                    cursor: isSubmitting ? "not-allowed" : "pointer",
-                  }}
-                  className="px-4 py-2 rounded-md font-semibold transition-all h-9 text-sm shadow-md hover:shadow-lg"
-                  onMouseEnter={(e) => {
-                    if (!isSubmitting) {
-                      e.currentTarget.style.backgroundColor =
-                        "var(--primary-600)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSubmitting) {
-                      e.currentTarget.style.backgroundColor =
-                        "var(--primary-500)";
-                    }
-                  }}
-                >
-                  {isSubmitting ? "Submitting..." : "Submit"}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Editor and Console - Vertical Layout */}
-          <div className="flex flex-col h-[calc(100%-0px)] overflow-hidden">
-            {/* Code Editor - Full Width Top */}
-            <div
-              className={`flex-1 min-h-0 flex flex-col ${
-                isDarkTheme
-                  ? "border-b border-gray-700"
-                  : "border-b border-gray-200"
-              }`}
-            >
-              {shouldRenderEditor ? (
-                <div className="flex-1 min-h-0 w-full overflow-hidden">
-                  <AppEditor
-                    height="100%"
-                    language={
-                      selectedLanguage === "python3"
-                        ? "python"
-                        : selectedLanguage === "c++"
-                        ? "cpp"
-                        : selectedLanguage || "javascript"
-                    }
-                    value={code}
-                    onChange={(v) => handleCodeChange(v)}
-                    theme={isDarkTheme ? "vs-dark" : "light"}
-                    disableCopyPaste={true}
-                    onMount={handleEditorDidMount}
-                    className="w-full h-full"
-                  />
-                </div>
-              ) : (
-                <div className="flex items-center justify-center flex-1">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
-                </div>
-              )}
+                  </Tooltip>
+                ) : !allTestCasesPassed ? (
+                  <Tooltip title="Pass all test cases to submit">
+                    <span>
+                      <button
+                        disabled
+                        style={{
+                          backgroundColor: "#9ca3af",
+                          color: "#ffffff",
+                          cursor: "not-allowed",
+                        }}
+                        className="px-4 py-2 rounded-md font-semibold h-9 text-sm"
+                      >
+                        Submit
+                      </button>
+                    </span>
+                  </Tooltip>
+                ) : (
+                  <button
+                    onClick={handleSubmitCode}
+                    disabled={isSubmitting}
+                    style={{
+                      backgroundColor: isSubmitting
+                        ? "#9ca3af"
+                        : "var(--primary-500)",
+                      color: "#ffffff",
+                      cursor: isSubmitting ? "not-allowed" : "pointer",
+                    }}
+                    className="px-4 py-2 rounded-md font-semibold transition-all h-9 text-sm shadow-md hover:shadow-lg"
+                    onMouseEnter={(e) => {
+                      if (!isSubmitting) {
+                        e.currentTarget.style.backgroundColor =
+                          "var(--primary-600)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSubmitting) {
+                        e.currentTarget.style.backgroundColor =
+                          "var(--primary-500)";
+                      }
+                    }}
+                  >
+                    {isSubmitting ? "Submitting..." : "Submit"}
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* Console Panel - Full Width Bottom */}
-            <div
-              className={`flex flex-col overflow-hidden flex-1 min-h-10 ${
-                isDarkTheme ? "bg-gray-900" : "bg-white"
-              }`}
-            >
-              {/* Console Tabs */}
+            {/* Editor and Console - Vertical Layout */}
+            <div className="flex flex-col h-[calc(100%-0px)] overflow-hidden">
+              {/* Code Editor - Full Width Top */}
               <div
-                className={`flex border-b flex-shrink-0 ${
-                  isDarkTheme ? "border-gray-700" : "border-gray-200"
+                className={`flex-1 min-h-0 flex flex-col ${
+                  isDarkTheme
+                    ? "border-b border-gray-700"
+                    : "border-b border-gray-200"
                 }`}
               >
-                <button
-                  className={`px-4 py-2 text-sm font-medium transition-colors ${
-                    consoleTab === "testcases"
-                      ? isDarkTheme
-                        ? "border-b-2 border-primary-500 text-white"
-                        : "border-b-2 border-primary-500 text-primary-600"
-                      : isDarkTheme
-                      ? "text-gray-400 hover:text-white"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                  onClick={() => setConsoleTab("testcases")}
-                >
-                  Test Cases
-                </button>
-                <button
-                  className={`px-4 py-2 text-sm font-medium transition-colors ${
-                    consoleTab === "custom"
-                      ? isDarkTheme
-                        ? "border-b-2 border-primary-500 text-white"
-                        : "border-b-2 border-primary-500 text-primary-600"
-                      : isDarkTheme
-                      ? "text-gray-400 hover:text-white"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                  onClick={() => setConsoleTab("custom")}
-                >
-                  Custom Input
-                </button>
+                {shouldRenderEditor ? (
+                  <div className="flex-1 min-h-0 w-full overflow-hidden">
+                    <AppEditor
+                      height="100%"
+                      language={
+                        selectedLanguage === "python3"
+                          ? "python"
+                          : selectedLanguage === "c++"
+                          ? "cpp"
+                          : selectedLanguage || "javascript"
+                      }
+                      value={code}
+                      onChange={(v) => handleCodeChange(v)}
+                      theme={isDarkTheme ? "vs-dark" : "light"}
+                      disableCopyPaste={true}
+                      onMount={handleEditorDidMount}
+                      className="w-full h-full"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center flex-1">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+                  </div>
+                )}
               </div>
 
-              {/* Console Content */}
+              {/* Console Panel - Full Width Bottom */}
               <div
-                ref={consoleContentRef}
-                className="flex-1 overflow-y-auto p-4"
-                style={{
-                  minHeight: 0,
-                  maxHeight: "100%",
-                  overflowY: "auto",
-                  overflowX: "hidden",
-                }}
+                className={`flex flex-col overflow-hidden flex-1 min-h-10 ${
+                  isDarkTheme ? "bg-gray-900" : "bg-white"
+                }`}
               >
-                {consoleTab === "testcases" ? (
-                  <div className="space-y-3">
-                    {/* Test Case Tabs */}
-                    <div className="flex gap-2 flex-wrap">
-                      {testCases.map((tc, index) => {
-                        const hasError = tc.stderr || tc.compile_output;
-                        return (
-                          <button
-                            key={index}
-                            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                              activeTestCase === index
-                                ? isDarkTheme
-                                  ? "bg-gray-700 text-white"
-                                  : "bg-primary-100 text-primary-700"
-                                : isDarkTheme
-                                ? "bg-gray-800 text-gray-400 hover:bg-gray-700"
-                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                            } ${
-                              tc.status === "passed"
-                                ? "border-l-4 border-green-500"
-                                : tc.status === "failed" || hasError
-                                ? "border-l-4 border-red-500"
-                                : ""
-                            } ${
-                              hasError && tc.status === "failed"
-                                ? isDarkTheme
-                                  ? "bg-red-900/20"
-                                  : "bg-red-50"
-                                : ""
-                            }`}
-                            onClick={() => setActiveTestCase(index)}
-                          >
-                            Case {index + 1}
-                            {hasError && (
-                              <span className="ml-1 text-red-500">⚠</span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
+                {/* Console Tabs */}
+                <div
+                  className={`flex border-b flex-shrink-0 ${
+                    isDarkTheme ? "border-gray-700" : "border-gray-200"
+                  }`}
+                >
+                  <button
+                    className={`px-4 py-2 text-sm font-medium transition-colors ${
+                      consoleTab === "testcases"
+                        ? isDarkTheme
+                          ? "border-b-2 border-primary-500 text-white"
+                          : "border-b-2 border-primary-500 text-primary-600"
+                        : isDarkTheme
+                        ? "text-gray-400 hover:text-white"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                    onClick={() => setConsoleTab("testcases")}
+                  >
+                    Test Cases
+                  </button>
+                  <button
+                    className={`px-4 py-2 text-sm font-medium transition-colors ${
+                      consoleTab === "custom"
+                        ? isDarkTheme
+                          ? "border-b-2 border-primary-500 text-white"
+                          : "border-b-2 border-primary-500 text-primary-600"
+                        : isDarkTheme
+                        ? "text-gray-400 hover:text-white"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                    onClick={() => setConsoleTab("custom")}
+                  >
+                    Custom Input
+                  </button>
+                </div>
 
-                    {/* Active Test Case Display */}
-                    {testCases[activeTestCase] && (
-                      <div className="space-y-3">
-                        <div>
-                          <div
-                            className={`text-sm font-semibold mb-2 ${
-                              isDarkTheme ? "text-gray-300" : "text-gray-700"
-                            }`}
-                          >
-                            Input:
-                          </div>
-                          <div
-                            className={`p-3 rounded-md font-mono text-sm ${
-                              isDarkTheme
-                                ? "bg-gray-800 text-gray-300"
-                                : "bg-gray-50 text-gray-800"
-                            }`}
-                          >
-                            {testCases[activeTestCase].sample_input}
-                          </div>
-                        </div>
+                {/* Console Content */}
+                <div
+                  ref={consoleContentRef}
+                  className="flex-1 overflow-y-auto p-4"
+                  style={{
+                    minHeight: 0,
+                    maxHeight: "100%",
+                    overflowY: "auto",
+                    overflowX: "hidden",
+                  }}
+                >
+                  {consoleTab === "testcases" ? (
+                    <div className="space-y-3">
+                      {/* Test Case Tabs */}
+                      <div className="flex gap-2 flex-wrap">
+                        {testCases.map((tc, index) => {
+                          const hasError = tc.stderr || tc.compile_output;
+                          return (
+                            <button
+                              key={index}
+                              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                                activeTestCase === index
+                                  ? isDarkTheme
+                                    ? "bg-gray-700 text-white"
+                                    : "bg-primary-100 text-primary-700"
+                                  : isDarkTheme
+                                  ? "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                              } ${
+                                tc.status === "passed"
+                                  ? "border-l-4 border-green-500"
+                                  : tc.status === "failed" || hasError
+                                  ? "border-l-4 border-red-500"
+                                  : ""
+                              } ${
+                                hasError && tc.status === "failed"
+                                  ? isDarkTheme
+                                    ? "bg-red-900/20"
+                                    : "bg-red-50"
+                                  : ""
+                              }`}
+                              onClick={() => setActiveTestCase(index)}
+                            >
+                              Case {index + 1}
+                              {hasError && (
+                                <span className="ml-1 text-red-500">⚠</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
 
-                        <div>
-                          <div
-                            className={`text-sm font-semibold mb-2 ${
-                              isDarkTheme ? "text-gray-300" : "text-gray-700"
-                            }`}
-                          >
-                            Expected Output:
-                          </div>
-                          <div
-                            className={`p-3 rounded-md font-mono text-sm ${
-                              isDarkTheme
-                                ? "bg-gray-800 text-gray-300"
-                                : "bg-gray-50 text-gray-800"
-                            }`}
-                          >
-                            {testCases[activeTestCase].sample_output}
-                          </div>
-                        </div>
-
-                        {testCases[activeTestCase].userOutput !== undefined && (
+                      {/* Active Test Case Display */}
+                      {testCases[activeTestCase] && (
+                        <div className="space-y-3">
                           <div>
                             <div
                               className={`text-sm font-semibold mb-2 ${
-                                testCases[activeTestCase].status === "passed"
-                                  ? "text-green-600"
-                                  : "text-red-600"
+                                isDarkTheme ? "text-gray-300" : "text-gray-700"
                               }`}
                             >
-                              Your Output:
+                              Input:
                             </div>
                             <div
                               className={`p-3 rounded-md font-mono text-sm ${
@@ -1460,229 +1725,286 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                                   ? "bg-gray-800 text-gray-300"
                                   : "bg-gray-50 text-gray-800"
                               }`}
+                              style={{ whiteSpace: "pre-wrap" }}
                             >
-                              {testCases[activeTestCase].userOutput}
+                              {formatTestCaseValue(
+                                testCases[activeTestCase].sample_input
+                              )}
                             </div>
                           </div>
-                        )}
 
-                        {testCases[activeTestCase].status && (
-                          <>
+                          <div>
                             <div
-                              className={`p-3 rounded-md text-sm font-small ${
-                                testCases[activeTestCase].status === "passed"
-                                  ? "bg-green-100 text-green-800"
-                                  : testCases[activeTestCase].status ===
-                                    "failed"
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-yellow-100 text-yellow-800"
+                              className={`text-sm font-semibold mb-2 ${
+                                isDarkTheme ? "text-gray-300" : "text-gray-700"
                               }`}
                             >
-                              Status:{" "}
-                              {testCases[activeTestCase].verdict ||
-                                (testCases[activeTestCase].status === "passed"
-                                  ? "✓ Passed"
-                                  : testCases[activeTestCase].status ===
-                                    "failed"
-                                  ? "✗ Failed"
-                                  : "⟳ Running...")}
+                              Expected Output:
                             </div>
-
-                            {/* Error Display - stderr */}
-                            {testCases[activeTestCase].stderr && (
-                              <div>
-                                <div
-                                  className={`text-sm font-semibold mb-2 text-red-600 ${
-                                    isDarkTheme
-                                      ? "text-red-400"
-                                      : "text-red-700"
-                                  }`}
-                                >
-                                  Error (stderr):
-                                </div>
-                                <div
-                                  className={`p-3 rounded-md font-mono text-sm text-red-600 ${
-                                    isDarkTheme
-                                      ? "bg-red-900/30 text-red-400 border border-red-700"
-                                      : "bg-red-50 text-red-800 border border-red-200"
-                                  }`}
-                                  style={{ whiteSpace: "pre-wrap" }}
-                                >
-                                  {testCases[activeTestCase].stderr}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Compile Output Display */}
-                            {testCases[activeTestCase].compile_output && (
-                              <div>
-                                <div
-                                  className={`text-sm font-semibold mb-2 text-orange-600 ${
-                                    isDarkTheme
-                                      ? "text-orange-400"
-                                      : "text-orange-700"
-                                  }`}
-                                >
-                                  Compile Output:
-                                </div>
-                                <div
-                                  className={`p-3 rounded-md font-mono text-sm text-orange-600 ${
-                                    isDarkTheme
-                                      ? "bg-orange-900/30 text-orange-400 border border-orange-700"
-                                      : "bg-orange-50 text-orange-800 border border-orange-200"
-                                  }`}
-                                  style={{ whiteSpace: "pre-wrap" }}
-                                >
-                                  {testCases[activeTestCase].compile_output}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Time and Memory */}
-                            {testCases[activeTestCase].time && (
-                              <div className="text-sm text-gray-600">
-                                Time: {testCases[activeTestCase].time}s |
-                                Memory: {testCases[activeTestCase].memory} KB
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {/* Custom Input Area */}
-                    <div>
-                      <label
-                        className={`text-sm font-semibold mb-2 block ${
-                          isDarkTheme ? "text-gray-300" : "text-gray-700"
-                        }`}
-                      >
-                        Input (stdin):
-                      </label>
-                      <textarea
-                        value={customInput}
-                        onChange={(e) => setCustomInput(e.target.value)}
-                        placeholder="Enter custom input..."
-                        rows={6}
-                        className={`w-full p-3 rounded-md font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          isDarkTheme
-                            ? "bg-gray-800 text-gray-300 border border-gray-700"
-                            : "bg-gray-50 text-gray-800 border border-gray-300"
-                        }`}
-                      />
-                    </div>
-
-                    {/* Custom Output Area */}
-                    <div>
-                      <label
-                        className={`text-sm font-semibold mb-2 block ${
-                          isDarkTheme ? "text-gray-300" : "text-gray-700"
-                        }`}
-                      >
-                        Output (stdout):
-                      </label>
-                      <div
-                        className={`w-full p-3 rounded-md font-mono text-sm min-h-[100px] ${
-                          isDarkTheme
-                            ? "bg-gray-800 text-gray-300 border border-gray-700"
-                            : "bg-gray-50 text-gray-800 border border-gray-300"
-                        }`}
-                        style={{ whiteSpace: "pre-wrap" }}
-                      >
-                        {stdOut || "Run code to see output..."}
-                      </div>
-                    </div>
-
-                    {/* Error Display for Custom Input */}
-                    {customTestCase.stderr && (
-                      <div>
-                        <label
-                          className={`text-sm font-semibold mb-2 block text-red-600 ${
-                            isDarkTheme ? "text-red-400" : "text-red-700"
-                          }`}
-                        >
-                          Error (stderr):
-                        </label>
-                        <div
-                          className={`w-full p-3 rounded-md font-mono text-sm text-red-600 ${
-                            isDarkTheme
-                              ? "bg-red-900/30 text-red-400 border border-red-700"
-                              : "bg-red-50 text-red-800 border border-red-200"
-                          }`}
-                          style={{ whiteSpace: "pre-wrap" }}
-                        >
-                          {customTestCase.stderr}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Compile Output Display for Custom Input */}
-                    {customTestCase.compile_output && (
-                      <div>
-                        <label
-                          className={`text-sm font-semibold mb-2 block text-orange-600 ${
-                            isDarkTheme ? "text-orange-400" : "text-orange-700"
-                          }`}
-                        >
-                          Compile Output:
-                        </label>
-                        <div
-                          className={`w-full p-3 rounded-md font-mono text-sm text-orange-600 ${
-                            isDarkTheme
-                              ? "bg-orange-900/30 text-orange-400 border border-orange-700"
-                              : "bg-orange-50 text-orange-800 border border-orange-200"
-                          }`}
-                          style={{ whiteSpace: "pre-wrap" }}
-                        >
-                          {customTestCase.compile_output}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Status and Metrics for Custom Input */}
-                    {customTestCase.verdict && (
-                      <div className="mt-3">
-                        <div
-                          className={`text-sm font-medium ${
-                            customTestCase.status === "passed"
-                              ? "text-green-700"
-                              : "text-red-700"
-                          }`}
-                        >
-                          Status: {customTestCase.verdict}
-                        </div>
-                        {customTestCase.time && (
-                          <div className="mt-1 text-sm text-gray-600">
-                            Time: {customTestCase.time}s | Memory:{" "}
-                            {customTestCase.memory} KB
+                            <div
+                              className={`p-3 rounded-md font-mono text-sm ${
+                                isDarkTheme
+                                  ? "bg-gray-800 text-gray-300"
+                                  : "bg-gray-50 text-gray-800"
+                              }`}
+                              style={{ whiteSpace: "pre-wrap" }}
+                            >
+                              {formatTestCaseValue(
+                                testCases[activeTestCase].sample_output
+                              )}
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
 
-                {/* Results Display */}
-                {showResults && (
-                  <div
-                    className={`mt-4 p-3 rounded-md text-sm font-medium ${
-                      resultStatus === "S"
-                        ? "bg-green-100 text-green-800"
-                        : resultStatus === "F"
-                        ? "bg-red-100 text-red-800"
-                        : "bg-yellow-100 text-yellow-800"
-                    }`}
-                    style={{ whiteSpace: "pre-wrap", fontFamily: "monospace" }}
-                  >
-                    {showResults}
-                  </div>
-                )}
+                          {testCases[activeTestCase].userOutput !==
+                            undefined && (
+                            <div>
+                              <div
+                                className={`text-sm font-semibold mb-2 ${
+                                  testCases[activeTestCase].status === "passed"
+                                    ? "text-green-600"
+                                    : "text-red-600"
+                                }`}
+                              >
+                                Your Output:
+                              </div>
+                              <div
+                                className={`p-3 rounded-md font-mono text-sm ${
+                                  isDarkTheme
+                                    ? "bg-gray-800 text-gray-300"
+                                    : "bg-gray-50 text-gray-800"
+                                }`}
+                                style={{ whiteSpace: "pre-wrap" }}
+                              >
+                                {formatTestCaseValue(
+                                  testCases[activeTestCase].userOutput
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {testCases[activeTestCase].status && (
+                            <>
+                              <div
+                                className={`p-3 rounded-md text-sm font-small ${
+                                  testCases[activeTestCase].status === "passed"
+                                    ? "bg-green-100 text-green-800"
+                                    : testCases[activeTestCase].status ===
+                                      "failed"
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-yellow-100 text-yellow-800"
+                                }`}
+                              >
+                                Status:{" "}
+                                {testCases[activeTestCase].verdict ||
+                                  (testCases[activeTestCase].status === "passed"
+                                    ? "✓ Passed"
+                                    : testCases[activeTestCase].status ===
+                                      "failed"
+                                    ? "✗ Failed"
+                                    : "⟳ Running...")}
+                              </div>
+
+                              {/* Error Display - stderr */}
+                              {testCases[activeTestCase].stderr && (
+                                <div>
+                                  <div
+                                    className={`text-sm font-semibold mb-2 text-red-600 ${
+                                      isDarkTheme
+                                        ? "text-red-400"
+                                        : "text-red-700"
+                                    }`}
+                                  >
+                                    Error (stderr):
+                                  </div>
+                                  <div
+                                    className={`p-3 rounded-md font-mono text-sm text-red-600 ${
+                                      isDarkTheme
+                                        ? "bg-red-900/30 text-red-400 border border-red-700"
+                                        : "bg-red-50 text-red-800 border border-red-200"
+                                    }`}
+                                    style={{ whiteSpace: "pre-wrap" }}
+                                  >
+                                    {testCases[activeTestCase].stderr}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Compile Output Display */}
+                              {testCases[activeTestCase].compile_output && (
+                                <div>
+                                  <div
+                                    className={`text-sm font-semibold mb-2 text-orange-600 ${
+                                      isDarkTheme
+                                        ? "text-orange-400"
+                                        : "text-orange-700"
+                                    }`}
+                                  >
+                                    Compile Output:
+                                  </div>
+                                  <div
+                                    className={`p-3 rounded-md font-mono text-sm text-orange-600 ${
+                                      isDarkTheme
+                                        ? "bg-orange-900/30 text-orange-400 border border-orange-700"
+                                        : "bg-orange-50 text-orange-800 border border-orange-200"
+                                    }`}
+                                    style={{ whiteSpace: "pre-wrap" }}
+                                  >
+                                    {testCases[activeTestCase].compile_output}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Time and Memory */}
+                              {testCases[activeTestCase].time && (
+                                <div className="text-sm text-gray-600">
+                                  Time: {testCases[activeTestCase].time}s |
+                                  Memory: {testCases[activeTestCase].memory} KB
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {/* Custom Input Area */}
+                      <div>
+                        <label
+                          className={`text-sm font-semibold mb-2 block ${
+                            isDarkTheme ? "text-gray-300" : "text-gray-700"
+                          }`}
+                        >
+                          Input (stdin):
+                        </label>
+                        <textarea
+                          value={customInput}
+                          onChange={(e) => setCustomInput(e.target.value)}
+                          placeholder="Enter custom input..."
+                          rows={6}
+                          className={`w-full p-3 rounded-md font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                            isDarkTheme
+                              ? "bg-gray-800 text-gray-300 border border-gray-700"
+                              : "bg-gray-50 text-gray-800 border border-gray-300"
+                          }`}
+                        />
+                      </div>
+
+                      {/* Custom Output Area */}
+                      <div>
+                        <label
+                          className={`text-sm font-semibold mb-2 block ${
+                            isDarkTheme ? "text-gray-300" : "text-gray-700"
+                          }`}
+                        >
+                          Output (stdout):
+                        </label>
+                        <div
+                          className={`w-full p-3 rounded-md font-mono text-sm min-h-[100px] ${
+                            isDarkTheme
+                              ? "bg-gray-800 text-gray-300 border border-gray-700"
+                              : "bg-gray-50 text-gray-800 border border-gray-300"
+                          }`}
+                          style={{ whiteSpace: "pre-wrap" }}
+                        >
+                          {stdOut || "Run code to see output..."}
+                        </div>
+                      </div>
+
+                      {/* Error Display for Custom Input */}
+                      {customTestCase.stderr && (
+                        <div>
+                          <label
+                            className={`text-sm font-semibold mb-2 block text-red-600 ${
+                              isDarkTheme ? "text-red-400" : "text-red-700"
+                            }`}
+                          >
+                            Error (stderr):
+                          </label>
+                          <div
+                            className={`w-full p-3 rounded-md font-mono text-sm text-red-600 ${
+                              isDarkTheme
+                                ? "bg-red-900/30 text-red-400 border border-red-700"
+                                : "bg-red-50 text-red-800 border border-red-200"
+                            }`}
+                            style={{ whiteSpace: "pre-wrap" }}
+                          >
+                            {customTestCase.stderr}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Compile Output Display for Custom Input */}
+                      {customTestCase.compile_output && (
+                        <div>
+                          <label
+                            className={`text-sm font-semibold mb-2 block text-orange-600 ${
+                              isDarkTheme
+                                ? "text-orange-400"
+                                : "text-orange-700"
+                            }`}
+                          >
+                            Compile Output:
+                          </label>
+                          <div
+                            className={`w-full p-3 rounded-md font-mono text-sm text-orange-600 ${
+                              isDarkTheme
+                                ? "bg-orange-900/30 text-orange-400 border border-orange-700"
+                                : "bg-orange-50 text-orange-800 border border-orange-200"
+                            }`}
+                            style={{ whiteSpace: "pre-wrap" }}
+                          >
+                            {customTestCase.compile_output}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Status and Metrics for Custom Input */}
+                      {customTestCase.verdict && (
+                        <div className="mt-3">
+                          <div
+                            className={`text-sm font-medium ${
+                              customTestCase.status === "passed"
+                                ? "text-green-700"
+                                : "text-red-700"
+                            }`}
+                          >
+                            Status: {customTestCase.verdict}
+                          </div>
+                          {customTestCase.time && (
+                            <div className="mt-1 text-sm text-gray-600">
+                              Time: {customTestCase.time}s | Memory:{" "}
+                              {customTestCase.memory} KB
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Results Display */}
+                  {showResults && (
+                    <div
+                      className={`mt-4 p-3 rounded-md text-sm font-medium ${
+                        resultStatus === "S"
+                          ? "bg-green-100 text-green-800"
+                          : resultStatus === "F"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}
+                      style={{
+                        whiteSpace: "pre-wrap",
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      {showResults}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
