@@ -7,6 +7,7 @@ export interface ProblemDetails {
   sample_input: string;
   sample_output: string;
   title: string;
+  constraints?: string;
   template_code: Array<{
     language: string;
     language_id: number;
