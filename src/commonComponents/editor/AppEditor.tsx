@@ -119,7 +119,7 @@ const AppEditor: React.FC<AppEditorProps> = ({
         onMount={handleEditorDidMount}
         options={{
           pasteAs: {
-            enabled: false,
+            enabled: true,
             showPasteSelector: "never",
           },
           hover: {

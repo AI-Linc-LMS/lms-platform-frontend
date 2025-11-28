@@ -309,44 +309,79 @@ const CourseContent: React.FC<CourseContentProps> = ({
       <InstructorsSection />
 
       <div className="mt-4 md:mt-8">
-        {course?.modules?.map((module: Module) => (
-          <CollapsibleCourseModule
-            key={module.id}
-            week={{
-              id: `${course.course_id}`,
-              weekNo: module.weekno,
-              title: module.title,
-              completed: module.completion_percentage,
-              modules: module.submodules.map((submodule: Submodule) => ({
-                id: `${submodule.id}`,
-                title: submodule.title,
-                content: [
-                  {
-                    type: "video",
-                    title: "Videos",
-                    count: submodule.video_count,
-                  },
-                  {
-                    type: "article",
-                    title: "Articles",
-                    count: submodule.article_count,
-                  },
-                  {
-                    type: "problem",
-                    title: "Problems",
-                    count: submodule.coding_problem_count,
-                  },
-                  {
-                    type: "quiz",
-                    title: "Quizzes",
-                    count: submodule.quiz_count,
-                  },
-                ],
-              })),
-            }}
-            defaultOpen={module.weekno === 1}
-          />
-        ))}
+        {(() => {
+          // Group modules by week number
+          const modulesByWeek = new Map<number, Module[]>();
+
+          course?.modules?.forEach((module: Module) => {
+            const weekNo = module.weekno;
+            if (!modulesByWeek.has(weekNo)) {
+              modulesByWeek.set(weekNo, []);
+            }
+            modulesByWeek.get(weekNo)?.push(module);
+          });
+
+          // Convert to array and sort by week number
+          const weeks = Array.from(modulesByWeek.entries()).sort(
+            ([weekA], [weekB]) => weekA - weekB
+          );
+
+          return weeks.map(([weekNo, modules]) => (
+            <div key={weekNo} className="mb-6">
+              {/* Week Heading */}
+              <h2 className="text-xl font-semibold text-[#257195] p-4">
+                Week {weekNo}
+              </h2>
+
+              {/* Render each module in this week as a separate collapsible card */}
+              {modules.map((module) => {
+                const submodules = module.submodules.map(
+                  (submodule: Submodule) => ({
+                    id: `${submodule.id}`,
+                    title: submodule.title,
+                    content: [
+                      {
+                        type: "video" as const,
+                        title: "Videos",
+                        count: submodule.video_count,
+                      },
+                      {
+                        type: "article" as const,
+                        title: "Articles",
+                        count: submodule.article_count,
+                      },
+                      {
+                        type: "problem" as const,
+                        title: "Problems",
+                        count: submodule.coding_problem_count || 0,
+                      },
+                      {
+                        type: "quiz" as const,
+                        title: "Quizzes",
+                        count: submodule.quiz_count,
+                      },
+                    ],
+                  })
+                );
+
+                return (
+                  <CollapsibleCourseModule
+                    key={module.id}
+                    week={{
+                      id: `${course.course_id}`,
+                      weekNo: weekNo,
+                      title: module.title,
+                      completed: module.completion_percentage,
+                      modules: submodules,
+                    }}
+                    defaultOpen={weekNo === 1}
+                    showWeekHeading={false}
+                  />
+                );
+              })}
+            </div>
+          ));
+        })()}
       </div>
     </div>
   );
