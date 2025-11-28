@@ -121,6 +121,24 @@ const Description: React.FC<DescriptionProps> = ({ problem, isDarkTheme }) => {
         </div>
       </div>
 
+      {problem.constraints && (
+        <div className="section">
+          <h3 className={`section-title ${isDarkTheme ? "dark-mode" : ""}`}>
+            Constraints
+          </h3>
+          <div
+            className={`section-content ${
+              isDarkTheme ? "dark-mode text-gray-300" : "text-gray-700"
+            }`}
+            style={{ whiteSpace: "pre-wrap" }}
+          >
+            <div
+              dangerouslySetInnerHTML={{ __html: problem.constraints || "" }}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="examples-section">
         <div className="example">
           <h3 className={`example-title ${isDarkTheme ? "dark-mode" : ""}`}>

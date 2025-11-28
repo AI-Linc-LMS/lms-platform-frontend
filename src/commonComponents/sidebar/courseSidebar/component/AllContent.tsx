@@ -294,22 +294,24 @@ const AllContent = ({
                 </h3>
                 <div className="text-xs text-gray-500 flex flex-wrap gap-2 items-center">
                   <span>{item.marks} Marks</span>
-                  {item.content_type === "Quiz" &&
-                    typeof item.obtainedMarks === "number" &&
-                    item.obtainedMarks >= 0 &&
-                    (item.submissions || 0) > 0 && (
-                      <>
-                        <span>|</span>
-                        <span> Obtained Marks: {item.obtainedMarks}</span>
-                      </>
-                    )}
-                  {item.content_type === "Quiz" &&
-                    (item.submissions || 0) > 0 && (
-                      <>
-                        <span>|</span>
-                        <span> Submissions: {item.submissions}</span>
-                      </>
-                    )}
+                  {item.content_type === "Quiz" ||
+                    (item.content_type === "CodingProblem" &&
+                      typeof item.obtainedMarks === "number" &&
+                      item.obtainedMarks >= 0 &&
+                      (item.submissions || 0) > 0 && (
+                        <>
+                          <span>|</span>
+                          <span> Obtained Marks: {item.obtainedMarks}</span>
+                        </>
+                      ))}
+                  {item.content_type === "Quiz" ||
+                    (item.content_type === "CodingProblem" &&
+                      (item.submissions || 0) > 0 && (
+                        <>
+                          <span>|</span>
+                          <span> Submissions: {item.submissions}</span>
+                        </>
+                      ))}
                   <span>|</span>
                   <span>{item.content_type}</span>
                 </div>

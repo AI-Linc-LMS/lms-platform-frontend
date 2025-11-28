@@ -44,6 +44,7 @@ export interface CourseWeek {
 interface CollapsibleCourseModuleProps {
   week: CourseWeek;
   defaultOpen?: boolean;
+  showWeekHeading?: boolean;
 }
 
 // Mock Instructor Data
@@ -101,6 +102,7 @@ interface CollapsibleCourseModuleProps {
 const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
   week,
   defaultOpen = false,
+  showWeekHeading = true,
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const navigate = useNavigate();
@@ -131,11 +133,11 @@ const CollapsibleCourseModule: React.FC<CollapsibleCourseModuleProps> = ({
 
   return (
     <>
-      <div>
+      {showWeekHeading && (
         <h2 className="text-xl font-semibold text-[#257195] p-4">
           Week {week.weekNo}
         </h2>
-      </div>
+      )}
       <div className="mb-4 md:mb-6 border border-gray-100 rounded-[22px] shadow-sm">
         {/* Week Header */}
         <div

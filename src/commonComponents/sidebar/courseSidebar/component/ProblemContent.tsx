@@ -9,6 +9,7 @@ interface ProblemItem {
   marks: number;
   accuracy: number;
   submissions: number;
+  obtainedMarks: number;
   status: string;
 }
 
@@ -34,6 +35,8 @@ const ProblemContent: React.FC<ProblemContentProps> = ({
         {problems.map((problem, idx) => {
           const isSelected = selectedProblemId === problem.id;
           const isLast = idx === problems.length - 1;
+          const obtainedMarks = problem.obtainedMarks;
+          const submissions = problem.submissions;
 
           return (
             <div
@@ -57,12 +60,22 @@ const ProblemContent: React.FC<ProblemContentProps> = ({
                   </h3>
                   <p className="text-xs text-gray-500 flex flex-wrap gap-2">
                     <span>{problem.marks} Marks</span>
-                    <span>|</span>
-                    <span>{problem.accuracy.toFixed(2)}% Accuracy</span>
-                    <span>|</span>
-                    <span>
-                      {problem.submissions.toLocaleString()} Submissions
-                    </span>
+
+                    {obtainedMarks !== null && submissions > 0 && (
+                      <>
+                        <span>|</span>
+                        <span> Obtained Marks: {obtainedMarks}</span>
+                        <span>|</span>
+                      </>
+                    )}
+                    {submissions !== null && submissions !== 0 && (
+                      <>
+                        <span>
+                          {" "}
+                          Submissions: {submissions.toLocaleString()}
+                        </span>
+                      </>
+                    )}
                   </p>
                 </div>
               </div>
