@@ -244,6 +244,7 @@ const CourseSidebarContent = ({
           marks: content.marks || 10,
           accuracy: content.accuracy || 0,
           submissions: content.submissions || 0,
+          obtainedMarks: content.obtainedMarks || 0,
           status: content.status || "non-complete",
         }))
     : [];
