@@ -21,7 +21,26 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { ProblemData, TestCase, CustomTestCase } from "./problem.types";
 import React from "react";
 import { Code, Play, Moon, Sun, Maximize2, Minimize2 } from "lucide-react";
-import { Tooltip, Select, MenuItem, FormControl } from "@mui/material";
+import {
+  Tooltip,
+  Select,
+  MenuItem,
+  FormControl,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  CircularProgress,
+  LinearProgress,
+  Box,
+  Typography,
+  Chip,
+} from "@mui/material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import TaskAltIcon from "@mui/icons-material/TaskAlt";
+import CancelIcon from "@mui/icons-material/Cancel";
+import InfoIcon from "@mui/icons-material/Info";
 import { STREAK_QUERY_KEY } from "../../../hooks/useStreakData";
 
 interface ProblemCardProps {
@@ -680,6 +699,9 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           queryKey: [STREAK_QUERY_KEY, numericClientId],
         });
       } else {
+        if (onComplete) {
+          onComplete();
+        }
         setSubmitResult({
           status: data.status,
           passed: data.passed,
@@ -1016,78 +1038,304 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           : "bg-gray-50"
       }`}
     >
-      {/* Success Modal */}
-      {isSubmitSuccess && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-black/30">
-          <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md border-t-4 border-green-500">
-            <div className="text-center">
-              <div className="text-6xl mb-4">🎉</div>
-              <h3 className="text-2xl font-bold text-green-600 mb-3">
-                Problem Completed!
-              </h3>
-              <p className="text-gray-700 mb-6">
-                Great job! Your solution has been accepted and the problem is
-                marked as complete.
-              </p>
-              <button
-                onClick={() => setIsSubmitSuccess(false)}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold shadow-md"
+      {/* Submission Result Dialog */}
+      <Dialog
+        open={isSubmitSuccess || (submitResult !== null && !isSubmitSuccess)}
+        onClose={() => {
+          setIsSubmitSuccess(false);
+          setSubmitResult(null);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        {isSubmitSuccess ? (
+          <>
+            <DialogTitle sx={{ textAlign: "center", pt: 4, pb: 2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 2,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: "50%",
+                    bgcolor: "var(--success-100)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <TaskAltIcon
+                    sx={{ fontSize: 50, color: "var(--success-500)" }}
+                  />
+                </Box>
+                <Typography
+                  variant="h5"
+                  fontWeight="bold"
+                  sx={{ color: "var(--success-500)" }}
+                >
+                  Perfect run — Submission accepted!
+                </Typography>
+              </Box>
+            </DialogTitle>
+            <DialogContent sx={{ textAlign: "center", pb: 2 }}>
+              <Typography
+                variant="body1"
+                sx={{ color: "var(--font-secondary)" }}
+                gutterBottom
+              >
+                Great job! Your solution has been accepted.
+              </Typography>
+              {submitResult && (
+                <Box sx={{ mt: 3 }}>
+                  <Chip
+                    icon={<CheckCircleIcon />}
+                    label={`${submitResult.passed}/${submitResult.total_test_cases} test cases passed`}
+                    sx={{
+                      borderColor: "var(--success-500)",
+                      color: "var(--success-500)",
+                      "& .MuiChip-icon": {
+                        color: "var(--success-500)",
+                      },
+                    }}
+                    variant="outlined"
+                  />
+                </Box>
+              )}
+            </DialogContent>
+            <DialogActions sx={{ justifyContent: "center", pb: 3, px: 3 }}>
+              <Button
+                onClick={() => {
+                  setIsSubmitSuccess(false);
+                  setSubmitResult(null);
+                }}
+                variant="contained"
+                size="large"
+                startIcon={<CheckCircleIcon />}
+                sx={{
+                  minWidth: 180,
+                  bgcolor: "var(--success-500)",
+                  "&:hover": {
+                    bgcolor: "var(--success-500)",
+                    opacity: 0.9,
+                  },
+                }}
               >
                 Continue Learning
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              </Button>
+            </DialogActions>
+          </>
+        ) : submitResult ? (
+          <>
+            <DialogTitle sx={{ textAlign: "center", pt: 4, pb: 2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 2,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: "50%",
+                    bgcolor:
+                      submitResult.passed > 0
+                        ? "var(--warning-100)"
+                        : "var(--error-100)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {submitResult.passed > 0 ? (
+                    <InfoIcon
+                      sx={{ fontSize: 50, color: "var(--warning-500)" }}
+                    />
+                  ) : (
+                    <CancelIcon
+                      sx={{ fontSize: 50, color: "var(--error-500)" }}
+                    />
+                  )}
+                </Box>
+                <Typography
+                  variant="h5"
+                  fontWeight="bold"
+                  sx={{
+                    color:
+                      submitResult.passed > 0
+                        ? "var(--warning-500)"
+                        : "var(--error-500)",
+                  }}
+                >
+                  {submitResult.passed > 0
+                    ? "Partially Solved"
+                    : "Submission Failed"}
+                </Typography>
+              </Box>
+            </DialogTitle>
+            <DialogContent sx={{ pb: 2 }}>
+              <Box sx={{ mb: 3 }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: "var(--font-secondary)", mb: 1 }}
+                  gutterBottom
+                >
+                  Status
+                </Typography>
+                <Chip
+                  label={submitResult.status}
+                  sx={{
+                    bgcolor:
+                      submitResult.passed > 0
+                        ? "var(--warning-100)"
+                        : "var(--error-100)",
+                    color:
+                      submitResult.passed > 0
+                        ? "var(--warning-500)"
+                        : "var(--error-500)",
+                  }}
+                  size="medium"
+                />
+              </Box>
 
-      {/* Failure Modal */}
-      {submitResult && !isSubmitSuccess && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-black/30">
-          <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md border-t-4 border-red-500">
-            <h3 className="text-2xl font-bold text-red-600 mb-6 text-center">
-              Submission Failed
-            </h3>
-            <div className="space-y-3 mb-6">
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="text-gray-600 font-medium">Status:</span>
-                <span className="text-red-600 font-bold">
-                  {submitResult.status}
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="text-gray-600 font-medium">Passed:</span>
-                <span className="text-green-600 font-bold">
-                  {submitResult.passed}/{submitResult.total_test_cases}
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="text-gray-600 font-medium">Failed:</span>
-                <span className="text-red-600 font-bold">
-                  {submitResult.failed}/{submitResult.total_test_cases}
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={() => setSubmitResult(null)}
-              className="w-full px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold shadow-md"
-            >
-              Try Again
-            </button>
-          </div>
-        </div>
-      )}
+              <Box sx={{ mb: 3 }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: "var(--font-secondary)", mb: 1.5 }}
+                  gutterBottom
+                >
+                  Test Cases Progress
+                </Typography>
+                <Box sx={{ position: "relative", mb: 1 }}>
+                  <LinearProgress
+                    variant="determinate"
+                    value={
+                      (submitResult.passed / submitResult.total_test_cases) *
+                      100
+                    }
+                    sx={{
+                      height: 10,
+                      borderRadius: 5,
+                      backgroundColor: "var(--neutral-200)",
+                      "& .MuiLinearProgress-bar": {
+                        borderRadius: 5,
+                        backgroundColor:
+                          submitResult.passed > 0
+                            ? "var(--warning-500)"
+                            : "var(--error-500)",
+                      },
+                    }}
+                  />
+                </Box>
+                <Typography
+                  variant="body2"
+                  textAlign="center"
+                  fontWeight={500}
+                  sx={{ color: "var(--font-primary)" }}
+                >
+                  {submitResult.passed} of {submitResult.total_test_cases} test
+                  cases passed
+                </Typography>
+              </Box>
 
-      {/* Loading Overlay */}
-      {isSubmitting && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-black/30">
-          <div className="bg-white p-8 rounded-xl shadow-2xl flex flex-col items-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary-500 mb-4"></div>
-            <p className="text-gray-700 text-lg font-medium">
-              Submitting your solution...
-            </p>
-          </div>
-        </div>
-      )}
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 2,
+                  justifyContent: "center",
+                  mt: 3,
+                }}
+              >
+                <Chip
+                  icon={<CheckCircleIcon />}
+                  label={`${submitResult.passed} Passed`}
+                  sx={{
+                    borderColor: "var(--success-500)",
+                    color: "var(--success-500)",
+                    "& .MuiChip-icon": {
+                      color: "var(--success-500)",
+                    },
+                  }}
+                  variant="outlined"
+                  size="medium"
+                />
+                <Chip
+                  icon={<CancelIcon />}
+                  label={`${submitResult.failed} Failed`}
+                  sx={{
+                    borderColor: "var(--error-500)",
+                    color: "var(--error-500)",
+                    "& .MuiChip-icon": {
+                      color: "var(--error-500)",
+                    },
+                  }}
+                  variant="outlined"
+                  size="medium"
+                />
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ justifyContent: "center", pb: 3, px: 3 }}>
+              <Button
+                onClick={() => {
+                  setSubmitResult(null);
+                }}
+                variant="contained"
+                size="large"
+                startIcon={
+                  submitResult.passed > 0 ? <InfoIcon /> : <CancelIcon />
+                }
+                sx={{
+                  minWidth: 180,
+                  bgcolor:
+                    submitResult.passed > 0
+                      ? "var(--warning-500)"
+                      : "var(--error-500)",
+                  "&:hover": {
+                    bgcolor:
+                      submitResult.passed > 0
+                        ? "var(--warning-500)"
+                        : "var(--error-500)",
+                    opacity: 0.9,
+                  },
+                }}
+              >
+                Try Again
+              </Button>
+            </DialogActions>
+          </>
+        ) : null}
+      </Dialog>
+
+      {/* Loading Dialog */}
+      <Dialog open={isSubmitting} PaperProps={{ sx: { p: 3 } }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 2,
+            minWidth: 200,
+          }}
+        >
+          <CircularProgress
+            size={50}
+            sx={{
+              color: "var(--primary-500)",
+            }}
+          />
+          <Typography variant="body1" sx={{ color: "var(--font-primary)" }}>
+            Submitting your solution...
+          </Typography>
+        </Box>
+      </Dialog>
 
       <div
         className={`grid grid-cols-12 gap-3 p-3 ${
