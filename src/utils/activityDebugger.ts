@@ -7,19 +7,42 @@ const MAX_DEBUG_EVENTS = 100;
 
 /**
  * Log a debug event with timestamp
+ * OPTIMIZED: Uses requestIdleCallback to defer logging when browser is busy
+ * This prevents logging from interfering with user interactions or causing refreshes
  */
 export const logActivityEvent = (event: string, data?: unknown): void => {
-  const timestamp = new Date().toISOString();
-  const logEntry = `[${timestamp}] ${event}${
-    data ? ": " + JSON.stringify(data) : ""
-  }`;
+  // Defer logging to next event loop or idle time to prevent blocking
+  // This ensures logging doesn't interfere with user experience
+  const logEntry = () => {
+    const timestamp = new Date().toISOString();
+    const entry = `[${timestamp}] ${event}${
+      data ? ": " + JSON.stringify(data) : ""
+    }`;
 
-  // Store in memory for retrieval
-  activeDebugEvents.push(logEntry);
+    // Store in memory for retrieval
+    activeDebugEvents.push(entry);
 
-  // Keep array size manageable
-  if (activeDebugEvents.length > MAX_DEBUG_EVENTS) {
-    activeDebugEvents = activeDebugEvents.slice(-MAX_DEBUG_EVENTS);
+    // Keep array size manageable
+    if (activeDebugEvents.length > MAX_DEBUG_EVENTS) {
+      activeDebugEvents = activeDebugEvents.slice(-MAX_DEBUG_EVENTS);
+    }
+  };
+
+  // Use requestIdleCallback if available to defer logging when browser is idle
+  // This prevents logging from causing performance issues or refreshes
+  if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+    const requestIdleCallback = (
+      window as Window & {
+        requestIdleCallback: (
+          callback: () => void,
+          options?: { timeout?: number }
+        ) => number;
+      }
+    ).requestIdleCallback;
+    requestIdleCallback(logEntry, { timeout: 100 });
+  } else {
+    // Fallback: use setTimeout to defer to next event loop
+    setTimeout(logEntry, 0);
   }
 };
 

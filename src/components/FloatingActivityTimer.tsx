@@ -115,51 +115,82 @@ const FloatingActivityTimer: React.FC = () => {
   }, [isActive, currentSessionStart]);
 
   // Update debug logs periodically and check for sync events
+  // OPTIMIZED: Only poll when debugging is enabled, and use longer interval to reduce re-renders
   useEffect(() => {
     if (!showDebugging) return;
 
+    // Use longer interval (5 seconds instead of 1 second) to reduce re-renders
+    // This prevents the component from causing performance issues or refreshes
     const debugTimer = setInterval(() => {
-      const events = getActivityDebugEvents();
-      setDebugEvents(events);
+      // Use requestIdleCallback to defer reading debug events when browser is idle
+      const readDebugEvents = () => {
+        const events = getActivityDebugEvents();
+        
+        // Only update state if events actually changed to prevent unnecessary re-renders
+        setDebugEvents((prevEvents) => {
+          if (prevEvents.length !== events.length || 
+              prevEvents[prevEvents.length - 1] !== events[events.length - 1]) {
+            return events;
+          }
+          return prevEvents; // Return previous to prevent re-render
+        });
 
-      // Check for sync-related events in the logs
-      const syncEvents = events.filter(
-        (event) =>
-          event.includes("Sent activity data") ||
-          event.includes("Failed to send activity data") ||
-          event.includes("Periodic sync")
-      );
+        // Check for sync-related events in the logs
+        const syncEvents = events.filter(
+          (event) =>
+            event.includes("Sent activity data") ||
+            event.includes("Failed to send activity data") ||
+            event.includes("Periodic sync")
+        );
 
-      if (syncEvents.length > 0) {
-        const latestSyncEvent = syncEvents[syncEvents.length - 1];
+        if (syncEvents.length > 0) {
+          const latestSyncEvent = syncEvents[syncEvents.length - 1];
 
-        // Update sync status
-        if (latestSyncEvent.includes("success")) {
-          setSyncStatus({
-            lastSync: Date.now(),
-            status: "success",
-            message: "Last sync successful",
-          });
-
-          // Reset status after 3 seconds
-          setTimeout(() => {
-            setSyncStatus((prev) => ({ ...prev, status: "idle" }));
-          }, 3000);
-        } else if (latestSyncEvent.includes("failed")) {
-          setSyncStatus({
-            lastSync: Date.now(),
-            status: "failed",
-            message: "Sync failed",
-          });
-        } else if (latestSyncEvent.includes("Periodic sync")) {
-          setSyncStatus({
-            lastSync: Date.now(),
-            status: "syncing",
-            message: "Syncing...",
+          // Update sync status only if it changed
+          setSyncStatus((prevStatus) => {
+            if (latestSyncEvent.includes("success") && prevStatus.status !== "success") {
+              // Reset status after 3 seconds
+              setTimeout(() => {
+                setSyncStatus((prev) => ({ ...prev, status: "idle" }));
+              }, 3000);
+              return {
+                lastSync: Date.now(),
+                status: "success",
+                message: "Last sync successful",
+              };
+            } else if (latestSyncEvent.includes("failed") && prevStatus.status !== "failed") {
+              return {
+                lastSync: Date.now(),
+                status: "failed",
+                message: "Sync failed",
+              };
+            } else if (latestSyncEvent.includes("Periodic sync") && prevStatus.status !== "syncing") {
+              return {
+                lastSync: Date.now(),
+                status: "syncing",
+                message: "Syncing...",
+              };
+            }
+            return prevStatus; // No change, prevent re-render
           });
         }
+      };
+
+      // Defer to next event loop or use requestIdleCallback if available
+      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+        const requestIdleCallback = (
+          window as Window & {
+            requestIdleCallback: (
+              callback: () => void,
+              options?: { timeout?: number }
+            ) => number;
+          }
+        ).requestIdleCallback;
+        requestIdleCallback(readDebugEvents, { timeout: 5000 });
+      } else {
+        setTimeout(readDebugEvents, 0);
       }
-    }, 1000);
+    }, 5000); // Changed from 1000ms to 5000ms to reduce polling frequency
 
     return () => clearInterval(debugTimer);
   }, [showDebugging]);
@@ -231,34 +262,39 @@ const FloatingActivityTimer: React.FC = () => {
       body: JSON.stringify(activityData),
     };
 
-    // Make the API call directly using Fetch API for better visibility in Network tab
+    // Make the API call directly using Fetch API - completely fire-and-forget
+    // Don't parse response.json() to avoid any potential side effects
     fetch(`${apiUrl}/activity/clients/${clientId}/track-time/`, fetchOptions)
       .then((response) => {
         if (!response.ok) {
-          throw new Error(`API responded with status ${response.status}`);
+          // Log error but don't throw - fire-and-forget means no error propagation
+          console.warn(`Activity tracking API responded with status ${response.status}`);
+          return;
         }
-        return response.json();
-      })
-      .then(() => {
-        // Record this sync to prevent duplicates in automatic syncs
-        try {
-          localStorage.setItem(
-            STORAGE_KEYS.LAST_SYNC_TIME,
-            Date.now().toString()
-          );
-          localStorage.setItem(
-            STORAGE_KEYS.LAST_SYNC_DATA,
-            totalTimeInSeconds.toString()
-          );
-        } catch {
-          // Ignore storage errors
-        }
+        
+        // Don't parse response - just update UI state
+        // Use setTimeout to defer state updates to next event loop
+        setTimeout(() => {
+          try {
+            // Record this sync to prevent duplicates in automatic syncs
+            localStorage.setItem(
+              STORAGE_KEYS.LAST_SYNC_TIME,
+              Date.now().toString()
+            );
+            localStorage.setItem(
+              STORAGE_KEYS.LAST_SYNC_DATA,
+              totalTimeInSeconds.toString()
+            );
+          } catch {
+            // Ignore storage errors
+          }
 
-        setSyncStatus({
-          lastSync: Date.now(),
-          status: "success",
-          message: "API call successful",
-        });
+          setSyncStatus({
+            lastSync: Date.now(),
+            status: "success",
+            message: "API call successful",
+          });
+        }, 0);
 
         // Reset status after 3 seconds
         setTimeout(() => {

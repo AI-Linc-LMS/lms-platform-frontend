@@ -74,16 +74,19 @@ const recordSuccessfulSessionSync = (
 };
 
 // Add a helper function to check processed sessions
-const isSessionProcessed = (sessionStart: number, sessionDuration: number): boolean => {
+const isSessionProcessed = (
+  sessionStart: number,
+  sessionDuration: number
+): boolean => {
   try {
-    const processedSessionsStr = localStorage.getItem('processedSessions');
+    const processedSessionsStr = localStorage.getItem("processedSessions");
     if (!processedSessionsStr) {
       return false;
     }
 
     const processedSessions = JSON.parse(processedSessionsStr);
     const sessionKey = `${sessionStart}-${sessionDuration}`;
-    
+
     return processedSessions.includes(sessionKey);
   } catch {
     return false;
@@ -91,22 +94,30 @@ const isSessionProcessed = (sessionStart: number, sessionDuration: number): bool
 };
 
 // Add function to mark processed sessions
-const markSessionAsProcessed = (sessionStart: number, sessionDuration: number): void => {
+const markSessionAsProcessed = (
+  sessionStart: number,
+  sessionDuration: number
+): void => {
   try {
-    const processedSessionsStr = localStorage.getItem('processedSessions');
-    const processedSessions = processedSessionsStr ? JSON.parse(processedSessionsStr) : [];
-    
+    const processedSessionsStr = localStorage.getItem("processedSessions");
+    const processedSessions = processedSessionsStr
+      ? JSON.parse(processedSessionsStr)
+      : [];
+
     const sessionKey = `${sessionStart}-${sessionDuration}`;
-    
+
     if (!processedSessions.includes(sessionKey)) {
       processedSessions.push(sessionKey);
-      
+
       // Keep only the last 50 processed sessions to avoid storage bloat
       if (processedSessions.length > 50) {
         processedSessions.splice(0, processedSessions.length - 50);
       }
-      
-      localStorage.setItem('processedSessions', JSON.stringify(processedSessions));
+
+      localStorage.setItem(
+        "processedSessions",
+        JSON.stringify(processedSessions)
+      );
     }
   } catch {
     // Silently fail if localStorage is not available
@@ -185,37 +196,37 @@ export const setupActivitySyncListeners = (): void => {
     try {
       // Try multiple sources for current session data
       let sessionData = null;
-      
+
       // Method 1: Check localStorage for current session
-      const currentSessionStr = localStorage.getItem('currentActiveSession');
+      const currentSessionStr = localStorage.getItem("currentActiveSession");
       if (currentSessionStr) {
         sessionData = JSON.parse(currentSessionStr);
       }
-      
+
       // Method 2: Check for any activity context data
       if (!sessionData) {
-        const activityContextStr = localStorage.getItem('userActivityContext');
+        const activityContextStr = localStorage.getItem("userActivityContext");
         if (activityContextStr) {
           const contextData = JSON.parse(activityContextStr);
           if (contextData.isActive && contextData.currentSessionStart) {
             sessionData = {
               isActive: contextData.isActive,
-              startTime: contextData.currentSessionStart
+              startTime: contextData.currentSessionStart,
             };
           }
         }
       }
-      
-      
+
       if (sessionData && sessionData.isActive && sessionData.startTime) {
         const now = Date.now();
-        const sessionDuration = Math.floor((now - sessionData.startTime) / 1000);
-        
-        
+        const sessionDuration = Math.floor(
+          (now - sessionData.startTime) / 1000
+        );
+
         if (sessionDuration > 0) {
           const { device_info } = getDeviceFingerprint();
           const userId = getCurrentUserId();
-          
+
           // Create emergency data
           const emergencyData = {
             sessionDuration,
@@ -225,34 +236,37 @@ export const setupActivitySyncListeners = (): void => {
             userId,
             deviceType: device_info.deviceType,
             isRefresh: true,
-            source: 'beforeunload'
+            source: "beforeunload",
           };
-          
-          
+
           // Save to localStorage
-          localStorage.setItem('emergencySessionData', JSON.stringify(emergencyData));
-          
+          localStorage.setItem(
+            "emergencySessionData",
+            JSON.stringify(emergencyData)
+          );
+
           // Try immediate API call with beacon
           const apiUrl = import.meta.env.VITE_API_URL;
           const clientId = import.meta.env.VITE_CLIENT_ID;
-          
+
           if (apiUrl && clientId) {
             const payload = {
-              "time_spent_seconds": sessionDuration,
-              "session_id": userId,
-              "date": formatDateForApi(),
-              "device_type": device_info.deviceType,
-              "session_only": true,
-              "event_type": "page_unload"
+              time_spent_seconds: sessionDuration,
+              session_id: userId,
+              date: formatDateForApi(),
+              device_type: device_info.deviceType,
+              session_only: true,
+              event_type: "page_unload",
             };
-            
+
             // Use beacon for immediate send
-            const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+            const blob = new Blob([JSON.stringify(payload)], {
+              type: "application/json",
+            });
             navigator.sendBeacon(
               `${apiUrl}/activity/clients/${clientId}/track-time/`,
               blob
             );
-            
           }
         }
       }
@@ -264,20 +278,22 @@ export const setupActivitySyncListeners = (): void => {
   // Handle page hide for mobile browsers
   window.addEventListener("pagehide", (event) => {
     if (event.persisted) return;
-    
+
     try {
-      const currentSessionStr = localStorage.getItem('currentActiveSession');
+      const currentSessionStr = localStorage.getItem("currentActiveSession");
       if (currentSessionStr) {
         const sessionData = JSON.parse(currentSessionStr);
         const now = Date.now();
-        
+
         if (sessionData.startTime && sessionData.isActive) {
-          const sessionDuration = Math.floor((now - sessionData.startTime) / 1000);
-          
+          const sessionDuration = Math.floor(
+            (now - sessionData.startTime) / 1000
+          );
+
           if (sessionDuration > 0) {
             const { device_info } = getDeviceFingerprint();
             const userId = getCurrentUserId();
-            
+
             emergencySessionCapture(
               sessionDuration,
               sessionData.startTime,
@@ -446,12 +462,12 @@ export const sendRefreshSessionData = async (
 
     // Create refresh-specific payload
     const refreshPayload = {
-      "time_spent_seconds": validatedSessionDuration,
-      "session_id": finalUserId,
-      "date": formatDateForApi(),
-      "device_type": deviceInfo.deviceType,
-      "session_only": true,
-      "event_type": "page_refresh", // Special flag for refresh events
+      time_spent_seconds: validatedSessionDuration,
+      session_id: finalUserId,
+      date: formatDateForApi(),
+      device_type: deviceInfo.deviceType,
+      session_only: true,
+      event_type: "page_refresh", // Special flag for refresh events
     };
 
     logActivityEvent("Sending refresh session data", {
@@ -459,43 +475,69 @@ export const sendRefreshSessionData = async (
       endpoint: `${apiUrl}/activity/clients/${clientId}/track-time/`,
     });
 
-    // Use fetch with keepalive to ensure the request completes even during page unload
-    const response = await fetch(
-      `${apiUrl}/activity/clients/${clientId}/track-time/`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(localStorage.getItem("token")
-            ? {
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-              }
-            : {}),
-        },
-        body: JSON.stringify(refreshPayload),
-        keepalive: true, // Critical for page refresh scenarios
-      }
-    );
+    // Use fetch in fire-and-forget mode with keepalive to prevent blocking
+    // Don't await - let it run in the background completely asynchronously
+    fetch(`${apiUrl}/activity/clients/${clientId}/track-time/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(localStorage.getItem("token")
+          ? {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            }
+          : {}),
+      },
+      body: JSON.stringify(refreshPayload),
+      keepalive: true, // Critical for page refresh scenarios
+    })
+      .then((response) => {
+        // CRITICAL: Defer ALL handling to next event loop cycle
+        // This ensures the response handling doesn't interfere with current execution
+        setTimeout(() => {
+          try {
+            if (!response.ok) {
+              // Log error but don't throw - this prevents any interruption
+              logActivityEvent("Refresh session API call failed", {
+                status: response.status,
+                sessionDuration: validatedSessionDuration,
+              });
+              return;
+            }
 
-    if (!response.ok) {
-      throw new Error(
-        `Refresh session API call failed with status ${response.status}`
-      );
-    }
+            // Don't parse response - just log success
+            // Parsing response.json() is unnecessary and could cause side effects
+            logActivityEvent("Refresh session data sent successfully", {
+              sessionDuration: validatedSessionDuration,
+            });
+          } catch {
+            // Silently ignore any errors in response handling
+          }
+        }, 0);
+      })
+      .catch((error) => {
+        // Defer error handling to next event loop cycle as well
+        setTimeout(() => {
+          try {
+            // Silently handle errors - don't throw, don't interrupt user experience
+            logActivityEvent("Refresh session API call error (non-blocking)", {
+              error: (error as Error).message,
+              sessionDuration: validatedSessionDuration,
+            });
+          } catch {
+            // Silently ignore
+          }
+        }, 0);
+      });
 
-    const responseData = await response.json();
-
-    logActivityEvent("Refresh session data sent successfully", {
-      sessionDuration: validatedSessionDuration,
-      response: responseData,
-    });
+    // Return immediately without waiting for the fetch to complete
+    // This ensures the function doesn't block and doesn't cause any refreshes
+    return;
   } catch (error) {
-    logActivityEvent("Failed to send refresh session data", {
+    // Only catch synchronous errors, not fetch errors
+    logActivityEvent("Error in refresh session data setup", {
       error: (error as Error).message,
-      sessionDuration,
     });
-
-    throw error;
+    // Don't throw - silently handle
   }
 };
 
@@ -522,7 +564,7 @@ export const createActivityPayload = (
 
   return {
     date: formatDateForApi(),
-    "time_spent_seconds": validatedTotalTime,
+    time_spent_seconds: validatedTotalTime,
     "time-spend": Math.floor(validatedTotalTime / 60),
     current_session_duration: validatedSessionDuration,
     // session_id: sessionId,
@@ -563,7 +605,7 @@ export const createPreciseActivityPayload = (
 
   return {
     date: formatDateForApi(new Date(timestamp)),
-    "time_spent_seconds": validatedTotalTime, // Exact seconds for precision
+    time_spent_seconds: validatedTotalTime, // Exact seconds for precision
     "time-spend": Math.floor(validatedTotalTime / 60), // Use floor to avoid inflating time
     current_session_duration: validatedSessionDuration, // Current session data for diagnostics
     // session_id: sessionId,
@@ -577,7 +619,7 @@ export const createPreciseActivityPayload = (
  * Immediately sends session-end data to the backend with only current session time
  * Now includes processed session tracking to prevent duplicates
  */
-export const sendSessionEndData = async (
+export const sendSessionEndData = (
   sessionStartTime: number,
   _sessionEndTime: number,
   sessionDuration: number,
@@ -585,119 +627,142 @@ export const sendSessionEndData = async (
   sessionId: string,
   deviceInfo: { browser: string; os: string; deviceType: string },
   userId?: string
-): Promise<void> => {
-  try {
-    // Check if this session has already been processed
-    if (isSessionProcessed(sessionStartTime, sessionDuration)) {
-      logActivityEvent("Session already processed, skipping API call", {
-        sessionStart: sessionStartTime,
-        sessionDuration
-      });
-      return;
-    }
-
-    const apiUrl = import.meta.env.VITE_API_URL;
-    const clientId = import.meta.env.VITE_CLIENT_ID;
-
-    if (!apiUrl || !clientId) {
-      logActivityEvent("Missing API URL or Client ID for session-end sync");
-      return;
-    }
-
-    // Validate time values
-    const validatedSessionDuration = validateTimeValue(sessionDuration);
-
-    // Get user ID (use provided userId or get current user ID)
-    const finalUserId = userId || getCurrentUserId();
-
-    // Check if we should skip this sync due to recent identical session sync
-    if (shouldSkipDuplicateSessionSync(sessionId, validatedSessionDuration)) {
-      logActivityEvent("Skipping duplicate session-end sync", {
-        sessionId,
-        sessionDuration: validatedSessionDuration,
-      });
-      return;
-    }
-
-    // Create session-end payload with only session duration
-    const sessionEndPayload = {
-      "time_spent_seconds": validatedSessionDuration, // Send only current session time
-      "session_id": finalUserId,
-      "date": formatDateForApi(),
-      "device_type": deviceInfo.deviceType,
-      "session_only": true, // Indicate this is session-only data
-    };
-
-    logActivityEvent("Sending session-end data with session time only", {
-      sessionDuration: validatedSessionDuration,
-      sessionId: sessionId,
-      endpoint: `${apiUrl}/activity/clients/${clientId}/track-time/`,
-    });
-
-    // Use fetch for immediate sending
-    const response = await fetch(
-      `${apiUrl}/activity/clients/${clientId}/track-time/`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(localStorage.getItem("token")
-            ? {
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-              }
-            : {}),
-        },
-        body: JSON.stringify(sessionEndPayload),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `Session-end API call failed with status ${response.status}`
-      );
-    }
-
-    const responseData = await response.json();
-
-    logActivityEvent("Session-end data sent successfully", {
-      sessionDuration: validatedSessionDuration,
-      response: responseData,
-    });
-
-    // Record this sync to prevent duplicates
-    recordSuccessfulSessionSync(sessionId, validatedSessionDuration);
-    
-    // Mark session as processed
-    markSessionAsProcessed(sessionStartTime, validatedSessionDuration);
-  } catch (error) {
-    logActivityEvent("Failed to send session-end data", {
-      error: (error as Error).message,
-      sessionDuration,
-    });
-
-    // Store as pending data if immediate send fails
+): void => {
+  // CRITICAL: Defer ALL execution to next event loop cycle
+  // This ensures the function doesn't execute synchronously and cause refreshes
+  setTimeout(() => {
     try {
-      const pendingData = {
-        sessionDuration,
-        sessionStartTime,
-        sessionEndTime: _sessionEndTime,
-        timestamp: _sessionEndTime,
-        eventType: "session-end",
+      // Check if this session has already been processed
+      if (isSessionProcessed(sessionStartTime, sessionDuration)) {
+        logActivityEvent("Session already processed, skipping API call", {
+          sessionStart: sessionStartTime,
+          sessionDuration,
+        });
+        return;
+      }
+
+      const apiUrl = import.meta.env.VITE_API_URL;
+      const clientId = import.meta.env.VITE_CLIENT_ID;
+
+      if (!apiUrl || !clientId) {
+        logActivityEvent("Missing API URL or Client ID for session-end sync");
+        return;
+      }
+
+      // Validate time values
+      const validatedSessionDuration = validateTimeValue(sessionDuration);
+
+      // Get user ID (use provided userId or get current user ID)
+      const finalUserId = userId || getCurrentUserId();
+
+      // Check if we should skip this sync due to recent identical session sync
+      if (shouldSkipDuplicateSessionSync(sessionId, validatedSessionDuration)) {
+        logActivityEvent("Skipping duplicate session-end sync", {
+          sessionId,
+          sessionDuration: validatedSessionDuration,
+        });
+        return;
+      }
+
+      // Create session-end payload with only session duration
+      const sessionEndPayload = {
+        time_spent_seconds: validatedSessionDuration, // Send only current session time
+        session_id: finalUserId,
+        date: formatDateForApi(),
+        device_type: deviceInfo.deviceType,
+        session_only: true, // Indicate this is session-only data
       };
 
-      localStorage.setItem(
-        "pendingSessionEndData",
-        JSON.stringify(pendingData)
-      );
-      logActivityEvent("Stored session-end data as pending for later sync");
-    } catch (storageError) {
-      logActivityEvent("Failed to store pending session-end data", {
-        error: (storageError as Error).message,
+      logActivityEvent("Sending session-end data with session time only", {
+        sessionDuration: validatedSessionDuration,
+        sessionId: sessionId,
+        endpoint: `${apiUrl}/activity/clients/${clientId}/track-time/`,
       });
-    }
 
-    throw error;
-  }
+      // Use fetch in completely fire-and-forget mode
+      // Defer the entire fetch call to ensure it doesn't interfere with current execution
+      setTimeout(() => {
+        fetch(`${apiUrl}/activity/clients/${clientId}/track-time/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(localStorage.getItem("token")
+              ? {
+                  Authorization: `Bearer ${localStorage.getItem("token")}`,
+                }
+              : {}),
+          },
+          body: JSON.stringify(sessionEndPayload),
+        })
+          .then((response) => {
+            // Defer response handling even further to ensure complete isolation
+            setTimeout(() => {
+              try {
+                if (!response.ok) {
+                  logActivityEvent("Session-end API call failed", {
+                    status: response.status,
+                    sessionDuration: validatedSessionDuration,
+                  });
+                  return;
+                }
+
+                logActivityEvent("Session-end data sent successfully", {
+                  sessionDuration: validatedSessionDuration,
+                });
+
+                // Record this sync to prevent duplicates
+                recordSuccessfulSessionSync(
+                  sessionId,
+                  validatedSessionDuration
+                );
+
+                // Mark session as processed
+                markSessionAsProcessed(
+                  sessionStartTime,
+                  validatedSessionDuration
+                );
+              } catch {
+                // Silently ignore any errors
+              }
+            }, 0);
+          })
+          .catch((error) => {
+            // Defer error handling to next event loop cycle
+            setTimeout(() => {
+              try {
+                logActivityEvent("Session-end API call error (non-blocking)", {
+                  error: (error as Error).message,
+                  sessionDuration: validatedSessionDuration,
+                });
+
+                // Store as pending data if immediate send fails
+                const pendingData = {
+                  sessionDuration: validatedSessionDuration,
+                  sessionStartTime,
+                  timestamp: Date.now(),
+                  eventType: "session-end",
+                };
+
+                localStorage.setItem(
+                  "pendingSessionEndData",
+                  JSON.stringify(pendingData)
+                );
+                logActivityEvent(
+                  "Stored session-end data as pending for later sync"
+                );
+              } catch {
+                // Silently ignore all errors
+              }
+            }, 0);
+          });
+      }, 0);
+    } catch {
+      // Silently ignore any errors in the entire function
+    }
+  }, 0);
+
+  // Return immediately - function is completely fire-and-forget
+  // No Promise, no async, no blocking - just returns void immediately
 };
 
 /**
@@ -737,11 +802,11 @@ export const sendSessionEndDataViaBeacon = (
 
     // Create session-end payload with only session duration
     const sessionEndPayload = {
-      "time_spent_seconds": validatedSessionDuration, // Send only current session time
-      "session_id": finalUserId,
-      "date": formatDateForApi(),
-      "device_type": deviceInfo.deviceType,
-      "session_only": true, // Indicate this is session-only data
+      time_spent_seconds: validatedSessionDuration, // Send only current session time
+      session_id: finalUserId,
+      date: formatDateForApi(),
+      device_type: deviceInfo.deviceType,
+      session_only: true, // Indicate this is session-only data
     };
 
     // Use Beacon API for guaranteed delivery during page unload
@@ -753,11 +818,14 @@ export const sendSessionEndDataViaBeacon = (
       blob
     );
 
-    logActivityEvent("Sent session-end data via beacon with session time only", {
-      sessionDuration: validatedSessionDuration,
-      sessionId: sessionId,
-      success,
-    });
+    logActivityEvent(
+      "Sent session-end data via beacon with session time only",
+      {
+        sessionDuration: validatedSessionDuration,
+        sessionId: sessionId,
+        success,
+      }
+    );
 
     return success;
   } catch (error) {
@@ -823,11 +891,11 @@ export const sendPeriodicSessionUpdate = async (
 
     // Create session update payload with only session duration
     const sessionUpdatePayload = {
-      "time_spent_seconds": validatedSessionDuration, // Send only current session time
-      "session_id": finalUserId,
-      "date": formatDateForApi(),
-      "device_type": deviceInfo.deviceType,
-      "session_only": true, // Indicate this is session-only data
+      time_spent_seconds: validatedSessionDuration, // Send only current session time
+      session_id: finalUserId,
+      date: formatDateForApi(),
+      device_type: deviceInfo.deviceType,
+      session_only: true, // Indicate this is session-only data
     };
 
     logActivityEvent("Sending periodic session update with session time only", {
@@ -836,45 +904,71 @@ export const sendPeriodicSessionUpdate = async (
       endpoint: `${apiUrl}/activity/clients/${clientId}/track-time/`,
     });
 
-    // Send the session update
-    const response = await fetch(
-      `${apiUrl}/activity/clients/${clientId}/track-time/`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(localStorage.getItem("token")
-            ? {
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-              }
-            : {}),
-        },
-        body: JSON.stringify(sessionUpdatePayload),
-      }
-    );
+    // Send the session update in fire-and-forget mode to prevent blocking or causing refreshes
+    // Don't await - let it run in the background completely asynchronously
+    fetch(`${apiUrl}/activity/clients/${clientId}/track-time/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(localStorage.getItem("token")
+          ? {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            }
+          : {}),
+      },
+      body: JSON.stringify(sessionUpdatePayload),
+    })
+      .then((response) => {
+        // CRITICAL: Defer ALL handling to next event loop cycle
+        // This ensures the response handling doesn't interfere with current execution
+        setTimeout(() => {
+          try {
+            if (!response.ok) {
+              // Log error but don't throw - this prevents any interruption
+              logActivityEvent("Periodic session update failed", {
+                status: response.status,
+                sessionDuration: validatedSessionDuration,
+              });
+              return;
+            }
 
-    if (!response.ok) {
-      throw new Error(
-        `Periodic session update failed with status ${response.status}`
-      );
-    }
+            // Don't parse response - just log success and update tracking
+            // Parsing response.json() is unnecessary and could cause side effects
+            logActivityEvent("Periodic session update sent successfully", {
+              sessionDuration: validatedSessionDuration,
+            });
 
-    const responseData = await response.json();
+            // Record this sync to prevent duplicates
+            recordSuccessfulSessionSync(sessionId, validatedSessionDuration);
+          } catch {
+            // Silently ignore any errors in response handling
+          }
+        }, 0);
+      })
+      .catch((error) => {
+        // Defer error handling to next event loop cycle as well
+        setTimeout(() => {
+          try {
+            // Silently handle errors - don't throw, don't interrupt user experience
+            logActivityEvent("Periodic session update error (non-blocking)", {
+              error: (error as Error).message,
+              sessionDuration: validatedSessionDuration,
+            });
+          } catch {
+            // Silently ignore
+          }
+        }, 0);
+      });
 
-    logActivityEvent("Periodic session update sent successfully", {
-      sessionDuration: validatedSessionDuration,
-      response: responseData,
-    });
-
-    // Record this sync to prevent duplicates
-    recordSuccessfulSessionSync(sessionId, validatedSessionDuration);
+    // Return immediately without waiting for the fetch to complete
+    // This ensures the function doesn't block and doesn't cause any refreshes
+    return;
   } catch (error) {
-    logActivityEvent("Failed to send periodic session update", {
+    // Only catch synchronous errors, not fetch errors
+    logActivityEvent("Error in periodic session update setup", {
       error: (error as Error).message,
-      sessionDuration: Math.floor((Date.now() - sessionStartTime) / 1000),
     });
-
-    throw error;
+    // Don't throw - silently handle
   }
 };
 
@@ -936,17 +1030,17 @@ export const emergencySessionCapture = (
     const payloads = [
       // Primary payload
       {
-        "time_spent_seconds": validatedSessionDuration,
-        "session_id": finalUserId,
-        "date": formatDateForApi(),
-        "device_type": deviceInfo.deviceType,
-        "session_only": true,
-        "event_type": isRefresh ? "page_refresh" : "page_unload",
+        time_spent_seconds: validatedSessionDuration,
+        session_id: finalUserId,
+        date: formatDateForApi(),
+        device_type: deviceInfo.deviceType,
+        session_only: true,
+        event_type: isRefresh ? "page_refresh" : "page_unload",
       },
       // Backup payload with minimal data
       {
-        "time_spent_seconds": validatedSessionDuration,
-        "session_id": finalUserId,
+        time_spent_seconds: validatedSessionDuration,
+        session_id: finalUserId,
         emergency: true,
       },
     ];
@@ -954,7 +1048,9 @@ export const emergencySessionCapture = (
     // Try multiple beacon sends for redundancy
     payloads.forEach((payload, index) => {
       try {
-        const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+        const blob = new Blob([JSON.stringify(payload)], {
+          type: "application/json",
+        });
         const success = navigator.sendBeacon(
           `${apiUrl}/activity/clients/${clientId}/track-time/`,
           blob
@@ -1036,73 +1132,102 @@ export const recoverEmergencySession = (): {
  * Call this when your app starts up
  */
 export const initializeActivityTracking = async (): Promise<void> => {
-  
   try {
     // Set up event listeners first
     setupActivitySyncListeners();
-    
+
     // Check for emergency data immediately
-    const emergencyDataStr = localStorage.getItem('emergencySessionData');
-    
+    const emergencyDataStr = localStorage.getItem("emergencySessionData");
+
     if (emergencyDataStr) {
       try {
         const emergencyData = JSON.parse(emergencyDataStr);
-        
+
         if (
-          typeof emergencyData.sessionDuration === 'number' &&
+          typeof emergencyData.sessionDuration === "number" &&
           emergencyData.sessionDuration > 0
         ) {
           const apiUrl = import.meta.env.VITE_API_URL;
           const clientId = import.meta.env.VITE_CLIENT_ID;
-          
-          
+
           if (apiUrl && clientId) {
             const payload = {
-              "time_spent_seconds": emergencyData.sessionDuration,
-              "session_id": emergencyData.userId || getCurrentUserId(),
-              "date": formatDateForApi(),
-              "device_type": emergencyData.deviceType || "unknown",
-              "session_only": true,
-              "event_type": "recovered_session"
+              time_spent_seconds: emergencyData.sessionDuration,
+              session_id: emergencyData.userId || getCurrentUserId(),
+              date: formatDateForApi(),
+              device_type: emergencyData.deviceType || "unknown",
+              session_only: true,
+              event_type: "recovered_session",
             };
-            
-            
-            const response = await fetch(
-              `${apiUrl}/activity/clients/${clientId}/track-time/`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  ...(localStorage.getItem("token")
-                    ? {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+
+            // Use fetch in fire-and-forget mode to prevent blocking or causing refreshes
+            // Don't await - let it run in the background completely asynchronously
+            fetch(`${apiUrl}/activity/clients/${clientId}/track-time/`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(localStorage.getItem("token")
+                  ? {
+                      Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    }
+                  : {}),
+              },
+              body: JSON.stringify(payload),
+            })
+              .then((response) => {
+                // CRITICAL: Defer ALL handling to next event loop cycle
+                // This ensures the response handling doesn't interfere with current execution
+                setTimeout(() => {
+                  try {
+                    if (!response.ok) {
+                      // Log error but don't throw - this prevents any interruption
+                      logActivityEvent("Emergency session recovery failed", {
+                        status: response.status,
+                        sessionDuration: emergencyData.sessionDuration,
+                      });
+                      return;
+                    }
+
+                    // Don't parse response - just log success
+                    // Parsing response.json() is unnecessary and could cause side effects
+                    logActivityEvent(
+                      "Emergency session data recovered and sent successfully",
+                      {
+                        sessionDuration: emergencyData.sessionDuration,
                       }
-                    : {}),
-                },
-                body: JSON.stringify(payload),
-              }
-            );
-            
-            
-            if (response.ok) {
-              const responseData = await response.json();
-              logActivityEvent("Emergency session data recovered and sent successfully", {
-                sessionDuration: emergencyData.sessionDuration,
-                response: responseData
+                    );
+                  } catch {
+                    // Silently ignore any errors in response handling
+                  }
+                }, 0);
+              })
+              .catch((error) => {
+                // Defer error handling to next event loop cycle as well
+                setTimeout(() => {
+                  try {
+                    // Silently handle errors - don't throw, don't interrupt user experience
+                    logActivityEvent(
+                      "Emergency session recovery error (non-blocking)",
+                      {
+                        error: (error as Error).message,
+                        sessionDuration: emergencyData.sessionDuration,
+                      }
+                    );
+                  } catch {
+                    // Silently ignore
+                  }
+                }, 0);
               });
-            } else {
-              // Failed to send recovery data
-            }
           }
         }
       } catch (parseError) {
         // Error parsing emergency data
       }
-      
+
       // Always clear emergency data after processing attempt
-      localStorage.removeItem('emergencySessionData');
+      localStorage.removeItem("emergencySessionData");
     }
-    
+
     logActivityEvent("Activity tracking initialized successfully");
   } catch (error) {
     // Error initializing activity tracking
