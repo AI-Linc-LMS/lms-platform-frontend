@@ -93,9 +93,13 @@ const VideoCard: React.FC<VideoCardProps> = ({
     enabled: !!contentId && !!courseId,
     retry: 3,
     retryDelay: 1000,
-    // Ensure fresh data when switching between content
-    staleTime: 0,
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes but always refetch
+    // Cache data to prevent unnecessary refetches during playback
+    staleTime: 1000 * 60 * 10, // 10 minutes - keep data fresh during playback
+    gcTime: 1000 * 60 * 30, // 30 minutes - keep in cache longer
+    refetchOnWindowFocus: false, // Prevent refetch when window regains focus
+    // refetchOnMount will automatically handle content changes (new query key = new query)
+    // but won't refetch if data exists and is fresh (staleTime)
+    refetchOnReconnect: false, // Prevent refetch on reconnect
   });
 
   // Process the video URL when data changes

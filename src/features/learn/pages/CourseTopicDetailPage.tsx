@@ -1,5 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSubmoduleById } from "../../../services/enrolled-courses-content/courseContentApis";
@@ -126,6 +132,12 @@ const CourseTopicDetailPage: React.FC = () => {
   const hasInitializedRef = useRef<boolean>(false);
   // Track the data hash to detect actual data changes (not just refetches)
   const lastDataHashRef = useRef<string | null>(null);
+  // Track last progress update time to throttle updates
+  const lastProgressUpdateRef = useRef<number>(0);
+  const lastProgressPercentRef = useRef<number>(0);
+  const progressUpdateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   // Store selectedContentId in sessionStorage whenever it changes
   useEffect(() => {
@@ -145,30 +157,17 @@ const CourseTopicDetailPage: React.FC = () => {
         setIsSwitchingTopic(true);
         hasInitializedRef.current = false; // Reset initialization flag for new submodule
         lastDataHashRef.current = null; // Reset data hash for new submodule
+        // Reset progress tracking refs when switching submodules
+        lastProgressUpdateRef.current = 0;
+        lastProgressPercentRef.current = 0;
+        if (progressUpdateTimeoutRef.current) {
+          clearTimeout(progressUpdateTimeoutRef.current);
+          progressUpdateTimeoutRef.current = null;
+        }
 
-        // Only clear content-related queries for the specific course/submodule
-        // This is more targeted than invalidating all queries
-        const contentQueryKeys = [
-          "video",
-          "quiz",
-          "article",
-          "problem",
-          "assignment",
-          "comments",
-        ];
-        contentQueryKeys.forEach((key) => {
-          queryClient.removeQueries({
-            predicate: (query) => {
-              const queryKey = query.queryKey;
-              return (
-                Array.isArray(queryKey) &&
-                queryKey.length >= 2 &&
-                queryKey[0] === key &&
-                queryKey[1] === courseId
-              );
-            },
-          });
-        });
+        // Don't clear queries - let React Query handle cache with staleTime
+        // This prevents unnecessary refetches and page refreshes
+        // React Query will automatically fetch new data when query key changes
 
         // Clear window temporary data that causes stale sidebar content
         const w = window as unknown as {
@@ -186,7 +185,7 @@ const CourseTopicDetailPage: React.FC = () => {
         initializedSubmoduleRef.current = submoduleKey;
       }
     }
-  }, [courseId, submoduleId, queryClient]);
+  }, [courseId, submoduleId]);
 
   // Effect to close sidebar on mobile
   useEffect(() => {
@@ -196,6 +195,15 @@ const CourseTopicDetailPage: React.FC = () => {
       setIsSidebarContentOpen(true);
     }
   }, [isMobile]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (progressUpdateTimeoutRef.current) {
+        clearTimeout(progressUpdateTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const clientId = Number(import.meta.env.VITE_CLIENT_ID);
   const streakQueryKey = clientId ? [STREAK_QUERY_KEY, clientId] : null;
@@ -236,8 +244,12 @@ const CourseTopicDetailPage: React.FC = () => {
         parseInt(submoduleId || "0")
       ),
     enabled: !!courseId && !!submoduleId,
-    staleTime: 1000 * 60 * 5, // 5 minutes - cache data to reduce unnecessary refetches
-    gcTime: 1000 * 60 * 10, // 10 minutes - keep in cache for faster navigation
+    staleTime: 1000 * 60 * 10, // 10 minutes - cache data to reduce unnecessary refetches
+    gcTime: 1000 * 60 * 30, // 30 minutes - keep in cache for faster navigation
+    refetchOnWindowFocus: false, // Prevent refetch when window regains focus
+    // refetchOnMount will automatically handle URL changes (new query key = new query)
+    // but won't refetch if data exists and is fresh (staleTime)
+    refetchOnReconnect: false, // Prevent refetch on reconnect
   });
   // Calculate content availability
   const contentAvailability = getContentAvailability(submoduleData);
@@ -415,98 +427,116 @@ const CourseTopicDetailPage: React.FC = () => {
     }
   }, [submoduleData, courseId, submoduleId]); // Only depend on these - no state dependencies!
 
-  // Props objects for each content type
-  const videoProps = {
-    selectedVideoId,
-    onVideoClick: (id: string) => {
-      setSelectedVideoId(id);
-      setSelectedContentId(parseInt(id));
-      const videoIndex = submoduleData?.data?.findIndex(
-        (content: SubmoduleContent) => content.id.toString() === id
-      );
-      if (videoIndex !== undefined && videoIndex !== -1) {
-        setCurrentContentIndex(videoIndex);
-      }
-    },
-    videos: [], // Empty array since the actual videos are handled in CourseSidebarContent
-  };
+  // Props objects for each content type (memoized to prevent re-renders)
+  const videoProps = useMemo(
+    () => ({
+      selectedVideoId,
+      onVideoClick: (id: string) => {
+        setSelectedVideoId(id);
+        setSelectedContentId(parseInt(id));
+        const videoIndex = submoduleData?.data?.findIndex(
+          (content: SubmoduleContent) => content.id.toString() === id
+        );
+        if (videoIndex !== undefined && videoIndex !== -1) {
+          setCurrentContentIndex(videoIndex);
+        }
+      },
+      videos: [], // Empty array since the actual videos are handled in CourseSidebarContent
+    }),
+    [selectedVideoId, submoduleData?.data]
+  );
 
-  const quizProps = {
-    selectedQuizId,
-    onSelectQuiz: (id: number) => {
-      setSelectedQuizId(id);
-      setSelectedContentId(id);
-      const quizIndex = submoduleData?.data?.findIndex(
-        (content: SubmoduleContent) => content.id === id
-      );
-      if (quizIndex !== undefined && quizIndex !== -1) {
-        setCurrentContentIndex(quizIndex);
-      }
-    },
-    quizzes: [], // Empty array since the actual quizzes are handled in CourseSidebarContent
-  };
+  const quizProps = useMemo(
+    () => ({
+      selectedQuizId,
+      onSelectQuiz: (id: number) => {
+        setSelectedQuizId(id);
+        setSelectedContentId(id);
+        const quizIndex = submoduleData?.data?.findIndex(
+          (content: SubmoduleContent) => content.id === id
+        );
+        if (quizIndex !== undefined && quizIndex !== -1) {
+          setCurrentContentIndex(quizIndex);
+        }
+      },
+      quizzes: [], // Empty array since the actual quizzes are handled in CourseSidebarContent
+    }),
+    [selectedQuizId, submoduleData?.data]
+  );
 
-  const problemProps = {
-    selectedProblemId,
-    onProblemSelect: (id: string) => {
-      setSelectedProblemId(id);
-      setSelectedContentId(parseInt(id));
-      const problemIndex = submoduleData?.data?.findIndex(
-        (content: SubmoduleContent) => content.id.toString() === id
-      );
-      if (problemIndex !== undefined && problemIndex !== -1) {
-        setCurrentContentIndex(problemIndex);
-      }
-    },
-    problems: [], // Empty array since the actual problems are handled in CourseSidebarContent
-  };
+  const problemProps = useMemo(
+    () => ({
+      selectedProblemId,
+      onProblemSelect: (id: string) => {
+        setSelectedProblemId(id);
+        setSelectedContentId(parseInt(id));
+        const problemIndex = submoduleData?.data?.findIndex(
+          (content: SubmoduleContent) => content.id.toString() === id
+        );
+        if (problemIndex !== undefined && problemIndex !== -1) {
+          setCurrentContentIndex(problemIndex);
+        }
+      },
+      problems: [], // Empty array since the actual problems are handled in CourseSidebarContent
+    }),
+    [selectedProblemId, submoduleData?.data]
+  );
 
-  const articleProps = {
-    selectedArticleId,
-    onArticleClick: (id: number) => {
-      setSelectedArticleId(id);
-      setSelectedContentId(id);
-      const articleIndex = submoduleData?.data?.findIndex(
-        (content: SubmoduleContent) => content.id === id
-      );
-      if (articleIndex !== undefined && articleIndex !== -1) {
-        setCurrentContentIndex(articleIndex);
-      }
-    },
-    articles: [], // Empty array since the actual articles are handled in CourseSidebarContent
-  };
+  const articleProps = useMemo(
+    () => ({
+      selectedArticleId,
+      onArticleClick: (id: number) => {
+        setSelectedArticleId(id);
+        setSelectedContentId(id);
+        const articleIndex = submoduleData?.data?.findIndex(
+          (content: SubmoduleContent) => content.id === id
+        );
+        if (articleIndex !== undefined && articleIndex !== -1) {
+          setCurrentContentIndex(articleIndex);
+        }
+      },
+      articles: [], // Empty array since the actual articles are handled in CourseSidebarContent
+    }),
+    [selectedArticleId, submoduleData?.data]
+  );
 
-  const developmentProps = {
-    selectedProjectId,
-    onProjectSelect: (id: string) => {
-      setSelectedProjectId(id);
-      setSelectedContentId(parseInt(id));
-      const projectIndex = submoduleData?.data?.findIndex(
-        (content: SubmoduleContent) => content.id.toString() === id
-      );
-      if (projectIndex !== undefined && projectIndex !== -1) {
-        setCurrentContentIndex(projectIndex);
-      }
-    },
-  };
+  const developmentProps = useMemo(
+    () => ({
+      selectedProjectId,
+      onProjectSelect: (id: string) => {
+        setSelectedProjectId(id);
+        setSelectedContentId(parseInt(id));
+        const projectIndex = submoduleData?.data?.findIndex(
+          (content: SubmoduleContent) => content.id.toString() === id
+        );
+        if (projectIndex !== undefined && projectIndex !== -1) {
+          setCurrentContentIndex(projectIndex);
+        }
+      },
+    }),
+    [selectedProjectId, submoduleData?.data]
+  );
 
-  const subjectiveProps = {
-    selectedAssignmentId,
-    onAssignmentClick: (id: number) => {
-      setSelectedAssignmentId(id);
-      setSelectedContentId(id);
-      const assignmentIndex = submoduleData?.data?.findIndex(
-        (content: SubmoduleContent) => content.id === id
-      );
-      if (assignmentIndex !== undefined && assignmentIndex !== -1) {
-        setCurrentContentIndex(assignmentIndex);
-      }
-    },
-    assignments: [], // Empty array since the actual assignments are handled in CourseSidebarContent
-  };
+  const subjectiveProps = useMemo(
+    () => ({
+      selectedAssignmentId,
+      onAssignmentClick: (id: number) => {
+        setSelectedAssignmentId(id);
+        setSelectedContentId(id);
+        const assignmentIndex = submoduleData?.data?.findIndex(
+          (content: SubmoduleContent) => content.id === id
+        );
+        if (assignmentIndex !== undefined && assignmentIndex !== -1) {
+          setCurrentContentIndex(assignmentIndex);
+        }
+      },
+      assignments: [], // Empty array since the actual assignments are handled in CourseSidebarContent
+    }),
+    [selectedAssignmentId, submoduleData?.data]
+  );
 
-  // Handle navigation to next content item
-  const nextContent = () => {
+  // Handle navigation to next content item (memoized to prevent re-renders)
+  const nextContent = useCallback(() => {
     if (!submoduleData?.data) return;
 
     const nextIndex = currentContentIndex + 1;
@@ -541,13 +571,13 @@ const CourseTopicDetailPage: React.FC = () => {
           break;
       }
     }
-  };
+  }, [submoduleData?.data, currentContentIndex]);
 
-  const getNextTopicTitle = () => {
+  const getNextTopicTitle = useCallback(() => {
     return (
       submoduleData?.data?.[currentContentIndex + 1]?.title || "Next Content"
     );
-  };
+  }, [submoduleData?.data, currentContentIndex]);
 
   // Handle sidebar label selection
   const handleSidebarLabelSelect = (label: string) => {
@@ -774,12 +804,53 @@ const CourseTopicDetailPage: React.FC = () => {
     }
   };
 
-  // Function to update video progress
-  const updateVideoProgress = (
-    videoId: string,
-    progressPercent: number
-  ): void => {
-    if (submoduleData?.data) {
+  // Function to update video progress (throttled to prevent excessive refreshes)
+  const updateVideoProgress = useCallback(
+    (videoId: string, progressPercent: number): void => {
+      if (!submoduleData?.data) return;
+
+      const now = Date.now();
+      const timeSinceLastUpdate = now - lastProgressUpdateRef.current;
+      const progressDiff = Math.abs(
+        progressPercent - lastProgressPercentRef.current
+      );
+
+      // Define milestones where we should always update
+      const milestones = [25, 50, 75, 95, 100];
+      const isMilestone = milestones.some(
+        (milestone) =>
+          progressPercent >= milestone &&
+          lastProgressPercentRef.current < milestone
+      );
+
+      // Throttle: Only update if:
+      // 1. It's been at least 10 seconds since last update, OR
+      // 2. Progress changed by at least 5%, OR
+      // 3. It's a milestone, OR
+      // 4. Video is complete (≥95%)
+      const shouldUpdate =
+        timeSinceLastUpdate >= 10000 ||
+        progressDiff >= 5 ||
+        isMilestone ||
+        progressPercent >= 95;
+
+      if (!shouldUpdate) {
+        // Clear any pending timeout and set a new one for delayed update
+        if (progressUpdateTimeoutRef.current) {
+          clearTimeout(progressUpdateTimeoutRef.current);
+        }
+        progressUpdateTimeoutRef.current = setTimeout(() => {
+          updateVideoProgress(videoId, progressPercent);
+        }, 10000);
+        return;
+      }
+
+      // Clear any pending timeout
+      if (progressUpdateTimeoutRef.current) {
+        clearTimeout(progressUpdateTimeoutRef.current);
+        progressUpdateTimeoutRef.current = null;
+      }
+
       const updatedData = [...submoduleData.data];
       const videoIndex = updatedData.findIndex(
         (content) =>
@@ -787,90 +858,104 @@ const CourseTopicDetailPage: React.FC = () => {
           content.id.toString() === videoId
       );
 
-      if (videoIndex !== -1) {
-        // Mark as complete if progress ≥ 95%
-        if (progressPercent >= 95) {
-          updatedData[videoIndex] = {
-            ...updatedData[videoIndex],
-            status: "complete",
-          };
-        } else if (progressPercent > 0) {
-          // Mark as in_progress with progress percentage
-          updatedData[videoIndex] = {
-            ...updatedData[videoIndex],
-            status: "in_progress",
-            progress_percentage: progressPercent,
-          };
-        }
+      if (videoIndex === -1) return;
 
-        // Update submodule data with new progress
-        // Note: In a real app, this would call an API to persist progress
-        // For this demo, we're just updating the local state
-        if (submoduleData) {
-          const newSubmoduleData: SubmoduleData = {
-            ...submoduleData,
-            data: updatedData,
-          };
-          // This line would trigger a re-render of all components using submoduleData
-          // In a real app, you'd use a state management system or context API
-          const w = window as unknown as {
-            temporarySubmoduleData: SubmoduleData;
-          };
-          w.temporarySubmoduleData = newSubmoduleData;
-
-          // Force re-render sidebar components
-          setSelectedVideoId((prevId) => {
-            if (prevId === videoId) return prevId; // No change to avoid unnecessary re-renders
-            return videoId; // Change to force re-render
-          });
-
-          // Invalidate queries to refresh sidebar data immediately (similar to quiz/problem submission)
-          queryClient.invalidateQueries({
-            queryKey: ["submodule", courseId, submoduleId],
-          });
-        }
+      // Mark as complete if progress ≥ 95%
+      if (progressPercent >= 95) {
+        updatedData[videoIndex] = {
+          ...updatedData[videoIndex],
+          status: "complete",
+          progress_percentage: progressPercent,
+        };
+      } else if (progressPercent > 0) {
+        // Mark as in_progress with progress percentage
+        updatedData[videoIndex] = {
+          ...updatedData[videoIndex],
+          status: "in_progress",
+          progress_percentage: progressPercent,
+        };
       }
-    }
-  };
 
-  const updateQuizStatus = (quizId: number, status: string): void => {
-    if (submoduleData?.data) {
+      // Update query cache directly without invalidating (prevents refetch)
+      const newSubmoduleData: SubmoduleData = {
+        ...submoduleData,
+        data: updatedData,
+      };
+
+      // Update the query cache immediately for instant UI update (no refetch)
+      queryClient.setQueryData<SubmoduleData>(
+        ["submodule", courseId, submoduleId],
+        newSubmoduleData
+      );
+
+      // Update temporary data for sidebar refresh mechanism
+      const w = window as unknown as {
+        temporarySubmoduleData: SubmoduleData;
+      };
+      w.temporarySubmoduleData = newSubmoduleData;
+
+      // Only invalidate queries on completion (≥95%) to refresh sidebar
+      // Don't invalidate on milestones during playback to prevent refreshes
+      if (progressPercent >= 95) {
+        queryClient.invalidateQueries({
+          queryKey: ["submodule", courseId, submoduleId],
+        });
+      }
+
+      // Update refs
+      lastProgressUpdateRef.current = now;
+      lastProgressPercentRef.current = progressPercent;
+    },
+    [submoduleData, courseId, submoduleId, queryClient]
+  );
+
+  const updateQuizStatus = useCallback(
+    (quizId: number, status: string): void => {
+      if (!submoduleData?.data) return;
+
       const updatedData = [...submoduleData.data];
       const quizIndex = updatedData.findIndex(
         (content) => content.content_type === "Quiz" && content.id === quizId
       );
 
-      if (quizIndex !== -1) {
-        updatedData[quizIndex] = {
-          ...updatedData[quizIndex],
-          status: status,
-        };
+      if (quizIndex === -1) return;
 
-        // Update submodule data with new status
-        if (submoduleData) {
-          const newSubmoduleData: SubmoduleData = {
-            ...submoduleData,
-            data: updatedData,
-          };
-          // This line would trigger a re-render of all components using submoduleData
-          // In a real app, you'd use a state management system or context API
-          const w = window as unknown as {
-            temporarySubmoduleData: SubmoduleData;
-          };
-          w.temporarySubmoduleData = newSubmoduleData;
+      updatedData[quizIndex] = {
+        ...updatedData[quizIndex],
+        status: status,
+      };
 
-          // Force re-render sidebar components
-          setSelectedQuizId((prevId) => {
-            if (prevId === quizId) return prevId; // No change to avoid unnecessary re-renders
-            return quizId; // Change to force re-render
-          });
-        }
+      const newSubmoduleData: SubmoduleData = {
+        ...submoduleData,
+        data: updatedData,
+      };
+
+      // Update query cache directly without invalidating (prevents refetch)
+      queryClient.setQueryData<SubmoduleData>(
+        ["submodule", courseId, submoduleId],
+        newSubmoduleData
+      );
+
+      // Update temporary data for sidebar refresh mechanism
+      const w = window as unknown as {
+        temporarySubmoduleData: SubmoduleData;
+      };
+      w.temporarySubmoduleData = newSubmoduleData;
+
+      // Only invalidate on status change to "complete" to refresh sidebar
+      if (status === "complete") {
+        queryClient.invalidateQueries({
+          queryKey: ["submodule", courseId, submoduleId],
+        });
       }
-    }
-  };
+    },
+    [submoduleData, courseId, submoduleId, queryClient]
+  );
   // Update the updateProblemStatus function to take an optional parameter to skip API calls
-  const updateProblemStatus = (problemId: string, status: string): void => {
-    if (submoduleData?.data) {
+  const updateProblemStatus = useCallback(
+    (problemId: string, status: string): void => {
+      if (!submoduleData?.data) return;
+
       const updatedData = [...submoduleData.data];
       const problemIndex = updatedData.findIndex(
         (content) =>
@@ -878,43 +963,52 @@ const CourseTopicDetailPage: React.FC = () => {
           content.id.toString() === problemId
       );
 
-      if (problemIndex !== -1) {
-        // First update the state in memory for immediate UI feedback
-        updatedData[problemIndex] = {
-          ...updatedData[problemIndex],
-          status: status,
-        };
+      if (problemIndex === -1) return;
 
-        // Update submodule data with new status
-        if (submoduleData) {
-          const newSubmoduleData: SubmoduleData = {
-            ...submoduleData,
-            data: updatedData,
-          };
+      // Update the state in memory for immediate UI feedback
+      updatedData[problemIndex] = {
+        ...updatedData[problemIndex],
+        status: status,
+      };
 
-          // Update the query cache immediately for instant UI update
-          queryClient.setQueryData<SubmoduleData>(
-            ["submodule", courseId, submoduleId],
-            newSubmoduleData
-          );
+      const newSubmoduleData: SubmoduleData = {
+        ...submoduleData,
+        data: updatedData,
+      };
 
-          // Also update temporary data for sidebar refresh mechanism
-          const w = window as unknown as {
-            temporarySubmoduleData: SubmoduleData;
-          };
-          w.temporarySubmoduleData = newSubmoduleData;
+      // Update the query cache immediately for instant UI update (no refetch)
+      queryClient.setQueryData<SubmoduleData>(
+        ["submodule", courseId, submoduleId],
+        newSubmoduleData
+      );
 
-          // Trigger immediate sidebar refresh by updating a state that CourseSidebarContent watches
-          setSelectedProblemId((prevId) => {
-            // Force a change to trigger re-render
-            return prevId === problemId ? `${problemId}-updated` : problemId;
-          });
-        }
-      } else {
+      // Update temporary data for sidebar refresh mechanism
+      const w = window as unknown as {
+        temporarySubmoduleData: SubmoduleData;
+      };
+      w.temporarySubmoduleData = newSubmoduleData;
+
+      // Only invalidate on completion to refresh sidebar
+      if (status === "complete") {
+        queryClient.invalidateQueries({
+          queryKey: ["submodule", courseId, submoduleId],
+        });
       }
-    } else {
-    }
-  };
+    },
+    [submoduleData, courseId, submoduleId, queryClient]
+  );
+
+  // Memoized callback for video completion - will be called with contentId from VideoCard
+  const handleVideoComplete = useCallback(
+    (contentId?: number) => {
+      if (contentId) {
+        updateVideoProgress(contentId.toString(), 100);
+        triggerStreakRefresh();
+        refetchStreakAfterCompletion();
+      }
+    },
+    [updateVideoProgress, triggerStreakRefresh, refetchStreakAfterCompletion]
+  );
 
   const handleStartNextQuiz = () => {
     if (!submoduleData?.data) return;
@@ -1105,7 +1199,7 @@ const CourseTopicDetailPage: React.FC = () => {
 
           {/* Content display based on active tab */}
           <div
-            key={`content-${currentContent?.id}-${currentContent?.content_type}`}
+            key={`content-${currentContent?.id}-${currentContent?.content_type}-${submoduleId}`}
             className={`mb-20 md:mb-0 ${
               !isSidebarContentOpen ? "ml-12" : ""
             } animate-fadeIn`}
@@ -1122,13 +1216,11 @@ const CourseTopicDetailPage: React.FC = () => {
                 nextContent={nextContent}
                 getNextTopicTitle={getNextTopicTitle}
                 onComplete={() => {
-                  updateVideoProgress(currentContent.id.toString(), 100);
-                  triggerStreakRefresh();
-                  refetchStreakAfterCompletion();
+                  if (currentContent) {
+                    handleVideoComplete(currentContent.id);
+                  }
                 }}
-                onProgressUpdate={(videoId, progress) => {
-                  updateVideoProgress(videoId, progress);
-                }}
+                onProgressUpdate={updateVideoProgress}
               />
             )}
             {currentContent?.content_type === "CodingProblem" && (
