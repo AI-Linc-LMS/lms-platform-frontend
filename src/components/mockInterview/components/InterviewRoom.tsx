@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { CircularProgress } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import useFullscreenControl from "../hooks/useFullscreenControl";
 import InterviewSetup from "./InterviewSetup";
 import ActiveInterviewSession from "./ActiveInterviewSession";
@@ -33,8 +34,14 @@ const InterviewRoom = ({
   interviewId: providedInterviewId,
   questions: providedQuestions,
 }: InterviewRoomProps) => {
+  const navigate = useNavigate();
+
   // Proctoring
-  const { eventLog, getEventLog } = useProctoring();
+  const {
+    eventLog,
+    getEventLog,
+    logEvent: logProctoringEvent,
+  } = useProctoring();
 
   // Interview attempt ID - use provided ID or null
   const [attemptId, setAttemptId] = useState<string | null>(
@@ -76,6 +83,12 @@ const InterviewRoom = ({
     windowSwitches: 0,
     audioIssues: 0,
     totalDuration: 0,
+    // Enhanced proctoring metrics
+    noFaceIncidents: 0,
+    noFaceDuration: 0, // in seconds
+    lookingAwayIncidents: 0,
+    lookingAwayDuration: 0, // in seconds
+    multipleFaceIncidents: 0,
   });
   const [preInitializedStream, setPreInitializedStream] =
     useState<MediaStream | null>(null);
@@ -339,7 +352,8 @@ const InterviewRoom = ({
           );
         }
 
-        // Show warning modal
+        // Show warning modal and mark as paused
+        setIsPausedForFullscreenWarning(true);
         setFullscreenExitWarningOpen(true);
       }
 
@@ -382,6 +396,16 @@ const InterviewRoom = ({
       ) => void)
     | null
   >(null);
+
+  // Track violation durations
+  const noFaceStartTimeRef = useRef<number | null>(null);
+  const multipleFaceStartTimeRef = useRef<number | null>(null);
+  const lookingAwayStartTimeRef = useRef<number | null>(null);
+  const lastFacePositionRef = useRef<{
+    x: number;
+    y: number;
+    size: number;
+  } | null>(null);
 
   // Start face detection when recording - MAXIMUM ROBUSTNESS
   useEffect(() => {
@@ -450,18 +474,60 @@ const InterviewRoom = ({
                 ? "single"
                 : "multiple";
 
-            // Log status changes
-            if (newStatus !== lastFaceStatusRef.current) {
-              lastFaceStatusRef.current = newStatus;
+            const currentTime = Date.now();
 
-              // Log proctoring violations
-              if (newStatus === "none") {
+            // Calculate face position for looking away detection
+            let isLookingAway = false;
+            if (faceCount === 1 && predictions[0]) {
+              const prediction = predictions[0];
+              const [x1, y1] = prediction.topLeft as [number, number];
+              const [x2, y2] = prediction.bottomRight as [number, number];
+              const faceWidth = x2 - x1;
+              const faceHeight = y2 - y1;
+              const faceCenterX = (x1 + x2) / 2;
+              const faceCenterY = (y1 + y2) / 2;
+              const faceSize = faceWidth * faceHeight;
+
+              const videoWidth = videoRef.current.videoWidth;
+              const videoHeight = videoRef.current.videoHeight;
+              const videoCenterX = videoWidth / 2;
+              const videoCenterY = videoHeight / 2;
+
+              // Check if face is significantly off-center (looking away detection)
+              const horizontalOffset =
+                Math.abs(faceCenterX - videoCenterX) / videoWidth;
+              const verticalOffset =
+                Math.abs(faceCenterY - videoCenterY) / videoHeight;
+
+              // Threshold: if face center is more than 30% away from center, consider looking away
+              isLookingAway = horizontalOffset > 0.3 || verticalOffset > 0.25;
+
+              // Store current face position
+              lastFacePositionRef.current = {
+                x: faceCenterX / videoWidth,
+                y: faceCenterY / videoHeight,
+                size: faceSize,
+              };
+            }
+
+            // Handle "no face" status changes and duration tracking
+            if (newStatus === "none") {
+              if (lastFaceStatusRef.current !== "none") {
+                // Started no face violation
+                noFaceStartTimeRef.current = currentTime;
                 noFaceCountRef.current++;
+
+                // Log to proctoring system
+                logProctoringEvent("FACE_NOT_DETECTED_START", {
+                  timestamp: currentTime,
+                  count: noFaceCountRef.current,
+                });
+
                 if (logEventRef.current) {
                   logEventRef.current(
                     "no_face",
                     {
-                      timestamp: Date.now(),
+                      timestamp: currentTime,
                       count: noFaceCountRef.current,
                       message: "No face detected in camera view",
                     },
@@ -472,14 +538,49 @@ const InterviewRoom = ({
                 setSubmissionData((prev) => ({
                   ...prev,
                   faceValidationFailures: prev.faceValidationFailures + 1,
+                  noFaceIncidents: prev.noFaceIncidents + 1,
                 }));
-              } else if (newStatus === "multiple") {
+              }
+              // Duration is tracked continuously while status is "none"
+            } else {
+              // Face is detected, end "no face" violation if it was active
+              if (noFaceStartTimeRef.current !== null) {
+                const duration =
+                  (currentTime - noFaceStartTimeRef.current) / 1000; // seconds
+
+                // Log end event to proctoring system
+                logProctoringEvent("FACE_NOT_DETECTED_END", {
+                  timestamp: currentTime,
+                  duration: duration,
+                });
+
+                setSubmissionData((prev) => ({
+                  ...prev,
+                  noFaceDuration: prev.noFaceDuration + duration,
+                }));
+                noFaceStartTimeRef.current = null;
+              }
+            }
+
+            // Handle "multiple faces" status changes and duration tracking
+            if (newStatus === "multiple") {
+              if (lastFaceStatusRef.current !== "multiple") {
+                // Started multiple faces violation
+                multipleFaceStartTimeRef.current = currentTime;
                 multipleFaceCountRef.current++;
+
+                // Log to proctoring system
+                logProctoringEvent("MULTIPLE_FACES_START", {
+                  timestamp: currentTime,
+                  count: multipleFaceCountRef.current,
+                  faceCount: faceCount,
+                });
+
                 if (logEventRef.current) {
                   logEventRef.current(
                     "multiple_faces",
                     {
-                      timestamp: Date.now(),
+                      timestamp: currentTime,
                       count: multipleFaceCountRef.current,
                       faceCount: faceCount,
                       message: "Multiple faces detected",
@@ -491,10 +592,76 @@ const InterviewRoom = ({
                 setSubmissionData((prev) => ({
                   ...prev,
                   multipleFaceDetections: prev.multipleFaceDetections + 1,
+                  multipleFaceIncidents: prev.multipleFaceIncidents + 1,
                 }));
+              }
+            } else {
+              // Not multiple faces, end violation if it was active
+              if (multipleFaceStartTimeRef.current !== null) {
+                const duration =
+                  (currentTime - multipleFaceStartTimeRef.current) / 1000;
+
+                // Log end event to proctoring system
+                logProctoringEvent("MULTIPLE_FACES_END", {
+                  timestamp: currentTime,
+                  duration: duration,
+                });
+
+                multipleFaceStartTimeRef.current = null;
               }
             }
 
+            // Handle "looking away" detection
+            if (isLookingAway && newStatus === "single") {
+              if (lookingAwayStartTimeRef.current === null) {
+                // Started looking away
+                lookingAwayStartTimeRef.current = currentTime;
+
+                // Log to proctoring system
+                logProctoringEvent("LOOKING_AWAY_START", {
+                  timestamp: currentTime,
+                  facePosition: lastFacePositionRef.current,
+                });
+
+                // Also log to old event system as face_detection
+                if (logEventRef.current) {
+                  logEventRef.current(
+                    "face_detection",
+                    {
+                      timestamp: currentTime,
+                      status: "looking_away",
+                      message: "User appears to be looking away from camera",
+                    },
+                    "info"
+                  );
+                }
+
+                setSubmissionData((prev) => ({
+                  ...prev,
+                  lookingAwayIncidents: prev.lookingAwayIncidents + 1,
+                }));
+              }
+            } else {
+              // Not looking away, end violation if it was active
+              if (lookingAwayStartTimeRef.current !== null) {
+                const duration =
+                  (currentTime - lookingAwayStartTimeRef.current) / 1000;
+
+                // Log end event to proctoring system
+                logProctoringEvent("LOOKING_AWAY_END", {
+                  timestamp: currentTime,
+                  duration: duration,
+                });
+
+                setSubmissionData((prev) => ({
+                  ...prev,
+                  lookingAwayDuration: prev.lookingAwayDuration + duration,
+                }));
+                lookingAwayStartTimeRef.current = null;
+              }
+            }
+
+            lastFaceStatusRef.current = newStatus;
             setFaceStatus(newStatus);
           } catch (error) {
             consecutiveErrors++;
@@ -676,13 +843,30 @@ const InterviewRoom = ({
   }, []);
 
   // Handle camera ready
+  // Register stream in global registry for cleanup
+  const registerStream = useCallback((stream: MediaStream) => {
+    if (!stream) return;
+
+    // Initialize global registry if not exists
+    if (!(window as any).__globalMediaStreams) {
+      (window as any).__globalMediaStreams = [];
+    }
+
+    // Add to registry if not already there
+    const registry = (window as any).__globalMediaStreams as MediaStream[];
+    if (!registry.includes(stream)) {
+      registry.push(stream);
+    }
+  }, []);
+
   const handleCameraReady = useCallback(
     (stream: MediaStream) => {
       setPreInitializedStream(stream);
       preInitializedStreamRef.current = stream; // Also store in ref
+      registerStream(stream); // Register in global registry
       logEvent("camera_ready", { status: "pre_initialized" }, "info");
     },
-    [logEvent]
+    [logEvent, registerStream]
   );
 
   // Auto-initialize camera and auto-start interview when questions are provided (from waiting room)
@@ -1054,45 +1238,289 @@ const InterviewRoom = ({
   };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasExited, setHasExited] = useState(false);
+  const [isPausedForFullscreenWarning, setIsPausedForFullscreenWarning] =
+    useState(false);
 
+  // Reset states on mount for fresh interviews (don't call cleanup here!)
+  useEffect(() => {
+    setIsSubmitting(false);
+    setHasExited(false);
+    setIsPausedForFullscreenWarning(false);
+    // Don't call stopAllStreams here - it will kill the setup camera preview
+  }, []);
+
+  const stopAllStreams = async () => {
+    // Helper to stop individual stream - NUCLEAR OPTION
+    const stopStreamTracks = (stream: MediaStream | null) => {
+      if (!stream) return;
+      const tracks = stream.getTracks();
+      tracks.forEach((track) => {
+        try {
+          track.stop();
+          track.enabled = false;
+        } catch (err) {
+          // Continue stopping other tracks
+        }
+      });
+    };
+
+    // 1. Stop the main video ref FIRST
+    if (videoRef.current) {
+      const videoStream = videoRef.current.srcObject as MediaStream | null;
+      if (videoStream) {
+        videoStream.getTracks().forEach((track) => {
+          track.stop();
+          track.enabled = false;
+        });
+      }
+      videoRef.current.srcObject = null;
+      videoRef.current.pause();
+      try {
+        videoRef.current.load();
+      } catch (e) {}
+    }
+
+    // 2. Stop streams from refs
+    stopStreamTracks(streamRef.current);
+    stopStreamTracks(preInitializedStreamRef.current);
+    stopStreamTracks(preInitializedStream);
+
+    // 3. Stop all attached video elements in DOM
+    document.querySelectorAll("video").forEach((video) => {
+      const stream = video.srcObject as MediaStream | null;
+      if (stream) {
+        stream.getTracks().forEach((track) => {
+          track.stop();
+          track.enabled = false;
+        });
+      }
+      video.srcObject = null;
+      video.pause();
+      try {
+        video.load();
+      } catch (e) {}
+    });
+
+    // 4. Stop any audio-only streams
+    document.querySelectorAll("audio").forEach((audio) => {
+      const stream = audio.srcObject as MediaStream | null;
+      if (stream) {
+        stream.getTracks().forEach((track) => {
+          track.stop();
+          track.enabled = false;
+        });
+      }
+      audio.srcObject = null;
+      audio.pause();
+      try {
+        audio.load();
+      } catch (e) {}
+    });
+
+    // 5. Stop global registry streams
+    if ((window as any).__globalMediaStreams) {
+      (window as any).__globalMediaStreams.forEach((stream: MediaStream) => {
+        if (stream) {
+          stream.getTracks().forEach((track) => {
+            track.stop();
+            track.enabled = false;
+          });
+        }
+      });
+      (window as any).__globalMediaStreams = [];
+    }
+
+    // 6. Close WebRTC connections
+    if ((window as any).__rtcConnections) {
+      (window as any).__rtcConnections.forEach((pc: RTCPeerConnection) => {
+        pc.getSenders().forEach((sender) => {
+          if (sender.track) {
+            sender.track.stop();
+            sender.track.enabled = false;
+          }
+        });
+        try {
+          pc.close();
+        } catch (e) {}
+      });
+      (window as any).__rtcConnections = [];
+    }
+
+    // 7. Stop audio context if exists
+    if (audioContextRef.current) {
+      try {
+        if (audioContextRef.current.state !== "closed") {
+          await audioContextRef.current.suspend();
+          await audioContextRef.current.close();
+        }
+      } catch (e) {}
+      audioContextRef.current = null;
+    }
+
+    // 8. Stop speech recognition
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+        recognitionRef.current.abort();
+      } catch (e) {}
+      recognitionRef.current = null;
+    }
+
+    // 9. Stop ANY active media streams stored globally
+    if ((window as any).activeUserMediaStream) {
+      stopStreamTracks((window as any).activeUserMediaStream);
+      (window as any).activeUserMediaStream = null;
+    }
+
+    // 10. Clear refs
+    streamRef.current = null;
+    preInitializedStreamRef.current = null;
+
+    // 11. NUCLEAR: Get new stream and immediately stop it to force browser release
+    try {
+      const tempVideoStream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: true,
+      });
+      tempVideoStream.getTracks().forEach((track) => {
+        track.stop();
+        track.enabled = false;
+      });
+    } catch (e) {
+      // Permission denied or not available - continue
+    }
+
+    // 12. NUCLEAR for audio: Get audio stream and immediately stop it
+    try {
+      const tempAudioStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: false,
+      });
+      tempAudioStream.getTracks().forEach((track) => {
+        track.stop();
+        track.enabled = false;
+      });
+    } catch (e) {
+      // Permission denied or not available - that's fine
+    }
+  };
   const confirmExit = async () => {
+    // Immediately mark as exiting to prevent UI flicker
+    setHasExited(true);
+
     // Set submitting flag immediately in sessionStorage
     sessionStorage.setItem("interview_submitting", "true");
     setIsSubmitting(true);
     setExitDialogOpen(false);
 
-    // TURN OFF CAMERA AND AUDIO IMMEDIATELY - BEFORE NAVIGATION
-    const stopAllStreams = (stream: MediaStream | null) => {
-      if (stream) {
+    // IMMEDIATE SYNCHRONOUS CLEANUP FIRST
+    // Stop all tracks synchronously before async operations
+    const immediateCleanup = () => {
+      if (videoRef.current?.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
         stream.getTracks().forEach((track) => {
-          if (track.readyState === "live" || track.readyState === "ended") {
-            track.stop();
-          }
+          track.stop();
+          track.enabled = false;
+        });
+        videoRef.current.srcObject = null;
+      }
+
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => {
+          track.stop();
+          track.enabled = false;
+        });
+      }
+
+      if (preInitializedStreamRef.current) {
+        preInitializedStreamRef.current.getTracks().forEach((track) => {
+          track.stop();
+          track.enabled = false;
+        });
+      }
+
+      if (preInitializedStream) {
+        preInitializedStream.getTracks().forEach((track) => {
+          track.stop();
+          track.enabled = false;
         });
       }
     };
 
-    // Stop all possible streams
-    stopAllStreams(streamRef.current);
-    stopAllStreams(preInitializedStreamRef.current);
-    stopAllStreams(preInitializedStream);
+    // Execute immediate cleanup
+    immediateCleanup();
 
-    // Also check video element for any attached stream
-    if (videoRef.current && videoRef.current.srcObject) {
-      const videoStream = videoRef.current.srcObject as MediaStream;
-      stopAllStreams(videoStream);
-      videoRef.current.srcObject = null;
-      videoRef.current.pause();
+    // THEN do comprehensive async cleanup
+    await stopAllStreams();
+
+    // Force multiple cleanup attempts
+    setTimeout(async () => await stopAllStreams(), 50);
+    setTimeout(async () => await stopAllStreams(), 100);
+    setTimeout(async () => await stopAllStreams(), 200);
+    setTimeout(async () => await stopAllStreams(), 500);
+
+    // Finalize any active violation durations before submission
+    const currentTime = Date.now();
+    if (noFaceStartTimeRef.current !== null) {
+      const duration = (currentTime - noFaceStartTimeRef.current) / 1000;
+
+      // Log end event
+      logProctoringEvent("FACE_NOT_DETECTED_END", {
+        timestamp: currentTime,
+        duration: duration,
+        reason: "interview_ended",
+      });
+
+      setSubmissionData((prev) => ({
+        ...prev,
+        noFaceDuration: prev.noFaceDuration + duration,
+      }));
+      noFaceStartTimeRef.current = null;
+    }
+    if (lookingAwayStartTimeRef.current !== null) {
+      const duration = (currentTime - lookingAwayStartTimeRef.current) / 1000;
+
+      // Log end event
+      logProctoringEvent("LOOKING_AWAY_END", {
+        timestamp: currentTime,
+        duration: duration,
+        reason: "interview_ended",
+      });
+
+      setSubmissionData((prev) => ({
+        ...prev,
+        lookingAwayDuration: prev.lookingAwayDuration + duration,
+      }));
+      lookingAwayStartTimeRef.current = null;
+    }
+    if (multipleFaceStartTimeRef.current !== null) {
+      const duration = (currentTime - multipleFaceStartTimeRef.current) / 1000;
+
+      // Log end event
+      logProctoringEvent("MULTIPLE_FACES_END", {
+        timestamp: currentTime,
+        duration: duration,
+        reason: "interview_ended",
+      });
+
+      multipleFaceStartTimeRef.current = null;
     }
 
-    // Stop speech recognition immediately
+    // Stop speech recognition immediately - AGGRESSIVE
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
+        recognitionRef.current.abort();
       } catch (e) {
         // Ignore
       }
+      recognitionRef.current = null;
     }
+
+    // Update recording state ref
+    isRecordingAnswerRef.current = false;
+    setIsRecordingAnswer(false);
 
     // Stop audio context and visualization
     if (animationFrameRef.current !== null) {
@@ -1101,7 +1529,11 @@ const InterviewRoom = ({
     }
     if (audioContextRef.current) {
       try {
-        audioContextRef.current.close();
+        // Suspend first, then close
+        if (audioContextRef.current.state !== "closed") {
+          audioContextRef.current.suspend();
+          audioContextRef.current.close();
+        }
         audioContextRef.current = null;
         analyserRef.current = null;
       } catch (error) {
@@ -1114,14 +1546,11 @@ const InterviewRoom = ({
     setIsAgentSpeaking(false);
     setIsAvatarAsking(false);
 
-    // Stop recording (visual indicator only)
+    // Stop timer - keep isRecording true to prevent showing setup page
     stopTimer();
-    setIsRecording(false);
 
-    // Clear refs
-    streamRef.current = null;
-    preInitializedStreamRef.current = null;
-    setPreInitializedStream(null);
+    // Mark as exited to prevent rendering setup page (CRITICAL - keeps hasExited true)
+    setHasExited(true);
 
     // Cleanup and exit fullscreen
     try {
@@ -1133,8 +1562,37 @@ const InterviewRoom = ({
       // Continue even if fullscreen exit fails
     }
 
-    // Navigate to complete page with submitting flag (AFTER stopping everything)
-    onComplete(undefined, attemptId || undefined); // undefined = submitting, pass attemptId
+    // Clear refs - but DON'T set isRecording(false) yet
+    streamRef.current = null;
+    preInitializedStreamRef.current = null;
+    setPreInitializedStream(null);
+    // Keep isRecording = true until after navigation
+
+    // Store attemptId for complete page
+    if (attemptId) {
+      sessionStorage.setItem("interview_attempt_id", attemptId);
+    }
+
+    // Ensure cleanup is complete
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    // Try callback first
+    try {
+      onComplete(undefined, attemptId || undefined);
+    } catch (error) {
+      // Fallback: navigate directly
+      navigate("/mock-interview/complete", { replace: true });
+    }
+
+    // NOW set isRecording false after navigation has started
+    setTimeout(() => {
+      setIsRecording(false);
+    }, 100);
+
+    // Force cleanup after navigation - multiple attempts
+    setTimeout(async () => await stopAllStreams(), 300);
+    setTimeout(async () => await stopAllStreams(), 500);
+    setTimeout(async () => await stopAllStreams(), 1000);
 
     if ("keyboard" in navigator && "unlock" in (navigator as any).keyboard) {
       try {
@@ -1214,6 +1672,12 @@ const InterviewRoom = ({
             timestamp: Date.now(),
             tabSwitches,
             windowSwitches,
+            // Enhanced proctoring metrics
+            noFaceIncidents: submissionData.noFaceIncidents,
+            noFaceDuration: Math.round(submissionData.noFaceDuration),
+            lookingAwayIncidents: submissionData.lookingAwayIncidents,
+            lookingAwayDuration: Math.round(submissionData.lookingAwayDuration),
+            multipleFaceIncidents: submissionData.multipleFaceIncidents,
           },
         });
 
@@ -1257,6 +1721,7 @@ const InterviewRoom = ({
   // Handle fullscreen exit warning - continue interview
   const handleContinueInterview = async () => {
     setFullscreenExitWarningOpen(false);
+    setIsPausedForFullscreenWarning(false);
 
     // Re-enter fullscreen
     try {
@@ -1280,6 +1745,7 @@ const InterviewRoom = ({
         streamRef.current = stream;
         setPreInitializedStream(stream);
         preInitializedStreamRef.current = stream;
+        registerStream(stream); // Register in global registry
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -1357,6 +1823,7 @@ const InterviewRoom = ({
   // Handle fullscreen exit warning - exit interview
   const handleExitFromFullscreenWarning = () => {
     setFullscreenExitWarningOpen(false);
+    setIsPausedForFullscreenWarning(false);
     // Open the exit dialog
     setExitDialogOpen(true);
   };
@@ -1632,21 +2099,42 @@ const InterviewRoom = ({
     }, 300);
   };
 
-  // Cleanup
+  // Track if we ever started recording (for cleanup guard)
+  const everStartedRecordingRef = useRef(false);
+
+  useEffect(() => {
+    if (isRecording) {
+      everStartedRecordingRef.current = true;
+    }
+  }, [isRecording]);
+
+  // Cleanup on unmount - CRITICAL for preventing camera leaks
   useEffect(() => {
     return () => {
-      stopTimer();
-
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
+      // Only run cleanup if we actually started an interview session
+      // Don't cleanup if we're just showing the setup page
+      if (!everStartedRecordingRef.current) {
+        // Never started recording, don't cleanup (preserves setup camera)
+        return;
       }
 
+      // We had an active session, do full cleanup
+      stopTimer();
+
+      // Use the comprehensive stopAllStreams function
+      (async () => await stopAllStreams())();
+
+      // Additional cleanup
       if (animationFrameRef.current !== null) {
         cancelAnimationFrame(animationFrameRef.current);
       }
 
       if (audioContextRef.current) {
-        audioContextRef.current.close();
+        try {
+          audioContextRef.current.close();
+        } catch (e) {
+          // Continue
+        }
       }
 
       // Stop any ongoing TTS speech
@@ -1657,8 +2145,13 @@ const InterviewRoom = ({
       }
 
       fullscreenControl.exitFullscreen();
+
+      // Final cleanup attempt after unmount
+      setTimeout(async () => {
+        await stopAllStreams();
+      }, 500);
     };
-  }, []);
+  }, []); // Empty deps - cleanup function never changes, uses ref
 
   return (
     <div
@@ -1666,8 +2159,17 @@ const InterviewRoom = ({
       className="min-h-screen bg-white"
       style={{ position: "relative" }}
     >
-      {!isRecording &&
-      (!providedQuestions || providedQuestions.length === 0) ? (
+      {hasExited || isSubmitting ? (
+        // Show submitting state while exiting
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <CircularProgress size={60} />
+            <p className="mt-4 text-gray-600">Submitting interview...</p>
+          </div>
+        </div>
+      ) : !isRecording &&
+        !isPausedForFullscreenWarning &&
+        (!providedQuestions || providedQuestions.length === 0) ? (
         <InterviewSetup
           topic={topic}
           difficulty={difficulty}
@@ -1675,7 +2177,10 @@ const InterviewRoom = ({
           onBack={onBack}
           onCameraReady={handleCameraReady}
         />
-      ) : !isRecording && providedQuestions && providedQuestions.length > 0 ? (
+      ) : !isRecording &&
+        !isPausedForFullscreenWarning &&
+        providedQuestions &&
+        providedQuestions.length > 0 ? (
         // Show loading while auto-initializing camera
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
