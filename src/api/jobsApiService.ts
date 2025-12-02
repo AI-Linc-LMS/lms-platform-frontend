@@ -1,4 +1,31 @@
 import { Job } from '../features/jobs/types/jobs.types';
+import axiosInstance from '../services/axiosInstance';
+import { mockJobs } from '../features/jobs/data/mockJobs';
+
+// API Response Types for Jobs API
+interface ApiJobItem {
+  id: number;
+  job_title: string;
+  company_name: string;
+  company_logo: string;
+  rating: string;
+  reviews: string;
+  experience: string;
+  salary: string;
+  location: string;
+  job_description: string;
+  tags: string[];
+  job_post_date: string;
+  job_url: string;
+  job_type: 'job' | 'internship';
+  created_at: string;
+  updated_at: string;
+}
+
+interface JobsApiResponse {
+  count: number;
+  results: ApiJobItem[];
+}
 
 // API Response Types
 interface RemotiveJob {
@@ -110,6 +137,129 @@ const mapExperienceLevel = (title: string, description: string): 'Entry Level' |
   if (combined.includes('senior') || combined.includes('lead') || combined.includes('principal') || combined.includes('staff')) return 'Senior Level';
   if (combined.includes('junior') || combined.includes('entry') || combined.includes('graduate') || combined.includes('intern')) return 'Entry Level';
   return 'Mid Level';
+};
+
+// Parse experience string like "8-13 Yrs" to determine experience level
+const parseExperienceLevel = (experience: string): 'Entry Level' | 'Mid Level' | 'Senior Level' | 'Executive' => {
+  if (!experience) return 'Mid Level';
+  
+  const lowerExp = experience.toLowerCase();
+  // Extract years from strings like "8-13 Yrs", "0-2 Yrs", etc.
+  const match = experience.match(/(\d+)(?:-(\d+))?\s*(?:yrs?|years?)/i);
+  
+  if (match) {
+    const minYears = parseInt(match[1], 10);
+    const maxYears = match[2] ? parseInt(match[2], 10) : minYears;
+    const avgYears = (minYears + maxYears) / 2;
+    
+    if (avgYears < 2) return 'Entry Level';
+    if (avgYears < 8) return 'Mid Level';
+    if (avgYears < 15) return 'Senior Level';
+    return 'Executive';
+  }
+  
+  // Fallback to keyword matching
+  if (lowerExp.includes('senior') || lowerExp.includes('lead') || lowerExp.includes('principal') || lowerExp.includes('staff')) return 'Senior Level';
+  if (lowerExp.includes('junior') || lowerExp.includes('entry') || lowerExp.includes('graduate') || lowerExp.includes('intern')) return 'Entry Level';
+  if (lowerExp.includes('executive') || lowerExp.includes('director') || lowerExp.includes('vp') || lowerExp.includes('chief')) return 'Executive';
+  
+  return 'Mid Level';
+};
+
+// Parse salary string like "15-20 Lacs PA" to {min, max, currency}
+const parseSalary = (salary: string): { min: number; max: number; currency: string } | undefined => {
+  if (!salary || salary.trim() === '') return undefined;
+  
+  // Handle formats like "15-20 Lacs PA", "₹15-20 Lacs", "15-20 LPA", etc.
+  const lacsMatch = salary.match(/(\d+(?:\.\d+)?)(?:\s*-\s*(\d+(?:\.\d+)?))?\s*(?:lacs?|lpa)/i);
+  if (lacsMatch) {
+    const min = parseFloat(lacsMatch[1]) * 100000; // Convert lacs to rupees
+    const max = lacsMatch[2] ? parseFloat(lacsMatch[2]) * 100000 : min;
+    return { min, max, currency: 'INR' };
+  }
+  
+  // Handle formats like "₹500000 - ₹1000000"
+  const rupeeMatch = salary.match(/₹?\s*(\d+(?:,\d+)*(?:\.\d+)?)(?:\s*-\s*₹?\s*(\d+(?:,\d+)*(?:\.\d+)?))?/i);
+  if (rupeeMatch) {
+    const min = parseFloat(rupeeMatch[1].replace(/,/g, ''));
+    const max = rupeeMatch[2] ? parseFloat(rupeeMatch[2].replace(/,/g, '')) : min;
+    return { min, max, currency: 'INR' };
+  }
+  
+  // Handle USD formats like "$100k - $150k"
+  const usdMatch = salary.match(/\$?\s*(\d+(?:\.\d+)?)k?(?:\s*-\s*\$?\s*(\d+(?:\.\d+)?)k?)?/i);
+  if (usdMatch) {
+    const min = parseFloat(usdMatch[1]) * (usdMatch[1].includes('k') ? 1000 : 1);
+    const max = usdMatch[2] ? parseFloat(usdMatch[2]) * (usdMatch[2].includes('k') ? 1000 : 1) : min;
+    return { min, max, currency: 'USD' };
+  }
+  
+  return undefined;
+};
+
+// Map API job type to UI job type
+const mapApiJobTypeToUIType = (apiJobType: 'job' | 'internship'): 'Full-time' | 'Part-time' | 'Contract' | 'Internship' | 'Freelance' => {
+  if (apiJobType === 'internship') return 'Internship';
+  return 'Full-time'; // Default to Full-time for 'job' type
+};
+
+// Check if location suggests remote work
+const isRemoteLocation = (location: string): boolean => {
+  if (!location) return false;
+  const lowerLocation = location.toLowerCase();
+  return lowerLocation.includes('remote') || 
+         lowerLocation.includes('work from home') || 
+         lowerLocation.includes('wfh') ||
+         lowerLocation === 'remote';
+};
+
+// Map API job item to Job type
+const mapApiJobToJobType = (apiJob: ApiJobItem): Job => {
+  // Extract requirements from description or tags
+  const requirements: string[] = [];
+  if (apiJob.job_description) {
+    // Try to extract bullet points or requirements from description
+    const descLines = apiJob.job_description.split('\n').filter(line => line.trim());
+    descLines.forEach(line => {
+      if (line.trim().startsWith('-') || line.trim().startsWith('•') || line.trim().match(/^\d+\./)) {
+        requirements.push(line.trim().replace(/^[-•\d.]+\s*/, ''));
+      }
+    });
+  }
+  
+  // If no requirements extracted, use tags or create from description
+  if (requirements.length === 0) {
+    if (apiJob.tags && apiJob.tags.length > 0) {
+      requirements.push(...apiJob.tags.slice(0, 5));
+    } else if (apiJob.job_description) {
+      // Take first sentence as requirement
+      const firstSentence = apiJob.job_description.split('.')[0];
+      if (firstSentence) requirements.push(firstSentence.trim());
+    }
+  }
+  
+  // If still no requirements, add a default
+  if (requirements.length === 0) {
+    requirements.push('Relevant experience in the field');
+  }
+  
+  return {
+    id: apiJob.id.toString(),
+    title: apiJob.job_title,
+    company: apiJob.company_name,
+    companyLogo: apiJob.company_logo || '',
+    location: apiJob.location,
+    type: mapApiJobTypeToUIType(apiJob.job_type),
+    experienceLevel: parseExperienceLevel(apiJob.experience),
+    salary: parseSalary(apiJob.salary),
+    description: apiJob.job_description || '',
+    requirements: requirements,
+    benefits: [], // API doesn't provide benefits, can be enhanced later
+    tags: apiJob.tags || [],
+    remote: isRemoteLocation(apiJob.location),
+    postedDate: apiJob.job_post_date || apiJob.created_at,
+    applicationUrl: apiJob.job_url,
+  };
 };
 
 // Enhanced Mock Data with Real-World Jobs
@@ -486,6 +636,79 @@ const fetchRemotiveJobs = async (category: string = ''): Promise<Job[]> => {
 const simulateNetworkDelay = (min: number = 800, max: number = 2000): Promise<void> => {
   const delay = Math.random() * (max - min) + min;
   return new Promise(resolve => setTimeout(resolve, delay));
+};
+
+// Jobs API Interface
+export interface JobsApiFilters {
+  job_type?: 'job' | 'internship';
+  designation?: string;
+  location?: string;
+  experience?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface JobsApiResponseData {
+  jobs: Job[];
+  count: number;
+  hasMore: boolean;
+}
+
+// Main API Function to fetch jobs from backend
+export const fetchJobsFromAPI = async (
+  filters: JobsApiFilters = {}
+): Promise<JobsApiResponseData> => {
+  try {
+    // Build query parameters
+    const params = new URLSearchParams();
+    
+    if (filters.job_type) {
+      params.append('job_type', filters.job_type);
+    }
+    
+    if (filters.designation && filters.designation.trim()) {
+      params.append('designation', filters.designation.trim());
+    }
+    
+    if (filters.location && filters.location.trim()) {
+      params.append('location', filters.location.trim());
+    }
+    
+    if (filters.experience && filters.experience.trim()) {
+      params.append('experience', filters.experience.trim());
+    }
+    
+    // Build the API URL
+    const queryString = params.toString();
+    const url = `/jobs/api/getjobs/${queryString ? `?${queryString}` : ''}`;
+    
+    // Make API call
+    const response = await axiosInstance.get<JobsApiResponse>(url);
+    
+    if (response.data && response.data.results) {
+      // Map API jobs to Job type
+      const mappedJobs = response.data.results.map(mapApiJobToJobType);
+      
+      return {
+        jobs: mappedJobs,
+        count: response.data.count || mappedJobs.length,
+        hasMore: false, // API doesn't seem to support pagination based on the response structure
+      };
+    }
+    
+    // If response structure is unexpected, return empty
+    return {
+      jobs: [],
+      count: 0,
+      hasMore: false,
+    };
+  } catch (error) {
+    // Log error but don't throw - we'll fallback to mock data
+    if (error instanceof Error) {
+      // Silently handle error - will fallback to mock data
+    }
+    throw error; // Re-throw to let caller handle fallback
+  }
 };
 
 // Main API Functions
