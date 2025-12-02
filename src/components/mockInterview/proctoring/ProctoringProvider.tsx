@@ -120,6 +120,7 @@ export const ProctoringProvider: React.FC<{ children: React.ReactNode }> = ({
         startScreenShare,
         stopScreenShare,
         isScreenSharing,
+        logEvent,
       }}
     >
       {children}
