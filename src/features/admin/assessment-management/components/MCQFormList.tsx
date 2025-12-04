@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import {
   Box,
   Paper,
@@ -24,7 +24,7 @@ import {
   ViewList as ViewListIcon,
   ViewModule as ViewModuleIcon,
 } from "@mui/icons-material";
-import { MCQData, downloadCSVTemplate, parseCSV } from "../types";
+import { MCQData } from "../types";
 
 interface MCQFormListProps {
   mcqs: MCQData[];
@@ -41,7 +41,6 @@ const MCQFormList = ({
   onMCQChange,
   onAddMCQ,
   onRemoveMCQ,
-  onBulkAddMCQs,
 }: MCQFormListProps) => {
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
 
