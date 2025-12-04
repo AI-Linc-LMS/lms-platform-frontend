@@ -65,12 +65,24 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
 
   {
     id: 5,
-    title: "Assesment Results",
-    slug: "admin_assessment_result",
+    title: "Assessment Management",
+    slug: "admin_assessment",
     links: [
       {
         id: 1,
-        title: "Assesment Results",
+        title: "Assessment Management",
+        href: "/admin/assessments",
+        icon: <GoTasklist />,
+      },
+      {
+        id: 2,
+        title: "MCQ Bank",
+        href: "/admin/mcqs",
+        icon: <GoTasklist />,
+      },
+      {
+        id: 3,
+        title: "Assessment Results",
         href: "/admin/assesment-results",
         icon: <GoTasklist />,
       },
