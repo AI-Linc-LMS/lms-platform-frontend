@@ -91,8 +91,25 @@ const AttendanceManagementPage = lazy(
 const AttendancePage = lazy(
   () => import("./features/learn/pages/AttendancePage")
 );
-const PWATestPage = lazy(() => import("./components/PWATestPage").then(module => ({ default: module.PWATestPage })));
+const PWATestPage = lazy(() =>
+  import("./components/PWATestPage").then((module) => ({
+    default: module.PWATestPage,
+  }))
+);
 const IOSPWATestPage = lazy(() => import("./components/IOSPWATestPage"));
+const AssessmentListPage = lazy(
+  () =>
+    import("./features/admin/assessment-management/pages/AssessmentListPage")
+);
+const CreateEditAssessmentPage = lazy(
+  () =>
+    import(
+      "./features/admin/assessment-management/pages/CreateEditAssessmentPage"
+    )
+);
+const MCQListPage = lazy(
+  () => import("./features/admin/assessment-management/pages/MCQListPage")
+);
 
 export interface RouteConfig {
   path: string;
@@ -338,6 +355,30 @@ const routes: RouteConfig[] = [
     path: "/admin/webinar-management",
     component: WebinarManagement,
     isPrivate: true,
+  },
+  {
+    path: "/admin/assessments",
+    component: AssessmentListPage,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/assessments/create",
+    component: CreateEditAssessmentPage,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/assessments/edit/:assessmentId",
+    component: CreateEditAssessmentPage,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/mcqs",
+    component: MCQListPage,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
   },
 ];
 
