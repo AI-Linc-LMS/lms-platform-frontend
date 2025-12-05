@@ -15,7 +15,7 @@ export type {
 } from "../../../services/admin/mcqApis";
 
 // UI-specific types
-export type MCQMode = "create" | "select" | "bulk";
+export type MCQMode = "create" | "select" | "bulk" | "ai";
 
 export interface MCQData {
   id: string;
@@ -131,12 +131,12 @@ export const CSV_HEADERS = [
 // Function to download CSV template (empty)
 export const downloadCSVTemplate = () => {
   const headers = CSV_HEADERS.join(",");
-  
+
   const csvContent = headers; // Empty template with only headers
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const link = document.createElement("a");
   const url = URL.createObjectURL(blob);
-  
+
   link.setAttribute("href", url);
   link.setAttribute("download", "mcq_template.csv");
   link.style.visibility = "hidden";
@@ -148,12 +148,12 @@ export const downloadCSVTemplate = () => {
 // Function to parse CSV line considering quoted fields
 const parseCSVLine = (line: string): string[] => {
   const result: string[] = [];
-  let current = '';
+  let current = "";
   let inQuotes = false;
-  
+
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
-    
+
     if (char === '"') {
       if (inQuotes && line[i + 1] === '"') {
         current += '"';
@@ -161,73 +161,87 @@ const parseCSVLine = (line: string): string[] => {
       } else {
         inQuotes = !inQuotes;
       }
-    } else if (char === ',' && !inQuotes) {
+    } else if (char === "," && !inQuotes) {
       result.push(current.trim());
-      current = '';
+      current = "";
     } else {
       current += char;
     }
   }
-  
+
   result.push(current.trim());
   return result;
 };
 
 // Function to parse CSV and validate
-export const parseCSV = (csvText: string): { data: MCQData[]; errors: string[] } => {
+export const parseCSV = (
+  csvText: string
+): { data: MCQData[]; errors: string[] } => {
   const errors: string[] = [];
   const mcqs: MCQData[] = [];
-  
-  const lines = csvText.split(/\r?\n/).filter(line => line.trim());
-  
+
+  const lines = csvText.split(/\r?\n/).filter((line) => line.trim());
+
   if (lines.length < 2) {
     errors.push("CSV file is empty or contains only headers");
     return { data: [], errors };
   }
-  
-  const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
-  
+
+  const headers = parseCSVLine(lines[0]).map((h) => h.trim().toLowerCase());
+
   // Validate headers
-  const requiredHeaders = ["question_text", "option_a", "option_b", "option_c", "option_d", "correct_option"];
-  const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
-  
+  const requiredHeaders = [
+    "question_text",
+    "option_a",
+    "option_b",
+    "option_c",
+    "option_d",
+    "correct_option",
+  ];
+  const missingHeaders = requiredHeaders.filter((h) => !headers.includes(h));
+
   if (missingHeaders.length > 0) {
     errors.push(`Missing required columns: ${missingHeaders.join(", ")}`);
     return { data: [], errors };
   }
-  
+
   // Parse data rows
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
     if (!line.trim()) continue;
-    
+
     const values = parseCSVLine(line);
     const rowData: Record<string, string> = {};
-    
+
     headers.forEach((header, index) => {
       rowData[header] = values[index] || "";
     });
-    
+
     // Validate row
     const rowErrors: string[] = [];
-    
+
     if (!rowData.question_text) {
       rowErrors.push(`Row ${i}: Question text is required`);
     }
-    
-    if (!rowData.option_a || !rowData.option_b || !rowData.option_c || !rowData.option_d) {
+
+    if (
+      !rowData.option_a ||
+      !rowData.option_b ||
+      !rowData.option_c ||
+      !rowData.option_d
+    ) {
       rowErrors.push(`Row ${i}: All options (A, B, C, D) are required`);
     }
-    
+
     if (!["A", "B", "C", "D"].includes(rowData.correct_option?.toUpperCase())) {
       rowErrors.push(`Row ${i}: Correct option must be A, B, C, or D`);
     }
-    
+
     const difficulty = rowData.difficulty_level || "Medium";
     if (!["Easy", "Medium", "Hard"].includes(difficulty)) {
       rowErrors.push(`Row ${i}: Difficulty must be Easy, Medium, or Hard`);
     }
-    
+
     if (rowErrors.length > 0) {
       errors.push(...rowErrors);
     } else {
@@ -238,14 +252,18 @@ export const parseCSV = (csvText: string): { data: MCQData[]; errors: string[] }
         option_b: rowData.option_b,
         option_c: rowData.option_c,
         option_d: rowData.option_d,
-        correct_option: rowData.correct_option.toUpperCase() as "A" | "B" | "C" | "D",
+        correct_option: rowData.correct_option.toUpperCase() as
+          | "A"
+          | "B"
+          | "C"
+          | "D",
         explanation: rowData.explanation || "",
-        difficulty_level: (difficulty as "Easy" | "Medium" | "Hard"),
+        difficulty_level: difficulty as "Easy" | "Medium" | "Hard",
         topic: rowData.topic || "",
         skills: rowData.skills || "",
       });
     }
   }
-  
+
   return { data: mcqs, errors };
 };

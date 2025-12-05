@@ -43,6 +43,7 @@ import {
   Upload as UploadIcon,
   Download as DownloadIcon,
   Delete as DeleteIcon,
+  AutoAwesome as AutoAwesomeIcon,
 } from "@mui/icons-material";
 import {
   getAssessmentById,
@@ -50,7 +51,11 @@ import {
   updateAssessment,
   CreateAssessmentPayload,
 } from "../../../../services/admin/assessmentApis";
-import { getMCQs, MCQListItem } from "../../../../services/admin/mcqApis";
+import {
+  getMCQs,
+  MCQListItem,
+  generateMCQsWithAI,
+} from "../../../../services/admin/mcqApis";
 import MCQFormList from "../components/MCQFormList";
 import MCQSelectionTable from "../components/MCQSelectionTable";
 
@@ -101,7 +106,7 @@ const CreateEditAssessmentPage = () => {
   const [tabValue, setTabValue] = useState(0);
   const [showModeChangeConfirm, setShowModeChangeConfirm] = useState(false);
   const [pendingMode, setPendingMode] = useState<
-    "create" | "select" | "bulk" | null
+    "create" | "select" | "bulk" | "ai" | null
   >(null);
   const [bulkMCQs, setBulkMCQs] = useState<MCQData[]>([]);
   const [csvErrors, setCsvErrors] = useState<string[]>([]);
@@ -109,6 +114,19 @@ const CreateEditAssessmentPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [bulkPage, setBulkPage] = useState(0);
   const [bulkRowsPerPage, setBulkRowsPerPage] = useState(10);
+
+  // AI Generation state
+  const [aiMCQs, setAiMCQs] = useState<MCQData[]>([]);
+  const [aiPage, setAiPage] = useState(0);
+  const [aiRowsPerPage, setAiRowsPerPage] = useState(10);
+  const [aiTopic, setAiTopic] = useState("");
+  const [aiNumberOfQuestions, setAiNumberOfQuestions] = useState(10);
+  const [aiDifficultyLevel, setAiDifficultyLevel] = useState<
+    "Easy" | "Medium" | "Hard"
+  >("Medium");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiGenerationError, setAiGenerationError] = useState("");
+  const [aiGenerationSuccess, setAiGenerationSuccess] = useState(false);
 
   // Fetch existing assessment if editing
   const { data: existingAssessment, isLoading: loadingAssessment } = useQuery({
@@ -310,6 +328,65 @@ const CreateEditAssessmentPage = () => {
     });
   };
 
+  const handleAIGenerate = async () => {
+    // Validation
+    if (!aiTopic.trim()) {
+      setAiGenerationError("Topic is required");
+      return;
+    }
+    if (aiNumberOfQuestions < 1 || aiNumberOfQuestions > 100) {
+      setAiGenerationError("Number of questions must be between 1 and 100");
+      return;
+    }
+
+    setIsGenerating(true);
+    setAiGenerationError("");
+    setAiGenerationSuccess(false);
+
+    try {
+      const data = await generateMCQsWithAI(clientId, {
+        topic: aiTopic,
+        number_of_questions: aiNumberOfQuestions,
+        difficulty_level: aiDifficultyLevel,
+      });
+
+      // Transform the MCQs to match our MCQData format
+      const generatedMCQs: MCQData[] = data.mcqs.map((mcq, index: number) => ({
+        id: `AI-${Date.now()}-${index}`,
+        question_text: mcq.question_text,
+        option_a: mcq.option_a,
+        option_b: mcq.option_b,
+        option_c: mcq.option_c,
+        option_d: mcq.option_d,
+        correct_option: mcq.correct_option,
+        explanation: mcq.explanation || "",
+        difficulty_level: mcq.difficulty_level,
+        topic: mcq.topic || "",
+        skills: mcq.skills || "",
+      }));
+
+      // Add to existing AI MCQs
+      setAiMCQs((prev) => [...prev, ...generatedMCQs]);
+      setAiGenerationSuccess(true);
+      setAiPage(0);
+
+      // Reset form
+      setAiTopic("");
+      setAiNumberOfQuestions(10);
+      setAiDifficultyLevel("Medium");
+
+      setTimeout(() => setAiGenerationSuccess(false), 3000);
+    } catch (error) {
+      setAiGenerationError(
+        error instanceof Error
+          ? error.message
+          : "Failed to generate MCQs. Please try again."
+      );
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleConfirmModeChange = () => {
     if (pendingMode) {
       setFormData((prev) => ({
@@ -321,6 +398,9 @@ const CreateEditAssessmentPage = () => {
       setBulkMCQs([]);
       setCsvErrors([]);
       setBulkPage(0);
+      setAiMCQs([]);
+      setAiGenerationError("");
+      setAiPage(0);
       setErrors({});
     }
     setShowModeChangeConfirm(false);
@@ -381,6 +461,10 @@ const CreateEditAssessmentPage = () => {
       if (bulkMCQs.length === 0) {
         newErrors.mcqs = "Please upload a CSV file with at least one MCQ";
       }
+    } else if (formData.mode === "ai") {
+      if (aiMCQs.length === 0) {
+        newErrors.mcqs = "Please generate at least one MCQ using AI";
+      }
     }
 
     setErrors(newErrors);
@@ -427,6 +511,19 @@ const CreateEditAssessmentPage = () => {
       payload.mcq_ids = Array.from(selectedMCQIds);
     } else if (formData.mode === "bulk") {
       payload.mcqs = bulkMCQs.map((mcq) => ({
+        question_text: mcq.question_text,
+        option_a: mcq.option_a,
+        option_b: mcq.option_b,
+        option_c: mcq.option_c,
+        option_d: mcq.option_d,
+        correct_option: mcq.correct_option,
+        explanation: mcq.explanation || undefined,
+        difficulty_level: mcq.difficulty_level,
+        topic: mcq.topic || undefined,
+        skills: mcq.skills || undefined,
+      }));
+    } else if (formData.mode === "ai") {
+      payload.mcqs = aiMCQs.map((mcq) => ({
         question_text: mcq.question_text,
         option_a: mcq.option_a,
         option_b: mcq.option_b,
@@ -713,14 +810,16 @@ const CreateEditAssessmentPage = () => {
                     const newMode = e.target.value as
                       | "create"
                       | "select"
-                      | "bulk";
+                      | "bulk"
+                      | "ai";
 
                     // Check if there's unsaved data
                     const hasUnsavedData =
                       (formData.mode === "create" &&
                         formData.mcqs.length > 0) ||
                       (formData.mode === "select" && selectedMCQIds.size > 0) ||
-                      (formData.mode === "bulk" && bulkMCQs.length > 0);
+                      (formData.mode === "bulk" && bulkMCQs.length > 0) ||
+                      (formData.mode === "ai" && aiMCQs.length > 0);
 
                     if (hasUnsavedData) {
                       // Show confirmation dialog
@@ -737,6 +836,9 @@ const CreateEditAssessmentPage = () => {
                       setBulkMCQs([]);
                       setCsvErrors([]);
                       setBulkPage(0);
+                      setAiMCQs([]);
+                      setAiGenerationError("");
+                      setAiPage(0);
                       setErrors({});
                     }
                   }}
@@ -784,6 +886,20 @@ const CreateEditAssessmentPage = () => {
                       />
                     }
                     label="Bulk Upload (CSV)"
+                  />
+                  <FormControlLabel
+                    value="ai"
+                    control={
+                      <Radio
+                        sx={{
+                          color: "var(--primary-500)",
+                          "&.Mui-checked": {
+                            color: "var(--primary-600)",
+                          },
+                        }}
+                      />
+                    }
+                    label="AI Generation"
                   />
                 </RadioGroup>
 
@@ -841,7 +957,7 @@ const CreateEditAssessmentPage = () => {
                 {/* Bulk Upload Mode */}
                 {formData.mode === "bulk" && (
                   <Box>
-                    {/* CSV Upload/Download Section */}
+                    {/* CSV Upload Section */}
                     <Paper
                       sx={{
                         p: 3,
@@ -858,7 +974,10 @@ const CreateEditAssessmentPage = () => {
                         }}
                       >
                         <Typography
-                          sx={{ fontWeight: 600, color: "var(--font-primary)" }}
+                          sx={{
+                            fontWeight: 600,
+                            color: "var(--font-primary)",
+                          }}
                         >
                           Bulk Import via CSV
                         </Typography>
@@ -1236,6 +1355,418 @@ const CreateEditAssessmentPage = () => {
                     )}
                   </Box>
                 )}
+
+                {/* AI Generation Mode */}
+                {formData.mode === "ai" && (
+                  <Box>
+                    {/* AI Generation Section */}
+                    <Paper
+                      sx={{
+                        p: 3,
+                        border: "1px solid",
+                        borderColor: "var(--neutral-200)",
+                        mb: 3,
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 2,
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                          }}
+                        >
+                          <AutoAwesomeIcon
+                            sx={{ color: "var(--primary-600)", fontSize: 24 }}
+                          />
+                          <Typography
+                            sx={{
+                              fontWeight: 600,
+                              color: "var(--font-primary)",
+                            }}
+                          >
+                            AI-Powered MCQ Generation
+                          </Typography>
+                        </Box>
+                        <Typography
+                          sx={{
+                            fontSize: "0.875rem",
+                            color: "var(--font-secondary)",
+                            mb: 1,
+                          }}
+                        >
+                          Generate MCQs automatically using AI by specifying a
+                          topic, number of questions, and difficulty level.
+                        </Typography>
+
+                        <Box
+                          sx={{
+                            display: "grid",
+                            gridTemplateColumns: {
+                              xs: "1fr",
+                              md: "1fr 1fr 1fr",
+                            },
+                            gap: 2,
+                          }}
+                        >
+                          <TextField
+                            label="Topic"
+                            value={aiTopic}
+                            onChange={(e) => setAiTopic(e.target.value)}
+                            placeholder="e.g., Python Programming"
+                            fullWidth
+                            required
+                          />
+
+                          <TextField
+                            label="Number of Questions"
+                            type="number"
+                            value={aiNumberOfQuestions}
+                            onChange={(e) =>
+                              setAiNumberOfQuestions(Number(e.target.value))
+                            }
+                            inputProps={{ min: 1, max: 100 }}
+                            fullWidth
+                            required
+                          />
+
+                          <FormControl fullWidth>
+                            <InputLabel>Difficulty Level</InputLabel>
+                            <Select
+                              value={aiDifficultyLevel}
+                              onChange={(e) =>
+                                setAiDifficultyLevel(
+                                  e.target.value as "Easy" | "Medium" | "Hard"
+                                )
+                              }
+                              label="Difficulty Level"
+                            >
+                              <MenuItem value="Easy">Easy</MenuItem>
+                              <MenuItem value="Medium">Medium</MenuItem>
+                              <MenuItem value="Hard">Hard</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Box>
+
+                        <Box>
+                          <Button
+                            variant="contained"
+                            startIcon={
+                              isGenerating ? null : <AutoAwesomeIcon />
+                            }
+                            onClick={handleAIGenerate}
+                            disabled={isGenerating}
+                            sx={{
+                              bgcolor: "var(--primary-500)",
+                              "&:hover": {
+                                bgcolor: "var(--primary-700)",
+                              },
+                              "&:disabled": {
+                                opacity: 0.6,
+                              },
+                            }}
+                          >
+                            {isGenerating ? (
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    width: 16,
+                                    height: 16,
+                                    border: "2px solid white",
+                                    borderTopColor: "transparent",
+                                    borderRadius: "50%",
+                                    animation: "spin 1s linear infinite",
+                                    "@keyframes spin": {
+                                      "0%": { transform: "rotate(0deg)" },
+                                      "100%": {
+                                        transform: "rotate(360deg)",
+                                      },
+                                    },
+                                  }}
+                                />
+                                Generating...
+                              </Box>
+                            ) : (
+                              "Generate MCQs with AI"
+                            )}
+                          </Button>
+                        </Box>
+
+                        {aiGenerationSuccess && (
+                          <Alert
+                            severity="success"
+                            onClose={() => setAiGenerationSuccess(false)}
+                          >
+                            Successfully generated {aiNumberOfQuestions} MCQ(s)
+                            using AI!
+                          </Alert>
+                        )}
+
+                        {aiGenerationError && (
+                          <Alert
+                            severity="error"
+                            onClose={() => setAiGenerationError("")}
+                          >
+                            {aiGenerationError}
+                          </Alert>
+                        )}
+                      </Box>
+                    </Paper>
+
+                    {/* Table View for AI MCQs */}
+                    {aiMCQs.length > 0 && (
+                      <Box>
+                        <Typography
+                          sx={{
+                            mb: 2,
+                            color: "var(--font-secondary)",
+                            fontSize: "0.875rem",
+                          }}
+                        >
+                          {aiMCQs.length} question
+                          {aiMCQs.length !== 1 ? "s" : ""} generated
+                        </Typography>
+                        <TableContainer
+                          component={Paper}
+                          sx={{
+                            border: "1px solid",
+                            borderColor: "var(--neutral-200)",
+                          }}
+                        >
+                          <Table>
+                            <TableHead sx={{ bgcolor: "var(--neutral-50)" }}>
+                              <TableRow>
+                                <TableCell
+                                  sx={{ fontWeight: "bold", width: 70 }}
+                                >
+                                  ID
+                                </TableCell>
+                                <TableCell
+                                  sx={{ fontWeight: "bold", minWidth: 200 }}
+                                >
+                                  Question
+                                </TableCell>
+                                <TableCell
+                                  sx={{ fontWeight: "bold", width: 120 }}
+                                >
+                                  Option A
+                                </TableCell>
+                                <TableCell
+                                  sx={{ fontWeight: "bold", width: 120 }}
+                                >
+                                  Option B
+                                </TableCell>
+                                <TableCell
+                                  sx={{ fontWeight: "bold", width: 120 }}
+                                >
+                                  Option C
+                                </TableCell>
+                                <TableCell
+                                  sx={{ fontWeight: "bold", width: 120 }}
+                                >
+                                  Option D
+                                </TableCell>
+                                <TableCell
+                                  sx={{ fontWeight: "bold", width: 80 }}
+                                >
+                                  Correct
+                                </TableCell>
+                                <TableCell
+                                  sx={{ fontWeight: "bold", width: 100 }}
+                                >
+                                  Difficulty
+                                </TableCell>
+                                <TableCell
+                                  sx={{ fontWeight: "bold", width: 80 }}
+                                >
+                                  Actions
+                                </TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {aiMCQs
+                                .slice(
+                                  aiPage * aiRowsPerPage,
+                                  aiPage * aiRowsPerPage + aiRowsPerPage
+                                )
+                                .map((mcq, displayIndex) => {
+                                  const actualIndex =
+                                    aiPage * aiRowsPerPage + displayIndex;
+                                  return (
+                                    <TableRow key={mcq.id} hover>
+                                      <TableCell
+                                        sx={{
+                                          fontSize: "0.75rem",
+                                          color: "var(--font-secondary)",
+                                          fontWeight: "bold",
+                                        }}
+                                      >
+                                        {mcq.id}
+                                      </TableCell>
+                                      <TableCell>
+                                        <Typography
+                                          sx={{ fontSize: "0.875rem" }}
+                                          title={mcq.question_text}
+                                        >
+                                          {mcq.question_text}
+                                        </Typography>
+                                      </TableCell>
+                                      <TableCell>
+                                        <Typography
+                                          sx={{ fontSize: "0.875rem" }}
+                                          title={mcq.option_a}
+                                        >
+                                          {mcq.option_a}
+                                        </Typography>
+                                      </TableCell>
+                                      <TableCell>
+                                        <Typography
+                                          sx={{ fontSize: "0.875rem" }}
+                                          title={mcq.option_b}
+                                        >
+                                          {mcq.option_b}
+                                        </Typography>
+                                      </TableCell>
+                                      <TableCell>
+                                        <Typography
+                                          sx={{ fontSize: "0.875rem" }}
+                                          title={mcq.option_c}
+                                        >
+                                          {mcq.option_c}
+                                        </Typography>
+                                      </TableCell>
+                                      <TableCell>
+                                        <Typography
+                                          sx={{ fontSize: "0.875rem" }}
+                                          title={mcq.option_d}
+                                        >
+                                          {mcq.option_d}
+                                        </Typography>
+                                      </TableCell>
+                                      <TableCell>
+                                        <Chip
+                                          label={mcq.correct_option}
+                                          size="small"
+                                          sx={{
+                                            bgcolor: "var(--success-100)",
+                                            color: "var(--success-700)",
+                                            fontWeight: "bold",
+                                          }}
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <Chip
+                                          label={mcq.difficulty_level}
+                                          size="small"
+                                          sx={{
+                                            bgcolor:
+                                              mcq.difficulty_level === "Easy"
+                                                ? "var(--success-100)"
+                                                : mcq.difficulty_level ===
+                                                  "Medium"
+                                                ? "var(--warning-100)"
+                                                : "var(--error-100)",
+                                            color:
+                                              mcq.difficulty_level === "Easy"
+                                                ? "var(--success-700)"
+                                                : mcq.difficulty_level ===
+                                                  "Medium"
+                                                ? "var(--warning-700)"
+                                                : "var(--error-700)",
+                                          }}
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <IconButton
+                                          onClick={() => {
+                                            setAiMCQs((prev) => {
+                                              const newMCQs = prev.filter(
+                                                (_, i) => i !== actualIndex
+                                              );
+                                              const maxPage = Math.max(
+                                                0,
+                                                Math.ceil(
+                                                  newMCQs.length / aiRowsPerPage
+                                                ) - 1
+                                              );
+                                              if (aiPage > maxPage) {
+                                                setAiPage(maxPage);
+                                              }
+                                              return newMCQs;
+                                            });
+                                          }}
+                                          size="small"
+                                          sx={{
+                                            color: "var(--error-500)",
+                                            "&:hover": {
+                                              bgcolor: "var(--error-100)",
+                                            },
+                                          }}
+                                        >
+                                          <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                        <TablePagination
+                          component="div"
+                          count={aiMCQs.length}
+                          page={aiPage}
+                          onPageChange={(_, newPage) => setAiPage(newPage)}
+                          rowsPerPage={aiRowsPerPage}
+                          onRowsPerPageChange={(e) => {
+                            setAiRowsPerPage(parseInt(e.target.value, 10));
+                            setAiPage(0);
+                          }}
+                          rowsPerPageOptions={[5, 10, 25, 50]}
+                          sx={{
+                            borderTop: "1px solid",
+                            borderColor: "var(--neutral-200)",
+                          }}
+                        />
+                      </Box>
+                    )}
+
+                    {aiMCQs.length === 0 && !aiGenerationError && (
+                      <Box
+                        sx={{
+                          textAlign: "center",
+                          py: 8,
+                          bgcolor: "var(--neutral-50)",
+                          borderRadius: 1,
+                        }}
+                      >
+                        <AutoAwesomeIcon
+                          sx={{
+                            fontSize: 48,
+                            color: "var(--font-tertiary)",
+                            mb: 2,
+                          }}
+                        />
+                        <Typography sx={{ color: "var(--font-secondary)" }}>
+                          No MCQs generated yet. Fill in the details and click
+                          Generate to create MCQs with AI.
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                )}
               </Box>
             </TabPanel>
           </Paper>
@@ -1347,7 +1878,9 @@ const CreateEditAssessmentPage = () => {
                 ? `You have ${formData.mcqs.length} unsaved question(s). Switching modes will clear all your current questions.`
                 : formData.mode === "select"
                 ? `You have ${selectedMCQIds.size} selected question(s). Switching modes will clear your selections.`
-                : `You have ${bulkMCQs.length} uploaded question(s). Switching modes will clear your uploaded questions.`}
+                : formData.mode === "bulk"
+                ? `You have ${bulkMCQs.length} uploaded question(s). Switching modes will clear your uploaded questions.`
+                : `You have ${aiMCQs.length} AI-generated question(s). Switching modes will clear your generated questions.`}
             </Typography>
             <Typography sx={{ color: "var(--font-secondary)", mt: 2 }}>
               Are you sure you want to continue?

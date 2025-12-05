@@ -41,6 +41,21 @@ export interface UpdateMCQPayload extends Partial<CreateMCQPayload> {
   id: number;
 }
 
+// AI Generation interfaces
+export interface GenerateMCQRequest {
+  topic: string;
+  number_of_questions: number;
+  difficulty_level: "Easy" | "Medium" | "Hard";
+}
+
+export interface GenerateMCQResponse {
+  message: string;
+  topic: string;
+  difficulty_level: string;
+  count: number;
+  mcqs: MCQListItem[];
+}
+
 /**
  * Get all MCQs for a client
  */
@@ -183,6 +198,45 @@ export const deleteMCQ = async (
       error.response?.data?.message ||
       error.response?.data?.detail ||
       "Failed to delete MCQ";
+    throw new Error(message);
+  }
+};
+
+/**
+ * Generate MCQs using AI
+ */
+export const generateMCQsWithAI = async (
+  clientId: string | number,
+  payload: GenerateMCQRequest
+): Promise<GenerateMCQResponse> => {
+  try {
+    const response = await axiosInstance.post(
+      `/admin-dashboard/api/clients/${clientId}/generate-mcq-questions/`,
+      payload
+    );
+    return response.data;
+  } catch (err) {
+    const error = err as AxiosError<ApiErrorPayload>;
+
+    // Handle validation errors
+    if (error.response?.status === 400 && error.response?.data) {
+      const errorData = error.response.data;
+      const errorMessages = Object.entries(errorData)
+        .map(([key, value]) => {
+          if (Array.isArray(value)) {
+            return `${key}: ${value.join(", ")}`;
+          }
+          return `${key}: ${value}`;
+        })
+        .join("; ");
+      throw new Error(errorMessages || "Validation error");
+    }
+
+    const message =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      "Failed to generate MCQs with AI";
     throw new Error(message);
   }
 };
