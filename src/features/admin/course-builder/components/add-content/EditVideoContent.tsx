@@ -69,7 +69,6 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
       //console.log("Video ID:", videoData.video_content);
       return getContentById(
         clientId,
-        "video-tutorials",
         videoData.video_content
       );
     },
@@ -81,11 +80,8 @@ const EditVideoContent: React.FC<EditVideoContentProps> = ({
   //console.log("Direct Video Data:", directVideoData);
   // Populate form with existing data
   useEffect(() => {
-    // Use direct video data if available and has description, otherwise use submodule data
-    const dataToUse =
-      directVideoData && directVideoData.description
-        ? directVideoData
-        : videoData;
+    // Use direct video data if available, otherwise use submodule data
+    const dataToUse = directVideoData || videoData;
 
     if (dataToUse) {
       //console.log("=== LOADED VIDEO DATA FOR EDITING ===");

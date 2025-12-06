@@ -679,9 +679,13 @@ export const sendSessionEndData = (
         endpoint: `${apiUrl}/activity/clients/${clientId}/track-time/`,
       });
 
-      // Use fetch in completely fire-and-forget mode
+      // Use fetch in completely fire-and-forget mode with keepalive
       // Defer the entire fetch call to ensure it doesn't interfere with current execution
       setTimeout(() => {
+        // Create abort controller for timeout (with fallback for older browsers)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
         fetch(`${apiUrl}/activity/clients/${clientId}/track-time/`, {
           method: "POST",
           headers: {
@@ -693,47 +697,65 @@ export const sendSessionEndData = (
               : {}),
           },
           body: JSON.stringify(sessionEndPayload),
+          keepalive: true, // Keep request alive even if page unloads
+          signal: controller.signal, // 5 second timeout
         })
           .then((response) => {
-            // Defer response handling even further to ensure complete isolation
-            setTimeout(() => {
-              try {
-                if (!response.ok) {
+            clearTimeout(timeoutId);
+            // CRITICAL: Don't read response body to prevent any side effects
+            // Just check status and handle silently
+            if (response.ok) {
+              // Defer response handling even further to ensure complete isolation
+              setTimeout(() => {
+                try {
+                  logActivityEvent("Session-end data sent successfully", {
+                    sessionDuration: validatedSessionDuration,
+                  });
+
+                  // Record this sync to prevent duplicates
+                  recordSuccessfulSessionSync(
+                    sessionId,
+                    validatedSessionDuration
+                  );
+
+                  // Mark session as processed
+                  markSessionAsProcessed(
+                    sessionStartTime,
+                    validatedSessionDuration
+                  );
+                } catch {
+                  // Silently ignore any errors
+                }
+              }, 100);
+            } else {
+              // Log failure but don't read response body
+              setTimeout(() => {
+                try {
                   logActivityEvent("Session-end API call failed", {
                     status: response.status,
                     sessionDuration: validatedSessionDuration,
                   });
-                  return;
+                } catch {
+                  // Silently ignore
                 }
-
-                logActivityEvent("Session-end data sent successfully", {
-                  sessionDuration: validatedSessionDuration,
-                });
-
-                // Record this sync to prevent duplicates
-                recordSuccessfulSessionSync(
-                  sessionId,
-                  validatedSessionDuration
-                );
-
-                // Mark session as processed
-                markSessionAsProcessed(
-                  sessionStartTime,
-                  validatedSessionDuration
-                );
-              } catch {
-                // Silently ignore any errors
-              }
-            }, 0);
+              }, 100);
+            }
           })
           .catch((error) => {
+            clearTimeout(timeoutId);
             // Defer error handling to next event loop cycle
             setTimeout(() => {
               try {
-                logActivityEvent("Session-end API call error (non-blocking)", {
-                  error: (error as Error).message,
-                  sessionDuration: validatedSessionDuration,
-                });
+                // Only log if it's not an abort error
+                if ((error as Error).name !== "AbortError") {
+                  logActivityEvent(
+                    "Session-end API call error (non-blocking)",
+                    {
+                      error: (error as Error).message,
+                      sessionDuration: validatedSessionDuration,
+                    }
+                  );
+                }
 
                 // Store as pending data if immediate send fails
                 const pendingData = {
@@ -753,9 +775,9 @@ export const sendSessionEndData = (
               } catch {
                 // Silently ignore all errors
               }
-            }, 0);
+            }, 100);
           });
-      }, 0);
+      }, 100);
     } catch {
       // Silently ignore any errors in the entire function
     }

@@ -1,5 +1,5 @@
 import { SidebarLinkInfo } from "./typings";
-import { MdOutlineDashboard, MdOutlineEmail, MdPayment } from "react-icons/md";
+import { MdOutlineDashboard, MdOutlineEmail, MdPayment, MdVerified } from "react-icons/md";
 import { PiStudent } from "react-icons/pi";
 import { VscBook } from "react-icons/vsc";
 import { LiaChalkboardTeacherSolid } from "react-icons/lia";
@@ -164,6 +164,19 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
         title: "Attendance",
         href: "/admin/attendance",
         icon: <JobsIconController />,
+      },
+    ],
+  },
+  {
+    id: 11,
+    title: "Content Verification",
+    slug: "admin_verify_content",
+    links: [
+      {
+        id: 1,
+        title: "AI Judge",
+        href: "/admin/verify-content",
+        icon: <MdVerified />,
       },
     ],
   },
