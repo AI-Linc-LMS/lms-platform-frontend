@@ -751,7 +751,7 @@ export const UserActivityProvider = ({
       logActivityEvent("User left tab - ending session");
 
       // Fire-and-forget — don't await
-      endSession("visibility_change");
+      // endSession("visibility_change");
       backupCurrentState();
     }
   };
@@ -810,7 +810,7 @@ export const UserActivityProvider = ({
   const handlePowerChange = () => {
     logActivityEvent("Power status changed");
     // End current session and send data immediately
-    endSession();
+    // endSession();
     // Also backup when power status changes
     backupCurrentState();
   };
@@ -857,7 +857,7 @@ export const UserActivityProvider = ({
 
     // Only end session if it hasn't been ended recently
     if (activityState.isActive) {
-      endSession();
+      // endSession();
     }
     backupCurrentState();
   };
@@ -903,9 +903,9 @@ export const UserActivityProvider = ({
     }
 
     // Only end session if it hasn't been ended recently
-    if (activityState.isActive) {
-      endSession();
-    }
+    // if (activityState.isActive) {
+    //   endSession();
+    // }
     backupCurrentState();
   };
 

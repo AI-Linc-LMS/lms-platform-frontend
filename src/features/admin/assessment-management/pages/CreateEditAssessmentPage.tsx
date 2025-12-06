@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Box,
@@ -94,6 +94,7 @@ function TabPanel(props: TabPanelProps) {
 const CreateEditAssessmentPage = () => {
   const navigate = useNavigate();
   const { assessmentId } = useParams<{ assessmentId: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const isEditMode = !!assessmentId;
@@ -130,6 +131,7 @@ const CreateEditAssessmentPage = () => {
 
   // Track if form has been initialized to prevent resets
   const formInitializedRef = useRef(false);
+  const lastAiMCQsCountRef = useRef(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [selectedMCQIds, setSelectedMCQIds] = useState<Set<number>>(() => {
     if (isEditMode) return new Set();
@@ -144,7 +146,31 @@ const CreateEditAssessmentPage = () => {
     }
     return new Set();
   });
-  const [tabValue, setTabValue] = useState(0);
+  // Initialize tab value from URL or localStorage
+  const [tabValue, setTabValue] = useState(() => {
+    const urlTab = searchParams.get("tab");
+    if (urlTab) {
+      const tabNum = parseInt(urlTab, 10);
+      if (!isNaN(tabNum) && tabNum >= 0 && tabNum <= 2) {
+        return tabNum;
+      }
+    }
+    // Fallback to localStorage if no URL param
+    if (!isEditMode) {
+      try {
+        const stored = localStorage.getItem(`${storageKey}-tab`);
+        if (stored) {
+          const tabNum = parseInt(stored, 10);
+          if (!isNaN(tabNum) && tabNum >= 0 && tabNum <= 2) {
+            return tabNum;
+          }
+        }
+      } catch {
+        // Ignore
+      }
+    }
+    return 0;
+  });
   const [showModeChangeConfirm, setShowModeChangeConfirm] = useState(false);
   const [pendingMode, setPendingMode] = useState<
     "create" | "select" | "bulk" | "ai" | null
@@ -173,11 +199,16 @@ const CreateEditAssessmentPage = () => {
     try {
       const stored = localStorage.getItem(`${storageKey}-aiMCQs`);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        if (parsed && Array.isArray(parsed)) {
+          lastAiMCQsCountRef.current = parsed.length;
+          return parsed;
+        }
       }
     } catch {
       // Ignore parse errors
     }
+    lastAiMCQsCountRef.current = 0;
     return [];
   });
   const [aiPage, setAiPage] = useState(0);
@@ -210,26 +241,32 @@ const CreateEditAssessmentPage = () => {
   useEffect(() => {
     if (existingAssessment && !hasInitializedRef.current) {
       hasInitializedRef.current = true;
-      setFormData({
-        title: existingAssessment.title,
-        instructions: existingAssessment.instructions,
-        description: existingAssessment.description || "",
-        duration_minutes: existingAssessment.duration_minutes,
-        is_paid: existingAssessment.is_paid,
-        price: existingAssessment.price || "",
-        currency: existingAssessment.currency || "INR",
-        is_active: existingAssessment.is_active,
-        quiz_section: {
-          title: existingAssessment.quiz_sections?.[0]?.title || "Quiz Section",
-          description: existingAssessment.quiz_sections?.[0]?.description || "",
-          order: existingAssessment.quiz_sections?.[0]?.order || 1,
-        },
-        mode: "create",
-        mcqs: [],
-        mcq_ids: [],
-      });
+      // Only set form data if we're in edit mode and don't have localStorage data
+      // This prevents overwriting user's work if they accidentally navigate
+      if (isEditMode) {
+        setFormData({
+          title: existingAssessment.title,
+          instructions: existingAssessment.instructions,
+          description: existingAssessment.description || "",
+          duration_minutes: existingAssessment.duration_minutes,
+          is_paid: existingAssessment.is_paid,
+          price: existingAssessment.price || "",
+          currency: existingAssessment.currency || "INR",
+          is_active: existingAssessment.is_active,
+          quiz_section: {
+            title:
+              existingAssessment.quiz_sections?.[0]?.title || "Quiz Section",
+            description:
+              existingAssessment.quiz_sections?.[0]?.description || "",
+            order: existingAssessment.quiz_sections?.[0]?.order || 1,
+          },
+          mode: "create",
+          mcqs: [],
+          mcq_ids: [],
+        });
+      }
     }
-  }, [existingAssessment]);
+  }, [existingAssessment, isEditMode]);
 
   // Create/Update mutation (declared early so it can be used in useEffect)
   const saveMutation = useMutation({
@@ -252,32 +289,201 @@ const CreateEditAssessmentPage = () => {
     },
   });
 
-  // Mark form as initialized after first render and restore from localStorage if needed
+  // Mark form as initialized after first render
   useEffect(() => {
     formInitializedRef.current = true;
+  }, []);
 
-    // On mount, check if we need to restore from localStorage
-    // This handles cases where component remounts or state gets reset
+  // Update URL when tab changes
+  useEffect(() => {
+    const currentTab = searchParams.get("tab");
+    const tabStr = tabValue.toString();
+    if (currentTab !== tabStr) {
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.set("tab", tabStr);
+      setSearchParams(newSearchParams, { replace: true });
+    }
+    // Also save to localStorage
     if (!isEditMode) {
-      // Check if current form is empty/default and localStorage has data
-      const isFormEmpty =
-        (!formData.title ||
-          formData.title === initialAssessmentFormData.title) &&
-        (!formData.instructions ||
-          formData.instructions === initialAssessmentFormData.instructions) &&
-        formData.mcqs.length === 0 &&
-        selectedMCQIds.size === 0 &&
-        bulkMCQs.length === 0 &&
-        aiMCQs.length === 0;
+      try {
+        localStorage.setItem(`${storageKey}-tab`, tabStr);
+      } catch {
+        // Ignore
+      }
+    }
+  }, [tabValue, searchParams, setSearchParams, isEditMode, storageKey]);
 
-      if (isFormEmpty) {
-        const stored = loadFormFromStorage();
-        if (
-          stored &&
-          (stored.title || stored.instructions || stored.mcqs?.length > 0)
-        ) {
-          setFormData(stored);
+  // Persist form data to localStorage (debounced) - saves on every change
+  useEffect(() => {
+    if (!isEditMode && formInitializedRef.current) {
+      // Save immediately first (no debounce for critical data)
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(formData));
+        localStorage.setItem(
+          `${storageKey}-selectedMCQIds`,
+          JSON.stringify(Array.from(selectedMCQIds))
+        );
+        localStorage.setItem(
+          `${storageKey}-bulkMCQs`,
+          JSON.stringify(bulkMCQs)
+        );
+        localStorage.setItem(`${storageKey}-aiMCQs`, JSON.stringify(aiMCQs));
+      } catch {
+        // Ignore storage errors
+      }
+    }
+  }, [formData, selectedMCQIds, bulkMCQs, aiMCQs, isEditMode, storageKey]);
+
+  // Save immediately when tab becomes hidden (before browser discards state)
+  useEffect(() => {
+    if (isEditMode) return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden" && formInitializedRef.current) {
+        // Tab is being hidden - save immediately to localStorage
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(formData));
+          localStorage.setItem(
+            `${storageKey}-selectedMCQIds`,
+            JSON.stringify(Array.from(selectedMCQIds))
+          );
+          localStorage.setItem(
+            `${storageKey}-bulkMCQs`,
+            JSON.stringify(bulkMCQs)
+          );
+          localStorage.setItem(`${storageKey}-aiMCQs`, JSON.stringify(aiMCQs));
+          localStorage.setItem(`${storageKey}-tab`, tabValue.toString());
+        } catch {
+          // Ignore storage errors
         }
+      } else if (document.visibilityState === "visible") {
+        // Tab became visible - check and restore aiMCQs if needed
+        setTimeout(() => {
+          if (formInitializedRef.current && !isEditMode) {
+            try {
+              const storedAI = localStorage.getItem(`${storageKey}-aiMCQs`);
+              if (storedAI) {
+                const parsed = JSON.parse(storedAI);
+                if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+                  // Always restore if localStorage has data and state is empty or different
+                  if (
+                    aiMCQs.length === 0 ||
+                    parsed.length !== aiMCQs.length ||
+                    parsed.length > lastAiMCQsCountRef.current
+                  ) {
+                    setAiMCQs(parsed);
+                    lastAiMCQsCountRef.current = parsed.length;
+                  }
+                }
+              }
+            } catch (error) {
+              console.error(
+                "Error restoring aiMCQs on visibility change:",
+                error
+              );
+            }
+          }
+        }, 100); // Small delay to ensure state has settled
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [
+    formData,
+    selectedMCQIds,
+    bulkMCQs,
+    aiMCQs,
+    tabValue,
+    isEditMode,
+    storageKey,
+  ]);
+
+  // Backup: Save before page unload
+  useEffect(() => {
+    if (isEditMode) return;
+
+    const handleBeforeUnload = () => {
+      if (formInitializedRef.current) {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(formData));
+          localStorage.setItem(
+            `${storageKey}-selectedMCQIds`,
+            JSON.stringify(Array.from(selectedMCQIds))
+          );
+          localStorage.setItem(
+            `${storageKey}-bulkMCQs`,
+            JSON.stringify(bulkMCQs)
+          );
+          localStorage.setItem(`${storageKey}-aiMCQs`, JSON.stringify(aiMCQs));
+          localStorage.setItem(`${storageKey}-tab`, tabValue.toString());
+        } catch {
+          // Ignore storage errors
+        }
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [
+    formData,
+    selectedMCQIds,
+    bulkMCQs,
+    aiMCQs,
+    tabValue,
+    isEditMode,
+    storageKey,
+  ]);
+
+  // Restore form from localStorage if it gets reset (handles tab switches and remounts)
+  useEffect(() => {
+    if (isEditMode || !formInitializedRef.current) return;
+
+    // ALWAYS check localStorage for aiMCQs first - this is critical for data persistence
+    // This handles the case where AI MCQs were generated but state was lost on tab switch
+    try {
+      const storedAI = localStorage.getItem(`${storageKey}-aiMCQs`);
+      if (storedAI) {
+        const parsed = JSON.parse(storedAI);
+        if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+          // Simple rule: if localStorage has MCQs and state is empty OR has fewer items, restore
+          // This ensures we never lose data
+          if (aiMCQs.length === 0 || parsed.length > aiMCQs.length) {
+            setAiMCQs(parsed);
+            lastAiMCQsCountRef.current = parsed.length;
+          } else if (parsed.length > lastAiMCQsCountRef.current) {
+            // localStorage has more than we last tracked - restore it
+            setAiMCQs(parsed);
+            lastAiMCQsCountRef.current = parsed.length;
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error restoring aiMCQs from localStorage:", error);
+    }
+
+    // Check if form appears to be reset (empty/default) but localStorage has data
+    const isFormEmpty =
+      (!formData.title || formData.title === initialAssessmentFormData.title) &&
+      (!formData.instructions ||
+        formData.instructions === initialAssessmentFormData.instructions) &&
+      formData.mcqs.length === 0 &&
+      selectedMCQIds.size === 0 &&
+      bulkMCQs.length === 0;
+
+    if (isFormEmpty) {
+      const stored = loadFormFromStorage();
+      if (
+        stored &&
+        stored.title &&
+        stored.title !== initialAssessmentFormData.title
+      ) {
+        // Form was reset, restore from localStorage immediately
+        setFormData(stored);
 
         // Restore other state
         try {
@@ -305,127 +511,9 @@ const CreateEditAssessmentPage = () => {
         } catch {
           // Ignore
         }
-
-        try {
-          const storedAI = localStorage.getItem(`${storageKey}-aiMCQs`);
-          if (storedAI) {
-            const parsed = JSON.parse(storedAI);
-            if (parsed.length > 0) {
-              setAiMCQs(parsed);
-            }
-          }
-        } catch {
-          // Ignore
-        }
       }
     }
-  }, []); // Only run once on mount
-
-  // Persist form data to localStorage (debounced)
-  useEffect(() => {
-    // Only persist if form has been initialized and not in edit mode
-    if (!isEditMode && formInitializedRef.current) {
-      const timeoutId = setTimeout(() => {
-        try {
-          localStorage.setItem(storageKey, JSON.stringify(formData));
-          localStorage.setItem(
-            `${storageKey}-selectedMCQIds`,
-            JSON.stringify(Array.from(selectedMCQIds))
-          );
-          localStorage.setItem(
-            `${storageKey}-bulkMCQs`,
-            JSON.stringify(bulkMCQs)
-          );
-          localStorage.setItem(`${storageKey}-aiMCQs`, JSON.stringify(aiMCQs));
-        } catch {
-          // Ignore storage errors
-        }
-      }, 500); // Debounce by 500ms
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [formData, selectedMCQIds, bulkMCQs, aiMCQs, isEditMode, storageKey]);
-
-  // Prevent form reset on tab visibility changes
-  // This ensures form data persists even when browser tab is switched
-  useEffect(() => {
-    if (isEditMode) return;
-
-    const handleVisibilityChange = () => {
-      // When tab becomes visible, check if form was reset and restore if needed
-      if (
-        document.visibilityState === "visible" &&
-        formInitializedRef.current
-      ) {
-        // Use a small delay to check after any potential resets
-        setTimeout(() => {
-          // Check if form was reset to defaults
-          const appearsReset =
-            formData.title === initialAssessmentFormData.title &&
-            formData.instructions === initialAssessmentFormData.instructions &&
-            formData.mcqs.length === 0 &&
-            selectedMCQIds.size === 0 &&
-            bulkMCQs.length === 0 &&
-            aiMCQs.length === 0;
-
-          // If reset, try to restore from localStorage
-          if (appearsReset) {
-            const stored = loadFormFromStorage();
-            if (
-              stored &&
-              (stored.title || stored.instructions || stored.mcqs?.length > 0)
-            ) {
-              setFormData(stored);
-            }
-
-            // Restore other state from localStorage
-            try {
-              const storedSelected = localStorage.getItem(
-                `${storageKey}-selectedMCQIds`
-              );
-              if (storedSelected) {
-                const ids = JSON.parse(storedSelected);
-                if (ids.length > 0) {
-                  setSelectedMCQIds(new Set(ids));
-                }
-              }
-            } catch {
-              // Ignore
-            }
-
-            try {
-              const storedBulk = localStorage.getItem(`${storageKey}-bulkMCQs`);
-              if (storedBulk) {
-                const parsed = JSON.parse(storedBulk);
-                if (parsed.length > 0) {
-                  setBulkMCQs(parsed);
-                }
-              }
-            } catch {
-              // Ignore
-            }
-
-            try {
-              const storedAI = localStorage.getItem(`${storageKey}-aiMCQs`);
-              if (storedAI) {
-                const parsed = JSON.parse(storedAI);
-                if (parsed.length > 0) {
-                  setAiMCQs(parsed);
-                }
-              }
-            } catch {
-              // Ignore
-            }
-          }
-        }, 100);
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [formData, selectedMCQIds, bulkMCQs, aiMCQs, isEditMode, storageKey]);
+  }, [formData, selectedMCQIds, bulkMCQs, aiMCQs, isEditMode, storageKey]); // Watch for changes
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -437,23 +525,45 @@ const CreateEditAssessmentPage = () => {
 
     if (name.startsWith("quiz_section.")) {
       const fieldName = name.split(".")[1];
-      setFormData((prev) => ({
-        ...prev,
-        quiz_section: {
-          ...prev.quiz_section,
-          [fieldName]: fieldName === "order" ? Number(value) : value,
-        },
-      }));
+      setFormData((prev) => {
+        const updated = {
+          ...prev,
+          quiz_section: {
+            ...prev.quiz_section,
+            [fieldName]: fieldName === "order" ? Number(value) : value,
+          },
+        };
+        // Save immediately on change (no debounce for critical updates)
+        if (!isEditMode && formInitializedRef.current) {
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(updated));
+          } catch {
+            // Ignore
+          }
+        }
+        return updated;
+      });
     } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]:
-          type === "checkbox"
-            ? checked
-            : type === "number"
-            ? Number(value)
-            : value,
-      }));
+      setFormData((prev) => {
+        const updated = {
+          ...prev,
+          [name]:
+            type === "checkbox"
+              ? checked
+              : type === "number"
+              ? Number(value)
+              : value,
+        };
+        // Save immediately on change (no debounce for critical updates)
+        if (!isEditMode && formInitializedRef.current) {
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(updated));
+          } catch {
+            // Ignore
+          }
+        }
+        return updated;
+      });
     }
 
     if (errors[name]) {
@@ -611,8 +721,36 @@ const CreateEditAssessmentPage = () => {
         skills: mcq.skills || "",
       }));
 
-      // Add to existing AI MCQs
-      setAiMCQs((prev) => [...prev, ...generatedMCQs]);
+      // Calculate new array BEFORE state update
+      const updatedAiMCQs = [...aiMCQs, ...generatedMCQs];
+
+      // Save to localStorage SYNCHRONOUSLY before any state updates or tab switches
+      if (!isEditMode) {
+        try {
+          localStorage.setItem(
+            `${storageKey}-aiMCQs`,
+            JSON.stringify(updatedAiMCQs)
+          );
+          // Also save the full form data
+          localStorage.setItem(storageKey, JSON.stringify(formData));
+          localStorage.setItem(
+            `${storageKey}-selectedMCQIds`,
+            JSON.stringify(Array.from(selectedMCQIds))
+          );
+          localStorage.setItem(
+            `${storageKey}-bulkMCQs`,
+            JSON.stringify(bulkMCQs)
+          );
+          // Update ref to track the count
+          lastAiMCQsCountRef.current = updatedAiMCQs.length;
+        } catch (error) {
+          console.error("Failed to save AI MCQs to localStorage:", error);
+        }
+      }
+
+      // Now update state
+      setAiMCQs(updatedAiMCQs);
+      lastAiMCQsCountRef.current = updatedAiMCQs.length;
       setAiGenerationSuccess(true);
       setAiPage(0);
 
@@ -659,6 +797,24 @@ const CreateEditAssessmentPage = () => {
   };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    // Save current form state before changing tabs
+    if (!isEditMode && formInitializedRef.current) {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(formData));
+        localStorage.setItem(
+          `${storageKey}-selectedMCQIds`,
+          JSON.stringify(Array.from(selectedMCQIds))
+        );
+        localStorage.setItem(
+          `${storageKey}-bulkMCQs`,
+          JSON.stringify(bulkMCQs)
+        );
+        localStorage.setItem(`${storageKey}-aiMCQs`, JSON.stringify(aiMCQs));
+        localStorage.setItem(`${storageKey}-tab`, newValue.toString());
+      } catch {
+        // Ignore
+      }
+    }
     setTabValue(newValue);
   };
 
@@ -1949,6 +2105,20 @@ const CreateEditAssessmentPage = () => {
                                               );
                                               if (aiPage > maxPage) {
                                                 setAiPage(maxPage);
+                                              }
+                                              // Save immediately to localStorage
+                                              if (
+                                                !isEditMode &&
+                                                formInitializedRef.current
+                                              ) {
+                                                try {
+                                                  localStorage.setItem(
+                                                    `${storageKey}-aiMCQs`,
+                                                    JSON.stringify(newMCQs)
+                                                  );
+                                                } catch {
+                                                  // Ignore storage errors
+                                                }
                                               }
                                               return newMCQs;
                                             });
