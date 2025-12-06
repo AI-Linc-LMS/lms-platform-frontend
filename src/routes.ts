@@ -110,6 +110,15 @@ const CreateEditAssessmentPage = lazy(
 const MCQListPage = lazy(
   () => import("./features/admin/assessment-management/pages/MCQListPage")
 );
+const ContentVerificationPage = lazy(
+  () =>
+    import(
+      "./features/admin/content-verification/pages/ContentVerificationPage"
+    )
+);
+const ContentDetailPage = lazy(
+  () => import("./features/admin/content-verification/pages/ContentDetailPage")
+);
 
 export interface RouteConfig {
   path: string;
@@ -377,6 +386,18 @@ const routes: RouteConfig[] = [
   {
     path: "/admin/mcqs",
     component: MCQListPage,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/verify-content",
+    component: ContentVerificationPage,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/verify-content/:contentId",
+    component: ContentDetailPage,
     isPrivate: true,
     requiredRole: "admin_or_instructor",
   },

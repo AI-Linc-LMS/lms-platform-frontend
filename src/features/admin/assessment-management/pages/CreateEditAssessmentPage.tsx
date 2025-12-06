@@ -98,17 +98,69 @@ const CreateEditAssessmentPage = () => {
   const clientId = import.meta.env.VITE_CLIENT_ID;
   const isEditMode = !!assessmentId;
 
-  const [formData, setFormData] = useState<AssessmentFormData>(
-    initialAssessmentFormData
-  );
+  // Storage key for form persistence
+  const storageKey = `assessment-form-${assessmentId || "new"}`;
+  const hasInitializedRef = useRef(false);
+
+  // Load from localStorage on mount (only for new assessments, not edit mode)
+  const loadFormFromStorage = (): AssessmentFormData | null => {
+    if (isEditMode) return null; // Don't load from storage in edit mode
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Only return if it has meaningful data (not just default values)
+        if (
+          parsed &&
+          (parsed.title || parsed.instructions || parsed.mcqs?.length > 0)
+        ) {
+          return parsed;
+        }
+      }
+    } catch {
+      // Ignore parse errors
+    }
+    return null;
+  };
+
+  const [formData, setFormData] = useState<AssessmentFormData>(() => {
+    const stored = loadFormFromStorage();
+    return stored || initialAssessmentFormData;
+  });
+
+  // Track if form has been initialized to prevent resets
+  const formInitializedRef = useRef(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [selectedMCQIds, setSelectedMCQIds] = useState<Set<number>>(new Set());
+  const [selectedMCQIds, setSelectedMCQIds] = useState<Set<number>>(() => {
+    if (isEditMode) return new Set();
+    try {
+      const stored = localStorage.getItem(`${storageKey}-selectedMCQIds`);
+      if (stored) {
+        const ids = JSON.parse(stored);
+        return new Set(ids);
+      }
+    } catch {
+      // Ignore parse errors
+    }
+    return new Set();
+  });
   const [tabValue, setTabValue] = useState(0);
   const [showModeChangeConfirm, setShowModeChangeConfirm] = useState(false);
   const [pendingMode, setPendingMode] = useState<
     "create" | "select" | "bulk" | "ai" | null
   >(null);
-  const [bulkMCQs, setBulkMCQs] = useState<MCQData[]>([]);
+  const [bulkMCQs, setBulkMCQs] = useState<MCQData[]>(() => {
+    if (isEditMode) return [];
+    try {
+      const stored = localStorage.getItem(`${storageKey}-bulkMCQs`);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch {
+      // Ignore parse errors
+    }
+    return [];
+  });
   const [csvErrors, setCsvErrors] = useState<string[]>([]);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -116,7 +168,18 @@ const CreateEditAssessmentPage = () => {
   const [bulkRowsPerPage, setBulkRowsPerPage] = useState(10);
 
   // AI Generation state
-  const [aiMCQs, setAiMCQs] = useState<MCQData[]>([]);
+  const [aiMCQs, setAiMCQs] = useState<MCQData[]>(() => {
+    if (isEditMode) return [];
+    try {
+      const stored = localStorage.getItem(`${storageKey}-aiMCQs`);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch {
+      // Ignore parse errors
+    }
+    return [];
+  });
   const [aiPage, setAiPage] = useState(0);
   const [aiRowsPerPage, setAiRowsPerPage] = useState(10);
   const [aiTopic, setAiTopic] = useState("");
@@ -143,9 +206,10 @@ const CreateEditAssessmentPage = () => {
     queryFn: () => getMCQs(clientId),
   });
 
-  // Populate form if editing
+  // Populate form if editing (only once when assessment loads)
   useEffect(() => {
-    if (existingAssessment) {
+    if (existingAssessment && !hasInitializedRef.current) {
+      hasInitializedRef.current = true;
       setFormData({
         title: existingAssessment.title,
         instructions: existingAssessment.instructions,
@@ -167,7 +231,7 @@ const CreateEditAssessmentPage = () => {
     }
   }, [existingAssessment]);
 
-  // Create/Update mutation
+  // Create/Update mutation (declared early so it can be used in useEffect)
   const saveMutation = useMutation({
     mutationFn: (payload: CreateAssessmentPayload) => {
       if (isEditMode) {
@@ -176,10 +240,192 @@ const CreateEditAssessmentPage = () => {
       return createAssessment(clientId, payload);
     },
     onSuccess: () => {
+      // Clear localStorage on successful save (for new assessments only)
+      if (!isEditMode) {
+        localStorage.removeItem(storageKey);
+        localStorage.removeItem(`${storageKey}-selectedMCQIds`);
+        localStorage.removeItem(`${storageKey}-bulkMCQs`);
+        localStorage.removeItem(`${storageKey}-aiMCQs`);
+      }
       queryClient.invalidateQueries({ queryKey: ["assessments", clientId] });
       navigate("/admin/assessments");
     },
   });
+
+  // Mark form as initialized after first render and restore from localStorage if needed
+  useEffect(() => {
+    formInitializedRef.current = true;
+
+    // On mount, check if we need to restore from localStorage
+    // This handles cases where component remounts or state gets reset
+    if (!isEditMode) {
+      // Check if current form is empty/default and localStorage has data
+      const isFormEmpty =
+        (!formData.title ||
+          formData.title === initialAssessmentFormData.title) &&
+        (!formData.instructions ||
+          formData.instructions === initialAssessmentFormData.instructions) &&
+        formData.mcqs.length === 0 &&
+        selectedMCQIds.size === 0 &&
+        bulkMCQs.length === 0 &&
+        aiMCQs.length === 0;
+
+      if (isFormEmpty) {
+        const stored = loadFormFromStorage();
+        if (
+          stored &&
+          (stored.title || stored.instructions || stored.mcqs?.length > 0)
+        ) {
+          setFormData(stored);
+        }
+
+        // Restore other state
+        try {
+          const storedSelected = localStorage.getItem(
+            `${storageKey}-selectedMCQIds`
+          );
+          if (storedSelected) {
+            const ids = JSON.parse(storedSelected);
+            if (ids.length > 0) {
+              setSelectedMCQIds(new Set(ids));
+            }
+          }
+        } catch {
+          // Ignore
+        }
+
+        try {
+          const storedBulk = localStorage.getItem(`${storageKey}-bulkMCQs`);
+          if (storedBulk) {
+            const parsed = JSON.parse(storedBulk);
+            if (parsed.length > 0) {
+              setBulkMCQs(parsed);
+            }
+          }
+        } catch {
+          // Ignore
+        }
+
+        try {
+          const storedAI = localStorage.getItem(`${storageKey}-aiMCQs`);
+          if (storedAI) {
+            const parsed = JSON.parse(storedAI);
+            if (parsed.length > 0) {
+              setAiMCQs(parsed);
+            }
+          }
+        } catch {
+          // Ignore
+        }
+      }
+    }
+  }, []); // Only run once on mount
+
+  // Persist form data to localStorage (debounced)
+  useEffect(() => {
+    // Only persist if form has been initialized and not in edit mode
+    if (!isEditMode && formInitializedRef.current) {
+      const timeoutId = setTimeout(() => {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(formData));
+          localStorage.setItem(
+            `${storageKey}-selectedMCQIds`,
+            JSON.stringify(Array.from(selectedMCQIds))
+          );
+          localStorage.setItem(
+            `${storageKey}-bulkMCQs`,
+            JSON.stringify(bulkMCQs)
+          );
+          localStorage.setItem(`${storageKey}-aiMCQs`, JSON.stringify(aiMCQs));
+        } catch {
+          // Ignore storage errors
+        }
+      }, 500); // Debounce by 500ms
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [formData, selectedMCQIds, bulkMCQs, aiMCQs, isEditMode, storageKey]);
+
+  // Prevent form reset on tab visibility changes
+  // This ensures form data persists even when browser tab is switched
+  useEffect(() => {
+    if (isEditMode) return;
+
+    const handleVisibilityChange = () => {
+      // When tab becomes visible, check if form was reset and restore if needed
+      if (
+        document.visibilityState === "visible" &&
+        formInitializedRef.current
+      ) {
+        // Use a small delay to check after any potential resets
+        setTimeout(() => {
+          // Check if form was reset to defaults
+          const appearsReset =
+            formData.title === initialAssessmentFormData.title &&
+            formData.instructions === initialAssessmentFormData.instructions &&
+            formData.mcqs.length === 0 &&
+            selectedMCQIds.size === 0 &&
+            bulkMCQs.length === 0 &&
+            aiMCQs.length === 0;
+
+          // If reset, try to restore from localStorage
+          if (appearsReset) {
+            const stored = loadFormFromStorage();
+            if (
+              stored &&
+              (stored.title || stored.instructions || stored.mcqs?.length > 0)
+            ) {
+              setFormData(stored);
+            }
+
+            // Restore other state from localStorage
+            try {
+              const storedSelected = localStorage.getItem(
+                `${storageKey}-selectedMCQIds`
+              );
+              if (storedSelected) {
+                const ids = JSON.parse(storedSelected);
+                if (ids.length > 0) {
+                  setSelectedMCQIds(new Set(ids));
+                }
+              }
+            } catch {
+              // Ignore
+            }
+
+            try {
+              const storedBulk = localStorage.getItem(`${storageKey}-bulkMCQs`);
+              if (storedBulk) {
+                const parsed = JSON.parse(storedBulk);
+                if (parsed.length > 0) {
+                  setBulkMCQs(parsed);
+                }
+              }
+            } catch {
+              // Ignore
+            }
+
+            try {
+              const storedAI = localStorage.getItem(`${storageKey}-aiMCQs`);
+              if (storedAI) {
+                const parsed = JSON.parse(storedAI);
+                if (parsed.length > 0) {
+                  setAiMCQs(parsed);
+                }
+              }
+            } catch {
+              // Ignore
+            }
+          }
+        }, 100);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [formData, selectedMCQIds, bulkMCQs, aiMCQs, isEditMode, storageKey]);
 
   const handleInputChange = (
     e: React.ChangeEvent<
