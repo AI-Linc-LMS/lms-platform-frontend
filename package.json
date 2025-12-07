@@ -54,6 +54,7 @@
     "lucide-react": "^0.534.0",
     "motion": "^12.23.24",
     "package": "^1.0.1",
+    "pptxgenjs": "^4.0.1",
     "prismjs": "^1.30.0",
     "react": "^19.0.0",
     "react-chartjs-2": "^5.3.0",
