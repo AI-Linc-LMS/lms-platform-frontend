@@ -81,14 +81,26 @@ const EbookProcessingPage = () => {
   };
 
   const processFile = async (file: File) => {
+    // Validate file first
     const validationError = validateFile(file);
     if (validationError) {
       setErrorMessage(validationError);
+      setTimeout(() => setErrorMessage(""), 5000);
       return;
     }
 
+    // Check if file is actually selected
+    if (!file || file.size === 0) {
+      setErrorMessage("Please select a valid file");
+      setTimeout(() => setErrorMessage(""), 5000);
+      return;
+    }
+
+    // Generate unique ID and capture it
+    const ebookId = `ebook-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
     const newEbook: Ebook = {
-      id: `ebook-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: ebookId,
       name: file.name.replace(/\.[^/.]+$/, ""),
       fileName: file.name,
       fileSize: file.size,
@@ -101,14 +113,32 @@ const EbookProcessingPage = () => {
       },
     };
 
-    // Add to list immediately
-    setEbooks((prev) => [...prev, newEbook]);
-    setProcessingBookId(newEbook.id);
+    // Clear any previous errors
+    setErrorMessage("");
+    
+    // Add to list immediately using functional update to ensure we get the latest state
+    setEbooks((prev) => {
+      // Check if this file was already uploaded (by name)
+      const existing = prev.find((ebook) => ebook.fileName === file.name);
+      if (existing) {
+        setErrorMessage("This file has already been uploaded");
+        setTimeout(() => setErrorMessage(""), 3000);
+        return prev;
+      }
+      return [...prev, newEbook];
+    });
+    
+    setProcessingBookId(ebookId);
     setIsProcessing(true);
 
     try {
       // Extract content from the book
       const extractedContent = await extractBookContent(file);
+      
+      // Validate that content was extracted
+      if (!extractedContent || !extractedContent.text || extractedContent.text.trim().length === 0) {
+        throw new Error("No content could be extracted from the file");
+      }
 
       // Simulate processing time (2-3 seconds)
       await new Promise((resolve) =>
@@ -116,9 +146,10 @@ const EbookProcessingPage = () => {
       );
 
       // Update ebook with extracted content and mark as ready
+      // Use the captured ebookId to ensure we update the correct item
       setEbooks((prev) =>
         prev.map((ebook) =>
-          ebook.id === newEbook.id
+          ebook.id === ebookId
             ? {
                 ...ebook,
                 status: "ready",
@@ -136,13 +167,14 @@ const EbookProcessingPage = () => {
       setSuccessMessage(`Successfully processed "${file.name}"`);
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
+      console.error("Error processing file:", error);
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
       setErrorMessage(
-        `Failed to process "${file.name}": ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
+        `Failed to process "${file.name}": ${errorMsg}`
       );
-      // Remove the ebook if processing failed
-      setEbooks((prev) => prev.filter((ebook) => ebook.id !== newEbook.id));
+      setTimeout(() => setErrorMessage(""), 5000);
+      // Remove the ebook if processing failed - use captured ID
+      setEbooks((prev) => prev.filter((ebook) => ebook.id !== ebookId));
     } finally {
       setIsProcessing(false);
       setProcessingBookId(null);
@@ -152,12 +184,21 @@ const EbookProcessingPage = () => {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Process the file immediately
       processFile(file);
+    } else {
+      setErrorMessage("No file selected");
+      setTimeout(() => setErrorMessage(""), 3000);
     }
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    // Reset input after processing starts to allow same file to be selected again
+    // Use requestAnimationFrame to ensure the file is captured first
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      }, 200);
+    });
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -172,11 +213,15 @@ const EbookProcessingPage = () => {
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(false);
 
     const file = e.dataTransfer.files[0];
     if (file) {
       processFile(file);
+    } else {
+      setErrorMessage("No file dropped");
+      setTimeout(() => setErrorMessage(""), 3000);
     }
   };
 
