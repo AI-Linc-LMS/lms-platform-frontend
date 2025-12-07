@@ -119,6 +119,9 @@ const ContentVerificationPage = lazy(
 const ContentDetailPage = lazy(
   () => import("./features/admin/content-verification/pages/ContentDetailPage")
 );
+const EbookProcessingPage = lazy(
+  () => import("./features/admin/ebook-processing/pages/EbookProcessingPage")
+);
 
 export interface RouteConfig {
   path: string;
@@ -398,6 +401,12 @@ const routes: RouteConfig[] = [
   {
     path: "/admin/verify-content/:contentId",
     component: ContentDetailPage,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/ebook-processing",
+    component: EbookProcessingPage,
     isPrivate: true,
     requiredRole: "admin_or_instructor",
   },
