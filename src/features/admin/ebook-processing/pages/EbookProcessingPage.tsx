@@ -24,11 +24,14 @@ import {
   Description as DocxIcon,
   Slideshow as PptIcon,
 } from "@mui/icons-material";
+import { useSelector } from "react-redux";
+import { RootState } from "../../../../redux/store";
 import { Ebook } from "../types";
 import { extractBookContent } from "../utils/fileReader";
 import { downloadPPT, downloadDOCX, downloadPDF } from "../utils/mockDownload";
 
 const EbookProcessingPage = () => {
+  const clientInfo = useSelector((state: RootState) => state.clientInfo);
   const [ebooks, setEbooks] = useState<Ebook[]>(() => {
     // Load from localStorage on mount
     try {
@@ -97,8 +100,10 @@ const EbookProcessingPage = () => {
     }
 
     // Generate unique ID and capture it
-    const ebookId = `ebook-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+    const ebookId = `ebook-${Date.now()}-${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+
     const newEbook: Ebook = {
       id: ebookId,
       name: file.name.replace(/\.[^/.]+$/, ""),
@@ -115,7 +120,7 @@ const EbookProcessingPage = () => {
 
     // Clear any previous errors
     setErrorMessage("");
-    
+
     // Add to list immediately using functional update to ensure we get the latest state
     setEbooks((prev) => {
       // Check if this file was already uploaded (by name)
@@ -127,16 +132,20 @@ const EbookProcessingPage = () => {
       }
       return [...prev, newEbook];
     });
-    
+
     setProcessingBookId(ebookId);
     setIsProcessing(true);
 
     try {
       // Extract content from the book
       const extractedContent = await extractBookContent(file);
-      
+
       // Validate that content was extracted
-      if (!extractedContent || !extractedContent.text || extractedContent.text.trim().length === 0) {
+      if (
+        !extractedContent ||
+        !extractedContent.text ||
+        extractedContent.text.trim().length === 0
+      ) {
         throw new Error("No content could be extracted from the file");
       }
 
@@ -169,9 +178,7 @@ const EbookProcessingPage = () => {
     } catch (error) {
       console.error("Error processing file:", error);
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
-      setErrorMessage(
-        `Failed to process "${file.name}": ${errorMsg}`
-      );
+      setErrorMessage(`Failed to process "${file.name}": ${errorMsg}`);
       setTimeout(() => setErrorMessage(""), 5000);
       // Remove the ebook if processing failed - use captured ID
       setEbooks((prev) => prev.filter((ebook) => ebook.id !== ebookId));
@@ -240,7 +247,12 @@ const EbookProcessingPage = () => {
     try {
       switch (format) {
         case "ppt":
-          downloadPPT(ebook.name, ebook.extractedContent, ebook.fileName);
+          downloadPPT(
+            ebook.name,
+            ebook.extractedContent,
+            ebook.fileName,
+            clientInfo.data?.name
+          );
           break;
         case "docx":
           downloadDOCX(ebook.name, ebook.extractedContent, ebook.fileName);

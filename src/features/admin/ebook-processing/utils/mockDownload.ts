@@ -13,71 +13,178 @@ import PptxGenJS from "pptxgenjs";
 export const downloadPPT = (
   bookName: string,
   content: ExtractedContent,
-  originalFileName?: string
+  originalFileName?: string,
+  clientName?: string
 ): void => {
   try {
-    // Split content into slides
-    const slides =
-      content.chapters && content.chapters.length > 0
-        ? content.chapters.slice(0, 50) // Limit to 50 slides
-        : splitIntoSlides(content.text, 800);
-
     // Create a new presentation
     const pptx = new PptxGenJS();
 
     // Set presentation properties
-    pptx.author = "LMS Platform";
-    pptx.company = "AI Linc";
+    pptx.author = clientName || "LMS Platform";
+    pptx.company = clientName || "AI Linc";
     pptx.title = content.title || bookName;
     pptx.subject = "Ebook Content";
 
-    // Add slides
-    slides.forEach((slideContent, index) => {
-      const slide = pptx.addSlide();
+    // Get chapters or split text into chapters
+    const chapters =
+      content.chapters && content.chapters.length > 0
+        ? content.chapters.slice(0, 50) // Limit to 50 chapters
+        : splitIntoChapters(content.text);
 
-      // Add title
-      slide.addText(content.title || bookName, {
-        x: 0.5,
-        y: 0.5,
-        w: 9,
-        h: 0.8,
-        fontSize: 36,
-        bold: true,
-        color: "1a1a1a",
-        align: "left",
-      });
+    // Get images and map them by page/chapter index
+    const images = content.images || [];
+    const imagesByChapter = new Map<
+      number,
+      Array<{ data: string; format?: string }>
+    >();
 
-      // Add content - clean and format the text
-      const cleanText = slideContent
-        .trim()
-        .replace(/\n\s*\n/g, "\n") // Replace multiple newlines with single
-        .replace(/\n+/g, " ") // Replace single newlines with spaces
-        .substring(0, 2000); // Limit text length to prevent overflow
-
-      if (cleanText.length > 0) {
-        slide.addText(cleanText, {
-          x: 0.5,
-          y: 1.8,
-          w: 9,
-          h: 4.5,
-          fontSize: 20,
-          color: "333333",
-          align: "left",
-          valign: "top",
-          lineSpacing: 28,
-          wrap: true,
-        });
+    images.forEach((img) => {
+      const chapterIndex = img.pageIndex ?? 0;
+      if (!imagesByChapter.has(chapterIndex)) {
+        imagesByChapter.set(chapterIndex, []);
       }
+      imagesByChapter.get(chapterIndex)!.push({
+        data: img.data,
+        format: img.format,
+      });
+    });
 
-      // Add slide number at the bottom
-      slide.addText(`Slide ${index + 1} of ${slides.length}`, {
-        x: 8,
-        y: 6.8,
-        w: 1.5,
-        h: 0.3,
-        fontSize: 14,
-        color: "666666",
-        align: "right",
+    // Add title slide
+    const titleSlide = pptx.addSlide();
+    titleSlide.addText(content.title || bookName, {
+      x: 1,
+      y: 2.5,
+      w: 8,
+      h: 1.5,
+      fontSize: 44,
+      bold: true,
+      color: "1a1a1a",
+      align: "center",
+      valign: "middle",
+    });
+
+    // Add slides for each chapter
+    chapters.forEach((chapterContent, chapterIndex) => {
+      // Get images for this chapter
+      const chapterImages = imagesByChapter.get(chapterIndex) || [];
+
+      // Split chapter content into multiple slides if it's too long
+      const chapterSlides = splitIntoSlides(chapterContent, 800);
+
+      chapterSlides.forEach((slideContent, slideIndex) => {
+        const slide = pptx.addSlide();
+
+        // Add chapter title/header
+        const chapterTitle = `Chapter ${chapterIndex + 1}${
+          chapterSlides.length > 1 ? ` - Part ${slideIndex + 1}` : ""
+        }`;
+        slide.addText(chapterTitle, {
+          x: 0.5,
+          y: 0.3,
+          w: 9,
+          h: 0.6,
+          fontSize: 28,
+          bold: true,
+          color: "0078d4",
+          align: "left",
+        });
+
+        // Add images if available (only on first slide of chapter or distribute them)
+        if (chapterImages.length > 0 && slideIndex === 0) {
+          // Add first image(s) to the slide
+          const imagesToAdd = chapterImages.slice(0, 2); // Max 2 images per slide
+
+          if (imagesToAdd.length === 1) {
+            // Single image - center it
+            try {
+              slide.addImage({
+                data: imagesToAdd[0].data,
+                x: 1,
+                y: 1.2,
+                w: 8,
+                h: 4,
+              });
+            } catch (imgError) {
+              console.warn("Failed to add image to slide:", imgError);
+            }
+          } else if (imagesToAdd.length === 2) {
+            // Two images - side by side
+            try {
+              slide.addImage({
+                data: imagesToAdd[0].data,
+                x: 0.5,
+                y: 1.2,
+                w: 4.5,
+                h: 3,
+              });
+              slide.addImage({
+                data: imagesToAdd[1].data,
+                x: 5,
+                y: 1.2,
+                w: 4.5,
+                h: 3,
+              });
+            } catch (imgError) {
+              console.warn("Failed to add images to slide:", imgError);
+            }
+          }
+
+          // Add text below images
+          const cleanText = slideContent
+            .trim()
+            .replace(/\n\s*\n/g, "\n")
+            .replace(/\n+/g, " ")
+            .substring(0, 1000);
+
+          if (cleanText.length > 0) {
+            slide.addText(cleanText, {
+              x: 0.5,
+              y: 4.5,
+              w: 9,
+              h: 2,
+              fontSize: 18,
+              color: "333333",
+              align: "left",
+              valign: "top",
+              lineSpacing: 24,
+              wrap: true,
+            });
+          }
+        } else {
+          // No images or not first slide - add text content
+          const cleanText = slideContent
+            .trim()
+            .replace(/\n\s*\n/g, "\n")
+            .replace(/\n+/g, " ")
+            .substring(0, 2000);
+
+          if (cleanText.length > 0) {
+            slide.addText(cleanText, {
+              x: 0.5,
+              y: 1.2,
+              w: 9,
+              h: 5,
+              fontSize: 20,
+              color: "333333",
+              align: "left",
+              valign: "top",
+              lineSpacing: 28,
+              wrap: true,
+            });
+          }
+        }
+
+        // Add slide number at the bottom
+        slide.addText(`Chapter ${chapterIndex + 1} - Slide ${slideIndex + 1}`, {
+          x: 8,
+          y: 6.8,
+          w: 1.5,
+          h: 0.3,
+          fontSize: 12,
+          color: "666666",
+          align: "right",
+        });
       });
     });
 
@@ -311,6 +418,56 @@ export const downloadPDF = (
 };
 
 /**
+ * Helper function to split text into chapters
+ */
+const splitIntoChapters = (text: string): string[] => {
+  // Try to split by common chapter markers
+  const chapterPatterns = [
+    /(?:^|\n)\s*(?:Chapter|CHAPTER|Ch\.|CH\.)\s+\d+/i,
+    /(?:^|\n)\s*\d+\.\s+[A-Z]/,
+    /(?:^|\n)\s*#{1,3}\s+/,
+    /(?:^|\n)\s*[IVX]+\.\s+/,
+  ];
+
+  for (const pattern of chapterPatterns) {
+    const matches = text.split(pattern);
+    if (matches.length > 1) {
+      // Found chapter markers
+      const chapters: string[] = [];
+      const parts = text.split(pattern);
+
+      // First part might be intro, rest are chapters
+      if (parts[0]?.trim()) {
+        chapters.push(parts[0].trim());
+      }
+
+      // Reconstruct chapters with their markers
+      const markers = text.match(new RegExp(pattern.source, "gi")) || [];
+      for (let i = 1; i < parts.length; i++) {
+        const marker = markers[i - 1] || "";
+        const chapterText = (marker + parts[i]).trim();
+        if (chapterText) {
+          chapters.push(chapterText);
+        }
+      }
+
+      if (chapters.length > 1) {
+        return chapters;
+      }
+    }
+  }
+
+  // If no chapter markers found, split by double newlines or large paragraphs
+  const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim().length > 0);
+  if (paragraphs.length > 3) {
+    return paragraphs;
+  }
+
+  // Last resort: split by sentences into reasonable chunks
+  return splitIntoSlides(text, 2000);
+};
+
+/**
  * Helper function to split text into slides
  */
 const splitIntoSlides = (text: string, maxLength: number): string[] => {
@@ -396,43 +553,6 @@ const formatTextForDOCX = (text: string): string => {
     // Single paragraph or no clear paragraph breaks
     const lines = text.split(/\n/).filter((l) => l.trim().length > 0);
     return lines.map((line) => `<p>${escapeHTML(line.trim())}</p>`).join("\n");
-  }
-};
-
-/**
- * Formats slide content with proper spacing and line breaks
- */
-const formatSlideContent = (text: string): string => {
-  // Split by double newlines first for paragraphs
-  const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim().length > 0);
-
-  if (paragraphs.length > 1) {
-    // Multiple paragraphs
-    return paragraphs
-      .map((para) => {
-        const trimmed = para.trim();
-        // Replace single newlines with spaces within paragraphs
-        const formatted = trimmed.replace(/\n+/g, " ");
-        return `<p style="margin: 0 0 20px 0; line-height: 1.8;">${escapeHTML(
-          formatted
-        )}</p>`;
-      })
-      .join("\n");
-  } else {
-    // Single paragraph or lines - format with proper spacing
-    const lines = text.split(/\n/).filter((l) => l.trim().length > 0);
-    if (lines.length > 1) {
-      // Multiple lines - join with spaces for better readability
-      const formatted = lines.join(" ");
-      return `<p style="margin: 0; line-height: 1.8;">${escapeHTML(
-        formatted
-      )}</p>`;
-    } else {
-      // Single line
-      return `<p style="margin: 0; line-height: 1.8;">${escapeHTML(
-        text.trim()
-      )}</p>`;
-    }
   }
 };
 

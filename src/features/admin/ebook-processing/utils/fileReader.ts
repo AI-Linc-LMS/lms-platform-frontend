@@ -6,6 +6,11 @@ export interface ExtractedContent {
   text: string;
   title?: string;
   chapters?: string[];
+  images?: Array<{
+    data: string; // Base64 encoded image data
+    pageIndex?: number; // For PDFs, which page the image is from
+    format?: string; // Image format (png, jpeg, etc.)
+  }>;
 }
 
 /**
@@ -82,8 +87,13 @@ export const extractTextFromPDF = async (
 
     let fullText = "";
     const pages: string[] = [];
+    const images: Array<{
+      data: string;
+      pageIndex: number;
+      format: string;
+    }> = [];
 
-    // Extract text from each page
+    // Extract text and images from each page
     for (let pageNum = 1; pageNum <= numPages; pageNum++) {
       try {
         const page = await pdf.getPage(pageNum);
@@ -104,6 +114,59 @@ export const extractTextFromPDF = async (
         if (pageText.trim().length > 0) {
           fullText += pageText + "\n\n";
           pages.push(pageText);
+        }
+
+        // Extract images from the page
+        try {
+          const operatorList = await page.getOperatorList();
+          const ops = operatorList.fnArray;
+          const argsArray = operatorList.argsArray;
+
+          for (let i = 0; i < ops.length; i++) {
+            // Look for image rendering operators (Do - Draw Object)
+            if (ops[i] === pdfjsLib.OPS.paintImageXObject || 
+                ops[i] === pdfjsLib.OPS.paintJpegXObject ||
+                ops[i] === pdfjsLib.OPS.paintImageXObjectGroup) {
+              try {
+                const imageName = argsArray[i][0];
+                const imageObj = await page.objs.get(imageName);
+                
+                if (imageObj && imageObj.data) {
+                  // Convert image data to base64
+                  let base64Data = "";
+                  if (imageObj.data instanceof Uint8Array) {
+                    // Convert Uint8Array to base64
+                    const binary = Array.from(imageObj.data as Uint8Array)
+                      .map((byte) => String.fromCharCode(byte))
+                      .join("");
+                    base64Data = btoa(binary);
+                  } else if (typeof imageObj.data === "string") {
+                    base64Data = imageObj.data;
+                  }
+
+                  if (base64Data) {
+                    // Determine image format
+                    let format = "png";
+                    if (imageName.includes("jpeg") || imageName.includes("jpg")) {
+                      format = "jpeg";
+                    }
+
+                    images.push({
+                      data: `data:image/${format};base64,${base64Data}`,
+                      pageIndex: pageNum - 1,
+                      format,
+                    });
+                  }
+                }
+              } catch (imgError) {
+                // Skip images that can't be extracted
+                console.warn(`Error extracting image from page ${pageNum}:`, imgError);
+              }
+            }
+          }
+        } catch (imgExtractError) {
+          // If image extraction fails, continue with text extraction
+          console.warn(`Error extracting images from page ${pageNum}:`, imgExtractError);
         }
       } catch (pageError) {
         console.warn(`Error extracting text from page ${pageNum}:`, pageError);
@@ -132,6 +195,7 @@ export const extractTextFromPDF = async (
         text: `Content from ${title}\n\nPDF file processed. This PDF may contain only images or scanned content. Text extraction was not possible.`,
         title,
         chapters: [],
+        images: images.length > 0 ? images : undefined,
       };
     }
 
@@ -139,6 +203,7 @@ export const extractTextFromPDF = async (
       text: fullText.trim(),
       title,
       chapters: pages.length > 0 ? pages : [fullText],
+      images: images.length > 0 ? images : undefined,
     };
   } catch (error) {
     console.error("Error extracting PDF text:", error);
