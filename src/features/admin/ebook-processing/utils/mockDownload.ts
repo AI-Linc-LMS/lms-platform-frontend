@@ -4,149 +4,97 @@
  */
 
 import { ExtractedContent } from "./fileReader";
+import PptxGenJS from "pptxgenjs";
 
 /**
  * Downloads a PowerPoint presentation file generated from book content
- * Creates an HTML file that can be opened in PowerPoint or converted to PPTX
+ * Creates a real PPTX file using pptxgenjs
  */
 export const downloadPPT = (
   bookName: string,
   content: ExtractedContent,
   originalFileName?: string
 ): void => {
-  // Split content into slides
-  const slides =
-    content.chapters && content.chapters.length > 0
-      ? content.chapters.slice(0, 50) // Limit to 50 slides
-      : splitIntoSlides(content.text, 800);
+  try {
+    // Split content into slides
+    const slides =
+      content.chapters && content.chapters.length > 0
+        ? content.chapters.slice(0, 50) // Limit to 50 slides
+        : splitIntoSlides(content.text, 800);
 
-  // Create HTML that PowerPoint can open
-  const htmlContent = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>${escapeHTML(content.title || bookName)}</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background: #f5f5f5;
-    }
-    .slide {
-      width: 960px;
-      min-height: 720px;
-      margin: 30px auto;
-      background: linear-gradient(to bottom, #ffffff 0%, #f8f9fa 100%);
-      padding: 60px 80px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-      page-break-after: always;
-      display: flex;
-      flex-direction: column;
-      border-radius: 8px;
-    }
-    .slide-title {
-      font-size: 36px;
-      font-weight: 700;
-      color: #1a1a1a;
-      margin-bottom: 40px;
-      border-bottom: 4px solid #0078d4;
-      padding-bottom: 20px;
-      line-height: 1.2;
-    }
-    .slide-content {
-      font-size: 20px;
-      line-height: 1.8;
-      color: #333333;
-      flex: 1;
-      overflow: hidden;
-      margin-top: 20px;
-    }
-    .slide-content p {
-      margin-bottom: 20px;
-      text-align: left;
-    }
-    .slide-content p:last-child {
-      margin-bottom: 0;
-    }
-    .slide-number {
-      text-align: right;
-      color: #666666;
-      font-size: 14px;
-      margin-top: 40px;
-      padding-top: 20px;
-      border-top: 1px solid #e0e0e0;
-      font-weight: 500;
-    }
-    @media print {
-      body {
-        background: white;
-        padding: 0;
+    // Create a new presentation
+    const pptx = new PptxGenJS();
+
+    // Set presentation properties
+    pptx.author = "LMS Platform";
+    pptx.company = "AI Linc";
+    pptx.title = content.title || bookName;
+    pptx.subject = "Ebook Content";
+
+    // Add slides
+    slides.forEach((slideContent, index) => {
+      const slide = pptx.addSlide();
+
+      // Add title
+      slide.addText(content.title || bookName, {
+        x: 0.5,
+        y: 0.5,
+        w: 9,
+        h: 0.8,
+        fontSize: 36,
+        bold: true,
+        color: "1a1a1a",
+        align: "left",
+      });
+
+      // Add content - clean and format the text
+      const cleanText = slideContent
+        .trim()
+        .replace(/\n\s*\n/g, "\n") // Replace multiple newlines with single
+        .replace(/\n+/g, " ") // Replace single newlines with spaces
+        .substring(0, 2000); // Limit text length to prevent overflow
+
+      if (cleanText.length > 0) {
+        slide.addText(cleanText, {
+          x: 0.5,
+          y: 1.8,
+          w: 9,
+          h: 4.5,
+          fontSize: 20,
+          color: "333333",
+          align: "left",
+          valign: "top",
+          lineSpacing: 28,
+          wrap: true,
+        });
       }
-      .slide {
-        margin: 0;
-        box-shadow: none;
-        border-radius: 0;
-        page-break-after: always;
-      }
-    }
-  </style>
-</head>
-<body>
-  ${slides
-    .map(
-      (slide, index) => `
-    <div class="slide">
-      <div class="slide-title">${escapeHTML(content.title || bookName)}</div>
-      <div class="slide-content">${formatSlideContent(slide)}</div>
-      <div class="slide-number">Slide ${index + 1} of ${slides.length}</div>
-    </div>
-  `
-    )
-    .join("\n")}
-</body>
-</html>`;
 
-  // Get base file name from original file or use book name
-  const baseFileName = originalFileName
-    ? originalFileName.replace(/\.[^/.]+$/, "")
-    : sanitizeFileName(content.title || bookName);
+      // Add slide number at the bottom
+      slide.addText(`Slide ${index + 1} of ${slides.length}`, {
+        x: 8,
+        y: 6.8,
+        w: 1.5,
+        h: 0.3,
+        fontSize: 14,
+        color: "666666",
+        align: "right",
+      });
+    });
 
-  // Create blob and download
-  const blob = new Blob([htmlContent], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${baseFileName}.html`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+    // Get base file name from original file or use book name
+    const baseFileName = originalFileName
+      ? originalFileName.replace(/\.[^/.]+$/, "")
+      : sanitizeFileName(content.title || bookName);
 
-  // Also create a text-based version that can be imported into PowerPoint
-  setTimeout(() => {
-    const pptText = slides
-      .map(
-        (slide, index) => `Slide ${index + 1}\n${"=".repeat(50)}\n${slide}\n\n`
-      )
-      .join("\n");
-
-    const textBlob = new Blob([pptText], { type: "text/plain" });
-    const textUrl = URL.createObjectURL(textBlob);
-    const textLink = document.createElement("a");
-    textLink.href = textUrl;
-    textLink.download = `${baseFileName}_slides.txt`;
-    document.body.appendChild(textLink);
-    textLink.click();
-    document.body.removeChild(textLink);
-    URL.revokeObjectURL(textUrl);
-  }, 500);
-
-  URL.revokeObjectURL(url);
+    // Generate and download the PPTX file
+    pptx.writeFile({ fileName: `${baseFileName}.pptx` });
+  } catch (error) {
+    throw new Error(
+      `Failed to generate PPTX: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
 };
 
 /**

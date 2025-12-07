@@ -188,7 +188,7 @@ export const getContentById = async (
   clientId: string | number,
   contentId: number
 ): Promise<ContentDetail> => {
-  try {
+  try { 
     const response = await axiosInstance.get(
       `/admin-dashboard/api/clients/${clientId}/contents/${contentId}/`
     );
