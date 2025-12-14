@@ -1,7 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 // import ailincimg from "../../../../assets/dashboard_assets/toplogoimg.png";
 import popper from "../../../../assets/dashboard_assets/poppers.png";
-import roadmap from "../../../../assets/roadmap/roadmap.png";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import CertificateTemplates from "../../../../components/certificate/CertificateTemplates";
@@ -420,43 +419,6 @@ const RoadmapPage = () => {
               Your performance in the assessment has qualified you for an
               exclusive opportunity.
             </p>
-            {/* {redeemData?.is_paid && redeemData?.txn_status !== "paid" ? (
-              <div className="flex flex-col items-center justify-center">
-                <button
-                  onClick={handleCertificatePayment}
-                  disabled={assessmentPaymentState.isProcessing}
-                  className={`flex items-center gap-2 font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-lg shadow transition-colors duration-200 focus:outline-none text-sm sm:text-base ${assessmentPaymentState.isProcessing
-                    ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                    : "bg-[#14212B] text-[var(--font-light)] hover:bg-[#223344]"
-                    }`}
-                >
-                  {assessmentPaymentState.isProcessing ? "Processing Payment..." : " Download Certificate"}
-                </button>
-                <span className="text-sm text-gray-500 italic text-center max-w-md px-2 mt-2">
-                  (You'll be required to pay Rs {redeemData?.assessment_price || 49}/- for the certificate)
-                </span>
-              </div>
-            ) : ( */}
-            <button
-              onClick={handleDownloadCertificate}
-              className="flex items-center gap-2 bg-green-600 text-[var(--font-light)] font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-lg shadow hover:bg-green-700 transition-colors duration-200 focus:outline-none text-sm sm:text-base"
-            >
-              {isDownloading ? "Downloading..." : "Download Certificate"}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-4 h-4 sm:w-5 sm:h-5 ml-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
-                />
-              </svg>
-            </button>
           </div>
         </div>
 
@@ -497,18 +459,6 @@ const RoadmapPage = () => {
 
           {/* Divider */}
           <div className="border-t border-gray-300 mt-6 sm:mt-8 lg:mt-10 mx-4 sm:mx-6 lg:mx-7"></div>
-
-          {/* Growth Roadmap */}
-          <h2 className="text-xl sm:text-2xl font-bold text-[#222] mx-4 sm:mx-6 lg:mx-10 my-6 sm:my-8 lg:my-10">
-            Growth Roadmap
-          </h2>
-          <div className="flex flex-col items-center justify-center mb-6 sm:mb-8 lg:mb-10 w-full px-2 sm:px-4">
-            <img
-              src={roadmap}
-              alt="Roadmap"
-              className="w-full sm:w-[90%] lg:w-[75%] max-w-5xl h-auto"
-            />
-          </div>
         </div>
 
         {/* Upskilling Roadmap Section */}

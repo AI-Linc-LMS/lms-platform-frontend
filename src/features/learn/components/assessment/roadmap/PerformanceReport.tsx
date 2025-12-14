@@ -74,17 +74,13 @@ PerformanceReportProps) => {
           </div>
         )} */}
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8 justify-between items-center">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 justify-center items-center">
         {data.map((metric: Metric, idx: number) => {
           const isPlacementReadiness = metric.label === "Placement Readiness";
           return (
             <div
               key={metric.label}
-              className={`flex flex-col items-center flex-1 min-w-[120px] sm:min-w-[150px] lg:min-w-[200px] ${
-                idx === 1 || idx === 3
-                  ? "lg:border-l lg:border-gray-200 lg:border-r lg:px-4"
-                  : ""
-              } ${idx === 2 ? " lg:px-4" : ""} ${idx === 4 ? "lg:px-4" : ""}`}
+              className="flex flex-col items-center flex-1 min-w-[120px] sm:min-w-[150px] lg:min-w-[200px]"
             >
               <span className="text-gray-500 text-xs sm:text-sm lg:text-md mb-2 text-center">
                 {metric.label}
