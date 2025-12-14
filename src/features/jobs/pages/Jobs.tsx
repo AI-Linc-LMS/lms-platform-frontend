@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import JobCard from "../components/JobCard";
 import { Job } from "../types/jobs.types";
@@ -33,15 +33,18 @@ const Jobs: React.FC = () => {
   // Autocomplete states
   const [showDesignationSuggestions, setShowDesignationSuggestions] = useState(false);
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  const [showJobTypeDropdown, setShowJobTypeDropdown] = useState(false);
   
   // Refs for dropdown positioning
   const designationInputRef = useRef<HTMLInputElement>(null);
   const locationInputRef = useRef<HTMLInputElement>(null);
+  const jobTypeDropdownRef = useRef<HTMLDivElement>(null);
   
   // Sidebar filter states (client-side filtering) - using arrays for multiple selections
   const [showFilterSidebar, setShowFilterSidebar] = useState(false);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedWorkTypes, setSelectedWorkTypes] = useState<string[]>([]);
 
   // Extract unique values from loaded jobs for filters (limit locations to 10)
   // Use allAvailableJobs if no jobs found, otherwise use jobs
@@ -58,7 +61,18 @@ const Jobs: React.FC = () => {
     )
   ).sort().slice(0, 10);
   
-  const uniqueTags = Array.from(new Set(jobsForFilters.flatMap(job => job.tags))).sort();
+  // Get unique tags and shuffle them randomly instead of sorting alphabetically
+  // Use useMemo to shuffle only when jobsForFilters changes
+  const uniqueTags = useMemo(() => {
+    const tags = Array.from(new Set(jobsForFilters.flatMap(job => job.tags)));
+    // Fisher-Yates shuffle algorithm for random order
+    const shuffled = [...tags];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }, [jobsForFilters]);
 
   // Handlers for checkbox toggles
   const toggleLocation = (location: string) => {
@@ -80,6 +94,38 @@ const Jobs: React.FC = () => {
   const clearAllFilters = () => {
     setSelectedLocations([]);
     setSelectedTags([]);
+    setSelectedWorkTypes([]);
+  };
+
+  const toggleWorkType = (type: string) => {
+    setSelectedWorkTypes(prev => 
+      prev.includes(type) 
+        ? prev.filter(t => t !== type)
+        : [...prev, type]
+    );
+  };
+
+  // Helper function to check if job matches work type filter
+  const matchesWorkTypeFilter = (job: Job): boolean => {
+    if (selectedWorkTypes.length === 0) return true;
+    
+    const locationLower = job.location.toLowerCase();
+    const isRemote = job.remote || locationLower.includes('remote') || locationLower.includes('work from home') || locationLower.includes('wfh');
+    const isHybrid = isHybridLocation(job.location);
+    const isOnSite = !isRemote && !isHybrid;
+    
+    return selectedWorkTypes.some(type => {
+      if (type === 'hybrid') return isHybrid;
+      if (type === 'onsite') return isOnSite;
+      return false;
+    });
+  };
+
+  // Helper function to check if location is hybrid
+  const isHybridLocation = (location: string): boolean => {
+    if (!location) return false;
+    const lowerLocation = location.toLowerCase();
+    return lowerLocation.includes('hybrid');
   };
 
   // Suggestion lists
@@ -215,8 +261,55 @@ const Jobs: React.FC = () => {
           new Map(allJobs.map(job => [job.id, job])).values()
         );
         
+        // If location filter was applied and no/few results found, fetch hybrid/remote jobs
+        if (locationFilter && locationFilter.trim() && uniqueJobs.length === 0) {
+          try {
+            // Fetch jobs without location filter but with other filters
+            const hybridAllJobs: Job[] = [];
+            
+            for (const exp of experienceLevels) {
+              try {
+                const hybridFilters: JobsApiFilters = {};
+                
+                if (jobTypeFilter) {
+                  hybridFilters.job_type = jobTypeFilter;
+                }
+                
+                if (designationFilter && designationFilter.trim()) {
+                  hybridFilters.designation = designationFilter.trim();
+                }
+                
+                hybridFilters.experience = exp;
+                
+                const hybridResponse = await fetchJobsFromAPI(hybridFilters);
+                hybridAllJobs.push(...hybridResponse.jobs);
+              } catch (err) {
+                // Continue with other calls even if one fails
+              }
+            }
+            
+            // Remove duplicates from hybrid jobs
+            const uniqueHybridJobs = Array.from(
+              new Map(hybridAllJobs.map(job => [job.id, job])).values()
+            );
+            
+            // Filter to only include remote/hybrid jobs
+            const hybridJobs = uniqueHybridJobs.filter(job => {
+              const isRemote = job.remote === true;
+              const isHybrid = isHybridLocation(job.location);
+              return isRemote || isHybrid;
+            });
+            
+            // Combine results (hybrid jobs first)
+            uniqueJobs.push(...hybridJobs);
+            totalCount = uniqueJobs.length;
+          } catch (err) {
+            // If hybrid fetch fails, just use original results
+          }
+        }
+        
         setJobs(uniqueJobs);
-        setTotalCount(uniqueJobs.length);
+        setTotalCount(totalCount);
         setVisibleJobsCount(12);
         return;
       }
@@ -241,8 +334,46 @@ const Jobs: React.FC = () => {
       }
       
       const response = await fetchJobsFromAPI(apiFilters);
-      setJobs(response.jobs);
-      setTotalCount(response.count);
+      let jobs = response.jobs;
+      let totalCount = response.count;
+      
+      // If location filter was applied and no/few results found, fetch hybrid/remote jobs
+      if (locationFilter && locationFilter.trim() && jobs.length === 0) {
+        try {
+          // Fetch jobs without location filter but with other filters
+          const hybridFilters: JobsApiFilters = {};
+          
+          if (jobTypeFilter) {
+            hybridFilters.job_type = jobTypeFilter;
+          }
+          
+          if (designationFilter && designationFilter.trim()) {
+            hybridFilters.designation = designationFilter.trim();
+          }
+          
+          if (experienceFilter && experienceFilter.trim()) {
+            hybridFilters.experience = experienceFilter.trim();
+          }
+          
+          const hybridResponse = await fetchJobsFromAPI(hybridFilters);
+          
+          // Filter to only include remote/hybrid jobs
+          const hybridJobs = hybridResponse.jobs.filter(job => {
+            const isRemote = job.remote === true;
+            const isHybrid = isHybridLocation(job.location);
+            return isRemote || isHybrid;
+          });
+          
+          // Combine results (hybrid jobs first, then any location-matched jobs)
+          jobs = [...hybridJobs, ...jobs];
+          totalCount = jobs.length;
+        } catch (err) {
+          // If hybrid fetch fails, just use original results
+        }
+      }
+      
+      setJobs(jobs);
+      setTotalCount(totalCount);
       setVisibleJobsCount(12);
     } catch (err) {
       setError("Failed to load jobs. Please try again.");
@@ -275,6 +406,23 @@ const Jobs: React.FC = () => {
     fetchAllAvailableJobs();
   }, [fetchDefaultJobs, fetchAllAvailableJobs]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (jobTypeDropdownRef.current && !jobTypeDropdownRef.current.contains(event.target as Node)) {
+        setShowJobTypeDropdown(false);
+      }
+    };
+
+    if (showJobTypeDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showJobTypeDropdown]);
+
   const handleSearch = () => {
     fetchJobs();
   };
@@ -299,6 +447,10 @@ const Jobs: React.FC = () => {
     setDesignationFilter("");
     setLocationFilter("");
     setExperienceFilter("");
+    // Clear sidebar filters as well
+    setSelectedLocations([]);
+    setSelectedTags([]);
+    setSelectedWorkTypes([]);
     // Call fetchDefaultJobs directly since it doesn't depend on state
     fetchDefaultJobs();
   };
@@ -322,6 +474,9 @@ const Jobs: React.FC = () => {
         if (!hasMatchingTag) return false;
       }
 
+      // Work Type Filter (Hybrid/On-site)
+      if (!matchesWorkTypeFilter(job)) return false;
+
       return true;
     })
     .sort((a, b) => {
@@ -330,11 +485,15 @@ const Jobs: React.FC = () => {
 
   const sortedJobs = filteredAndSortedJobs;
   
-  // Filtered "You might be interested in" jobs (when no main results)
-  // Apply sidebar filters to allAvailableJobs when main jobs array is empty
-  const filteredSuggestedJobs = jobs.length === 0 && allAvailableJobs.length > 0
+  // Filtered "You might be interested in" jobs (when no main results or less than 12)
+  // Apply sidebar filters to allAvailableJobs and exclude jobs already shown
+  const sortedJobIds = new Set(sortedJobs.map(job => job.id));
+  const filteredSuggestedJobs = (jobs.length === 0 || sortedJobs.length < 12) && allAvailableJobs.length > 0
     ? [...allAvailableJobs]
         .filter((job) => {
+          // Exclude jobs already shown in main results
+          if (sortedJobIds.has(job.id)) return false;
+
           // Location Filter (OR logic - match any selected location)
           if (selectedLocations.length > 0) {
             const jobLocations = job.location.split(',').map(loc => normalizeLocation(loc.trim()));
@@ -349,6 +508,9 @@ const Jobs: React.FC = () => {
             const hasMatchingTag = selectedTags.some(tag => job.tags.includes(tag));
             if (!hasMatchingTag) return false;
           }
+
+          // Work Type Filter (Hybrid/On-site)
+          if (!matchesWorkTypeFilter(job)) return false;
 
           return true;
         })
@@ -374,16 +536,78 @@ const Jobs: React.FC = () => {
                 <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-5 shadow-2xl border border-white/50 overflow-visible">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 overflow-visible">
                     {/* Job Type Dropdown */}
-                    <div className="lg:col-span-1">
-                      <select
-                        value={jobTypeFilter}
-                        onChange={(e) => setJobTypeFilter(e.target.value as 'job' | 'internship' | '')}
-                        className="w-full px-3 sm:px-4 py-3.5 sm:py-4 text-[var(--neutral-600)] border-2 border-[var(--neutral-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary-500)] focus:border-[var(--primary-500)] text-sm sm:text-base font-medium bg-white hover:border-[var(--neutral-300)] transition-all shadow-sm"
-                      >
-                        <option value="">All Types</option>
-                        <option value="job">Job</option>
-                        <option value="internship">Internship</option>
-                      </select>
+                    <div className="lg:col-span-1 relative z-[100]">
+                      <div className="relative" ref={jobTypeDropdownRef}>
+                        <button
+                          type="button"
+                          onClick={() => setShowJobTypeDropdown(!showJobTypeDropdown)}
+                          className="w-full px-3 sm:px-4 py-3.5 sm:py-4 text-[var(--neutral-600)] border-2 border-[var(--neutral-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary-500)] focus:border-[var(--primary-500)] text-sm sm:text-base font-medium bg-white hover:border-[var(--neutral-300)] transition-all shadow-sm flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-2">
+                            <svg
+                              className="w-5 h-5 text-[var(--primary-400)]"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                              />
+                            </svg>
+                            <span className={jobTypeFilter ? 'text-[var(--neutral-600)]' : 'text-[var(--neutral-400)]'}>
+                              {jobTypeFilter === 'job' ? 'Job' : jobTypeFilter === 'internship' ? 'Internship' : 'All Types'}
+                            </span>
+                          </div>
+                          <svg
+                            className={`w-5 h-5 text-[var(--neutral-400)] transition-transform ${showJobTypeDropdown ? 'rotate-180' : ''}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 9l-7 7-7-7"
+                            />
+                          </svg>
+                        </button>
+                        {/* Dropdown Menu */}
+                        {showJobTypeDropdown && (
+                          <div className="absolute z-[10000] w-full mt-1 bg-white border border-[var(--neutral-200)] rounded-lg shadow-lg overflow-hidden">
+                            {[
+                              { value: '', label: 'All Types' },
+                              { value: 'job', label: 'Job' },
+                              { value: 'internship', label: 'Internship' },
+                            ].map((option) => (
+                              <div
+                                key={option.value}
+                                className={`px-4 py-3 cursor-pointer text-[var(--neutral-600)] text-base text-left transition-colors ${
+                                  jobTypeFilter === option.value
+                                    ? 'bg-[var(--primary-50)] text-[var(--primary-600)] font-semibold'
+                                    : 'hover:bg-[var(--neutral-50)]'
+                                }`}
+                                onClick={() => {
+                                  setJobTypeFilter(option.value as 'job' | 'internship' | '');
+                                  setShowJobTypeDropdown(false);
+                                }}
+                              >
+                                <div className="flex items-center gap-2">
+                                  {jobTypeFilter === option.value && (
+                                    <svg className="w-4 h-4 text-[var(--primary-600)]" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  )}
+                                  <span>{option.label}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Designation Input with Autocomplete */}
@@ -560,6 +784,29 @@ const Jobs: React.FC = () => {
                 
                 <div className="p-6 pt-4">
 
+                {/* Work Type Filter (Hybrid/On-site) */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-[var(--neutral-600)] mb-3">
+                    Work Type {selectedWorkTypes.length > 0 && `(${selectedWorkTypes.length})`}
+                  </label>
+                  <div className="space-y-2">
+                    {[
+                      { value: 'hybrid', label: 'Hybrid' },
+                      { value: 'onsite', label: 'On-site' },
+                    ].map((option) => (
+                      <label key={option.value} className="flex items-center cursor-pointer group hover:bg-[var(--neutral-50)] p-2 rounded transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={selectedWorkTypes.includes(option.value)}
+                          onChange={() => toggleWorkType(option.value)}
+                          className="w-4 h-4 text-[var(--primary-500)] border-gray-300 rounded focus:ring-[var(--primary-500)]"
+                        />
+                        <span className="ml-3 text-sm text-[var(--neutral-600)]">{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Location Filter */}
                 <div className="mb-6">
                   <label className="block text-sm font-semibold text-[var(--neutral-600)] mb-3">
@@ -691,6 +938,123 @@ const Jobs: React.FC = () => {
                   >
                     Reset All Filters
                   </button>
+                  </div>
+
+                  {/* You Might Be Interested In Section */}
+                  {allAvailableJobs.length > 0 && (
+                    <div className="mt-8">
+                      <div className="mb-6">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-[var(--neutral-600)] mb-2">
+                          You Might Be Interested In
+                        </h2>
+                        <p className="text-[var(--neutral-400)] text-sm sm:text-base">
+                          {filteredSuggestedJobs.length > 0 
+                            ? `Showing ${filteredSuggestedJobs.length} ${filteredSuggestedJobs.length === 1 ? 'job' : 'jobs'} based on your filters`
+                            : `Here are some ${jobTypeFilter === 'internship' ? 'internships' : 'jobs'} you might find interesting`
+                          }
+                        </p>
+                      </div>
+                      {loadingAllJobs ? (
+                        <div className="text-center py-12 bg-white rounded-lg shadow-md">
+                          <Loader2 className="h-12 w-12 mx-auto text-[var(--primary-500)] animate-spin mb-4" />
+                          <p className="text-[var(--neutral-500)] text-lg">Loading jobs...</p>
+                        </div>
+                      ) : filteredSuggestedJobs.length > 0 ? (
+                        <div className="space-y-4 sm:space-y-6">
+                          {filteredSuggestedJobs.slice(0, visibleJobsCount).map((job, index) => (
+                            <JobCard
+                              key={job.id}
+                              job={job}
+                              onApply={handleApplyToJob}
+                              className={
+                                index === 0
+                                  ? "border-2 border-[var(--primary-500)]"
+                                  : ""
+                              }
+                            />
+                          ))}
+                          {visibleJobsCount < filteredSuggestedJobs.length && (
+                            <div className="text-center mt-8 sm:mt-12">
+                              <button
+                                onClick={() => {
+                                  const remainingJobs = filteredSuggestedJobs.length - visibleJobsCount;
+                                  const jobsToLoad = Math.min(remainingJobs, 6);
+                                  setVisibleJobsCount((prevCount) => prevCount + jobsToLoad);
+                                }}
+                                className="px-6 sm:px-8 py-3 sm:py-4 border-2 border-[var(--primary-500)] text-[var(--primary-500)] rounded-lg hover:bg-[var(--primary-500)] hover:text-[var(--font-light)] transition-colors font-medium flex items-center justify-center mx-auto"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-5 w-5 mr-2"
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                Load More Jobs ({filteredSuggestedJobs.length - visibleJobsCount} remaining)
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="space-y-4 sm:space-y-6">
+                          {allAvailableJobs
+                            .filter(job => !sortedJobIds.has(job.id))
+                            .slice(0, 12)
+                            .map((job, index) => (
+                              <JobCard
+                                key={job.id}
+                                job={job}
+                                onApply={handleApplyToJob}
+                                className={
+                                  index === 0
+                                    ? "border-2 border-[var(--primary-500)]"
+                                    : ""
+                                }
+                              />
+                            ))}
+                          {allAvailableJobs.filter(job => !sortedJobIds.has(job.id)).length > 12 && (
+                            <div className="text-center mt-8">
+                              <p className="text-[var(--neutral-400)] text-sm mb-4">
+                                Showing 12 of {allAvailableJobs.filter(job => !sortedJobIds.has(job.id)).length} available jobs
+                              </p>
+                              <button
+                                onClick={() => {
+                                  setJobs(allAvailableJobs);
+                                  setVisibleJobsCount(12);
+                                  resetAllFilters();
+                                }}
+                                className="px-6 py-3 bg-[var(--primary-500)] text-[var(--font-light)] rounded-lg hover:bg-[var(--primary-600)] transition-colors font-medium"
+                              >
+                                View All Available Jobs
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : sortedJobs.length < 12 ? (
+                <div>
+                  {/* Show main jobs */}
+                  <div className="space-y-4 sm:space-y-6 mb-8">
+                    {sortedJobs.slice(0, visibleJobsCount).map((job, index) => (
+                      <JobCard
+                        key={job.id}
+                        job={job}
+                        onApply={handleApplyToJob}
+                        className={
+                          index === 0
+                            ? "border-2 border-[var(--primary-500)]"
+                            : ""
+                        }
+                      />
+                    ))}
                   </div>
 
                   {/* You Might Be Interested In Section */}
