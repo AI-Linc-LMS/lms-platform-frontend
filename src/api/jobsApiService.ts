@@ -169,7 +169,26 @@ const parseExperienceLevel = (experience: string): 'Entry Level' | 'Mid Level' |
 const parseSalary = (salary: string): { min: number; max: number; currency: string } | undefined => {
   if (!salary || salary.trim() === '') return undefined;
   
-  // Handle formats like "15-20 Lacs PA", "₹15-20 Lacs", "15-20 LPA", etc.
+  // First check if salary contains ₹ symbol - prioritize INR
+  if (salary.includes('₹')) {
+    // Handle formats like "₹500000 - ₹1000000" or "₹1,700,000 - ₹2,500,000"
+    const rupeeMatch = salary.match(/₹\s*(\d+(?:,\d+)*(?:\.\d+)?)(?:\s*-\s*₹\s*(\d+(?:,\d+)*(?:\.\d+)?))?/i);
+    if (rupeeMatch) {
+      const min = parseFloat(rupeeMatch[1].replace(/,/g, ''));
+      const max = rupeeMatch[2] ? parseFloat(rupeeMatch[2].replace(/,/g, '')) : min;
+      return { min, max, currency: 'INR' };
+    }
+    
+    // Handle formats like "₹15-20 Lacs" or "₹15-20 LPA"
+    const lacsMatch = salary.match(/₹\s*(\d+(?:\.\d+)?)(?:\s*-\s*(\d+(?:\.\d+)?))?\s*(?:lacs?|lpa)/i);
+    if (lacsMatch) {
+      const min = parseFloat(lacsMatch[1]) * 100000; // Convert lacs to rupees
+      const max = lacsMatch[2] ? parseFloat(lacsMatch[2]) * 100000 : min;
+      return { min, max, currency: 'INR' };
+    }
+  }
+  
+  // Handle formats like "15-20 Lacs PA", "15-20 LPA", etc. (without ₹ symbol)
   const lacsMatch = salary.match(/(\d+(?:\.\d+)?)(?:\s*-\s*(\d+(?:\.\d+)?))?\s*(?:lacs?|lpa)/i);
   if (lacsMatch) {
     const min = parseFloat(lacsMatch[1]) * 100000; // Convert lacs to rupees
@@ -177,20 +196,25 @@ const parseSalary = (salary: string): { min: number; max: number; currency: stri
     return { min, max, currency: 'INR' };
   }
   
-  // Handle formats like "₹500000 - ₹1000000"
-  const rupeeMatch = salary.match(/₹?\s*(\d+(?:,\d+)*(?:\.\d+)?)(?:\s*-\s*₹?\s*(\d+(?:,\d+)*(?:\.\d+)?))?/i);
-  if (rupeeMatch) {
-    const min = parseFloat(rupeeMatch[1].replace(/,/g, ''));
-    const max = rupeeMatch[2] ? parseFloat(rupeeMatch[2].replace(/,/g, '')) : min;
-    return { min, max, currency: 'INR' };
+  // Handle formats like "500000 - 1000000" (assume INR if no currency symbol and large numbers)
+  const numberMatch = salary.match(/(\d+(?:,\d+)*(?:\.\d+)?)(?:\s*-\s*(\d+(?:,\d+)*(?:\.\d+)?))?/i);
+  if (numberMatch) {
+    const min = parseFloat(numberMatch[1].replace(/,/g, ''));
+    const max = numberMatch[2] ? parseFloat(numberMatch[2].replace(/,/g, '')) : min;
+    // If numbers are large (likely INR), default to INR, otherwise check for USD patterns
+    if (min > 10000) {
+      return { min, max, currency: 'INR' };
+    }
   }
   
-  // Handle USD formats like "$100k - $150k"
-  const usdMatch = salary.match(/\$?\s*(\d+(?:\.\d+)?)k?(?:\s*-\s*\$?\s*(\d+(?:\.\d+)?)k?)?/i);
-  if (usdMatch) {
-    const min = parseFloat(usdMatch[1]) * (usdMatch[1].includes('k') ? 1000 : 1);
-    const max = usdMatch[2] ? parseFloat(usdMatch[2]) * (usdMatch[2].includes('k') ? 1000 : 1) : min;
-    return { min, max, currency: 'USD' };
+  // Handle USD formats like "$100k - $150k" (only if $ is explicitly present)
+  if (salary.includes('$')) {
+    const usdMatch = salary.match(/\$\s*(\d+(?:\.\d+)?)k?(?:\s*-\s*\$\s*(\d+(?:\.\d+)?)k?)?/i);
+    if (usdMatch) {
+      const min = parseFloat(usdMatch[1]) * (usdMatch[1].includes('k') || salary.includes('k') ? 1000 : 1);
+      const max = usdMatch[2] ? parseFloat(usdMatch[2]) * (usdMatch[2].includes('k') || salary.includes('k') ? 1000 : 1) : min;
+      return { min, max, currency: 'USD' };
+    }
   }
   
   return undefined;
