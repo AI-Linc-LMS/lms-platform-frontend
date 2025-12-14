@@ -739,27 +739,19 @@ export const UserActivityProvider = ({
   };
 
   // Handle document visibility change (user switches tabs or minimizes window)
-  const handleVisibilityChange = async () => {
+  const handleVisibilityChange = () => {
     logActivityEvent("Visibility changed", {
       visibilityState: document.visibilityState,
     });
 
     if (document.visibilityState === "visible") {
-      // User returned to the tab - start a fresh session
       logActivityEvent("User returned to tab - starting fresh session");
       startSession();
     } else {
-      // User actually left the tab (switched to another tab or minimized)
-      logActivityEvent(
-        "User left tab - ending session with immediate data send"
-      );
+      logActivityEvent("User left tab - ending session");
 
-      // Use ONLY endSession, which already handles the API call
-      // DO NOT use sendCurrentSessionImmediately AND endSession together
-      await executeApiCallSafely(async () => {
-        await endSession("visibility_change");
-      }, "handleVisibilityChange");
-
+      // Fire-and-forget — don't await
+      // endSession("visibility_change");
       backupCurrentState();
     }
   };
@@ -818,7 +810,7 @@ export const UserActivityProvider = ({
   const handlePowerChange = () => {
     logActivityEvent("Power status changed");
     // End current session and send data immediately
-    endSession();
+    // endSession();
     // Also backup when power status changes
     backupCurrentState();
   };
@@ -865,7 +857,7 @@ export const UserActivityProvider = ({
 
     // Only end session if it hasn't been ended recently
     if (activityState.isActive) {
-      endSession();
+      // endSession();
     }
     backupCurrentState();
   };
@@ -911,9 +903,9 @@ export const UserActivityProvider = ({
     }
 
     // Only end session if it hasn't been ended recently
-    if (activityState.isActive) {
-      endSession();
-    }
+    // if (activityState.isActive) {
+    //   endSession();
+    // }
     backupCurrentState();
   };
 
@@ -1936,7 +1928,7 @@ export const UserActivityProvider = ({
       }
 
       // End the session when component unmounts
-      endSession();
+      // endSession();
     };
   }, []);
 

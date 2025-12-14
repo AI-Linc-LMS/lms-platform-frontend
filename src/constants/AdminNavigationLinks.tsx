@@ -1,5 +1,10 @@
 import { SidebarLinkInfo } from "./typings";
-import { MdOutlineDashboard, MdOutlineEmail, MdPayment } from "react-icons/md";
+import {
+  MdOutlineDashboard,
+  MdOutlineEmail,
+  MdPayment,
+  MdVerified,
+} from "react-icons/md";
 import { PiStudent } from "react-icons/pi";
 import { VscBook } from "react-icons/vsc";
 import { LiaChalkboardTeacherSolid } from "react-icons/lia";
@@ -65,12 +70,24 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
 
   {
     id: 5,
-    title: "Assesment Results",
-    slug: "admin_assessment_result",
+    title: "Assessment Management",
+    slug: "admin_assessment",
     links: [
       {
         id: 1,
-        title: "Assesment Results",
+        title: "Assessment Management",
+        href: "/admin/assessments",
+        icon: <GoTasklist />,
+      },
+      {
+        id: 2,
+        title: "MCQ Bank",
+        href: "/admin/mcqs",
+        icon: <GoTasklist />,
+      },
+      {
+        id: 3,
+        title: "Assessment Results",
         href: "/admin/assesment-results",
         icon: <GoTasklist />,
       },
@@ -152,6 +169,32 @@ export const AdminNavigationLinks: SidebarLinkInfo[] = [
         title: "Attendance",
         href: "/admin/attendance",
         icon: <JobsIconController />,
+      },
+    ],
+  },
+  {
+    id: 11,
+    title: "Content Verification",
+    slug: "admin_verify_content",
+    links: [
+      {
+        id: 1,
+        title: "AI Judge",
+        href: "/admin/verify-content",
+        icon: <MdVerified />,
+      },
+    ],
+  },
+  {
+    id: 12,
+    title: "Ebook Processing",
+    slug: "admin_ebook",
+    links: [
+      {
+        id: 1,
+        title: "Ebook Processing",
+        href: "/admin/ebook-processing",
+        icon: <VscBook />,
       },
     ],
   },

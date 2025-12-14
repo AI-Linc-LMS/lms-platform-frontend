@@ -152,6 +152,12 @@ export interface InterviewSubmission {
     timestamp: number;
     tabSwitches?: number;
     windowSwitches?: number;
+    // Enhanced proctoring metrics
+    noFaceIncidents?: number;
+    noFaceDuration?: number; // in seconds
+    lookingAwayIncidents?: number;
+    lookingAwayDuration?: number; // in seconds
+    multipleFaceIncidents?: number;
     [key: string]: any;
   };
 }

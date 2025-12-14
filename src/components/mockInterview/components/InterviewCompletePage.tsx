@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CircularProgress } from "@mui/material";
 
@@ -15,74 +15,200 @@ const InterviewCompletePage: React.FC<InterviewCompletePageProps> = ({
   const isSubmitting = submissionStatus === null;
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const streamRef = useRef<MediaStream | null>(null);
 
   // Get attemptId from props or sessionStorage
   const attemptId =
     propAttemptId || sessionStorage.getItem("interview_attempt_id");
+  const stopAllStreams = async () => {
+    // NUCLEAR OPTION - Stop everything aggressively
 
-  // Stop all video and audio streams immediately on mount
+    // 1️⃣ Stop all tracks from ANY stream source
+    const stopStream = (stream: MediaStream | null) => {
+      if (!stream) return;
+      stream.getTracks().forEach((track) => {
+        try {
+          track.stop();
+          track.enabled = false;
+        } catch (e) {
+          // Continue
+        }
+      });
+    };
+
+    // 2️⃣ Kill streams attached to VIDEO tags
+    const videos = document.querySelectorAll("video");
+    videos.forEach((video) => {
+      stopStream(video.srcObject as MediaStream | null);
+      video.srcObject = null;
+      video.pause();
+      video.load(); // Force reload to release resources
+    });
+
+    // 3️⃣ Kill streams attached to AUDIO tags
+    document.querySelectorAll("audio").forEach((audio) => {
+      stopStream(audio.srcObject as MediaStream | null);
+      audio.srcObject = null;
+      audio.pause();
+      audio.load();
+    });
+
+    // 4️⃣ Kill all global stream references
+    const globalStream = (window as any).activeUserMediaStream;
+    stopStream(globalStream);
+    (window as any).activeUserMediaStream = null;
+
+    if ((window as any).__globalMediaStreams) {
+      (window as any).__globalMediaStreams.forEach((s: MediaStream) =>
+        stopStream(s)
+      );
+      (window as any).__globalMediaStreams = [];
+    }
+
+    // 5️⃣ Stop MediaRecorder
+    const recorder = (window as any).activeMediaRecorder;
+    if (recorder && recorder.state !== "inactive") {
+      try {
+        recorder.stop();
+      } catch (e) {
+        // Continue
+      }
+    }
+
+    // 6️⃣ Kill WebRTC connections
+    const pcs = (window as any).__rtcConnections;
+    if (Array.isArray(pcs)) {
+      pcs.forEach((pc: RTCPeerConnection) => {
+        pc.getSenders().forEach((sender) => {
+          try {
+            if (sender.track) {
+              sender.track.stop();
+              sender.track.enabled = false;
+            }
+          } catch {}
+        });
+        pc.close();
+      });
+      (window as any).__rtcConnections = [];
+    }
+
+    // 7️⃣ Stop speech recognition - AGGRESSIVE
+    if ((window as any).__speechRecognition) {
+      try {
+        (window as any).__speechRecognition.stop();
+        (window as any).__speechRecognition.abort();
+        (window as any).__speechRecognition = null;
+      } catch {}
+    }
+
+    // 8️⃣ Clear any audio contexts - AGGRESSIVE
+    if ((window as any).__audioContext) {
+      try {
+        if ((window as any).__audioContext.state !== "closed") {
+          (window as any).__audioContext.suspend();
+          (window as any).__audioContext.close();
+        }
+        (window as any).__audioContext = null;
+      } catch {}
+    }
+
+    // 9️⃣ Stop ALL microphone tracks specifically
+    try {
+      const allTracks = [...document.querySelectorAll("video, audio")].flatMap(
+        (el) => {
+          const stream = (el as HTMLMediaElement).srcObject as MediaStream;
+          return stream ? stream.getTracks() : [];
+        }
+      );
+
+      allTracks.forEach((track) => {
+        if (track.kind === "audio" || track.kind === "video") {
+          try {
+            track.stop();
+            track.enabled = false;
+          } catch (e) {}
+        }
+      });
+    } catch (e) {}
+
+    // 🔟 Request new stream and immediately close it (forces permission release)
+    try {
+      const tempStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: true,
+      });
+      tempStream.getTracks().forEach((track) => {
+        track.stop();
+        track.enabled = false;
+      });
+    } catch {}
+
+    // 1️⃣1️⃣ Try audio only if video+audio failed
+    try {
+      const audioStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: false,
+      });
+      audioStream.getTracks().forEach((track) => {
+        track.stop();
+        track.enabled = false;
+      });
+    } catch {}
+
+    // Wait a moment for browser to process
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  };
+
+  // Stop all video and audio streams immediately on mount and keep stopping
   useEffect(() => {
-    const stopAllMedia = () => {
-      // 1. Stop all video elements (if any)
+    // IMMEDIATE synchronous cleanup first
+    const immediateCleanup = () => {
       document.querySelectorAll("video").forEach((video) => {
         const stream = video.srcObject as MediaStream | null;
         if (stream) {
-          stream.getTracks().forEach((t) => t.stop());
-          video.srcObject = null;
-          video.pause();
+          stream.getTracks().forEach((track) => {
+            track.stop();
+            track.enabled = false;
+          });
         }
+        video.srcObject = null;
+        video.pause();
       });
 
-      // 2. Stop all audio elements (if any)
       document.querySelectorAll("audio").forEach((audio) => {
         const stream = audio.srcObject as MediaStream | null;
         if (stream) {
-          stream.getTracks().forEach((t) => t.stop());
-          audio.srcObject = null;
-          audio.pause();
+          stream.getTracks().forEach((track) => {
+            track.stop();
+            track.enabled = false;
+          });
         }
+        audio.srcObject = null;
+        audio.pause();
       });
-
-      // 3. Stop the stream from your ref
-      if (streamRef.current) {
-        const stream = streamRef.current as MediaStream;
-        stream.getTracks().forEach((t) => t.stop());
-        streamRef.current = null;
-      }
-
-      // 4. Stop ANY active tracks from existing MediaStreams
-      // This is the real way to kill audio/video
-      if ((navigator.mediaDevices as any)._activeStreams) {
-        (navigator.mediaDevices as any)._activeStreams.forEach(
-          (s: MediaStream) => s.getTracks().forEach((t) => t.stop())
-        );
-      }
     };
 
-    // Monkey-patch getUserMedia to track all created streams
-    const origGetUserMedia = navigator.mediaDevices.getUserMedia.bind(
-      navigator.mediaDevices
-    );
+    // Run immediate cleanup
+    immediateCleanup();
 
-    (navigator.mediaDevices as any)._activeStreams =
-      (navigator.mediaDevices as any)._activeStreams || [];
+    // Then async cleanup
+    stopAllStreams();
 
-    navigator.mediaDevices.getUserMedia = async (constraints) => {
-      const stream = await origGetUserMedia(constraints);
-      (navigator.mediaDevices as any)._activeStreams.push(stream);
-      return stream;
-    };
+    // Aggressive cleanup - try multiple times
+    const cleanup1 = setTimeout(() => stopAllStreams(), 50);
+    const cleanup2 = setTimeout(() => stopAllStreams(), 200);
+    const cleanup3 = setTimeout(() => stopAllStreams(), 500);
+    const cleanup4 = setTimeout(() => stopAllStreams(), 1000);
+    const cleanup5 = setTimeout(() => stopAllStreams(), 2000);
 
-    // Execute immediately and after short delays
-    stopAllMedia();
-    const t1 = setTimeout(stopAllMedia, 100);
-    const t2 = setTimeout(stopAllMedia, 500);
-
+    // Continue cleanup on unmount
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      stopAllMedia();
+      clearTimeout(cleanup1);
+      clearTimeout(cleanup2);
+      clearTimeout(cleanup3);
+      clearTimeout(cleanup4);
+      clearTimeout(cleanup5);
+      immediateCleanup();
+      stopAllStreams();
     };
   }, []);
 

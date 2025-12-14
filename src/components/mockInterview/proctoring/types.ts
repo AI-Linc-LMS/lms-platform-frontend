@@ -6,7 +6,13 @@ export type ProctoringEventType =
   | "WINDOW_BLUR"
   | "WINDOW_FOCUS"
   | "SCREEN_SHARE_START"
-  | "SCREEN_SHARE_STOP";
+  | "SCREEN_SHARE_STOP"
+  | "FACE_NOT_DETECTED_START"
+  | "FACE_NOT_DETECTED_END"
+  | "LOOKING_AWAY_START"
+  | "LOOKING_AWAY_END"
+  | "MULTIPLE_FACES_START"
+  | "MULTIPLE_FACES_END";
 
 export interface ProctoringEvent {
   type: ProctoringEventType;
@@ -21,4 +27,5 @@ export interface ProctoringContextType {
   getEventLog: () => ProctoringEvent[];
   clearProctoringEvents: () => void;
   isScreenSharing: boolean;
+  logEvent: (type: ProctoringEventType, details?: Record<string, any>) => void;
 }

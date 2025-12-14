@@ -90,24 +90,6 @@ export const transformToPerformanceReportData = (stats?: AssessmentStats) => {
         </svg>
       ),
     },
-    {
-      label: "Scholarship Eligibility",
-      value: stats.offered_scholarship_percentage ?? 0,
-      unit: "%",
-      color: "#22c55e",
-      icon: (
-        <svg
-          width="24"
-          height="24"
-          fill="none"
-          stroke="#22c55e"
-          strokeWidth="2"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 8v4l2 2" />
-        </svg>
-      ),
-    },
   ];
 };
 

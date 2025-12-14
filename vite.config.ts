@@ -122,7 +122,7 @@ export default defineConfig({
     tailwindcss(),
     injectEnvPlugin(),
     ...(enablePWA
-      ? [
+      ? ([
           VitePWA({
             // Critical: Use prompt instead of autoUpdate to avoid loops
             injectRegister: "auto",
@@ -171,10 +171,10 @@ export default defineConfig({
 
             manifest: false,
           }),
-        ]
+        ] as any)
       : []),
     ...(enableBundleAnalyzer
-      ? [
+      ? ([
           visualizer({
             filename: "dist/bundle-analysis.html",
             template: "treemap",
@@ -182,7 +182,7 @@ export default defineConfig({
             brotliSize: true,
             open: false,
           }),
-        ]
+        ] as any)
       : []),
   ],
   build: {

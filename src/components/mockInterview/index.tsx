@@ -70,6 +70,9 @@ const MockInterview = () => {
   // Type selector handlers
   const handleTypeSelect = (type: InterviewType) => {
     if (type === "fresh") {
+      // Clear previous interview data when starting fresh
+      sessionStorage.removeItem("interview_topic");
+      sessionStorage.removeItem("interview_difficulty");
       navigate("/mock-interview/mode");
     } else if (type === "history") {
       setListRefreshKey((prev) => prev + 1);
@@ -94,15 +97,28 @@ const MockInterview = () => {
   // Quick start handler
   const handleQuickStart = async (topic: string, difficulty: string) => {
     try {
+      // Clear any previous interview flags
+      sessionStorage.removeItem("interview_submitting");
+      sessionStorage.removeItem("interview_submission_complete");
+      sessionStorage.removeItem("interview_attempt_id");
+      setSubmissionStatus(null);
+      setSubmittedAttemptId(null);
+
+      // Set the state with the interview details BEFORE creating interview
+      setSelectedTopic(topic);
+      setSelectedDifficulty(difficulty);
+
+      // Store in sessionStorage to persist across navigation
+      sessionStorage.setItem("interview_topic", topic);
+      sessionStorage.setItem("interview_difficulty", difficulty);
+
       // Create and start the interview immediately
       const { attemptId, questions } = await mockInterviewAPI.startInterview(
         topic,
         difficulty
       );
 
-      // Set the state with the interview details
-      setSelectedTopic(topic);
-      setSelectedDifficulty(difficulty);
+      // Update with questions from API
       setInterviewQuestions(questions || []);
       setScheduledInterviewId(attemptId);
 
@@ -125,12 +141,28 @@ const MockInterview = () => {
     questions: InterviewQuestion[],
     interviewId: string
   ) => {
+    // Clear any previous interview flags
+    sessionStorage.removeItem("interview_submitting");
+    sessionStorage.removeItem("interview_submission_complete");
+    sessionStorage.removeItem("interview_attempt_id");
+    setSubmissionStatus(null);
+    setSubmittedAttemptId(null);
+
     setInterviewQuestions(questions);
     setScheduledInterviewId(interviewId);
-    if (questions.length > 0) {
-      setSelectedTopic(questions[0].topic || "Interview");
-      setSelectedDifficulty(questions[0].difficulty || "Medium");
-    }
+
+    const topic =
+      questions.length > 0 ? questions[0].topic || "Interview" : "Interview";
+    const difficulty =
+      questions.length > 0 ? questions[0].difficulty || "Medium" : "Medium";
+
+    setSelectedTopic(topic);
+    setSelectedDifficulty(difficulty);
+
+    // Store in sessionStorage to persist across navigation
+    sessionStorage.setItem("interview_topic", topic);
+    sessionStorage.setItem("interview_difficulty", difficulty);
+
     navigate(`/mock-interview/interview/${interviewId}`);
   };
 
@@ -158,6 +190,51 @@ const MockInterview = () => {
     }
   );
 
+  // Global cleanup - ensure no media streams leak
+  useEffect(() => {
+    const cleanupMediaStreams = () => {
+      // Only cleanup if NOT on interview room or interview page
+      const path = window.location.pathname;
+      if (
+        path.includes("/mock-interview/interview/") ||
+        path.includes("/mock-interview/room")
+      ) {
+        return; // Don't cleanup during active interview
+      }
+
+      const stopStream = (stream: MediaStream | null) => {
+        if (!stream) return;
+        stream.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch (e) {
+            // Continue
+          }
+        });
+      };
+
+      // Stop all video/audio elements
+      document.querySelectorAll("video, audio").forEach((element) => {
+        const mediaElement = element as HTMLMediaElement;
+        stopStream(mediaElement.srcObject as MediaStream | null);
+        mediaElement.srcObject = null;
+      });
+
+      // Clear global streams
+      if ((window as any).__globalMediaStreams) {
+        (window as any).__globalMediaStreams.forEach(stopStream);
+        (window as any).__globalMediaStreams = [];
+      }
+    };
+
+    // Don't run immediately, wait a bit
+    const interval = setInterval(cleanupMediaStreams, 2000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+
   const handleInterviewComplete = (
     submissionSuccess?: boolean,
     attemptId?: string
@@ -165,20 +242,26 @@ const MockInterview = () => {
     // If undefined, it means submission is in progress
     // If boolean, submission is complete (true = success, false = failed)
     if (submissionSuccess === undefined) {
-      // Check sessionStorage flag
-      const submitting = sessionStorage.getItem("interview_submitting");
-      if (submitting === "true") {
-        setSubmissionStatus(null); // null = submitting
-      }
-      // Store attemptId in sessionStorage and state
+      // Submission in progress - navigate to complete page
+
+      // Store attemptId in sessionStorage and state FIRST
       if (attemptId) {
         sessionStorage.setItem("interview_attempt_id", attemptId);
         setSubmittedAttemptId(attemptId);
       }
-      navigate("/mock-interview/complete");
+
+      // Set submission status
+      const submitting = sessionStorage.getItem("interview_submitting");
+      if (submitting === "true") {
+        setSubmissionStatus(null); // null = submitting
+      }
+
+      // Navigate to complete page with replace to prevent back navigation
+      navigate("/mock-interview/complete", { replace: true });
     } else {
-      // Update status after navigation
+      // Update status after navigation (submission complete)
       setSubmissionStatus(submissionSuccess);
+
       // Store attemptId if provided
       if (attemptId) {
         sessionStorage.setItem("interview_attempt_id", attemptId);
@@ -311,9 +394,7 @@ const MockInterview = () => {
               <Route
                 path="detail/:recordId"
                 element={
-                  <InterviewDetailViewWrapper
-                    selectedRecord={selectedRecord}
-                  />
+                  <InterviewDetailViewWrapper selectedRecord={selectedRecord} />
                 }
               />
 
@@ -352,20 +433,34 @@ const InterviewRoomWrapper = ({
   selectedTopic: string | null;
   selectedDifficulty: string | null;
   interviewQuestions: InterviewQuestion[];
-  onComplete: () => void;
+  onComplete: (submissionSuccess?: boolean, attemptId?: string) => void;
   onBack: () => void;
 }) => {
   const { interviewId } = useParams<{ interviewId: string }>();
+
+  // Clear any lingering submission flags when mounting interview room
+  useEffect(() => {
+    sessionStorage.removeItem("interview_submitting");
+    sessionStorage.removeItem("interview_submission_complete");
+  }, []);
 
   if (!interviewId) {
     return <Navigate to="/mock-interview" replace />;
   }
 
+  // Get topic and difficulty from state or sessionStorage
+  const topic =
+    selectedTopic || sessionStorage.getItem("interview_topic") || "General";
+  const difficulty =
+    selectedDifficulty ||
+    sessionStorage.getItem("interview_difficulty") ||
+    "Medium";
+
   return (
     <ProctoringProvider>
       <InterviewRoom
-        topic={selectedTopic || "General"}
-        difficulty={selectedDifficulty || "Medium"}
+        topic={topic}
+        difficulty={difficulty}
         onComplete={onComplete}
         onBack={onBack}
         interviewId={interviewId}

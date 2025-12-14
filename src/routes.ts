@@ -91,8 +91,37 @@ const AttendanceManagementPage = lazy(
 const AttendancePage = lazy(
   () => import("./features/learn/pages/AttendancePage")
 );
-const PWATestPage = lazy(() => import("./components/PWATestPage").then(module => ({ default: module.PWATestPage })));
+const PWATestPage = lazy(() =>
+  import("./components/PWATestPage").then((module) => ({
+    default: module.PWATestPage,
+  }))
+);
 const IOSPWATestPage = lazy(() => import("./components/IOSPWATestPage"));
+const AssessmentListPage = lazy(
+  () =>
+    import("./features/admin/assessment-management/pages/AssessmentListPage")
+);
+const CreateEditAssessmentPage = lazy(
+  () =>
+    import(
+      "./features/admin/assessment-management/pages/CreateEditAssessmentPage"
+    )
+);
+const MCQListPage = lazy(
+  () => import("./features/admin/assessment-management/pages/MCQListPage")
+);
+const ContentVerificationPage = lazy(
+  () =>
+    import(
+      "./features/admin/content-verification/pages/ContentVerificationPage"
+    )
+);
+const ContentDetailPage = lazy(
+  () => import("./features/admin/content-verification/pages/ContentDetailPage")
+);
+const EbookProcessingPage = lazy(
+  () => import("./features/admin/ebook-processing/pages/EbookProcessingPage")
+);
 
 export interface RouteConfig {
   path: string;
@@ -338,6 +367,48 @@ const routes: RouteConfig[] = [
     path: "/admin/webinar-management",
     component: WebinarManagement,
     isPrivate: true,
+  },
+  {
+    path: "/admin/assessments",
+    component: AssessmentListPage,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/assessments/create",
+    component: CreateEditAssessmentPage,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/assessments/edit/:assessmentId",
+    component: CreateEditAssessmentPage,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/mcqs",
+    component: MCQListPage,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/verify-content",
+    component: ContentVerificationPage,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/verify-content/:contentId",
+    component: ContentDetailPage,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
+  },
+  {
+    path: "/admin/ebook-processing",
+    component: EbookProcessingPage,
+    isPrivate: true,
+    requiredRole: "admin_or_instructor",
   },
 ];
 
