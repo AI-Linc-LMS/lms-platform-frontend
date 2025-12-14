@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && NODE_OPTIONS=--max-old-space-size=8192 vite build",
     "analyze": "cross-env ANALYZE=true vite build",
     "lint": "eslint .",
     "preview": "vite preview",
