@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import JobCard from "../components/JobCard";
 import { Job } from "../types/jobs.types";
@@ -33,6 +33,10 @@ const Jobs: React.FC = () => {
   // Autocomplete states
   const [showDesignationSuggestions, setShowDesignationSuggestions] = useState(false);
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  
+  // Refs for dropdown positioning
+  const designationInputRef = useRef<HTMLInputElement>(null);
+  const locationInputRef = useRef<HTMLInputElement>(null);
   
   // Sidebar filter states (client-side filtering) - using arrays for multiple selections
   const [showFilterSidebar, setShowFilterSidebar] = useState(false);
@@ -366,9 +370,9 @@ const Jobs: React.FC = () => {
                 {t("jobs.description")}
               </p>
 
-              <div className="max-w-6xl mx-auto">
-                <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-5 shadow-2xl border border-white/50">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+              <div className="max-w-6xl mx-auto relative z-50">
+                <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-5 shadow-2xl border border-white/50 overflow-visible">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 overflow-visible">
                     {/* Job Type Dropdown */}
                     <div className="lg:col-span-1">
                       <select
@@ -383,7 +387,7 @@ const Jobs: React.FC = () => {
                     </div>
 
                     {/* Designation Input with Autocomplete */}
-                    <div className="lg:col-span-1 relative">
+                    <div className="lg:col-span-1 relative z-[100]">
                       <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
                       <svg
@@ -401,6 +405,7 @@ const Jobs: React.FC = () => {
                       </svg>
                     </div>
                     <input
+                      ref={designationInputRef}
                       type="text"
                       placeholder="Role"
                       value={designationFilter}
@@ -414,8 +419,8 @@ const Jobs: React.FC = () => {
                     />
                       </div>
                       {/* Suggestions Dropdown */}
-                      {showDesignationSuggestions && filteredDesignationSuggestions.length > 0 && designationFilter && (
-                        <div className="absolute z-50 w-full mt-1 bg-white border border-[var(--neutral-200)] rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {showDesignationSuggestions && filteredDesignationSuggestions.length > 0 && (
+                        <div className="absolute z-[10000] w-full mt-1 bg-white border border-[var(--neutral-200)] rounded-lg shadow-lg max-h-60 overflow-y-auto">
                           {filteredDesignationSuggestions.map((suggestion, index) => (
                             <div
                               key={index}
@@ -433,7 +438,7 @@ const Jobs: React.FC = () => {
                   </div>
 
                     {/* Location Input with Autocomplete */}
-                    <div className="lg:col-span-1 relative">
+                    <div className="lg:col-span-1 relative z-[100]">
                       <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
                       <svg
@@ -457,6 +462,7 @@ const Jobs: React.FC = () => {
                       </svg>
                     </div>
                     <input
+                      ref={locationInputRef}
                       type="text"
                       placeholder="City"
                       value={locationFilter}
@@ -470,8 +476,8 @@ const Jobs: React.FC = () => {
                     />
                       </div>
                       {/* Suggestions Dropdown */}
-                      {showLocationSuggestions && filteredLocationSuggestions.length > 0 && locationFilter && (
-                        <div className="absolute z-50 w-full mt-1 bg-white border border-[var(--neutral-200)] rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {showLocationSuggestions && filteredLocationSuggestions.length > 0 && (
+                        <div className="absolute z-[10000] w-full mt-1 bg-white border border-[var(--neutral-200)] rounded-lg shadow-lg max-h-60 overflow-y-auto">
                           {filteredLocationSuggestions.map((suggestion, index) => (
                             <div
                               key={index}
@@ -486,7 +492,7 @@ const Jobs: React.FC = () => {
                           ))}
                         </div>
                       )}
-                    </div>
+                  </div>
 
                     {/* Experience Input */}
                     <div className="lg:col-span-1">
@@ -539,7 +545,7 @@ const Jobs: React.FC = () => {
           <div className="flex gap-6">
             {/* Filter Sidebar */}
             <div className={`${showFilterSidebar ? 'block' : 'hidden'} lg:block w-full lg:w-64 flex-shrink-0`}>
-              <div className="bg-white rounded-xl shadow-sm border border-[var(--neutral-100)] sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto">
+              <div className="bg-white rounded-xl shadow-sm border border-[var(--neutral-100)] sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto z-40">
                 <div className="sticky top-0 bg-white z-10 p-6 pb-4 border-b border-[var(--neutral-100)]">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-bold text-[var(--neutral-600)]">Filters</h3>
@@ -656,35 +662,35 @@ const Jobs: React.FC = () => {
                 <div>
                   {/* No Jobs Found Message */}
                   <div className="text-center py-12 sm:py-16 bg-white rounded-lg shadow-md mb-8">
-                    <div className="mb-6">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-16 w-16 mx-auto text-[var(--neutral-300)] opacity-50"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                        />
-                      </svg>
-                    </div>
-                    <h3 className="text-lg sm:text-xl font-semibold text-[var(--neutral-500)] mb-2">
-                      No {jobTypeFilter === 'internship' ? 'Internships' : 'Jobs'} Found
-                    </h3>
-                    <p className="text-[var(--neutral-300)] mb-4 text-sm sm:text-base max-w-md mx-auto px-4">
-                      We couldn't find any {jobTypeFilter === 'internship' ? 'internships' : 'jobs'} matching your current search
-                      criteria. Try adjusting your filters or search terms.
-                    </p>
-                    <button
-                      onClick={resetAllFilters}
-                      className="mt-4 px-6 py-2 bg-[var(--primary-500)] text-[var(--font-light)] rounded-lg hover:bg-[var(--primary-600)] transition-colors"
+                  <div className="mb-6">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-16 w-16 mx-auto text-[var(--neutral-300)] opacity-50"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
                     >
-                      Reset All Filters
-                    </button>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-semibold text-[var(--neutral-500)] mb-2">
+                      No {jobTypeFilter === 'internship' ? 'Internships' : 'Jobs'} Found
+                  </h3>
+                  <p className="text-[var(--neutral-300)] mb-4 text-sm sm:text-base max-w-md mx-auto px-4">
+                      We couldn't find any {jobTypeFilter === 'internship' ? 'internships' : 'jobs'} matching your current search
+                    criteria. Try adjusting your filters or search terms.
+                  </p>
+                  <button
+                    onClick={resetAllFilters}
+                    className="mt-4 px-6 py-2 bg-[var(--primary-500)] text-[var(--font-light)] rounded-lg hover:bg-[var(--primary-600)] transition-colors"
+                  >
+                    Reset All Filters
+                  </button>
                   </div>
 
                   {/* You Might Be Interested In Section */}
