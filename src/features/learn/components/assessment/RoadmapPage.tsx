@@ -50,7 +50,6 @@ const RoadmapPage = () => {
 
   const currentAssessmentId = assessmentId || location.state?.assessmentId;
   const clientId = parseInt(import.meta.env.VITE_CLIENT_ID) || 1;
-  const [isDownloading, setIsDownloading] = useState(false);
 
   // FIXED: Set to true to show modal immediately on page load
   //  const [showCongratsModal, setShowCongratsModal] = useState(true);
@@ -219,7 +218,6 @@ const RoadmapPage = () => {
   }, []);
 
   const handleDownloadCertificate = async () => {
-    setIsDownloading(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 300));
 
@@ -230,8 +228,6 @@ const RoadmapPage = () => {
       }
     } catch {
       // Download failed
-    } finally {
-      setIsDownloading(false);
     }
   };
 

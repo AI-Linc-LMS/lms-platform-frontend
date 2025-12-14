@@ -75,7 +75,7 @@ PerformanceReportProps) => {
         )} */}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 justify-center items-center">
-        {data.map((metric: Metric, idx: number) => {
+        {data.map((metric: Metric) => {
           const isPlacementReadiness = metric.label === "Placement Readiness";
           return (
             <div
