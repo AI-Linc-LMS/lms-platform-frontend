@@ -9,9 +9,10 @@ export const ProctoringContext = createContext<
   ProctoringContextType | undefined
 >(undefined);
 
-export const ProctoringProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const ProctoringProvider: React.FC<{
+  children: React.ReactNode;
+  sessionId?: string;
+}> = ({ children, sessionId }) => {
   const [eventLog, setEventLog] = useState<ProctoringEvent[]>([]);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
 
@@ -21,7 +22,7 @@ export const ProctoringProvider: React.FC<{ children: React.ReactNode }> = ({
     // Clear any existing events for this interview
     sessionStorage.removeItem(`proctoring_events_${interviewId}`);
     setEventLog([]);
-  }, []);
+  }, [sessionId]);
 
   // Clear all proctoring events for current interview
   const clearProctoringEvents = () => {
@@ -49,6 +50,10 @@ export const ProctoringProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Get current interview ID from URL or generate one
   const getInterviewId = () => {
+    // If sessionId is provided, use it
+    if (sessionId) {
+      return sessionId;
+    }
     const path = window.location.pathname;
     const match = path.match(/\/mock-interview/);
     return match ? `mock-interview-${Date.now()}` : "current_interview";

@@ -80,12 +80,19 @@ export const useAssessment = (assessmentId?: string) => {
   const finalAssessmentId = questions?.slug ?? currentAssessmentId;
 
   const finalSubmitMutation = useMutation({
-    mutationFn: (answers: QuizSectionResponse) =>
+    mutationFn: ({
+      answers,
+      metadata,
+    }: {
+      answers: QuizSectionResponse;
+      metadata?: Record<string, any>;
+    }) =>
       submitFinalAssessment(
         clientId,
         finalAssessmentId,
         answers,
-        referralCode || undefined
+        referralCode || undefined,
+        metadata
       ),
     onSuccess: (data) => {
       if (referralCode) {
@@ -205,23 +212,26 @@ export const useAssessment = (assessmentId?: string) => {
     const timer = setInterval(() => {
       setTimeRemaining((prev) => {
         if (prev <= 1) {
-          finalSubmitMutation.mutate(userAnswers, {
-            onSuccess: (data) => {
-              if (referralCode) {
-              }
-              if (data) {
-                setAssessmentResult({
-                  score: data.score || 0,
-                  offered_scholarship_percentage:
-                    data.offered_scholarship_percentage || 0,
-                });
-              }
-            },
-            onError: () => {
-              // Error auto-submitting assessment
-              setIsCompleted(true);
-            },
-          });
+          finalSubmitMutation.mutate(
+            { answers: userAnswers },
+            {
+              onSuccess: (data) => {
+                if (referralCode) {
+                }
+                if (data) {
+                  setAssessmentResult({
+                    score: data.score || 0,
+                    offered_scholarship_percentage:
+                      data.offered_scholarship_percentage || 0,
+                  });
+                }
+              },
+              onError: () => {
+                // Error auto-submitting assessment
+                setIsCompleted(true);
+              },
+            }
+          );
           return 0;
         }
         return prev - 1;
@@ -266,18 +276,22 @@ export const useAssessment = (assessmentId?: string) => {
     setCurrentQuestionIndex(index);
   };
 
-  const handleFinishAssessment = () => {
+  const handleFinishAssessment = (metadata?: Record<string, any>) => {
     if (referralCode) {
     }
-    finalSubmitMutation.mutate(userAnswers, {
-      onSuccess: () => {
-        setIsCompleted(true);
-      },
-      onError: () => {
-        // Error submitting final assessment
-        setIsCompleted(true);
-      },
-    });
+    // Update mutation to include metadata
+    finalSubmitMutation.mutate(
+      { answers: userAnswers, metadata },
+      {
+        onSuccess: () => {
+          setIsCompleted(true);
+        },
+        onError: () => {
+          // Error submitting final assessment
+          setIsCompleted(true);
+        },
+      }
+    );
   };
 
   const getQuestionButtonStyle = (index: number) => {

@@ -2,9 +2,9 @@ import { QuizSectionResponse } from "../../features/learn/hooks/useAssessment";
 import axiosInstance from "../axiosInstance";
 
 interface ApiError {
-  response?: { 
-    data?: { detail?: string }; 
-    status?: number 
+  response?: {
+    data?: { detail?: string };
+    status?: number;
   };
   message: string;
 }
@@ -16,6 +16,7 @@ export interface AssessmentDetails {
   slug: string;
   instructions: string;
   description: string;
+  total_questions: number;
   duration_minutes: number;
   is_paid: boolean;
   price: string;
@@ -41,9 +42,13 @@ export interface AssessmentListItem {
 interface AssessmentSubmissionPayload {
   response_sheet: QuizSectionResponse;
   referral_code?: string;
+  metadata?: Record<string, any>;
 }
 
-export const getInstructions = async (clientId: number, assessmentId: string): Promise<AssessmentDetails> => {
+export const getInstructions = async (
+  clientId: number,
+  assessmentId: string
+): Promise<AssessmentDetails> => {
   try {
     const res = await axiosInstance.get(
       `/assessment/api/client/${clientId}/assessment-details/${assessmentId}/`
@@ -67,7 +72,9 @@ export const getInstructions = async (clientId: number, assessmentId: string): P
 };
 
 // New API to get all available assessments
-export const getAllAssessments = async (clientId: number): Promise<AssessmentListItem[]> => {
+export const getAllAssessments = async (
+  clientId: number
+): Promise<AssessmentListItem[]> => {
   try {
     const res = await axiosInstance.get(
       `/assessment/api/client/${clientId}/active-assessments/`
@@ -75,14 +82,15 @@ export const getAllAssessments = async (clientId: number): Promise<AssessmentLis
     return res.data;
   } catch {
     // If the API endpoint doesn't exist, return a static list of known assessments
-    
+
     // Fallback list of known assessments - this can be configured
     const fallbackAssessments: AssessmentListItem[] = [
       {
         id: 1,
         title: "AI-Linc Scholarship Test",
         slug: "ai-linc-scholarship-test",
-        description: "Complete this assessment to showcase your AI and full-stack development skills and qualify for our scholarship program.",
+        description:
+          "Complete this assessment to showcase your AI and full-stack development skills and qualify for our scholarship program.",
         duration_minutes: 30,
         is_paid: true,
         price: "00.00",
@@ -92,14 +100,15 @@ export const getAllAssessments = async (clientId: number): Promise<AssessmentLis
         id: 2,
         title: "AI-Linc Scholarship Test II",
         slug: "ai-linc-scholarship-test-2",
-        description: "Advanced assessment to evaluate your technical expertise and problem-solving abilities in AI and development.",
+        description:
+          "Advanced assessment to evaluate your technical expertise and problem-solving abilities in AI and development.",
         duration_minutes: 30,
         is_paid: true,
         price: "49.00",
         is_active: true,
-      }
+      },
     ];
-    
+
     return fallbackAssessments;
   }
 };
@@ -123,7 +132,9 @@ export const startAssessment = async (
     const queryString = params.toString();
 
     const res = await axiosInstance.get(
-      `assessment/api/client/${clientId}/start-assessment/${assessmentId}/${queryString ? "?" + queryString : ""}`
+      `assessment/api/client/${clientId}/start-assessment/${assessmentId}/${
+        queryString ? "?" + queryString : ""
+      }`
     );
     return res.data;
   } catch (error) {
@@ -147,7 +158,8 @@ export const submitFinalAssessment = async (
   clientId: number,
   assessmentId: string,
   userAnswers: QuizSectionResponse,
-  referralCode?: string
+  referralCode?: string,
+  metadata?: Record<string, any>
 ) => {
   try {
     const payload: AssessmentSubmissionPayload = {
@@ -157,6 +169,11 @@ export const submitFinalAssessment = async (
     // Add referral code if provided
     if (referralCode) {
       payload.referral_code = referralCode;
+    }
+
+    // Add metadata if provided
+    if (metadata) {
+      payload.metadata = metadata;
     }
 
     const res = await axiosInstance.put(
