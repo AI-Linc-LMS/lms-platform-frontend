@@ -875,6 +875,11 @@ const CreateEditAssessmentPage = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    localStorage.removeItem("assessment-form-new");
+    localStorage.removeItem("assessment-form-new-selectedMCQIds");
+    localStorage.removeItem("assessment-form-new-bulkMCQs");
+    localStorage.removeItem("assessment-form-new-aiMCQs");
+    localStorage.removeItem("assessment-form-new-tab");
 
     if (!validateForm()) {
       return;
