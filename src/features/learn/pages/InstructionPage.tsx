@@ -187,7 +187,8 @@ const InstructionPage: React.FC = () => {
                     {t(
                       "assessments.kakatiyaAssessment.details.totalQuestions",
                       {
-                        totalQuestions: assessmentData?.total_questions || "10",
+                        totalQuestions:
+                          assessmentData?.number_of_questions || "10",
                       }
                     )}
                   </span>

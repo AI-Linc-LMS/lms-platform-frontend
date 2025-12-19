@@ -16,7 +16,7 @@ export interface AssessmentDetails {
   slug: string;
   instructions: string;
   description: string;
-  total_questions: number;
+  number_of_questions: number;
   duration_minutes: number;
   is_paid: boolean;
   price: string;
@@ -162,18 +162,16 @@ export const submitFinalAssessment = async (
   metadata?: Record<string, any>
 ) => {
   try {
+    // Include metadata inside response_sheet if provided
+    const responseSheet = metadata ? { ...userAnswers, metadata } : userAnswers;
+
     const payload: AssessmentSubmissionPayload = {
-      response_sheet: userAnswers,
+      response_sheet: responseSheet,
     };
 
     // Add referral code if provided
     if (referralCode) {
       payload.referral_code = referralCode;
-    }
-
-    // Add metadata if provided
-    if (metadata) {
-      payload.metadata = metadata;
     }
 
     const res = await axiosInstance.put(
