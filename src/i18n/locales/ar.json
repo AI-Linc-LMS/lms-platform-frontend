@@ -417,8 +417,8 @@
         "goodLuck": "حظاً موفقاً!"
       },
       "details": {
-        "totalQuestions": "إجمالي الأسئلة: 30 MCQ",
-        "duration": "المدة: 30 دقيقة",
+        "totalQuestions": "إجمالي الأسئلة: {{totalQuestions}} MCQ",
+        "duration": "المدة: {{duration}} دقيقة",
         "topics": "المواضيع:",
         "topicsList": {
           "aiFundamentals": "أساسيات الذكاء الاصطناعي",

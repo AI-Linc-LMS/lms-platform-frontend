@@ -414,8 +414,8 @@
         "goodLuck": "शुभकामनाएं!"
       },
       "details": {
-        "totalQuestions": "कुल प्रश्न: 30 MCQ",
-        "duration": "अवधि: 30 मिनट",
+        "totalQuestions": "कुल प्रश्न: {{totalQuestions}} MCQ",
+        "duration": "अवधि: {{duration}} मिनट",
         "topics": "विषय:",
         "topicsList": {
           "aiFundamentals": "AI मूल बातें",

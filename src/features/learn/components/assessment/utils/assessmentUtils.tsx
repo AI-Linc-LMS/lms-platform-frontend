@@ -23,17 +23,21 @@ export const transformToPerformanceReportData = (stats?: AssessmentStats) => {
       label: "Overall Accuracy",
       value: stats.accuracy_percent ?? 0,
       unit: "%",
-      color: "#22c55e",
+      color: "var(--success-500)",
       icon: (
         <svg
           width="24"
           height="24"
           fill="none"
-          stroke="#22c55e"
+          stroke="var(--success-500)"
           strokeWidth="2"
+          viewBox="0 0 24 24"
         >
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 8v4l2 2" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
       ),
     },
@@ -59,14 +63,15 @@ export const transformToPerformanceReportData = (stats?: AssessmentStats) => {
       label: "Placement Readiness",
       value: stats.placement_readiness ?? 0,
       unit: "",
-      color: "var(--accent-yellow)",
+      color: "var(--accent-orange)",
       icon: (
         <svg
           width="24"
           height="24"
           fill="none"
-          stroke="var(--accent-yellow)"
+          stroke="var(--accent-orange)"
           strokeWidth="2"
+          viewBox="0 0 24 24"
         >
           <polygon points="12,2 15,10 24,10 17,15 19,24 12,19 5,24 7,15 0,10 9,10" />
         </svg>
@@ -84,9 +89,13 @@ export const transformToPerformanceReportData = (stats?: AssessmentStats) => {
           fill="none"
           stroke="#0ea5e9"
           strokeWidth="2"
+          viewBox="0 0 24 24"
         >
-          <circle cx="12" cy="8" r="4" />
-          <rect x="8" y="12" width="8" height="8" rx="2" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+          />
         </svg>
       ),
     },

@@ -138,6 +138,10 @@ const InstructionPage: React.FC = () => {
     });
   };
 
+  const handleViewResults = () => {
+    navigate(`/roadmap/${currentAssessmentId}`);
+  };
+
   return (
     <div className="min-h-screen bg-[var(--neutral-50)] p-4">
       <div className="max-w-4xl mx-auto">
@@ -180,7 +184,13 @@ const InstructionPage: React.FC = () => {
                     />
                   </svg>
                   <span className="font-medium">
-                    {t("assessments.kakatiyaAssessment.details.totalQuestions")}
+                    {t(
+                      "assessments.kakatiyaAssessment.details.totalQuestions",
+                      {
+                        totalQuestions:
+                          assessmentData?.number_of_questions || "10",
+                      }
+                    )}
                   </span>
                 </div>
 
@@ -199,7 +209,9 @@ const InstructionPage: React.FC = () => {
                     />
                   </svg>
                   <span className="font-medium">
-                    {t("assessments.kakatiyaAssessment.details.duration")}
+                    {t("assessments.kakatiyaAssessment.details.duration", {
+                      duration: assessmentData?.duration_minutes,
+                    })}
                   </span>
                 </div>
 
@@ -259,7 +271,7 @@ const InstructionPage: React.FC = () => {
                 <div className="flex flex-col lg:flex-row gap-3">
                   {assessmentData?.status === "submitted" ? (
                     <button
-                      onClick={handleResumeAssessment}
+                      onClick={handleViewResults}
                       className="w-full py-3 px-6 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors"
                     >
                       {t("assessments.kakatiyaAssessment.buttons.viewResults")}
