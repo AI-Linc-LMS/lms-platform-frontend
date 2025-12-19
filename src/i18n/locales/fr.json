@@ -423,8 +423,8 @@
         "goodLuck": "Good luck!"
       },
       "details": {
-        "totalQuestions": "Total Questions: 30 MCQ",
-        "duration": "Duration: 30 minutes",
+        "totalQuestions": "Total Questions: {{totalQuestions}} MCQ",
+        "duration": "Duration: {{duration}} minutes",
         "topics": "Topics:",
         "topicsList": {
           "aiFundamentals": "AI Fundamentals",
