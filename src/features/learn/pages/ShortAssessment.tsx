@@ -149,16 +149,29 @@ const ShortAssessmentContent: React.FC<{
       // Try to request fullscreen
       if (element.requestFullscreen) {
         try {
+          // First try with navigationUI option (may require permissions)
           fullscreenPromise = element.requestFullscreen({
             navigationUI: "hide",
           }) as Promise<void>;
         } catch (err: any) {
-          // If navigationUI option fails, try without it
+          // If navigationUI option fails (permissions or not supported), try without it
           if (
             err.name === "TypeError" ||
-            err.message?.includes("navigationUI")
+            err.message?.includes("navigationUI") ||
+            err.message?.includes("Permissions check failed") ||
+            err.message?.includes("permission") ||
+            err.name === "NotAllowedError" ||
+            err.name === "SecurityError"
           ) {
-            fullscreenPromise = element.requestFullscreen() as Promise<void>;
+            console.log(
+              "NavigationUI option not supported or permission denied, trying without it"
+            );
+            try {
+              fullscreenPromise = element.requestFullscreen() as Promise<void>;
+            } catch (fallbackErr: any) {
+              // If even basic fullscreen fails, throw the original error
+              throw err;
+            }
           } else {
             throw err;
           }
@@ -175,7 +188,34 @@ const ShortAssessmentContent: React.FC<{
 
       // Wait for the promise to resolve
       if (fullscreenPromise) {
-        await fullscreenPromise;
+        try {
+          await fullscreenPromise;
+        } catch (promiseError: any) {
+          // Handle promise rejection (permissions, user denial, etc.)
+          if (
+            promiseError.name === "NotAllowedError" ||
+            promiseError.name === "SecurityError" ||
+            promiseError.message?.includes("Permissions check failed") ||
+            promiseError.message?.includes("permission")
+          ) {
+            console.warn(
+              "Fullscreen permission denied or check failed:",
+              promiseError.message
+            );
+            // Try again without navigationUI if we haven't already
+            if (element.requestFullscreen) {
+              try {
+                await (element.requestFullscreen() as Promise<void>);
+              } catch (retryError: any) {
+                throw promiseError; // Throw original error
+              }
+            } else {
+              throw promiseError;
+            }
+          } else {
+            throw promiseError;
+          }
+        }
       }
 
       // Wait a moment for the fullscreen change event to fire
@@ -205,7 +245,20 @@ const ShortAssessmentContent: React.FC<{
       // Log the error for debugging
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      console.error("Fullscreen error:", errorMessage, error);
+      const errorName = error instanceof Error ? error.name : "Unknown";
+
+      // Don't log as error if it's a permission issue - it's expected in some cases
+      if (
+        errorMessage.includes("Permissions check failed") ||
+        errorMessage.includes("permission") ||
+        errorName === "NotAllowedError" ||
+        errorName === "SecurityError"
+      ) {
+        console.warn("Fullscreen permission issue:", errorMessage);
+      } else {
+        console.error("Fullscreen error:", errorMessage, error);
+      }
+
       logEvent("SCREEN_SHARE_STOP", { error: errorMessage });
       return false;
     }
