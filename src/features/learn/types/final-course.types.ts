@@ -10,7 +10,7 @@ export interface Course {
   slug: string;
   price: string;
   is_free: boolean;
-  enrollment_enabled: boolean;
+  enrollment_enabled?: boolean;
 
   // Course metadata (from backend)
   difficulty_level: string; // "Easy", "Medium", "Advanced"
