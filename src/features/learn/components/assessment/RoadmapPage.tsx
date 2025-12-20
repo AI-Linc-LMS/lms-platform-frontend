@@ -35,6 +35,7 @@ import {
 // Import fallback data
 import { certificateFallbackData } from "./data/assessmentData";
 import { redeemScholarship } from "../../../../services/assesment/assesmentApis";
+import BackButton from "../../../../components/mockInterview/components/BackButton";
 
 const RoadmapPage = () => {
   const navigate = useNavigate();
@@ -123,27 +124,6 @@ const RoadmapPage = () => {
     }
   };
 
-  // const handleCertificatePayment = () => {
-  //   if (!currentAssessmentId) {
-  //     showToast("error", "Error", "Assessment ID not found");
-  //     return;
-  //   }
-
-  //   const certificatePrice = redeemData?.assessment_price ?? 49;
-
-  //   initiateAssessmentPayment(clientId, certificatePrice, {
-  //     prefill: {
-  //       name: user?.full_name || "User",
-  //       email: user?.email || "",
-  //     },
-  //     metadata: {
-  //       assessmentId: currentAssessmentId,
-  //       type_id: currentAssessmentId,
-  //       payment_type: "ASSESSMENT",
-  //     },
-  //   });
-  // };
-
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
     setPaymentResult(null);
@@ -152,46 +132,6 @@ const RoadmapPage = () => {
   // Get user data and stats
   const user = useSelector((state: { user: UserState }) => state.user);
   const assessmentStats = redeemData?.stats;
-
-  // Certificate payment hook
-  // const { paymentState: assessmentPaymentState, initiateAssessmentPayment } =
-  //   useAssessmentPayment({
-  //     onSuccess: (result: PaymentResult) => {
-  //       setPaymentResult({
-  //         paymentId: result.paymentId,
-  //         orderId: result.orderId,
-  //         amount: result.amount,
-  //       });
-  //       setShowSuccessModal(true);
-  //       showToast(
-  //         "success",
-  //         "Payment Successful!",
-  //         "Your certificate payment is complete. You can now download your certificate."
-  //       );
-
-  //       // Invalidate and refetch the assessment results query to get updated payment status
-  //       queryClient.invalidateQueries({
-  //         queryKey: ["assessment-results", clientId, currentAssessmentId],
-  //       });
-
-  //       // Also refetch after a short delay to ensure backend processing is complete
-  //       setTimeout(() => {
-  //         queryClient.invalidateQueries({
-  //           queryKey: ["assessment-results", clientId, currentAssessmentId],
-  //         });
-  //       }, 2000);
-  //     },
-  //     onError: (error: string) => {
-  //       showToast("error", "Payment Failed", error);
-  //     },
-  //     onDismiss: () => {
-  //       showToast(
-  //         "warning",
-  //         "Payment Cancelled",
-  //         "Payment was cancelled. You can try again anytime."
-  //       );
-  //     },
-  //   });
 
   // Certificate data for the assessment
   const certificateData = {
@@ -349,6 +289,14 @@ const RoadmapPage = () => {
   return (
     <div className="py-6">
       <div className="max-w-6xl mx-auto">
+        <div className="mb-4">
+          <BackButton
+            onClick={() => {
+              navigate("/assessments");
+            }}
+            label="Back to Assessments"
+          />
+        </div>
         {/* Header - Matching InterviewDetailView style */}
         <div className="mb-8">
           <div
