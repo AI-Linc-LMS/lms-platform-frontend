@@ -409,88 +409,192 @@ const ShortAssessmentContent: React.FC<{
 
   // Get the stream from global variable (set by InstructionPage) - run on mount
   useEffect(() => {
-    // Get stream from global variable
-    const globalStream = (window as any)
-      .__assessmentCameraStream as MediaStream | null;
+    // Get stream from global variable with retry logic (in case InstructionPage hasn't set it yet)
+    let attempts = 0;
+    const maxAttempts = 10;
 
-    if (!globalStream) {
-      console.error(
-        "Camera stream not found - InstructionPage should have set it"
-      );
-      return;
-    }
-
-    // Use the stream immediately - don't check if it's active, just use it
-    console.log("Setting up camera stream from InstructionPage");
-    setCameraStream(globalStream);
-    streamRef.current = globalStream;
-
-    // Register stream globally for cleanup (but don't stop it here)
-    if (!(window as any).__globalMediaStreams) {
-      (window as any).__globalMediaStreams = [];
-    }
-    if (!(window as any).__globalMediaStreams.includes(globalStream)) {
-      (window as any).__globalMediaStreams.push(globalStream);
-    }
-
-    // Setup video element with retry logic
-    const setupVideo = () => {
-      if (videoRef.current && globalStream) {
-        const video = videoRef.current;
-        video.srcObject = globalStream;
-        video.playsInline = true;
-        video.muted = true;
-        video
-          .play()
-          .then(() => {
-            console.log("Video playing successfully");
-            setTimeout(() => setIsVideoReady(true), 300);
-          })
-          .catch((err) => {
-            console.warn("Video play failed, retrying...", err);
-            setTimeout(setupVideo, 200);
-          });
-      } else if (!videoRef.current) {
-        // Video ref not ready yet, retry
-        setTimeout(setupVideo, 100);
-      }
+    const getStream = (): MediaStream | null => {
+      return (window as any).__assessmentCameraStream as MediaStream | null;
     };
 
-    // Start setup immediately
-    setupVideo();
+    const setupStream = () => {
+      const globalStream = getStream();
 
-    logEvent("SCREEN_SHARE_START");
+      if (!globalStream) {
+        attempts++;
+        if (attempts < maxAttempts) {
+          // Retry after a short delay (stream might not be set yet)
+          setTimeout(setupStream, 100);
+          return;
+        }
+        console.error(
+          "Camera stream not found after retries - InstructionPage should have set it"
+        );
+        return;
+      }
 
-    // Load face detection model
-    loadBlazeFaceModel()
-      .then((model) => {
-        blazeFaceModelRef.current = model;
-        setFaceDetectionReady(true);
-      })
-      .catch(() => {
-        // Face detection failed, continue without it
+      // Verify stream is actually a MediaStream
+      if (!(globalStream instanceof MediaStream)) {
+        console.error("Invalid stream type in global variable");
+        return;
+      }
+
+      // Use the stream immediately - don't check if it's active, just use it
+      console.log("Setting up camera stream from InstructionPage");
+      setCameraStream(globalStream);
+      streamRef.current = globalStream;
+
+      // Register stream globally for cleanup (but don't stop it here)
+      if (!(window as any).__globalMediaStreams) {
+        (window as any).__globalMediaStreams = [];
+      }
+      if (!(window as any).__globalMediaStreams.includes(globalStream)) {
+        (window as any).__globalMediaStreams.push(globalStream);
+      }
+
+      // Setup video element with retry logic
+      const setupVideo = (videoAttempts = 0) => {
+        if (videoAttempts > 20) {
+          console.error("Failed to setup video after max attempts");
+          return;
+        }
+
+        if (videoRef.current && globalStream) {
+          const video = videoRef.current;
+          video.srcObject = globalStream;
+          video.playsInline = true;
+          video.muted = true;
+          video.setAttribute("autoplay", "true");
+          video
+            .play()
+            .then(() => {
+              console.log("Video playing successfully");
+              setTimeout(() => setIsVideoReady(true), 300);
+            })
+            .catch((err) => {
+              console.warn("Video play failed, retrying...", err);
+              setTimeout(() => setupVideo(videoAttempts + 1), 200);
+            });
+        } else if (!videoRef.current) {
+          // Video ref not ready yet, retry
+          setTimeout(() => setupVideo(videoAttempts + 1), 100);
+        }
+      };
+
+      // Start setup immediately
+      setupVideo();
+
+      logEvent("SCREEN_SHARE_START");
+
+      // Load face detection model
+      loadBlazeFaceModel()
+        .then((model) => {
+          blazeFaceModelRef.current = model;
+          setFaceDetectionReady(true);
+        })
+        .catch(() => {
+          // Face detection failed, continue without it
+        });
+
+      // Auto-enter fullscreen - must be triggered by user interaction
+      // Set up a one-time user interaction handler to enter fullscreen
+      let fullscreenEntered = false;
+
+      const enterFullscreenOnInteraction = async () => {
+        if (fullscreenEntered || checkFullscreenState()) {
+          return;
+        }
+
+        console.log("User interaction detected, entering fullscreen...");
+        fullscreenEntered = true;
+
+        // Remove listeners after first interaction
+        document.removeEventListener("click", enterFullscreenOnInteraction);
+        document.removeEventListener("keydown", enterFullscreenOnInteraction);
+        document.removeEventListener(
+          "touchstart",
+          enterFullscreenOnInteraction
+        );
+
+        let attempts = 0;
+        const maxAttempts = 3;
+
+        const tryEnter = async () => {
+          if (attempts >= maxAttempts) {
+            console.warn("Max fullscreen attempts reached");
+            return;
+          }
+
+          if (checkFullscreenState()) {
+            console.log("Already in fullscreen");
+            setHasEnteredFullscreen(true);
+            return;
+          }
+
+          attempts++;
+          console.log(`Fullscreen attempt ${attempts}...`);
+
+          const success = await attemptEnterFullscreen();
+          if (success || checkFullscreenState()) {
+            console.log("Fullscreen entered successfully");
+            setHasEnteredFullscreen(true);
+          } else {
+            console.warn(
+              `Fullscreen entry failed (attempt ${attempts}), will retry...`
+            );
+            setTimeout(tryEnter, 500 * attempts);
+          }
+        };
+
+        tryEnter();
+      };
+
+      // Add event listeners for user interaction
+      document.addEventListener("click", enterFullscreenOnInteraction, {
+        once: true,
+      });
+      document.addEventListener("keydown", enterFullscreenOnInteraction, {
+        once: true,
+      });
+      document.addEventListener("touchstart", enterFullscreenOnInteraction, {
+        once: true,
       });
 
-    // Auto-enter fullscreen after a delay to ensure everything is ready
-    const fullscreenTimer = setTimeout(async () => {
-      if (!checkFullscreenState()) {
-        console.log("Attempting to enter fullscreen...");
-        const success = await attemptEnterFullscreen();
-        if (success) {
-          console.log("Fullscreen entered successfully");
-        } else {
-          console.warn("Fullscreen entry failed, will retry");
-          // Retry once more after a delay
-          setTimeout(async () => {
-            await attemptEnterFullscreen();
-          }, 1000);
+      // Also try to enter fullscreen automatically after a delay (some browsers allow this)
+      const autoFullscreenTimer = setTimeout(async () => {
+        if (!fullscreenEntered && !checkFullscreenState()) {
+          console.log("Attempting automatic fullscreen entry...");
+          const success = await attemptEnterFullscreen();
+          if (success || checkFullscreenState()) {
+            console.log("Automatic fullscreen entered successfully");
+            fullscreenEntered = true;
+            setHasEnteredFullscreen(true);
+            document.removeEventListener("click", enterFullscreenOnInteraction);
+            document.removeEventListener(
+              "keydown",
+              enterFullscreenOnInteraction
+            );
+            document.removeEventListener(
+              "touchstart",
+              enterFullscreenOnInteraction
+            );
+          }
         }
-      }
-    }, 1000);
+      }, 1000);
 
-    return () => {
-      clearTimeout(fullscreenTimer);
+      return () => {
+        clearTimeout(autoFullscreenTimer);
+        document.removeEventListener("click", enterFullscreenOnInteraction);
+        document.removeEventListener("keydown", enterFullscreenOnInteraction);
+        document.removeEventListener(
+          "touchstart",
+          enterFullscreenOnInteraction
+        );
+      };
     };
+
+    // Start setup
+    setupStream();
   }, []); // Run only on mount
 
   // Cleanup camera on unmount - only when actually leaving the page
@@ -573,17 +677,47 @@ const ShortAssessmentContent: React.FC<{
     ensurePlay();
 
     const interval = setInterval(() => {
+      // Get current stream (may have changed)
+      const currentStream = streamRef.current || cameraStream;
+
+      if (!currentStream) {
+        // Try to restore from global
+        const globalStream = (window as any).__assessmentCameraStream;
+        if (globalStream) {
+          console.log("Restoring stream from global");
+          streamRef.current = globalStream;
+          setCameraStream(globalStream);
+          video.srcObject = globalStream;
+          return;
+        }
+        return;
+      }
+
+      // Check if stream is still valid
+      if (!currentStream.active) {
+        console.warn("Stream is not active, attempting to restore...");
+        // Try to get stream from global again
+        const globalStream = (window as any).__assessmentCameraStream;
+        if (globalStream && globalStream.active) {
+          console.log("Restoring stream from global");
+          streamRef.current = globalStream;
+          setCameraStream(globalStream);
+          video.srcObject = globalStream;
+          return;
+        }
+      }
+
       // Always reconnect if srcObject is lost
-      if (!video.srcObject && stream) {
+      if (!video.srcObject && currentStream) {
         console.log("Video srcObject lost, reconnecting...");
-        video.srcObject = stream;
+        video.srcObject = currentStream;
         video.playsInline = true;
         video.muted = true;
         video.setAttribute("autoplay", "true");
       }
 
       // Ensure stream tracks are still active
-      const videoTracks = stream.getVideoTracks();
+      const videoTracks = currentStream.getVideoTracks();
       const activeVideoTracks = videoTracks.filter(
         (track) => track.readyState === "live"
       );
@@ -591,6 +725,14 @@ const ShortAssessmentContent: React.FC<{
         console.warn(
           "Video tracks became inactive - stream may have been stopped"
         );
+        // Try to restore from global
+        const globalStream = (window as any).__assessmentCameraStream;
+        if (globalStream && globalStream.active) {
+          console.log("Restoring stream from global after track loss");
+          streamRef.current = globalStream;
+          setCameraStream(globalStream);
+          video.srcObject = globalStream;
+        }
       }
 
       // Ensure video is playing
@@ -904,24 +1046,46 @@ const ShortAssessmentContent: React.FC<{
       !checkFullscreenState() &&
       cameraStream &&
       streamRef.current &&
+      streamRef.current.active &&
       questionsData.length > 0 &&
-      !questionsLoading &&
-      isVideoReady
+      !questionsLoading
     ) {
       // Auto-enter fullscreen after everything is ready
+      // Don't wait for isVideoReady - enter fullscreen as soon as stream is active
       const enterFullscreenTimer = setTimeout(async () => {
         console.log("Auto-entering fullscreen...");
-        const success = await attemptEnterFullscreen();
-        if (success) {
-          console.log("Fullscreen entered successfully");
-        } else {
-          console.warn("Fullscreen entry failed, will retry");
-          // Retry once more after a delay
-          setTimeout(async () => {
-            await attemptEnterFullscreen();
-          }, 1000);
-        }
-      }, 800);
+        let attempts = 0;
+        const maxAttempts = 3;
+
+        const tryEnter = async () => {
+          if (attempts >= maxAttempts) {
+            console.warn("Max fullscreen attempts reached");
+            return;
+          }
+
+          if (checkFullscreenState()) {
+            console.log("Already in fullscreen");
+            setHasEnteredFullscreen(true);
+            return;
+          }
+
+          attempts++;
+          console.log(`Fullscreen attempt ${attempts}...`);
+
+          const success = await attemptEnterFullscreen();
+          if (success || checkFullscreenState()) {
+            console.log("Fullscreen entered successfully");
+            setHasEnteredFullscreen(true);
+          } else {
+            console.warn(
+              `Fullscreen entry failed (attempt ${attempts}), will retry...`
+            );
+            setTimeout(tryEnter, 500 * attempts);
+          }
+        };
+
+        tryEnter();
+      }, 1000);
 
       return () => clearTimeout(enterFullscreenTimer);
     }
@@ -929,7 +1093,6 @@ const ShortAssessmentContent: React.FC<{
     cameraStream,
     questionsData.length,
     questionsLoading,
-    isVideoReady,
     attemptEnterFullscreen,
     checkFullscreenState,
   ]);
