@@ -1,6 +1,11 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import React, { useEffect, useState, useRef } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import {
+  useNavigate,
+  useParams,
+  useSearchParams,
+  useLocation,
+} from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   getTranslatedAssessmentTitle,
@@ -41,6 +46,8 @@ const InstructionPage: React.FC = () => {
   });
   const [isDeviceCheckComplete, setIsDeviceCheckComplete] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
+  const location = useLocation();
+  const previousPathRef = useRef<string>("");
 
   // If no assessment ID is provided, redirect to assessments list
   useEffect(() => {
@@ -132,7 +139,7 @@ const InstructionPage: React.FC = () => {
           }));
         }
 
-        // Store stream for cleanup
+        // Store stream for cleanup - IMPORTANT: Keep stream alive
         streamRef.current = stream;
 
         // Mark check as complete
@@ -162,19 +169,55 @@ const InstructionPage: React.FC = () => {
 
     checkDevices();
 
-    // Cleanup on unmount - don't stop stream if it's been passed to assessment
+    // Cleanup on unmount ONLY - don't stop stream during re-renders
+    // Remove isDeviceCheckComplete from deps to prevent cleanup from running when state changes
     return () => {
-      // Only stop stream if it hasn't been passed to assessment page
+      // Only stop stream on actual unmount if it hasn't been passed to assessment page
       // The stream should continue running in the assessment
       if (streamRef.current && !(window as any).__assessmentCameraStream) {
+        // Only stop if we're actually unmounting (not just re-rendering)
+        // Check if stream tracks are still active before stopping
+        const tracks = streamRef.current.getTracks();
+        const hasActiveTracks = tracks.some(
+          (track) => track.readyState === "live"
+        );
+
+        // Only stop if tracks are not active (stream was already stopped)
+        // Otherwise, keep it running for navigation
+        if (!hasActiveTracks) {
+          streamRef.current.getTracks().forEach((track) => {
+            track.stop();
+          });
+          streamRef.current = null;
+        }
+      }
+      // If stream was passed to assessment, don't stop it - let assessment handle it
+    };
+    // Removed isDeviceCheckComplete from deps to prevent cleanup from running when state changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentAssessmentId, assessmentData]);
+
+  // Stop stream on route change (if navigating away from this page)
+  useEffect(() => {
+    // Initialize previousPathRef on first render
+    if (previousPathRef.current === "") {
+      previousPathRef.current = location.pathname;
+      return;
+    }
+
+    // Check if pathname changed (user navigated away)
+    if (previousPathRef.current !== location.pathname) {
+      // Route changed - stop the stream if it exists and hasn't been passed to assessment
+      if (streamRef.current && !(window as any).__assessmentCameraStream) {
+        console.log("Route changed, stopping camera stream");
         streamRef.current.getTracks().forEach((track) => {
           track.stop();
         });
         streamRef.current = null;
       }
-      // If stream was passed to assessment, don't stop it - let assessment handle it
-    };
-  }, [currentAssessmentId, isDeviceCheckComplete, assessmentData]);
+      previousPathRef.current = location.pathname;
+    }
+  }, [location.pathname]);
 
   const startAssessmentMutation = useMutation({
     mutationFn: () =>
@@ -270,8 +313,26 @@ const InstructionPage: React.FC = () => {
       return;
     }
 
-    // Verify stream is still active
-    if (!streamRef.current || !streamRef.current.active) {
+    // Verify stream is still active - check both stream.active and track states
+    const stream = streamRef.current;
+    if (!stream) {
+      alert("Camera stream is not available. Please retry the device check.");
+      handleRetryDeviceCheck();
+      return;
+    }
+
+    // Check if stream is active OR if tracks are live (more reliable check)
+    const videoTracks = stream.getVideoTracks();
+    const audioTracks = stream.getAudioTracks();
+    const hasActiveVideo =
+      videoTracks.length > 0 &&
+      videoTracks.some((track) => track.readyState === "live");
+    const hasActiveAudio =
+      audioTracks.length > 0 &&
+      audioTracks.some((track) => track.readyState === "live");
+
+    // Stream is valid if it's active OR if tracks are live
+    if (!stream.active && !hasActiveVideo && !hasActiveAudio) {
       alert("Camera stream is not active. Please retry the device check.");
       handleRetryDeviceCheck();
       return;
@@ -303,8 +364,26 @@ const InstructionPage: React.FC = () => {
       return;
     }
 
-    // Verify stream is still active
-    if (!streamRef.current || !streamRef.current.active) {
+    // Verify stream is still active - check both stream.active and track states
+    const stream = streamRef.current;
+    if (!stream) {
+      alert("Camera stream is not available. Please retry the device check.");
+      handleRetryDeviceCheck();
+      return;
+    }
+
+    // Check if stream is active OR if tracks are live (more reliable check)
+    const videoTracks = stream.getVideoTracks();
+    const audioTracks = stream.getAudioTracks();
+    const hasActiveVideo =
+      videoTracks.length > 0 &&
+      videoTracks.some((track) => track.readyState === "live");
+    const hasActiveAudio =
+      audioTracks.length > 0 &&
+      audioTracks.some((track) => track.readyState === "live");
+
+    // Stream is valid if it's active OR if tracks are live
+    if (!stream.active && !hasActiveVideo && !hasActiveAudio) {
       alert("Camera stream is not active. Please retry the device check.");
       handleRetryDeviceCheck();
       return;

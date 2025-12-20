@@ -421,12 +421,21 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
 
         <div className="flex items-center ">
           {/* Primary Action Button */}
-          <button
-            onClick={isFree ? handlePrimaryClick : handlePayment}
-            className={`px-5 py-3 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[var(--course-cta)] text-[var(--font-light)] hover:bg-[var(--course-cta)] hover:-translate-y-0.5 ${"w-full"} ${className}`}
-          >
-            {`${t("courses.enrollNow")} - ${displayPriceLabel}`}
-          </button>
+          {course.enrollment_enabled ? (
+            <button
+              onClick={isFree ? handlePrimaryClick : handlePayment}
+              className={`px-5 py-3 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[var(--course-cta)] text-[var(--font-light)] hover:bg-[var(--course-cta)] hover:-translate-y-0.5 ${"w-full"} ${className}`}
+            >
+              {`${t("courses.enrollNow")} - ${displayPriceLabel}`}
+            </button>
+          ) : (
+            <button
+              disabled={true}
+              className={`px-5 py-3 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 text-center bg-[var(--course-cta)] text-[var(--font-light)] hover:bg-[var(--course-cta)] hover:-translate-y-0.5 ${"w-full"} ${className}`}
+            >
+              {`${t("courses.enrollmentClosed")}`}
+            </button>
+          )}
         </div>
       </div>
 
