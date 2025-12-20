@@ -257,13 +257,27 @@ const InstructionPage: React.FC = () => {
   }
 
   const handleStartAssessment = () => {
+    // Double-check permissions before starting
     if (
-      currentAssessmentId &&
-      deviceCheckStatus.camera === "success" &&
-      deviceCheckStatus.mic === "success"
+      !currentAssessmentId ||
+      deviceCheckStatus.camera !== "success" ||
+      deviceCheckStatus.mic !== "success" ||
+      !isDeviceCheckComplete
     ) {
-      startAssessmentMutation.mutate();
+      alert(
+        "Please grant camera and microphone permissions to start the assessment."
+      );
+      return;
     }
+
+    // Verify stream is still active
+    if (!streamRef.current || !streamRef.current.active) {
+      alert("Camera stream is not active. Please retry the device check.");
+      handleRetryDeviceCheck();
+      return;
+    }
+
+    startAssessmentMutation.mutate();
   };
 
   const handleRetryDeviceCheck = () => {
@@ -276,25 +290,38 @@ const InstructionPage: React.FC = () => {
   };
 
   const handleResumeAssessment = () => {
-    // Check devices before resuming (same as starting)
+    // Double-check permissions before resuming
     if (
-      currentAssessmentId &&
-      deviceCheckStatus.camera === "success" &&
-      deviceCheckStatus.mic === "success"
+      !currentAssessmentId ||
+      deviceCheckStatus.camera !== "success" ||
+      deviceCheckStatus.mic !== "success" ||
+      !isDeviceCheckComplete
     ) {
-      // Store stream globally so ShortAssessment can access it
-      // MediaStream cannot be serialized in navigation state
-      if (streamRef.current) {
-        (window as any).__assessmentCameraStream = streamRef.current;
-        // Clear the ref so cleanup doesn't stop it
-        streamRef.current = null;
-      }
-      navigate("/assessment/quiz", {
-        state: {
-          assessmentId: currentAssessmentId,
-        },
-      });
+      alert(
+        "Please grant camera and microphone permissions to resume the assessment."
+      );
+      return;
     }
+
+    // Verify stream is still active
+    if (!streamRef.current || !streamRef.current.active) {
+      alert("Camera stream is not active. Please retry the device check.");
+      handleRetryDeviceCheck();
+      return;
+    }
+
+    // Store stream globally so ShortAssessment can access it
+    // MediaStream cannot be serialized in navigation state
+    if (streamRef.current) {
+      (window as any).__assessmentCameraStream = streamRef.current;
+      // Clear the ref so cleanup doesn't stop it
+      streamRef.current = null;
+    }
+    navigate("/assessment/quiz", {
+      state: {
+        assessmentId: currentAssessmentId,
+      },
+    });
   };
 
   const handleViewResults = () => {
@@ -613,14 +640,17 @@ const InstructionPage: React.FC = () => {
                         deviceCheckStatus.camera !== "success" ||
                         deviceCheckStatus.mic !== "success"
                       }
-                      className="w-full py-3 px-6 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                      className="w-full py-3 px-6 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed disabled:text-gray-500"
                     >
                       {startAssessmentMutation.isPending
                         ? "Starting..."
                         : !isDeviceCheckComplete ||
                           deviceCheckStatus.camera !== "success" ||
                           deviceCheckStatus.mic !== "success"
-                        ? "Please complete device check"
+                        ? deviceCheckStatus.camera === "checking" ||
+                          deviceCheckStatus.mic === "checking"
+                          ? "Checking devices..."
+                          : "Please grant camera and microphone permissions"
                         : t(
                             "assessments.kakatiyaAssessment.buttons.startAssessment"
                           )}
