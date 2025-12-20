@@ -1158,12 +1158,39 @@ const ShortAssessmentContent: React.FC<{
       } else if (wasFullscreenRef.current) {
         // We were in fullscreen but now we're not
         if (!isCompleted) {
-          // Reset layout (show navigation, restore styles)
-          resetLayout();
-
-          // Show modal IMMEDIATELY - synchronous state update (no delays)
+          // Show modal IMMEDIATELY - hide navigation when modal is shown
           setFullscreenExitWarningOpen(true);
           setHasEnteredFullscreen(false);
+
+          // Hide navigation when fullscreen is exited (modal is shown)
+          const topNav = document.querySelector(
+            'nav[class*="TopNav"], header[class*="TopNav"], header'
+          ) as HTMLElement;
+          const sidebar = document.querySelector(
+            ".side-navigation"
+          ) as HTMLElement;
+          const sidebarNav = document.querySelector(
+            "nav.fixed.z-\\[1111\\]"
+          ) as HTMLElement;
+          const mobileNav = document.querySelector(
+            '[class*="MobileNavBar"]'
+          ) as HTMLElement;
+          const mainContent = document.querySelector("main") as HTMLElement;
+
+          if (topNav) topNav.style.display = "none";
+          if (sidebar) sidebar.style.display = "none";
+          if (sidebarNav) sidebarNav.style.display = "none";
+          if (mobileNav) mobileNav.style.display = "none";
+          if (mainContent) {
+            mainContent.style.marginLeft = "0";
+            mainContent.style.paddingTop = "0";
+          }
+          document.querySelectorAll("nav").forEach((nav) => {
+            (nav as HTMLElement).style.display = "none";
+          });
+          document.querySelectorAll("header").forEach((header) => {
+            (header as HTMLElement).style.display = "none";
+          });
 
           // Log and update submission data (non-blocking)
           logEvent("WINDOW_BLUR", { reason: "fullscreen_exit" });
@@ -1180,33 +1207,8 @@ const ShortAssessmentContent: React.FC<{
               const isFullscreenNow = checkFullscreenState();
 
               if (success || isFullscreenNow) {
-                // Hide navigation again after entering fullscreen
-                const topNav = document.querySelector(
-                  'nav[class*="TopNav"]'
-                ) as HTMLElement;
-                const sidebar = document.querySelector(
-                  ".side-navigation"
-                ) as HTMLElement;
-                const mobileNav = document.querySelector(
-                  '[class*="MobileNavBar"]'
-                ) as HTMLElement;
-                const mainContent = document.querySelector(
-                  "main"
-                ) as HTMLElement;
-
-                if (topNav) topNav.style.display = "none";
-                if (sidebar) sidebar.style.display = "none";
-                if (mobileNav) mobileNav.style.display = "none";
-                if (mainContent) {
-                  mainContent.style.marginLeft = "0";
-                  mainContent.style.paddingTop = "0";
-                }
-                document.querySelectorAll("nav").forEach((nav) => {
-                  if (nav !== sidebar && nav !== mobileNav) {
-                    (nav as HTMLElement).style.display = "none";
-                  }
-                });
-
+                // Navigation is already hidden from when modal was shown
+                // Just close the modal and mark fullscreen as entered
                 setFullscreenExitWarningOpen(false);
                 setHasEnteredFullscreen(true);
               } else if (attempt < 3) {
@@ -1291,12 +1293,39 @@ const ShortAssessmentContent: React.FC<{
         !isCurrentlyFullscreen &&
         !fullscreenExitWarningOpen
       ) {
-        // Reset layout (show navigation, restore styles)
-        resetLayout();
-
-        // Show modal immediately - prioritize this
+        // Show modal immediately - hide navigation when modal is shown
         setFullscreenExitWarningOpen(true);
         setHasEnteredFullscreen(false);
+
+        // Hide navigation when fullscreen is exited (modal is shown)
+        const topNav = document.querySelector(
+          'nav[class*="TopNav"], header[class*="TopNav"], header'
+        ) as HTMLElement;
+        const sidebar = document.querySelector(
+          ".side-navigation"
+        ) as HTMLElement;
+        const sidebarNav = document.querySelector(
+          "nav.fixed.z-\\[1111\\]"
+        ) as HTMLElement;
+        const mobileNav = document.querySelector(
+          '[class*="MobileNavBar"]'
+        ) as HTMLElement;
+        const mainContent = document.querySelector("main") as HTMLElement;
+
+        if (topNav) topNav.style.display = "none";
+        if (sidebar) sidebar.style.display = "none";
+        if (sidebarNav) sidebarNav.style.display = "none";
+        if (mobileNav) mobileNav.style.display = "none";
+        if (mainContent) {
+          mainContent.style.marginLeft = "0";
+          mainContent.style.paddingTop = "0";
+        }
+        document.querySelectorAll("nav").forEach((nav) => {
+          (nav as HTMLElement).style.display = "none";
+        });
+        document.querySelectorAll("header").forEach((header) => {
+          (header as HTMLElement).style.display = "none";
+        });
 
         // Log and update (non-blocking)
         logEvent("WINDOW_BLUR", { reason: "fullscreen_exit_detected" });
@@ -1414,12 +1443,40 @@ const ShortAssessmentContent: React.FC<{
         setTimeout(() => {
           const stillFullscreen = checkFullscreenState();
           if (!stillFullscreen && !isCompleted) {
-            // Reset layout (show navigation, restore styles)
-            resetLayout();
-
-            // Show modal IMMEDIATELY
+            // Show modal IMMEDIATELY (but don't reset layout yet - hide nav instead)
             setFullscreenExitWarningOpen(true);
             setHasEnteredFullscreen(false);
+
+            // Hide navigation when modal is shown (user exited fullscreen)
+            const topNav = document.querySelector(
+              'nav[class*="TopNav"], header[class*="TopNav"], header'
+            ) as HTMLElement;
+            const sidebar = document.querySelector(
+              ".side-navigation"
+            ) as HTMLElement;
+            const sidebarNav = document.querySelector(
+              "nav.fixed.z-\\[1111\\]"
+            ) as HTMLElement;
+            const mobileNav = document.querySelector(
+              '[class*="MobileNavBar"]'
+            ) as HTMLElement;
+            const mainContent = document.querySelector("main") as HTMLElement;
+
+            if (topNav) topNav.style.display = "none";
+            if (sidebar) sidebar.style.display = "none";
+            if (sidebarNav) sidebarNav.style.display = "none";
+            if (mobileNav) mobileNav.style.display = "none";
+            if (mainContent) {
+              mainContent.style.marginLeft = "0";
+              mainContent.style.paddingTop = "0";
+            }
+            document.querySelectorAll("nav").forEach((nav) => {
+              (nav as HTMLElement).style.display = "none";
+            });
+            document.querySelectorAll("header").forEach((header) => {
+              (header as HTMLElement).style.display = "none";
+            });
+
             logEvent("WINDOW_BLUR", { reason: "esc_key_pressed" });
             setSubmissionData((prev) => ({
               ...prev,
@@ -1434,33 +1491,8 @@ const ShortAssessmentContent: React.FC<{
                 const isFullscreenNow = checkFullscreenState();
 
                 if (success || isFullscreenNow) {
-                  // Hide navigation again after entering fullscreen
-                  const topNav = document.querySelector(
-                    'nav[class*="TopNav"]'
-                  ) as HTMLElement;
-                  const sidebar = document.querySelector(
-                    ".side-navigation"
-                  ) as HTMLElement;
-                  const mobileNav = document.querySelector(
-                    '[class*="MobileNavBar"]'
-                  ) as HTMLElement;
-                  const mainContent = document.querySelector(
-                    "main"
-                  ) as HTMLElement;
-
-                  if (topNav) topNav.style.display = "none";
-                  if (sidebar) sidebar.style.display = "none";
-                  if (mobileNav) mobileNav.style.display = "none";
-                  if (mainContent) {
-                    mainContent.style.marginLeft = "0";
-                    mainContent.style.paddingTop = "0";
-                  }
-                  document.querySelectorAll("nav").forEach((nav) => {
-                    if (nav !== sidebar && nav !== mobileNav) {
-                      (nav as HTMLElement).style.display = "none";
-                    }
-                  });
-
+                  // Navigation is already hidden from when modal was shown
+                  // Just close the modal and mark fullscreen as entered
                   setFullscreenExitWarningOpen(false);
                   setHasEnteredFullscreen(true);
                 } else if (attempt < 3) {
@@ -1673,31 +1705,8 @@ const ShortAssessmentContent: React.FC<{
     try {
       const success = await attemptEnterFullscreen();
       if (success || checkFullscreenState()) {
-        // Hide navigation again after entering fullscreen
-        const topNav = document.querySelector(
-          'nav[class*="TopNav"]'
-        ) as HTMLElement;
-        const sidebar = document.querySelector(
-          ".side-navigation"
-        ) as HTMLElement;
-        const mobileNav = document.querySelector(
-          '[class*="MobileNavBar"]'
-        ) as HTMLElement;
-        const mainContent = document.querySelector("main") as HTMLElement;
-
-        if (topNav) topNav.style.display = "none";
-        if (sidebar) sidebar.style.display = "none";
-        if (mobileNav) mobileNav.style.display = "none";
-        if (mainContent) {
-          mainContent.style.marginLeft = "0";
-          mainContent.style.paddingTop = "0";
-        }
-        document.querySelectorAll("nav").forEach((nav) => {
-          if (nav !== sidebar && nav !== mobileNav) {
-            (nav as HTMLElement).style.display = "none";
-          }
-        });
-
+        // Navigation is already hidden from when modal was shown
+        // Just close the modal and mark fullscreen as entered
         setFullscreenExitWarningOpen(false);
         setHasEnteredFullscreen(true);
         logEvent("WINDOW_FOCUS", { reason: "fullscreen_resumed" });
