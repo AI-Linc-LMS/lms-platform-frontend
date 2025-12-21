@@ -1,6 +1,11 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import React, { useEffect } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import React, { useEffect, useState, useRef } from "react";
+import {
+  useNavigate,
+  useParams,
+  useSearchParams,
+  useLocation,
+} from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   getTranslatedAssessmentTitle,
@@ -29,6 +34,21 @@ const InstructionPage: React.FC = () => {
   // Use assessment ID from URL params or redirect to assessments list
   const currentAssessmentId = assessmentId;
 
+  // Camera and mic permission check state
+  const [deviceCheckStatus, setDeviceCheckStatus] = useState<{
+    camera: "checking" | "success" | "error" | "not_started";
+    mic: "checking" | "success" | "error" | "not_started";
+    errorMessage: string;
+  }>({
+    camera: "not_started",
+    mic: "not_started",
+    errorMessage: "",
+  });
+  const [isDeviceCheckComplete, setIsDeviceCheckComplete] = useState(false);
+  const streamRef = useRef<MediaStream | null>(null);
+  const location = useLocation();
+  const previousPathRef = useRef<string>("");
+
   // If no assessment ID is provided, redirect to assessments list
   useEffect(() => {
     if (!currentAssessmentId) {
@@ -55,6 +75,150 @@ const InstructionPage: React.FC = () => {
     enabled: !!currentAssessmentId,
   });
 
+  // Check camera and mic permissions (for both new assessments and resuming)
+  useEffect(() => {
+    if (
+      !currentAssessmentId ||
+      isDeviceCheckComplete ||
+      !assessmentData ||
+      assessmentData?.status === "submitted"
+    )
+      return;
+
+    const checkDevices = async () => {
+      try {
+        // Check camera
+        setDeviceCheckStatus((prev) => ({
+          ...prev,
+          camera: "checking",
+        }));
+
+        // Check microphone
+        setDeviceCheckStatus((prev) => ({
+          ...prev,
+          mic: "checking",
+        }));
+
+        // Request both camera and mic access
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: "user",
+          },
+          audio: true,
+        });
+
+        // Check if video track exists and is active
+        const videoTrack = stream.getVideoTracks()[0];
+        const audioTrack = stream.getAudioTracks()[0];
+
+        if (videoTrack && videoTrack.readyState === "live") {
+          setDeviceCheckStatus((prev) => ({
+            ...prev,
+            camera: "success",
+          }));
+        } else {
+          setDeviceCheckStatus((prev) => ({
+            ...prev,
+            camera: "error",
+            errorMessage: "Camera is not accessible",
+          }));
+        }
+
+        if (audioTrack && audioTrack.readyState === "live") {
+          setDeviceCheckStatus((prev) => ({
+            ...prev,
+            mic: "success",
+          }));
+        } else {
+          setDeviceCheckStatus((prev) => ({
+            ...prev,
+            mic: "error",
+            errorMessage: prev.errorMessage || "Microphone is not accessible",
+          }));
+        }
+
+        // Store stream for cleanup - IMPORTANT: Keep stream alive
+        streamRef.current = stream;
+
+        // Mark check as complete
+        setIsDeviceCheckComplete(true);
+
+        // Keep the stream running until navigation
+        // Don't stop it immediately - let it run until user clicks Start/Resume
+        // This maintains permissions and makes transition smoother
+      } catch (error: any) {
+        const errorMessage =
+          error.name === "NotAllowedError" ||
+          error.name === "PermissionDeniedError"
+            ? "Camera and microphone permissions are required. Please allow access and try again."
+            : error.name === "NotFoundError" ||
+              error.name === "DevicesNotFoundError"
+            ? "No camera or microphone found. Please connect a camera and microphone."
+            : error.message || "Failed to access camera and microphone.";
+
+        setDeviceCheckStatus({
+          camera: "error",
+          mic: "error",
+          errorMessage,
+        });
+        setIsDeviceCheckComplete(true);
+      }
+    };
+
+    checkDevices();
+
+    // Cleanup on unmount ONLY - don't stop stream during re-renders
+    // Remove isDeviceCheckComplete from deps to prevent cleanup from running when state changes
+    return () => {
+      // Only stop stream on actual unmount if it hasn't been passed to assessment page
+      // The stream should continue running in the assessment
+      if (streamRef.current && !(window as any).__assessmentCameraStream) {
+        // Only stop if we're actually unmounting (not just re-rendering)
+        // Check if stream tracks are still active before stopping
+        const tracks = streamRef.current.getTracks();
+        const hasActiveTracks = tracks.some(
+          (track) => track.readyState === "live"
+        );
+
+        // Only stop if tracks are not active (stream was already stopped)
+        // Otherwise, keep it running for navigation
+        if (!hasActiveTracks) {
+          streamRef.current.getTracks().forEach((track) => {
+            track.stop();
+          });
+          streamRef.current = null;
+        }
+      }
+      // If stream was passed to assessment, don't stop it - let assessment handle it
+    };
+    // Removed isDeviceCheckComplete from deps to prevent cleanup from running when state changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentAssessmentId, assessmentData]);
+
+  // Stop stream on route change (if navigating away from this page)
+  useEffect(() => {
+    // Initialize previousPathRef on first render
+    if (previousPathRef.current === "") {
+      previousPathRef.current = location.pathname;
+      return;
+    }
+
+    // Check if pathname changed (user navigated away)
+    if (previousPathRef.current !== location.pathname) {
+      // Route changed - stop the stream if it exists and hasn't been passed to assessment
+      if (streamRef.current && !(window as any).__assessmentCameraStream) {
+        console.log("Route changed, stopping camera stream");
+        streamRef.current.getTracks().forEach((track) => {
+          track.stop();
+        });
+        streamRef.current = null;
+      }
+      previousPathRef.current = location.pathname;
+    }
+  }, [location.pathname]);
+
   const startAssessmentMutation = useMutation({
     mutationFn: () =>
       startAssessment(
@@ -64,8 +228,17 @@ const InstructionPage: React.FC = () => {
         referralCode || undefined
       ),
     onSuccess: () => {
+      // Store stream globally so ShortAssessment can access it
+      // MediaStream cannot be serialized in navigation state
+      if (streamRef.current) {
+        (window as any).__assessmentCameraStream = streamRef.current;
+        // Clear the ref so cleanup doesn't stop it
+        streamRef.current = null;
+      }
       navigate("/assessment/quiz", {
-        state: { assessmentId: currentAssessmentId },
+        state: {
+          assessmentId: currentAssessmentId,
+        },
       });
     },
     onError: () => {
@@ -127,20 +300,267 @@ const InstructionPage: React.FC = () => {
   }
 
   const handleStartAssessment = () => {
-    if (currentAssessmentId) {
-      startAssessmentMutation.mutate();
+    // Double-check permissions before starting
+    if (
+      !currentAssessmentId ||
+      deviceCheckStatus.camera !== "success" ||
+      deviceCheckStatus.mic !== "success" ||
+      !isDeviceCheckComplete
+    ) {
+      alert(
+        "Please grant camera and microphone permissions to start the assessment."
+      );
+      return;
     }
+
+    // Verify stream is still active - check both stream.active and track states
+    const stream = streamRef.current;
+    if (!stream) {
+      alert("Camera stream is not available. Please retry the device check.");
+      handleRetryDeviceCheck();
+      return;
+    }
+
+    // Check if stream is active OR if tracks are live (more reliable check)
+    const videoTracks = stream.getVideoTracks();
+    const audioTracks = stream.getAudioTracks();
+    const hasActiveVideo =
+      videoTracks.length > 0 &&
+      videoTracks.some((track) => track.readyState === "live");
+    const hasActiveAudio =
+      audioTracks.length > 0 &&
+      audioTracks.some((track) => track.readyState === "live");
+
+    // Stream is valid if it's active OR if tracks are live
+    if (!stream.active && !hasActiveVideo && !hasActiveAudio) {
+      alert("Camera stream is not active. Please retry the device check.");
+      handleRetryDeviceCheck();
+      return;
+    }
+
+    startAssessmentMutation.mutate();
+  };
+
+  const handleRetryDeviceCheck = () => {
+    setIsDeviceCheckComplete(false);
+    setDeviceCheckStatus({
+      camera: "not_started",
+      mic: "not_started",
+      errorMessage: "",
+    });
   };
 
   const handleResumeAssessment = () => {
+    // Double-check permissions before resuming
+    if (
+      !currentAssessmentId ||
+      deviceCheckStatus.camera !== "success" ||
+      deviceCheckStatus.mic !== "success" ||
+      !isDeviceCheckComplete
+    ) {
+      alert(
+        "Please grant camera and microphone permissions to resume the assessment."
+      );
+      return;
+    }
+
+    // Verify stream is still active - check both stream.active and track states
+    const stream = streamRef.current;
+    if (!stream) {
+      alert("Camera stream is not available. Please retry the device check.");
+      handleRetryDeviceCheck();
+      return;
+    }
+
+    // Check if stream is active OR if tracks are live (more reliable check)
+    const videoTracks = stream.getVideoTracks();
+    const audioTracks = stream.getAudioTracks();
+    const hasActiveVideo =
+      videoTracks.length > 0 &&
+      videoTracks.some((track) => track.readyState === "live");
+    const hasActiveAudio =
+      audioTracks.length > 0 &&
+      audioTracks.some((track) => track.readyState === "live");
+
+    // Stream is valid if it's active OR if tracks are live
+    if (!stream.active && !hasActiveVideo && !hasActiveAudio) {
+      alert("Camera stream is not active. Please retry the device check.");
+      handleRetryDeviceCheck();
+      return;
+    }
+
+    // Store stream globally so ShortAssessment can access it
+    // MediaStream cannot be serialized in navigation state
+    if (streamRef.current) {
+      (window as any).__assessmentCameraStream = streamRef.current;
+      // Clear the ref so cleanup doesn't stop it
+      streamRef.current = null;
+    }
     navigate("/assessment/quiz", {
-      state: { assessmentId: currentAssessmentId },
+      state: {
+        assessmentId: currentAssessmentId,
+      },
     });
   };
+
+  const handleViewResults = () => {
+    navigate(`/roadmap/${currentAssessmentId}`);
+  };
+
+  // Show preloader for new assessments and in_progress (not for submitted)
+  const shouldCheckDevices = assessmentData?.status !== "submitted";
+
+  // Show preloader while checking devices or if there's an error (for new assessments and resuming)
+  const showPreloader =
+    shouldCheckDevices &&
+    (!isDeviceCheckComplete ||
+      deviceCheckStatus.camera === "checking" ||
+      deviceCheckStatus.mic === "checking" ||
+      deviceCheckStatus.camera === "error" ||
+      deviceCheckStatus.mic === "error");
 
   return (
     <div className="min-h-screen bg-[var(--neutral-50)] p-4">
       <div className="max-w-4xl mx-auto">
+        {/* Preloader for device check */}
+        {showPreloader && (
+          <div className="bg-white rounded-3xl w-full border border-gray-200 shadow-lg p-6 lg:p-8 mb-4">
+            <div className="flex flex-col items-center justify-center py-8">
+              <h2 className="text-2xl md:text-3xl font-bold text-[var(--primary-500)] mb-6 text-center">
+                Checking Your Devices
+              </h2>
+              <p className="text-gray-600 mb-8 text-center max-w-md">
+                We need to verify that your camera and microphone are working
+                before starting the assessment.
+              </p>
+
+              <div className="w-full max-w-md space-y-4">
+                {/* Camera Check */}
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                      {deviceCheckStatus.camera === "checking" ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-600"></div>
+                      ) : deviceCheckStatus.camera === "success" ? (
+                        <svg
+                          className="w-5 h-5 text-green-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="w-5 h-5 text-red-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-800">Camera</p>
+                      <p className="text-sm text-gray-500">
+                        {deviceCheckStatus.camera === "checking"
+                          ? "Checking..."
+                          : deviceCheckStatus.camera === "success"
+                          ? "Camera ready"
+                          : "Camera not accessible"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Microphone Check */}
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                      {deviceCheckStatus.mic === "checking" ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-600"></div>
+                      ) : deviceCheckStatus.mic === "success" ? (
+                        <svg
+                          className="w-5 h-5 text-green-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="w-5 h-5 text-red-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-800">Microphone</p>
+                      <p className="text-sm text-gray-500">
+                        {deviceCheckStatus.mic === "checking"
+                          ? "Checking..."
+                          : deviceCheckStatus.mic === "success"
+                          ? "Microphone ready"
+                          : "Microphone not accessible"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Error Message */}
+                {deviceCheckStatus.errorMessage &&
+                  (deviceCheckStatus.camera === "error" ||
+                    deviceCheckStatus.mic === "error") && (
+                    <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+                      <p className="text-sm text-red-700">
+                        {deviceCheckStatus.errorMessage}
+                      </p>
+                    </div>
+                  )}
+
+                {/* Retry Button */}
+                {isDeviceCheckComplete &&
+                  (deviceCheckStatus.camera === "error" ||
+                    deviceCheckStatus.mic === "error") && (
+                    <button
+                      onClick={handleRetryDeviceCheck}
+                      className="w-full mt-4 py-3 px-6 bg-[var(--primary-500)] text-white rounded-xl font-medium hover:bg-[#1a4a5f] transition-colors"
+                    >
+                      Retry Device Check
+                    </button>
+                  )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Main Content */}
         <div className="bg-white rounded-3xl w-full border border-gray-200 shadow-lg p-6 lg:p-8">
           <div className="flex flex-col justify-center">
             <div className="mb-6">
@@ -180,7 +600,13 @@ const InstructionPage: React.FC = () => {
                     />
                   </svg>
                   <span className="font-medium">
-                    {t("assessments.kakatiyaAssessment.details.totalQuestions")}
+                    {t(
+                      "assessments.kakatiyaAssessment.details.totalQuestions",
+                      {
+                        totalQuestions:
+                          assessmentData?.number_of_questions || "10",
+                      }
+                    )}
                   </span>
                 </div>
 
@@ -199,59 +625,10 @@ const InstructionPage: React.FC = () => {
                     />
                   </svg>
                   <span className="font-medium">
-                    {t("assessments.kakatiyaAssessment.details.duration")}
+                    {t("assessments.kakatiyaAssessment.details.duration", {
+                      duration: assessmentData?.duration_minutes,
+                    })}
                   </span>
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <svg
-                      className="w-5 h-5 text-green-500"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="font-medium">
-                      {t("assessments.kakatiyaAssessment.details.topics")}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      t(
-                        "assessments.kakatiyaAssessment.details.topicsList.aiFundamentals"
-                      ),
-                      t(
-                        "assessments.kakatiyaAssessment.details.topicsList.javascript"
-                      ),
-                      t(
-                        "assessments.kakatiyaAssessment.details.topicsList.react"
-                      ),
-                      t(
-                        "assessments.kakatiyaAssessment.details.topicsList.nodejs"
-                      ),
-                      t(
-                        "assessments.kakatiyaAssessment.details.topicsList.htmlCss"
-                      ),
-                      t(
-                        "assessments.kakatiyaAssessment.details.topicsList.cloudDatabase"
-                      ),
-                      t(
-                        "assessments.kakatiyaAssessment.details.topicsList.logicAptitude"
-                      ),
-                    ].map((topic) => (
-                      <span
-                        key={topic}
-                        className="px-3 py-1 bg-[var(--primary-50)] text-gray-700 rounded-full text-sm border border-[var(--primary-200)]"
-                      >
-                        {topic}
-                      </span>
-                    ))}
-                  </div>
                 </div>
               </div>
 
@@ -259,7 +636,7 @@ const InstructionPage: React.FC = () => {
                 <div className="flex flex-col lg:flex-row gap-3">
                   {assessmentData?.status === "submitted" ? (
                     <button
-                      onClick={handleResumeAssessment}
+                      onClick={handleViewResults}
                       className="w-full py-3 px-6 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors"
                     >
                       {t("assessments.kakatiyaAssessment.buttons.viewResults")}
@@ -267,18 +644,41 @@ const InstructionPage: React.FC = () => {
                   ) : assessmentData?.status === "in_progress" ? (
                     <button
                       onClick={handleResumeAssessment}
-                      className="w-full py-3 px-6 bg-[var(--primary-500)] text-white rounded-xl font-medium hover:bg-[#1a4a5f] transition-colors"
+                      disabled={
+                        !isDeviceCheckComplete ||
+                        deviceCheckStatus.camera !== "success" ||
+                        deviceCheckStatus.mic !== "success"
+                      }
+                      className="w-full py-3 px-6 bg-[var(--primary-500)] text-white rounded-xl font-medium hover:bg-[#1a4a5f] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                     >
-                      {t("assessments.kakatiyaAssessment.buttons.resumeTest")}
+                      {!isDeviceCheckComplete ||
+                      deviceCheckStatus.camera !== "success" ||
+                      deviceCheckStatus.mic !== "success"
+                        ? "Please complete device check"
+                        : t(
+                            "assessments.kakatiyaAssessment.buttons.resumeTest"
+                          )}
                     </button>
                   ) : (
                     <button
                       onClick={handleStartAssessment}
-                      disabled={startAssessmentMutation.isPending}
-                      className="w-full py-3 px-6 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                      disabled={
+                        startAssessmentMutation.isPending ||
+                        !isDeviceCheckComplete ||
+                        deviceCheckStatus.camera !== "success" ||
+                        deviceCheckStatus.mic !== "success"
+                      }
+                      className="w-full py-3 px-6 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed disabled:text-gray-500"
                     >
                       {startAssessmentMutation.isPending
                         ? "Starting..."
+                        : !isDeviceCheckComplete ||
+                          deviceCheckStatus.camera !== "success" ||
+                          deviceCheckStatus.mic !== "success"
+                        ? deviceCheckStatus.camera === "checking" ||
+                          deviceCheckStatus.mic === "checking"
+                          ? "Checking devices..."
+                          : "Please grant camera and microphone permissions"
                         : t(
                             "assessments.kakatiyaAssessment.buttons.startAssessment"
                           )}

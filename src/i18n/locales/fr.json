@@ -155,6 +155,7 @@
     "availableCourses": "Cours disponibles",
     "courseDetails": "Détails du cours",
     "enrollNow": "S'inscrire maintenant",
+    "enrollmentClosed": "Inscription fermée",
     "continueLearning": "Continuer l'apprentissage",
     "completed": "Terminé",
     "inProgress": "En cours",
@@ -423,8 +424,8 @@
         "goodLuck": "Good luck!"
       },
       "details": {
-        "totalQuestions": "Total Questions: 30 MCQ",
-        "duration": "Duration: 30 minutes",
+        "totalQuestions": "Total Questions: {{totalQuestions}} MCQ",
+        "duration": "Duration: {{duration}} minutes",
         "topics": "Topics:",
         "topicsList": {
           "aiFundamentals": "AI Fundamentals",
