@@ -1944,7 +1944,7 @@ const ShortAssessmentContent: React.FC<{
     >
       {/* Video feed - positioned at right of screen - always show when camera is available */}
       {cameraStream && streamRef.current && !isCompleted && (
-        <div className="fixed top-20 right-4 w-64 h-48 rounded-lg overflow-hidden shadow-2xl z-50 bg-black">
+        <div className="fixed top-4 right-4 w-32 h-24 rounded-lg overflow-hidden shadow-lg z-50 bg-black">
           {/* Video */}
           <video
             ref={videoRef}
@@ -1962,25 +1962,25 @@ const ShortAssessmentContent: React.FC<{
           />
 
           {/* Status Indicators - Top Left */}
-          <div className="absolute top-2 left-2 z-20 space-y-2">
+          <div className="absolute top-1 left-1 z-20 space-y-1">
             {/* Recording Status */}
-            <div className="recording-indicator bg-red-500/90 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center space-x-2 shadow-lg">
-              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-              <span className="text-white text-xs font-bold">Recording</span>
+            <div className="recording-indicator bg-red-500/90 backdrop-blur-sm px-1.5 py-0.5 rounded-full flex items-center space-x-1 shadow-md">
+              <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+              <span className="text-white text-[10px] font-semibold">Rec</span>
             </div>
 
             {/* Face Status */}
             <div
-              className={`face-status-indicator backdrop-blur-md px-3 py-1.5 rounded-full flex items-center space-x-2 shadow-lg ${
+              className={`face-status-indicator backdrop-blur-sm px-1.5 py-0.5 rounded-full flex items-center space-x-1 shadow-md ${
                 faceStatus === "single" ? "bg-green-500/90" : "bg-yellow-500/90"
               }`}
             >
-              <span className="text-white text-xs font-bold">
+              <span className="text-white text-[10px] font-semibold">
                 {faceStatus === "single"
-                  ? "✓ Face Detected"
+                  ? "✓ Face"
                   : faceStatus === "none"
                   ? "⚠ No Face"
-                  : "⚠ Multiple Faces"}
+                  : "⚠ Multi"}
               </span>
             </div>
           </div>
