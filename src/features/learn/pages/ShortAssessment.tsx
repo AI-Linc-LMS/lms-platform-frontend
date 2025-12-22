@@ -163,9 +163,6 @@ const ShortAssessmentContent: React.FC<{
             err.name === "NotAllowedError" ||
             err.name === "SecurityError"
           ) {
-            console.log(
-              "NavigationUI option not supported or permission denied, trying without it"
-            );
             try {
               fullscreenPromise = element.requestFullscreen() as Promise<void>;
             } catch (fallbackErr: any) {
@@ -198,10 +195,6 @@ const ShortAssessmentContent: React.FC<{
             promiseError.message?.includes("Permissions check failed") ||
             promiseError.message?.includes("permission")
           ) {
-            console.warn(
-              "Fullscreen permission denied or check failed:",
-              promiseError.message
-            );
             // Try again without navigationUI if we haven't already
             if (element.requestFullscreen) {
               try {
@@ -245,19 +238,8 @@ const ShortAssessmentContent: React.FC<{
       // Log the error for debugging
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      const errorName = error instanceof Error ? error.name : "Unknown";
 
-      // Don't log as error if it's a permission issue - it's expected in some cases
-      if (
-        errorMessage.includes("Permissions check failed") ||
-        errorMessage.includes("permission") ||
-        errorName === "NotAllowedError" ||
-        errorName === "SecurityError"
-      ) {
-        console.warn("Fullscreen permission issue:", errorMessage);
-      } else {
-        console.error("Fullscreen error:", errorMessage, error);
-      }
+      // Error handling without console logs per project requirements
 
       logEvent("SCREEN_SHARE_STOP", { error: errorMessage });
       return false;
@@ -289,23 +271,66 @@ const ShortAssessmentContent: React.FC<{
   } = useAssessment(currentAssessmentId);
 
   // Wrapper functions to trigger fullscreen on user interaction
+  // BLOCK interaction if not in fullscreen
   const handleOptionSelectWithFullscreen = useCallback(
     (optionId: string) => {
-      attemptEnterFullscreen();
+      if (!hasEnteredFullscreen || !checkFullscreenState()) {
+        // Force fullscreen entry before allowing interaction
+        attemptEnterFullscreen();
+        return; // Block interaction until fullscreen is entered
+      }
       handleOptionSelect(optionId);
     },
-    [attemptEnterFullscreen, handleOptionSelect]
+    [
+      attemptEnterFullscreen,
+      handleOptionSelect,
+      hasEnteredFullscreen,
+      checkFullscreenState,
+    ]
   );
 
   const handleNextWithFullscreen = useCallback(() => {
-    attemptEnterFullscreen();
+    if (!hasEnteredFullscreen || !checkFullscreenState()) {
+      attemptEnterFullscreen();
+      return; // Block interaction until fullscreen is entered
+    }
     handleNext();
-  }, [attemptEnterFullscreen, handleNext]);
+  }, [
+    attemptEnterFullscreen,
+    handleNext,
+    hasEnteredFullscreen,
+    checkFullscreenState,
+  ]);
 
   const handleBackWithFullscreen = useCallback(() => {
-    attemptEnterFullscreen();
+    if (!hasEnteredFullscreen || !checkFullscreenState()) {
+      attemptEnterFullscreen();
+      return; // Block interaction until fullscreen is entered
+    }
     handleBack();
-  }, [attemptEnterFullscreen, handleBack]);
+  }, [
+    attemptEnterFullscreen,
+    handleBack,
+    hasEnteredFullscreen,
+    checkFullscreenState,
+  ]);
+
+  // Block question navigation when not in fullscreen
+  const navigateToQuestionWithFullscreen = useCallback(
+    (index: number) => {
+      if (!hasEnteredFullscreen || !checkFullscreenState()) {
+        attemptEnterFullscreen();
+        return; // Block interaction until fullscreen is entered
+      }
+      navigateToQuestion(index);
+    },
+    [
+      attemptEnterFullscreen,
+      navigateToQuestion,
+      hasEnteredFullscreen,
+      checkFullscreenState,
+    ]
+  );
 
   // Collect proctoring metadata - matching InterviewRoom format
   const collectProctoringMetadata = useCallback(() => {
@@ -411,7 +436,6 @@ const ShortAssessmentContent: React.FC<{
       }
     } catch (error) {
       // Fullscreen exit failed, continue anyway
-      console.error("Error exiting fullscreen:", error);
     }
   }, []);
 
@@ -441,7 +465,6 @@ const ShortAssessmentContent: React.FC<{
       }
     } catch (error) {
       // Continue even if exit fails
-      console.error("Error exiting fullscreen:", error);
     }
 
     // Reset layout (show navigation, restore styles)
@@ -480,20 +503,15 @@ const ShortAssessmentContent: React.FC<{
           setTimeout(setupStream, 100);
           return;
         }
-        console.error(
-          "Camera stream not found after retries - InstructionPage should have set it"
-        );
         return;
       }
 
       // Verify stream is actually a MediaStream
       if (!(globalStream instanceof MediaStream)) {
-        console.error("Invalid stream type in global variable");
         return;
       }
 
       // Use the stream immediately - don't check if it's active, just use it
-      console.log("Setting up camera stream from InstructionPage");
       setCameraStream(globalStream);
       streamRef.current = globalStream;
 
@@ -508,7 +526,6 @@ const ShortAssessmentContent: React.FC<{
       // Setup video element with retry logic
       const setupVideo = (videoAttempts = 0) => {
         if (videoAttempts > 20) {
-          console.error("Failed to setup video after max attempts");
           return;
         }
 
@@ -521,11 +538,9 @@ const ShortAssessmentContent: React.FC<{
           video
             .play()
             .then(() => {
-              console.log("Video playing successfully");
               setTimeout(() => setIsVideoReady(true), 300);
             })
-            .catch((err) => {
-              console.warn("Video play failed, retrying...", err);
+            .catch(() => {
               setTimeout(() => setupVideo(videoAttempts + 1), 200);
             });
         } else if (!videoRef.current) {
@@ -558,7 +573,6 @@ const ShortAssessmentContent: React.FC<{
           return;
         }
 
-        console.log("User interaction detected, entering fullscreen...");
         fullscreenEntered = true;
 
         // Remove listeners after first interaction
@@ -574,27 +588,20 @@ const ShortAssessmentContent: React.FC<{
 
         const tryEnter = async () => {
           if (attempts >= maxAttempts) {
-            console.warn("Max fullscreen attempts reached");
             return;
           }
 
           if (checkFullscreenState()) {
-            console.log("Already in fullscreen");
             setHasEnteredFullscreen(true);
             return;
           }
 
           attempts++;
-          console.log(`Fullscreen attempt ${attempts}...`);
 
           const success = await attemptEnterFullscreen();
           if (success || checkFullscreenState()) {
-            console.log("Fullscreen entered successfully");
             setHasEnteredFullscreen(true);
           } else {
-            console.warn(
-              `Fullscreen entry failed (attempt ${attempts}), will retry...`
-            );
             setTimeout(tryEnter, 500 * attempts);
           }
         };
@@ -616,10 +623,8 @@ const ShortAssessmentContent: React.FC<{
       // Also try to enter fullscreen automatically after a delay (some browsers allow this)
       const autoFullscreenTimer = setTimeout(async () => {
         if (!fullscreenEntered && !checkFullscreenState()) {
-          console.log("Attempting automatic fullscreen entry...");
           const success = await attemptEnterFullscreen();
           if (success || checkFullscreenState()) {
-            console.log("Automatic fullscreen entered successfully");
             fullscreenEntered = true;
             setHasEnteredFullscreen(true);
             document.removeEventListener("click", enterFullscreenOnInteraction);
@@ -707,7 +712,6 @@ const ShortAssessmentContent: React.FC<{
 
     // Always ensure video is connected to stream
     if (video.srcObject !== stream) {
-      console.log("Reconnecting video to stream");
       video.srcObject = stream;
       video.playsInline = true;
       video.muted = true;
@@ -715,15 +719,9 @@ const ShortAssessmentContent: React.FC<{
 
     const ensurePlay = () => {
       if (video.paused && video.srcObject) {
-        video
-          .play()
-          .then(() => {
-            console.log("Video play ensured");
-          })
-          .catch((err) => {
-            console.warn("Video play failed, retrying...", err);
-            setTimeout(ensurePlay, 200);
-          });
+        video.play().catch(() => {
+          setTimeout(ensurePlay, 200);
+        });
       }
     };
 
@@ -737,7 +735,6 @@ const ShortAssessmentContent: React.FC<{
         // Try to restore from global
         const globalStream = (window as any).__assessmentCameraStream;
         if (globalStream) {
-          console.log("Restoring stream from global");
           streamRef.current = globalStream;
           setCameraStream(globalStream);
           video.srcObject = globalStream;
@@ -748,11 +745,9 @@ const ShortAssessmentContent: React.FC<{
 
       // Check if stream is still valid
       if (!currentStream.active) {
-        console.warn("Stream is not active, attempting to restore...");
         // Try to get stream from global again
         const globalStream = (window as any).__assessmentCameraStream;
         if (globalStream && globalStream.active) {
-          console.log("Restoring stream from global");
           streamRef.current = globalStream;
           setCameraStream(globalStream);
           video.srcObject = globalStream;
@@ -762,7 +757,6 @@ const ShortAssessmentContent: React.FC<{
 
       // Always reconnect if srcObject is lost
       if (!video.srcObject && currentStream) {
-        console.log("Video srcObject lost, reconnecting...");
         video.srcObject = currentStream;
         video.playsInline = true;
         video.muted = true;
@@ -775,13 +769,9 @@ const ShortAssessmentContent: React.FC<{
         (track) => track.readyState === "live"
       );
       if (activeVideoTracks.length === 0 && videoTracks.length > 0) {
-        console.warn(
-          "Video tracks became inactive - stream may have been stopped"
-        );
         // Try to restore from global
         const globalStream = (window as any).__assessmentCameraStream;
         if (globalStream && globalStream.active) {
-          console.log("Restoring stream from global after track loss");
           streamRef.current = globalStream;
           setCameraStream(globalStream);
           video.srcObject = globalStream;
@@ -806,7 +796,7 @@ const ShortAssessmentContent: React.FC<{
       if (!isVideoReady && video.readyState >= 2 && !video.paused) {
         setIsVideoReady(true);
       }
-    }, 500);
+    }, 1000); // Reduced frequency to prevent crashes
 
     return () => clearInterval(interval);
   }, [cameraStream, isVideoReady, isCompleted]);
@@ -1106,33 +1096,25 @@ const ShortAssessmentContent: React.FC<{
       // Auto-enter fullscreen after everything is ready
       // Don't wait for isVideoReady - enter fullscreen as soon as stream is active
       const enterFullscreenTimer = setTimeout(async () => {
-        console.log("Auto-entering fullscreen...");
         let attempts = 0;
         const maxAttempts = 3;
 
         const tryEnter = async () => {
           if (attempts >= maxAttempts) {
-            console.warn("Max fullscreen attempts reached");
             return;
           }
 
           if (checkFullscreenState()) {
-            console.log("Already in fullscreen");
             setHasEnteredFullscreen(true);
             return;
           }
 
           attempts++;
-          console.log(`Fullscreen attempt ${attempts}...`);
 
           const success = await attemptEnterFullscreen();
           if (success || checkFullscreenState()) {
-            console.log("Fullscreen entered successfully");
             setHasEnteredFullscreen(true);
           } else {
-            console.warn(
-              `Fullscreen entry failed (attempt ${attempts}), will retry...`
-            );
             setTimeout(tryEnter, 500 * attempts);
           }
         };
@@ -1271,12 +1253,8 @@ const ShortAssessmentContent: React.FC<{
                   tryEnterFullscreen(attempt + 1);
                 }, delay);
                 (window as any).__autoReturnFullscreenTimer = autoReturnTimer;
-              } else {
-                // Keep modal open if all attempts failed
-                console.error(
-                  "Failed to auto-return to fullscreen after 3 attempts"
-                );
               }
+              // Keep modal open if all attempts failed - test remains blocked
             } catch (error) {
               if (attempt < 3) {
                 // Retry on error
@@ -1285,9 +1263,8 @@ const ShortAssessmentContent: React.FC<{
                   tryEnterFullscreen(attempt + 1);
                 }, delay);
                 (window as any).__autoReturnFullscreenTimer = autoReturnTimer;
-              } else {
-                console.error("Failed to auto-return to fullscreen:", error);
               }
+              // Keep modal open if all attempts failed - test remains blocked
             }
           };
 
@@ -1428,12 +1405,8 @@ const ShortAssessmentContent: React.FC<{
               setTimeout(() => {
                 tryEnterFullscreen(attempt + 1);
               }, delay);
-            } else {
-              // Keep modal open if all attempts failed
-              console.error(
-                "Failed to auto-return to fullscreen after 3 attempts"
-              );
             }
+            // Keep modal open if all attempts failed - test remains blocked
           } catch (error) {
             if (attempt < 3) {
               // Retry on error
@@ -1441,9 +1414,8 @@ const ShortAssessmentContent: React.FC<{
               setTimeout(() => {
                 tryEnterFullscreen(attempt + 1);
               }, delay);
-            } else {
-              console.error("Failed to auto-return to fullscreen:", error);
             }
+            // Keep modal open if all attempts failed - test remains blocked
           }
         };
 
@@ -1454,8 +1426,8 @@ const ShortAssessmentContent: React.FC<{
       wasFullscreen = isCurrentlyFullscreen;
     };
 
-    // Monitor fullscreen state very frequently for quick detection (25ms for near-instant)
-    const monitorInterval = setInterval(checkFullscreenAfterESC, 25);
+    // Monitor fullscreen state periodically (reduced frequency to prevent crashes)
+    const monitorInterval = setInterval(checkFullscreenAfterESC, 200);
 
     // Also check immediately on mount/update
     checkFullscreenAfterESC();
@@ -1555,12 +1527,8 @@ const ShortAssessmentContent: React.FC<{
                     tryEnterFullscreen(attempt + 1);
                   }, delay);
                   (window as any).__autoReturnFullscreenTimer = autoReturnTimer;
-                } else {
-                  // Keep modal open if all attempts failed
-                  console.error(
-                    "Failed to auto-return to fullscreen after 3 attempts"
-                  );
                 }
+                // Keep modal open if all attempts failed - test remains blocked
               } catch (error) {
                 if (attempt < 3) {
                   // Retry on error
@@ -1569,9 +1537,8 @@ const ShortAssessmentContent: React.FC<{
                     tryEnterFullscreen(attempt + 1);
                   }, delay);
                   (window as any).__autoReturnFullscreenTimer = autoReturnTimer;
-                } else {
-                  console.error("Failed to auto-return to fullscreen:", error);
                 }
+                // Keep modal open if all attempts failed - test remains blocked
               }
             };
 
@@ -1766,7 +1733,6 @@ const ShortAssessmentContent: React.FC<{
       }
     } catch (error) {
       // Fullscreen failed - keep modal open
-      console.error("Failed to enter fullscreen:", error);
     }
   };
 
@@ -1827,7 +1793,6 @@ const ShortAssessmentContent: React.FC<{
             setHasEnteredFullscreen(false);
             setFullscreenExitWarningOpen(false);
           } catch (error) {
-            console.error("Error exiting fullscreen on route change:", error);
             // Even if exit fails, reset layout
             resetLayout();
           }
@@ -1923,11 +1888,48 @@ const ShortAssessmentContent: React.FC<{
   const currentQuestion = questionsData[currentQuestionIndex];
 
   if (questionsLoading) {
-    return <div>Loading questions...</div>;
+    return (
+      <div className="min-h-screen bg-[var(--neutral-50)] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--primary-500)]"></div>
+      </div>
+    );
   }
 
   if (questionsError) {
-    return <div>Error loading questions: {questionsError.message}</div>;
+    return (
+      <div className="min-h-screen bg-[var(--neutral-50)] flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-8 shadow-xl max-w-md mx-auto text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg
+              className="w-8 h-8 text-red-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              ></path>
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-3">
+            Failed to Start Assessment
+          </h2>
+          <p className="text-gray-600 mb-6">
+            {questionsError.message ||
+              "An error occurred while starting the assessment. Please try again."}
+          </p>
+          <button
+            onClick={() => navigate("/assessments")}
+            className="bg-[var(--primary-500)] text-[var(--font-light)] px-6 py-3 rounded-xl font-medium hover:bg-[#1a4a5f] transition-colors"
+          >
+            Return to Assessments
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // Assessment completed section
@@ -1985,6 +1987,35 @@ const ShortAssessmentContent: React.FC<{
         </div>
       )}
 
+      {/* Blocking overlay when fullscreen is not entered - prevents all interaction */}
+      {/* Only show blocking overlay if questions are loaded successfully */}
+      {(!hasEnteredFullscreen || !checkFullscreenState()) &&
+        !isCompleted &&
+        !questionsLoading &&
+        !questionsError &&
+        questionsData.length > 0 && (
+          <div
+            className="fixed inset-0 bg-black/90 z-[9998] flex items-center justify-center"
+            style={{ pointerEvents: "all" }}
+          >
+            <div className="bg-white rounded-lg p-8 max-w-md mx-4 text-center">
+              <h3 className="text-2xl font-bold mb-4 text-red-600">
+                Fullscreen Required
+              </h3>
+              <p className="text-gray-700 mb-6">
+                You must enter fullscreen mode to start the assessment. Please
+                click the button below to enter fullscreen.
+              </p>
+              <button
+                onClick={handleResumeFullscreen}
+                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 font-semibold text-lg"
+              >
+                Enter Fullscreen to Start Assessment
+              </button>
+            </div>
+          </div>
+        )}
+
       {/* Fullscreen exit warning */}
       {fullscreenExitWarningOpen && (
         <div
@@ -2015,7 +2046,19 @@ const ShortAssessmentContent: React.FC<{
         </div>
       )}
 
-      <div className="p-4">
+      {/* Block all interactions when not in fullscreen */}
+      {/* Only block if questions are loaded successfully */}
+      <div
+        className={`p-4 ${
+          (!hasEnteredFullscreen || !checkFullscreenState()) &&
+          !isCompleted &&
+          !questionsLoading &&
+          !questionsError &&
+          questionsData.length > 0
+            ? "pointer-events-none opacity-50"
+            : ""
+        }`}
+      >
         <div className="max-w-7xl mx-auto">
           <AssessmentHeader
             timeRemaining={timeRemaining}
@@ -2030,7 +2073,7 @@ const ShortAssessmentContent: React.FC<{
               <QuestionNavigation
                 questionsData={questionsData}
                 getQuestionButtonStyle={getQuestionButtonStyle}
-                navigateToQuestion={navigateToQuestion}
+                navigateToQuestion={navigateToQuestionWithFullscreen}
                 getAnsweredCount={getAnsweredCount}
                 getRemainingCount={getRemainingCount}
               />
