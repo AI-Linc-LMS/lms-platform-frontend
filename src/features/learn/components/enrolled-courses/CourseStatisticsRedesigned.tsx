@@ -72,25 +72,25 @@ const CourseStatistics: React.FC<CourseStatisticsProps> = ({ course }) => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div
             key={index}
-            className={`${stat.bgColor} ${stat.borderColor} border-2 rounded-xl sm:rounded-2xl p-4 sm:p-6 hover:shadow-lg transition-all duration-300 group cursor-pointer`}
+            className={`bg-white ${stat.borderColor} border rounded-xl p-5 shadow-card hover:shadow-card-hover transition-all duration-200 group cursor-pointer`}
           >
             <div className="flex flex-col items-center text-center">
-              <div className="mb-2 sm:mb-3 p-2 sm:p-3 bg-white rounded-lg sm:rounded-xl shadow-sm group-hover:scale-110 transition-transform duration-300">
+              <div className="mb-3 p-3 bg-white rounded-xl shadow-sm group-hover:scale-105 transition-transform duration-200">
                 {stat.icon}
               </div>
 
               <div className="space-y-1">
-                <p className="text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wide">
+                <p className="text-xs sm:text-sm font-medium text-[var(--font-secondary)] uppercase tracking-wide">
                   {stat.label}
                 </p>
-                <p className="text-lg sm:text-2xl font-bold text-gray-900">
+                <p className="text-xl sm:text-2xl font-bold text-[var(--font-primary)]">
                   {stat.value}
                 </p>
-                <p className="text-xs text-gray-500">{stat.description}</p>
+                <p className="text-xs text-[var(--font-tertiary)]">{stat.description}</p>
               </div>
             </div>
           </div>

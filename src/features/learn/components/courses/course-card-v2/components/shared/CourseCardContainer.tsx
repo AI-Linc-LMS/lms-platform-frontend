@@ -7,9 +7,9 @@ interface CourseCardContainerProps {
   height?: string; // optional: force uniform height
 }
 
-const CARD_BASE_STYLES = `bg-white rounded-2xl border border-[#e3f2fd] shadow-[0_8px_32px_rgba(0,0,0,0.1)] 
-  overflow-hidden transition-all duration-300 ease-in-out 
-  hover:shadow-[0_12px_40px_rgba(0,0,0,0.15)] hover:-translate-y-1 relative flex flex-col`;
+const CARD_BASE_STYLES = `bg-white rounded-xl border border-[var(--neutral-200)] shadow-card
+  overflow-hidden transition-all duration-200 ease-in-out 
+  hover:shadow-card-hover hover:-translate-y-1 relative flex flex-col`;
 
 const CARD_FONT_FAMILY = {
   fontFamily:

@@ -231,7 +231,7 @@ const AddContent: React.FC<AddContentProps> = ({
                   onChange={handleSearchChange}
                   onFocus={handleInputFocus}
                   disabled={isLoading}
-                  className="w-full border border-gray-300 rounded px-3 py-2 pr-10 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[var(--primary-500)] focus:border-[var(--primary-500)] transition-colors"
+                  className="w-full border border-[var(--neutral-200)] rounded-xl px-3 py-2.5 pr-10 text-sm text-[var(--font-primary)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-500)] focus:border-[var(--primary-500)] transition-all shadow-sm"
                 />
 
                 {/* Search Icon */}

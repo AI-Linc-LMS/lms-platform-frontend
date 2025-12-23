@@ -14,10 +14,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     <div
       className={`side-navigation top-0 left-0 h-[calc(100vh-2px)] ${
         isExpanded ? "w-[250px]" : "w-[80px]"
-      } rounded-lg text-[var(--font-dark)] px-0 flex flex-col items-center py-4 transition-all duration-300 ease-in-out`}
+      } rounded-lg text-[var(--font-primary)] px-0 flex flex-col items-center py-4 transition-all duration-300 ease-in-out bg-white`}
     >
       <SidebarLogo isExpanded={isExpanded} onClickArrow={toggleSidebar} />
-      <nav className="flex w-full flex-col">
+      <nav className="flex w-full flex-col px-2">
         <AdminSidebarMenu isExpanded={isExpanded} />
       </nav>
     </div>

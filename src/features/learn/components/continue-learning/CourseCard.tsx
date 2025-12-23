@@ -17,13 +17,13 @@ const CourseCard: React.FC<CourseData> = ({
   const { t } = useTranslation();
   
   return (
-    <div className="w-full border-[var(--primary-200)] rounded-[16px] md:rounded-[22px] border-[1px] bg-[var(--neutral-50)] p-4 flex flex-col gap-3 min-h-[280px] md:min-h-[300px]">
+    <div className="w-full border-[var(--neutral-200)] rounded-xl border bg-white p-5 flex flex-col gap-4 min-h-[280px] md:min-h-[300px] shadow-card hover:shadow-card-hover transition-all duration-200">
       <div className="flex flex-col sm:flex-row justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <h1 className="font-bold text-[var(--neutral-500)] text-[16px] md:text-[18px] line-clamp-1">
+          <h1 className="font-bold text-[var(--font-primary)] text-[16px] md:text-[18px] line-clamp-1">
             {title}
           </h1>
-          <p className="font-sans font-normal text-[13px] text-[var(--neutral-400)] line-clamp-1">
+          <p className="font-sans font-normal text-[13px] text-[var(--font-secondary)] line-clamp-1">
             {description}
           </p>
         </div>

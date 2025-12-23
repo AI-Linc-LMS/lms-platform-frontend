@@ -24,11 +24,7 @@ const SidebarMenu = ({ isExpanded }: SidebarMenuProps) => {
   }, [clientInfo?.data?.features, i18n.language, t]);
 
   return (
-    <div
-      className={`${
-        isExpanded ? "px-2" : "px-2"
-      } h-full w-full flex flex-col gap-2 divide-y-[0.5px] divide-[#D3D3D318] items-center my-8`}
-    >
+    <div className="h-full w-full flex flex-col gap-1 items-center mt-4">
       {filteredNavigationLinks.map((link: SidebarLinkInfo) => (
         <SidebarList
           key={link.title}

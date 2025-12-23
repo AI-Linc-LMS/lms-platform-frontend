@@ -92,7 +92,7 @@ function Container({ children }: { children: React.ReactNode }) {
 
       {/* Main Content Area */}
       <main
-        className={`animate-children-fade-up ${
+        className={`animate-children-fade-up bg-[var(--neutral-50)] min-h-screen ${
           showSidebar
             ? isSidebarExpanded
               ? "md:ml-[180px] lg:ml-[250px]"

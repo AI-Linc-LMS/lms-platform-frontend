@@ -19,7 +19,7 @@ const SidebarLogoPart = ({
         isExpanded
           ? "flex-col items-center gap-2 px-2"
           : "flex-col items-center justify-center"
-      } text-neutral-900 w-full h-14 border-b border-[#D3D3D318] font-bold transition-all duration-300`}
+      } text-[var(--font-primary)] w-full h-14 border-b border-[var(--neutral-200)] font-bold transition-all duration-300`}
     >
       {clientInfo.data?.app_logo_url && (
         <div
@@ -27,25 +27,6 @@ const SidebarLogoPart = ({
             isExpanded ? "w-full h-full p-2" : "w-10 h-10"
           }`}
         >
-          {/* Soothing background layers */}
-          <div
-            className={`absolute inset-0 transition-all duration-300 ${
-              isExpanded
-                ? "bg-gradient-to-br from-slate-50/80 via-gray-50/60 to-neutral-100/80 rounded-lg"
-                : "bg-gradient-to-br from-slate-100/70 via-gray-100/50 to-neutral-50/70 rounded-full"
-            }`}
-          />
-
-          {/* Subtle inner shadow for depth */}
-          <div
-            className={`absolute inset-0 transition-all duration-300 shadow-inner ${
-              isExpanded ? "rounded-lg" : "rounded-full"
-            }`}
-            style={{
-              boxShadow: "inset 0 1px 3px rgba(0, 0, 0, 0.05)",
-            }}
-          />
-
           {/* Logo image */}
           <img
             src={
@@ -66,11 +47,11 @@ const SidebarLogoPart = ({
         className={`${
           isExpanded ? "" : "rotate-180"
         } absolute w-[45px] h-[52px] grid place-items-center rounded-[12px] 
-        transition-transform duration-300 right-[-37px] bottom-[-12px] 
-        bg-[var(--nav-background)] cursor-pointer pr-[3px] hover:scale-105`}
+        transition-all duration-300 right-[-37px] bottom-[-12px] 
+        bg-white border border-[var(--neutral-200)] shadow-md cursor-pointer pr-[3px] hover:scale-105 hover:shadow-lg`}
         onClick={onClickArrow}
       >
-        <ArrowIcon className="var(--font-dark-nav)" />
+        <ArrowIcon className="text-[var(--font-primary)]" />
       </div>
     </div>
   );

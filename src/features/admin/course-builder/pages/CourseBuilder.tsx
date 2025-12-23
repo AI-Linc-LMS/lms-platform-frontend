@@ -424,10 +424,10 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             <button
-              className="bg-[#17627A] text-[var(--font-light)] px-4 py-2 rounded-md flex items-center whitespace-nowrap hover:bg-[var(--primary-800)] transition-colors"
+              className="bg-[var(--accent-purple)] text-white px-4 py-2 rounded-xl flex items-center whitespace-nowrap hover:bg-[#7c3aed] transition-all shadow-sm hover:shadow-md active:scale-[0.98] font-medium"
               onClick={() => setIsModalOpen(true)}
             >
-              <span className="mr-1">+</span> Add New Course
+              <span className="mr-1.5">+</span> Add New Course
             </button>
           </div>
         </div>

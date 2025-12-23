@@ -25,7 +25,7 @@ const DesktopSearch = ({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search by courses"
-          className="w-full py-2 pl-10 pr-4 border border-[#DEE2E6] rounded-lg text-[var(--neutral-400)] focus:outline-none focus:ring-2 focus:ring-[#17627A] focus:border-transparent"
+          className="w-full py-2.5 pl-10 pr-4 border border-[var(--neutral-200)] rounded-xl text-[var(--font-primary)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-500)] focus:border-[var(--primary-500)] transition-all shadow-sm"
         />
       </div>
 

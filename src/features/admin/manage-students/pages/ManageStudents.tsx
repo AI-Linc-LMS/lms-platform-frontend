@@ -233,7 +233,7 @@ const ManageStudents = () => {
                 onChange={(e) =>
                   setFilters((f) => ({ ...f, searchTerm: e.target.value }))
                 }
-                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none transition-all shadow-sm"
+                className="w-full pl-12 pr-4 py-3 border border-[var(--neutral-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary-500)] focus:border-[var(--primary-500)] outline-none transition-all shadow-sm bg-white text-[var(--font-primary)]"
               />
             </div>
 

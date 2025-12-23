@@ -165,7 +165,7 @@ const TopNav: React.FC = () => {
 
   return (
     <header
-      className={`sticky top-0 z-40 w-full bg-[var(--nav-background)] md:bg-white border-b border-gray-200 shadow-sm ${
+      className={`sticky top-0 z-40 w-full bg-white border-b border-[var(--neutral-200)] shadow-sm ${
         isRTL ? "direction-rtl" : ""
       }`}
     >
@@ -283,7 +283,7 @@ const TopNav: React.FC = () => {
                   ref={streakTooltipRef}
                   className={`fixed sm:absolute ${
                     isRTL ? "right-0 sm:right-auto" : "left-0"
-                  } top-14 sm:top-full mt-2 w-[calc(100vw-2rem)] sm:w-72 max-w-sm bg-white rounded-lg shadow-xl border border-gray-200 p-3 sm:p-4 z-50 ${
+                  } top-14 sm:top-full mt-2 w-[calc(100vw-2rem)] sm:w-72 max-w-sm bg-white rounded-lg shadow-lg border border-[var(--neutral-200)] p-3 sm:p-4 z-50 ${
                     showStreakTooltip
                       ? "animate-dropdown-open"
                       : "animate-dropdown-close"
@@ -337,11 +337,11 @@ const TopNav: React.FC = () => {
                               >
                                 #{index + 1}
                               </span>
-                              <span className="text-sm text-gray-700 truncate">
+                              <span className="text-sm text-[var(--font-primary)] truncate">
                                 {user.name}
                               </span>
                             </div>
-                            <span className="text-xs font-medium text-[#17627A] flex-shrink-0 ml-2">
+                            <span className="text-xs font-medium text-[var(--primary-500)] flex-shrink-0 ml-2">
                               {timeDisplay}
                             </span>
                           </div>
@@ -349,7 +349,7 @@ const TopNav: React.FC = () => {
                       })}
                     </div>
                   ) : (
-                    <div className="text-xs text-gray-500 text-center py-2">
+                    <div className="text-xs text-[var(--font-tertiary)] text-center py-2">
                       No data available
                     </div>
                   )}
@@ -464,7 +464,7 @@ const TopNav: React.FC = () => {
             {(isAdminOrInstructor || isSuperAdmin) && (
               <Link
                 to="/admin/dashboard"
-                className="hidden sm:inline-flex bg-[#17627A] text-white px-3 md:px-4 py-1.5 md:py-2 rounded-md text-xs md:text-sm font-medium hover:bg-[var(--primary-800)] transition-colors whitespace-nowrap"
+                className="hidden sm:inline-flex bg-[var(--primary-500)] text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-[var(--primary-600)] transition-colors whitespace-nowrap shadow-sm"
               >
                 {t("navigation.admin")}
               </Link>
@@ -473,12 +473,12 @@ const TopNav: React.FC = () => {
             {/* Notification Bell */}
             <div className="relative">
               <button
-                className="bg-gray-100 p-2 rounded-md cursor-pointer hover:bg-gray-200 transition-colors flex-shrink-0"
+                className="bg-[var(--neutral-50)] p-2 rounded-lg cursor-pointer hover:bg-[var(--neutral-100)] transition-colors flex-shrink-0"
                 onClick={triggerNotification}
                 aria-label="Notifications"
               >
                 <Bell
-                  className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-gray-600"
+                  className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-[var(--font-secondary)]"
                   strokeWidth={1.5}
                 />
               </button>
@@ -493,7 +493,7 @@ const TopNav: React.FC = () => {
                     ref={notificationRef}
                     className={`fixed sm:absolute ${
                       isRTL ? "left-4 sm:left-0" : "right-4 sm:right-0"
-                    } top-14 sm:top-full mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm bg-white rounded-lg shadow-xl border border-gray-200 p-4 z-50 ${
+                    } top-14 sm:top-full mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm bg-white rounded-lg shadow-lg border border-[var(--neutral-200)] p-4 z-50 ${
                       showNotification
                         ? "animate-dropdown-open"
                         : "animate-dropdown-close"
@@ -508,16 +508,16 @@ const TopNav: React.FC = () => {
                   >
                     <div className="flex justify-between items-start gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 mb-1">
+                        <p className="text-sm font-medium text-[var(--font-primary)] mb-1">
                           {t("notifications.communityLive.title")}
                         </p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-[var(--font-secondary)]">
                           {t("notifications.communityLive.message")}
                         </p>
                       </div>
                       <button
                         onClick={hideNotification}
-                        className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                        className="text-[var(--font-tertiary)] hover:text-[var(--font-primary)] transition-colors flex-shrink-0"
                         aria-label="Close notification"
                       >
                         ✕
@@ -526,7 +526,7 @@ const TopNav: React.FC = () => {
                     <div className="mt-3">
                       <Link
                         to="/community"
-                        className="inline-block text-sm text-white bg-[#17627A] hover:bg-[var(--primary-800)] px-4 py-2 rounded transition-colors"
+                        className="inline-block text-sm text-white bg-[var(--primary-500)] hover:bg-[var(--primary-600)] px-4 py-2 rounded-lg transition-all shadow-sm hover:shadow-md active:scale-[0.98]"
                         onClick={hideNotification}
                       >
                         {t("notifications.communityLive.action")}
@@ -560,7 +560,7 @@ const TopNav: React.FC = () => {
                 <div
                   className={`absolute ${
                     isRTL ? "left-0" : "right-0"
-                  } mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50 ${
+                  } mt-2 w-48 bg-white rounded-lg shadow-lg border border-[var(--neutral-200)] py-1 z-50 ${
                     showDropdown
                       ? "animate-dropdown-open"
                       : "animate-dropdown-close"
@@ -573,7 +573,7 @@ const TopNav: React.FC = () => {
                 >
                   <Link
                     to="/user-profile"
-                    className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="block px-4 py-2.5 text-sm text-[var(--font-primary)] hover:bg-[var(--neutral-50)] transition-colors"
                     onClick={handleCloseDropdown}
                   >
                     {t("navigation.profile")}
@@ -581,7 +581,7 @@ const TopNav: React.FC = () => {
                   {(isAdminOrInstructor || isSuperAdmin) && (
                     <Link
                       to="/admin/dashboard"
-                      className="sm:hidden block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-100"
+                      className="sm:hidden block px-4 py-2.5 text-sm text-[var(--font-primary)] hover:bg-[var(--neutral-50)] transition-colors border-t border-[var(--neutral-200)]"
                       onClick={handleCloseDropdown}
                     >
                       {t("navigation.admin")}
@@ -589,7 +589,7 @@ const TopNav: React.FC = () => {
                   )}
                   <button
                     onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-gray-100"
+                    className="block w-full text-left px-4 py-2.5 text-sm text-[var(--error-500)] hover:bg-[var(--error-100)] transition-colors border-t border-[var(--neutral-200)]"
                   >
                     {t("navigation.logout")}
                   </button>

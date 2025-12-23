@@ -24,54 +24,22 @@ body {
   display: none;
 }
 
-/* Side Navigation Container */
+/* Side Navigation Container - Premium Styling */
 .side-navigation {
   position: absolute;
-  color: white;
-  background: transparent;
-  /* border-radius: 0.75rem; */
-}
-
-/* Side Navigation Purple Border */
-.side-navigation::before {
-  position: absolute;
-  content: "";
-  z-index: -2;
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100px;
-  background-color: #a544ff;
-  /* clip-path: polygon(
-    0 0,
-    100% 0,
-    100% calc(100% - var(--cut-radius)),
-    calc(100% - var(--cut-radius)) 100%,
-    0 100%
-  );
-  bottom: 0;
-  left: 0; */
-  /* border-radius: 0.75rem; */
-}
-
-/* Side Navigation Pseudo Background (Dark Gray) */
-.side-navigation::after {
-  position: absolute;
-  content: "";
-  width: calc(100% - 0px);
-  height: calc(100% - 2px);
-  top: 0px;
-  left: 0px;
-  z-index: -1;
+  color: var(--font-primary);
   background: var(--nav-background);
-  /* clip-path: polygon(
-    0 0,
-    100% 0,
-    100% calc(100% - var(--cut-radius) - 1px),
-    calc(100% - var(--cut-radius) - 1px) 100%,
-    0 100%
-  );
-  border-radius: 0.75rem; */
+  border-right: 1px solid var(--neutral-200);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Premium Hover Element */
+.hover-element {
+  transition: all 0.2s ease;
+}
+
+.hover-element:hover {
+  background-color: var(--neutral-50);
 }
 
 /* =============================== SIDE NAVIGATION BAR - END ================================== */
@@ -296,11 +264,11 @@ body {
 }
 
 .animate-fade-up {
-  animation: fade-up 0.5s ease-out forwards;
+  animation: fade-up 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .animate-children-fade-up > * {
-  animation: fade-up 0.5s ease-out forwards;
+  animation: fade-up 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   opacity: 0;
 }
 /* =============================== Page Load Animation - END ================================== */
@@ -309,7 +277,7 @@ body {
 @keyframes dropdown-open {
   from {
     opacity: 0;
-    transform: scale(0.95) translateY(-10px);
+    transform: scale(0.95) translateY(-8px);
   }
   to {
     opacity: 1;
@@ -324,16 +292,16 @@ body {
   }
   to {
     opacity: 0;
-    transform: scale(0.95) translateY(-10px);
+    transform: scale(0.95) translateY(-8px);
   }
 }
 
 .animate-dropdown-open {
-  animation: dropdown-open 0.1s ease-out forwards;
+  animation: dropdown-open 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .animate-dropdown-close {
-  animation: dropdown-close 0.1s ease-in forwards;
+  animation: dropdown-close 0.15s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 /* =============================== Dropdown Animation - END ================================== */
 
@@ -394,31 +362,32 @@ body {
   transition: all 0.2s ease;
 }
 
-/* Course Card Styles */
+/* Course Card Styles - Premium */
 .course-card {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 12px;
 }
 
 .course-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-card-hover);
 }
 
 :root {
-  /* Primary Colors */
-  --nav-background: #d7eff6;
-  --font-dark-nav: #0f2b46;
+  /* Primary Colors - Premium Blue Scheme */
+  --nav-background: #ffffff;
+  --font-dark-nav: #1f2937;
   --font-light-nav: #ffffff;
-  --primary-50: #d7eff6;
-  --primary-100: #b9e4f2;
-  --primary-200: #80c9e0;
-  --primary-300: #63b6d3;
-  --primary-400: #2a8cb0;
-  --primary-500: #255c79;
-  --primary-600: #1e4a63;
-  --primary-700: #1a5a7a;
-  --primary-800: #124f65;
-  --primary-900: #0f2b46;
+  --primary-50: #eff6ff;
+  --primary-100: #dbeafe;
+  --primary-200: #bfdbfe;
+  --primary-300: #93c5fd;
+  --primary-400: #60a5fa;
+  --primary-500: #3b82f6;
+  --primary-600: #2563eb;
+  --primary-700: #1d4ed8;
+  --primary-800: #1e40af;
+  --primary-900: #1e3a8a;
 
   /* Secondary Colors */
   --secondary-50: #e6f8f6;
@@ -427,57 +396,65 @@ body {
   --secondary-300: #ae0606;
   --secondary-400: #007b9f;
   --secondary-500: #12293a;
-  --nav-selected: #12293a;
+  --nav-selected: #3b82f6;
   --secondary-600: #1a3a4f;
   --secondary-700: #264d64;
 
-  /* Accent Colors */
+  /* Accent Colors - Premium Palette */
   --accent-yellow: #facc15;
-  --accent-blue: #3875f9;
-  --accent-green: #38a169;
-  --accent-red: #e53e3e;
-  --accent-orange: #dd6b20;
-  --accent-teal: #319795;
-  --accent-purple: #805ad5;
-  --accent-pink: #d53f8c;
+  --accent-blue: #3b82f6;
+  --accent-green: #10b981;
+  --accent-red: #ef4444;
+  --accent-orange: #f97316;
+  --accent-teal: #14b8a6;
+  --accent-purple: #8b5cf6;
+  --accent-pink: #ec4899;
 
-  /* Neutral Colors */
+  /* Neutral Colors - Premium Grays */
   --neutral-50: #f8f9fa;
-  --neutral-100: #e9ecef;
-  --neutral-200: #dde2e6;
-  --neutral-300: #6c757d;
-  --neutral-400: #495057;
-  --neutral-500: #343a40;
-  --neutral-600: #2d3748;
-  --neutral-700: #1e1e1e;
-  --neutral-800: #1a1a1a;
+  --neutral-100: #f1f3f5;
+  --neutral-200: #e9ecef;
+  --neutral-300: #dee2e6;
+  --neutral-400: #ced4da;
+  --neutral-500: #6c757d;
+  --neutral-600: #495057;
+  --neutral-700: #343a40;
+  --neutral-800: #212529;
 
   /* Success Colors */
-  --success-50: #e6f8f6;
-  --success-100: #cde5ce;
-  --success-500: #5fa564;
+  --success-50: #ecfdf5;
+  --success-100: #d1fae5;
+  --success-500: #10b981;
 
   /* Warning Colors */
-  --warning-100: #fff8e6;
-  --warning-500: #ffb800;
+  --warning-100: #fef3c7;
+  --warning-500: #f59e0b;
 
   /* Error Colors */
-  --error-100: #ffe6e6;
-  --error-500: #ea4335;
-  --error-600: #ae0606;
+  --error-100: #fee2e2;
+  --error-500: #ef4444;
+  --error-600: #dc2626;
 
   /* Font Colors */
-  --font-primary: #333333;
+  --font-primary: #1f2937;
   --font-secondary: #6b7280;
   --font-tertiary: #9ca3af;
   --font-light: #ffffff;
   --font-dark: #000000;
   --course-cta: #10b981;
 
-  --default-primary: #255c79;
+  --default-primary: #3b82f6;
 
   /* Card / surface background (themeable) */
   --card-bg: #ffffff;
+
+  /* Premium Shadow System */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.12);
 
   /* Chart series colors (themeable) */
   --chart-articles: #234256;

@@ -247,8 +247,8 @@ const Dashboard = () => {
             Back to Main
           </button>
           <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-3xl font-bold text-[var(--font-primary)]">Dashboard</h1>
+            <p className="text-[var(--font-secondary)] mt-2">
               Here is a glimpse of your overall progress.
             </p>
           </div>
@@ -256,7 +256,7 @@ const Dashboard = () => {
       </div>
       <div className="flex items-center justify-between mb-4">
         <select
-          className=" rounded-lg p-2 border border-[var(--primary-100)] text-xs text-gray-700 w-1/10"
+          className="rounded-xl p-2.5 border border-[var(--neutral-200)] text-sm text-[var(--font-primary)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-500)] focus:border-[var(--primary-500)] transition-all shadow-sm w-auto min-w-[150px]"
           value={selectedCourseId}
           onChange={(e) => {
             const val = e.target.value;
@@ -294,49 +294,58 @@ const Dashboard = () => {
           </button>
         </div>
       </div>
-      <div className="flex gap-4">
-        {metrics.map((metric, idx) => (
-          <div
-            key={idx}
-            className="flex-1 bg-white rounded-lg shadow p-4 flex items-center justify-between ring-1 ring-[var(--primary-100)] ring-offset-1"
-          >
-            <div>
-              <div className="text-xs text-[var(--primary-500)] flex items-center gap-1 mb-2">
-                {metric.label}
-                <span className="ml-1 text-gray-400 cursor-default relative group">
-                  <img src={i} alt="info" className="w-4 h-4" />
-                  <div
-                    role="tooltip"
-                    className="absolute z-20 hidden group-hover:block bg-gray-700 text-white text-[10px] leading-snug rounded px-2 py-1 w-[120px] -top-2 left-1/2 -translate-x-1/2 -translate-y-full shadow-lg"
-                  >
-                    {getMetricTooltip(metric.id)}
-                  </div>
-                </span>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {metrics.map((metric, idx) => {
+          const iconColors = [
+            "bg-blue-100 text-blue-600",
+            "bg-green-100 text-green-600",
+            "bg-orange-100 text-orange-600",
+            "bg-purple-100 text-purple-600",
+          ];
+          const iconColorClass = iconColors[idx % iconColors.length];
+          
+          return (
+            <div
+              key={idx}
+              className="bg-white rounded-xl shadow-card p-6 flex items-center justify-between hover:shadow-card-hover transition-all duration-200 border border-[var(--neutral-200)]"
+            >
+              <div className="flex-1">
+                <div className="text-sm text-[var(--font-secondary)] font-medium mb-2 flex items-center gap-1">
+                  {metric.label}
+                  <span className="text-gray-400 cursor-default relative group">
+                    <img src={i} alt="info" className="w-4 h-4" />
+                    <div
+                      role="tooltip"
+                      className="absolute z-20 hidden group-hover:block bg-[var(--font-primary)] text-white text-[10px] leading-snug rounded-lg px-2 py-1 w-[120px] -top-2 left-1/2 -translate-x-1/2 -translate-y-full shadow-lg"
+                    >
+                      {getMetricTooltip(metric.id)}
+                    </div>
+                  </span>
+                </div>
+                <div className="text-3xl font-bold text-[var(--font-primary)]">
+                  {metric.id === "time_spent" ? (
+                    (() => {
+                      const parts = String(metric.value).split(" ");
+                      const num = parts[0];
+                      const unit = parts.slice(1).join(" ");
+                      return (
+                        <span>
+                          <span>{num}</span>
+                          {unit && <span className="text-lg ml-2 font-normal">{unit}</span>}
+                        </span>
+                      );
+                    })()
+                  ) : (
+                    metric.value
+                  )}
+                </div>
               </div>
-              <div className="text-3xl font-bold text-[var(--primary-500)]">
-                {metric.id === "time_spent" ? (
-                  // metric.value has format "<number> <unit>"
-                  (() => {
-                    const parts = String(metric.value).split(" ");
-                    const num = parts[0];
-                    const unit = parts.slice(1).join(" ");
-                    return (
-                      <span>
-                        <span>{num}</span>
-                        {unit && <span className="text-base ml-2">{unit}</span>}
-                      </span>
-                    );
-                  })()
-                ) : (
-                  metric.value
-                )}
+              <div className={`${iconColorClass} rounded-xl p-3 flex items-center justify-center ml-4`}>
+                <img src={metric.Icon} alt={metric.label} className="w-6 h-6" />
               </div>
             </div>
-            <div className="bg-[var(--primary-50)] rounded-full p-4 flex items-center justify-center border border-[var(--primary-500)]">
-              <img src={metric.Icon} alt={metric.label} />
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <div className="h-1 border-t border-[#D9E8FF] my-5"></div>
       

@@ -349,7 +349,7 @@ const NotEnrolledExpandedCard: React.FC<NotEnrolledExpandedCardProps> = ({
 
   return (
     <div
-      className={`course-card w-full max-w-lg bg-white rounded-2xl border border-blue-100 shadow-xl transition-all duration-300 ease-in-out relative overflow-visible ${className}`}
+      className={`course-card w-full max-w-lg bg-white rounded-xl border border-[var(--neutral-200)] shadow-card hover:shadow-card-hover transition-all duration-200 ease-in-out relative overflow-visible ${className}`}
     >
       {/* Card Header */}
       <div className="p-4 sm:p-4 pb-3 border-b border-gray-100">

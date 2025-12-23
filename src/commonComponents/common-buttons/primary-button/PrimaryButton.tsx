@@ -20,7 +20,7 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       onClick={onClick}
       type={type}
       disabled={disabled}
-      className={`w-full h-14 rounded-xl text-[var(--font-light)] py-4 px-6 text-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-[var(--primary-500)] hover:bg-[var(--primary-600)] hover:scale-95 ${className}`}
+      className={`w-full h-12 rounded-xl text-white py-3 px-6 text-base font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-[var(--primary-500)] hover:bg-[var(--primary-600)] shadow-sm hover:shadow-md active:scale-[0.98] ${className}`}
     >
       {children}
     </button>

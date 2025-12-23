@@ -14,7 +14,7 @@ const SidebarList: React.FC<SidebarListProps> = ({ links, isExpanded }) => {
 
   return (
     <div className="flex w-full flex-col">
-      <ul className="text-base font-semibold flex flex-col gap-2 mt-2">
+      <ul className="text-base font-semibold flex flex-col gap-1">
         {links.map((link) => {
           let isActive = false;
           if (pathname.toLowerCase().includes(link.href.toLowerCase())) {

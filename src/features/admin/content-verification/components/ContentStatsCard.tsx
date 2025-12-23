@@ -19,19 +19,21 @@ const ContentStatsCard: React.FC<ContentStatsCardProps> = ({
     <Card
       sx={{
         cursor: onClick ? "pointer" : "default",
-        transition: "all 0.2s",
-        "&:hover": onClick
-          ? {
-              transform: "translateY(-4px)",
-              boxShadow: 3,
-            }
-          : {},
+        transition: "all 0.2s ease",
+        borderRadius: "12px",
         border: "1px solid",
         borderColor: "var(--neutral-200)",
+        boxShadow: "var(--shadow-card)",
+        "&:hover": onClick
+          ? {
+              transform: "translateY(-2px)",
+              boxShadow: "var(--shadow-card-hover)",
+            }
+          : {},
       }}
       onClick={onClick}
     >
-      <CardContent>
+      <CardContent sx={{ p: 3 }}>
         <Box
           sx={{
             display: "flex",
@@ -51,8 +53,9 @@ const ContentStatsCard: React.FC<ContentStatsCardProps> = ({
           <Typography
             sx={{
               fontSize: "2rem",
-              fontWeight: "bold",
+              fontWeight: 700,
               color: color,
+              lineHeight: 1.2,
             }}
           >
             {count}

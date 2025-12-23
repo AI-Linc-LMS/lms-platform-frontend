@@ -23,11 +23,7 @@ const AdminSidebarMenu = ({ isExpanded }: AdminSidebarMenuProps) => {
   }, [clientInfo?.data?.features]);
 
   return (
-    <div
-      className={`${
-        isExpanded ? "px-2" : "px-2"
-      } h-full w-full flex flex-col divide-y-[0.5px] divide-[#D3D3D318] items-center`}
-    >
+    <div className="h-full w-full flex flex-col gap-1 items-center mt-4">
       {filteredNavigationLinks.map((link: SidebarLinkInfo) => (
         // (clientId === 1 || link.id <= 2) && (
         <SidebarList
