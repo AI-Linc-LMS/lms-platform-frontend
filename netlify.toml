@@ -1,27 +1,6 @@
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+[build]
+command = "yarn next build" # or "yarn next build"
+publish = ".next"
 
-# Ensure new deployments are picked up without users clearing cache
-[[headers]]
-  for = "/sw-custom.js"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-    Service-Worker-Allowed = "/"
-
-[[headers]]
-  for = "/manifest.webmanifest"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-
-[[headers]]
-  for = "/index.html"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-
-# Long-cache hashed static assets
-[[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+[[plugins]]
+package = "@netlify/plugin-nextjs"
