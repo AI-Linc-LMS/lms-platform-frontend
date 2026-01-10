@@ -1,6 +1,7 @@
 "use client";
 
 import { Box } from "@mui/material";
+import { Leaderboard } from "./Leaderboard";
 import { StreakTable } from "./StreakTable";
 
 interface DashboardSidebarProps {
@@ -20,6 +21,7 @@ export const DashboardSidebar = ({
         gap: 3,
       }}
     >
+      <Leaderboard />
       <StreakTable streakDays={streakDays} currentStreak={currentStreak} />
     </Box>
   );
