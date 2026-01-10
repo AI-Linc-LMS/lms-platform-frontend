@@ -68,6 +68,9 @@ export function CommentItem({
           border: "1px solid #e5e7eb",
           borderRadius: 2,
           backgroundColor: depth % 2 === 0 ? "#ffffff" : "#fafafa",
+          width: "100%",
+          maxWidth: "100%",
+          overflow: "hidden",
         }}
       >
         {/* Comment Header */}
@@ -107,16 +110,71 @@ export function CommentItem({
         </Box>
 
         {/* Comment Body */}
-        <Typography
-          variant="body2"
+        <Box
+          dangerouslySetInnerHTML={{ __html: comment.body }}
           sx={{
             mb: 1.5,
-            whiteSpace: "pre-wrap",
             color: "#374151",
+            fontSize: "0.875rem",
+            lineHeight: 1.6,
+            wordBreak: "break-word",
+            overflowWrap: "break-word",
+            overflow: "hidden",
+            width: "100%",
+            maxWidth: "100%",
+            "& p": {
+              margin: 0,
+              marginBottom: "0.5rem",
+              "&:last-child": {
+                marginBottom: 0,
+              },
+            },
+            "& b, & strong": {
+              fontWeight: 600,
+            },
+            "& i, & em": {
+              fontStyle: "italic",
+            },
+            "& img": {
+              maxWidth: "100%",
+              width: "100%",
+              height: "auto",
+              display: "block",
+              margin: "0.5rem 0",
+              borderRadius: "4px",
+              objectFit: "contain",
+            },
+            "& a": {
+              color: "#2563eb",
+              textDecoration: "none",
+              wordBreak: "break-all",
+              "&:hover": {
+                textDecoration: "underline",
+              },
+            },
+            "& code": {
+              backgroundColor: "#f3f4f6",
+              padding: "2px 6px",
+              borderRadius: "4px",
+              fontSize: "0.875em",
+              fontFamily: "monospace",
+              wordBreak: "break-word",
+              overflowWrap: "break-word",
+            },
+            "& pre": {
+              backgroundColor: "#f3f4f6",
+              padding: "0.75rem",
+              borderRadius: "4px",
+              overflow: "auto",
+              margin: "0.5rem 0",
+              maxWidth: "100%",
+              "& code": {
+                backgroundColor: "transparent",
+                padding: 0,
+              },
+            },
           }}
-        >
-          {comment.body}
-        </Typography>
+        />
 
         {/* Actions */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>

@@ -17,6 +17,10 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 let leaderboardCache: CacheEntry<DailyProgressLeaderboardEntry[]> | null = null;
 let streakCache: CacheEntry<MonthlyStreak> | null = null;
 
+export const invalidateStreakCache = () => {
+  streakCache = null;
+};
+
 export const useLeaderboardAndStreak = () => {
   const [leaderboard, setLeaderboard] = useState<
     DailyProgressLeaderboardEntry[]
@@ -115,6 +119,9 @@ export const useLeaderboardAndStreak = () => {
     leaderboardError,
     streakError,
     refreshLeaderboard: loadLeaderboard,
-    refreshStreak: loadStreak,
+    refreshStreak: async () => {
+      invalidateStreakCache();
+      await loadStreak();
+    },
   };
 };

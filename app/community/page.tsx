@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Container,
   Box,
@@ -39,8 +39,67 @@ export default function CommunityPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const optimisticVotesRef = useRef<Map<number, "upvote" | "downvote" | null>>(
+    new Map()
+  );
+  const optimisticBookmarksRef = useRef<Map<number, boolean>>(new Map());
+
+  const VOTES_STORAGE_KEY = "community_thread_votes";
+  const BOOKMARKS_STORAGE_KEY = "community_thread_bookmarks";
+
+  const loadVotesFromStorage = (): Map<number, "upvote" | "downvote" | null> => {
+    try {
+      const stored = sessionStorage.getItem(VOTES_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return new Map(
+          Object.entries(parsed).map(([id, vote]) => [
+            Number(id),
+            vote as "upvote" | "downvote" | null,
+          ])
+        );
+      }
+    } catch (error) {
+    }
+    return new Map();
+  };
+
+  const saveVotesToStorage = (votes: Map<number, "upvote" | "downvote" | null>) => {
+    try {
+      const obj = Object.fromEntries(votes);
+      sessionStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(obj));
+    } catch (error) {
+    }
+  };
+
+  const loadBookmarksFromStorage = (): Map<number, boolean> => {
+    try {
+      const stored = sessionStorage.getItem(BOOKMARKS_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return new Map(
+          Object.entries(parsed).map(([id, bookmarked]) => [
+            Number(id),
+            bookmarked as boolean,
+          ])
+        );
+      }
+    } catch (error) {
+    }
+    return new Map();
+  };
+
+  const saveBookmarksToStorage = (bookmarks: Map<number, boolean>) => {
+    try {
+      const obj = Object.fromEntries(bookmarks);
+      sessionStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(obj));
+    } catch (error) {
+    }
+  };
 
   useEffect(() => {
+    optimisticVotesRef.current = loadVotesFromStorage();
+    optimisticBookmarksRef.current = loadBookmarksFromStorage();
     loadData();
   }, []);
 
@@ -56,7 +115,48 @@ export default function CommunityPage() {
         communityService.getThreads(),
         communityService.getTags(),
       ]);
-      setThreads(threadsData);
+
+      const mergedThreads = threadsData.map((backendThread) => {
+        const optimisticVote = optimisticVotesRef.current.get(
+          backendThread.id
+        );
+        const optimisticBookmark = optimisticBookmarksRef.current.get(
+          backendThread.id
+        );
+
+        const userVote =
+          backendThread.user_vote !== undefined
+            ? backendThread.user_vote
+            : optimisticVote ?? null;
+        const userBookmarked =
+          backendThread.user_bookmarked !== undefined
+            ? backendThread.user_bookmarked
+            : optimisticBookmark ?? false;
+
+        if (backendThread.user_vote !== undefined) {
+          optimisticVotesRef.current.set(backendThread.id, userVote);
+        } else if (userVote !== null) {
+          optimisticVotesRef.current.set(backendThread.id, userVote);
+        }
+        if (backendThread.user_bookmarked !== undefined) {
+          optimisticBookmarksRef.current.set(
+            backendThread.id,
+            userBookmarked ?? false
+          );
+        } else if (userBookmarked) {
+          optimisticBookmarksRef.current.set(backendThread.id, userBookmarked);
+        }
+
+        return {
+          ...backendThread,
+          user_vote: userVote,
+          user_bookmarked: userBookmarked,
+        };
+      });
+
+      saveVotesToStorage(optimisticVotesRef.current);
+      saveBookmarksToStorage(optimisticBookmarksRef.current);
+      setThreads(mergedThreads);
       setTags(tagsData);
     } catch (error) {
       showToast("Failed to load community data", "error");
@@ -81,46 +181,212 @@ export default function CommunityPage() {
   };
 
   const handleVote = async (threadId: number, type: "upvote" | "downvote") => {
+    const thread = threads.find((t) => t.id === threadId);
+    if (!thread) return;
+
+    const currentVote = thread.user_vote ?? null;
+    let newUpvotes = thread.upvotes;
+    let newDownvotes = thread.downvotes;
+    let newUserVote: "upvote" | "downvote" | null = null;
+
+    if (currentVote === type) {
+      if (type === "upvote") {
+        newUpvotes = Math.max(0, newUpvotes - 1);
+      } else {
+        newDownvotes = Math.max(0, newDownvotes - 1);
+      }
+      newUserVote = null;
+    } else if (currentVote === null) {
+      if (type === "upvote") {
+        newUpvotes += 1;
+      } else {
+        newDownvotes += 1;
+      }
+      newUserVote = type;
+    } else {
+      if (type === "upvote") {
+        newDownvotes = Math.max(0, newDownvotes - 1);
+        newUpvotes += 1;
+      } else {
+        newUpvotes = Math.max(0, newUpvotes - 1);
+        newDownvotes += 1;
+      }
+      newUserVote = type;
+    }
+
+    optimisticVotesRef.current.set(threadId, newUserVote);
+    saveVotesToStorage(optimisticVotesRef.current);
+
+    setThreads((prev) =>
+      prev.map((t) =>
+        t.id === threadId
+          ? {
+              ...t,
+              upvotes: newUpvotes,
+              downvotes: newDownvotes,
+              user_vote: newUserVote,
+            }
+          : t
+      )
+    );
+
     try {
       await communityService.voteThread(threadId, type);
-      // Update local state
+      const [threadsData, tagsData] = await Promise.all([
+        communityService.getThreads(),
+        communityService.getTags(),
+      ]);
+
+      const mergedThreads = threadsData.map((backendThread) => {
+        const optimisticVote = optimisticVotesRef.current.get(
+          backendThread.id
+        );
+
+        if (backendThread.id === threadId) {
+          return {
+            ...backendThread,
+            upvotes: backendThread.upvotes,
+            downvotes: backendThread.downvotes,
+            user_vote:
+              backendThread.user_vote !== undefined
+                ? backendThread.user_vote
+                : optimisticVote ?? null,
+          };
+        }
+
+        return {
+          ...backendThread,
+          user_vote:
+            backendThread.user_vote !== undefined
+              ? backendThread.user_vote
+              : optimisticVote ?? null,
+        };
+      });
+
+      saveVotesToStorage(optimisticVotesRef.current);
+      setThreads(mergedThreads);
+      setTags(tagsData);
+    } catch (error) {
+      optimisticVotesRef.current.delete(threadId);
+      saveVotesToStorage(optimisticVotesRef.current);
       setThreads((prev) =>
-        prev.map((thread) =>
-          thread.id === threadId
+        prev.map((t) =>
+          t.id === threadId
             ? {
-                ...thread,
-                [type === "upvote" ? "upvotes" : "downvotes"]:
-                  thread[type === "upvote" ? "upvotes" : "downvotes"] + 1,
+                ...t,
+                upvotes: thread.upvotes,
+                downvotes: thread.downvotes,
+                user_vote: thread.user_vote ?? null,
               }
-            : thread
+            : t
         )
       );
-    } catch (error) {
       showToast("Failed to vote", "error");
     }
   };
 
   const handleBookmark = async (threadId: number) => {
+    const thread = threads.find((t) => t.id === threadId);
+    if (!thread) return;
+
+    const isBookmarked = thread.user_bookmarked ?? false;
+    let newBookmarksCount = thread.bookmarks_count;
+    let newUserBookmarked = !isBookmarked;
+
+    if (isBookmarked) {
+      newBookmarksCount = Math.max(0, newBookmarksCount - 1);
+      newUserBookmarked = false;
+    } else {
+      newBookmarksCount += 1;
+      newUserBookmarked = true;
+    }
+
+    optimisticBookmarksRef.current.set(threadId, newUserBookmarked);
+    saveBookmarksToStorage(optimisticBookmarksRef.current);
+
+    setThreads((prev) =>
+      prev.map((t) =>
+        t.id === threadId
+          ? {
+              ...t,
+              bookmarks_count: newBookmarksCount,
+              user_bookmarked: newUserBookmarked,
+            }
+          : t
+      )
+    );
+
     try {
       await communityService.bookmarkThread(threadId);
+      const [threadsData, tagsData] = await Promise.all([
+        communityService.getThreads(),
+        communityService.getTags(),
+      ]);
+
+      const mergedThreads = threadsData.map((backendThread) => {
+        const optimisticBookmark = optimisticBookmarksRef.current.get(
+          backendThread.id
+        );
+
+        if (backendThread.id === threadId) {
+          return {
+            ...backendThread,
+            bookmarks_count: backendThread.bookmarks_count,
+            user_bookmarked:
+              backendThread.user_bookmarked !== undefined
+                ? backendThread.user_bookmarked
+                : optimisticBookmark ?? false,
+          };
+        }
+
+        return {
+          ...backendThread,
+          bookmarks_count: backendThread.bookmarks_count,
+          user_bookmarked:
+            backendThread.user_bookmarked !== undefined
+              ? backendThread.user_bookmarked
+              : optimisticBookmark ?? false,
+        };
+      });
+
+      setThreads(mergedThreads);
+      setTags(tagsData);
+
+      showToast(
+        newUserBookmarked ? "Thread bookmarked!" : "Bookmark removed!",
+        "success"
+      );
+    } catch (error) {
       setThreads((prev) =>
-        prev.map((thread) =>
-          thread.id === threadId
-            ? { ...thread, bookmarks_count: thread.bookmarks_count + 1 }
-            : thread
+        prev.map((t) =>
+          t.id === threadId
+            ? {
+                ...t,
+                bookmarks_count: thread.bookmarks_count,
+                user_bookmarked: thread.user_bookmarked ?? false,
+              }
+            : t
         )
       );
-      showToast("Thread bookmarked!", "success");
-    } catch (error) {
+      optimisticBookmarksRef.current.delete(threadId);
+      setThreads((prev) =>
+        prev.map((t) =>
+          t.id === threadId
+            ? {
+                ...t,
+                bookmarks_count: thread.bookmarks_count,
+                user_bookmarked: thread.user_bookmarked ?? false,
+              }
+            : t
+        )
+      );
       showToast("Failed to bookmark thread", "error");
     }
   };
 
-  // Filter and sort threads
   const filteredThreads = useMemo(() => {
     return threads
       .filter((thread) => {
-        // Filter by search query
         if (searchQuery) {
           const query = searchQuery.toLowerCase();
           return (
@@ -136,7 +402,6 @@ export default function CommunityPage() {
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           );
         } else {
-          // popular: sort by score
           const scoreA = a.upvotes - a.downvotes;
           const scoreB = b.upvotes - b.downvotes;
           return scoreB - scoreA;
@@ -144,7 +409,6 @@ export default function CommunityPage() {
       });
   }, [threads, searchQuery, sortBy]);
 
-  // Pagination
   const paginatedThreads = useMemo(() => {
     const start = (page - 1) * pageSize;
     return filteredThreads.slice(start, start + pageSize);

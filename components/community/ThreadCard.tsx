@@ -56,6 +56,7 @@ export function ThreadCard({ thread, onVote, onBookmark }: ThreadCardProps) {
           <VoteButtons
             upvotes={thread.upvotes}
             downvotes={thread.downvotes}
+            userVote={thread.user_vote}
             onVote={(type) => onVote(thread.id, type)}
             size="small"
             orientation="vertical"
@@ -193,19 +194,27 @@ export function ThreadCard({ thread, onVote, onBookmark }: ThreadCardProps) {
             {/* Bookmark Button */}
             {onBookmark && (
               <Box sx={{ marginLeft: "auto" }}>
-                <Tooltip title="Bookmark">
+                <Tooltip title={thread.user_bookmarked ? "Remove bookmark" : "Bookmark"}>
                   <IconButton
                     size="small"
                     onClick={() => onBookmark(thread.id)}
                     sx={{
-                      color: "#6b7280",
+                      color: thread.user_bookmarked ? "#f59e0b" : "#6b7280",
+                      backgroundColor: thread.user_bookmarked ? "#fef3c7" : "transparent",
                       "&:hover": {
                         color: "#f59e0b",
                         backgroundColor: "#fef3c7",
                       },
                     }}
                   >
-                    <IconWrapper icon="mdi:bookmark-outline" size={20} />
+                    <IconWrapper
+                      icon={
+                        thread.user_bookmarked
+                          ? "mdi:bookmark"
+                          : "mdi:bookmark-outline"
+                      }
+                      size={20}
+                    />
                   </IconButton>
                 </Tooltip>
               </Box>

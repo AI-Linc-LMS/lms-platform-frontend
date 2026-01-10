@@ -16,7 +16,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
 import { LogOut, User, Menu as MenuIcon, Bell } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DRAWER_WIDTH } from "./Sidebar";
 import {
   getUserDisplayName,
@@ -53,6 +53,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
     isLeaderboardLoading,
     isStreakLoading,
     leaderboardError,
+    refreshStreak,
   } = useLeaderboardAndStreak();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -91,6 +92,24 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   const handleStreakLeave = () => {
     setStreakAnchorEl(null);
   };
+
+  useEffect(() => {
+    const handleSubmoduleComplete = () => {
+      if (refreshStreak) {
+        refreshStreak();
+      }
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("submodule-complete", handleSubmoduleComplete);
+      return () => {
+        window.removeEventListener(
+          "submodule-complete",
+          handleSubmoduleComplete
+        );
+      };
+    }
+  }, [refreshStreak]);
 
   // Convert score (in minutes) to hours and minutes
   const formatScore = (score: number) => {

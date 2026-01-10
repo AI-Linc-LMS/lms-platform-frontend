@@ -342,7 +342,7 @@ export function StudentsTable({
               </TableRow>
             ) : (
               students.map((student) => {
-                const stats = completionStats[student.user_id];
+                const stats = completionStats[student.user_id] || completionStats[student.id];
                 return (
                   <TableRow
                     key={student.id}
@@ -477,9 +477,9 @@ export function StudentsTable({
                         fontSize: { xs: "0.75rem", sm: "0.875rem" },
                       }}
                     >
-                      {selectedCourse && loadingStats ? (
+                      {loadingStats ? (
                         <CircularProgress size={16} />
-                      ) : selectedCourse && stats ? (
+                      ) : stats ? (
                         <Box sx={{ minWidth: { xs: 80, sm: 120 } }}>
                           <Box
                             sx={{
@@ -540,9 +540,9 @@ export function StudentsTable({
                         fontSize: { xs: "0.75rem", sm: "0.875rem" },
                       }}
                     >
-                      {selectedCourse && loadingStats ? (
+                      {loadingStats ? (
                         <CircularProgress size={16} />
-                      ) : selectedCourse && stats ? (
+                      ) : stats ? (
                         <Box sx={{ minWidth: { xs: 80, sm: 120 } }}>
                           <Box
                             sx={{
