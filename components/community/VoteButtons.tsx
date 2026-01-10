@@ -28,17 +28,15 @@ export function VoteButtons({
 
     setVoting(true);
     try {
-      // Call API and wait for response
-      // Parent will reload data and update props
       await onVote(type);
     } catch (error) {
-      // Silently handle vote error
     } finally {
       setVoting(false);
     }
   };
 
   const isVertical = orientation === "vertical";
+  const normalizedUserVote = userVote ?? null;
 
   return (
     <Box
@@ -49,7 +47,6 @@ export function VoteButtons({
         gap: isVertical ? 0.5 : 2,
       }}
     >
-      {/* Upvote Button and Count */}
       <Box
         sx={{
           display: "flex",
@@ -63,12 +60,12 @@ export function VoteButtons({
           onClick={() => handleVote("upvote")}
           disabled={voting}
           sx={{
-            color: userVote === "upvote" ? "#10b981" : "#6b7280",
+            color: normalizedUserVote === "upvote" ? "#10b981" : "#6b7280",
             backgroundColor:
-              userVote === "upvote" ? "#f0fdf4" : "transparent",
+              normalizedUserVote === "upvote" ? "#f0fdf4" : "transparent",
             "&:hover": {
               color: "#10b981",
-              backgroundColor: "#f0fdf4",
+              backgroundColor: normalizedUserVote === "upvote" ? "#f0fdf4" : "#f0fdf4",
             },
             "&:disabled": {
               color: "#d1d5db",
@@ -80,7 +77,7 @@ export function VoteButtons({
           ) : (
             <IconWrapper
               icon={
-                userVote === "upvote" ? "mdi:thumb-up" : "mdi:thumb-up-outline"
+                normalizedUserVote === "upvote" ? "mdi:thumb-up" : "mdi:thumb-up-outline"
               }
               size={size === "small" ? 20 : 24}
             />
@@ -90,7 +87,7 @@ export function VoteButtons({
           variant="caption"
           fontWeight={600}
           sx={{
-            color: userVote === "upvote" ? "#10b981" : "#6b7280",
+            color: normalizedUserVote === "upvote" ? "#10b981" : "#6b7280",
             fontSize: size === "small" ? "0.75rem" : "0.875rem",
           }}
         >
@@ -98,7 +95,6 @@ export function VoteButtons({
         </Typography>
       </Box>
 
-      {/* Downvote Button and Count */}
       <Box
         sx={{
           display: "flex",
@@ -112,12 +108,12 @@ export function VoteButtons({
           onClick={() => handleVote("downvote")}
           disabled={voting}
           sx={{
-            color: userVote === "downvote" ? "#ef4444" : "#6b7280",
+            color: normalizedUserVote === "downvote" ? "#ef4444" : "#6b7280",
             backgroundColor:
-              userVote === "downvote" ? "#fef2f2" : "transparent",
+              normalizedUserVote === "downvote" ? "#fef2f2" : "transparent",
             "&:hover": {
               color: "#ef4444",
-              backgroundColor: "#fef2f2",
+              backgroundColor: normalizedUserVote === "downvote" ? "#fef2f2" : "#fef2f2",
             },
             "&:disabled": {
               color: "#d1d5db",
@@ -129,7 +125,7 @@ export function VoteButtons({
           ) : (
             <IconWrapper
               icon={
-                userVote === "downvote"
+                normalizedUserVote === "downvote"
                   ? "mdi:thumb-down"
                   : "mdi:thumb-down-outline"
               }
@@ -141,7 +137,7 @@ export function VoteButtons({
           variant="caption"
           fontWeight={600}
           sx={{
-            color: userVote === "downvote" ? "#ef4444" : "#6b7280",
+            color: normalizedUserVote === "downvote" ? "#ef4444" : "#6b7280",
             fontSize: size === "small" ? "0.75rem" : "0.875rem",
           }}
         >

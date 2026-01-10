@@ -97,7 +97,7 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
           backgroundColor: "#ffffff",
           display: "flex",
           flexDirection: "column",
-          maxHeight: 140, // Reduced to show only 1-2 entries
+          maxHeight: 450,
           overflow: "hidden",
         }}
       >

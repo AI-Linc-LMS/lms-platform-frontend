@@ -29,6 +29,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { SubmoduleSidebar } from "@/components/course/submodule/SubmoduleSidebar";
 import { SubmoduleContentHeader } from "@/components/course/submodule/SubmoduleContentHeader";
 import { SubmoduleContentViewer } from "@/components/course/submodule/SubmoduleContentViewer";
+import { invalidateStreakCache } from "@/lib/hooks/useLeaderboardAndStreak";
 
 export default function SubmoduleDetailPage() {
   const params = useParams();
@@ -226,14 +227,14 @@ export default function SubmoduleDetailPage() {
 
   // Video completion is now handled by the VideoPlayer component via onVideoComplete callback
 
-  const loadSubmoduleData = async (preserveSelectedContent = false) => {
+  const loadSubmoduleData = async (
+    preserveSelectedContent = false
+  ): Promise<SubModuleDetailResponse | null> => {
     try {
-      // Only show loading if this is the initial load
       if (!preserveSelectedContent) {
         setLoading(true);
       }
 
-      // Store current selectedContentId before reload if we want to preserve it
       const currentSelectedId = preserveSelectedContent
         ? selectedContentId
         : null;
@@ -244,12 +245,14 @@ export default function SubmoduleDetailPage() {
       );
       setSubmoduleData(data);
 
-      // Restore selectedContentId after reload if we're preserving it
       if (preserveSelectedContent && currentSelectedId) {
         setSelectedContentId(currentSelectedId);
       }
+
+      return data;
     } catch (error: any) {
       showToast("Failed to load submodule data", "error");
+      return null;
     } finally {
       if (!preserveSelectedContent) {
         setLoading(false);
@@ -930,35 +933,18 @@ export default function SubmoduleDetailPage() {
                   // Quiz will start on the same page via QuizContent component
                 }}
                 onQuizComplete={async (obtainedMarks?: number) => {
-                  // Update local state without reloading - completion dialog handles the rest
-                  if (selectedContentId && submoduleData) {
-                    // Update the current item's status without reloading content detail
-                    const updatedData = {
-                      ...submoduleData,
-                      data: [...submoduleData.data],
-                    };
-                    const itemIndex = updatedData.data.findIndex(
-                      (item) => item.id === selectedContentId
-                    );
-                    if (itemIndex !== -1) {
-                      const currentItem = updatedData.data[itemIndex];
-                      updatedData.data[itemIndex] = {
-                        ...currentItem,
-                        status: "complete",
-                        obtainedMarks:
-                          obtainedMarks !== undefined
-                            ? obtainedMarks
-                            : currentItem.obtainedMarks,
-                        submissions: (currentItem.submissions || 0) + 1,
-                      };
-                      setSubmoduleData(updatedData);
+                  if (selectedContentId) {
+                    lastFetchedSubmissionsIdRef.current = null;
+                    await loadPastSubmissions(selectedContentId);
 
-                      // Reload past submissions to show the new submission
-                      // Reset the ref to force reload
-                      lastFetchedSubmissionsIdRef.current = null;
-                      await loadPastSubmissions(selectedContentId);
-                      
-                      // Check if all content is completed
+                    invalidateStreakCache();
+                    const updatedData = await loadSubmoduleData(true);
+                    
+                    if (typeof window !== "undefined") {
+                      window.dispatchEvent(new CustomEvent("submodule-complete"));
+                    }
+                    
+                    if (updatedData) {
                       checkSubmoduleCompletion(updatedData);
                     }
                   }
