@@ -92,25 +92,105 @@ export default function ManageStudentsPage() {
 
       setAllStudents(response.students);
 
-      // Load completion stats if course is selected
-      if (selectedCourse) {
-        setLoadingStats(true);
-        try {
-          const stats = await adminStudentService.getCourseCompletionStats(
-            Number(selectedCourse)
-          );
-          const statsMap: Record<number, CourseCompletionStats> = {};
+      setLoadingStats(true);
+      try {
+        const stats = await adminStudentService.getCourseCompletionStats(
+          selectedCourse ? Number(selectedCourse) : undefined
+        );
+        let statsMap: Record<number, CourseCompletionStats> = {};
+
+        if (selectedCourse) {
           stats.forEach((stat) => {
-            statsMap[stat.student_id] = stat;
+            const studentId = stat.student_id;
+            statsMap[studentId] = stat;
+            allStudents.forEach((student) => {
+              if (student.user_id === studentId || student.id === studentId) {
+                statsMap[student.user_id] = stat;
+                if (student.user_id !== student.id) {
+                  statsMap[student.id] = stat;
+                }
+              }
+            });
           });
-          setCompletionStats(statsMap);
-        } catch (error) {
-          // Silently fail
-        } finally {
-          setLoadingStats(false);
+        } else {
+          const studentStatsMap: Record<
+            number,
+            {
+              total_completed: number;
+              total_total: number;
+              total_attended: number;
+              total_attendance_activities: number;
+              count: number;
+            }
+          > = {};
+
+          stats.forEach((stat) => {
+            if (!studentStatsMap[stat.student_id]) {
+              studentStatsMap[stat.student_id] = {
+                total_completed: 0,
+                total_total: 0,
+                total_attended: 0,
+                total_attendance_activities: 0,
+                count: 0,
+              };
+            }
+            studentStatsMap[stat.student_id].total_completed +=
+              stat.completed_contents;
+            studentStatsMap[stat.student_id].total_total += stat.total_contents;
+            studentStatsMap[stat.student_id].total_attended +=
+              stat.attended_activities;
+            studentStatsMap[stat.student_id].total_attendance_activities +=
+              stat.total_attendance_activities;
+            studentStatsMap[stat.student_id].count += 1;
+          });
+
+          statsMap = {};
+          Object.entries(studentStatsMap).forEach(([studentId, aggregated]) => {
+            const completionPercentage =
+              aggregated.total_total > 0
+                ? (aggregated.total_completed / aggregated.total_total) * 100
+                : 0;
+            const attendancePercentage =
+              aggregated.total_attendance_activities > 0
+                ? (aggregated.total_attended /
+                    aggregated.total_attendance_activities) *
+                  100
+                : 0;
+
+            const firstStat = stats.find(
+              (s) => s.student_id === Number(studentId)
+            );
+            if (firstStat) {
+              const mappedStat: CourseCompletionStats = {
+                ...firstStat,
+                completed_contents: aggregated.total_completed,
+                total_contents: aggregated.total_total,
+                completion_percentage: completionPercentage,
+                attended_activities: aggregated.total_attended,
+                total_attendance_activities:
+                  aggregated.total_attendance_activities,
+                attendance_percentage: attendancePercentage,
+              };
+              statsMap[Number(studentId)] = mappedStat;
+              allStudents.forEach((student) => {
+                if (
+                  student.user_id === Number(studentId) ||
+                  student.id === Number(studentId)
+                ) {
+                  statsMap[student.user_id] = mappedStat;
+                  if (student.user_id !== student.id) {
+                    statsMap[student.id] = mappedStat;
+                  }
+                }
+              });
+            }
+          });
         }
-      } else {
-        setCompletionStats({});
+
+        setCompletionStats(statsMap);
+      } catch (error) {
+      } finally {
+        setLoadingStats(false);
       }
     } catch (error: any) {
       showToast(

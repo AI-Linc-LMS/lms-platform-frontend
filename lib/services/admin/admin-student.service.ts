@@ -33,6 +33,8 @@ export interface CourseCompletionStats {
   student_id: number;
   name: string;
   email: string;
+  course_id?: number;
+  course_title?: string;
   completed_contents: number;
   total_contents: number;
   completion_percentage: number;
