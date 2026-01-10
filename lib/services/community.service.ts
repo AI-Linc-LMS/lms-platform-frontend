@@ -24,6 +24,7 @@ export interface Thread {
   downvotes: number;
   user_vote?: "upvote" | "downvote" | null;
   bookmarks_count: number;
+  user_bookmarked?: boolean | null;
   comments_count: number;
   created_at: string;
   updated_at: string;

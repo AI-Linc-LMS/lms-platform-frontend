@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   Container,
@@ -23,6 +23,7 @@ import { CommentItem } from "@/components/community/CommentItem";
 import {
   communityService,
   ThreadDetail,
+  Comment as CommentType,
 } from "@/lib/services/community.service";
 import { useToast } from "@/components/common/Toast";
 import { formatDistanceToNow } from "@/lib/utils/date-utils";
@@ -37,9 +38,90 @@ export default function ThreadDetailPage() {
   const [loading, setLoading] = useState(true);
   const [commentBody, setCommentBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const optimisticCommentVotesRef = useRef<
+    Map<number, "upvote" | "downvote" | null>
+  >(new Map());
+  const optimisticThreadVoteRef = useRef<"upvote" | "downvote" | null>(null);
+  const optimisticThreadBookmarkRef = useRef<boolean | null>(null);
+
+  const COMMENT_VOTES_STORAGE_KEY = `community_thread_${threadId}_comment_votes`;
+  const THREAD_VOTE_STORAGE_KEY = `community_thread_${threadId}_vote`;
+  const THREAD_BOOKMARK_STORAGE_KEY = `community_thread_${threadId}_bookmark`;
+
+  const loadCommentVotesFromStorage = (): Map<
+    number,
+    "upvote" | "downvote" | null
+  > => {
+    try {
+      const stored = sessionStorage.getItem(COMMENT_VOTES_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return new Map(
+          Object.entries(parsed).map(([id, vote]) => [
+            Number(id),
+            vote as "upvote" | "downvote" | null,
+          ])
+        );
+      }
+    } catch (error) {
+    }
+    return new Map();
+  };
+
+  const saveCommentVotesToStorage = (
+    votes: Map<number, "upvote" | "downvote" | null>
+  ) => {
+    try {
+      const obj = Object.fromEntries(votes);
+      sessionStorage.setItem(COMMENT_VOTES_STORAGE_KEY, JSON.stringify(obj));
+    } catch (error) {
+    }
+  };
+
+  const loadThreadVoteFromStorage = (): "upvote" | "downvote" | null => {
+    try {
+      const stored = sessionStorage.getItem(THREAD_VOTE_STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (error) {
+    }
+    return null;
+  };
+
+  const saveThreadVoteToStorage = (vote: "upvote" | "downvote" | null) => {
+    try {
+      sessionStorage.setItem(THREAD_VOTE_STORAGE_KEY, JSON.stringify(vote));
+    } catch (error) {
+    }
+  };
+
+  const loadThreadBookmarkFromStorage = (): boolean => {
+    try {
+      const stored = sessionStorage.getItem(THREAD_BOOKMARK_STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (error) {
+    }
+    return false;
+  };
+
+  const saveThreadBookmarkToStorage = (bookmarked: boolean) => {
+    try {
+      sessionStorage.setItem(
+        THREAD_BOOKMARK_STORAGE_KEY,
+        JSON.stringify(bookmarked)
+      );
+    } catch (error) {
+    }
+  };
 
   useEffect(() => {
     if (threadId) {
+      optimisticCommentVotesRef.current = loadCommentVotesFromStorage();
+      optimisticThreadVoteRef.current = loadThreadVoteFromStorage();
+      optimisticThreadBookmarkRef.current = loadThreadBookmarkFromStorage();
       loadThread();
     }
   }, [threadId]);
@@ -48,7 +130,78 @@ export default function ThreadDetailPage() {
     try {
       setLoading(true);
       const data = await communityService.getThreadDetail(threadId);
-      setThread(data);
+
+      const mergeCommentVotes = (
+        comments: CommentType[]
+      ): CommentType[] => {
+        return comments.map((c) => {
+          const optimisticVote = optimisticCommentVotesRef.current.get(c.id);
+
+          const updatedComment = {
+            ...c,
+            user_vote:
+              c.user_vote !== undefined ? c.user_vote : optimisticVote ?? null,
+          };
+
+          if (c.replies && c.replies.length > 0) {
+            return {
+              ...updatedComment,
+              replies: mergeCommentVotes(c.replies),
+            };
+          }
+
+          return updatedComment;
+        });
+      };
+
+      const userVote =
+        data.user_vote !== undefined
+          ? data.user_vote
+          : optimisticThreadVoteRef.current ?? null;
+      const userBookmarked =
+        data.user_bookmarked !== undefined
+          ? data.user_bookmarked
+          : optimisticThreadBookmarkRef.current ?? false;
+
+      if (data.user_vote !== undefined) {
+        optimisticThreadVoteRef.current = userVote;
+      }
+      if (data.user_bookmarked !== undefined) {
+        optimisticThreadBookmarkRef.current = userBookmarked;
+      }
+
+      const updatedComments = mergeCommentVotes(data.comments);
+      updatedComments.forEach((comment) => {
+        const updateCommentRefs = (c: CommentType) => {
+          const finalVote =
+            c.user_vote !== undefined
+              ? c.user_vote
+              : optimisticCommentVotesRef.current.get(c.id) ?? null;
+          optimisticCommentVotesRef.current.set(c.id, finalVote);
+          if (c.replies && c.replies.length > 0) {
+            c.replies.forEach(updateCommentRefs);
+          }
+        };
+        updateCommentRefs(comment);
+      });
+
+      if (data.user_vote !== undefined) {
+        optimisticThreadVoteRef.current = data.user_vote;
+      }
+      if (data.user_bookmarked !== undefined) {
+        optimisticThreadBookmarkRef.current = data.user_bookmarked;
+      }
+
+      saveCommentVotesToStorage(optimisticCommentVotesRef.current);
+      saveThreadVoteToStorage(userVote);
+      saveThreadBookmarkToStorage(userBookmarked ?? false);
+
+      setThread({
+        ...data,
+        comments: updatedComments,
+        user_vote: userVote,
+        user_bookmarked: userBookmarked,
+      });
     } catch (error) {
       showToast("Failed to load thread", "error");
     } finally {
@@ -57,11 +210,118 @@ export default function ThreadDetailPage() {
   };
 
   const handleVoteThread = async (type: "upvote" | "downvote") => {
+    if (!thread) return;
+
+    const currentVote = thread.user_vote ?? null;
+    let newUpvotes = thread.upvotes;
+    let newDownvotes = thread.downvotes;
+    let newUserVote: "upvote" | "downvote" | null = null;
+
+    if (currentVote === type) {
+      if (type === "upvote") {
+        newUpvotes = Math.max(0, newUpvotes - 1);
+      } else {
+        newDownvotes = Math.max(0, newDownvotes - 1);
+      }
+      newUserVote = null;
+    } else if (currentVote === null) {
+      if (type === "upvote") {
+        newUpvotes += 1;
+      } else {
+        newDownvotes += 1;
+      }
+      newUserVote = type;
+    } else {
+      if (type === "upvote") {
+        newDownvotes = Math.max(0, newDownvotes - 1);
+        newUpvotes += 1;
+      } else {
+        newUpvotes = Math.max(0, newUpvotes - 1);
+        newDownvotes += 1;
+      }
+      newUserVote = type;
+    }
+
+    optimisticThreadVoteRef.current = newUserVote;
+    saveThreadVoteToStorage(newUserVote);
+
+    setThread((prev) =>
+      prev
+        ? {
+            ...prev,
+            upvotes: newUpvotes,
+            downvotes: newDownvotes,
+            user_vote: newUserVote,
+          }
+        : null
+    );
+
     try {
       await communityService.voteThread(threadId, type);
-      // Reload thread to get updated vote counts and user_vote status
-      await loadThread();
+      const updatedThread = await communityService.getThreadDetail(threadId);
+
+      setThread((prev) => {
+        const mergeCommentVotes = (
+          comments: CommentType[]
+        ): CommentType[] => {
+          return comments.map((c) => {
+            const optimisticVote = optimisticCommentVotesRef.current.get(c.id);
+
+            const updatedComment = {
+              ...c,
+              user_vote:
+                c.user_vote !== undefined
+                  ? c.user_vote
+                  : optimisticVote ?? null,
+            };
+
+            if (c.replies && c.replies.length > 0) {
+              return {
+                ...updatedComment,
+                replies: mergeCommentVotes(c.replies),
+              };
+            }
+
+            return updatedComment;
+          });
+        };
+
+        return prev
+          ? {
+              ...updatedThread,
+              user_vote:
+                updatedThread.user_vote !== undefined
+                  ? updatedThread.user_vote
+                  : optimisticThreadVoteRef.current ?? null,
+              upvotes: updatedThread.upvotes,
+              downvotes: updatedThread.downvotes,
+              comments: mergeCommentVotes(updatedThread.comments),
+              user_bookmarked:
+                updatedThread.user_bookmarked !== undefined
+                  ? updatedThread.user_bookmarked
+                  : optimisticThreadBookmarkRef.current ?? false,
+            }
+          : updatedThread;
+      });
+
+      saveCommentVotesToStorage(optimisticCommentVotesRef.current);
+      saveThreadVoteToStorage(optimisticThreadVoteRef.current ?? null);
+      saveThreadBookmarkToStorage(
+        optimisticThreadBookmarkRef.current ?? false
+      );
     } catch (error) {
+      optimisticThreadVoteRef.current = thread.user_vote ?? null;
+      saveThreadVoteToStorage(optimisticThreadVoteRef.current);
+      setThread((prev) =>
+        prev
+          ? {
+              ...prev,
+              upvotes: thread.upvotes,
+              downvotes: thread.downvotes,
+              user_vote: thread.user_vote ?? null,
+            }
+          : null
+      );
       showToast("Failed to vote", "error");
     }
   };
@@ -70,11 +330,140 @@ export default function ThreadDetailPage() {
     commentId: number,
     type: "upvote" | "downvote"
   ) => {
+    if (!thread) return;
+
+    const findComment = (
+      comments: CommentType[],
+      id: number
+    ): CommentType | undefined => {
+      for (const comment of comments) {
+        if (comment.id === id) return comment;
+        if (comment.replies) {
+          const found = findComment(comment.replies, id);
+          if (found) return found;
+        }
+      }
+      return undefined;
+    };
+
+    const comment = findComment(thread.comments, commentId);
+    if (!comment) return;
+
+    const currentVote = comment.user_vote ?? null;
+    let newUpvotes = comment.upvotes;
+    let newDownvotes = comment.downvotes;
+    let newUserVote: "upvote" | "downvote" | null = null;
+
+    if (currentVote === type) {
+      if (type === "upvote") {
+        newUpvotes = Math.max(0, newUpvotes - 1);
+      } else {
+        newDownvotes = Math.max(0, newDownvotes - 1);
+      }
+      newUserVote = null;
+    } else if (currentVote === null) {
+      if (type === "upvote") {
+        newUpvotes += 1;
+      } else {
+        newDownvotes += 1;
+      }
+      newUserVote = type;
+    } else {
+      if (type === "upvote") {
+        newDownvotes = Math.max(0, newDownvotes - 1);
+        newUpvotes += 1;
+      } else {
+        newUpvotes = Math.max(0, newUpvotes - 1);
+        newDownvotes += 1;
+      }
+      newUserVote = type;
+    }
+
+    optimisticCommentVotesRef.current.set(commentId, newUserVote);
+    saveCommentVotesToStorage(optimisticCommentVotesRef.current);
+
+    const updateCommentInThread = (
+      comments: CommentType[]
+    ): CommentType[] => {
+      return comments.map((c) => {
+        if (c.id === commentId) {
+          return {
+            ...c,
+            upvotes: newUpvotes,
+            downvotes: newDownvotes,
+            user_vote: newUserVote,
+          };
+        }
+        if (c.replies) {
+          return { ...c, replies: updateCommentInThread(c.replies) };
+        }
+        return c;
+      });
+    };
+
+    setThread((prev) =>
+      prev
+        ? {
+            ...prev,
+            comments: updateCommentInThread(prev.comments),
+          }
+        : null
+    );
+
     try {
       await communityService.voteComment(threadId, commentId, type);
-      // Reload thread to get updated comments
-      await loadThread();
+      const updatedThread = await communityService.getThreadDetail(threadId);
+
+      const mergeCommentVotes = (comments: CommentType[]): CommentType[] => {
+        return comments.map((c) => {
+          const optimisticVote = optimisticCommentVotesRef.current.get(c.id);
+
+          if (c.id === commentId) {
+            return {
+              ...c,
+              upvotes: c.upvotes,
+              downvotes: c.downvotes,
+              user_vote:
+                c.user_vote !== undefined ? c.user_vote : optimisticVote ?? null,
+            };
+          }
+
+          const updatedComment = {
+            ...c,
+            user_vote:
+              c.user_vote !== undefined ? c.user_vote : optimisticVote ?? null,
+          };
+
+          if (c.replies && c.replies.length > 0) {
+            return {
+              ...updatedComment,
+              replies: mergeCommentVotes(c.replies),
+            };
+          }
+
+          return updatedComment;
+        });
+      };
+
+      setThread((prev) =>
+        prev
+          ? {
+              ...updatedThread,
+              comments: mergeCommentVotes(updatedThread.comments),
+              user_vote:
+                updatedThread.user_vote !== undefined
+                  ? updatedThread.user_vote
+                  : optimisticThreadVoteRef.current ?? prev?.user_vote ?? null,
+              user_bookmarked:
+                updatedThread.user_bookmarked !== undefined
+                  ? updatedThread.user_bookmarked
+                  : optimisticThreadBookmarkRef.current ?? prev?.user_bookmarked ?? false,
+            }
+          : updatedThread
+      );
     } catch (error) {
+      optimisticCommentVotesRef.current.delete(commentId);
+      await loadThread();
       showToast("Failed to vote", "error");
     }
   };
@@ -112,13 +501,95 @@ export default function ThreadDetailPage() {
   };
 
   const handleBookmark = async () => {
+    if (!thread) return;
+
+    const isBookmarked = thread.user_bookmarked ?? false;
+    let newBookmarksCount = thread.bookmarks_count;
+    let newUserBookmarked = !isBookmarked;
+
+    if (isBookmarked) {
+      newBookmarksCount = Math.max(0, newBookmarksCount - 1);
+      newUserBookmarked = false;
+    } else {
+      newBookmarksCount += 1;
+      newUserBookmarked = true;
+    }
+
+    optimisticThreadBookmarkRef.current = newUserBookmarked;
+    saveThreadBookmarkToStorage(newUserBookmarked);
+
+    setThread((prev) =>
+      prev
+        ? {
+            ...prev,
+            bookmarks_count: newBookmarksCount,
+            user_bookmarked: newUserBookmarked,
+          }
+        : null
+      );
+
     try {
       await communityService.bookmarkThread(threadId);
-      setThread((prev) =>
-        prev ? { ...prev, bookmarks_count: prev.bookmarks_count + 1 } : null
+      const updatedThread = await communityService.getThreadDetail(threadId);
+
+      setThread((prev) => {
+        const mergeCommentVotes = (
+          comments: CommentType[]
+        ): CommentType[] => {
+          return comments.map((c) => {
+            const optimisticVote = optimisticCommentVotesRef.current.get(c.id);
+
+            const updatedComment = {
+              ...c,
+              user_vote:
+                c.user_vote !== undefined
+                  ? c.user_vote
+                  : optimisticVote ?? null,
+            };
+
+            if (c.replies && c.replies.length > 0) {
+              return {
+                ...updatedComment,
+                replies: mergeCommentVotes(c.replies),
+              };
+            }
+
+            return updatedComment;
+          });
+        };
+
+        return prev
+          ? {
+              ...updatedThread,
+              user_bookmarked:
+                updatedThread.user_bookmarked !== undefined
+                  ? updatedThread.user_bookmarked
+                  : optimisticThreadBookmarkRef.current ?? false,
+              bookmarks_count: updatedThread.bookmarks_count,
+              user_vote:
+                updatedThread.user_vote !== undefined
+                  ? updatedThread.user_vote
+                  : optimisticThreadVoteRef.current ?? prev.user_vote ?? null,
+              comments: mergeCommentVotes(updatedThread.comments),
+            }
+          : updatedThread;
+      });
+
+      showToast(
+        newUserBookmarked ? "Thread bookmarked!" : "Bookmark removed!",
+        "success"
       );
-      showToast("Thread bookmarked!", "success");
     } catch (error) {
+      optimisticThreadBookmarkRef.current = thread.user_bookmarked ?? false;
+      setThread((prev) =>
+        prev
+          ? {
+              ...prev,
+              bookmarks_count: thread.bookmarks_count,
+              user_bookmarked: thread.user_bookmarked ?? false,
+            }
+          : null
+      );
       showToast("Failed to bookmark thread", "error");
     }
   };
@@ -177,7 +648,17 @@ export default function ThreadDetailPage() {
         </Breadcrumbs>
 
         {/* Thread Content */}
-        <Paper elevation={0} sx={{ p: 3, border: "1px solid #e5e7eb", mb: 3 }}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            border: "1px solid #e5e7eb",
+            mb: 3,
+            width: "100%",
+            maxWidth: "100%",
+            overflow: "hidden",
+          }}
+        >
           <Box sx={{ display: "flex", gap: 3 }}>
             {/* Vote Buttons */}
             <Box sx={{ minWidth: 48 }}>
@@ -215,17 +696,71 @@ export default function ThreadDetailPage() {
               </Box>
 
               {/* Body */}
-              <Typography
-                variant="body1"
+              <Box
+                dangerouslySetInnerHTML={{ __html: thread.body }}
                 sx={{
                   mb: 3,
-                  whiteSpace: "pre-wrap",
                   color: "#374151",
                   lineHeight: 1.7,
+                  fontSize: "1rem",
+                  wordBreak: "break-word",
+                  overflowWrap: "break-word",
+                  overflow: "hidden",
+                  width: "100%",
+                  maxWidth: "100%",
+                  "& p": {
+                    margin: 0,
+                    marginBottom: "1rem",
+                    "&:last-child": {
+                      marginBottom: 0,
+                    },
+                  },
+                  "& b, & strong": {
+                    fontWeight: 600,
+                  },
+                  "& i, & em": {
+                    fontStyle: "italic",
+                  },
+                  "& img": {
+                    maxWidth: "100%",
+                    width: "100%",
+                    height: "auto",
+                    display: "block",
+                    margin: "1rem 0",
+                    borderRadius: "4px",
+                    objectFit: "contain",
+                  },
+                  "& a": {
+                    color: "#2563eb",
+                    textDecoration: "none",
+                    wordBreak: "break-all",
+                    "&:hover": {
+                      textDecoration: "underline",
+                    },
+                  },
+                  "& code": {
+                    backgroundColor: "#f3f4f6",
+                    padding: "2px 6px",
+                    borderRadius: "4px",
+                    fontSize: "0.875em",
+                    fontFamily: "monospace",
+                    wordBreak: "break-word",
+                    overflowWrap: "break-word",
+                  },
+                  "& pre": {
+                    backgroundColor: "#f3f4f6",
+                    padding: "0.75rem",
+                    borderRadius: "4px",
+                    overflow: "auto",
+                    margin: "1rem 0",
+                    maxWidth: "100%",
+                    "& code": {
+                      backgroundColor: "transparent",
+                      padding: 0,
+                    },
+                  },
                 }}
-              >
-                {thread.body}
-              </Typography>
+              />
 
               {/* Author & Meta */}
               <Box
@@ -266,11 +801,28 @@ export default function ThreadDetailPage() {
                 </Box>
 
                 <Button
-                  startIcon={<IconWrapper icon="mdi:bookmark-outline" />}
+                  startIcon={
+                    <IconWrapper
+                      icon={
+                        thread.user_bookmarked
+                          ? "mdi:bookmark"
+                          : "mdi:bookmark-outline"
+                      }
+                    />
+                  }
                   onClick={handleBookmark}
-                  sx={{ textTransform: "none" }}
+                  sx={{
+                    textTransform: "none",
+                    color: thread.user_bookmarked ? "#f59e0b" : "inherit",
+                    "&:hover": {
+                      backgroundColor: thread.user_bookmarked
+                        ? "#fef3c7"
+                        : "rgba(0, 0, 0, 0.04)",
+                    },
+                  }}
                 >
-                  Bookmark ({thread.bookmarks_count})
+                  {thread.user_bookmarked ? "Bookmarked" : "Bookmark"} (
+                  {thread.bookmarks_count})
                 </Button>
               </Box>
             </Box>
@@ -278,7 +830,16 @@ export default function ThreadDetailPage() {
         </Paper>
 
         {/* Comments Section */}
-        <Paper elevation={0} sx={{ p: 3, border: "1px solid #e5e7eb" }}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            border: "1px solid #e5e7eb",
+            width: "100%",
+            maxWidth: "100%",
+            overflow: "hidden",
+          }}
+        >
           <Typography variant="h6" fontWeight={600} gutterBottom>
             {thread.comments_count}{" "}
             {thread.comments_count === 1 ? "Answer" : "Answers"}
