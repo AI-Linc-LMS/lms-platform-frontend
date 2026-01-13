@@ -157,10 +157,11 @@ export default function CommunityPage() {
         let userBookmarked: boolean;
         if (backendThread.user_bookmarked !== undefined) {
           // Backend explicitly provided bookmark data - this is the source of truth
-          userBookmarked = backendThread.user_bookmarked;
+          // Convert null to false for boolean type
+          userBookmarked = backendThread.user_bookmarked ?? false;
           optimisticBookmarksRef.current.set(
             backendThread.id,
-            backendThread.user_bookmarked
+            backendThread.user_bookmarked ?? false
           );
         } else {
           // Backend didn't provide bookmark data - use optimistic state as fallback
@@ -351,14 +352,14 @@ export default function CommunityPage() {
         // Only use optimistic state as fallback if backend doesn't provide the data
         const finalUserBookmarked =
           backendThread.user_bookmarked !== undefined
-            ? backendThread.user_bookmarked
+            ? backendThread.user_bookmarked ?? false
             : optimisticBookmark ?? false;
 
         // Update optimistic state to match backend if backend provided it
         if (backendThread.user_bookmarked !== undefined) {
           optimisticBookmarksRef.current.set(
             backendThread.id,
-            backendThread.user_bookmarked
+            backendThread.user_bookmarked ?? false
           );
         }
 
