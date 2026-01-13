@@ -60,12 +60,10 @@ export function VoteButtons({
           onClick={() => handleVote("upvote")}
           disabled={voting}
           sx={{
-            color: normalizedUserVote === "upvote" ? "#10b981" : "#6b7280",
-            backgroundColor:
-              normalizedUserVote === "upvote" ? "#f0fdf4" : "transparent",
+            color: "#6b7280",
+            backgroundColor: "transparent",
             "&:hover": {
-              color: "#10b981",
-              backgroundColor: normalizedUserVote === "upvote" ? "#f0fdf4" : "#f0fdf4",
+              backgroundColor: "rgba(0, 0, 0, 0.04)",
             },
             "&:disabled": {
               color: "#d1d5db",
@@ -87,7 +85,7 @@ export function VoteButtons({
           variant="caption"
           fontWeight={600}
           sx={{
-            color: normalizedUserVote === "upvote" ? "#10b981" : "#6b7280",
+            color: "#6b7280",
             fontSize: size === "small" ? "0.75rem" : "0.875rem",
           }}
         >
@@ -108,12 +106,10 @@ export function VoteButtons({
           onClick={() => handleVote("downvote")}
           disabled={voting}
           sx={{
-            color: normalizedUserVote === "downvote" ? "#ef4444" : "#6b7280",
-            backgroundColor:
-              normalizedUserVote === "downvote" ? "#fef2f2" : "transparent",
+            color: "#6b7280",
+            backgroundColor: "transparent",
             "&:hover": {
-              color: "#ef4444",
-              backgroundColor: normalizedUserVote === "downvote" ? "#fef2f2" : "#fef2f2",
+              backgroundColor: "rgba(0, 0, 0, 0.04)",
             },
             "&:disabled": {
               color: "#d1d5db",
@@ -137,7 +133,7 @@ export function VoteButtons({
           variant="caption"
           fontWeight={600}
           sx={{
-            color: normalizedUserVote === "downvote" ? "#ef4444" : "#6b7280",
+            color: "#6b7280",
             fontSize: size === "small" ? "0.75rem" : "0.875rem",
           }}
         >
