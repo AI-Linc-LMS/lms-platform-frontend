@@ -14,9 +14,12 @@ export interface DailyProgressLeaderboardEntry {
 
 // Monthly Streak
 export interface MonthlyStreak {
+  year?: number;
+  month?: number;
+  streak?: { [date: string]: boolean }; // Object with date keys (YYYY-MM-DD) and boolean values
   current_streak: number;
-  longest_streak: number;
-  monthly_days: number[]; // Array of day numbers with activity
+  longest_streak?: number;
+  monthly_days?: number[]; // Array of day numbers with activity (deprecated, use streak object)
 }
 
 // Overall Leaderboard Entry
@@ -106,6 +109,9 @@ export const dashboardService = {
       const data = response.data?.data || response.data || {};
 
       return {
+        year: data.year,
+        month: data.month,
+        streak: data.streak || {},
         current_streak: data.current_streak || 0,
         longest_streak: data.longest_streak || 0,
         monthly_days: Array.isArray(data.monthly_days) ? data.monthly_days : [],
@@ -114,8 +120,38 @@ export const dashboardService = {
       return {
         current_streak: 0,
         longest_streak: 0,
+        streak: {},
         monthly_days: [],
       };
+    }
+  },
+
+  // Get student activity analytics (streak holders)
+  getStudentActivityAnalytics: async (params?: {
+    start_date?: string;
+    end_date?: string;
+  }): Promise<Array<{
+    studentName: string;
+    Present_streak: number;
+    Active_days: number;
+  }>> => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.start_date) queryParams.append("start_date", params.start_date);
+      if (params?.end_date) queryParams.append("end_date", params.end_date);
+
+      const queryString = queryParams.toString();
+      const url = `/admin-dashboard/api/clients/${config.clientId}/student-activity-analytics/${queryString ? `?${queryString}` : ""}`;
+
+      const response = await apiClient.get<Array<{
+        studentName: string;
+        Present_streak: number;
+        Active_days: number;
+      }>>(url);
+
+      return Array.isArray(response.data) ? response.data : [];
+    } catch (error: any) {
+      return [];
     }
   },
 

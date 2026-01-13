@@ -23,6 +23,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.next
+next-env.d.ts
 
 # Windows reserved filename — ignore to avoid git add errors
 /CON
