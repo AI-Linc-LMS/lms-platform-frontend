@@ -17,6 +17,7 @@ export function useStreakCongratulations(
 ) {
   const [showModal, setShowModal] = useState(false);
   const lastCheckedDateRef = useRef<string | null>(null);
+  const previousStreakRef = useRef<number | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkStreak = useCallback(() => {
@@ -36,16 +37,34 @@ export function useStreakCongratulations(
     // Reset check if it's a new day
     if (lastCheckedDateRef.current !== todayDateKey) {
       lastCheckedDateRef.current = todayDateKey;
+      // Reset previous streak on new day to allow showing modal again
+      previousStreakRef.current = null;
     }
 
-    // Check if today is in the monthly_days array (user has activity today)
-    const hasActivityToday = streak.monthly_days?.includes(todayDay) ?? false;
+    const currentStreak = streak.current_streak ?? 0;
+    const previousStreak = previousStreakRef.current ?? 0;
 
-    // Only show if:
-    // 1. User has activity today
-    // 2. Current streak is greater than 0
+    // Check if streak has increased
+    const streakIncreased = currentStreak > previousStreak && currentStreak > 0;
+
+    // Check if today has activity - support both new streak object format and old monthly_days array
+    let hasActivityToday = false;
+    if (streak.streak && Object.keys(streak.streak).length > 0) {
+      // New format: check streak object with date keys (YYYY-MM-DD)
+      const todayDateKey = today.toISOString().split("T")[0]; // YYYY-MM-DD
+      hasActivityToday = streak.streak[todayDateKey] === true;
+    } else {
+      // Old format: check monthly_days array
+      hasActivityToday = streak.monthly_days?.includes(todayDay) ?? false;
+    }
+
+    // Show modal if:
+    // 1. Streak has increased (and is greater than 0)
+    // 2. OR (for backward compatibility) user has activity today and streak > 0
     // 3. We haven't shown the modal today
-    if (hasActivityToday && streak.current_streak > 0) {
+    const shouldShow = (streakIncreased || (hasActivityToday && currentStreak > 0)) && currentStreak > 0;
+
+    if (shouldShow) {
       // Check if we've already shown the modal today
       const lastShownDate = localStorage.getItem("streak_congrats_shown_date");
       const hasShownToday = lastShownDate === todayDateKey;
@@ -59,6 +78,9 @@ export function useStreakCongratulations(
         }, 1000); // Show after 1 second
       }
     }
+
+    // Update previous streak reference for next check
+    previousStreakRef.current = currentStreak;
   }, [streak, isLoading]);
 
   useEffect(() => {
