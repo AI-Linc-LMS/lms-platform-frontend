@@ -14,6 +14,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { Thread } from "@/lib/services/community.service";
 import { VoteButtons } from "./VoteButtons";
 import { formatDistanceToNow } from "@/lib/utils/date-utils";
+import { getHtmlPreview } from "@/lib/utils/html-utils";
 
 interface ThreadCardProps {
   thread: Thread;
@@ -95,7 +96,7 @@ export function ThreadCard({ thread, onVote, onBookmark }: ThreadCardProps) {
               textOverflow: "ellipsis",
             }}
           >
-            {thread.body}
+            {thread.body ? getHtmlPreview(thread.body, 150) : ""}
           </Typography>
 
           {/* Tags */}
@@ -199,11 +200,10 @@ export function ThreadCard({ thread, onVote, onBookmark }: ThreadCardProps) {
                     size="small"
                     onClick={() => onBookmark(thread.id)}
                     sx={{
-                      color: thread.user_bookmarked ? "#f59e0b" : "#6b7280",
-                      backgroundColor: thread.user_bookmarked ? "#fef3c7" : "transparent",
+                      color: "#6b7280",
+                      backgroundColor: "transparent",
                       "&:hover": {
-                        color: "#f59e0b",
-                        backgroundColor: "#fef3c7",
+                        backgroundColor: "rgba(0, 0, 0, 0.04)",
                       },
                     }}
                   >
