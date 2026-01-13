@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Box, Typography, Card, CircularProgress } from "@mui/material";
+import { Box, Typography, Card, CircularProgress, Tooltip } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { dashboardService } from "@/lib/services/dashboard.service";
 
@@ -16,6 +16,7 @@ export const StreakTable = ({
 }: StreakTableProps) => {
   const [loading, setLoading] = useState(false);
   const [streakDays, setStreakDays] = useState<number[]>(propStreakDays || []);
+  const [streakData, setStreakData] = useState<{ [date: string]: boolean }>({});
   const [currentStreak, setCurrentStreak] = useState<number>(
     propCurrentStreak || 0
   );
@@ -34,7 +35,25 @@ export const StreakTable = ({
         today.getMonth() + 1
       ).padStart(2, "0")}`;
       const data = await dashboardService.getMonthlyStreak(monthStr);
-      setStreakDays(data.monthly_days || []);
+      
+      // Use new streak object format if available, otherwise fall back to monthly_days
+      if (data.streak && Object.keys(data.streak).length > 0) {
+        setStreakData(data.streak);
+        // Convert streak object to day numbers array for backward compatibility
+        const daysWithStreak: number[] = [];
+        Object.keys(data.streak).forEach((dateStr) => {
+          if (data.streak![dateStr]) {
+            const date = new Date(dateStr);
+            daysWithStreak.push(date.getDate());
+          }
+        });
+        setStreakDays(daysWithStreak);
+      } else {
+        // Fallback to monthly_days array format
+        setStreakDays(data.monthly_days || []);
+        setStreakData({});
+      }
+      
       setCurrentStreak(data.current_streak || 0);
       setLongestStreak(data.longest_streak || 0);
     } catch (error: any) {
@@ -80,12 +99,27 @@ export const StreakTable = ({
 
   const isStreakDay = (day: number | null) => {
     if (day === null) return false;
+    
+    // First check the new streak object format
+    if (Object.keys(streakData).length > 0) {
+      const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      return streakData[dateStr] === true;
+    }
+    
+    // Fallback to monthly_days array format
     return streakDays.includes(day);
   };
 
   const isToday = (day: number | null) => {
     if (day === null) return false;
     return day === today.getDate();
+  };
+
+  const isFutureDate = (day: number | null) => {
+    if (day === null) return false;
+    const dayDate = new Date(currentYear, currentMonth, day);
+    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    return dayDate > todayDate;
   };
 
   return (
@@ -205,10 +239,10 @@ export const StreakTable = ({
 
                 const hasStreak = isStreakDay(day);
                 const isCurrentDay = isToday(day);
+                const isFuture = isFutureDate(day);
 
-                return (
+                const dayBoxContent = (
                   <Box
-                    key={index}
                     sx={{
                       height: 28,
                       display: "flex",
@@ -216,25 +250,75 @@ export const StreakTable = ({
                       justifyContent: "center",
                       borderRadius: 1,
                       backgroundColor: hasStreak
-                        ? "#6366f1"
+                        ? "#F59E0B"
                         : isCurrentDay
-                        ? "#E0E7FF"
+                        ? "#FEF3C7"
                         : "transparent",
                       color: hasStreak
                         ? "#ffffff"
                         : isCurrentDay
-                        ? "#6366f1"
+                        ? "#92400E"
+                        : isFuture
+                        ? "#9CA3AF"
                         : "#111827",
                       fontWeight: hasStreak || isCurrentDay ? 600 : 400,
                       fontSize: "0.75rem",
                       border:
                         isCurrentDay && !hasStreak
-                          ? "1px solid #6366f1"
+                          ? "1px solid #F59E0B"
                           : "none",
+                      cursor: isFuture ? "not-allowed" : "pointer",
+                      opacity: isFuture ? 0.5 : 1,
+                      transition: "all 0.2s ease",
+                      "&:hover": !isFuture
+                        ? {
+                            backgroundColor: hasStreak
+                              ? "#D97706"
+                              : isCurrentDay
+                              ? "#FDE68A"
+                              : "#F3F4F6",
+                            transform: "scale(1.05)",
+                          }
+                        : {},
                     }}
                   >
                     {day}
                   </Box>
+                );
+
+                // For future dates, return without tooltip
+                if (isFuture) {
+                  return <Box key={index}>{dayBoxContent}</Box>;
+                }
+
+                // For past/present dates, wrap with tooltip
+                return (
+                  <Tooltip
+                    key={index}
+                    title={hasStreak ? "Streak" : "No streak"}
+                    arrow
+                    placement="top"
+                    componentsProps={{
+                      tooltip: {
+                        sx: {
+                          backgroundColor: "#1F2937",
+                          color: "#FFFFFF",
+                          fontSize: "0.75rem",
+                          fontWeight: 500,
+                          padding: "6px 12px",
+                          borderRadius: 1,
+                          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                        },
+                      },
+                      arrow: {
+                        sx: {
+                          color: "#1F2937",
+                        },
+                      },
+                    }}
+                  >
+                    {dayBoxContent}
+                  </Tooltip>
                 );
               })}
             </Box>
