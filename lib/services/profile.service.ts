@@ -46,9 +46,12 @@ export interface DailyProgressLeaderboardEntry {
 }
 
 export interface MonthlyStreak {
+  year?: number;
+  month?: number;
+  streak?: { [date: string]: boolean }; // Object with date keys (YYYY-MM-DD) and boolean values
   current_streak: number;
-  longest_streak: number;
-  monthly_days: number[];
+  longest_streak?: number;
+  monthly_days?: number[]; // Array of day numbers with activity (deprecated, use streak object)
 }
 
 export const profileService = {
