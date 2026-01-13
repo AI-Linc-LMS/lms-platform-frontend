@@ -16,6 +16,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { Comment } from "@/lib/services/community.service";
 import { VoteButtons } from "./VoteButtons";
 import { formatDistanceToNow } from "@/lib/utils/date-utils";
+import { unescapeHtml } from "@/lib/utils/html-utils";
 
 interface CommentItemProps {
   comment: Comment;
@@ -111,7 +112,16 @@ export function CommentItem({
 
         {/* Comment Body */}
         <Box
-          dangerouslySetInnerHTML={{ __html: comment.body }}
+          dangerouslySetInnerHTML={{
+            __html: (() => {
+              // Check if HTML is escaped and unescape it before rendering
+              let body = comment.body || "";
+              if (body && (body.includes("&lt;") || body.includes("&gt;"))) {
+                body = unescapeHtml(body);
+              }
+              return body;
+            })(),
+          }}
           sx={{
             mb: 1.5,
             color: "#374151",
