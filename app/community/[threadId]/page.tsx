@@ -154,6 +154,8 @@ export default function ThreadDetailPage() {
         });
       };
 
+      // Always trust backend data first - use backend values if provided
+      // Only use optimistic state as fallback if backend doesn't provide the data
       const userVote =
         data.user_vote !== undefined
           ? data.user_vote
@@ -163,11 +165,12 @@ export default function ThreadDetailPage() {
           ? data.user_bookmarked
           : optimisticThreadBookmarkRef.current ?? false;
 
+      // Update optimistic state to match backend if backend provided it
       if (data.user_vote !== undefined) {
-        optimisticThreadVoteRef.current = userVote;
+        optimisticThreadVoteRef.current = data.user_vote;
       }
       if (data.user_bookmarked !== undefined) {
-        optimisticThreadBookmarkRef.current = userBookmarked;
+        optimisticThreadBookmarkRef.current = data.user_bookmarked;
       }
 
       const updatedComments = mergeCommentVotes(data.comments);
@@ -289,6 +292,8 @@ export default function ThreadDetailPage() {
         return prev
           ? {
               ...updatedThread,
+              // Always trust backend data first - use backend user_vote if provided
+              // Only use optimistic state as fallback if backend doesn't provide it
               user_vote:
                 updatedThread.user_vote !== undefined
                   ? updatedThread.user_vote
@@ -296,13 +301,51 @@ export default function ThreadDetailPage() {
               upvotes: updatedThread.upvotes,
               downvotes: updatedThread.downvotes,
               comments: mergeCommentVotes(updatedThread.comments),
+              // Always trust backend data first - use backend user_bookmarked if provided
+              // Only use optimistic state as fallback if backend doesn't provide it
               user_bookmarked:
                 updatedThread.user_bookmarked !== undefined
                   ? updatedThread.user_bookmarked
-                  : optimisticThreadBookmarkRef.current ?? false,
+                  : optimisticThreadBookmarkRef.current ?? prev.user_bookmarked ?? false,
             }
           : updatedThread;
       });
+
+      // Update optimistic state to match backend response
+      if (updatedThread.user_vote !== undefined) {
+        optimisticThreadVoteRef.current = updatedThread.user_vote;
+      }
+      if (updatedThread.user_bookmarked !== undefined) {
+        optimisticThreadBookmarkRef.current = updatedThread.user_bookmarked;
+      }
+
+      // Also update the shared community list storage to keep them in sync
+      // This ensures when user navigates back to list page, it shows correct state
+      if (typeof window !== "undefined") {
+        try {
+          const VOTES_STORAGE_KEY = "community_thread_votes";
+          const BOOKMARKS_STORAGE_KEY = "community_thread_bookmarks";
+          
+          const storedVotes = sessionStorage.getItem(VOTES_STORAGE_KEY);
+          const votesMap = storedVotes ? JSON.parse(storedVotes) : {};
+          
+          const storedBookmarks = sessionStorage.getItem(BOOKMARKS_STORAGE_KEY);
+          const bookmarksMap = storedBookmarks ? JSON.parse(storedBookmarks) : {};
+          
+          // Update with backend data
+          if (updatedThread.user_vote !== undefined) {
+            votesMap[threadId] = updatedThread.user_vote;
+          }
+          if (updatedThread.user_bookmarked !== undefined) {
+            bookmarksMap[threadId] = updatedThread.user_bookmarked;
+          }
+          
+          sessionStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(votesMap));
+          sessionStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(bookmarksMap));
+        } catch (error) {
+          // Silently handle storage errors
+        }
+      }
 
       saveCommentVotesToStorage(optimisticCommentVotesRef.current);
       saveThreadVoteToStorage(optimisticThreadVoteRef.current ?? null);
@@ -561,11 +604,15 @@ export default function ThreadDetailPage() {
         return prev
           ? {
               ...updatedThread,
+              // Always trust backend data first - use backend user_bookmarked if provided
+              // Only use optimistic state as fallback if backend doesn't provide it
               user_bookmarked:
                 updatedThread.user_bookmarked !== undefined
                   ? updatedThread.user_bookmarked
-                  : optimisticThreadBookmarkRef.current ?? false,
+                  : optimisticThreadBookmarkRef.current ?? prev.user_bookmarked ?? false,
               bookmarks_count: updatedThread.bookmarks_count,
+              // Always trust backend data first - use backend user_vote if provided
+              // Only use optimistic state as fallback if backend doesn't provide it
               user_vote:
                 updatedThread.user_vote !== undefined
                   ? updatedThread.user_vote
@@ -575,6 +622,45 @@ export default function ThreadDetailPage() {
           : updatedThread;
       });
 
+      // Update optimistic state to match backend response
+      if (updatedThread.user_bookmarked !== undefined) {
+        optimisticThreadBookmarkRef.current = updatedThread.user_bookmarked;
+      }
+      if (updatedThread.user_vote !== undefined) {
+        optimisticThreadVoteRef.current = updatedThread.user_vote;
+      }
+
+      // Also update the shared community list storage to keep them in sync
+      if (typeof window !== "undefined") {
+        try {
+          const VOTES_STORAGE_KEY = "community_thread_votes";
+          const BOOKMARKS_STORAGE_KEY = "community_thread_bookmarks";
+          
+          const storedVotes = sessionStorage.getItem(VOTES_STORAGE_KEY);
+          const votesMap = storedVotes ? JSON.parse(storedVotes) : {};
+          
+          const storedBookmarks = sessionStorage.getItem(BOOKMARKS_STORAGE_KEY);
+          const bookmarksMap = storedBookmarks ? JSON.parse(storedBookmarks) : {};
+          
+          // Update with backend data
+          if (updatedThread.user_vote !== undefined) {
+            votesMap[threadId] = updatedThread.user_vote;
+          }
+          if (updatedThread.user_bookmarked !== undefined) {
+            bookmarksMap[threadId] = updatedThread.user_bookmarked;
+          }
+          
+          sessionStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(votesMap));
+          sessionStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(bookmarksMap));
+        } catch (error) {
+          // Silently handle storage errors
+        }
+      }
+
+      // Save optimistic state to storage after successful API call
+      saveThreadBookmarkToStorage(optimisticThreadBookmarkRef.current ?? false);
+      saveThreadVoteToStorage(optimisticThreadVoteRef.current ?? null);
+      
       showToast(
         newUserBookmarked ? "Thread bookmarked!" : "Bookmark removed!",
         "success"
@@ -813,11 +899,9 @@ export default function ThreadDetailPage() {
                   onClick={handleBookmark}
                   sx={{
                     textTransform: "none",
-                    color: thread.user_bookmarked ? "#f59e0b" : "inherit",
+                    color: "inherit",
                     "&:hover": {
-                      backgroundColor: thread.user_bookmarked
-                        ? "#fef3c7"
-                        : "rgba(0, 0, 0, 0.04)",
+                      backgroundColor: "rgba(0, 0, 0, 0.04)",
                     },
                   }}
                 >
