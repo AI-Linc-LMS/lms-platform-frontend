@@ -2,6 +2,7 @@
 
 import { Box } from "@mui/material";
 import { Leaderboard } from "./Leaderboard";
+import { StreakHolders } from "./StreakHolders";
 import { StreakTable } from "./StreakTable";
 
 interface DashboardSidebarProps {
@@ -22,6 +23,7 @@ export const DashboardSidebar = ({
       }}
     >
       <Leaderboard />
+      <StreakHolders />
       <StreakTable streakDays={streakDays} currentStreak={currentStreak} />
     </Box>
   );
