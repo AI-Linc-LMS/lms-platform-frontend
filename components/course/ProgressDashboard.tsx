@@ -142,7 +142,7 @@ export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
               fontWeight: 700,
             }}
           >
-            {overallProgressPercentage.toFixed(0)}%
+            {overallProgressPercentage.toFixed(2)}%
           </Typography>
         </Box>
         <LinearProgress
