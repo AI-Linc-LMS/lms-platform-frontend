@@ -1,13 +1,28 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
-import { Box, Typography, Card, Avatar, CircularProgress } from "@mui/material";
+import { Box, Typography, Card, Avatar, Skeleton } from "@mui/material";
 import {
   dashboardService,
   OverallLeaderboardEntry,
 } from "@/lib/services/dashboard.service";
 import { useToast } from "@/components/common/Toast";
 import { getUserInitials } from "@/lib/utils/user-utils";
+
+// Shared cache to minimize API calls
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Module-level cache shared across all component instances
+let leaderboardCache: CacheEntry<OverallLeaderboardEntry[]> | null = null;
+
+export const invalidateLeaderboardCache = () => {
+  leaderboardCache = null;
+};
 
 interface LeaderboardProps {
   courseId?: number; // Kept for backward compatibility but not used
@@ -22,7 +37,20 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
   useEffect(() => {
     if (hasLoadedRef.current) return;
     hasLoadedRef.current = true;
-    loadLeaderboard();
+
+    // Check cache first
+    const now = Date.now();
+    const cachedData = leaderboardCache?.data;
+    const cacheTime = leaderboardCache?.timestamp || 0;
+
+    if (cachedData && now - cacheTime < CACHE_DURATION) {
+      // Use cached data
+      setLeaderboard(cachedData);
+      setLoading(false);
+    } else {
+      // Load fresh data
+      loadLeaderboard();
+    }
   }, []);
 
   const loadLeaderboard = async () => {
@@ -34,13 +62,29 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
       // Ensure data is an array - multiple checks
       if (!data) {
         setLeaderboard([]);
+        // Update cache with empty array
+        leaderboardCache = {
+          data: [],
+          timestamp: Date.now(),
+        };
         return;
       }
 
       if (!Array.isArray(data)) {
         setLeaderboard([]);
+        // Update cache with empty array
+        leaderboardCache = {
+          data: [],
+          timestamp: Date.now(),
+        };
         return;
       }
+
+      // Update cache with fresh data
+      leaderboardCache = {
+        data,
+        timestamp: Date.now(),
+      };
 
       setLeaderboard(data);
     } catch (error: any) {
@@ -97,13 +141,80 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
           backgroundColor: "#ffffff",
           display: "flex",
           flexDirection: "column",
-          maxHeight: 450,
+          maxHeight: 350,
           overflow: "hidden",
         }}
       >
         {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 2, p: 2 }}>
-            <CircularProgress size={24} />
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 1,
+              p: 2,
+            }}
+          >
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Box
+                key={i}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  p: 1,
+                  borderRadius: 1,
+                }}
+              >
+                <Skeleton
+                  variant="circular"
+                  width={24}
+                  height={24}
+                  animation="wave"
+                  sx={{
+                    bgcolor: "#E0E7FF",
+                  }}
+                />
+                <Skeleton
+                  variant="circular"
+                  width={32}
+                  height={32}
+                  animation="wave"
+                  sx={{
+                    bgcolor: "#E0E7FF",
+                  }}
+                />
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Skeleton
+                    variant="text"
+                    width="60%"
+                    height={16}
+                    animation="wave"
+                    sx={{
+                      bgcolor: "#E0E7FF",
+                    }}
+                  />
+                  <Skeleton
+                    variant="text"
+                    width="40%"
+                    height={12}
+                    animation="wave"
+                    sx={{
+                      mt: 0.5,
+                      bgcolor: "#E0E7FF",
+                    }}
+                  />
+                </Box>
+                <Skeleton
+                  variant="text"
+                  width={30}
+                  height={16}
+                  animation="wave"
+                  sx={{
+                    bgcolor: "#E0E7FF",
+                  }}
+                />
+              </Box>
+            ))}
           </Box>
         ) : safeLeaderboard.length === 0 ? (
           <Typography
