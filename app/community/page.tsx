@@ -98,9 +98,25 @@ export default function CommunityPage() {
   };
 
   useEffect(() => {
+    // Load initial optimistic state from storage
     optimisticVotesRef.current = loadVotesFromStorage();
     optimisticBookmarksRef.current = loadBookmarksFromStorage();
     loadData();
+  }, []);
+
+  // Refresh data when page becomes visible again (user navigates back)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        // Reload data to sync with backend when user returns to the page
+        loadData();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   // Reset page when filters change
@@ -124,27 +140,32 @@ export default function CommunityPage() {
           backendThread.id
         );
 
-        const userVote =
-          backendThread.user_vote !== undefined
-            ? backendThread.user_vote
-            : optimisticVote ?? null;
-        const userBookmarked =
-          backendThread.user_bookmarked !== undefined
-            ? backendThread.user_bookmarked
-            : optimisticBookmark ?? false;
-
+        // Always trust backend data first - backend is the source of truth
+        // If backend provides user_vote (even if null), use it and clear optimistic state
+        // Only use optimistic state if backend doesn't provide the field at all (undefined)
+        let userVote: "upvote" | "downvote" | null;
         if (backendThread.user_vote !== undefined) {
-          optimisticVotesRef.current.set(backendThread.id, userVote);
-        } else if (userVote !== null) {
-          optimisticVotesRef.current.set(backendThread.id, userVote);
+          // Backend explicitly provided vote data (could be "upvote", "downvote", or null)
+          // This is the source of truth - use it and update optimistic state
+          userVote = backendThread.user_vote;
+          optimisticVotesRef.current.set(backendThread.id, backendThread.user_vote);
+        } else {
+          // Backend didn't provide vote data - use optimistic state as fallback
+          userVote = optimisticVote ?? null;
         }
+
+        let userBookmarked: boolean;
         if (backendThread.user_bookmarked !== undefined) {
+          // Backend explicitly provided bookmark data - this is the source of truth
+          // Convert null to false for boolean type
+          userBookmarked = backendThread.user_bookmarked ?? false;
           optimisticBookmarksRef.current.set(
             backendThread.id,
-            userBookmarked ?? false
+            backendThread.user_bookmarked ?? false
           );
-        } else if (userBookmarked) {
-          optimisticBookmarksRef.current.set(backendThread.id, userBookmarked);
+        } else {
+          // Backend didn't provide bookmark data - use optimistic state as fallback
+          userBookmarked = optimisticBookmark ?? false;
         }
 
         return {
@@ -242,24 +263,23 @@ export default function CommunityPage() {
           backendThread.id
         );
 
-        if (backendThread.id === threadId) {
-          return {
-            ...backendThread,
-            upvotes: backendThread.upvotes,
-            downvotes: backendThread.downvotes,
-            user_vote:
-              backendThread.user_vote !== undefined
-                ? backendThread.user_vote
-                : optimisticVote ?? null,
-          };
+        // Always trust backend data first - if backend provides user_vote, use it
+        // Only use optimistic state as fallback if backend doesn't provide the data
+        const finalUserVote =
+          backendThread.user_vote !== undefined
+            ? backendThread.user_vote
+            : optimisticVote ?? null;
+
+        // Update optimistic state to match backend if backend provided it
+        if (backendThread.user_vote !== undefined) {
+          optimisticVotesRef.current.set(backendThread.id, backendThread.user_vote);
         }
 
         return {
           ...backendThread,
-          user_vote:
-            backendThread.user_vote !== undefined
-              ? backendThread.user_vote
-              : optimisticVote ?? null,
+          upvotes: backendThread.upvotes,
+          downvotes: backendThread.downvotes,
+          user_vote: finalUserVote,
         };
       });
 
@@ -328,24 +348,25 @@ export default function CommunityPage() {
           backendThread.id
         );
 
-        if (backendThread.id === threadId) {
-          return {
-            ...backendThread,
-            bookmarks_count: backendThread.bookmarks_count,
-            user_bookmarked:
-              backendThread.user_bookmarked !== undefined
-                ? backendThread.user_bookmarked
-                : optimisticBookmark ?? false,
-          };
+        // Always trust backend data first - if backend provides user_bookmarked, use it
+        // Only use optimistic state as fallback if backend doesn't provide the data
+        const finalUserBookmarked =
+          backendThread.user_bookmarked !== undefined
+            ? backendThread.user_bookmarked ?? false
+            : optimisticBookmark ?? false;
+
+        // Update optimistic state to match backend if backend provided it
+        if (backendThread.user_bookmarked !== undefined) {
+          optimisticBookmarksRef.current.set(
+            backendThread.id,
+            backendThread.user_bookmarked ?? false
+          );
         }
 
         return {
           ...backendThread,
           bookmarks_count: backendThread.bookmarks_count,
-          user_bookmarked:
-            backendThread.user_bookmarked !== undefined
-              ? backendThread.user_bookmarked
-              : optimisticBookmark ?? false,
+          user_bookmarked: finalUserBookmarked,
         };
       });
 

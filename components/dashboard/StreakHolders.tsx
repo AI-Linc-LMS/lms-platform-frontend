@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Box, Typography, Card, Avatar, Skeleton } from "@mui/material";
-import {
-  dashboardService,
-  OverallLeaderboardEntry,
-} from "@/lib/services/dashboard.service";
-import { useToast } from "@/components/common/Toast";
-import { getUserInitials } from "@/lib/utils/user-utils";
+import { dashboardService } from "@/lib/services/dashboard.service";
+import { IconWrapper } from "@/components/common/IconWrapper";
+
+interface StreakHolder {
+  studentName: string;
+  Present_streak: number;
+  Active_days: number;
+}
 
 // Shared cache to minimize API calls
 interface CacheEntry<T> {
@@ -18,20 +20,25 @@ interface CacheEntry<T> {
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // Module-level cache shared across all component instances
-let leaderboardCache: CacheEntry<OverallLeaderboardEntry[]> | null = null;
+let streakHoldersCache: CacheEntry<StreakHolder[]> | null = null;
 
-export const invalidateLeaderboardCache = () => {
-  leaderboardCache = null;
+export const invalidateStreakHoldersCache = () => {
+  streakHoldersCache = null;
 };
 
-interface LeaderboardProps {
-  courseId?: number; // Kept for backward compatibility but not used
-}
+// Helper function to get initials from name string
+const getInitialsFromName = (name: string): string => {
+  if (!name) return "U";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+  return name[0]?.toUpperCase() || "U";
+};
 
-export const Leaderboard = ({ courseId }: LeaderboardProps) => {
-  const { showToast } = useToast();
+export const StreakHolders = () => {
   const [loading, setLoading] = useState(false);
-  const [leaderboard, setLeaderboard] = useState<OverallLeaderboardEntry[]>([]);
+  const [streakHolders, setStreakHolders] = useState<StreakHolder[]>([]);
   const hasLoadedRef = useRef(false);
 
   useEffect(() => {
@@ -40,85 +47,66 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
 
     // Check cache first
     const now = Date.now();
-    const cachedData = leaderboardCache?.data;
-    const cacheTime = leaderboardCache?.timestamp || 0;
+    const cachedData = streakHoldersCache?.data;
+    const cacheTime = streakHoldersCache?.timestamp || 0;
 
     if (cachedData && now - cacheTime < CACHE_DURATION) {
       // Use cached data
-      setLeaderboard(cachedData);
+      setStreakHolders(cachedData);
       setLoading(false);
     } else {
       // Load fresh data
-      loadLeaderboard();
+      loadStreakHolders();
     }
   }, []);
 
-  const loadLeaderboard = async () => {
+  const loadStreakHolders = async () => {
     try {
       setLoading(true);
-      // Get overall leaderboard (default limit is handled by API)
-      const data = await dashboardService.getOverallLeaderboard();
+      // Get current month dates
+      const today = new Date();
+      const endDate = today.toISOString().split("T")[0]; // YYYY-MM-DD
+      const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+      const startDateStr = startDate.toISOString().split("T")[0];
 
-      // Ensure data is an array - multiple checks
-      if (!data) {
-        setLeaderboard([]);
-        // Update cache with empty array
-        leaderboardCache = {
-          data: [],
-          timestamp: Date.now(),
-        };
-        return;
-      }
+      const data = await dashboardService.getStudentActivityAnalytics({
+        start_date: startDateStr,
+        end_date: endDate,
+      });
 
-      if (!Array.isArray(data)) {
-        setLeaderboard([]);
-        // Update cache with empty array
-        leaderboardCache = {
-          data: [],
-          timestamp: Date.now(),
-        };
-        return;
-      }
+      // Sort by Present_streak descending and take top 5
+      const sorted = [...data]
+        .sort((a, b) => b.Present_streak - a.Present_streak)
+        .filter((item) => item.Present_streak > 0)
+        .slice(0, 5);
 
       // Update cache with fresh data
-      leaderboardCache = {
-        data,
+      streakHoldersCache = {
+        data: sorted,
         timestamp: Date.now(),
       };
 
-      setLeaderboard(data);
+      setStreakHolders(sorted);
     } catch (error: any) {
-      setLeaderboard([]); // Set empty array on error
-      // Don't show toast for optional data
+      setStreakHolders([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const getRankColor = (rank?: number | null) => {
-    if (!rank || rank === 0) return "#6B7280";
-    if (rank === 1) return "#FFD700"; // Gold
-    if (rank === 2) return "#C0C0C0"; // Silver
-    if (rank === 3) return "#CD7F32"; // Bronze
-    return "#6B7280";
+  const getRankIcon = (index: number) => {
+    if (index === 0) return "🥇";
+    if (index === 1) return "🥈";
+    if (index === 2) return "🥉";
+    return `${index + 1}`;
   };
 
-  const getRankIcon = (rank?: number | null) => {
-    if (!rank || rank === 0) return "?";
-    if (rank === 1) return "🥇";
-    if (rank === 2) return "🥈";
-    if (rank === 3) return "🥉";
-    return String(rank);
+  const getRankColor = (index: number) => {
+    if (index === 0) return "#FFD700"; // Gold
+    if (index === 1) return "#C0C0C0"; // Silver
+    if (index === 2) return "#CD7F32"; // Bronze
+    return "#F59E0B"; // Orange for others
   };
-
-  // Ensure leaderboard is always an array - defensive check
-  const safeLeaderboard = useMemo(() => {
-    if (!leaderboard) return [];
-    if (!Array.isArray(leaderboard)) {
-      return [];
-    }
-    return leaderboard;
-  }, [leaderboard]);
 
   return (
     <Box>
@@ -131,7 +119,7 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
           mb: 2,
         }}
       >
-        Leaderboard
+        Streak Holders
       </Typography>
       <Card
         sx={{
@@ -141,7 +129,7 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
           backgroundColor: "#ffffff",
           display: "flex",
           flexDirection: "column",
-          maxHeight: 350,
+          maxHeight: 320,
           overflow: "hidden",
         }}
       >
@@ -171,7 +159,7 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
                   height={24}
                   animation="wave"
                   sx={{
-                    bgcolor: "#E0E7FF",
+                    bgcolor: "#FEF3C7",
                   }}
                 />
                 <Skeleton
@@ -180,7 +168,7 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
                   height={32}
                   animation="wave"
                   sx={{
-                    bgcolor: "#E0E7FF",
+                    bgcolor: "#FEF3C7",
                   }}
                 />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -190,38 +178,46 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
                     height={16}
                     animation="wave"
                     sx={{
-                      bgcolor: "#E0E7FF",
+                      bgcolor: "#FEF3C7",
                     }}
                   />
-                  <Skeleton
-                    variant="text"
-                    width="40%"
-                    height={12}
-                    animation="wave"
+                  <Box
                     sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
                       mt: 0.5,
-                      bgcolor: "#E0E7FF",
                     }}
-                  />
+                  >
+                    <Skeleton
+                      variant="circular"
+                      width={14}
+                      height={14}
+                      animation="wave"
+                      sx={{
+                        bgcolor: "#FEF3C7",
+                      }}
+                    />
+                    <Skeleton
+                      variant="text"
+                      width="40%"
+                      height={12}
+                      animation="wave"
+                      sx={{
+                        bgcolor: "#FEF3C7",
+                      }}
+                    />
+                  </Box>
                 </Box>
-                <Skeleton
-                  variant="text"
-                  width={30}
-                  height={16}
-                  animation="wave"
-                  sx={{
-                    bgcolor: "#E0E7FF",
-                  }}
-                />
               </Box>
             ))}
           </Box>
-        ) : safeLeaderboard.length === 0 ? (
+        ) : streakHolders.length === 0 ? (
           <Typography
             variant="body2"
             sx={{ color: "#6B7280", textAlign: "center", py: 2, p: 2 }}
           >
-            No leaderboard data available
+            No streak data available
           </Typography>
         ) : (
           <Box
@@ -246,14 +242,13 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
               },
             }}
           >
-            {safeLeaderboard.map((entry, index) => {
-              const userName = entry?.name || "User";
-              const rank = entry?.rank ?? 0;
-              const totalScore = entry?.marks ?? 0;
+            {streakHolders.map((holder, index) => {
+              const userName = holder?.studentName || "User";
+              const streak = holder?.Present_streak ?? 0;
 
               return (
                 <Box
-                  key={rank || index}
+                  key={`${userName}-${index}`}
                   sx={{
                     display: "flex",
                     alignItems: "center",
@@ -261,9 +256,9 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
                     p: 1,
                     borderRadius: 1,
                     backgroundColor:
-                      rank > 0 && rank <= 3 ? "#F9FAFB" : "transparent",
+                      index < 3 ? "#F9FAFB" : "transparent",
                     border:
-                      rank > 0 && rank <= 3 ? "1px solid #E5E7EB" : "none",
+                      index < 3 ? "1px solid #E5E7EB" : "none",
                     flexShrink: 0,
                   }}
                 >
@@ -275,21 +270,21 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
                       alignItems: "center",
                       justifyContent: "center",
                       borderRadius: "50%",
-                      backgroundColor: getRankColor(rank),
-                      color: "#ffffff",
+                      backgroundColor: getRankColor(index),
+                      color: index < 3 ? "#ffffff" : "#ffffff",
                       fontWeight: 700,
                       fontSize: "0.75rem",
                       flexShrink: 0,
                     }}
                   >
-                    {getRankIcon(rank)}
+                    {getRankIcon(index)}
                   </Box>
                   <Avatar
                     src={undefined}
                     alt={userName}
                     sx={{ width: 32, height: 32, flexShrink: 0 }}
                   >
-                    {userName[0]}
+                    {getInitialsFromName(userName)}
                   </Avatar>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography
@@ -306,28 +301,31 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
                     >
                       {userName}
                     </Typography>
-                    <Typography
-                      variant="caption"
+                    <Box
                       sx={{
-                        color: "#6B7280",
-                        fontSize: "0.6875rem",
-                        lineHeight: 1.2,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.5,
+                        mt: 0.25,
                       }}
                     >
-                      Score: {totalScore}
-                    </Typography>
+                      <IconWrapper
+                        icon="mdi:fire"
+                        size={14}
+                        style={{ color: "#F59E0B" }}
+                      />
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "#6B7280",
+                          fontSize: "0.6875rem",
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {streak} day{streak !== 1 ? "s" : ""}
+                      </Typography>
+                    </Box>
                   </Box>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontWeight: 700,
-                      color: "#6366f1",
-                      fontSize: "0.875rem",
-                      flexShrink: 0,
-                    }}
-                  >
-                    #{rank || "?"}
-                  </Typography>
                 </Box>
               );
             })}

@@ -30,6 +30,7 @@ import { SubmoduleSidebar } from "@/components/course/submodule/SubmoduleSidebar
 import { SubmoduleContentHeader } from "@/components/course/submodule/SubmoduleContentHeader";
 import { SubmoduleContentViewer } from "@/components/course/submodule/SubmoduleContentViewer";
 import { invalidateStreakCache } from "@/lib/hooks/useLeaderboardAndStreak";
+import { profileService } from "@/lib/services/profile.service";
 
 export default function SubmoduleDetailPage() {
   const params = useParams();
@@ -399,6 +400,34 @@ export default function SubmoduleDetailPage() {
     } catch (error) {
       // Error tracking activity
       throw error; // Re-throw to allow caller to handle
+    }
+  };
+
+  // Refresh streak data after content completion
+  const refreshStreakAfterCompletion = async () => {
+    try {
+      // Invalidate cache to force fresh data
+      invalidateStreakCache();
+      
+      // Get current month in YYYY-MM format
+      const today = new Date();
+      const monthStr = `${today.getFullYear()}-${String(
+        today.getMonth() + 1
+      ).padStart(2, "0")}`;
+      
+      // Fetch fresh streak data
+      await profileService.getMonthlyStreak(monthStr);
+      
+      // Dispatch event to notify MainLayout and AppBar to refresh
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("submodule-complete"));
+      }
+    } catch (error) {
+      // Silently fail - streak update is not critical
+      // Still dispatch event so UI can refresh if possible
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("submodule-complete"));
+      }
     }
   };
 
@@ -857,9 +886,13 @@ export default function SubmoduleDetailPage() {
                   // This ensures the backend is notified of completion
                   try {
                     await trackActivity(selectedContentId, "complete");
+                    // Refresh streak data immediately after completion
+                    await refreshStreakAfterCompletion();
                   } catch (error) {
                     // Failed to track video completion activity
                     // Don't return early - still try to reload content
+                    // Still try to refresh streak even if activity tracking failed
+                    await refreshStreakAfterCompletion();
                   }
 
                   // Store the next content ID BEFORE any operations
@@ -940,9 +973,8 @@ export default function SubmoduleDetailPage() {
                     invalidateStreakCache();
                     const updatedData = await loadSubmoduleData(true);
                     
-                    if (typeof window !== "undefined") {
-                      window.dispatchEvent(new CustomEvent("submodule-complete"));
-                    }
+                    // Refresh streak data immediately after quiz completion
+                    await refreshStreakAfterCompletion();
                     
                     if (updatedData) {
                       checkSubmoduleCompletion(updatedData);
@@ -971,6 +1003,8 @@ export default function SubmoduleDetailPage() {
                   try {
                     // Track article completion activity
                     await trackActivity(selectedContentId, "complete");
+                    // Refresh streak data immediately after completion
+                    await refreshStreakAfterCompletion();
 
                     // Update local state without full reload
                     if (submoduleData) {
@@ -995,6 +1029,8 @@ export default function SubmoduleDetailPage() {
                     }
                   } catch (error) {
                     // Failed to track article completion
+                    // Still try to refresh streak even if activity tracking failed
+                    await refreshStreakAfterCompletion();
                   }
                 }}
               />
