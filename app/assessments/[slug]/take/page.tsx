@@ -239,6 +239,39 @@ export default function TakeAssessmentPage({
     isProctoringActiveRef.current = isProctoringActive;
   }, [isProctoringActive]);
 
+  // Simple auto-save - only saves responses, no complex logic
+  useEffect(() => {
+    if (!assessmentStarted || !assessment || submitting) return;
+
+    // Clear any existing interval first
+    if (autoSaveIntervalRef.current) {
+      clearInterval(autoSaveIntervalRef.current);
+    }
+
+    // Auto-save every 30 seconds
+    autoSaveIntervalRef.current = setInterval(async () => {
+      try {
+        const hasResponses = Object.keys(responses).some(
+          (sectionType) =>
+            responses[sectionType] &&
+            Object.keys(responses[sectionType]).length > 0
+        );
+        if (hasResponses) {
+          await assessmentService.saveSubmission(slug, responses, metadata);
+        }
+      } catch (error) {
+        // Silently fail - don't disrupt user
+      }
+    }, 30000);
+
+    return () => {
+      if (autoSaveIntervalRef.current) {
+        clearInterval(autoSaveIntervalRef.current);
+        autoSaveIntervalRef.current = null;
+      }
+    };
+  }, [assessmentStarted, assessment, submitting, responses, metadata, slug]);
+
   // Prevent refresh and back navigation during assessment
   useEffect(() => {
     if (!assessmentStarted) return;
@@ -287,6 +320,7 @@ export default function TakeAssessmentPage({
     return () => {
       if (autoSaveIntervalRef.current) {
         clearInterval(autoSaveIntervalRef.current);
+        autoSaveIntervalRef.current = null;
       }
       // Only stop proctoring on component unmount (navigation away)
       if (isProctoringActiveRef.current) {
@@ -317,10 +351,20 @@ export default function TakeAssessmentPage({
   );
 
   const handleFinalSubmit = useCallback(async () => {
-    if (!assessment) return;
+    if (!assessment || submitting) return;
 
     try {
+      // Stop auto-save immediately to prevent interference
+      if (autoSaveIntervalRef.current) {
+        clearInterval(autoSaveIntervalRef.current);
+        autoSaveIntervalRef.current = null;
+      }
+
       setSubmitting(true);
+      setShowFullscreenWarning(false);
+
+      // Capture responses immediately to prevent state changes
+      const currentResponses = { ...responses };
 
       // Calculate total duration
       const totalDurationSeconds =
@@ -329,7 +373,7 @@ export default function TakeAssessmentPage({
         1000;
 
       // Calculate completed questions
-      const completedQuestions = Object.values(responses).reduce(
+      const completedQuestions = Object.values(currentResponses).reduce(
         (count, sectionResponses) => {
           return count + Object.keys(sectionResponses).length;
         },
@@ -349,18 +393,13 @@ export default function TakeAssessmentPage({
       const fullscreenExits = metadata.proctoring.fullscreen_exits.length;
 
       // Format responses according to API structure
-      // Structure: { quizSectionId: [{ "1": { "101": "A" } }], codingProblemSectionId: [{ "1": { "301": {...} } }] }
       const formattedResponses: Record<string, Array<Record<string, any>>> = {};
-
-      // Initialize arrays for each section type
       const quizSectionId: Array<Record<string, any>> = [];
       const codingProblemSectionId: Array<Record<string, any>> = [];
 
       sections.forEach((section: any, sectionIndex: number) => {
         const sectionType = section.section_type || "quiz";
-        const sectionResponses = responses[sectionType] || {};
-
-        // Get questions for this section
+        const sectionResponses = currentResponses[sectionType] || {};
         const sectionQuestions = section.questions || [];
         const sectionResponseData: Record<string, any> = {};
 
@@ -370,7 +409,6 @@ export default function TakeAssessmentPage({
 
           if (questionResponse) {
             if (sectionType === "coding") {
-              // For coding: include tc_passed, total_tc, best_code
               sectionResponseData[questionId] = {
                 tc_passed:
                   questionResponse.tc_passed ?? questionResponse.passed ?? 0,
@@ -382,15 +420,12 @@ export default function TakeAssessmentPage({
                   questionResponse.best_code ?? questionResponse.code ?? "",
               };
             } else {
-              // For quiz: just the answer value (string)
               sectionResponseData[questionId] = questionResponse;
             }
           }
         });
 
-        // Only add if there are responses
         if (Object.keys(sectionResponseData).length > 0) {
-          // Use 1-based index for section
           const sectionEntry = {
             [String(sectionIndex + 1)]: sectionResponseData,
           };
@@ -403,7 +438,6 @@ export default function TakeAssessmentPage({
         }
       });
 
-      // Add to formatted responses only if there are responses
       if (quizSectionId.length > 0) {
         formattedResponses.quizSectionId = quizSectionId;
       }
@@ -411,12 +445,12 @@ export default function TakeAssessmentPage({
         formattedResponses.codingProblemSectionId = codingProblemSectionId;
       }
 
-      // Prepare request body in the new format
+      // Prepare the full request body structure
       const requestBody = {
         transcript: {
           responses: formattedResponses,
           total_duration_seconds: totalDurationSeconds,
-          logs: [], // Empty logs array - can be populated if needed
+          logs: [],
           metadata: {
             ...metadata,
             face_validation_failures: faceValidationFailures,
@@ -428,13 +462,63 @@ export default function TakeAssessmentPage({
         },
       };
 
+      // Call finalSubmit - service will wrap responseSheet and metadata
+      // We pass formattedResponses (even though type doesn't match perfectly)
+      // and requestBody as metadata - backend should handle it
       await assessmentService.finalSubmit(
         slug,
-        formattedResponses,
+        formattedResponses as any,
         requestBody
       );
 
-      // Exit fullscreen first
+      // Stop proctoring and camera FIRST before exiting fullscreen
+      // This ensures camera is off before navigation
+      stopProctoring();
+
+      // Also explicitly stop the proctoring service
+      try {
+        const proctoringService = getProctoringService();
+        proctoringService.stopProctoring();
+      } catch (error) {
+        // Silently fail if service is not available
+      }
+
+      // Aggressively stop all media tracks (camera and audio)
+      stopAllMediaTracks();
+
+      // Wait a bit to ensure tracks are stopped
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Stop all media tracks again to catch any missed streams
+      stopAllMediaTracks();
+
+      // Get all active tracks and stop them explicitly
+      try {
+        const videoElements = document.querySelectorAll("video");
+        videoElements.forEach((video) => {
+          if (video.srcObject) {
+            const stream = video.srcObject as MediaStream;
+            stream.getTracks().forEach((track) => {
+              track.stop();
+            });
+            video.srcObject = null;
+          }
+        });
+
+        // Force stop by getting all tracks from all video elements (redundant but ensures cleanup)
+        document.querySelectorAll("video").forEach((video) => {
+          if (video.srcObject) {
+            (video.srcObject as MediaStream).getTracks().forEach((track) => {
+              track.stop();
+            });
+            video.srcObject = null;
+          }
+        });
+      } catch (error) {
+        // Continue even if cleanup fails
+      }
+
+      // Exit fullscreen after camera is stopped
       try {
         if (document.exitFullscreen) {
           await document.exitFullscreen();
@@ -449,27 +533,7 @@ export default function TakeAssessmentPage({
         // Silently fail if fullscreen exit fails
       }
 
-      // Stop proctoring and camera for cleanup
-      // Call stopProctoring from hook first
-      stopProctoring();
-
-      // Also explicitly stop the proctoring service to ensure cleanup
-      try {
-        const proctoringService = getProctoringService();
-        proctoringService.stopProctoring();
-      } catch (error) {
-        // Silently fail if service is not available
-      }
-
-      // Aggressively stop all media tracks (camera and audio)
-      stopAllMediaTracks();
-
-      // Stop all media tracks again after a brief delay to catch any missed streams
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      stopAllMediaTracks();
-
-      // One more cleanup pass to ensure everything is stopped
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      // Final cleanup pass
       stopAllMediaTracks();
 
       // Navigate to success page
@@ -537,6 +601,12 @@ export default function TakeAssessmentPage({
     if (!assessmentStarted) return;
 
     const handleFullscreenChange = () => {
+      // Don't show warning if we're submitting - fullscreen exit is intentional
+      if (submitting) {
+        setShowFullscreenWarning(false);
+        return;
+      }
+
       const isFS =
         !!document.fullscreenElement ||
         !!(document as any).webkitFullscreenElement ||
@@ -571,7 +641,7 @@ export default function TakeAssessmentPage({
         handleFullscreenChange
       );
     };
-  }, [assessmentStarted, handleReEnterFullscreen]);
+  }, [assessmentStarted, submitting, handleReEnterFullscreen]);
 
   // ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURN
   // Compute variables safely (handle null/empty cases)
@@ -824,7 +894,7 @@ export default function TakeAssessmentPage({
               />
             )}
 
-            {showFullscreenWarning && (
+            {showFullscreenWarning && !submitting && (
               <FullscreenWarningDialog
                 open={showFullscreenWarning}
                 onReEnterFullscreen={handleReEnterFullscreen}
