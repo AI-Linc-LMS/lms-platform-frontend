@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Box } from "@mui/material";
+import { Box, Collapse, IconButton, Paper, Typography } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
+import { IconWrapper } from "@/components/common/IconWrapper";
 import {
   adminStudentService,
   Student,
@@ -15,6 +16,8 @@ import { ManageStudentsHeader } from "../../../components/admin/manage-students/
 import { StudentsFilters } from "../../../components/admin/manage-students/StudentsFilters";
 import { StudentsTable } from "../../../components/admin/manage-students/StudentsTable";
 import { StudentsPagination } from "../../../components/admin/manage-students/StudentsPagination";
+import { BulkEnrollmentDialog } from "../../../components/admin/manage-students/BulkEnrollmentDialog";
+import { EnrollmentJobHistory } from "../../../components/admin/manage-students/EnrollmentJobHistory";
 
 type SortOption = "name" | "marks" | "last_activity" | "time_spent" | "streak";
 type SortOrder = "asc" | "desc";
@@ -43,6 +46,10 @@ export default function ManageStudentsPage() {
   const [limit, setLimit] = useState(10);
   const [sortBy, setSortBy] = useState<SortOption>("name");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+
+  // Bulk Enrollment
+  const [bulkEnrollDialogOpen, setBulkEnrollDialogOpen] = useState(false);
+  const [showJobHistory, setShowJobHistory] = useState(false);
 
   // Load courses for filter
   useEffect(() => {
@@ -323,10 +330,19 @@ export default function ManageStudentsPage() {
     // Client-side pagination - no API call
   };
 
+  const handleBulkEnrollSuccess = () => {
+    // Refresh student list after successful enrollment
+    loadStudents();
+    setShowJobHistory(true); // Show job history after successful enrollment
+  };
+
   return (
     <MainLayout>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-        <ManageStudentsHeader totalCount={totalCount} />
+        <ManageStudentsHeader
+          totalCount={totalCount}
+          onBulkEnrollClick={() => setBulkEnrollDialogOpen(true)}
+        />
 
         <StudentsFilters
           courses={courses}
@@ -337,6 +353,41 @@ export default function ManageStudentsPage() {
           onStatusChange={handleStatusChange}
           onSearchChange={handleSearchChange}
         />
+
+        <Box sx={{ mb: 4 }}>
+          <Paper
+            sx={{
+              p: 2,
+              mb: 2,
+              cursor: "pointer",
+              "&:hover": {
+                backgroundColor: "#f9fafb",
+              },
+            }}
+            onClick={() => setShowJobHistory(!showJobHistory)}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <Typography variant="h6" fontWeight={600}>
+                Enrollment Job History
+              </Typography>
+              <IconButton size="small">
+                <IconWrapper
+                  icon={showJobHistory ? "mdi:chevron-up" : "mdi:chevron-down"}
+                  size={20}
+                />
+              </IconButton>
+            </Box>
+          </Paper>
+          <Collapse in={showJobHistory}>
+            <EnrollmentJobHistory />
+          </Collapse>
+        </Box>
 
         <Box>
           <StudentsTable
@@ -358,6 +409,12 @@ export default function ManageStudentsPage() {
             onLimitChange={handleLimitChange}
           />
         </Box>
+
+        <BulkEnrollmentDialog
+          open={bulkEnrollDialogOpen}
+          onClose={() => setBulkEnrollDialogOpen(false)}
+          onSuccess={handleBulkEnrollSuccess}
+        />
       </Box>
     </MainLayout>
   );
