@@ -64,6 +64,38 @@ export interface GenerateMCQResponse {
   }>;
 }
 
+export interface CodingProblemListItem {
+  id: number;
+  title: string;
+  problem_statement: string;
+  difficulty_level?: string;
+  topic?: string;
+  programming_language?: string;
+  [key: string]: any;
+}
+
+export interface GenerateCodingProblemRequest {
+  topic: string;
+  difficulty_level?: "Easy" | "Medium" | "Hard";
+  programming_language?: string;
+  number_of_problems?: number;
+}
+
+export interface GenerateCodingProblemResponse {
+  message: string;
+  topic: string;
+  difficulty_level: string;
+  programming_language: string;
+  count: number;
+  coding_problem_ids: number[];
+  coding_problems: Array<{
+    id: number;
+    title: string;
+    problem_statement: string;
+    [key: string]: any;
+  }>;
+}
+
 export interface CreateAssessmentPayload {
   title: string;
   instructions: string;
@@ -73,9 +105,24 @@ export interface CreateAssessmentPayload {
   price?: string | number | null;
   currency?: string;
   is_active?: boolean;
-  quiz_section: QuizSection;
-  mcqs?: MCQ[];
-  mcq_ids?: number[];
+  quiz_section?: QuizSection; // For backward compatibility
+  quiz_sections?: Array<{
+    title: string;
+    description?: string;
+    order: number;
+    number_of_questions?: number;
+    mcqs?: MCQ[];
+    mcq_ids?: number[];
+  }>;
+  coding_sections?: Array<{
+    title: string;
+    description?: string;
+    order: number;
+    number_of_questions?: number;
+    coding_problem_ids?: number[];
+  }>;
+  mcqs?: MCQ[]; // For backward compatibility
+  mcq_ids?: number[]; // For backward compatibility
 }
 
 export interface Assessment {
@@ -323,6 +370,67 @@ export const generateMCQsWithAI = async (
   }
 };
 
+/**
+ * Get all coding problems for a client
+ */
+export const getCodingProblems = async (
+  clientId: string | number
+): Promise<CodingProblemListItem[]> => {
+  try {
+    const response = await apiClient.get(
+      `/admin-dashboard/api/clients/${clientId}/coding-problems/`
+    );
+    return response.data;
+  } catch (err) {
+    const error = err as AxiosError<ApiErrorPayload>;
+    const message =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      "Failed to fetch coding problems";
+    throw new Error(message);
+  }
+};
+
+/**
+ * Generate coding problems with AI
+ */
+export const generateCodingProblemsWithAI = async (
+  clientId: string | number,
+  payload: GenerateCodingProblemRequest
+): Promise<GenerateCodingProblemResponse> => {
+  try {
+    const response = await apiClient.post(
+      `/admin-dashboard/api/clients/${clientId}/generate-coding-problems/`,
+      payload
+    );
+    return response.data;
+  } catch (err) {
+    const error = err as AxiosError<ApiErrorPayload>;
+
+    // Handle validation errors
+    if (error.response?.status === 400 && error.response?.data) {
+      const errorData = error.response.data;
+      const errorMessages = Object.entries(errorData)
+        .map(([key, value]) => {
+          if (Array.isArray(value)) {
+            return `${key}: ${value.join(", ")}`;
+          }
+          return `${key}: ${value}`;
+        })
+        .join("; ");
+      throw new Error(errorMessages || "Validation error");
+    }
+
+    const message =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      "Failed to generate coding problems with AI";
+    throw new Error(message);
+  }
+};
+
 export const adminAssessmentService = {
   getAssessments,
   getAssessmentById,
@@ -331,5 +439,6 @@ export const adminAssessmentService = {
   deleteAssessment,
   getMCQs,
   generateMCQsWithAI,
+  getCodingProblems,
+  generateCodingProblemsWithAI,
 };
-

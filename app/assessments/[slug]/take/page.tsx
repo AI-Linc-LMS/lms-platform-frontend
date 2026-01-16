@@ -12,13 +12,7 @@ import {
   startTransition,
 } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Box,
-  Paper,
-  Typography,
-  Button,
-  CircularProgress,
-} from "@mui/material";
+import { Box } from "@mui/material";
 import { Loading } from "@/components/common/Loading";
 import { useToast } from "@/components/common/Toast";
 import { useAssessmentProctoring } from "@/lib/hooks/useAssessmentProctoring";
@@ -26,20 +20,18 @@ import { useAssessmentData } from "@/lib/hooks/useAssessmentData";
 import { useAssessmentTimer } from "@/lib/hooks/useAssessmentTimer";
 import { useAssessmentNavigation } from "@/lib/hooks/useAssessmentNavigation";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useAutoSave } from "@/lib/hooks/useAutoSave";
+import { useAssessmentSubmission } from "@/lib/hooks/useAssessmentSubmission";
+import { useFullscreenHandler } from "@/lib/hooks/useFullscreenHandler";
+import { useAssessmentSecurity } from "@/lib/hooks/useAssessmentSecurity";
 import { AssessmentTimerBar } from "@/components/assessment/AssessmentTimerBar";
 import { AssessmentNavigation } from "@/components/assessment/AssessmentNavigation";
-// Don't lazy load main content - it blocks timer and causes freeze
+import { StartAssessmentButton } from "@/components/assessment/StartAssessmentButton";
 import { AssessmentQuizLayout } from "@/components/assessment/AssessmentQuizLayout";
 import { AssessmentCodingLayout } from "@/components/assessment/AssessmentCodingLayout";
-import {
-  assessmentService,
-  AssessmentMetadata,
-} from "@/lib/services/assessment.service";
 import { mergeAssessmentSections } from "@/utils/assessment.utils";
-import { stopAllMediaTracks } from "@/lib/utils/cameraUtils";
-import { getProctoringService } from "@/lib/services/proctoring.service";
 
-// Only lazy load dialogs - they're not critical for initial render
+// Lazy load dialogs only
 const SubmissionDialog = lazy(() =>
   import("@/components/assessment/SubmissionDialog").then((m) => ({
     default: m.SubmissionDialog,
@@ -60,42 +52,44 @@ export default function TakeAssessmentPage({
 }) {
   const { slug } = use(params);
   const router = useRouter();
+  const { showToast } = useToast();
 
+  // State
   const [submitting, setSubmitting] = useState(false);
   const [assessmentStarted, setAssessmentStarted] = useState(false);
   const [showStartButton, setShowStartButton] = useState(true);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
-  const [showFullscreenWarning, setShowFullscreenWarning] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [responses, setResponses] = useState<
     Record<string, Record<string, any>>
   >({});
 
-  const { showToast } = useToast();
-  const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Refs
   const timeUpCallbackRef = useRef<(() => void) | null>(null);
   const isProctoringActiveRef = useRef(false);
   const isInitializingRef = useRef(false);
+  const hasCheckedSubmission = useRef(false);
 
+  // Data hooks
   const { assessment, loading } = useAssessmentData(slug);
 
-  // Preload proctoring model as soon as assessment loads (before user clicks start)
+  // Preload proctoring model in background
   useEffect(() => {
     if (assessment && !loading) {
-      // Preload the TensorFlow model in the background
       import("@/lib/services/proctoring.service").then(
         ({ getProctoringService }) => {
           const service = getProctoringService();
           service.initializeModel().catch(() => {
-            // Silently fail - model will be loaded on demand
+            // Silently fail - will load on demand
           });
         }
       );
     }
   }, [assessment, loading]);
 
+  // Timer setup
   const initialTimeSeconds = useMemo(() => {
     if (assessment?.remaining_time) {
       return assessment.remaining_time * 60;
@@ -108,7 +102,7 @@ export default function TakeAssessmentPage({
 
   const timer = useAssessmentTimer({
     initialTimeSeconds,
-    autoStart: false, // We'll manually start this
+    autoStart: false,
     onTimeUp: () => {
       if (timeUpCallbackRef.current) {
         timeUpCallbackRef.current();
@@ -116,6 +110,7 @@ export default function TakeAssessmentPage({
     },
   });
 
+  // Sections
   const sections = useMemo(() => {
     if (!assessment) return [];
     return mergeAssessmentSections(
@@ -124,9 +119,9 @@ export default function TakeAssessmentPage({
     );
   }, [assessment]);
 
-  // Violation threshold callback - no longer force submits
+  // Proctoring
   const handleViolationThresholdReached = useCallback(() => {
-    // Maximum violation threshold reached - handled by proctoring system
+    // Handled by proctoring system
   }, []);
 
   const {
@@ -146,6 +141,7 @@ export default function TakeAssessmentPage({
     autoStart: false,
   });
 
+  // Navigation
   const navigation = useAssessmentNavigation({
     currentSectionIndex,
     currentQuestionIndex,
@@ -154,12 +150,11 @@ export default function TakeAssessmentPage({
     setCurrentQuestionIndex,
   });
 
-  useKeyboardShortcuts({
-    enabled: assessmentStarted,
-  });
+  // Security measures
+  useAssessmentSecurity({ enabled: assessmentStarted });
+  useKeyboardShortcuts({ enabled: assessmentStarted });
 
-  // Check if assessment is already submitted (only check once when assessment loads)
-  const hasCheckedSubmission = useRef(false);
+  // Check if already submitted
   useEffect(() => {
     if (assessment && !hasCheckedSubmission.current) {
       hasCheckedSubmission.current = true;
@@ -170,6 +165,7 @@ export default function TakeAssessmentPage({
     }
   }, [assessment, slug, router, showToast]);
 
+  // Initialize responses
   useEffect(() => {
     if (assessment && sections.length > 0) {
       const initialResponses: Record<string, Record<string, any>> = {};
@@ -178,7 +174,6 @@ export default function TakeAssessmentPage({
       });
       setResponses(initialResponses);
 
-      // Set default section to first quiz/MCQ section
       const firstQuizIndex = sections.findIndex(
         (section: any) => (section.section_type || "quiz") === "quiz"
       );
@@ -189,18 +184,54 @@ export default function TakeAssessmentPage({
     }
   }, [assessment, sections]);
 
-  // Handle start assessment button click (user gesture for fullscreen)
-  const handleStartAssessment = async () => {
+  // Auto-save
+  useAutoSave({
+    enabled: assessmentStarted && !submitting,
+    slug,
+    responses,
+    metadata,
+  });
+
+  // Track proctoring state
+  useEffect(() => {
+    isProctoringActiveRef.current = isProctoringActive;
+  }, [isProctoringActive]);
+
+  // Fullscreen handler
+  const {
+    showFullscreenWarning,
+    setShowFullscreenWarning,
+    handleReEnterFullscreen,
+  } = useFullscreenHandler({
+    enabled: assessmentStarted,
+    submitting,
+    enterFullscreen,
+  });
+
+  // Submission handler
+  const { handleFinalSubmit } = useAssessmentSubmission({
+    assessment,
+    slug,
+    responses,
+    sections,
+    metadata,
+    navigation,
+    stopProctoring,
+    setSubmitting,
+    setShowFullscreenWarning,
+  });
+
+  // Start assessment
+  const handleStartAssessment = useCallback(async () => {
     if (isInitializingRef.current) return;
     isInitializingRef.current = true;
     setShowStartButton(false);
 
     try {
-      // Start UI immediately for instant feedback
       setAssessmentStarted(true);
       timer.start();
 
-      // Start camera and fullscreen in parallel (both non-blocking)
+      // Start camera and fullscreen in parallel
       Promise.all([
         startProctoring().catch(() => {
           showToast(
@@ -210,7 +241,6 @@ export default function TakeAssessmentPage({
         }),
         enterFullscreen()
           .then(() => {
-            // Quick check for fullscreen
             setTimeout(() => {
               const isFS =
                 !!document.fullscreenElement ||
@@ -221,7 +251,7 @@ export default function TakeAssessmentPage({
               if (!isFS) {
                 setShowFullscreenWarning(true);
               }
-            }, 100); // Reduced from 200ms to 100ms
+            }, 100);
           })
           .catch(() => {
             setShowFullscreenWarning(true);
@@ -232,109 +262,52 @@ export default function TakeAssessmentPage({
       setShowStartButton(true);
       isInitializingRef.current = false;
     }
-  };
+  }, [
+    timer,
+    startProctoring,
+    enterFullscreen,
+    showToast,
+    setShowFullscreenWarning,
+  ]);
 
-  // Track proctoring state in ref for cleanup
+  // Time up handler
   useEffect(() => {
-    isProctoringActiveRef.current = isProctoringActive;
-  }, [isProctoringActive]);
-
-  // Simple auto-save - only saves responses, no complex logic
-  useEffect(() => {
-    if (!assessmentStarted || !assessment || submitting) return;
-
-    // Clear any existing interval first
-    if (autoSaveIntervalRef.current) {
-      clearInterval(autoSaveIntervalRef.current);
-    }
-
-    // Auto-save every 30 seconds
-    autoSaveIntervalRef.current = setInterval(async () => {
-      try {
-        const hasResponses = Object.keys(responses).some(
-          (sectionType) =>
-            responses[sectionType] &&
-            Object.keys(responses[sectionType]).length > 0
-        );
-        if (hasResponses) {
-          await assessmentService.saveSubmission(slug, responses, metadata);
-        }
-      } catch (error) {
-        // Silently fail - don't disrupt user
-      }
-    }, 30000);
-
-    return () => {
-      if (autoSaveIntervalRef.current) {
-        clearInterval(autoSaveIntervalRef.current);
-        autoSaveIntervalRef.current = null;
-      }
+    timeUpCallbackRef.current = () => {
+      showToast("Time is up! Submitting assessment...", "warning");
+      handleFinalSubmit();
     };
-  }, [assessmentStarted, assessment, submitting, responses, metadata, slug]);
+  }, [handleFinalSubmit, showToast]);
 
-  // Prevent refresh and back navigation during assessment
-  useEffect(() => {
-    if (!assessmentStarted) return;
-
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue =
-        "Are you sure you want to leave? Your progress may be lost.";
-      return event.returnValue;
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Prevent F5, Ctrl+R, Ctrl+Shift+R
-      if (
-        event.key === "F5" ||
-        (event.ctrlKey && event.key === "r") ||
-        (event.ctrlKey && event.shiftKey && event.key === "R")
-      ) {
-        event.preventDefault();
-        showToast("Refresh is disabled during the assessment", "warning");
-        return false;
-      }
-    };
-
-    const handlePopState = (event: PopStateEvent) => {
-      // Push state again to prevent navigation
-      window.history.pushState(null, "", window.location.href);
-      showToast("Navigation is disabled during the assessment", "warning");
-    };
-
-    // Push state to prevent back navigation
-    window.history.pushState(null, "", window.location.href);
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [assessmentStarted, showToast]);
-
-  // Cleanup on unmount only - don't stop proctoring when still on the page
+  // Cleanup on unmount - ensure camera is always stopped
   useEffect(() => {
     return () => {
-      if (autoSaveIntervalRef.current) {
-        clearInterval(autoSaveIntervalRef.current);
-        autoSaveIntervalRef.current = null;
-      }
-      // Only stop proctoring on component unmount (navigation away)
       if (isProctoringActiveRef.current) {
         stopProctoring();
       }
+      // Additional cleanup - stop all media tracks
+      try {
+        const { stopAllMediaTracks } = require("@/lib/utils/cameraUtils");
+        stopAllMediaTracks();
+        // Force stop all video elements
+        document.querySelectorAll("video").forEach((video) => {
+          if (video.srcObject) {
+            (video.srcObject as MediaStream).getTracks().forEach((track) => {
+              track.stop();
+            });
+            video.srcObject = null;
+          }
+        });
+      } catch (error) {
+        // Silently fail
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty deps - only cleanup on unmount
+  }, []);
 
+  // Answer change handler
   const handleAnswerChange = useCallback(
     (sectionType: string, questionId: string | number, answer: any) => {
-      // Use functional update to avoid unnecessary re-renders
       setResponses((prev) => {
-        // Check if answer is the same to avoid unnecessary update
         if (prev[sectionType]?.[questionId] === answer) {
           return prev;
         }
@@ -350,234 +323,7 @@ export default function TakeAssessmentPage({
     []
   );
 
-  const handleFinalSubmit = useCallback(async () => {
-    if (!assessment || submitting) return;
-
-    try {
-      // Stop auto-save immediately to prevent interference
-      if (autoSaveIntervalRef.current) {
-        clearInterval(autoSaveIntervalRef.current);
-        autoSaveIntervalRef.current = null;
-      }
-
-      setSubmitting(true);
-      setShowFullscreenWarning(false);
-
-      // Capture responses immediately to prevent state changes
-      const currentResponses = { ...responses };
-
-      // Calculate total duration
-      const totalDurationSeconds =
-        (new Date().getTime() -
-          new Date(metadata.timing.started_at).getTime()) /
-        1000;
-
-      // Calculate completed questions
-      const completedQuestions = Object.values(currentResponses).reduce(
-        (count, sectionResponses) => {
-          return count + Object.keys(sectionResponses).length;
-        },
-        0
-      );
-
-      // Calculate total questions
-      const totalQuestions = navigation.totalQuestions;
-
-      // Extract proctoring data from metadata
-      const faceValidationFailures = metadata.proctoring.face_violations.filter(
-        (v) => v.type === "NO_FACE" || v.type === "MULTIPLE_FACES"
-      ).length;
-      const multipleFaceDetections = metadata.proctoring.face_violations.filter(
-        (v) => v.type === "MULTIPLE_FACES"
-      ).length;
-      const fullscreenExits = metadata.proctoring.fullscreen_exits.length;
-
-      // Format responses according to API structure
-      const formattedResponses: Record<string, Array<Record<string, any>>> = {};
-      const quizSectionId: Array<Record<string, any>> = [];
-      const codingProblemSectionId: Array<Record<string, any>> = [];
-
-      sections.forEach((section: any, sectionIndex: number) => {
-        const sectionType = section.section_type || "quiz";
-        const sectionResponses = currentResponses[sectionType] || {};
-        const sectionQuestions = section.questions || [];
-        const sectionResponseData: Record<string, any> = {};
-
-        sectionQuestions.forEach((question: any) => {
-          const questionId = question.id;
-          const questionResponse = sectionResponses[questionId];
-
-          if (questionResponse) {
-            if (sectionType === "coding") {
-              sectionResponseData[questionId] = {
-                tc_passed:
-                  questionResponse.tc_passed ?? questionResponse.passed ?? 0,
-                total_tc:
-                  questionResponse.total_tc ??
-                  questionResponse.total_test_cases ??
-                  0,
-                best_code:
-                  questionResponse.best_code ?? questionResponse.code ?? "",
-              };
-            } else {
-              sectionResponseData[questionId] = questionResponse;
-            }
-          }
-        });
-
-        if (Object.keys(sectionResponseData).length > 0) {
-          const sectionEntry = {
-            [String(sectionIndex + 1)]: sectionResponseData,
-          };
-
-          if (sectionType === "coding") {
-            codingProblemSectionId.push(sectionEntry);
-          } else {
-            quizSectionId.push(sectionEntry);
-          }
-        }
-      });
-
-      if (quizSectionId.length > 0) {
-        formattedResponses.quizSectionId = quizSectionId;
-      }
-      if (codingProblemSectionId.length > 0) {
-        formattedResponses.codingProblemSectionId = codingProblemSectionId;
-      }
-
-      // Prepare the full request body structure
-      const requestBody = {
-        transcript: {
-          responses: formattedResponses,
-          total_duration_seconds: totalDurationSeconds,
-          logs: [],
-          metadata: {
-            ...metadata,
-            face_validation_failures: faceValidationFailures,
-            multiple_face_detections: multipleFaceDetections,
-            fullscreen_exits: fullscreenExits,
-            completed_questions: completedQuestions,
-            total_questions: totalQuestions,
-          },
-        },
-      };
-
-      // Call finalSubmit - service will wrap responseSheet and metadata
-      // We pass formattedResponses (even though type doesn't match perfectly)
-      // and requestBody as metadata - backend should handle it
-      await assessmentService.finalSubmit(
-        slug,
-        formattedResponses as any,
-        requestBody
-      );
-
-      // Stop proctoring and camera FIRST before exiting fullscreen
-      // This ensures camera is off before navigation
-      stopProctoring();
-
-      // Also explicitly stop the proctoring service
-      try {
-        const proctoringService = getProctoringService();
-        proctoringService.stopProctoring();
-      } catch (error) {
-        // Silently fail if service is not available
-      }
-
-      // Aggressively stop all media tracks (camera and audio)
-      stopAllMediaTracks();
-
-      // Wait a bit to ensure tracks are stopped
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Stop all media tracks again to catch any missed streams
-      stopAllMediaTracks();
-
-      // Get all active tracks and stop them explicitly
-      try {
-        const videoElements = document.querySelectorAll("video");
-        videoElements.forEach((video) => {
-          if (video.srcObject) {
-            const stream = video.srcObject as MediaStream;
-            stream.getTracks().forEach((track) => {
-              track.stop();
-            });
-            video.srcObject = null;
-          }
-        });
-
-        // Force stop by getting all tracks from all video elements (redundant but ensures cleanup)
-        document.querySelectorAll("video").forEach((video) => {
-          if (video.srcObject) {
-            (video.srcObject as MediaStream).getTracks().forEach((track) => {
-              track.stop();
-            });
-            video.srcObject = null;
-          }
-        });
-      } catch (error) {
-        // Continue even if cleanup fails
-      }
-
-      // Exit fullscreen after camera is stopped
-      try {
-        if (document.exitFullscreen) {
-          await document.exitFullscreen();
-        } else if ((document as any).webkitExitFullscreen) {
-          await (document as any).webkitExitFullscreen();
-        } else if ((document as any).mozCancelFullScreen) {
-          await (document as any).mozCancelFullScreen();
-        } else if ((document as any).msExitFullscreen) {
-          await (document as any).msExitFullscreen();
-        }
-      } catch (error) {
-        // Silently fail if fullscreen exit fails
-      }
-
-      // Final cleanup pass
-      stopAllMediaTracks();
-
-      // Navigate to success page
-      showToast("Assessment submitted successfully!", "success");
-      router.replace(`/assessments/${slug}/submission-success`);
-    } catch (error: any) {
-      showToast("Failed to submit assessment", "error");
-      setSubmitting(false);
-    }
-  }, [
-    metadata,
-    responses,
-    navigation,
-    stopProctoring,
-    slug,
-    router,
-    showToast,
-    assessment,
-  ]);
-
-  useEffect(() => {
-    timeUpCallbackRef.current = () => {
-      showToast("Time is up! Submitting assessment...", "warning");
-      handleFinalSubmit();
-    };
-  }, [handleFinalSubmit, showToast]);
-
-  const handleReEnterFullscreen = useCallback(async () => {
-    try {
-      await enterFullscreen();
-      const isFS =
-        !!document.fullscreenElement ||
-        !!(document as any).webkitFullscreenElement ||
-        !!(document as any).mozFullScreenElement ||
-        !!(document as any).msFullscreenElement;
-      if (isFS) {
-        setShowFullscreenWarning(false);
-      }
-    } catch (error) {
-      // Silently fail re-entry
-    }
-  }, [enterFullscreen]);
-
-  // Memoize submit dialog handler
+  // Dialog handlers
   const handleShowSubmitDialog = useCallback(() => {
     setShowSubmitDialog(true);
   }, []);
@@ -586,65 +332,17 @@ export default function TakeAssessmentPage({
     setShowSubmitDialog(false);
   }, []);
 
-  // Memoize section change handler with startTransition to keep timer smooth
+  // Section change handler
   const handleSectionChange = useCallback((sectionIndex: number) => {
     setIsTransitioning(true);
     startTransition(() => {
       setCurrentSectionIndex(sectionIndex);
       setCurrentQuestionIndex(0);
-      // Clear transition after a brief delay
       setTimeout(() => setIsTransitioning(false), 100);
     });
   }, []);
 
-  useEffect(() => {
-    if (!assessmentStarted) return;
-
-    const handleFullscreenChange = () => {
-      // Don't show warning if we're submitting - fullscreen exit is intentional
-      if (submitting) {
-        setShowFullscreenWarning(false);
-        return;
-      }
-
-      const isFS =
-        !!document.fullscreenElement ||
-        !!(document as any).webkitFullscreenElement ||
-        !!(document as any).mozFullScreenElement ||
-        !!(document as any).msFullscreenElement;
-
-      if (!isFS && assessmentStarted) {
-        // Show dialog and let user click the button (which is a valid user gesture)
-        setShowFullscreenWarning(true);
-      } else if (isFS) {
-        setShowFullscreenWarning(false);
-      }
-    };
-
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
-    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
-    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
-
-    return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
-      document.removeEventListener(
-        "webkitfullscreenchange",
-        handleFullscreenChange
-      );
-      document.removeEventListener(
-        "mozfullscreenchange",
-        handleFullscreenChange
-      );
-      document.removeEventListener(
-        "MSFullscreenChange",
-        handleFullscreenChange
-      );
-    };
-  }, [assessmentStarted, submitting, handleReEnterFullscreen]);
-
-  // ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURN
-  // Compute variables safely (handle null/empty cases)
+  // Computed values
   const currentSection =
     sections.length > 0 ? sections[currentSectionIndex] : null;
   const sectionType = currentSection?.section_type || "quiz";
@@ -654,7 +352,6 @@ export default function TakeAssessmentPage({
     return currentSection.questions || [];
   }, [currentSection, sectionType]);
 
-  // Memoize mapped quiz questions to prevent unnecessary re-renders
   const mappedQuizQuestions = useMemo(() => {
     return quizQuestions.map((q: any) => ({
       id: q.id,
@@ -663,33 +360,6 @@ export default function TakeAssessmentPage({
     }));
   }, [quizQuestions, responses, sectionType]);
 
-  // Memoize quiz answer select handler - compute currentQuizQuestion inside
-  const handleQuizAnswerSelect = useCallback(
-    (answerId: string | number) => {
-      const question = quizQuestions[currentQuestionIndex];
-      if (question) {
-        handleAnswerChange(sectionType, question.id, answerId);
-      }
-    },
-    [quizQuestions, currentQuestionIndex, sectionType, handleAnswerChange]
-  );
-
-  // Memoize question click handler with startTransition for smooth switching
-  const handleQuizQuestionClick = useCallback(
-    (questionId: string | number) => {
-      const index = quizQuestions.findIndex((q: any) => q.id === questionId);
-      if (index !== -1) {
-        setIsTransitioning(true);
-        startTransition(() => {
-          setCurrentQuestionIndex(index);
-          setTimeout(() => setIsTransitioning(false), 100);
-        });
-      }
-    },
-    [quizQuestions]
-  );
-
-  // Memoize section status to prevent recalculation on every render
   const sectionStatus = useMemo(() => {
     return sections.map((section: any) => {
       const sectionType = section.section_type || "quiz";
@@ -706,7 +376,6 @@ export default function TakeAssessmentPage({
     });
   }, [sections, responses]);
 
-  // Memoize total answered count
   const totalAnswered = useMemo(() => {
     return Object.values(responses).reduce(
       (sum: number, sectionResponses: any) =>
@@ -717,12 +386,37 @@ export default function TakeAssessmentPage({
     );
   }, [responses]);
 
+  // Handlers
+  const handleQuizAnswerSelect = useCallback(
+    (answerId: string | number) => {
+      const question = quizQuestions[currentQuestionIndex];
+      if (question) {
+        handleAnswerChange(sectionType, question.id, answerId);
+      }
+    },
+    [quizQuestions, currentQuestionIndex, sectionType, handleAnswerChange]
+  );
+
+  const handleQuizQuestionClick = useCallback(
+    (questionId: string | number) => {
+      const index = quizQuestions.findIndex((q: any) => q.id === questionId);
+      if (index !== -1) {
+        setIsTransitioning(true);
+        startTransition(() => {
+          setCurrentQuestionIndex(index);
+          setTimeout(() => setIsTransitioning(false), 100);
+        });
+      }
+    },
+    [quizQuestions]
+  );
+
   const currentQuizQuestion = quizQuestions[currentQuestionIndex];
   const currentAnswer = currentQuizQuestion
     ? responses[sectionType]?.[currentQuizQuestion.id]
     : undefined;
 
-  // NOW we can have the early return AFTER all hooks
+  // Early return
   if (loading || !assessment) {
     return <Loading fullScreen />;
   }
@@ -733,8 +427,8 @@ export default function TakeAssessmentPage({
         minHeight: "100vh",
         backgroundColor: "#f9fafb",
         position: "relative",
-        overflow: "hidden", // Changed from auto to prevent scrolling
-        pb: 0.5, // Reduced from 10 to minimal padding
+        overflow: "hidden",
+        pb: 0.5,
         userSelect: assessmentStarted ? "none" : "auto",
         WebkitUserSelect: assessmentStarted ? "none" : "auto",
         MozUserSelect: assessmentStarted ? "none" : "auto",
@@ -747,10 +441,8 @@ export default function TakeAssessmentPage({
         }
       }}
     >
-      {/* ALWAYS render the video element in the same place in the DOM tree */}
       {assessmentStarted && (
         <>
-          {/* Timer Bar - Fixed at top */}
           <AssessmentTimerBar
             title={assessment.title}
             formattedTime={timer.formattedTime}
@@ -762,7 +454,6 @@ export default function TakeAssessmentPage({
             faceCount={faceCount}
           />
 
-          {/* Navigation Bar - Fixed below timer */}
           <AssessmentNavigation
             currentSectionIndex={currentSectionIndex}
             currentQuestionIndex={currentQuestionIndex}
@@ -775,15 +466,14 @@ export default function TakeAssessmentPage({
             onSectionChange={handleSectionChange}
           />
 
-          {/* Main Content Area - Optimized spacing */}
           <Box
             sx={{
-              pt: 18.5, // Increased padding to prevent header cut (timer + navigation height)
-              pb: 2, // Minimal bottom padding
+              pt: 18.5,
+              pb: 2,
               px: { xs: 2, md: 4 },
               maxWidth: "100%",
-              height: "100vh", // Full viewport height
-              overflow: "auto", // Allow scroll only if content exceeds
+              height: "100vh",
+              overflow: "auto",
               boxSizing: "border-box",
             }}
           >
@@ -846,17 +536,13 @@ export default function TakeAssessmentPage({
                           (currentSection as any).questions[
                             currentQuestionIndex
                           ].id,
-                          {
-                            code,
-                            language,
-                          }
+                          { code, language }
                         );
                       }}
                       onCodeSubmit={(result) => {
                         const questionId = (currentSection as any).questions[
                           currentQuestionIndex
                         ].id;
-                        // Update response with test case results
                         setResponses((prev) => ({
                           ...prev,
                           coding: {
@@ -907,53 +593,12 @@ export default function TakeAssessmentPage({
       {!assessmentStarted &&
         showStartButton &&
         assessment?.status !== "submitted" && (
-          <Box
-            sx={{
-              minHeight: "100vh",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "#f9fafb",
-            }}
-          >
-            <Paper
-              elevation={2}
-              sx={{
-                maxWidth: 500,
-                p: 4,
-                textAlign: "center",
-              }}
-            >
-              <Typography variant="h5" fontWeight={600} gutterBottom>
-                {assessment.title}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Click the button below to start your assessment in fullscreen
-                mode.
-              </Typography>
-              <Button
-                variant="contained"
-                size="large"
-                fullWidth
-                onClick={handleStartAssessment}
-                disabled={isInitializing}
-                sx={{
-                  py: 1.5,
-                  fontSize: "1rem",
-                  fontWeight: 600,
-                  backgroundColor: "#374151",
-                  "&:hover": {
-                    backgroundColor: "#1f2937",
-                  },
-                }}
-              >
-                {isInitializing ? "Starting..." : "Start Assessment"}
-              </Button>
-            </Paper>
-          </Box>
+          <StartAssessmentButton
+            title={assessment.title}
+            onStart={handleStartAssessment}
+            isInitializing={isInitializing}
+          />
         )}
-
-      {/* Removed extra loader - not needed as proctoring starts immediately */}
     </Box>
   );
 }

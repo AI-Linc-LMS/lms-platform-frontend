@@ -20,12 +20,16 @@ import {
   adminAssessmentService,
   CreateAssessmentPayload,
   MCQ,
+  CodingProblemListItem,
 } from "@/lib/services/admin/admin-assessment.service";
 import { config } from "@/lib/config";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
-import { QuizSectionSection } from "@/components/admin/assessment/QuizSectionSection";
-import { QuestionsInputSection } from "@/components/admin/assessment/QuestionsInputSection";
+import {
+  MultipleSectionsSection,
+  Section,
+} from "@/components/admin/assessment/MultipleSectionsSection";
+import { SectionBasedQuestionsInput } from "@/components/admin/assessment/SectionBasedQuestionsInput";
 import { AssessmentPreviewSection } from "@/components/admin/assessment/AssessmentPreviewSection";
 
 type MCQInputMethod = "manual" | "existing" | "csv" | "ai";
@@ -48,26 +52,47 @@ export default function CreateAssessmentPage() {
   const [currency, setCurrency] = useState<string>("INR");
   const [isActive, setIsActive] = useState(true);
 
-  // Quiz section
-  const [sectionTitle, setSectionTitle] = useState("");
-  const [sectionDescription, setSectionDescription] = useState("");
-  const [sectionOrder, setSectionOrder] = useState(1);
+  // Multiple sections
+  const [sections, setSections] = useState<Section[]>([]);
 
   // MCQ input method
   const [mcqInputMethod, setMcqInputMethod] =
     useState<MCQInputMethod>("manual");
-  const [manualMCQs, setManualMCQs] = useState<MCQ[]>([]);
-  const [selectedMcqIds, setSelectedMcqIds] = useState<number[]>([]);
-  const [csvMCQs, setCsvMCQs] = useState<MCQ[]>([]);
-  const [aiMCQs, setAiMCQs] = useState<MCQ[]>([]);
+
+  // Section-based question assignments
+  // For manual/csv/ai input
+  const [manualMCQs, setManualMCQs] = useState<Record<string, MCQ[]>>({});
+  const [csvMCQs, setCsvMCQs] = useState<Record<string, MCQ[]>>({});
+  const [aiMCQs, setAiMCQs] = useState<Record<string, MCQ[]>>({});
+  // For existing pool selection
+  const [sectionMcqIds, setSectionMcqIds] = useState<Record<string, number[]>>(
+    {}
+  );
 
   // Existing MCQs for selection
   const [existingMCQs, setExistingMCQs] = useState<any[]>([]);
   const [loadingMCQs, setLoadingMCQs] = useState(false);
 
-  // Load existing MCQs on page load
+  // Coding problems
+  const [codingInputMethod, setCodingInputMethod] = useState<"existing" | "ai">(
+    "existing"
+  );
+  const [sectionCodingProblemIds, setSectionCodingProblemIds] = useState<
+    Record<string, number[]>
+  >({});
+  // For AI generated coding problems (similar to aiMCQs)
+  const [aiCodingProblems, setAiCodingProblems] = useState<
+    Record<string, CodingProblemListItem[]>
+  >({});
+  const [existingCodingProblems, setExistingCodingProblems] = useState<
+    CodingProblemListItem[]
+  >([]);
+  const [loadingCodingProblems, setLoadingCodingProblems] = useState(false);
+
+  // Load existing MCQs and coding problems on page load
   useEffect(() => {
     loadExistingMCQs();
+    loadExistingCodingProblems();
   }, []);
 
   const loadExistingMCQs = async () => {
@@ -82,10 +107,24 @@ export default function CreateAssessmentPage() {
     }
   };
 
+  const loadExistingCodingProblems = async () => {
+    try {
+      setLoadingCodingProblems(true);
+      const data = await adminAssessmentService.getCodingProblems(
+        config.clientId
+      );
+      setExistingCodingProblems(Array.isArray(data) ? data : []);
+    } catch (error: any) {
+      showToast(error?.message || "Failed to load coding problems", "error");
+    } finally {
+      setLoadingCodingProblems(false);
+    }
+  };
+
   const handleNext = () => {
     if (activeStep === 0) {
       // Validate basic info
-      if (!title.trim() || !instructions.trim() || !sectionTitle.trim()) {
+      if (!title.trim() || !instructions.trim()) {
         showToast("Please fill in all required fields", "error");
         return;
       }
@@ -97,12 +136,46 @@ export default function CreateAssessmentPage() {
         showToast("Please enter a valid price for paid assessment", "error");
         return;
       }
+      if (sections.length === 0) {
+        showToast("Please add at least one section", "error");
+        return;
+      }
+      const quizSections = sections.filter((s) => s.type === "quiz");
+      if (quizSections.length === 0) {
+        showToast("Please add at least one quiz section", "error");
+        return;
+      }
     }
     if (activeStep === 1) {
-      // Validate questions
-      const totalMCQs = getTotalMCQs();
-      if (totalMCQs.length === 0) {
-        showToast("Please add at least one question", "error");
+      // Validate questions for each quiz section
+      const quizSections = sections.filter((s) => s.type === "quiz");
+      let hasQuestions = false;
+
+      for (const section of quizSections) {
+        if (mcqInputMethod === "existing") {
+          const ids = sectionMcqIds[section.id] || [];
+          if (ids.length > 0) {
+            hasQuestions = true;
+            break;
+          }
+        } else {
+          const mcqs =
+            manualMCQs[section.id] ||
+            csvMCQs[section.id] ||
+            aiMCQs[section.id] ||
+            [];
+          if (mcqs.length > 0) {
+            hasQuestions = true;
+            break;
+          }
+        }
+      }
+
+      if (!hasQuestions) {
+        showToast(
+          "Please add at least one question to a quiz section",
+          "error"
+        );
         return;
       }
     }
@@ -113,23 +186,150 @@ export default function CreateAssessmentPage() {
     setActiveStep((prev) => prev - 1);
   };
 
-  const getTotalMCQs = (): MCQ[] => {
-    switch (mcqInputMethod) {
-      case "manual":
-        return manualMCQs;
-      case "csv":
-        return csvMCQs;
-      case "ai":
-        return aiMCQs;
-      default:
-        return [];
+  // Get MCQs for a specific section - checks ALL input methods
+  const getMCQsForSection = (sectionId: string): MCQ[] => {
+    // Collect questions from all possible sources
+    const allMCQs: MCQ[] = [];
+
+    // Manual MCQs
+    if (manualMCQs[sectionId] && manualMCQs[sectionId].length > 0) {
+      allMCQs.push(...manualMCQs[sectionId]);
     }
+
+    // CSV MCQs
+    if (csvMCQs[sectionId] && csvMCQs[sectionId].length > 0) {
+      allMCQs.push(...csvMCQs[sectionId]);
+    }
+
+    // AI MCQs
+    if (aiMCQs[sectionId] && aiMCQs[sectionId].length > 0) {
+      allMCQs.push(...aiMCQs[sectionId]);
+    }
+
+    // Existing pool MCQs (convert IDs to MCQ objects)
+    const existingIds = sectionMcqIds[sectionId] || [];
+    if (existingIds.length > 0) {
+      const existingMCQsForSection = existingMCQs
+        .filter((mcq) => existingIds.includes(mcq.id))
+        .map((mcq) => ({
+          question_text: mcq.question_text,
+          option_a: mcq.option_a,
+          option_b: mcq.option_b,
+          option_c: mcq.option_c,
+          option_d: mcq.option_d,
+          correct_option: (mcq.correct_option as "A" | "B" | "C" | "D") || "A",
+          explanation: mcq.explanation || "",
+          difficulty_level:
+            (mcq.difficulty_level as "Easy" | "Medium" | "Hard") || "Medium",
+          topic: mcq.topic || "",
+          skills: mcq.skills || "",
+        }));
+      allMCQs.push(...existingMCQsForSection);
+    }
+
+    return allMCQs;
+  };
+
+  // Get MCQ IDs for a specific section (for existing pool)
+  const getMcqIdsForSection = (sectionId: string): number[] => {
+    return sectionMcqIds[sectionId] || [];
+  };
+
+  // Get Coding Problem IDs for a specific section
+  const getCodingProblemIdsForSection = (sectionId: string): number[] => {
+    return sectionCodingProblemIds[sectionId] || [];
+  };
+
+  // Get Coding Problems for a specific section (combines AI generated and existing)
+  const getCodingProblemsForSection = (
+    sectionId: string
+  ): CodingProblemListItem[] => {
+    const problems: CodingProblemListItem[] = [];
+
+    // Add AI generated problems
+    if (aiCodingProblems[sectionId] && aiCodingProblems[sectionId].length > 0) {
+      problems.push(...aiCodingProblems[sectionId]);
+    }
+
+    // Add existing problems (from selected IDs)
+    const selectedIds = sectionCodingProblemIds[sectionId] || [];
+    if (selectedIds.length > 0) {
+      const existingProblems = existingCodingProblems.filter((problem) =>
+        selectedIds.includes(problem.id)
+      );
+      // Only add if not already in AI generated list (avoid duplicates)
+      existingProblems.forEach((problem) => {
+        if (!problems.some((p) => p.id === problem.id)) {
+          problems.push(problem);
+        }
+      });
+    }
+
+    return problems;
+  };
+
+  // Get all MCQs across all sections with section information
+  const getAllMCQsWithSections = (): Array<MCQ & { sectionId: string }> => {
+    const quizSections = sections.filter((s) => s.type === "quiz");
+    const allMCQs: Array<MCQ & { sectionId: string }> = [];
+    quizSections.forEach((section) => {
+      const sectionMCQs = getMCQsForSection(section.id);
+      sectionMCQs.forEach((mcq) => {
+        allMCQs.push({ ...mcq, sectionId: section.id });
+      });
+    });
+    return allMCQs;
+  };
+
+  // Get all MCQs across all sections (for backward compatibility)
+  const getAllMCQs = (): MCQ[] => {
+    return getAllMCQsWithSections().map(({ sectionId, ...mcq }) => mcq);
   };
 
   const handleCreate = async () => {
     try {
       setCreating(true);
 
+      const quizSections = sections
+        .filter((s) => s.type === "quiz")
+        .sort((a, b) => a.order - b.order);
+      const codingSections = sections
+        .filter((s) => s.type === "coding")
+        .sort((a, b) => a.order - b.order);
+
+      if (quizSections.length === 0) {
+        showToast("Please add at least one quiz section", "error");
+        setCreating(false);
+        return;
+      }
+
+      // Validate that all quiz sections have at least 1 question
+      const sectionsWithoutQuestions: Array<{ title: string; order: number }> =
+        [];
+      quizSections.forEach((section) => {
+        const sectionMCQs = getMCQsForSection(section.id);
+        if (sectionMCQs.length === 0) {
+          sectionsWithoutQuestions.push({
+            title: section.title,
+            order: section.order,
+          });
+        }
+      });
+
+      if (sectionsWithoutQuestions.length > 0) {
+        const sectionNames = sectionsWithoutQuestions
+          .sort((a, b) => a.order - b.order)
+          .map((s) => `"${s.title}" (Order: ${s.order})`)
+          .join(", ");
+        showToast(
+          `Please add at least 1 question to the following quiz sections: ${sectionNames}`,
+          "error"
+        );
+        setCreating(false);
+        return;
+      }
+
+      // Build payload with all sections
       const payload: CreateAssessmentPayload = {
         title: title.trim(),
         instructions: instructions.trim(),
@@ -139,18 +339,77 @@ export default function CreateAssessmentPage() {
         price: isPaid ? (price ? Number(price) : null) : null,
         currency: isPaid ? currency : undefined,
         is_active: isActive,
-        quiz_section: {
-          title: sectionTitle.trim(),
-          description: sectionDescription.trim() || undefined,
-          order: sectionOrder,
-          number_of_questions: getTotalMCQs().length,
-        },
       };
 
-      if (mcqInputMethod === "existing") {
-        payload.mcq_ids = selectedMcqIds;
-      } else {
-        payload.mcqs = getTotalMCQs();
+      // Remove undefined fields to match exact API format
+      Object.keys(payload).forEach((key) => {
+        if (payload[key as keyof typeof payload] === undefined) {
+          delete payload[key as keyof typeof payload];
+        }
+      });
+
+      // Prepare quiz sections with their questions
+      if (quizSections.length > 0) {
+        payload.quiz_sections = quizSections.map((section) => {
+          const sectionMCQs = getMCQsForSection(section.id);
+          const sectionMcqIds = getMcqIdsForSection(section.id);
+
+          // Separate MCQs into those from manual/csv/ai (need to send as objects)
+          // and those from existing pool (send as IDs)
+          const manualMCQsForSection = manualMCQs[section.id] || [];
+          const csvMCQsForSection = csvMCQs[section.id] || [];
+          const aiMCQsForSection = aiMCQs[section.id] || [];
+          const mcqsToSend = [
+            ...manualMCQsForSection,
+            ...csvMCQsForSection,
+            ...aiMCQsForSection,
+          ];
+
+          const sectionPayload: any = {
+            title: section.title.trim(),
+            order: section.order,
+            number_of_questions: sectionMCQs.length, // Total count from all sources
+          };
+
+          // Include description only if it exists
+          if (section.description && section.description.trim()) {
+            sectionPayload.description = section.description.trim();
+          }
+
+          // Include mcqs if there are any from manual/csv/ai input
+          if (mcqsToSend.length > 0) {
+            sectionPayload.mcqs = mcqsToSend;
+          }
+
+          // Include mcq_ids if there are any from existing pool
+          if (sectionMcqIds.length > 0) {
+            sectionPayload.mcq_ids = sectionMcqIds;
+          }
+
+          return sectionPayload;
+        });
+      }
+
+      // Prepare coding sections with their coding problems
+      if (codingSections.length > 0) {
+        payload.coding_sections = codingSections.map((section) => {
+          const sectionCodingProblemIds = getCodingProblemIdsForSection(
+            section.id
+          );
+          const sectionPayload: any = {
+            title: section.title.trim(),
+            order: section.order,
+            number_of_questions: sectionCodingProblemIds.length,
+            coding_problem_ids: sectionCodingProblemIds,
+          };
+
+          // Include description only if it exists
+          if (section.description && section.description.trim()) {
+            sectionPayload.description = section.description.trim();
+          }
+
+          return sectionPayload;
+        });
       }
 
       await adminAssessmentService.createAssessment(config.clientId, payload);
@@ -190,37 +449,68 @@ export default function CreateAssessmentPage() {
               onActiveChange={setIsActive}
             />
             <Divider />
-            <QuizSectionSection
-              sectionTitle={sectionTitle}
-              sectionDescription={sectionDescription}
-              sectionOrder={sectionOrder}
-              onSectionTitleChange={setSectionTitle}
-              onSectionDescriptionChange={setSectionDescription}
-              onSectionOrderChange={setSectionOrder}
+            <MultipleSectionsSection
+              sections={sections}
+              onSectionsChange={setSections}
             />
           </Box>
         );
 
       case 1:
         return (
-          <QuestionsInputSection
+          <SectionBasedQuestionsInput
+            sections={sections}
             mcqInputMethod={mcqInputMethod}
             onMcqInputMethodChange={setMcqInputMethod}
+            sectionMcqIds={sectionMcqIds}
+            onSectionMcqIdsChange={(sectionId, ids) => {
+              setSectionMcqIds((prev) => ({ ...prev, [sectionId]: ids }));
+            }}
             manualMCQs={manualMCQs}
-            onManualMCQsChange={setManualMCQs}
-            selectedMcqIds={selectedMcqIds}
-            onSelectedMcqIdsChange={setSelectedMcqIds}
+            onManualMCQsChange={(sectionId, mcqs) => {
+              setManualMCQs((prev) => ({ ...prev, [sectionId]: mcqs }));
+            }}
             csvMCQs={csvMCQs}
-            onCsvMCQsChange={setCsvMCQs}
+            onCsvMCQsChange={(sectionId, mcqs) => {
+              setCsvMCQs((prev) => ({ ...prev, [sectionId]: mcqs }));
+            }}
             aiMCQs={aiMCQs}
-            onAiMCQsChange={setAiMCQs}
+            onAiMCQsChange={(sectionId, mcqs) => {
+              setAiMCQs((prev) => ({ ...prev, [sectionId]: mcqs }));
+            }}
             existingMCQs={existingMCQs}
             loadingMCQs={loadingMCQs}
+            codingInputMethod={codingInputMethod}
+            onCodingInputMethodChange={setCodingInputMethod}
+            sectionCodingProblemIds={sectionCodingProblemIds}
+            onSectionCodingProblemIdsChange={(sectionId, ids) => {
+              setSectionCodingProblemIds((prev) => ({
+                ...prev,
+                [sectionId]: ids,
+              }));
+            }}
+            aiCodingProblems={aiCodingProblems}
+            onAiCodingProblemsChange={(sectionId, problems) => {
+              setAiCodingProblems((prev) => ({
+                ...prev,
+                [sectionId]: problems,
+              }));
+            }}
+            existingCodingProblems={existingCodingProblems}
+            loadingCodingProblems={loadingCodingProblems}
           />
         );
 
       case 2:
-        const totalMCQs = getTotalMCQs();
+        const totalMCQsWithSections = getAllMCQsWithSections();
+        const totalMCQs = getAllMCQs();
+        const quizSections = sections.filter((s) => s.type === "quiz");
+        const codingSections = sections.filter((s) => s.type === "coding");
+        // Calculate total questions (MCQs + coding problems)
+        const totalCodingProblems = codingSections.reduce((sum, section) => {
+          return sum + getCodingProblemIdsForSection(section.id).length;
+        }, 0);
+        const totalQuestions = totalMCQs.length + totalCodingProblems;
         return (
           <AssessmentPreviewSection
             title={title}
@@ -229,8 +519,13 @@ export default function CreateAssessmentPage() {
             isPaid={isPaid}
             price={price}
             currency={currency}
-            sectionTitle={sectionTitle}
+            sectionTitle={quizSections.length > 0 ? quizSections[0].title : ""}
             totalMCQs={totalMCQs}
+            totalMCQsWithSections={totalMCQsWithSections}
+            sections={sections}
+            getMCQsForSection={getMCQsForSection}
+            getCodingProblemIdsForSection={getCodingProblemIdsForSection}
+            getCodingProblemsForSection={getCodingProblemsForSection}
           />
         );
 
