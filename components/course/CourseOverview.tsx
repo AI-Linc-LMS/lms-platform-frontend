@@ -52,6 +52,19 @@ export function CourseOverview({
 
   const stats = getTotalStats();
 
+  // Group modules by weekno
+  const modulesByWeek = course.modules?.reduce((acc, module) => {
+    const week = module.weekno || 0;
+    if (!acc[week]) acc[week] = [];
+    acc[week].push(module);
+    return acc;
+  }, {} as Record<number, Module[]>) || {};
+
+  // Sort weeks numerically
+  const sortedWeeks = Object.keys(modulesByWeek)
+    .map(Number)
+    .sort((a, b) => a - b);
+
   return (
     <Paper
       elevation={0}
@@ -97,20 +110,68 @@ export function CourseOverview({
         </Box>
       </Box>
 
-      {/* Modules */}
+      {/* Modules grouped by week */}
       {course.modules && course.modules.length > 0 ? (
         <Box>
-          {course.modules.map((module) => (
-            <ModuleAccordion
-              key={module.id}
-              module={module}
-              isExpanded={expandedModules[module.id] ?? false}
-              onToggle={() => onModuleToggle(module.id)}
-              courseId={course.course_id}
-              onNavigate={onNavigate}
-              getSubmoduleContentCount={getSubmoduleContentCount}
-            />
-          ))}
+          {sortedWeeks.map((week) => {
+            const weekModules = modulesByWeek[week];
+            return (
+              <Box key={week} sx={{ mb: week < sortedWeeks[sortedWeeks.length - 1] ? 3 : 0 }}>
+                {/* Week Header */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    mb: 2,
+                    pb: 1,
+                    borderBottom: "2px solid #e5e7eb",
+                  }}
+                >
+                  <IconWrapper
+                    icon="mdi:calendar-week"
+                    size={20}
+                    color="#6366f1"
+                  />
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      fontWeight: 600,
+                      color: "#374151",
+                      fontSize: "0.875rem",
+                    }}
+                  >
+                    Week {week}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "#9ca3af",
+                      fontSize: "0.75rem",
+                      ml: 0.5,
+                    }}
+                  >
+                    ({weekModules.length} {weekModules.length === 1 ? "module" : "modules"})
+                  </Typography>
+                </Box>
+
+                {/* Modules for this week */}
+                <Box>
+                  {weekModules.map((module) => (
+                    <ModuleAccordion
+                      key={module.id}
+                      module={module}
+                      isExpanded={expandedModules[module.id] ?? false}
+                      onToggle={() => onModuleToggle(module.id)}
+                      courseId={course.course_id}
+                      onNavigate={onNavigate}
+                      getSubmoduleContentCount={getSubmoduleContentCount}
+                    />
+                  ))}
+                </Box>
+              </Box>
+            );
+          })}
         </Box>
       ) : (
         <Typography variant="body2" sx={{ color: "#9ca3af" }}>
