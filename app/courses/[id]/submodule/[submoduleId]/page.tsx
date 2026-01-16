@@ -748,16 +748,46 @@ export default function SubmoduleDetailPage() {
               }}
             >
               <Box sx={{ minWidth: 0, flex: 1 }}>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: "#6b7280",
-                    fontSize: "0.75rem",
-                    display: "block",
-                  }}
-                >
-                  Content {currentIndex} of {totalContents}
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.25 }}>
+                  {submoduleData.weekNo && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.5,
+                        px: 1,
+                        py: 0.25,
+                        borderRadius: 1,
+                        backgroundColor: "#eef2ff",
+                      }}
+                    >
+                      <IconWrapper
+                        icon="mdi:calendar-week"
+                        size={14}
+                        color="#6366f1"
+                      />
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "#6366f1",
+                          fontSize: "0.7rem",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Week {submoduleData.weekNo}
+                      </Typography>
+                    </Box>
+                  )}
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "#6b7280",
+                      fontSize: "0.75rem",
+                    }}
+                  >
+                    Content {currentIndex} of {totalContents}
+                  </Typography>
+                </Box>
                 <Typography
                   variant="h6"
                   sx={{

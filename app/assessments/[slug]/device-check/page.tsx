@@ -32,7 +32,7 @@ export default function DeviceCheckPage({
 }) {
   const { slug } = use(params);
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start with false - don't block initial render
   const [checking, setChecking] = useState(false);
   const [, setAssessment] = useState<any>(null);
   const [deviceStatus, setDeviceStatus] = useState<DeviceStatus>({
@@ -59,11 +59,11 @@ export default function DeviceCheckPage({
     setMicError(null);
 
     try {
-      // Request camera and microphone access
+      // Request camera and microphone access - use lower resolution for faster check
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          width: { ideal: 640 },
+          height: { ideal: 480 },
           facingMode: "user",
         },
         audio: {
@@ -116,9 +116,18 @@ export default function DeviceCheckPage({
           source.connect(analyser);
           analyserRef.current = analyser;
 
-          // Monitor audio levels continuously
+          // Monitor audio levels - throttled to reduce CPU usage
+          let lastUpdate = 0;
           const updateAudioLevel = () => {
             if (!analyserRef.current) return;
+
+            const now = Date.now();
+            // Only update every 100ms to reduce CPU usage
+            if (now - lastUpdate < 100) {
+              animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
+              return;
+            }
+            lastUpdate = now;
 
             const dataArray = new Uint8Array(analyser.frequencyBinCount);
             analyserRef.current.getByteFrequencyData(dataArray);
@@ -208,7 +217,7 @@ export default function DeviceCheckPage({
     };
   }, []);
 
-  // Load assessment details
+  // Load assessment details - simplified, don't block on it
   useEffect(() => {
     const loadAssessment = async () => {
       try {
@@ -221,12 +230,9 @@ export default function DeviceCheckPage({
           router.push(`/assessments/${slug}`);
           return;
         }
-
-        // Start device testing automatically
-        testDevices();
       } catch (error: any) {
-        showToast("Failed to load assessment", "error");
-        router.push(`/assessments/${slug}`);
+        // Don't block on error, just show toast
+        showToast("Failed to load assessment details", "error");
       } finally {
         setLoading(false);
       }
@@ -235,7 +241,7 @@ export default function DeviceCheckPage({
     if (slug) {
       loadAssessment();
     }
-  }, [slug]);
+  }, [slug, router, showToast]);
 
   const handleStartAssessment = () => {
     if (!deviceStatus.camera || !deviceStatus.microphone) {
@@ -254,13 +260,7 @@ export default function DeviceCheckPage({
     deviceStatus.microphone &&
     deviceStatus.browserSupported;
 
-  if (loading && !checking) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
+  // Don't show loading screen - render immediately for better UX
 
   return (
     <MainLayout>

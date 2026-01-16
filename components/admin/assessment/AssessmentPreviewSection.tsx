@@ -1,8 +1,13 @@
 "use client";
 
-import { Box, Typography, Paper, Chip, Pagination, Select, MenuItem, FormControl, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
-import { MCQ } from "@/lib/services/admin/admin-assessment.service";
+import { Box, Typography, Paper, Chip, Pagination, Select, MenuItem, FormControl, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Divider } from "@mui/material";
+import { MCQ, CodingProblemListItem } from "@/lib/services/admin/admin-assessment.service";
 import { useMemo, useState } from "react";
+import { Section } from "./MultipleSectionsSection";
+
+interface MCQWithSection extends MCQ {
+  sectionId: string;
+}
 
 interface AssessmentPreviewSectionProps {
   title: string;
@@ -13,6 +18,11 @@ interface AssessmentPreviewSectionProps {
   currency: string;
   sectionTitle: string;
   totalMCQs: MCQ[];
+  totalMCQsWithSections?: MCQWithSection[];
+  sections?: Section[];
+  getMCQsForSection?: (sectionId: string) => MCQ[];
+  getCodingProblemIdsForSection?: (sectionId: string) => number[];
+  getCodingProblemsForSection?: (sectionId: string) => CodingProblemListItem[];
 }
 
 export function AssessmentPreviewSection({
@@ -24,17 +34,55 @@ export function AssessmentPreviewSection({
   currency,
   sectionTitle,
   totalMCQs,
+  totalMCQsWithSections,
+  sections,
+  getMCQsForSection,
+  getCodingProblemIdsForSection,
+  getCodingProblemsForSection,
 }: AssessmentPreviewSectionProps) {
-  const [page, setPage] = useState(1);
+  const [mcqPage, setMcqPage] = useState(1);
+  const [codingPage, setCodingPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
-  const paginatedMCQs = useMemo(() => {
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    return totalMCQs.slice(startIndex, endIndex);
-  }, [totalMCQs, page, limit]);
+  // Use MCQs with section info if available, otherwise fall back to regular MCQs
+  const mcqsToDisplay = totalMCQsWithSections || totalMCQs.map((mcq, index) => ({ ...mcq, sectionId: "" }));
 
-  const totalPages = Math.max(1, Math.ceil(totalMCQs.length / limit));
+  // Get all coding problems with section info
+  const allCodingProblems = useMemo(() => {
+    if (!sections || !getCodingProblemsForSection) return [];
+    const problems: Array<CodingProblemListItem & { sectionId: string }> = [];
+    sections
+      .filter((s) => s.type === "coding")
+      .forEach((section) => {
+        const sectionProblems = getCodingProblemsForSection(section.id);
+        sectionProblems.forEach((problem) => {
+          problems.push({ ...problem, sectionId: section.id });
+        });
+      });
+    return problems;
+  }, [sections, getCodingProblemsForSection]);
+
+  const paginatedMCQs = useMemo(() => {
+    const startIndex = (mcqPage - 1) * limit;
+    const endIndex = startIndex + limit;
+    return mcqsToDisplay.slice(startIndex, endIndex);
+  }, [mcqsToDisplay, mcqPage, limit]);
+
+  const paginatedCodingProblems = useMemo(() => {
+    const startIndex = (codingPage - 1) * limit;
+    const endIndex = startIndex + limit;
+    return allCodingProblems.slice(startIndex, endIndex);
+  }, [allCodingProblems, codingPage, limit]);
+
+  // Helper to get section name by ID
+  const getSectionName = (sectionId: string): string => {
+    if (!sections || !sectionId) return sectionTitle || "N/A";
+    const section = sections.find((s) => s.id === sectionId);
+    return section ? section.title : "N/A";
+  };
+
+  const totalMCQPages = Math.max(1, Math.ceil(totalMCQs.length / limit));
+  const totalCodingPages = Math.max(1, Math.ceil(allCodingProblems.length / limit));
 
   const getCurrencySymbol = (curr: string) => {
     switch (curr) {
@@ -73,18 +121,61 @@ export function AssessmentPreviewSection({
           </Typography>
         )}
         <Typography variant="body2" sx={{ mb: 1 }}>
-          <strong>Total Questions:</strong> {totalMCQs.length}
+          <strong>Total Questions:</strong> {(() => {
+            const codingProblemsCount = sections && getCodingProblemIdsForSection
+              ? sections
+                  .filter((s) => s.type === "coding")
+                  .reduce((sum, section) => sum + getCodingProblemIdsForSection(section.id).length, 0)
+              : 0;
+            return totalMCQs.length + codingProblemsCount;
+          })()}
         </Typography>
-        <Typography variant="body2">
-          <strong>Section:</strong> {sectionTitle}
-        </Typography>
+        {sections && sections.length > 0 ? (
+          <Box>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              <strong>Sections:</strong>
+            </Typography>
+            {sections
+              .sort((a, b) => a.order - b.order)
+              .map((section) => {
+                if (section.type === "quiz") {
+                  const sectionMCQs = getMCQsForSection
+                    ? getMCQsForSection(section.id)
+                    : [];
+                  return (
+                    <Box key={section.id} sx={{ ml: 2, mb: 1 }}>
+                      <Typography variant="body2">
+                        • {section.title} ({section.type}) - Order: {section.order} - {sectionMCQs.length} questions
+                      </Typography>
+                    </Box>
+                  );
+                } else if (section.type === "coding") {
+                  const codingProblemIds = getCodingProblemIdsForSection
+                    ? getCodingProblemIdsForSection(section.id)
+                    : [];
+                  return (
+                    <Box key={section.id} sx={{ ml: 2, mb: 1 }}>
+                      <Typography variant="body2">
+                        • {section.title} ({section.type}) - Order: {section.order} - {codingProblemIds.length} coding problems
+                      </Typography>
+                    </Box>
+                  );
+                }
+                return null;
+              })}
+          </Box>
+        ) : (
+          <Typography variant="body2">
+            <strong>Section:</strong> {sectionTitle}
+          </Typography>
+        )}
       </Paper>
 
       {/* Questions Preview */}
       {totalMCQs.length > 0 && (
         <Box>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-            Questions Preview ({totalMCQs.length})
+            MCQ Questions Preview ({totalMCQs.length})
           </Typography>
           <Paper sx={{ borderRadius: 2, boxShadow: "0 1px 3px rgba(0,0,0,0.1)", overflow: "hidden" }}>
             <TableContainer>
@@ -97,6 +188,11 @@ export function AssessmentPreviewSection({
                     <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
                       Question
                     </TableCell>
+                    {sections && sections.length > 0 && (
+                      <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem", width: 150 }}>
+                        Section
+                      </TableCell>
+                    )}
                     <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
                       Correct
                     </TableCell>
@@ -107,7 +203,10 @@ export function AssessmentPreviewSection({
                 </TableHead>
                 <TableBody>
                   {paginatedMCQs.map((mcq, index) => {
-                    const globalIndex = (page - 1) * limit + index;
+                    const globalIndex = (mcqPage - 1) * limit + index;
+                    const mcqWithSection = mcq as MCQWithSection;
+                    const sectionName = getSectionName(mcqWithSection.sectionId);
+                    const section = sections?.find((s) => s.id === mcqWithSection.sectionId);
                     return (
                       <TableRow
                         key={globalIndex}
@@ -208,6 +307,20 @@ export function AssessmentPreviewSection({
                             />
                           </Box>
                         </TableCell>
+                        {sections && sections.length > 0 && (
+                          <TableCell>
+                            <Chip
+                              label={sectionName}
+                              size="small"
+                              sx={{
+                                bgcolor: section?.type === "quiz" ? "#eef2ff" : "#d1fae5",
+                                color: section?.type === "quiz" ? "#6366f1" : "#10b981",
+                                fontWeight: 600,
+                                fontSize: "0.75rem",
+                              }}
+                            />
+                          </TableCell>
+                        )}
                         <TableCell>
                           <Chip
                             label={mcq.correct_option}
@@ -286,8 +399,8 @@ export function AssessmentPreviewSection({
                     }}
                   >
                     Showing{" "}
-                    {Math.min(totalMCQs.length, (page - 1) * limit + 1)} to{" "}
-                    {Math.min(totalMCQs.length, page * limit)} of {totalMCQs.length} questions
+                    {Math.min(totalMCQs.length, (mcqPage - 1) * limit + 1)} to{" "}
+                    {Math.min(totalMCQs.length, mcqPage * limit)} of {totalMCQs.length} questions
                   </Typography>
                   <FormControl
                     size="small"
@@ -302,7 +415,7 @@ export function AssessmentPreviewSection({
                       value={limit}
                       onChange={(e) => {
                         setLimit(Number(e.target.value));
-                        setPage(1);
+                        setMcqPage(1);
                       }}
                       displayEmpty
                     >
@@ -314,16 +427,226 @@ export function AssessmentPreviewSection({
                   </FormControl>
                 </Box>
                 <Pagination
-                  count={totalPages}
-                  page={page}
-                  onChange={(_, value) => setPage(value)}
+                  count={totalMCQPages}
+                  page={mcqPage}
+                  onChange={(_, value) => setMcqPage(value)}
                   color="primary"
                   size="small"
                   showFirstButton={false}
                   showLastButton={false}
                   boundaryCount={1}
                   siblingCount={0}
-                  disabled={totalPages <= 1}
+                  disabled={totalMCQPages <= 1}
+                  sx={{
+                    "& .MuiPaginationItem-root": {
+                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                    },
+                  }}
+                />
+              </Box>
+            )}
+          </Paper>
+        </Box>
+      )}
+
+      {/* Coding Problems Preview */}
+      {allCodingProblems.length > 0 && (
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+            Coding Problems Preview ({allCodingProblems.length})
+          </Typography>
+          <Paper sx={{ borderRadius: 2, boxShadow: "0 1px 3px rgba(0,0,0,0.1)", overflow: "hidden" }}>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: "#f9fafb" }}>
+                    <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem", width: 60 }}>
+                      #
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
+                      Title
+                    </TableCell>
+                    {sections && sections.length > 1 && (
+                      <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem", width: 150 }}>
+                        Section
+                      </TableCell>
+                    )}
+                    <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
+                      Difficulty
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
+                      Topic
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
+                      Language
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {paginatedCodingProblems.map((problem, index) => {
+                    const globalIndex = (codingPage - 1) * limit + index;
+                    const problemWithSection = problem as CodingProblemListItem & { sectionId: string };
+                    const sectionName = getSectionName(problemWithSection.sectionId);
+                    const section = sections?.find((s) => s.id === problemWithSection.sectionId);
+                    return (
+                      <TableRow
+                        key={problem.id || globalIndex}
+                        sx={{
+                          "&:hover": { backgroundColor: "#f9fafb" },
+                        }}
+                      >
+                        <TableCell>
+                          <Typography
+                            variant="body2"
+                            sx={{ color: "#6b7280", fontFamily: "monospace" }}
+                          >
+                            #{globalIndex + 1}
+                          </Typography>
+                        </TableCell>
+                        <TableCell sx={{ maxWidth: 400 }}>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 500, mb: 1 }}
+                          >
+                            {problem.title || `Problem #${problem.id}`}
+                          </Typography>
+                          {problem.problem_statement && (
+                            <Typography
+                              variant="caption"
+                              sx={{ color: "#6b7280", display: "block" }}
+                            >
+                              {problem.problem_statement.length > 100
+                                ? problem.problem_statement.substring(0, 100) + "..."
+                                : problem.problem_statement}
+                            </Typography>
+                          )}
+                        </TableCell>
+                        {sections && sections.length > 1 && (
+                          <TableCell>
+                            <Chip
+                              label={sectionName}
+                              size="small"
+                              sx={{
+                                bgcolor: "#d1fae5",
+                                color: "#10b981",
+                                fontWeight: 600,
+                                fontSize: "0.75rem",
+                              }}
+                            />
+                          </TableCell>
+                        )}
+                        <TableCell>
+                          {problem.difficulty_level ? (
+                            <Chip
+                              label={problem.difficulty_level}
+                              size="small"
+                              sx={{
+                                bgcolor:
+                                  problem.difficulty_level === "Easy"
+                                    ? "#fef3c7"
+                                    : problem.difficulty_level === "Medium"
+                                    ? "#fde68a"
+                                    : "#fed7aa",
+                                color:
+                                  problem.difficulty_level === "Easy"
+                                    ? "#92400e"
+                                    : problem.difficulty_level === "Medium"
+                                    ? "#78350f"
+                                    : "#7c2d12",
+                                fontWeight: 600,
+                                fontSize: "0.75rem",
+                              }}
+                            />
+                          ) : (
+                            <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+                              -
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                            {problem.topic || "-"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                            {problem.programming_language || "-"}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            {/* Pagination */}
+            {allCodingProblems.length > 0 && (
+              <Box
+                sx={{
+                  p: { xs: 1.5, sm: 2 },
+                  borderTop: "1px solid #e5e7eb",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexDirection: { xs: "column", sm: "row" },
+                  gap: { xs: 1.5, sm: 2 },
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "#6b7280",
+                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                    }}
+                  >
+                    Showing{" "}
+                    {Math.min(allCodingProblems.length, (codingPage - 1) * limit + 1)} to{" "}
+                    {Math.min(allCodingProblems.length, codingPage * limit)} of {allCodingProblems.length} problems
+                  </Typography>
+                  <FormControl
+                    size="small"
+                    sx={{
+                      minWidth: { xs: 100, sm: 120 },
+                      "& .MuiInputBase-root": {
+                        fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                      },
+                    }}
+                  >
+                    <Select
+                      value={limit}
+                      onChange={(e) => {
+                        setLimit(Number(e.target.value));
+                        setCodingPage(1);
+                      }}
+                      displayEmpty
+                    >
+                      <MenuItem value={10}>10 per page</MenuItem>
+                      <MenuItem value={25}>25 per page</MenuItem>
+                      <MenuItem value={50}>50 per page</MenuItem>
+                      <MenuItem value={100}>100 per page</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+                <Pagination
+                  count={totalCodingPages}
+                  page={codingPage}
+                  onChange={(_, value) => setCodingPage(value)}
+                  color="primary"
+                  size="small"
+                  showFirstButton={false}
+                  showLastButton={false}
+                  boundaryCount={1}
+                  siblingCount={0}
+                  disabled={totalCodingPages <= 1}
                   sx={{
                     "& .MuiPaginationItem-root": {
                       fontSize: { xs: "0.75rem", sm: "0.875rem" },
