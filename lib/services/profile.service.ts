@@ -43,6 +43,14 @@ export interface DailyProgressLeaderboardEntry {
   };
   score: number;
   rank: number;
+  // New format support
+  name?: string;
+  progress?: {
+    hours: number;
+    minutes: number;
+  };
+  seconds?: number;
+  profile_pic_url?: string;
 }
 
 export interface MonthlyStreak {
@@ -106,8 +114,53 @@ export const profileService = {
       url += `?${params.toString()}`;
     }
 
-    const response = await apiClient.get<DailyProgressLeaderboardEntry[]>(url);
-    return response.data;
+    const response = await apiClient.get<any>(url);
+    
+    // Handle different response formats
+    let leaderboardData: any[] = [];
+    
+    // Format 1: { date, leaderboard: [...] }
+    if (response.data?.leaderboard && Array.isArray(response.data.leaderboard)) {
+      leaderboardData = response.data.leaderboard;
+    }
+    // Format 2: Direct array
+    else if (Array.isArray(response.data)) {
+      leaderboardData = response.data;
+    }
+    // Format 3: { results: [...] }
+    else if (response.data?.results && Array.isArray(response.data.results)) {
+      leaderboardData = response.data.results;
+    }
+    
+    // Map to unified format
+    return leaderboardData.map((entry, index) => {
+      // New format: { name, progress: { hours, minutes }, seconds, profile_pic_url? }
+      if (entry?.name && entry?.progress) {
+        return {
+          user: {
+            id: entry?.user?.id ?? 0,
+            user_name: entry.name,
+            profile_pic_url: entry?.profile_pic_url ?? entry?.user?.profile_pic_url ?? "",
+          },
+          score: entry.seconds ?? 0, // Use seconds as score for sorting
+          rank: index + 1,
+          name: entry.name,
+          progress: entry.progress,
+          seconds: entry.seconds,
+          profile_pic_url: entry?.profile_pic_url ?? "",
+        };
+      }
+      // Old format: { user: { user_name }, score, rank }
+      return {
+        user: {
+          id: entry?.user?.id ?? 0,
+          user_name: entry?.user?.user_name ?? "Unknown User",
+          profile_pic_url: entry?.user?.profile_pic_url ?? "",
+        },
+        score: entry?.score ?? 0,
+        rank: entry?.rank ?? index + 1,
+      };
+    });
   },
 
   // Get monthly streak
