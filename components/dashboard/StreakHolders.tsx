@@ -9,6 +9,7 @@ interface StreakHolder {
   studentName: string;
   Present_streak: number;
   Active_days: number;
+  profile_pic_url?: string;
 }
 
 // Shared cache to minimize API calls
@@ -119,7 +120,7 @@ export const StreakHolders = () => {
           mb: 2,
         }}
       >
-        Streak Holders
+        Top Streak Holders
       </Typography>
       <Card
         sx={{
@@ -245,6 +246,7 @@ export const StreakHolders = () => {
             {streakHolders.map((holder, index) => {
               const userName = holder?.studentName || "User";
               const streak = holder?.Present_streak ?? 0;
+              const profilePicUrl = holder?.profile_pic_url;
 
               return (
                 <Box
@@ -280,7 +282,7 @@ export const StreakHolders = () => {
                     {getRankIcon(index)}
                   </Box>
                   <Avatar
-                    src={undefined}
+                    src={profilePicUrl || undefined}
                     alt={userName}
                     sx={{ width: 32, height: 32, flexShrink: 0 }}
                   >

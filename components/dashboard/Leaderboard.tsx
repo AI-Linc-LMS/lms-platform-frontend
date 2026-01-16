@@ -250,6 +250,7 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
               const userName = entry?.name || "User";
               const rank = entry?.rank ?? 0;
               const totalScore = entry?.marks ?? 0;
+              const profilePicUrl = entry?.profile_pic_url;
 
               return (
                 <Box
@@ -285,7 +286,7 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
                     {getRankIcon(rank)}
                   </Box>
                   <Avatar
-                    src={undefined}
+                    src={profilePicUrl || undefined}
                     alt={userName}
                     sx={{ width: 32, height: 32, flexShrink: 0 }}
                   >

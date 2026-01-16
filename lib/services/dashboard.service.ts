@@ -28,6 +28,7 @@ export interface OverallLeaderboardEntry {
   marks: number;
   course_name?: number;
   rank?: number;
+  profile_pic_url?: string;
 }
 
 export const dashboardService = {
@@ -80,15 +81,27 @@ export const dashboardService = {
       // Validate and sanitize each entry
       const validatedData = leaderboardData
         .filter((entry) => entry != null) // Remove null/undefined entries
-        .map((entry) => ({
-          user: {
-            id: entry?.user?.id ?? 0,
-            user_name: entry?.user?.user_name ?? "Unknown User",
-            profile_pic_url: entry?.user?.profile_pic_url ?? "",
-          },
-          score: entry?.score ?? 0,
-          rank: entry?.rank ?? 0,
-        }));
+        .map((entry) => {
+          // Handle different response formats:
+          // Format 1: { user: { user_name, profile_pic_url }, score, rank }
+          // Format 2: { name, profile_pic_url, progress, seconds }
+          const userName =
+            entry?.user?.user_name ?? entry?.name ?? "Unknown User";
+          const profilePicUrl =
+            entry?.user?.profile_pic_url ??
+            entry?.profile_pic_url ??
+            "";
+
+          return {
+            user: {
+              id: entry?.user?.id ?? 0,
+              user_name: userName,
+              profile_pic_url: profilePicUrl,
+            },
+            score: entry?.score ?? 0,
+            rank: entry?.rank ?? 0,
+          };
+        });
 
       return validatedData;
     } catch (error: any) {
@@ -134,6 +147,7 @@ export const dashboardService = {
     studentName: string;
     Present_streak: number;
     Active_days: number;
+    profile_pic_url?: string;
   }>> => {
     try {
       const queryParams = new URLSearchParams();
@@ -147,9 +161,17 @@ export const dashboardService = {
         studentName: string;
         Present_streak: number;
         Active_days: number;
+        profile_pic_url?: string;
       }>>(url);
 
-      return Array.isArray(response.data) ? response.data : [];
+      // Map the response to ensure profile_pic_url is included
+      const data = Array.isArray(response.data) ? response.data : [];
+      return data.map((entry) => ({
+        studentName: entry?.studentName ?? "",
+        Present_streak: entry?.Present_streak ?? 0,
+        Active_days: entry?.Active_days ?? 0,
+        profile_pic_url: entry?.profile_pic_url ?? "",
+      }));
     } catch (error: any) {
       return [];
     }
@@ -208,9 +230,10 @@ export const dashboardService = {
         .filter((entry) => entry != null) // Remove null/undefined entries
         .map((entry) => ({
           name: entry?.name ?? " User",
-          marks: entry?.marks ?? 0,
+          marks: entry?.marks ?? entry?.score ?? 0,
           course_name: entry?.course_name ?? " Course",
           rank: entry?.rank ?? 0,
+          profile_pic_url: entry?.profile_pic_url ?? entry?.user?.profile_pic_url ?? "",
         })) as OverallLeaderboardEntry[];
 
       return validatedData;

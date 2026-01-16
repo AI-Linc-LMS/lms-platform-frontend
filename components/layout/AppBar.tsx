@@ -77,11 +77,11 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
     handleMenuClose();
   };
 
-  const handleLeaderboardClick = (event: React.MouseEvent<HTMLElement>) => {
+  const handleLeaderboardHover = (event: React.MouseEvent<HTMLElement>) => {
     setLeaderboardAnchorEl(event.currentTarget);
   };
 
-  const handleLeaderboardClose = () => {
+  const handleLeaderboardLeave = () => {
     setLeaderboardAnchorEl(null);
   };
 
@@ -116,6 +116,23 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
     const hours = Math.floor(score / 60);
     const minutes = score % 60;
     return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+  };
+
+  // Format progress from new API format
+  const formatProgress = (entry: any) => {
+    // New format: { progress: { hours, minutes }, seconds }
+    if (entry?.progress) {
+      const { hours, minutes } = entry.progress;
+      if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+      }
+      return `${minutes}m`;
+    }
+    // Old format: score in minutes
+    if (entry?.score !== undefined) {
+      return formatScore(entry.score);
+    }
+    return "0m";
   };
 
   if (!isAuthenticated) {
@@ -262,7 +279,8 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
           >
             {/* Today's Leaders Button */}
             <Box
-              onClick={handleLeaderboardClick}
+              onMouseEnter={handleLeaderboardHover}
+              onMouseLeave={handleLeaderboardLeave}
               sx={{
                 display: "flex",
                 alignItems: "center",
@@ -314,7 +332,8 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
           >
             {/* Today's Leaders Button */}
             <Box
-              onClick={handleLeaderboardClick}
+              onMouseEnter={handleLeaderboardHover}
+              onMouseLeave={handleLeaderboardLeave}
               sx={{
                 display: "flex",
                 alignItems: "center",
@@ -351,9 +370,13 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
           <Popover
             open={Boolean(leaderboardAnchorEl)}
             anchorEl={leaderboardAnchorEl}
-            onClose={handleLeaderboardClose}
+            onClose={handleLeaderboardLeave}
             anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
             transformOrigin={{ vertical: "top", horizontal: "left" }}
+            disableRestoreFocus
+            sx={{
+              pointerEvents: "none",
+            }}
             PaperProps={{
               sx: {
                 mt: 1,
@@ -361,8 +384,13 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                 borderRadius: 2,
                 border: "1px solid #e5e7eb",
                 boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+                pointerEvents: "auto",
               },
             }}
+            onMouseEnter={() => {
+              // Keep popover open when hovering over it
+            }}
+            onMouseLeave={handleLeaderboardLeave}
           >
             <Box sx={{ p: 2 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
@@ -420,10 +448,19 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               ) : leaderboard.length > 0 ? (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                   {leaderboard.slice(0, 3).map((entry, index) => {
-                    const timeDisplay = formatScore(entry.score);
+                    // Get name from new format or old format
+                    const userName = entry?.name ?? entry?.user?.user_name ?? "Unknown";
+                    const timeDisplay = formatProgress(entry);
+                    const profilePicUrl = entry?.profile_pic_url ?? entry?.user?.profile_pic_url;
+                    
+                    // Create a unique key combining user id, name, and index
+                    const uniqueKey = entry?.user?.id 
+                      ? `leaderboard-${entry.user.id}-${index}` 
+                      : `leaderboard-${userName}-${index}`;
+                    
                     return (
                       <Box
-                        key={entry.user.id}
+                        key={uniqueKey}
                         sx={{
                           display: "flex",
                           alignItems: "center",
@@ -459,6 +496,15 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                           >
                             #{index + 1}
                           </Typography>
+                          {profilePicUrl && (
+                            <Avatar
+                              src={profilePicUrl}
+                              alt={userName}
+                              sx={{ width: 24, height: 24 }}
+                            >
+                              {userName[0]}
+                            </Avatar>
+                          )}
                           <Typography
                             variant="body2"
                             sx={{
@@ -470,7 +516,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                               whiteSpace: "nowrap",
                             }}
                           >
-                            {entry.user.user_name}
+                            {userName}
                           </Typography>
                         </Box>
                         <Typography
