@@ -136,8 +136,8 @@ export function useAssessmentSubmission({
         1000;
 
       // Calculate completed questions
-      const completedQuestions = Object.values(currentResponses).reduce(
-        (count, sectionResponses) => {
+      const completedQuestions = Object.values(currentResponses as Record<string, Record<string, any>>).reduce(
+        (count: number, sectionResponses: Record<string, any>) => {
           return count + Object.keys(sectionResponses).length;
         },
         0
