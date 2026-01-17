@@ -111,6 +111,10 @@ export interface CreateAssessmentPayload {
     description?: string;
     order: number;
     number_of_questions?: number;
+    number_of_questions_to_show?: number;
+    easy_score?: number;
+    medium_score?: number;
+    hard_score?: number;
     mcqs?: MCQ[];
     mcq_ids?: number[];
   }>;
@@ -119,6 +123,8 @@ export interface CreateAssessmentPayload {
     description?: string;
     order: number;
     number_of_questions?: number;
+    number_of_questions_to_show?: number;
+    coding_score?: number;
     coding_problem_ids?: number[];
   }>;
   mcqs?: MCQ[]; // For backward compatibility

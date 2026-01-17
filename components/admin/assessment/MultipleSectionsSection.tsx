@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -14,6 +14,7 @@ import {
   Select,
   MenuItem,
   Chip,
+  Alert,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
@@ -23,6 +24,14 @@ export interface Section {
   title: string;
   description: string;
   order: number;
+  // Score configuration for MCQs
+  easyScore?: number;
+  mediumScore?: number;
+  hardScore?: number;
+  // For coding sections
+  codingScore?: number;
+  // Number of questions to show (if section has 10 MCQs, but only 5 should be shown)
+  number_of_questions_to_show?: number;
 }
 
 interface MultipleSectionsSectionProps {
@@ -39,10 +48,40 @@ export function MultipleSectionsSection({
     title: "",
     description: "",
     order: sections.length + 1,
+    easyScore: 1,
+    mediumScore: 2,
+    hardScore: 3,
+    codingScore: 5,
   });
+
+  // Validate duplicate orders
+  const orderErrors = useMemo(() => {
+    const orderMap = new Map<number, string[]>();
+    sections.forEach((section) => {
+      if (!orderMap.has(section.order)) {
+        orderMap.set(section.order, []);
+      }
+      orderMap.get(section.order)!.push(section.id);
+    });
+    const errors: Record<string, string> = {};
+    orderMap.forEach((ids, order) => {
+      if (ids.length > 1) {
+        ids.forEach((id) => {
+          errors[id] = `Order ${order} is already used by another section`;
+        });
+      }
+    });
+    return errors;
+  }, [sections]);
 
   const handleAddSection = () => {
     if (!newSection.title.trim()) return;
+
+    // Check for duplicate order
+    const orderExists = sections.some((s) => s.order === newSection.order);
+    if (orderExists) {
+      return; // Error will be shown via orderErrors
+    }
 
     const section: Section = {
       id: `section-${Date.now()}`,
@@ -55,6 +94,10 @@ export function MultipleSectionsSection({
       title: "",
       description: "",
       order: sections.length + 2,
+      easyScore: 1,
+      mediumScore: 2,
+      hardScore: 3,
+      codingScore: 5,
     });
   };
 
@@ -130,7 +173,82 @@ export function MultipleSectionsSection({
               fullWidth
               inputProps={{ min: 1 }}
               helperText="Display order"
+              error={sections.some((s) => s.order === newSection.order)}
             />
+          </Box>
+          {sections.some((s) => s.order === newSection.order) && (
+            <Alert severity="error" sx={{ mt: 1 }}>
+              This order number is already used by another section. Please choose a different order.
+            </Alert>
+          )}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr 1fr" },
+              gap: 2,
+            }}
+          >
+            {newSection.type === "quiz" ? (
+              <>
+                <TextField
+                  label="Easy Score"
+                  type="number"
+                  value={newSection.easyScore || 1}
+                  onChange={(e) =>
+                    setNewSection({
+                      ...newSection,
+                      easyScore: Number(e.target.value),
+                    })
+                  }
+                  fullWidth
+                  inputProps={{ min: 0, step: 0.5 }}
+                  helperText="Points for Easy questions"
+                />
+                <TextField
+                  label="Medium Score"
+                  type="number"
+                  value={newSection.mediumScore || 2}
+                  onChange={(e) =>
+                    setNewSection({
+                      ...newSection,
+                      mediumScore: Number(e.target.value),
+                    })
+                  }
+                  fullWidth
+                  inputProps={{ min: 0, step: 0.5 }}
+                  helperText="Points for Medium questions"
+                />
+                <TextField
+                  label="Hard Score"
+                  type="number"
+                  value={newSection.hardScore || 3}
+                  onChange={(e) =>
+                    setNewSection({
+                      ...newSection,
+                      hardScore: Number(e.target.value),
+                    })
+                  }
+                  fullWidth
+                  inputProps={{ min: 0, step: 0.5 }}
+                  helperText="Points for Hard questions"
+                />
+              </>
+            ) : (
+              <TextField
+                label="Coding Score"
+                type="number"
+                value={newSection.codingScore || 5}
+                onChange={(e) =>
+                  setNewSection({
+                    ...newSection,
+                    codingScore: Number(e.target.value),
+                  })
+                }
+                fullWidth
+                inputProps={{ min: 0, step: 0.5 }}
+                helperText="Points for coding problems"
+              />
+            )}
           </Box>
           <TextField
             label="Section Title"
@@ -152,6 +270,22 @@ export function MultipleSectionsSection({
             multiline
             rows={2}
             helperText="Optional description for this section"
+          />
+          <TextField
+            label="Number of Questions to Show"
+            type="number"
+            value={newSection.number_of_questions_to_show || ""}
+            onChange={(e) =>
+              setNewSection({
+                ...newSection,
+                number_of_questions_to_show: e.target.value
+                  ? Number(e.target.value)
+                  : undefined,
+              })
+            }
+            fullWidth
+            inputProps={{ min: 1 }}
+            helperText="If you have 10 questions but only want to show 5, enter 5 here. Leave empty to show all questions."
           />
           <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
             <Button
@@ -188,6 +322,8 @@ export function MultipleSectionsSection({
                       handleUpdateSection(section.id, updates)
                     }
                     onDelete={() => handleDeleteSection(section.id)}
+                    orderError={orderErrors[section.id]}
+                    allSections={sections}
                   />
                 ))}
             </Box>
@@ -211,6 +347,8 @@ export function MultipleSectionsSection({
                       handleUpdateSection(section.id, updates)
                     }
                     onDelete={() => handleDeleteSection(section.id)}
+                    orderError={orderErrors[section.id]}
+                    allSections={sections}
                   />
                 ))}
             </Box>
@@ -233,9 +371,17 @@ interface SectionCardProps {
   section: Section;
   onUpdate: (updates: Partial<Section>) => void;
   onDelete: () => void;
+  orderError?: string;
+  allSections: Section[];
 }
 
-function SectionCard({ section, onUpdate, onDelete }: SectionCardProps) {
+function SectionCard({
+  section,
+  onUpdate,
+  onDelete,
+  orderError,
+  allSections,
+}: SectionCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState(section);
 
@@ -294,6 +440,18 @@ function SectionCard({ section, onUpdate, onDelete }: SectionCardProps) {
               }
               fullWidth
               inputProps={{ min: 1 }}
+              error={
+                allSections.some(
+                  (s) => s.id !== section.id && s.order === editData.order
+                ) || !!orderError
+              }
+              helperText={
+                allSections.some(
+                  (s) => s.id !== section.id && s.order === editData.order
+                )
+                  ? "This order is already used"
+                  : undefined
+              }
             />
           </Box>
           <TextField
@@ -315,6 +473,95 @@ function SectionCard({ section, onUpdate, onDelete }: SectionCardProps) {
             multiline
             rows={2}
           />
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr 1fr" },
+              gap: 2,
+            }}
+          >
+            {editData.type === "quiz" ? (
+              <>
+                <TextField
+                  label="Easy Score"
+                  type="number"
+                  value={editData.easyScore || 1}
+                  onChange={(e) =>
+                    setEditData({
+                      ...editData,
+                      easyScore: Number(e.target.value),
+                    })
+                  }
+                  fullWidth
+                  inputProps={{ min: 0, step: 0.5 }}
+                />
+                <TextField
+                  label="Medium Score"
+                  type="number"
+                  value={editData.mediumScore || 2}
+                  onChange={(e) =>
+                    setEditData({
+                      ...editData,
+                      mediumScore: Number(e.target.value),
+                    })
+                  }
+                  fullWidth
+                  inputProps={{ min: 0, step: 0.5 }}
+                />
+                <TextField
+                  label="Hard Score"
+                  type="number"
+                  value={editData.hardScore || 3}
+                  onChange={(e) =>
+                    setEditData({
+                      ...editData,
+                      hardScore: Number(e.target.value),
+                    })
+                  }
+                  fullWidth
+                  inputProps={{ min: 0, step: 0.5 }}
+                />
+              </>
+            ) : (
+              <TextField
+                label="Coding Score"
+                type="number"
+                value={editData.codingScore || 5}
+                onChange={(e) =>
+                  setEditData({
+                    ...editData,
+                    codingScore: Number(e.target.value),
+                  })
+                }
+                fullWidth
+                inputProps={{ min: 0, step: 0.5 }}
+              />
+            )}
+          </Box>
+          <TextField
+            label="Number of Questions to Show"
+            type="number"
+            value={editData.number_of_questions_to_show || ""}
+            onChange={(e) =>
+              setEditData({
+                ...editData,
+                number_of_questions_to_show: e.target.value
+                  ? Number(e.target.value)
+                  : undefined,
+              })
+            }
+            fullWidth
+            inputProps={{ min: 1 }}
+            helperText="If you have 10 questions but only want to show 5, enter 5 here. Leave empty to show all questions."
+          />
+          {allSections.some(
+            (s) => s.id !== section.id && s.order === editData.order
+          ) && (
+            <Alert severity="error">
+              This order number is already used by another section. Please
+              choose a different order.
+            </Alert>
+          )}
           <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
             <Button variant="outlined" onClick={handleCancel}>
               Cancel
@@ -362,6 +609,45 @@ function SectionCard({ section, onUpdate, onDelete }: SectionCardProps) {
                 <Typography variant="body2" sx={{ color: "#6b7280" }}>
                   {section.description}
                 </Typography>
+              )}
+              {section.type === "quiz" && (
+                <Box sx={{ mt: 1, display: "flex", gap: 1, flexWrap: "wrap" }}>
+                  <Chip
+                    label={`Easy: ${section.easyScore || 1} pts`}
+                    size="small"
+                    sx={{ bgcolor: "#d1fae5", color: "#065f46" }}
+                  />
+                  <Chip
+                    label={`Medium: ${section.mediumScore || 2} pts`}
+                    size="small"
+                    sx={{ bgcolor: "#fef3c7", color: "#92400e" }}
+                  />
+                  <Chip
+                    label={`Hard: ${section.hardScore || 3} pts`}
+                    size="small"
+                    sx={{ bgcolor: "#fee2e2", color: "#991b1b" }}
+                  />
+                </Box>
+              )}
+              {section.type === "coding" && (
+                <Box sx={{ mt: 1 }}>
+                  <Chip
+                    label={`Score: ${section.codingScore || 5} pts`}
+                    size="small"
+                    sx={{ bgcolor: "#d1fae5", color: "#065f46" }}
+                  />
+                </Box>
+              )}
+              {section.number_of_questions_to_show && (
+                <Typography variant="body2" sx={{ color: "#6366f1", mt: 0.5 }}>
+                  Showing {section.number_of_questions_to_show} out of total
+                  questions
+                </Typography>
+              )}
+              {orderError && (
+                <Alert severity="error" sx={{ mt: 1 }}>
+                  {orderError}
+                </Alert>
               )}
             </Box>
             <Box sx={{ display: "flex", gap: 1 }}>

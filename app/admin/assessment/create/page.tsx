@@ -376,6 +376,23 @@ export default function CreateAssessmentPage() {
             sectionPayload.description = section.description.trim();
           }
 
+          // Include scores for quiz sections
+          if (section.easyScore !== undefined) {
+            sectionPayload.easy_score = section.easyScore;
+          }
+          if (section.mediumScore !== undefined) {
+            sectionPayload.medium_score = section.mediumScore;
+          }
+          if (section.hardScore !== undefined) {
+            sectionPayload.hard_score = section.hardScore;
+          }
+
+          // Include number of questions to show
+          if (section.number_of_questions_to_show !== undefined) {
+            sectionPayload.number_of_questions_to_show =
+              section.number_of_questions_to_show;
+          }
+
           // Include mcqs if there are any from manual/csv/ai input
           if (mcqsToSend.length > 0) {
             sectionPayload.mcqs = mcqsToSend;
@@ -406,6 +423,17 @@ export default function CreateAssessmentPage() {
           // Include description only if it exists
           if (section.description && section.description.trim()) {
             sectionPayload.description = section.description.trim();
+          }
+
+          // Include score for coding sections
+          if (section.codingScore !== undefined) {
+            sectionPayload.coding_score = section.codingScore;
+          }
+
+          // Include number of questions to show
+          if (section.number_of_questions_to_show !== undefined) {
+            sectionPayload.number_of_questions_to_show =
+              section.number_of_questions_to_show;
           }
 
           return sectionPayload;
@@ -507,10 +535,7 @@ export default function CreateAssessmentPage() {
         const quizSections = sections.filter((s) => s.type === "quiz");
         const codingSections = sections.filter((s) => s.type === "coding");
         // Calculate total questions (MCQs + coding problems)
-        const totalCodingProblems = codingSections.reduce((sum, section) => {
-          return sum + getCodingProblemIdsForSection(section.id).length;
-        }, 0);
-        const totalQuestions = totalMCQs.length + totalCodingProblems;
+
         return (
           <AssessmentPreviewSection
             title={title}
