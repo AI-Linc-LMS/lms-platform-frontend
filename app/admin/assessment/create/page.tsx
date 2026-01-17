@@ -186,6 +186,32 @@ export default function CreateAssessmentPage() {
     setActiveStep((prev) => prev - 1);
   };
 
+  // Get total count of MCQs for a specific section (all sources combined)
+  const getTotalMCQCountForSection = (sectionId: string): number => {
+    let count = 0;
+    
+    // Manual MCQs
+    if (manualMCQs[sectionId]) {
+      count += manualMCQs[sectionId].length;
+    }
+    
+    // CSV MCQs
+    if (csvMCQs[sectionId]) {
+      count += csvMCQs[sectionId].length;
+    }
+    
+    // AI MCQs
+    if (aiMCQs[sectionId]) {
+      count += aiMCQs[sectionId].length;
+    }
+    
+    // Existing pool MCQs
+    const existingIds = sectionMcqIds[sectionId] || [];
+    count += existingIds.length;
+    
+    return count;
+  };
+
   // Get MCQs for a specific section - checks ALL input methods
   const getMCQsForSection = (sectionId: string): MCQ[] => {
     // Collect questions from all possible sources
@@ -233,6 +259,22 @@ export default function CreateAssessmentPage() {
   // Get MCQ IDs for a specific section (for existing pool)
   const getMcqIdsForSection = (sectionId: string): number[] => {
     return sectionMcqIds[sectionId] || [];
+  };
+
+  // Get total count of coding problems for a specific section (all sources combined)
+  const getTotalCodingProblemCountForSection = (sectionId: string): number => {
+    let count = 0;
+    
+    // Existing pool coding problems
+    const existingIds = sectionCodingProblemIds[sectionId] || [];
+    count += existingIds.length;
+    
+    // AI generated coding problems
+    if (aiCodingProblems[sectionId]) {
+      count += aiCodingProblems[sectionId].length;
+    }
+    
+    return count;
   };
 
   // Get Coding Problem IDs for a specific section
@@ -329,6 +371,64 @@ export default function CreateAssessmentPage() {
         return;
       }
 
+      // Validate number_of_questions_to_show for quiz sections
+      const invalidQuizSections: Array<{ title: string; order: number; required: number; selected: number }> = [];
+      quizSections.forEach((section) => {
+        if (section.number_of_questions_to_show !== undefined) {
+          const totalQuestions = getTotalMCQCountForSection(section.id);
+          if (totalQuestions < section.number_of_questions_to_show) {
+            invalidQuizSections.push({
+              title: section.title,
+              order: section.order,
+              required: section.number_of_questions_to_show,
+              selected: totalQuestions,
+            });
+          }
+        }
+      });
+
+      if (invalidQuizSections.length > 0) {
+        const errorMessages = invalidQuizSections
+          .sort((a, b) => a.order - b.order)
+          .map((s) => `"${s.title}" (Order: ${s.order}): Need ${s.required} questions, but only ${s.selected} selected`)
+          .join("; ");
+        showToast(
+          `Quiz sections with insufficient questions: ${errorMessages}`,
+          "error"
+        );
+        setCreating(false);
+        return;
+      }
+
+      // Validate number_of_questions_to_show for coding sections
+      const invalidCodingSections: Array<{ title: string; order: number; required: number; selected: number }> = [];
+      codingSections.forEach((section) => {
+        if (section.number_of_questions_to_show !== undefined) {
+          const totalProblems = getTotalCodingProblemCountForSection(section.id);
+          if (totalProblems < section.number_of_questions_to_show) {
+            invalidCodingSections.push({
+              title: section.title,
+              order: section.order,
+              required: section.number_of_questions_to_show,
+              selected: totalProblems,
+            });
+          }
+        }
+      });
+
+      if (invalidCodingSections.length > 0) {
+        const errorMessages = invalidCodingSections
+          .sort((a, b) => a.order - b.order)
+          .map((s) => `"${s.title}" (Order: ${s.order}): Need ${s.required} problems, but only ${s.selected} selected`)
+          .join("; ");
+        showToast(
+          `Coding sections with insufficient problems: ${errorMessages}`,
+          "error"
+        );
+        setCreating(false);
+        return;
+      }
+
       // Build payload with all sections
       const payload: CreateAssessmentPayload = {
         title: title.trim(),
@@ -368,7 +468,7 @@ export default function CreateAssessmentPage() {
           const sectionPayload: any = {
             title: section.title.trim(),
             order: section.order,
-            number_of_questions: sectionMCQs.length, // Total count from all sources
+            number_of_questions: section.number_of_questions_to_show !== undefined ? section.number_of_questions_to_show:sectionMCQs.length, // Total count from all sources
           };
 
           // Include description only if it exists
@@ -387,11 +487,6 @@ export default function CreateAssessmentPage() {
             sectionPayload.hard_score = section.hardScore;
           }
 
-          // Include number of questions to show
-          if (section.number_of_questions_to_show !== undefined) {
-            sectionPayload.number_of_questions_to_show =
-              section.number_of_questions_to_show;
-          }
 
           // Include mcqs if there are any from manual/csv/ai input
           if (mcqsToSend.length > 0) {
@@ -416,7 +511,7 @@ export default function CreateAssessmentPage() {
           const sectionPayload: any = {
             title: section.title.trim(),
             order: section.order,
-            number_of_questions: sectionCodingProblemIds.length,
+            number_of_questions: section.number_of_questions_to_show !== undefined? section.number_of_questions_to_show: sectionCodingProblemIds.length,
             coding_problem_ids: sectionCodingProblemIds,
           };
 
@@ -430,11 +525,7 @@ export default function CreateAssessmentPage() {
             sectionPayload.coding_score = section.codingScore;
           }
 
-          // Include number of questions to show
-          if (section.number_of_questions_to_show !== undefined) {
-            sectionPayload.number_of_questions_to_show =
-              section.number_of_questions_to_show;
-          }
+          
 
           return sectionPayload;
         });

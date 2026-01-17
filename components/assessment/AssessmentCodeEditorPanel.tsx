@@ -60,10 +60,10 @@ export function AssessmentCodeEditorPanel({
       {/* Language Selector and Actions */}
       <Box
         sx={{
-          p: { xs: 1, md: 1, lg: 1.5 },
+          p: { xs: 1.5, md: 2 },
           borderBottom: "1px solid #e5e7eb",
           display: "flex",
-          gap: { xs: 1, md: 1, lg: 1.5 },
+          gap: { xs: 1.5, md: 2 },
           alignItems: "center",
           flexWrap: "wrap",
           backgroundColor: "#f9fafb",
@@ -97,8 +97,20 @@ export function AssessmentCodeEditorPanel({
           variant="outlined"
           size="small"
           onClick={onReset}
-          startIcon={<IconWrapper icon="mdi:restore" size={16} />}
-          sx={{ fontSize: { xs: "0.75rem", md: "0.8rem", lg: "0.875rem" } }}
+          startIcon={<IconWrapper icon="mdi:restore" size={18} />}
+          sx={{
+            fontSize: "0.875rem",
+            fontWeight: 500,
+            px: 2,
+            py: 0.75,
+            textTransform: "none",
+            borderColor: "#d1d5db",
+            color: "#6b7280",
+            "&:hover": {
+              borderColor: "#9ca3af",
+              backgroundColor: "#f9fafb",
+            },
+          }}
         >
           Reset
         </Button>
@@ -110,18 +122,26 @@ export function AssessmentCodeEditorPanel({
           disabled={running || submitting}
           startIcon={
             running ? (
-              <CircularProgress size={16} />
+              <CircularProgress size={18} />
             ) : (
-              <IconWrapper icon="mdi:play" size={16} />
+              <IconWrapper icon="mdi:play" size={18} />
             )
           }
           sx={{
             borderColor: "#6366f1",
             color: "#6366f1",
-            fontSize: { xs: "0.75rem", md: "0.8rem", lg: "0.875rem" },
+            fontSize: "0.875rem",
+            fontWeight: 600,
+            px: 2.5,
+            py: 0.75,
+            textTransform: "none",
             "&:hover": {
               borderColor: "#4f46e5",
-              backgroundColor: "#f5f3ff",
+              backgroundColor: "#eff6ff",
+            },
+            "&:disabled": {
+              borderColor: "#e5e7eb",
+              color: "#9ca3af",
             },
           }}
         >
@@ -135,16 +155,21 @@ export function AssessmentCodeEditorPanel({
           disabled={running || submitting || !canSubmit}
           startIcon={
             submitting ? (
-              <CircularProgress size={16} />
+              <CircularProgress size={18} />
             ) : (
-              <IconWrapper icon="mdi:check" size={16} />
+              <IconWrapper icon="mdi:check" size={18} />
             )
           }
           sx={{
-            backgroundColor: canSubmit ? "#10b981" : "#9ca3af",
-            fontSize: { xs: "0.75rem", md: "0.8rem", lg: "0.875rem" },
+            backgroundColor: canSubmit ? "#10b981" : "#6b7280",
+            color: "#ffffff",
+            fontSize: "0.875rem",
+            fontWeight: 600,
+            px: 2.5,
+            py: 0.75,
+            textTransform: "none",
             "&:hover": {
-              backgroundColor: canSubmit ? "#059669" : "#9ca3af",
+              backgroundColor: canSubmit ? "#059669" : "#4b5563",
             },
             "&:disabled": {
               backgroundColor: "#d1d5db",

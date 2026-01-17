@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, use } from "react";
+import { useEffect, useState, useRef, use, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Container,
@@ -13,7 +13,6 @@ import {
   LinearProgress,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { assessmentService } from "@/lib/services/assessment.service";
@@ -50,10 +49,11 @@ export default function DeviceCheckPage({
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const isNavigatingToAssessmentRef = useRef(false);
+  const hasAutoTestedRef = useRef(false);
   const { showToast } = useToast();
 
   // Test devices
-  const testDevices = async () => {
+  const testDevices = useCallback(async () => {
     setChecking(true);
     setCameraError(null);
     setMicError(null);
@@ -186,7 +186,36 @@ export default function DeviceCheckPage({
     } finally {
       setChecking(false);
     }
-  };
+  }, []);
+
+  // Check browser support and auto-test devices on mount
+  useEffect(() => {
+    // Check if browser supports media devices
+    const browserSupported = !!(
+      navigator.mediaDevices && navigator.mediaDevices.getUserMedia
+    );
+
+    if (!browserSupported) {
+      setDeviceStatus({
+        camera: false,
+        microphone: false,
+        browserSupported: false,
+      });
+      return;
+    }
+
+    // Set browser as supported
+    setDeviceStatus((prev) => ({
+      ...prev,
+      browserSupported: true,
+    }));
+
+    // Auto-test devices once on mount
+    if (!hasAutoTestedRef.current) {
+      hasAutoTestedRef.current = true;
+      testDevices();
+    }
+  }, [testDevices]);
 
   // Cleanup on unmount - but only stop camera if NOT navigating to assessment
   useEffect(() => {

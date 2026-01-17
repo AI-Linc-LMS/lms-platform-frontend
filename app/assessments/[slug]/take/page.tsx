@@ -10,6 +10,7 @@ import {
   lazy,
   Suspense,
   startTransition,
+  memo,
 } from "react";
 import { useRouter } from "next/navigation";
 import { Box } from "@mui/material";
@@ -45,6 +46,10 @@ const FullscreenWarningDialog = lazy(() =>
 
 const MAX_VIOLATIONS = 100;
 
+// Memoized question component to prevent unnecessary re-renders
+const MemoizedQuizLayout = memo(AssessmentQuizLayout);
+const MemoizedCodingLayout = memo(AssessmentCodingLayout);
+
 export default function TakeAssessmentPage({
   params,
 }: {
@@ -71,21 +76,32 @@ export default function TakeAssessmentPage({
   const isProctoringActiveRef = useRef(false);
   const isInitializingRef = useRef(false);
   const hasCheckedSubmission = useRef(false);
+  const hasLoadedResponses = useRef(false);
+  const answerChangeDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Data hooks
   const { assessment, loading } = useAssessmentData(slug);
 
-  // Preload proctoring model in background
+  // Preload proctoring model in background (non-blocking)
   useEffect(() => {
     if (assessment && !loading) {
-      import("@/lib/services/proctoring.service").then(
-        ({ getProctoringService }) => {
-          const service = getProctoringService();
-          service.initializeModel().catch(() => {
-            // Silently fail - will load on demand
-          });
-        }
-      );
+      // Use requestIdleCallback if available, otherwise setTimeout
+      const schedulePreload = () => {
+        import("@/lib/services/proctoring.service").then(
+          ({ getProctoringService }) => {
+            const service = getProctoringService();
+            service.initializeModel().catch(() => {
+              // Silently fail - will load on demand
+            });
+          }
+        );
+      };
+
+      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+        (window as any).requestIdleCallback(schedulePreload, { timeout: 2000 });
+      } else {
+        setTimeout(schedulePreload, 1000);
+      }
     }
   }, [assessment, loading]);
 
@@ -110,12 +126,12 @@ export default function TakeAssessmentPage({
     },
   });
 
-  // Sections
+  // Sections - memoized to prevent unnecessary recalculations
   const sections = useMemo(() => {
     if (!assessment) return [];
     return mergeAssessmentSections(
-      assessment.quizSection,
-      assessment.codingProblemSection
+      assessment.quizSection || [],
+      assessment.codingProblemSection || []
     );
   }, [assessment]);
 
@@ -165,21 +181,75 @@ export default function TakeAssessmentPage({
     }
   }, [assessment, slug, router, showToast]);
 
-  // Initialize responses
+  // Load saved responses from responseSheet - ASYNC and DEFERRED to prevent freeze
   useEffect(() => {
-    if (assessment && sections.length > 0) {
+    if (assessment && sections.length > 0 && !hasLoadedResponses.current) {
+      hasLoadedResponses.current = true;
+
+      // Initialize empty structure immediately (non-blocking)
       const initialResponses: Record<string, Record<string, any>> = {};
       sections.forEach((section: any) => {
-        initialResponses[section.section_type || "quiz"] = {};
+        const sectionType = section.section_type || "quiz";
+        if (!initialResponses[sectionType]) {
+          initialResponses[sectionType] = {};
+        }
       });
       setResponses(initialResponses);
 
-      const firstQuizIndex = sections.findIndex(
+      // Set initial section and question immediately
+      const firstSectionIndex = sections.findIndex(
         (section: any) => (section.section_type || "quiz") === "quiz"
       );
-      if (firstQuizIndex !== -1) {
-        setCurrentSectionIndex(firstQuizIndex);
+      if (firstSectionIndex !== -1) {
+        setCurrentSectionIndex(firstSectionIndex);
         setCurrentQuestionIndex(0);
+      }
+
+      // Parse responseSheet asynchronously after initial render (deferred)
+      if (assessment.responseSheet) {
+        // Use requestIdleCallback or setTimeout to defer heavy parsing
+        const parseResponseSheet = () => {
+          try {
+            const responseSheet = assessment.responseSheet;
+            const loadedResponses: Record<string, Record<string, any>> = {};
+
+            // Process responseSheet - it may be organized by section index or section type
+            sections.forEach((section: any, sectionIndex: number) => {
+              const sectionType = section.section_type || "quiz";
+              const sectionKey = String(sectionIndex + 1);
+
+              // Check if responses exist for this section
+              if (responseSheet[sectionKey]) {
+                const sectionResponses = responseSheet[sectionKey];
+                if (!loadedResponses[sectionType]) {
+                  loadedResponses[sectionType] = {};
+                }
+
+                // Map section responses to question IDs
+                Object.keys(sectionResponses).forEach((questionId) => {
+                  const response = sectionResponses[questionId];
+                  if (response !== undefined && response !== null) {
+                    loadedResponses[sectionType][questionId] = response;
+                  }
+                });
+              }
+            });
+
+            // Only update if we found saved responses
+            if (Object.keys(loadedResponses).length > 0) {
+              setResponses(loadedResponses);
+            }
+          } catch (error) {
+            // Silently fail - already initialized empty structure
+          }
+        };
+
+        // Defer parsing to prevent blocking initial render
+        if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+          (window as any).requestIdleCallback(parseResponseSheet, { timeout: 1000 });
+        } else {
+          setTimeout(parseResponseSheet, 100);
+        }
       }
     }
   }, [assessment, sections]);
@@ -231,7 +301,7 @@ export default function TakeAssessmentPage({
       setAssessmentStarted(true);
       timer.start();
 
-      // Start camera and fullscreen in parallel
+      // Start camera and fullscreen in parallel (non-blocking)
       Promise.all([
         startProctoring().catch(() => {
           showToast(
@@ -300,25 +370,45 @@ export default function TakeAssessmentPage({
       } catch (error) {
         // Silently fail
       }
+      // Clear debounce timer
+      if (answerChangeDebounceRef.current) {
+        clearTimeout(answerChangeDebounceRef.current);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Answer change handler
+  // Answer change handler - debounced to prevent excessive updates
   const handleAnswerChange = useCallback(
     (sectionType: string, questionId: string | number, answer: any) => {
-      setResponses((prev) => {
-        if (prev[sectionType]?.[questionId] === answer) {
-          return prev;
-        }
-        return {
-          ...prev,
-          [sectionType]: {
-            ...prev[sectionType],
-            [questionId]: answer,
-          },
-        };
-      });
+      // Clear existing debounce
+      if (answerChangeDebounceRef.current) {
+        clearTimeout(answerChangeDebounceRef.current);
+      }
+
+      // Debounce for 100ms to batch rapid changes
+      answerChangeDebounceRef.current = setTimeout(() => {
+        setResponses((prev) => {
+          // Quick check to avoid unnecessary state updates
+          const currentAnswer = prev[sectionType]?.[questionId];
+          if (
+            currentAnswer === answer ||
+            (typeof answer === "object" &&
+              typeof currentAnswer === "object" &&
+              JSON.stringify(currentAnswer) === JSON.stringify(answer))
+          ) {
+            return prev;
+          }
+
+          return {
+            ...prev,
+            [sectionType]: {
+              ...prev[sectionType],
+              [questionId]: answer,
+            },
+          };
+        });
+      }, 100);
     },
     []
   );
@@ -332,20 +422,39 @@ export default function TakeAssessmentPage({
     setShowSubmitDialog(false);
   }, []);
 
-  // Section change handler
+  // Section change handler - optimized with transition (non-blocking)
   const handleSectionChange = useCallback((sectionIndex: number) => {
+    // Prevent multiple rapid clicks
+    if (isTransitioning) return;
+    
     setIsTransitioning(true);
-    startTransition(() => {
-      setCurrentSectionIndex(sectionIndex);
-      setCurrentQuestionIndex(0);
+    // Use requestIdleCallback or setTimeout for truly non-blocking updates
+    const updateSection = () => {
+      startTransition(() => {
+        setCurrentSectionIndex(sectionIndex);
+        setCurrentQuestionIndex(0);
+      });
+      // Clear transition state after a short delay
       setTimeout(() => setIsTransitioning(false), 100);
-    });
-  }, []);
+    };
+    
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      (window as any).requestIdleCallback(updateSection, { timeout: 50 });
+    } else {
+      setTimeout(updateSection, 0);
+    }
+  }, [isTransitioning]);
 
-  // Computed values
-  const currentSection =
-    sections.length > 0 ? sections[currentSectionIndex] : null;
-  const sectionType = currentSection?.section_type || "quiz";
+  // Computed values - heavily memoized
+  const currentSection = useMemo(
+    () => (sections.length > 0 ? sections[currentSectionIndex] : null),
+    [sections, currentSectionIndex]
+  );
+
+  const sectionType = useMemo(
+    () => currentSection?.section_type || "quiz",
+    [currentSection]
+  );
 
   const quizQuestions = useMemo(() => {
     if (!currentSection || sectionType !== "quiz") return [];
@@ -353,21 +462,28 @@ export default function TakeAssessmentPage({
   }, [currentSection, sectionType]);
 
   const mappedQuizQuestions = useMemo(() => {
+    if (!quizQuestions.length) return [];
+    const sectionResponses = responses[sectionType] || {};
     return quizQuestions.map((q: any) => ({
       id: q.id,
       question: q.question,
-      answered: !!responses[sectionType]?.[q.id],
+      answered: !!sectionResponses[q.id],
     }));
   }, [quizQuestions, responses, sectionType]);
 
+  // Optimized section status - only recalculate when responses change significantly
   const sectionStatus = useMemo(() => {
     return sections.map((section: any) => {
       const sectionType = section.section_type || "quiz";
       const sectionResponses = responses[sectionType] || {};
-      const answered = Object.keys(sectionResponses).filter(
-        (key) =>
-          sectionResponses[key] !== undefined && sectionResponses[key] !== ""
-      ).length;
+      // Optimize: only count non-empty responses
+      let answered = 0;
+      for (const key in sectionResponses) {
+        const value = sectionResponses[key];
+        if (value !== undefined && value !== null && value !== "") {
+          answered++;
+        }
+      }
       return {
         sectionType: sectionType,
         answered,
@@ -378,15 +494,25 @@ export default function TakeAssessmentPage({
 
   const totalAnswered = useMemo(() => {
     return Object.values(responses).reduce(
-      (sum: number, sectionResponses: any) =>
-        sum +
-        Object.keys(sectionResponses).filter((key) => sectionResponses[key])
-          .length,
+      (sum: number, sectionResponses: any) => {
+        if (!sectionResponses || typeof sectionResponses !== "object") {
+          return sum;
+        }
+        return (
+          sum +
+          Object.keys(sectionResponses).filter(
+            (key) =>
+              sectionResponses[key] !== undefined &&
+              sectionResponses[key] !== null &&
+              sectionResponses[key] !== ""
+          ).length
+        );
+      },
       0
     );
   }, [responses]);
 
-  // Handlers
+  // Handlers - memoized
   const handleQuizAnswerSelect = useCallback(
     (answerId: string | number) => {
       const question = quizQuestions[currentQuestionIndex];
@@ -399,22 +525,92 @@ export default function TakeAssessmentPage({
 
   const handleQuizQuestionClick = useCallback(
     (questionId: string | number) => {
+      // Don't block on isTransitioning for question clicks - allow rapid navigation
       const index = quizQuestions.findIndex((q: any) => q.id === questionId);
-      if (index !== -1) {
-        setIsTransitioning(true);
-        startTransition(() => {
-          setCurrentQuestionIndex(index);
-          setTimeout(() => setIsTransitioning(false), 100);
-        });
+      if (index !== -1 && index !== currentQuestionIndex) {
+        // Use requestIdleCallback for non-blocking updates
+        const updateQuestion = () => {
+          startTransition(() => {
+            setCurrentQuestionIndex(index);
+          });
+        };
+        
+        if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+          (window as any).requestIdleCallback(updateQuestion, { timeout: 30 });
+        } else {
+          setTimeout(updateQuestion, 0);
+        }
       }
     },
-    [quizQuestions]
+    [quizQuestions, currentQuestionIndex]
   );
 
-  const currentQuizQuestion = quizQuestions[currentQuestionIndex];
-  const currentAnswer = currentQuizQuestion
-    ? responses[sectionType]?.[currentQuizQuestion.id]
-    : undefined;
+  const currentQuizQuestion = useMemo(
+    () => quizQuestions[currentQuestionIndex],
+    [quizQuestions, currentQuestionIndex]
+  );
+
+  const currentAnswer = useMemo(() => {
+    if (!currentQuizQuestion) return undefined;
+    return responses[sectionType]?.[currentQuizQuestion.id];
+  }, [currentQuizQuestion, responses, sectionType]);
+
+  // Get current coding question details - memoized
+  const currentCodingQuestion = useMemo(() => {
+    if (!currentSection || sectionType !== "coding") return null;
+    return (currentSection as any).questions?.[currentQuestionIndex] || null;
+  }, [currentSection, sectionType, currentQuestionIndex]);
+
+  const currentCodingResponse = useMemo(() => {
+    if (!currentCodingQuestion) return null;
+    return responses["coding"]?.[currentCodingQuestion.id] || null;
+  }, [currentCodingQuestion, responses]);
+
+  // Get coding questions for navigation - optimized
+  const codingQuestions = useMemo(() => {
+    if (!currentSection || sectionType !== "coding") return [];
+    const codingResponses = responses["coding"] || {};
+    return (currentSection.questions || []).map((q: any) => {
+      const response = codingResponses[q.id];
+      // Mark as answered only if code has been submitted (has test case results)
+      const isAnswered = !!(
+        response &&
+        response.code &&
+        response.code.trim() !== "" &&
+        (response.tc_passed !== undefined ||
+          response.total_tc !== undefined ||
+          response.submitted === true)
+      );
+      return {
+        id: q.id,
+        title: q.title,
+        answered: isAnswered,
+      };
+    });
+  }, [currentSection, sectionType, responses]);
+
+  // Handle coding question click
+  const handleCodingQuestionClick = useCallback(
+    (questionId: string | number) => {
+      // Don't block on isTransitioning for question clicks - allow rapid navigation
+      const index = codingQuestions.findIndex((q: any) => q.id === questionId);
+      if (index !== -1 && index !== currentQuestionIndex) {
+        // Use requestIdleCallback for non-blocking updates
+        const updateQuestion = () => {
+          startTransition(() => {
+            setCurrentQuestionIndex(index);
+          });
+        };
+        
+        if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+          (window as any).requestIdleCallback(updateQuestion, { timeout: 30 });
+        } else {
+          setTimeout(updateQuestion, 0);
+        }
+      }
+    },
+    [codingQuestions, currentQuestionIndex]
+  );
 
   // Early return
   if (loading || !assessment) {
@@ -435,6 +631,24 @@ export default function TakeAssessmentPage({
         msUserSelect: assessmentStarted ? "none" : "auto",
       }}
       onContextMenu={(e) => {
+        if (assessmentStarted) {
+          e.preventDefault();
+          return false;
+        }
+      }}
+      onCopy={(e) => {
+        if (assessmentStarted) {
+          e.preventDefault();
+          return false;
+        }
+      }}
+      onCut={(e) => {
+        if (assessmentStarted) {
+          e.preventDefault();
+          return false;
+        }
+      }}
+      onPaste={(e) => {
         if (assessmentStarted) {
           e.preventDefault();
           return false;
@@ -481,12 +695,14 @@ export default function TakeAssessmentPage({
               <Box
                 sx={{
                   position: "relative",
-                  opacity: isTransitioning ? 0.6 : 1,
-                  transition: "opacity 0.15s ease-in-out",
+                  opacity: isTransitioning ? 0.8 : 1,
+                  transition: "opacity 0.15s ease-out",
+                  willChange: isTransitioning ? "opacity" : "auto",
+                  transform: isTransitioning ? "translateX(4px)" : "translateX(0)",
                 }}
               >
                 {sectionType === "quiz" && currentQuizQuestion && (
-                  <AssessmentQuizLayout
+                  <MemoizedQuizLayout
                     currentQuestionIndex={currentQuestionIndex}
                     currentQuestion={currentQuizQuestion as any}
                     selectedAnswer={currentAnswer}
@@ -499,70 +715,64 @@ export default function TakeAssessmentPage({
                   />
                 )}
 
-                {sectionType === "coding" &&
-                  (currentSection as any).questions?.[currentQuestionIndex] && (
-                    <AssessmentCodingLayout
-                      key={`coding-section-${currentSectionIndex}`}
-                      slug={slug}
-                      questionId={
-                        (currentSection as any).questions[currentQuestionIndex]
-                          .id
-                      }
-                      problemData={{
-                        details: (currentSection as any).questions[
-                          currentQuestionIndex
-                        ],
-                      }}
-                      initialCode={
-                        responses["coding"]?.[
-                          (currentSection as any).questions[
-                            currentQuestionIndex
-                          ].id
-                        ]?.code ||
-                        (currentSection as any).questions[currentQuestionIndex]
-                          .template_code?.python ||
-                        ""
-                      }
-                      initialLanguage={
-                        responses["coding"]?.[
-                          (currentSection as any).questions[
-                            currentQuestionIndex
-                          ].id
-                        ]?.language || "python"
-                      }
-                      onCodeChange={(code, language) => {
-                        handleAnswerChange(
-                          "coding",
-                          (currentSection as any).questions[
-                            currentQuestionIndex
-                          ].id,
-                          { code, language }
-                        );
-                      }}
-                      onCodeSubmit={(result) => {
-                        const questionId = (currentSection as any).questions[
-                          currentQuestionIndex
-                        ].id;
-                        setResponses((prev) => ({
-                          ...prev,
-                          coding: {
-                            ...prev.coding,
-                            [questionId]: {
-                              ...prev.coding?.[questionId],
-                              code:
-                                result.best_code ||
-                                prev.coding?.[questionId]?.code,
-                              language:
-                                prev.coding?.[questionId]?.language || "python",
-                              tc_passed: result.tc_passed ?? result.passed,
-                              total_tc:
-                                result.total_tc ?? result.total_test_cases,
-                            },
+                {sectionType === "coding" && currentCodingQuestion && (
+                  <MemoizedCodingLayout
+                    key={`coding-${currentCodingQuestion.id}-${currentQuestionIndex}`}
+                    slug={slug}
+                    questionId={currentCodingQuestion.id}
+                    problemData={{
+                      details: currentCodingQuestion,
+                    }}
+                    initialCode={
+                      currentCodingResponse?.code ||
+                      currentCodingQuestion.template_code?.python ||
+                      currentCodingQuestion.template_code?.python3 ||
+                      ""
+                    }
+                    initialLanguage={
+                      currentCodingResponse?.language || "python"
+                    }
+                    questions={codingQuestions}
+                    totalQuestions={codingQuestions.length}
+                    currentQuestionIndex={currentQuestionIndex}
+                    onQuestionClick={handleCodingQuestionClick}
+                    onNextQuestion={navigation.handleNext}
+                    onPreviousQuestion={navigation.handlePrevious}
+                    onCodeChange={(code, language) => {
+                      handleAnswerChange(
+                        "coding",
+                        currentCodingQuestion.id,
+                        {
+                          code,
+                          language,
+                          ...(currentCodingResponse || {}),
+                        }
+                      );
+                    }}
+                    onCodeSubmit={(result) => {
+                      setResponses((prev) => ({
+                        ...prev,
+                        coding: {
+                          ...prev.coding,
+                          [currentCodingQuestion.id]: {
+                            ...prev.coding?.[currentCodingQuestion.id],
+                            code:
+                              result.best_code ||
+                              prev.coding?.[currentCodingQuestion.id]?.code ||
+                              "",
+                            language:
+                              prev.coding?.[currentCodingQuestion.id]
+                                ?.language || "python",
+                            tc_passed: result.tc_passed ?? result.passed ?? 0,
+                            total_tc:
+                              result.total_tc ?? result.total_test_cases ?? 0,
+                            submitted: true, // Mark as submitted
                           },
-                        }));
-                      }}
-                    />
-                  )}
+                        },
+                      }));
+                    }}
+                  />
+                )}
               </Box>
             )}
           </Box>

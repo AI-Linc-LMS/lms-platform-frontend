@@ -28,25 +28,28 @@ export const AnswerOption = memo(function AnswerOption({
       elevation={0}
       onClick={() => !isSubmitting && !isReadOnly && onSelect()}
       sx={{
-        p: { xs: 2, sm: 2.5, md: 3 },
+        p: { xs: 2.5, sm: 3, md: 3.5 },
         border: isCorrect
           ? "2px solid #10b981"
           : isWrongSelection
           ? "2px solid #ef4444"
           : isSelected
           ? "2px solid #6366f1"
-          : "1px solid #e5e7eb",
+          : "1.5px solid #e5e7eb",
         backgroundColor: isCorrect
           ? "#f0fdf4"
           : isWrongSelection
           ? "#fef2f2"
           : isSelected
-          ? "#f0f9ff"
+          ? "#eff6ff"
           : "#ffffff",
-        borderRadius: 2,
+        borderRadius: 2.5,
         cursor: isSubmitting || isReadOnly ? "default" : "pointer",
-        transition: "all 0.2s",
+        transition: "all 0.2s ease-in-out",
         position: "relative",
+        boxShadow: isSelected
+          ? "0 2px 8px 0 rgba(99, 102, 241, 0.15)"
+          : "0 1px 3px 0 rgba(0, 0, 0, 0.05)",
         "&:hover": {
           borderColor:
             isSubmitting || isReadOnly
@@ -55,7 +58,9 @@ export const AnswerOption = memo(function AnswerOption({
                 : isWrongSelection
                 ? "#ef4444"
                 : "#e5e7eb"
-              : "#10b981",
+              : isSelected
+              ? "#4f46e5"
+              : "#6366f1",
           backgroundColor:
             isSubmitting || isReadOnly
               ? isCorrect
@@ -63,7 +68,15 @@ export const AnswerOption = memo(function AnswerOption({
                 : isWrongSelection
                 ? "#fef2f2"
                 : "#ffffff"
+              : isSelected
+              ? "#dbeafe"
               : "#f9fafb",
+          transform: isSubmitting || isReadOnly ? "none" : "translateY(-2px)",
+          boxShadow: isSubmitting || isReadOnly
+            ? (isSelected
+                ? "0 2px 8px 0 rgba(99, 102, 241, 0.15)"
+                : "0 1px 3px 0 rgba(0, 0, 0, 0.05)")
+            : "0 4px 12px 0 rgba(99, 102, 241, 0.2)",
         },
       }}
     >
@@ -76,9 +89,17 @@ export const AnswerOption = memo(function AnswerOption({
       >
         <Typography
           sx={{
-            fontWeight: isSelected || isCorrect ? 600 : 400,
-            color: "#1a1f2e",
+            fontWeight: isSelected || isCorrect ? 600 : 500,
+            color: isSelected
+              ? "#1e40af"
+              : isCorrect
+              ? "#065f46"
+              : isWrongSelection
+              ? "#991b1b"
+              : "#1a1f2e",
             fontSize: "1rem",
+            lineHeight: 1.6,
+            letterSpacing: "0.01em",
           }}
         >
           {option.label}
