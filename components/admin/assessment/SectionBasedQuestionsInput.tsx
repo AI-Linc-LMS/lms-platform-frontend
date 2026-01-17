@@ -21,6 +21,7 @@ import { CodingProblemSelectionSection } from "./CodingProblemSelectionSection";
 import { AIGeneratedCodingSection } from "./AIGeneratedCodingSection";
 import { MCQ, MCQListItem, CodingProblemListItem } from "@/lib/services/admin/admin-assessment.service";
 import { Section } from "./MultipleSectionsSection";
+import { SectionQuestionsSidenav } from "./SectionQuestionsSidenav";
 
 type MCQInputMethod = "manual" | "existing" | "csv" | "ai";
 type CodingInputMethod = "existing" | "ai";
@@ -88,19 +89,14 @@ export function SectionBasedQuestionsInput({
     [sections]
   );
 
-  // Auto-select first section if none selected
+  // Auto-select first section if none selected (only on mount)
   useEffect(() => {
-    if (!selectedSectionId && quizSections.length > 0) {
+    if (!selectedSectionId && !selectedCodingSectionId && quizSections.length > 0) {
       setSelectedSectionId(quizSections[0].id);
-    }
-  }, [selectedSectionId, quizSections]);
-
-  // Auto-select first coding section if none selected
-  useEffect(() => {
-    if (!selectedCodingSectionId && codingSections.length > 0 && !selectedSectionId) {
+    } else if (!selectedSectionId && !selectedCodingSectionId && codingSections.length > 0) {
       setSelectedCodingSectionId(codingSections[0].id);
     }
-  }, [selectedCodingSectionId, codingSections, selectedSectionId]);
+  }, []); // Only run on mount
 
   const currentSection = sections.find((s) => s.id === selectedSectionId);
   const currentManualMCQs = selectedSectionId
@@ -145,93 +141,98 @@ export function SectionBasedQuestionsInput({
     );
   }
 
+  // Calculate question counts for sidenav
+  const sectionQuestionCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    quizSections.forEach((section) => {
+      counts[section.id] =
+        sectionMcqIds[section.id]?.length ||
+        manualMCQs[section.id]?.length ||
+        csvMCQs[section.id]?.length ||
+        aiMCQs[section.id]?.length ||
+        0;
+    });
+    return counts;
+  }, [quizSections, sectionMcqIds, manualMCQs, csvMCQs, aiMCQs]);
+
+  const sectionCodingCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    codingSections.forEach((section) => {
+      counts[section.id] =
+        sectionCodingProblemIds[section.id]?.length ||
+        aiCodingProblems[section.id]?.length ||
+        0;
+    });
+    return counts;
+  }, [codingSections, sectionCodingProblemIds, aiCodingProblems]);
+
+  const handleSectionSelect = (sectionId: string) => {
+    if (!sectionId) {
+      setSelectedSectionId("");
+      setSelectedCodingSectionId("");
+      return;
+    }
+    
+    const section = sections.find((s) => s.id === sectionId);
+    if (section?.type === "quiz") {
+      setSelectedSectionId(sectionId);
+      setSelectedCodingSectionId("");
+    } else if (section?.type === "coding") {
+      setSelectedCodingSectionId(sectionId);
+      setSelectedSectionId("");
+    }
+  };
+
+  const currentSelectedId = selectedSectionId || selectedCodingSectionId;
+
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      {/* Section Selection */}
-      <Paper sx={{ p: 2, bgcolor: "#f9fafb" }}>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {quizSections.length > 0 && (
-            <Box>
-              <Typography
-                variant="subtitle2"
-                sx={{ fontWeight: 600, mb: 1, color: "#6366f1" }}
-              >
-                Quiz Sections
-              </Typography>
-              <FormControl fullWidth>
-                <InputLabel>Select Quiz Section</InputLabel>
-                <Select
-                  value={selectedSectionId}
-                  onChange={(e) => setSelectedSectionId(e.target.value)}
-                  label="Select Quiz Section"
-                >
-                  {quizSections.map((section) => {
-                    const mcqCount =
-                      sectionMcqIds[section.id]?.length ||
-                      manualMCQs[section.id]?.length ||
-                      csvMCQs[section.id]?.length ||
-                      aiMCQs[section.id]?.length ||
-                      0;
-                    return (
-                      <MenuItem key={section.id} value={section.id}>
-                        {section.title} (Order: {section.order})
-                        {mcqCount > 0 && (
-                          <Chip
-                            label={`${mcqCount} questions`}
-                            size="small"
-                            sx={{ ml: 1 }}
-                          />
-                        )}
-                      </MenuItem>
-                    );
-                  })}
-                </Select>
-              </FormControl>
-            </Box>
-          )}
-
-          {codingSections.length > 0 && (
-            <Box>
-              <Divider sx={{ my: 2 }} />
-              <Typography
-                variant="subtitle2"
-                sx={{ fontWeight: 600, mb: 1, color: "#10b981" }}
-              >
-                Coding Sections
-              </Typography>
-              <FormControl fullWidth>
-                <InputLabel>Select Coding Section</InputLabel>
-                <Select
-                  value={selectedCodingSectionId}
-                  onChange={(e) => {
-                    setSelectedCodingSectionId(e.target.value);
-                    setSelectedSectionId(""); // Clear quiz section selection
-                  }}
-                  label="Select Coding Section"
-                >
-                  {codingSections.map((section) => {
-                    const problemCount = sectionCodingProblemIds[section.id]?.length || 0;
-                    return (
-                      <MenuItem key={section.id} value={section.id}>
-                        {section.title} (Order: {section.order})
-                        {problemCount > 0 && (
-                          <Chip
-                            label={`${problemCount} problems`}
-                            size="small"
-                            sx={{ ml: 1, bgcolor: "#d1fae5" }}
-                          />
-                        )}
-                      </MenuItem>
-                    );
-                  })}
-                </Select>
-              </FormControl>
-            </Box>
-          )}
+    <Box sx={{ width: "100%", height: "100%" }}>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: {
+            xs: "1fr",
+            sm: "repeat(12, 1fr)",
+          },
+          gap: 2,
+          height: "100%",
+          m: 0,
+        }}
+      >
+        {/* Sidenav */}
+        <Box
+          sx={{
+            gridColumn: { xs: "1", sm: "span 4", md: "span 3", lg: "span 3" },
+            pr: { xs: 0, sm: 1 },
+          }}
+        >
+          <SectionQuestionsSidenav
+            sections={sections}
+            selectedSectionId={currentSelectedId}
+            onSectionSelect={handleSectionSelect}
+            sectionQuestionCounts={sectionQuestionCounts}
+            sectionCodingCounts={sectionCodingCounts}
+          />
         </Box>
-      </Paper>
 
-      {selectedSectionId && currentSection && currentSection.type === "quiz" && (
+        {/* Main Content */}
+        <Box
+          sx={{
+            gridColumn: { xs: "1", sm: "span 8", md: "span 9", lg: "span 9" },
+            pl: { xs: 0, sm: 1 },
+          }}
+        >
+          <Box 
+            sx={{ 
+              display: "flex", 
+              flexDirection: "column", 
+              gap: 2.5,
+              width: "100%",
+              height: "100%",
+              minHeight: { xs: "auto", sm: "calc(100vh - 120px)" },
+            }}
+          >
+          {selectedSectionId && currentSection && currentSection.type === "quiz" && (
         <>
           <Paper sx={{ p: 2, bgcolor: "#eef2ff" }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
@@ -377,6 +378,21 @@ export function SectionBasedQuestionsInput({
           })()}
         </>
       )}
+
+          {!currentSelectedId && (
+            <Paper sx={{ p: 4, textAlign: "center", bgcolor: "#f9fafb" }}>
+              <Typography variant="h6" sx={{ color: "#6b7280", mb: 1 }}>
+                Select a section to add questions
+              </Typography>
+              <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+                Choose a section from the sidebar to start adding questions or
+                coding problems.
+              </Typography>
+            </Paper>
+          )}
+          </Box>
+        </Box>
+      </Box>
     </Box>
   );
 }
