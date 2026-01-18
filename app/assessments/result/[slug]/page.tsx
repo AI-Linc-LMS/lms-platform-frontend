@@ -7,25 +7,25 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Loading } from "@/components/common/Loading";
 import {
   assessmentService,
-  ScholarshipStatus,
+  AssessmentResult,
 } from "@/lib/services/assessment.service";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { AssessmentResultHeader } from "@/components/assessment/result/AssessmentResultHeader";
-import { AssessmentStatsBar } from "@/components/assessment/result/AssessmentStatsBar";
-import { PerformanceMetrics } from "@/components/assessment/result/PerformanceMetrics";
+import { ScoreDisplay } from "@/components/assessment/result/ScoreDisplay";
+import { EnhancedStatsBar } from "@/components/assessment/result/EnhancedStatsBar";
+import { TopicWiseBreakdown } from "@/components/assessment/result/TopicWiseBreakdown";
 import { StrengthsWeaknesses } from "@/components/assessment/result/StrengthsWeaknesses";
-import { SkillsTags } from "@/components/assessment/result/SkillsTags";
+import { EnhancedSkillsTags } from "@/components/assessment/result/EnhancedSkillsTags";
 import { OverallFeedback } from "@/components/assessment/result/OverallFeedback";
 
 export default function AssessmentResultPage() {
   const params = useParams();
   const router = useRouter();
   const slug = params.slug as string;
-  const [scholarshipStatus, setScholarshipStatus] =
-    useState<ScholarshipStatus | null>(null);
+  const [assessmentResult, setAssessmentResult] =
+    useState<AssessmentResult | null>(null);
   const [loading, setLoading] = useState(true);
-  const [assessmentTitle, setAssessmentTitle] = useState("");
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export default function AssessmentResultPage() {
 
     const loadData = async () => {
       if (isCancelled) return;
-      await loadScholarshipStatus();
+      await loadAssessmentResult();
     };
 
     loadData();
@@ -45,14 +45,10 @@ export default function AssessmentResultPage() {
     };
   }, [slug]);
 
-  const loadScholarshipStatus = async () => {
+  const loadAssessmentResult = async () => {
     try {
-      const status = await assessmentService.getScholarshipStatus(slug);
-      setScholarshipStatus(status);
-      // Try to extract title from URL or set a default
-      setAssessmentTitle(
-        slug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
-      );
+      const result = await assessmentService.getAssessmentResult(slug);
+      setAssessmentResult(result);
     } catch (error: any) {
       showToast("Failed to load assessment results", "error");
     } finally {
@@ -69,9 +65,78 @@ export default function AssessmentResultPage() {
     );
   }
 
-  if (!scholarshipStatus) {
+  if (!assessmentResult) {
     return null;
   }
+
+  const { stats } = assessmentResult;
+  
+  // Extract strengths and weaknesses from topic-wise stats
+  const getStrengthsAndWeaknesses = () => {
+    const strengths: string[] = [];
+    const weaknesses: string[] = [];
+    
+    if (stats.topic_wise_stats) {
+      Object.entries(stats.topic_wise_stats).forEach(([topic, topicStats]) => {
+        if (topicStats.accuracy_percent >= 70) {
+          strengths.push(
+            `Strong performance in ${topic} (${topicStats.accuracy_percent.toFixed(1)}% accuracy)`
+          );
+        } else if (topicStats.accuracy_percent < 50) {
+          weaknesses.push(
+            `Needs improvement in ${topic} (${topicStats.accuracy_percent.toFixed(1)}% accuracy)`
+          );
+        }
+      });
+    }
+    
+    // If no topic-wise stats, use generic feedback
+    if (strengths.length === 0 && weaknesses.length === 0) {
+      if (stats.accuracy_percent >= 70) {
+        strengths.push("Strong understanding of core concepts");
+        strengths.push("Good problem-solving approach");
+      } else {
+        weaknesses.push("Consider reviewing fundamental concepts");
+        weaknesses.push("Practice more to improve accuracy");
+      }
+    }
+    
+    return { strengths, weaknesses };
+  };
+
+  const { strengths, weaknesses } = getStrengthsAndWeaknesses();
+
+  // Generate feedback points based on performance
+  const getFeedbackPoints = () => {
+    const feedback: string[] = [];
+    const accuracy = stats.accuracy_percent;
+    
+    if (accuracy >= 80) {
+      feedback.push("Excellent performance! You have demonstrated a strong grasp of the concepts");
+      feedback.push("Your analytical approach to problems is commendable");
+      feedback.push("Continue practicing to maintain this high level of performance");
+    } else if (accuracy >= 60) {
+      feedback.push("Good performance overall with room for improvement");
+      feedback.push("Focus on areas where you had difficulty to boost your score");
+      feedback.push("Practice more scenario-based questions to enhance your skills");
+    } else if (accuracy >= 40) {
+      feedback.push("You have a basic understanding but need more practice");
+      feedback.push("Review the topics where you struggled the most");
+      feedback.push("Focus on understanding core concepts before moving to advanced topics");
+    } else {
+      feedback.push("Consider revisiting the fundamental concepts");
+      feedback.push("Practice regularly to improve your understanding");
+      feedback.push("Don't hesitate to seek help or additional resources");
+    }
+    
+    if (stats.attempted_questions < stats.total_questions) {
+      feedback.push(`You attempted ${stats.attempted_questions} out of ${stats.total_questions} questions. Try to attempt all questions next time.`);
+    }
+    
+    return feedback;
+  };
+
+  const feedbackPoints = getFeedbackPoints();
 
   return (
     <MainLayout>
@@ -105,52 +170,52 @@ export default function AssessmentResultPage() {
         {/* RESULTS VIEW */}
         <Box>
           {/* Header */}
-          <AssessmentResultHeader assessmentTitle={assessmentTitle} />
-
-          {/* Quick Stats Bar */}
-          <AssessmentStatsBar
-            score={scholarshipStatus.score}
-            totalQuestions={25}
-            answeredQuestions={Math.floor((scholarshipStatus.score / 100) * 25)}
-            duration={45}
-            accuracy={scholarshipStatus.score}
+          <AssessmentResultHeader 
+            assessmentTitle={assessmentResult.assessment_name}
+            status={assessmentResult.status}
           />
 
-          {/* Performance Metrics */}
-          <PerformanceMetrics
-            overallAccuracy={scholarshipStatus.score}
-            testDuration={45}
-            performancePercentile={scholarshipStatus.score}
+          {/* Prominent Score Display */}
+          <ScoreDisplay
+            score={stats.score}
+            maximumMarks={stats.maximum_marks}
+            accuracy={stats.accuracy_percent}
+            percentile={stats.percentile}
           />
+
+          {/* Enhanced Stats Bar */}
+          <EnhancedStatsBar
+            totalQuestions={stats.total_questions}
+            attemptedQuestions={stats.attempted_questions}
+            correctAnswers={stats.correct_answers}
+            incorrectAnswers={stats.incorrect_answers}
+            timeTakenMinutes={stats.time_taken_minutes}
+            totalTimeMinutes={stats.total_time_minutes}
+          />
+
+          {/* Topic-wise Breakdown */}
+          {stats.topic_wise_stats && Object.keys(stats.topic_wise_stats).length > 0 && (
+            <TopicWiseBreakdown topicWiseStats={stats.topic_wise_stats} />
+          )}
 
           {/* Strengths & Weaknesses */}
           <StrengthsWeaknesses
-            strengths={[
-              "Strong understanding of core concepts",
-              "Excellent problem-solving skills demonstrated",
-              "Good time management throughout the assessment",
-            ]}
-            weaknesses={[
-              "Consider reviewing advanced topics for better clarity",
-              "Practice more scenario-based questions",
-              "Focus on speed-accuracy balance",
-            ]}
+            strengths={strengths}
+            weaknesses={weaknesses}
           />
 
           {/* Skills Tags */}
-          <SkillsTags
-            strongSkills={["Problem Solving", "Critical Thinking", "Analysis", "Logic"]}
-            weakSkills={["Advanced Concepts", "Time Management", "Application"]}
-          />
+          {((Array.isArray(stats.top_skills) && stats.top_skills.length > 0) || 
+            (Array.isArray(stats.low_skills) && stats.low_skills.length > 0)) && (
+            <EnhancedSkillsTags
+              strongSkills={Array.isArray(stats.top_skills) ? stats.top_skills : []}
+              weakSkills={Array.isArray(stats.low_skills) ? stats.low_skills : []}
+            />
+          )}
 
           {/* Overall Feedback */}
           <OverallFeedback
-            feedbackPoints={[
-              "You have demonstrated a solid grasp of fundamental concepts",
-              "Your analytical approach to problems shows promise",
-              "Continue practicing to improve speed and accuracy",
-              "Focus on understanding advanced topics in greater depth",
-            ]}
+            feedbackPoints={feedbackPoints}
           />
         </Box>
       </Box>

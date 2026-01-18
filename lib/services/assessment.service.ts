@@ -72,6 +72,49 @@ export interface AttemptedAssessment {
   submitted_at: string;
 }
 
+export interface TopicWiseStats {
+  total: number;
+  correct: number;
+  incorrect: number;
+  accuracy_percent: number;
+  rating_out_of_5: number;
+}
+
+export interface SkillStats {
+  skill: string;
+  accuracy_percent: number;
+  rating_out_of_5: number;
+  total: number;
+  correct: number;
+  incorrect: number;
+}
+
+export interface AssessmentResult {
+  message: string;
+  status: string;
+  score: number;
+  assessment_id: string;
+  assessment_name: string;
+  maximum_marks: number;
+  stats: {
+    total_questions: number;
+    attempted_questions: number;
+    correct_answers: number;
+    score: number;
+    incorrect_answers: number;
+    accuracy_percent: number;
+    placement_readiness: number;
+    maximum_marks: number;
+    topic_wise_stats: Record<string, TopicWiseStats>;
+    top_skills: SkillStats[] | string[];
+    low_skills: SkillStats[] | string[];
+    percentile: number;
+    time_taken_minutes: number;
+    total_time_minutes: number;
+    percentage_time_taken: number;
+  };
+}
+
 export interface AssessmentMetadata {
   proctoring: {
     face_violations: Array<{
@@ -206,6 +249,15 @@ export const assessmentService = {
   getAttemptedAssessments: async (): Promise<AttemptedAssessment[]> => {
     const response = await apiClient.get<AttemptedAssessment[]>(
       `/assessment/api/client/${config.clientId}/attempted-assessments/`
+    );
+    return response.data;
+  },
+
+  getAssessmentResult: async (
+    assessmentIdOrSlug: number | string
+  ): Promise<AssessmentResult> => {
+    const response = await apiClient.get<AssessmentResult>(
+      `/assessment/api/client/${config.clientId}/assessment-result/${assessmentIdOrSlug}/`
     );
     return response.data;
   },

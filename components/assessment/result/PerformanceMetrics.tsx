@@ -14,10 +14,15 @@ export function PerformanceMetrics({
   testDuration,
   performancePercentile,
 }: PerformanceMetricsProps) {
+  // Cap values at 100 for circular progress display
+  const cappedAccuracy = Math.min(overallAccuracy || 0, 100);
+  const cappedPercentile = Math.min(performancePercentile || 0, 100);
+
   const metrics = [
     {
       label: "Overall Accuracy",
       value: overallAccuracy || 0,
+      displayValue: cappedAccuracy,
       unit: "%",
       icon: "mdi:bullseye-arrow",
       color: "#6366f1",
@@ -26,6 +31,7 @@ export function PerformanceMetrics({
     {
       label: "Test Duration",
       value: testDuration || 0,
+      displayValue: testDuration || 0,
       unit: " mins",
       icon: "mdi:timer-outline",
       color: "#8b5cf6",
@@ -34,6 +40,7 @@ export function PerformanceMetrics({
     {
       label: "Performance Percentile",
       value: performancePercentile || 0,
+      displayValue: cappedPercentile,
       unit: "%",
       icon: "mdi:chart-line-variant",
       color: "#10b981",
@@ -109,8 +116,8 @@ export function PerformanceMetrics({
                   borderRadius: "50%",
                   background: `conic-gradient(
                     ${metric.color} 0%,
-                    ${metric.color} ${metric.value}%,
-                    #e5e7eb ${metric.value}%,
+                    ${metric.color} ${metric.displayValue}%,
+                    #e5e7eb ${metric.displayValue}%,
                     #e5e7eb 100%
                   )`,
                   display: "flex",
