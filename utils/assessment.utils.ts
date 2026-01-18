@@ -117,3 +117,67 @@ export function mergeAssessmentSections(
   // Sort by order
   return allSections.sort((a, b) => a.order - b.order);
 }
+
+/**
+ * Format assessment responses for API submission
+ * Uses actual section IDs from the assessment, not indices
+ */
+export function formatAssessmentResponses(
+  responses: Record<string, Record<string, any>>,
+  sections: Array<{ id: number; section_type: string; questions: Array<{ id: number | string }> }>
+): {
+  quizSectionId: Array<Record<string, any>>;
+  codingProblemSectionId: Array<Record<string, any>>;
+} {
+  const quizSectionId: Array<Record<string, any>> = [];
+  const codingProblemSectionId: Array<Record<string, any>> = [];
+
+  sections.forEach((section: any) => {
+    const sectionType = section.section_type || "quiz";
+    const sectionResponses = responses[sectionType] || {};
+    const sectionQuestions = section.questions || [];
+    const sectionResponseData: Record<string, any> = {};
+
+    sectionQuestions.forEach((question: any) => {
+      const questionId = question.id;
+      const questionResponse = sectionResponses[questionId];
+
+      if (questionResponse !== undefined && questionResponse !== null) {
+        if (sectionType === "coding") {
+          // Format coding response
+          sectionResponseData[String(questionId)] = {
+            tc_passed:
+              questionResponse.tc_passed ?? questionResponse.passed ?? 0,
+            total_tc:
+              questionResponse.total_tc ??
+              questionResponse.total_test_cases ??
+              0,
+            best_code:
+              questionResponse.best_code ?? questionResponse.code ?? "",
+          };
+        } else {
+          // Format quiz response (just the answer value)
+          sectionResponseData[String(questionId)] = questionResponse;
+        }
+      }
+    });
+
+    // Only add section if it has responses
+    if (Object.keys(sectionResponseData).length > 0) {
+      const sectionEntry = {
+        [String(section.id)]: sectionResponseData, // Use actual section ID, not index
+      };
+
+      if (sectionType === "coding") {
+        codingProblemSectionId.push(sectionEntry);
+      } else {
+        quizSectionId.push(sectionEntry);
+      }
+    }
+  });
+
+  return {
+    quizSectionId,
+    codingProblemSectionId,
+  };
+}

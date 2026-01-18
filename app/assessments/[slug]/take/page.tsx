@@ -259,6 +259,7 @@ export default function TakeAssessmentPage({
     enabled: assessmentStarted && !submitting,
     slug,
     responses,
+    sections,
     metadata,
   });
 

@@ -5,6 +5,7 @@ import { assessmentService } from "@/lib/services/assessment.service";
 import { AssessmentMetadata } from "@/lib/services/assessment.service";
 import { stopAllMediaTracks } from "@/lib/utils/cameraUtils";
 import { getProctoringService } from "@/lib/services/proctoring.service";
+import { formatAssessmentResponses } from "@/utils/assessment.utils";
 
 interface UseAssessmentSubmissionOptions {
   assessment: any;
@@ -154,82 +155,46 @@ export function useAssessmentSubmission({
       ).length;
       const fullscreenExits = metadata.proctoring.fullscreen_exits.length;
 
-      // Format responses
-      const formattedResponses: Record<string, Array<Record<string, any>>> = {};
-      const quizSectionId: Array<Record<string, any>> = [];
-      const codingProblemSectionId: Array<Record<string, any>> = [];
+      // Format responses using helper function (uses actual section IDs)
+      const { quizSectionId, codingProblemSectionId } = formatAssessmentResponses(
+        currentResponses,
+        sections
+      );
 
-      sections.forEach((section: any, sectionIndex: number) => {
-        const sectionType = section.section_type || "quiz";
-        const sectionResponses = currentResponses[sectionType] || {};
-        const sectionQuestions = section.questions || [];
-        const sectionResponseData: Record<string, any> = {};
+      // Prepare metadata for transcript
+      const transcriptMetadata = {
+        timing: {
+          started_at: metadata.timing.started_at,
+        },
+        proctoring: {
+          tab_switches: metadata.proctoring.tab_switches,
+          face_violations: metadata.proctoring.face_violations,
+          fullscreen_exits: metadata.proctoring.fullscreen_exits,
+          total_violation_count: metadata.proctoring.total_violation_count,
+          violation_threshold_reached: metadata.proctoring.violation_threshold_reached,
+        },
+        total_questions: totalQuestions,
+        fullscreen_exits: fullscreenExits,
+        completed_questions: completedQuestions,
+        face_validation_failures: faceValidationFailures,
+        multiple_face_detections: multipleFaceDetections,
+      };
 
-        sectionQuestions.forEach((question: any) => {
-          const questionId = question.id;
-          const questionResponse = sectionResponses[questionId];
-
-          if (questionResponse) {
-            if (sectionType === "coding") {
-              sectionResponseData[questionId] = {
-                tc_passed:
-                  questionResponse.tc_passed ?? questionResponse.passed ?? 0,
-                total_tc:
-                  questionResponse.total_tc ??
-                  questionResponse.total_test_cases ??
-                  0,
-                best_code:
-                  questionResponse.best_code ?? questionResponse.code ?? "",
-              };
-            } else {
-              sectionResponseData[questionId] = questionResponse;
-            }
-          }
-        });
-
-        if (Object.keys(sectionResponseData).length > 0) {
-          const sectionEntry = {
-            [String(sectionIndex + 1)]: sectionResponseData,
-          };
-
-          if (sectionType === "coding") {
-            codingProblemSectionId.push(sectionEntry);
-          } else {
-            quizSectionId.push(sectionEntry);
-          }
-        }
-      });
-
-      if (quizSectionId.length > 0) {
-        formattedResponses.quizSectionId = quizSectionId;
-      }
-      if (codingProblemSectionId.length > 0) {
-        formattedResponses.codingProblemSectionId = codingProblemSectionId;
-      }
-
-      // Prepare request body
+      // Prepare request body according to API format
       const requestBody = {
-        transcript: {
-          responses: formattedResponses,
-          total_duration_seconds: totalDurationSeconds,
-          logs: [],
-          metadata: {
-            ...metadata,
-            face_validation_failures: faceValidationFailures,
-            multiple_face_detections: multipleFaceDetections,
-            fullscreen_exits: fullscreenExits,
-            completed_questions: completedQuestions,
-            total_questions: totalQuestions,
+        metadata: {
+          transcript: {
+            logs: [],
+            metadata: transcriptMetadata,
+            total_duration_seconds: totalDurationSeconds,
           },
         },
+        quizSectionId,
+        codingProblemSectionId,
       };
 
       // Submit assessment - THIS IS THE CRITICAL STEP
-      await assessmentService.finalSubmit(
-        slug,
-        formattedResponses as any,
-        requestBody
-      );
+      await assessmentService.finalSubmit(slug, requestBody);
 
       // Show success immediately - don't wait for camera cleanup
       showToast("Assessment submitted successfully!", "success");

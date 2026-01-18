@@ -173,22 +173,31 @@ export const assessmentService = {
     return response.data;
   },
 
-  // Save assessment submission
+  // Save assessment submission (autosave)
   saveSubmission: async (
     assessmentId: string,
-    responseSheet: Record<string, Record<string, any>>,
-    metadata?: AssessmentMetadata
+    payload: {
+      metadata: {
+        transcript: {
+          logs: any[];
+          metadata: any;
+          total_duration_seconds: number;
+        };
+      };
+      quizSectionId: Array<Record<string, any>>;
+      codingProblemSectionId: Array<Record<string, any>>;
+    }
   ): Promise<SubmissionResponse> => {
     const response = await apiClient.put<SubmissionResponse>(
       `/assessment/api/client/${config.clientId}/assessment-submission/${assessmentId}/`,
       {
-        response_sheet: { ...responseSheet, metadata: metadata },
+        response_sheet: payload,
       }
     );
     return response.data;
   },
 
-  // Update assessment submission
+  // Update assessment submission (deprecated - use saveSubmission)
   updateSubmission: async (
     assessmentId: number,
     responseSheet: Record<string, Record<string, any>>,
@@ -207,13 +216,22 @@ export const assessmentService = {
   // Final submit assessment
   finalSubmit: async (
     assessmentId: string,
-    responseSheet: Record<string, Record<string, any>>,
-    metadata?: any
+    payload: {
+      metadata: {
+        transcript: {
+          logs: any[];
+          metadata: any;
+          total_duration_seconds: number;
+        };
+      };
+      quizSectionId: Array<Record<string, any>>;
+      codingProblemSectionId: Array<Record<string, any>>;
+    }
   ): Promise<FinalSubmissionResponse> => {
     const response = await apiClient.put<FinalSubmissionResponse>(
       `/assessment/api/client/${config.clientId}/assessment-submission/${assessmentId}/final/`,
       {
-        response_sheet: { ...responseSheet, metadata: metadata },
+        response_sheet: payload,
       }
     );
     return response.data;

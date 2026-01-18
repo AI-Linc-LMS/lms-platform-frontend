@@ -1,11 +1,13 @@
 import { useEffect, useRef } from "react";
 import { assessmentService } from "@/lib/services/assessment.service";
 import { AssessmentMetadata } from "@/lib/services/assessment.service";
+import { formatAssessmentResponses } from "@/utils/assessment.utils";
 
 interface UseAutoSaveOptions {
   enabled: boolean;
   slug: string;
   responses: Record<string, Record<string, any>>;
+  sections: Array<{ id: number; section_type: string; questions: Array<{ id: number | string }> }>;
   metadata: AssessmentMetadata;
   interval?: number; // in milliseconds
 }
@@ -14,6 +16,7 @@ export function useAutoSave({
   enabled,
   slug,
   responses,
+  sections,
   metadata,
   interval = 30000, // 30 seconds default
 }: UseAutoSaveOptions) {
@@ -49,8 +52,47 @@ export function useAutoSave({
         const responsesString = JSON.stringify(responses);
         if (responsesString === lastSaveRef.current) return;
 
+        // Format responses using helper function (uses actual section IDs)
+        const { quizSectionId, codingProblemSectionId } = formatAssessmentResponses(
+          responses,
+          sections
+        );
+
+        // Calculate total duration
+        const totalDurationSeconds =
+          (new Date().getTime() -
+            new Date(metadata.timing.started_at).getTime()) /
+          1000;
+
+        // Prepare metadata for transcript
+        const transcriptMetadata = {
+          timing: {
+            started_at: metadata.timing.started_at,
+          },
+          proctoring: {
+            tab_switches: metadata.proctoring.tab_switches,
+            face_violations: metadata.proctoring.face_violations,
+            fullscreen_exits: metadata.proctoring.fullscreen_exits,
+            total_violation_count: metadata.proctoring.total_violation_count,
+            violation_threshold_reached: metadata.proctoring.violation_threshold_reached,
+          },
+        };
+
+        // Prepare request body according to API format
+        const requestBody = {
+          metadata: {
+            transcript: {
+              logs: [],
+              metadata: transcriptMetadata,
+              total_duration_seconds: totalDurationSeconds,
+            },
+          },
+          quizSectionId,
+          codingProblemSectionId,
+        };
+
         // Save responses
-        await assessmentService.saveSubmission(slug, responses, metadata);
+        await assessmentService.saveSubmission(slug, requestBody);
         lastSaveRef.current = responsesString;
       } catch (error) {
         // Silently fail - don't disrupt user experience
@@ -74,7 +116,7 @@ export function useAutoSave({
         intervalRef.current = null;
       }
     };
-  }, [enabled, slug, responses, metadata, interval]);
+  }, [enabled, slug, responses, sections, metadata, interval]);
 
   // Cleanup on unmount
   useEffect(() => {
