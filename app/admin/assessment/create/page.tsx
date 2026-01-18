@@ -520,12 +520,16 @@ export default function CreateAssessmentPage() {
             sectionPayload.description = section.description.trim();
           }
 
-          // Include score for coding sections
-          if (section.codingScore !== undefined) {
-            sectionPayload.coding_score = section.codingScore;
+          // Include scores for coding sections
+          if (section.easyScore !== undefined) {
+            sectionPayload.easy_score = section.easyScore;
           }
-
-          
+          if (section.mediumScore !== undefined) {
+            sectionPayload.medium_score = section.mediumScore;
+          }
+          if (section.hardScore !== undefined) {
+            sectionPayload.hard_score = section.hardScore;
+          }
 
           return sectionPayload;
         });

@@ -24,12 +24,10 @@ export interface Section {
   title: string;
   description: string;
   order: number;
-  // Score configuration for MCQs
+  // Score configuration for MCQs and coding problems
   easyScore?: number;
   mediumScore?: number;
   hardScore?: number;
-  // For coding sections
-  codingScore?: number;
   // Number of questions to show (if section has 10 MCQs, but only 5 should be shown)
   number_of_questions_to_show?: number;
 }
@@ -51,7 +49,6 @@ export function MultipleSectionsSection({
     easyScore: 1,
     mediumScore: 2,
     hardScore: 3,
-    codingScore: 5,
   });
 
   // Validate duplicate orders
@@ -97,7 +94,6 @@ export function MultipleSectionsSection({
       easyScore: 1,
       mediumScore: 2,
       hardScore: 3,
-      codingScore: 5,
     });
   };
 
@@ -188,67 +184,50 @@ export function MultipleSectionsSection({
               gap: 2,
             }}
           >
-            {newSection.type === "quiz" ? (
-              <>
-                <TextField
-                  label="Easy Score"
-                  type="number"
-                  value={newSection.easyScore || 1}
-                  onChange={(e) =>
-                    setNewSection({
-                      ...newSection,
-                      easyScore: Number(e.target.value),
-                    })
-                  }
-                  fullWidth
-                  inputProps={{ min: 0, step: 0.5 }}
-                  helperText="Points for Easy questions"
-                />
-                <TextField
-                  label="Medium Score"
-                  type="number"
-                  value={newSection.mediumScore || 2}
-                  onChange={(e) =>
-                    setNewSection({
-                      ...newSection,
-                      mediumScore: Number(e.target.value),
-                    })
-                  }
-                  fullWidth
-                  inputProps={{ min: 0, step: 0.5 }}
-                  helperText="Points for Medium questions"
-                />
-                <TextField
-                  label="Hard Score"
-                  type="number"
-                  value={newSection.hardScore || 3}
-                  onChange={(e) =>
-                    setNewSection({
-                      ...newSection,
-                      hardScore: Number(e.target.value),
-                    })
-                  }
-                  fullWidth
-                  inputProps={{ min: 0, step: 0.5 }}
-                  helperText="Points for Hard questions"
-                />
-              </>
-            ) : (
+            <>
               <TextField
-                label="Coding Score"
+                label="Easy Score"
                 type="number"
-                value={newSection.codingScore || 5}
+                value={newSection.easyScore || 1}
                 onChange={(e) =>
                   setNewSection({
                     ...newSection,
-                    codingScore: Number(e.target.value),
+                    easyScore: Number(e.target.value),
                   })
                 }
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
-                helperText="Points for coding problems"
+                helperText={newSection.type === "quiz" ? "Points for Easy questions" : "Points for Easy problems"}
               />
-            )}
+              <TextField
+                label="Medium Score"
+                type="number"
+                value={newSection.mediumScore || 2}
+                onChange={(e) =>
+                  setNewSection({
+                    ...newSection,
+                    mediumScore: Number(e.target.value),
+                  })
+                }
+                fullWidth
+                inputProps={{ min: 0, step: 0.5 }}
+                helperText={newSection.type === "quiz" ? "Points for Medium questions" : "Points for Medium problems"}
+              />
+              <TextField
+                label="Hard Score"
+                type="number"
+                value={newSection.hardScore || 3}
+                onChange={(e) =>
+                  setNewSection({
+                    ...newSection,
+                    hardScore: Number(e.target.value),
+                  })
+                }
+                fullWidth
+                inputProps={{ min: 0, step: 0.5 }}
+                helperText={newSection.type === "quiz" ? "Points for Hard questions" : "Points for Hard problems"}
+              />
+            </>
           </Box>
           <TextField
             label="Section Title"
@@ -480,63 +459,47 @@ function SectionCard({
               gap: 2,
             }}
           >
-            {editData.type === "quiz" ? (
-              <>
-                <TextField
-                  label="Easy Score"
-                  type="number"
-                  value={editData.easyScore || 1}
-                  onChange={(e) =>
-                    setEditData({
-                      ...editData,
-                      easyScore: Number(e.target.value),
-                    })
-                  }
-                  fullWidth
-                  inputProps={{ min: 0, step: 0.5 }}
-                />
-                <TextField
-                  label="Medium Score"
-                  type="number"
-                  value={editData.mediumScore || 2}
-                  onChange={(e) =>
-                    setEditData({
-                      ...editData,
-                      mediumScore: Number(e.target.value),
-                    })
-                  }
-                  fullWidth
-                  inputProps={{ min: 0, step: 0.5 }}
-                />
-                <TextField
-                  label="Hard Score"
-                  type="number"
-                  value={editData.hardScore || 3}
-                  onChange={(e) =>
-                    setEditData({
-                      ...editData,
-                      hardScore: Number(e.target.value),
-                    })
-                  }
-                  fullWidth
-                  inputProps={{ min: 0, step: 0.5 }}
-                />
-              </>
-            ) : (
+            <>
               <TextField
-                label="Coding Score"
+                label="Easy Score"
                 type="number"
-                value={editData.codingScore || 5}
+                value={editData.easyScore || 1}
                 onChange={(e) =>
                   setEditData({
                     ...editData,
-                    codingScore: Number(e.target.value),
+                    easyScore: Number(e.target.value),
                   })
                 }
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
               />
-            )}
+              <TextField
+                label="Medium Score"
+                type="number"
+                value={editData.mediumScore || 2}
+                onChange={(e) =>
+                  setEditData({
+                    ...editData,
+                    mediumScore: Number(e.target.value),
+                  })
+                }
+                fullWidth
+                inputProps={{ min: 0, step: 0.5 }}
+              />
+              <TextField
+                label="Hard Score"
+                type="number"
+                value={editData.hardScore || 3}
+                onChange={(e) =>
+                  setEditData({
+                    ...editData,
+                    hardScore: Number(e.target.value),
+                  })
+                }
+                fullWidth
+                inputProps={{ min: 0, step: 0.5 }}
+              />
+            </>
           </Box>
           <TextField
             label="Number of Questions to Show"
@@ -630,11 +593,21 @@ function SectionCard({
                 </Box>
               )}
               {section.type === "coding" && (
-                <Box sx={{ mt: 1 }}>
+                <Box sx={{ mt: 1, display: "flex", gap: 1, flexWrap: "wrap" }}>
                   <Chip
-                    label={`Score: ${section.codingScore || 5} pts`}
+                    label={`Easy: ${section.easyScore || 1} pts`}
                     size="small"
                     sx={{ bgcolor: "#d1fae5", color: "#065f46" }}
+                  />
+                  <Chip
+                    label={`Medium: ${section.mediumScore || 2} pts`}
+                    size="small"
+                    sx={{ bgcolor: "#fef3c7", color: "#92400e" }}
+                  />
+                  <Chip
+                    label={`Hard: ${section.hardScore || 3} pts`}
+                    size="small"
+                    sx={{ bgcolor: "#fee2e2", color: "#991b1b" }}
                   />
                 </Box>
               )}
