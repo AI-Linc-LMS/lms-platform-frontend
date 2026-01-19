@@ -703,10 +703,11 @@ export default function TakeAssessmentPage({
         position: "relative",
         overflow: "hidden",
         pb: 0.5,
-        userSelect: assessmentStarted ? "none" : "auto",
-        WebkitUserSelect: assessmentStarted ? "none" : "auto",
-        MozUserSelect: assessmentStarted ? "none" : "auto",
-        msUserSelect: assessmentStarted ? "none" : "auto",
+        userSelect: assessmentStarted && !submitting ? "none" : "auto",
+        WebkitUserSelect: assessmentStarted && !submitting ? "none" : "auto",
+        MozUserSelect: assessmentStarted && !submitting ? "none" : "auto",
+        msUserSelect: assessmentStarted && !submitting ? "none" : "auto",
+        pointerEvents: submitting ? "none" : "auto",
       }}
       onContextMenu={(e) => {
         if (assessmentStarted) {

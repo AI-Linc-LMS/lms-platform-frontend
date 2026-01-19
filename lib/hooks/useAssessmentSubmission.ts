@@ -35,6 +35,7 @@ export function useAssessmentSubmission({
   const router = useRouter();
   const { showToast } = useToast();
   const isSubmittingRef = useRef(false);
+  const hasNavigatedRef = useRef(false); // Prevent multiple navigations
 
   // Comprehensive camera stop function - optimized to be fast and non-blocking
   const stopCameraCompletely = useCallback(async () => {
@@ -121,15 +122,23 @@ export function useAssessmentSubmission({
   }, [stopProctoring]);
 
   const handleFinalSubmit = useCallback(async () => {
-    if (!assessment || isSubmittingRef.current) return;
+    // SECURITY: Prevent multiple submissions and manipulation
+    if (!assessment || isSubmittingRef.current || hasNavigatedRef.current) {
+      return;
+    }
 
     try {
+      // Lock submission immediately - prevent any manipulation
       isSubmittingRef.current = true;
       setSubmitting(true);
       
-      // Remove beforeunload handler immediately to prevent browser prompt
+      // SECURITY: Remove beforeunload handler immediately to prevent browser prompt
       // This prevents the "leave site" dialog from appearing
       window.onbeforeunload = null;
+      
+      // SECURITY: Disable all user interactions during submission
+      document.body.style.pointerEvents = "none";
+      document.body.style.userSelect = "none";
       
       // Close all modals immediately
       setShowFullscreenWarning(false);
@@ -205,7 +214,16 @@ export function useAssessmentSubmission({
       };
 
       // Submit assessment - THIS IS THE CRITICAL STEP
-      await assessmentService.finalSubmit(slug, requestBody);
+      // SECURITY: Ensure submission actually succeeds before proceeding
+      const submitResult = await assessmentService.finalSubmit(slug, requestBody);
+      
+      // SECURITY: Verify submission was successful
+      if (!submitResult || (submitResult as any).status === "error") {
+        throw new Error("Submission failed. Please try again.");
+      }
+
+      // Mark as navigated to prevent duplicate navigation
+      hasNavigatedRef.current = true;
 
       // Show success immediately
       showToast("Assessment submitted successfully!", "success");
@@ -253,10 +271,23 @@ export function useAssessmentSubmission({
         }
       });
 
-      // Navigate immediately - use router for smooth navigation
-      // The beforeunload handler is already disabled via submitting flag
-      router.replace(`/assessments/${slug}/submission-success`);
+      // Navigate immediately - no delay to prevent freezing
+      // Use window.location for reliable navigation (ensures clean state)
+      // SECURITY: Only navigate if submission was successful
+      if (hasNavigatedRef.current) {
+        // Use requestAnimationFrame for smooth, non-blocking navigation
+        requestAnimationFrame(() => {
+          window.location.href = `/assessments/${slug}/submission-success`;
+        });
+      }
     } catch (error: any) {
+      // SECURITY: Re-enable interactions on error (allow retry)
+      document.body.style.pointerEvents = "";
+      document.body.style.userSelect = "";
+      
+      // Reset submission flags to allow retry
+      hasNavigatedRef.current = false;
+      
       // On error, stop camera in background (non-blocking)
       stopCameraCompletely().catch(() => {
         // Silently fail - don't block error handling
@@ -265,7 +296,7 @@ export function useAssessmentSubmission({
       // IMPORTANT: We do NOT clear responses state on error
       // All student answers remain intact - they can retry submission
       // The payload will be recalculated from current responses state on next attempt
-      showToast("Failed to submit assessment. Please try again.", "error");
+      showToast(error?.message || "Failed to submit assessment. Please try again.", "error");
       setSubmitting(false);
       isSubmittingRef.current = false;
       // Note: responses state is preserved - student can retry without losing work
