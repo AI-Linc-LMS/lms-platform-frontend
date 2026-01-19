@@ -274,7 +274,6 @@ export default function TakeAssessmentPage({
       try {
         stopProctoring();
         try {
-          const { getProctoringService } = require("@/lib/services/proctoring.service");
           const proctoringService = getProctoringService();
           if (proctoringService) {
             proctoringService.stopProctoring();
@@ -282,7 +281,6 @@ export default function TakeAssessmentPage({
         } catch (error) {
           // Continue
         }
-        const { stopAllMediaTracks } = require("@/lib/utils/cameraUtils");
         stopAllMediaTracks();
         document.querySelectorAll("video, audio").forEach((element) => {
           const mediaElement = element as HTMLVideoElement | HTMLAudioElement;
@@ -392,7 +390,6 @@ export default function TakeAssessmentPage({
 
         // Stop proctoring service
         try {
-          const { getProctoringService } = require("@/lib/services/proctoring.service");
           const proctoringService = getProctoringService();
           if (proctoringService) {
             proctoringService.stopProctoring();
@@ -403,7 +400,6 @@ export default function TakeAssessmentPage({
 
         // Stop all media tracks utility
         try {
-          const { stopAllMediaTracks } = require("@/lib/utils/cameraUtils");
           stopAllMediaTracks();
         } catch (error) {
           // Continue
