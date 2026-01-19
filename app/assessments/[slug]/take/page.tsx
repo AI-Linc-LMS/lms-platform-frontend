@@ -31,6 +31,8 @@ import { StartAssessmentButton } from "@/components/assessment/StartAssessmentBu
 import { AssessmentQuizLayout } from "@/components/assessment/AssessmentQuizLayout";
 import { AssessmentCodingLayout } from "@/components/assessment/AssessmentCodingLayout";
 import { mergeAssessmentSections } from "@/utils/assessment.utils";
+import { stopAllMediaTracks } from "@/lib/utils/cameraUtils";
+import { getProctoringService } from "@/lib/services/proctoring.service";
 
 // Lazy load dialogs only
 const SubmissionDialog = lazy(() =>
@@ -265,6 +267,38 @@ export default function TakeAssessmentPage({
     isProctoringActiveRef.current = isProctoringActive;
   }, [isProctoringActive]);
 
+  // Stop camera immediately when submission starts
+  useEffect(() => {
+    if (submitting) {
+      // Stop camera as soon as submission starts
+      try {
+        stopProctoring();
+        try {
+          const { getProctoringService } = require("@/lib/services/proctoring.service");
+          const proctoringService = getProctoringService();
+          if (proctoringService) {
+            proctoringService.stopProctoring();
+          }
+        } catch (error) {
+          // Continue
+        }
+        const { stopAllMediaTracks } = require("@/lib/utils/cameraUtils");
+        stopAllMediaTracks();
+        document.querySelectorAll("video, audio").forEach((element) => {
+          const mediaElement = element as HTMLVideoElement | HTMLAudioElement;
+          if (mediaElement.srcObject) {
+            (mediaElement.srcObject as MediaStream).getTracks().forEach((track) => {
+              track.stop();
+            });
+            mediaElement.srcObject = null;
+          }
+        });
+      } catch (error) {
+        // Silently fail
+      }
+    }
+  }, [submitting, stopProctoring]);
+
   // Fullscreen handler
   const {
     showFullscreenWarning,
@@ -349,25 +383,72 @@ export default function TakeAssessmentPage({
   // Cleanup on unmount - ensure camera is always stopped
   useEffect(() => {
     return () => {
-      if (isProctoringActiveRef.current) {
-        stopProctoring();
-      }
-      // Additional cleanup - stop all media tracks
+      // Aggressively stop camera on unmount
       try {
-        const { stopAllMediaTracks } = require("@/lib/utils/cameraUtils");
-        stopAllMediaTracks();
-        // Force stop all video elements
-        document.querySelectorAll("video").forEach((video) => {
-          if (video.srcObject) {
-            (video.srcObject as MediaStream).getTracks().forEach((track) => {
-              track.stop();
+        // Stop proctoring hook
+        if (isProctoringActiveRef.current) {
+          stopProctoring();
+        }
+
+        // Stop proctoring service
+        try {
+          const { getProctoringService } = require("@/lib/services/proctoring.service");
+          const proctoringService = getProctoringService();
+          if (proctoringService) {
+            proctoringService.stopProctoring();
+          }
+        } catch (error) {
+          // Continue
+        }
+
+        // Stop all media tracks utility
+        try {
+          const { stopAllMediaTracks } = require("@/lib/utils/cameraUtils");
+          stopAllMediaTracks();
+        } catch (error) {
+          // Continue
+        }
+
+        // Force stop all video and audio elements
+        document.querySelectorAll("video, audio").forEach((element) => {
+          const mediaElement = element as HTMLVideoElement | HTMLAudioElement;
+          if (mediaElement.srcObject) {
+            const stream = mediaElement.srcObject as MediaStream;
+            stream.getTracks().forEach((track) => {
+              track.stop(); // Stop regardless of state
             });
-            video.srcObject = null;
+            mediaElement.srcObject = null;
+            mediaElement.pause();
           }
         });
+
+        // Additional cleanup: stop any getUserMedia streams
+        if (navigator.mediaDevices) {
+          navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            .then((stream) => {
+              stream.getTracks().forEach((track) => track.stop());
+            })
+            .catch(() => {
+              // Ignore - this is just cleanup
+            });
+        }
       } catch (error) {
-        // Silently fail
+        // Silently fail - but try one more pass
+        try {
+          document.querySelectorAll("video, audio").forEach((element) => {
+            const mediaElement = element as HTMLVideoElement | HTMLAudioElement;
+            if (mediaElement.srcObject) {
+              (mediaElement.srcObject as MediaStream).getTracks().forEach((track) => {
+                track.stop();
+              });
+              mediaElement.srcObject = null;
+            }
+          });
+        } catch (finalError) {
+          // Last resort
+        }
       }
+
       // Clear debounce timer
       if (answerChangeDebounceRef.current) {
         clearTimeout(answerChangeDebounceRef.current);

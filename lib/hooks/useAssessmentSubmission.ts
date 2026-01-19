@@ -196,36 +196,84 @@ export function useAssessmentSubmission({
       // Submit assessment - THIS IS THE CRITICAL STEP
       await assessmentService.finalSubmit(slug, requestBody);
 
-      // Show success immediately - don't wait for camera cleanup
+      // Show success immediately
       showToast("Assessment submitted successfully!", "success");
 
-      // Stop camera in background - don't block navigation
-      // Use Promise.race with timeout to ensure it doesn't hang
-      Promise.race([
-        stopCameraCompletely(),
-        new Promise((resolve) => setTimeout(resolve, 2000)), // 2 second timeout
-      ]).catch(() => {
-        // Silently fail - camera cleanup shouldn't block submission
-      });
+      // CRITICAL: Stop camera SYNCHRONOUSLY before navigation
+      // This ensures camera is off before component unmounts
+      try {
+        // Stop proctoring hook immediately
+        stopProctoring();
 
-      // Exit fullscreen (non-blocking)
-      Promise.resolve().then(async () => {
+        // Stop proctoring service
         try {
-          if (document.exitFullscreen) {
-            await document.exitFullscreen();
-          } else if ((document as any).webkitExitFullscreen) {
-            await (document as any).webkitExitFullscreen();
-          } else if ((document as any).mozCancelFullScreen) {
-            await (document as any).mozCancelFullScreen();
-          } else if ((document as any).msExitFullscreen) {
-            await (document as any).msExitFullscreen();
-          }
+          const proctoringService = getProctoringService();
+          proctoringService.stopProctoring();
         } catch (error) {
-          // Silently fail
+          // Continue
         }
-      });
 
-      // Navigate immediately - don't wait for camera cleanup
+        // Stop all media tracks immediately
+        stopAllMediaTracks();
+
+        // Aggressively stop all video/audio tracks
+        document.querySelectorAll("video, audio").forEach((element) => {
+          const mediaElement = element as HTMLVideoElement | HTMLAudioElement;
+          if (mediaElement.srcObject) {
+            const stream = mediaElement.srcObject as MediaStream;
+            stream.getTracks().forEach((track) => {
+              track.stop(); // Stop regardless of state
+            });
+            mediaElement.srcObject = null;
+            mediaElement.pause();
+          }
+        });
+
+        // Additional pass: stop any remaining tracks
+        navigator.mediaDevices?.getUserMedia({ video: true, audio: true })
+          .then((stream) => {
+            stream.getTracks().forEach((track) => track.stop());
+          })
+          .catch(() => {
+            // Ignore - this is just cleanup
+          });
+      } catch (error) {
+        // Even if cleanup fails, try one more aggressive pass
+        try {
+          stopAllMediaTracks();
+          document.querySelectorAll("video, audio").forEach((element) => {
+            const mediaElement = element as HTMLVideoElement | HTMLAudioElement;
+            if (mediaElement.srcObject) {
+              (mediaElement.srcObject as MediaStream).getTracks().forEach((track) => {
+                track.stop();
+              });
+              mediaElement.srcObject = null;
+            }
+          });
+        } catch (finalError) {
+          // Last resort - at least we tried
+        }
+      }
+
+      // Exit fullscreen
+      try {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        } else if ((document as any).webkitExitFullscreen) {
+          (document as any).webkitExitFullscreen().catch(() => {});
+        } else if ((document as any).mozCancelFullScreen) {
+          (document as any).mozCancelFullScreen().catch(() => {});
+        } else if ((document as any).msExitFullscreen) {
+          (document as any).msExitFullscreen().catch(() => {});
+        }
+      } catch (error) {
+        // Silently fail
+      }
+
+      // Small delay to ensure camera cleanup completes before navigation
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Navigate after camera is stopped
       router.replace(`/assessments/${slug}/submission-success`);
     } catch (error: any) {
       // On error, stop camera in background (non-blocking)
