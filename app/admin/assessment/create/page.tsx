@@ -140,40 +140,54 @@ export default function CreateAssessmentPage() {
         showToast("Please add at least one section", "error");
         return;
       }
-      const quizSections = sections.filter((s) => s.type === "quiz");
-      if (quizSections.length === 0) {
-        showToast("Please add at least one quiz section", "error");
-        return;
-      }
     }
     if (activeStep === 1) {
-      // Validate questions for each quiz section
+      // Validate questions for each section
       const quizSections = sections.filter((s) => s.type === "quiz");
-      let hasQuestions = false;
+      const codingSections = sections.filter((s) => s.type === "coding");
+      
+      let hasQuizQuestions = false;
+      let hasCodingProblems = false;
 
-      for (const section of quizSections) {
-        if (mcqInputMethod === "existing") {
-          const ids = sectionMcqIds[section.id] || [];
-          if (ids.length > 0) {
-            hasQuestions = true;
-            break;
+      // Check quiz sections
+      if (quizSections.length > 0) {
+        for (const section of quizSections) {
+          if (mcqInputMethod === "existing") {
+            const ids = sectionMcqIds[section.id] || [];
+            if (ids.length > 0) {
+              hasQuizQuestions = true;
+              break;
+            }
+          } else {
+            const mcqs =
+              manualMCQs[section.id] ||
+              csvMCQs[section.id] ||
+              aiMCQs[section.id] ||
+              [];
+            if (mcqs.length > 0) {
+              hasQuizQuestions = true;
+              break;
+            }
           }
-        } else {
-          const mcqs =
-            manualMCQs[section.id] ||
-            csvMCQs[section.id] ||
-            aiMCQs[section.id] ||
-            [];
-          if (mcqs.length > 0) {
-            hasQuestions = true;
+        }
+      }
+
+      // Check coding sections
+      if (codingSections.length > 0) {
+        for (const section of codingSections) {
+          const ids = sectionCodingProblemIds[section.id] || [];
+          const aiProblems = aiCodingProblems[section.id] || [];
+          if (ids.length > 0 || aiProblems.length > 0) {
+            hasCodingProblems = true;
             break;
           }
         }
       }
 
-      if (!hasQuestions) {
+      // At least one section type must have questions
+      if (!hasQuizQuestions && !hasCodingProblems) {
         showToast(
-          "Please add at least one question to a quiz section",
+          "Please add at least one question to a section",
           "error"
         );
         return;
@@ -339,36 +353,39 @@ export default function CreateAssessmentPage() {
         .filter((s) => s.type === "coding")
         .sort((a, b) => a.order - b.order);
 
-      if (quizSections.length === 0) {
-        showToast("Please add at least one quiz section", "error");
+      // Validate that at least one section has questions
+      if (quizSections.length === 0 && codingSections.length === 0) {
+        showToast("Please add at least one section", "error");
         setCreating(false);
         return;
       }
 
       // Validate that all quiz sections have at least 1 question
-      const sectionsWithoutQuestions: Array<{ title: string; order: number }> =
-        [];
-      quizSections.forEach((section) => {
-        const sectionMCQs = getMCQsForSection(section.id);
-        if (sectionMCQs.length === 0) {
-          sectionsWithoutQuestions.push({
-            title: section.title,
-            order: section.order,
-          });
-        }
-      });
+      if (quizSections.length > 0) {
+        const sectionsWithoutQuestions: Array<{ title: string; order: number }> =
+          [];
+        quizSections.forEach((section) => {
+          const sectionMCQs = getMCQsForSection(section.id);
+          if (sectionMCQs.length === 0) {
+            sectionsWithoutQuestions.push({
+              title: section.title,
+              order: section.order,
+            });
+          }
+        });
 
-      if (sectionsWithoutQuestions.length > 0) {
-        const sectionNames = sectionsWithoutQuestions
-          .sort((a, b) => a.order - b.order)
-          .map((s) => `"${s.title}" (Order: ${s.order})`)
-          .join(", ");
-        showToast(
-          `Please add at least 1 question to the following quiz sections: ${sectionNames}`,
-          "error"
-        );
-        setCreating(false);
-        return;
+        if (sectionsWithoutQuestions.length > 0) {
+          const sectionNames = sectionsWithoutQuestions
+            .sort((a, b) => a.order - b.order)
+            .map((s) => `"${s.title}" (Order: ${s.order})`)
+            .join(", ");
+          showToast(
+            `Please add at least 1 question to the following quiz sections: ${sectionNames}`,
+            "error"
+          );
+          setCreating(false);
+          return;
+        }
       }
 
       // Validate number_of_questions_to_show for quiz sections

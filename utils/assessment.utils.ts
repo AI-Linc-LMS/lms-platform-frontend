@@ -121,6 +121,8 @@ export function mergeAssessmentSections(
 /**
  * Format assessment responses for API submission
  * Uses actual section IDs from the assessment, not indices
+ * For quiz sections: includes ALL questions (even if not attempted) for post-assessment analysis
+ * For coding sections: only includes questions that were actually submitted (not template code)
  */
 export function formatAssessmentResponses(
   responses: Record<string, Record<string, any>>,
@@ -142,37 +144,68 @@ export function formatAssessmentResponses(
       const questionId = question.id;
       const questionResponse = sectionResponses[questionId];
 
-      if (questionResponse !== undefined && questionResponse !== null) {
-        if (sectionType === "coding") {
-          // Format coding response
-          sectionResponseData[String(questionId)] = {
-            tc_passed:
-              questionResponse.tc_passed ?? questionResponse.passed ?? 0,
-            total_tc:
-              questionResponse.total_tc ??
-              questionResponse.total_test_cases ??
-              0,
-            best_code:
-              questionResponse.best_code ?? questionResponse.code ?? "",
-          };
-        } else {
-          // Format quiz response (just the answer value)
+      if (sectionType === "coding") {
+        // For coding: only include if actually submitted (has submitted flag or test case results)
+        // Don't send template code as best_code if not attempted
+        const hasTestResults = questionResponse?.tc_passed !== undefined ||
+                               questionResponse?.total_tc !== undefined ||
+                               questionResponse?.passed !== undefined ||
+                               questionResponse?.total_test_cases !== undefined;
+        
+        const isExplicitlySubmitted = questionResponse?.submitted === true;
+        
+        // Only include if explicitly submitted OR has test results (indicates code was run)
+        if ((isExplicitlySubmitted || hasTestResults) && questionResponse) {
+          const code = questionResponse.best_code ?? questionResponse.code ?? "";
+          
+          // Get template code for comparison
+          const templateCode = question.template_code?.python || 
+                              question.template_code?.python3 || 
+                              question.template_code?.java ||
+                              question.template_code?.cpp ||
+                              question.template_code?.javascript ||
+                              "";
+          
+          // Only send if code exists and is different from template (or if explicitly submitted with test results)
+          const hasActualCode = code.trim() !== "" && 
+                               (code.trim() !== templateCode.trim() || hasTestResults);
+          
+          if (hasActualCode) {
+            sectionResponseData[String(questionId)] = {
+              tc_passed:
+                questionResponse.tc_passed ?? questionResponse.passed ?? 0,
+              total_tc:
+                questionResponse.total_tc ??
+                questionResponse.total_test_cases ??
+                0,
+              best_code: code,
+            };
+          }
+        }
+      } else {
+        // For quiz: include ALL questions, even if not attempted (for post-assessment analysis)
+        // Send null or empty string if not attempted
+        if (questionResponse !== undefined && questionResponse !== null) {
           sectionResponseData[String(questionId)] = questionResponse;
+        } else {
+          // Include unanswered questions with null value
+          sectionResponseData[String(questionId)] = null;
         }
       }
     });
 
-    // Only add section if it has responses
-    if (Object.keys(sectionResponseData).length > 0) {
+    // For quiz sections: always add section (even if all questions are null)
+    // For coding sections: only add if it has actual submissions
+    if (sectionType === "quiz" && sectionQuestions.length > 0) {
       const sectionEntry = {
-        [String(section.id)]: sectionResponseData, // Use actual section ID, not index
+        [String(section.id)]: sectionResponseData,
       };
-
-      if (sectionType === "coding") {
-        codingProblemSectionId.push(sectionEntry);
-      } else {
-        quizSectionId.push(sectionEntry);
-      }
+      quizSectionId.push(sectionEntry);
+    } else if (sectionType === "coding" && Object.keys(sectionResponseData).length > 0) {
+      const sectionEntry = {
+        [String(section.id)]: sectionResponseData,
+      };
+      codingProblemSectionId.push(sectionEntry);
     }
   });
 

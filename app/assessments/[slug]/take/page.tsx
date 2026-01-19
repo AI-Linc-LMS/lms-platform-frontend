@@ -196,12 +196,9 @@ export default function TakeAssessmentPage({
       });
       setResponses(initialResponses);
 
-      // Set initial section and question immediately
-      const firstSectionIndex = sections.findIndex(
-        (section: any) => (section.section_type || "quiz") === "quiz"
-      );
-      if (firstSectionIndex !== -1) {
-        setCurrentSectionIndex(firstSectionIndex);
+      // Set initial section and question immediately - use first section by order
+      if (sections.length > 0) {
+        setCurrentSectionIndex(0);
         setCurrentQuestionIndex(0);
       }
 
@@ -573,14 +570,16 @@ export default function TakeAssessmentPage({
     const codingResponses = responses["coding"] || {};
     return (currentSection.questions || []).map((q: any) => {
       const response = codingResponses[q.id];
-      // Mark as answered only if code has been submitted (has test case results)
+      // Mark as answered ONLY if code was explicitly submitted (has submitted flag)
+      // OR has test case results (indicating code was run/submitted)
+      // Don't mark as answered just because template code was saved
       const isAnswered = !!(
         response &&
-        response.code &&
-        response.code.trim() !== "" &&
+        response.submitted === true &&
         (response.tc_passed !== undefined ||
           response.total_tc !== undefined ||
-          response.submitted === true)
+          response.passed !== undefined ||
+          response.total_test_cases !== undefined)
       );
       return {
         id: q.id,

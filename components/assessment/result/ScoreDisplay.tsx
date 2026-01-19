@@ -207,7 +207,7 @@ export function ScoreDisplay({
               opacity: 0.9,
             }}
           >
-            {percentage.toFixed(1)}% Complete
+            {percentage.toFixed(1)}%
           </Typography>
         </Box>
 

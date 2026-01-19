@@ -548,6 +548,7 @@ export function AssessmentCodingLayout({
             problemData={problemData}
             onRunCustomInput={handleRunCustomInput}
             runningCustomInput={false}
+            isAssessment={true}
           />
         </Box>
       </Box>
