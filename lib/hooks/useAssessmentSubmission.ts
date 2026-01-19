@@ -17,6 +17,7 @@ interface UseAssessmentSubmissionOptions {
   stopProctoring: () => void;
   setSubmitting: (value: boolean) => void;
   setShowFullscreenWarning: (value: boolean) => void;
+  setShowSubmitDialog?: (value: boolean) => void;
 }
 
 export function useAssessmentSubmission({
@@ -29,6 +30,7 @@ export function useAssessmentSubmission({
   stopProctoring,
   setSubmitting,
   setShowFullscreenWarning,
+  setShowSubmitDialog,
 }: UseAssessmentSubmissionOptions) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -124,7 +126,12 @@ export function useAssessmentSubmission({
     try {
       isSubmittingRef.current = true;
       setSubmitting(true);
+      
+      // Close all modals immediately
       setShowFullscreenWarning(false);
+      if (setShowSubmitDialog) {
+        setShowSubmitDialog(false);
+      }
 
       // CRITICAL: Capture responses as deep copy - original state is NEVER modified
       // This ensures if submission fails, all student answers remain intact for retry
@@ -270,10 +277,10 @@ export function useAssessmentSubmission({
         // Silently fail
       }
 
-      // Small delay to ensure camera cleanup completes before navigation
+      // Small delay to ensure camera cleanup completes and modals close before navigation
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Navigate after camera is stopped
+      // Navigate to submission success page after all cleanup
       router.replace(`/assessments/${slug}/submission-success`);
     } catch (error: any) {
       // On error, stop camera in background (non-blocking)
@@ -299,6 +306,7 @@ export function useAssessmentSubmission({
     stopProctoring,
     setSubmitting,
     setShowFullscreenWarning,
+    setShowSubmitDialog,
     router,
     showToast,
     stopCameraCompletely,

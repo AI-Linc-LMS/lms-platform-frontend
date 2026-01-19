@@ -319,6 +319,7 @@ export default function TakeAssessmentPage({
     stopProctoring,
     setSubmitting,
     setShowFullscreenWarning,
+    setShowSubmitDialog,
   });
 
   // Start assessment
