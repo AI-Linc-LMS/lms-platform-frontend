@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Box,
@@ -199,6 +199,136 @@ export default function CreateAssessmentPage() {
   const handleBack = () => {
     setActiveStep((prev) => prev - 1);
   };
+
+  // Validation function to check if Next button should be enabled
+  const isNextButtonDisabled = useMemo(() => {
+    if (activeStep === 0) {
+      // Step 0: Basic info validation
+      if (!title.trim() || !instructions.trim()) {
+        return true;
+      }
+      if (durationMinutes < 1) {
+        return true;
+      }
+      if (isPaid && (!price || Number(price) <= 0)) {
+        return true;
+      }
+      if (sections.length === 0) {
+        return true;
+      }
+      return false;
+    }
+    
+    if (activeStep === 1) {
+      // Step 1: Validate questions for each section
+      const quizSections = sections.filter((s) => s.type === "quiz");
+      const codingSections = sections.filter((s) => s.type === "coding");
+      
+      // Check quiz sections
+      for (const section of quizSections) {
+        // Calculate total MCQs for this section (inline logic)
+        let totalQuestions = 0;
+        if (manualMCQs[section.id]) {
+          totalQuestions += manualMCQs[section.id].length;
+        }
+        if (csvMCQs[section.id]) {
+          totalQuestions += csvMCQs[section.id].length;
+        }
+        if (aiMCQs[section.id]) {
+          totalQuestions += aiMCQs[section.id].length;
+        }
+        const existingIds = sectionMcqIds[section.id] || [];
+        totalQuestions += existingIds.length;
+        
+        const requiredQuestions = section.number_of_questions_to_show ?? 1;
+        
+        if (totalQuestions < requiredQuestions) {
+          return true; // Not enough questions
+        }
+      }
+      
+      // Check coding sections
+      for (const section of codingSections) {
+        // Calculate total coding problems for this section (inline logic)
+        let totalProblems = 0;
+        const existingIds = sectionCodingProblemIds[section.id] || [];
+        totalProblems += existingIds.length;
+        if (aiCodingProblems[section.id]) {
+          totalProblems += aiCodingProblems[section.id].length;
+        }
+        
+        const requiredProblems = section.number_of_questions_to_show ?? 1;
+        
+        if (totalProblems < requiredProblems) {
+          return true; // Not enough problems
+        }
+      }
+      
+      // At least one section type must have questions
+      let hasQuizQuestions = false;
+      let hasCodingProblems = false;
+      
+      if (quizSections.length > 0) {
+        for (const section of quizSections) {
+          let totalQuestions = 0;
+          if (manualMCQs[section.id]) {
+            totalQuestions += manualMCQs[section.id].length;
+          }
+          if (csvMCQs[section.id]) {
+            totalQuestions += csvMCQs[section.id].length;
+          }
+          if (aiMCQs[section.id]) {
+            totalQuestions += aiMCQs[section.id].length;
+          }
+          const existingIds = sectionMcqIds[section.id] || [];
+          totalQuestions += existingIds.length;
+          
+          if (totalQuestions > 0) {
+            hasQuizQuestions = true;
+            break;
+          }
+        }
+      }
+      
+      if (codingSections.length > 0) {
+        for (const section of codingSections) {
+          let totalProblems = 0;
+          const existingIds = sectionCodingProblemIds[section.id] || [];
+          totalProblems += existingIds.length;
+          if (aiCodingProblems[section.id]) {
+            totalProblems += aiCodingProblems[section.id].length;
+          }
+          
+          if (totalProblems > 0) {
+            hasCodingProblems = true;
+            break;
+          }
+        }
+      }
+      
+      if (!hasQuizQuestions && !hasCodingProblems) {
+        return true; // No questions at all
+      }
+      
+      return false;
+    }
+    
+    return false;
+  }, [
+    activeStep,
+    title,
+    instructions,
+    durationMinutes,
+    isPaid,
+    price,
+    sections,
+    sectionMcqIds,
+    manualMCQs,
+    csvMCQs,
+    aiMCQs,
+    sectionCodingProblemIds,
+    aiCodingProblems,
+  ]);
 
   // Get total count of MCQs for a specific section (all sources combined)
   const getTotalMCQCountForSection = (sectionId: string): number => {
@@ -771,6 +901,7 @@ export default function CreateAssessmentPage() {
               <Button
                 variant="contained"
                 onClick={handleNext}
+                disabled={isNextButtonDisabled}
                 endIcon={<IconWrapper icon="mdi:arrow-right" size={18} />}
                 sx={{ bgcolor: "#6366f1" }}
               >
