@@ -17,6 +17,7 @@ import {
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface SectionStatus {
+  sectionName: string;
   sectionType: string;
   answered: number;
   total: number;
@@ -107,7 +108,7 @@ export function SubmissionDialog({
                   index < sections.length - 1 ? "1px solid #e5e7eb" : "none",
               }}
             >
-              <Typography variant="body2">{section.sectionType}</Typography>
+              <Typography variant="body2">{section.sectionName}</Typography>
               <Typography variant="body2" fontWeight={600}>
                 {section.answered} / {section.total}
               </Typography>
