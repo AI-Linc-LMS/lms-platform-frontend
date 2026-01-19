@@ -552,18 +552,41 @@ export default function TakeAssessmentPage({
     return sections.map((section: any) => {
       const sectionType = section.section_type || "quiz";
       const sectionResponses = responses[sectionType] || {};
-      // Optimize: only count non-empty responses
+      const sectionQuestions = section.questions || [];
+      
+      // Count answered questions for THIS specific section only
+      // Check each question in this section to see if it has a response
       let answered = 0;
-      for (const key in sectionResponses) {
-        const value = sectionResponses[key];
-        if (value !== undefined && value !== null && value !== "") {
-          answered++;
+      sectionQuestions.forEach((question: any) => {
+        const questionId = question.id;
+        const response = sectionResponses[questionId];
+        
+        // For quiz: check if answer is selected
+        if (sectionType === "quiz") {
+          if (response !== undefined && response !== null && response !== "") {
+            answered++;
+          }
+        } 
+        // For coding: check if code was explicitly submitted (has submitted flag or test results)
+        else if (sectionType === "coding") {
+          if (
+            response &&
+            response.submitted === true &&
+            (response.tc_passed !== undefined ||
+              response.total_tc !== undefined ||
+              response.passed !== undefined ||
+              response.total_test_cases !== undefined)
+          ) {
+            answered++;
+          }
         }
-      }
+      });
+      
       return {
+        sectionName: section.title || section.section_type || "Section",
         sectionType: sectionType,
         answered,
-        total: section.questions?.length || 0,
+        total: sectionQuestions.length,
       };
     });
   }, [sections, responses]);
