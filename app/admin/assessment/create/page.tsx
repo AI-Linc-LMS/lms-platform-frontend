@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Box,
@@ -140,40 +140,54 @@ export default function CreateAssessmentPage() {
         showToast("Please add at least one section", "error");
         return;
       }
-      const quizSections = sections.filter((s) => s.type === "quiz");
-      if (quizSections.length === 0) {
-        showToast("Please add at least one quiz section", "error");
-        return;
-      }
     }
     if (activeStep === 1) {
-      // Validate questions for each quiz section
+      // Validate questions for each section
       const quizSections = sections.filter((s) => s.type === "quiz");
-      let hasQuestions = false;
+      const codingSections = sections.filter((s) => s.type === "coding");
+      
+      let hasQuizQuestions = false;
+      let hasCodingProblems = false;
 
-      for (const section of quizSections) {
-        if (mcqInputMethod === "existing") {
-          const ids = sectionMcqIds[section.id] || [];
-          if (ids.length > 0) {
-            hasQuestions = true;
-            break;
+      // Check quiz sections
+      if (quizSections.length > 0) {
+        for (const section of quizSections) {
+          if (mcqInputMethod === "existing") {
+            const ids = sectionMcqIds[section.id] || [];
+            if (ids.length > 0) {
+              hasQuizQuestions = true;
+              break;
+            }
+          } else {
+            const mcqs =
+              manualMCQs[section.id] ||
+              csvMCQs[section.id] ||
+              aiMCQs[section.id] ||
+              [];
+            if (mcqs.length > 0) {
+              hasQuizQuestions = true;
+              break;
+            }
           }
-        } else {
-          const mcqs =
-            manualMCQs[section.id] ||
-            csvMCQs[section.id] ||
-            aiMCQs[section.id] ||
-            [];
-          if (mcqs.length > 0) {
-            hasQuestions = true;
+        }
+      }
+
+      // Check coding sections
+      if (codingSections.length > 0) {
+        for (const section of codingSections) {
+          const ids = sectionCodingProblemIds[section.id] || [];
+          const aiProblems = aiCodingProblems[section.id] || [];
+          if (ids.length > 0 || aiProblems.length > 0) {
+            hasCodingProblems = true;
             break;
           }
         }
       }
 
-      if (!hasQuestions) {
+      // At least one section type must have questions
+      if (!hasQuizQuestions && !hasCodingProblems) {
         showToast(
-          "Please add at least one question to a quiz section",
+          "Please add at least one question to a section",
           "error"
         );
         return;
@@ -184,6 +198,162 @@ export default function CreateAssessmentPage() {
 
   const handleBack = () => {
     setActiveStep((prev) => prev - 1);
+  };
+
+  // Validation function to check if Next button should be enabled
+  const isNextButtonDisabled = useMemo(() => {
+    if (activeStep === 0) {
+      // Step 0: Basic info validation
+      if (!title.trim() || !instructions.trim()) {
+        return true;
+      }
+      if (durationMinutes < 1) {
+        return true;
+      }
+      if (isPaid && (!price || Number(price) <= 0)) {
+        return true;
+      }
+      if (sections.length === 0) {
+        return true;
+      }
+      return false;
+    }
+    
+    if (activeStep === 1) {
+      // Step 1: Validate questions for each section
+      const quizSections = sections.filter((s) => s.type === "quiz");
+      const codingSections = sections.filter((s) => s.type === "coding");
+      
+      // Check quiz sections
+      for (const section of quizSections) {
+        // Calculate total MCQs for this section (inline logic)
+        let totalQuestions = 0;
+        if (manualMCQs[section.id]) {
+          totalQuestions += manualMCQs[section.id].length;
+        }
+        if (csvMCQs[section.id]) {
+          totalQuestions += csvMCQs[section.id].length;
+        }
+        if (aiMCQs[section.id]) {
+          totalQuestions += aiMCQs[section.id].length;
+        }
+        const existingIds = sectionMcqIds[section.id] || [];
+        totalQuestions += existingIds.length;
+        
+        const requiredQuestions = section.number_of_questions_to_show ?? 1;
+        
+        if (totalQuestions < requiredQuestions) {
+          return true; // Not enough questions
+        }
+      }
+      
+      // Check coding sections
+      for (const section of codingSections) {
+        // Calculate total coding problems for this section (inline logic)
+        let totalProblems = 0;
+        const existingIds = sectionCodingProblemIds[section.id] || [];
+        totalProblems += existingIds.length;
+        if (aiCodingProblems[section.id]) {
+          totalProblems += aiCodingProblems[section.id].length;
+        }
+        
+        const requiredProblems = section.number_of_questions_to_show ?? 1;
+        
+        if (totalProblems < requiredProblems) {
+          return true; // Not enough problems
+        }
+      }
+      
+      // At least one section type must have questions
+      let hasQuizQuestions = false;
+      let hasCodingProblems = false;
+      
+      if (quizSections.length > 0) {
+        for (const section of quizSections) {
+          let totalQuestions = 0;
+          if (manualMCQs[section.id]) {
+            totalQuestions += manualMCQs[section.id].length;
+          }
+          if (csvMCQs[section.id]) {
+            totalQuestions += csvMCQs[section.id].length;
+          }
+          if (aiMCQs[section.id]) {
+            totalQuestions += aiMCQs[section.id].length;
+          }
+          const existingIds = sectionMcqIds[section.id] || [];
+          totalQuestions += existingIds.length;
+          
+          if (totalQuestions > 0) {
+            hasQuizQuestions = true;
+            break;
+          }
+        }
+      }
+      
+      if (codingSections.length > 0) {
+        for (const section of codingSections) {
+          let totalProblems = 0;
+          const existingIds = sectionCodingProblemIds[section.id] || [];
+          totalProblems += existingIds.length;
+          if (aiCodingProblems[section.id]) {
+            totalProblems += aiCodingProblems[section.id].length;
+          }
+          
+          if (totalProblems > 0) {
+            hasCodingProblems = true;
+            break;
+          }
+        }
+      }
+      
+      if (!hasQuizQuestions && !hasCodingProblems) {
+        return true; // No questions at all
+      }
+      
+      return false;
+    }
+    
+    return false;
+  }, [
+    activeStep,
+    title,
+    instructions,
+    durationMinutes,
+    isPaid,
+    price,
+    sections,
+    sectionMcqIds,
+    manualMCQs,
+    csvMCQs,
+    aiMCQs,
+    sectionCodingProblemIds,
+    aiCodingProblems,
+  ]);
+
+  // Get total count of MCQs for a specific section (all sources combined)
+  const getTotalMCQCountForSection = (sectionId: string): number => {
+    let count = 0;
+    
+    // Manual MCQs
+    if (manualMCQs[sectionId]) {
+      count += manualMCQs[sectionId].length;
+    }
+    
+    // CSV MCQs
+    if (csvMCQs[sectionId]) {
+      count += csvMCQs[sectionId].length;
+    }
+    
+    // AI MCQs
+    if (aiMCQs[sectionId]) {
+      count += aiMCQs[sectionId].length;
+    }
+    
+    // Existing pool MCQs
+    const existingIds = sectionMcqIds[sectionId] || [];
+    count += existingIds.length;
+    
+    return count;
   };
 
   // Get MCQs for a specific section - checks ALL input methods
@@ -233,6 +403,22 @@ export default function CreateAssessmentPage() {
   // Get MCQ IDs for a specific section (for existing pool)
   const getMcqIdsForSection = (sectionId: string): number[] => {
     return sectionMcqIds[sectionId] || [];
+  };
+
+  // Get total count of coding problems for a specific section (all sources combined)
+  const getTotalCodingProblemCountForSection = (sectionId: string): number => {
+    let count = 0;
+    
+    // Existing pool coding problems
+    const existingIds = sectionCodingProblemIds[sectionId] || [];
+    count += existingIds.length;
+    
+    // AI generated coding problems
+    if (aiCodingProblems[sectionId]) {
+      count += aiCodingProblems[sectionId].length;
+    }
+    
+    return count;
   };
 
   // Get Coding Problem IDs for a specific section
@@ -297,32 +483,93 @@ export default function CreateAssessmentPage() {
         .filter((s) => s.type === "coding")
         .sort((a, b) => a.order - b.order);
 
-      if (quizSections.length === 0) {
-        showToast("Please add at least one quiz section", "error");
+      // Validate that at least one section has questions
+      if (quizSections.length === 0 && codingSections.length === 0) {
+        showToast("Please add at least one section", "error");
         setCreating(false);
         return;
       }
 
       // Validate that all quiz sections have at least 1 question
-      const sectionsWithoutQuestions: Array<{ title: string; order: number }> =
-        [];
+      if (quizSections.length > 0) {
+        const sectionsWithoutQuestions: Array<{ title: string; order: number }> =
+          [];
+        quizSections.forEach((section) => {
+          const sectionMCQs = getMCQsForSection(section.id);
+          if (sectionMCQs.length === 0) {
+            sectionsWithoutQuestions.push({
+              title: section.title,
+              order: section.order,
+            });
+          }
+        });
+
+        if (sectionsWithoutQuestions.length > 0) {
+          const sectionNames = sectionsWithoutQuestions
+            .sort((a, b) => a.order - b.order)
+            .map((s) => `"${s.title}" (Order: ${s.order})`)
+            .join(", ");
+          showToast(
+            `Please add at least 1 question to the following quiz sections: ${sectionNames}`,
+            "error"
+          );
+          setCreating(false);
+          return;
+        }
+      }
+
+      // Validate number_of_questions_to_show for quiz sections
+      const invalidQuizSections: Array<{ title: string; order: number; required: number; selected: number }> = [];
       quizSections.forEach((section) => {
-        const sectionMCQs = getMCQsForSection(section.id);
-        if (sectionMCQs.length === 0) {
-          sectionsWithoutQuestions.push({
-            title: section.title,
-            order: section.order,
-          });
+        if (section.number_of_questions_to_show !== undefined) {
+          const totalQuestions = getTotalMCQCountForSection(section.id);
+          if (totalQuestions < section.number_of_questions_to_show) {
+            invalidQuizSections.push({
+              title: section.title,
+              order: section.order,
+              required: section.number_of_questions_to_show,
+              selected: totalQuestions,
+            });
+          }
         }
       });
 
-      if (sectionsWithoutQuestions.length > 0) {
-        const sectionNames = sectionsWithoutQuestions
+      if (invalidQuizSections.length > 0) {
+        const errorMessages = invalidQuizSections
           .sort((a, b) => a.order - b.order)
-          .map((s) => `"${s.title}" (Order: ${s.order})`)
-          .join(", ");
+          .map((s) => `"${s.title}" (Order: ${s.order}): Need ${s.required} questions, but only ${s.selected} selected`)
+          .join("; ");
         showToast(
-          `Please add at least 1 question to the following quiz sections: ${sectionNames}`,
+          `Quiz sections with insufficient questions: ${errorMessages}`,
+          "error"
+        );
+        setCreating(false);
+        return;
+      }
+
+      // Validate number_of_questions_to_show for coding sections
+      const invalidCodingSections: Array<{ title: string; order: number; required: number; selected: number }> = [];
+      codingSections.forEach((section) => {
+        if (section.number_of_questions_to_show !== undefined) {
+          const totalProblems = getTotalCodingProblemCountForSection(section.id);
+          if (totalProblems < section.number_of_questions_to_show) {
+            invalidCodingSections.push({
+              title: section.title,
+              order: section.order,
+              required: section.number_of_questions_to_show,
+              selected: totalProblems,
+            });
+          }
+        }
+      });
+
+      if (invalidCodingSections.length > 0) {
+        const errorMessages = invalidCodingSections
+          .sort((a, b) => a.order - b.order)
+          .map((s) => `"${s.title}" (Order: ${s.order}): Need ${s.required} problems, but only ${s.selected} selected`)
+          .join("; ");
+        showToast(
+          `Coding sections with insufficient problems: ${errorMessages}`,
           "error"
         );
         setCreating(false);
@@ -368,7 +615,7 @@ export default function CreateAssessmentPage() {
           const sectionPayload: any = {
             title: section.title.trim(),
             order: section.order,
-            number_of_questions: sectionMCQs.length, // Total count from all sources
+            number_of_questions: section.number_of_questions_to_show !== undefined ? section.number_of_questions_to_show:sectionMCQs.length, // Total count from all sources
           };
 
           // Include description only if it exists
@@ -387,11 +634,6 @@ export default function CreateAssessmentPage() {
             sectionPayload.hard_score = section.hardScore;
           }
 
-          // Include number of questions to show
-          if (section.number_of_questions_to_show !== undefined) {
-            sectionPayload.number_of_questions_to_show =
-              section.number_of_questions_to_show;
-          }
 
           // Include mcqs if there are any from manual/csv/ai input
           if (mcqsToSend.length > 0) {
@@ -416,7 +658,7 @@ export default function CreateAssessmentPage() {
           const sectionPayload: any = {
             title: section.title.trim(),
             order: section.order,
-            number_of_questions: sectionCodingProblemIds.length,
+            number_of_questions: section.number_of_questions_to_show !== undefined? section.number_of_questions_to_show: sectionCodingProblemIds.length,
             coding_problem_ids: sectionCodingProblemIds,
           };
 
@@ -425,15 +667,15 @@ export default function CreateAssessmentPage() {
             sectionPayload.description = section.description.trim();
           }
 
-          // Include score for coding sections
-          if (section.codingScore !== undefined) {
-            sectionPayload.coding_score = section.codingScore;
+          // Include scores for coding sections
+          if (section.easyScore !== undefined) {
+            sectionPayload.easy_score = section.easyScore;
           }
-
-          // Include number of questions to show
-          if (section.number_of_questions_to_show !== undefined) {
-            sectionPayload.number_of_questions_to_show =
-              section.number_of_questions_to_show;
+          if (section.mediumScore !== undefined) {
+            sectionPayload.medium_score = section.mediumScore;
+          }
+          if (section.hardScore !== undefined) {
+            sectionPayload.hard_score = section.hardScore;
           }
 
           return sectionPayload;
@@ -659,6 +901,7 @@ export default function CreateAssessmentPage() {
               <Button
                 variant="contained"
                 onClick={handleNext}
+                disabled={isNextButtonDisabled}
                 endIcon={<IconWrapper icon="mdi:arrow-right" size={18} />}
                 sx={{ bgcolor: "#6366f1" }}
               >

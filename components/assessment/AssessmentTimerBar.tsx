@@ -154,21 +154,64 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
       <Button
         variant="contained"
         onClick={onSubmit}
-        disabled={!isLastQuestion || submitting}
-        startIcon={<IconWrapper icon="mdi:check-circle" />}
+        disabled={submitting}
+        startIcon={
+          submitting ? (
+            <Box
+              component="span"
+              sx={{
+                display: "inline-block",
+                animation: "spin 1s linear infinite",
+                "@keyframes spin": {
+                  "0%": { transform: "rotate(0deg)" },
+                  "100%": { transform: "rotate(360deg)" },
+                },
+              }}
+            >
+              <IconWrapper icon="mdi:loading" size={20} />
+            </Box>
+          ) : (
+            <IconWrapper icon="mdi:check-circle" size={20} />
+          )
+        }
         sx={{
-          minWidth: "150px",
-          backgroundColor: "#374151",
+          minWidth: { xs: "120px", md: "180px" },
+          px: { xs: 2, md: 3 },
+          py: 1.25,
+          backgroundColor: isLastQuestion ? "#10b981" : "#6366f1",
+          color: "#ffffff",
+          fontWeight: 600,
+          fontSize: { xs: "0.875rem", md: "1rem" },
+          textTransform: "none",
+          borderRadius: 2,
+          boxShadow: isLastQuestion
+            ? "0 4px 14px 0 rgba(16, 185, 129, 0.39)"
+            : "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
+          transition: "all 0.2s ease-in-out",
           "&:hover": {
-            backgroundColor: "#1f2937",
+            backgroundColor: isLastQuestion ? "#059669" : "#4f46e5",
+            boxShadow: isLastQuestion
+              ? "0 6px 20px 0 rgba(16, 185, 129, 0.5)"
+              : "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
+            transform: "translateY(-1px)",
+          },
+          "&:active": {
+            transform: "translateY(0)",
           },
           "&:disabled": {
-            backgroundColor: "#e5e7eb",
-            color: "#9ca3af",
+            backgroundColor: "#9ca3af",
+            color: "#ffffff",
+            boxShadow: "none",
+            transform: "none",
+            cursor: "not-allowed",
           },
         }}
       >
-        {submitting ? "Submitting..." : "Submit Assessment"}
+        {submitting
+          ? "Submitting..."
+          : isLastQuestion
+          ? "Submit Assessment"
+          : "Submit Early"}
       </Button>
     </Paper>
   );

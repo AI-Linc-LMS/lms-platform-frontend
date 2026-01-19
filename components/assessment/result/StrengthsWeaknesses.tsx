@@ -25,10 +25,15 @@ export function StrengthsWeaknesses({
       <Paper
         elevation={0}
         sx={{
-          p: 3,
-          border: "1px solid #d1fae5",
+          p: 3.5,
+          border: "2px solid #d1fae5",
           borderRadius: 3,
           background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)",
+          transition: "all 0.3s ease",
+          "&:hover": {
+            transform: "translateY(-2px)",
+            boxShadow: "0 8px 20px rgba(16, 185, 129, 0.15)",
+          },
         }}
       >
         <Box
@@ -110,10 +115,15 @@ export function StrengthsWeaknesses({
       <Paper
         elevation={0}
         sx={{
-          p: 3,
-          border: "1px solid #fecaca",
+          p: 3.5,
+          border: "2px solid #fecaca",
           borderRadius: 3,
           background: "linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)",
+          transition: "all 0.3s ease",
+          "&:hover": {
+            transform: "translateY(-2px)",
+            boxShadow: "0 8px 20px rgba(239, 68, 68, 0.15)",
+          },
         }}
       >
         <Box

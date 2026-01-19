@@ -25,7 +25,7 @@ export const AnswerOptionsList = memo(function AnswerOptionsList({
   onAnswerSelect,
 }: AnswerOptionsListProps) {
   return (
-    <Box sx={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
+    <Box sx={{ flex: 1, display: "flex", flexDirection: "column", gap: 2.5, mt: 3 }}>
       {options.map((option) => {
         const isSelected = selectedAnswer === option.id;
         const isCorrect = showCorrectAnswer && correctAnswerId === option.id;

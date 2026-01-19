@@ -4,23 +4,23 @@ import { Box, Paper, Typography, List, ListItem, ListItemButton, ListItemText } 
 import { useState, memo } from "react";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
-interface QuizQuestion {
+interface CodingQuestion {
   id: string | number;
-  question: string;
+  title: string;
   answered?: boolean;
 }
 
-interface QuizQuestionListProps {
-  questions: QuizQuestion[];
+interface CodingQuestionListProps {
+  questions: CodingQuestion[];
   currentQuestionId: string | number;
   onQuestionClick?: (questionId: string | number) => void;
 }
 
-const QuizQuestionListComponent = memo(function QuizQuestionList({
+const CodingQuestionListComponent = memo(function CodingQuestionList({
   questions,
   currentQuestionId,
   onQuestionClick,
-}: QuizQuestionListProps) {
+}: CodingQuestionListProps) {
   const [expanded, setExpanded] = useState(true);
 
   return (
@@ -56,7 +56,7 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
             fontSize: "1rem",
           }}
         >
-          Quiz Questions List
+          Coding Problems
         </Typography>
         <IconWrapper
           icon={expanded ? "mdi:chevron-up" : "mdi:chevron-down"}
@@ -105,11 +105,9 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
                     py: 1.5,
                     px: 2,
                     backgroundColor: isCurrent ? "#eff6ff" : "transparent",
-                    borderLeft: isCurrent ? "3px solid #6366f1" : "3px solid transparent",
                     "&:hover": {
                       backgroundColor: isCurrent ? "#dbeafe" : "#f9fafb",
                     },
-                    transition: "all 0.2s ease-in-out",
                   }}
                 >
                   <ListItemText
@@ -125,18 +123,18 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
                           <IconWrapper
                             icon="mdi:check-circle"
                             size={20}
-                            color={isCurrent ? "#6366f1" : "#10b981"}
+                            color="#10b981"
                           />
                         ) : (
                           <IconWrapper
-                            icon="mdi:circle-outline"
+                            icon="mdi:code-braces"
                             size={20}
-                            color={isCurrent ? "#6366f1" : "#d1d5db"}
+                            color={isCurrent ? "#3b82f6" : "#d1d5db"}
                           />
                         )}
                         <Typography
                           sx={{
-                            fontWeight: isCurrent ? 700 : 500,
+                            fontWeight: isCurrent ? 600 : 400,
                             color: isCurrent
                               ? "#1e40af"
                               : "#6b7280",
@@ -145,22 +143,10 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap",
                             flex: 1,
-                            lineHeight: 1.5,
                           }}
                         >
-                          {question.question || `Quiz question ${index + 1}`}
+                          {question.title || `Problem ${index + 1}`}
                         </Typography>
-                        {isCurrent && (
-                          <Box
-                            sx={{
-                              width: 6,
-                              height: 6,
-                              borderRadius: "50%",
-                              backgroundColor: "#6366f1",
-                              ml: 0.5,
-                            }}
-                          />
-                        )}
                       </Box>
                     }
                   />
@@ -185,6 +171,5 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
   return true; // Skip re-render
 });
 
-// Export as named export for barrel file compatibility
-export { QuizQuestionListComponent as QuizQuestionList };
+export { CodingQuestionListComponent as CodingQuestionList };
 

@@ -12,11 +12,16 @@ export function OverallFeedback({ feedbackPoints }: OverallFeedbackProps) {
     <Paper
       elevation={0}
       sx={{
-        p: 3,
+        p: 3.5,
         mb: 3,
-        border: "1px solid #c4b5fd",
+        border: "2px solid #c4b5fd",
         borderRadius: 3,
         background: "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)",
+        transition: "all 0.3s ease",
+        "&:hover": {
+          transform: "translateY(-2px)",
+          boxShadow: "0 8px 20px rgba(139, 92, 246, 0.15)",
+        },
       }}
     >
       <Box

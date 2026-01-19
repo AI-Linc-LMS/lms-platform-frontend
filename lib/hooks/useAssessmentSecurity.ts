@@ -3,17 +3,24 @@ import { useToast } from "@/components/common/Toast";
 
 interface UseAssessmentSecurityOptions {
   enabled: boolean;
+  submitting?: boolean; // Disable beforeunload during submission
 }
 
-export function useAssessmentSecurity({ enabled }: UseAssessmentSecurityOptions) {
+export function useAssessmentSecurity({ enabled, submitting = false }: UseAssessmentSecurityOptions) {
   const { showToast } = useToast();
   const hasWarnedRef = useRef(false);
 
   useEffect(() => {
     if (!enabled) return;
 
-    // Prevent refresh
+    // Prevent refresh - but NOT during submission
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      // Don't show prompt during submission
+      if (submitting) {
+        // Remove the handler when submitting
+        window.removeEventListener("beforeunload", handleBeforeUnload);
+        return;
+      }
       event.preventDefault();
       event.returnValue =
         "Are you sure you want to leave? Your progress may be lost.";
@@ -84,7 +91,12 @@ export function useAssessmentSecurity({ enabled }: UseAssessmentSecurityOptions)
 
     // Push state to prevent back navigation
     window.history.pushState(null, "", window.location.href);
-    window.addEventListener("beforeunload", handleBeforeUnload);
+    
+    // Only add beforeunload listener if not submitting
+    if (!submitting) {
+      window.addEventListener("beforeunload", handleBeforeUnload);
+    }
+    
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("popstate", handlePopState);
 
@@ -112,13 +124,15 @@ export function useAssessmentSecurity({ enabled }: UseAssessmentSecurityOptions)
     document.addEventListener("dragstart", handleDragStart);
 
     return () => {
+      // Always try to remove, even if it wasn't added
       window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.onbeforeunload = null; // Also clear the property
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("popstate", handlePopState);
       document.removeEventListener("contextmenu", handleContextMenu);
       document.removeEventListener("selectstart", handleSelectStart);
       document.removeEventListener("dragstart", handleDragStart);
     };
-  }, [enabled, showToast]);
+  }, [enabled, submitting, showToast]);
 }
 

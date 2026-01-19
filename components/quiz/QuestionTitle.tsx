@@ -33,10 +33,11 @@ export function QuestionTitle({ question }: QuestionTitleProps) {
       <Typography
         variant="h6"
         sx={{
-          fontWeight: 600,
-          color: "#1a1f2e",
-          fontSize: { xs: "1rem", sm: "1.125rem", md: "1.25rem" },
-          lineHeight: 1.6,
+          fontWeight: 700,
+          color: "#111827",
+          fontSize: { xs: "1.125rem", sm: "1.25rem", md: "1.375rem" },
+          lineHeight: 1.7,
+          letterSpacing: "-0.01em",
         }}
       >
         {question}

@@ -9,6 +9,7 @@ interface AssessmentStatsBarProps {
   answeredQuestions: number;
   duration: number; // in minutes
   accuracy: number;
+  maximumMarks?: number;
 }
 
 export function AssessmentStatsBar({
@@ -17,12 +18,13 @@ export function AssessmentStatsBar({
   answeredQuestions,
   duration,
   accuracy,
+  maximumMarks,
 }: AssessmentStatsBarProps) {
   const stats = [
     {
       icon: "mdi:star",
       label: "Score",
-      value: `${score || 0}/${totalQuestions * 10}`,
+      value: `${(score || 0).toFixed(1)}/${maximumMarks || totalQuestions * 10}`,
       color: "#6366f1",
       bgColor: "rgba(99, 102, 241, 0.1)",
     },

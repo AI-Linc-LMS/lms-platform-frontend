@@ -38,16 +38,25 @@ export function useAssessmentNavigation({
     currentQuestionIndex === currentSectionQuestionCount - 1;
 
   const handlePrevious = useCallback(() => {
-    // Use startTransition for non-urgent navigation to keep timer smooth
-    startTransition(() => {
-      if (currentQuestionIndex > 0) {
-        setCurrentQuestionIndex(currentQuestionIndex - 1);
-      } else if (currentSectionIndex > 0) {
-        setCurrentSectionIndex(currentSectionIndex - 1);
-        const prevSection = sections[currentSectionIndex - 1];
-        setCurrentQuestionIndex((prevSection?.questions?.length || 1) - 1);
-      }
-    });
+    // Use requestIdleCallback for truly non-blocking navigation
+    const navigate = () => {
+      startTransition(() => {
+        if (currentQuestionIndex > 0) {
+          setCurrentQuestionIndex(currentQuestionIndex - 1);
+        } else if (currentSectionIndex > 0) {
+          setCurrentSectionIndex(currentSectionIndex - 1);
+          const prevSection = sections[currentSectionIndex - 1];
+          setCurrentQuestionIndex((prevSection?.questions?.length || 1) - 1);
+        }
+      });
+    };
+    
+    // Use requestIdleCallback if available, otherwise setTimeout
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      (window as any).requestIdleCallback(navigate, { timeout: 30 });
+    } else {
+      setTimeout(navigate, 0);
+    }
   }, [
     currentQuestionIndex,
     currentSectionIndex,
@@ -57,15 +66,24 @@ export function useAssessmentNavigation({
   ]);
 
   const handleNext = useCallback(() => {
-    // Use startTransition for non-urgent navigation to keep timer smooth
-    startTransition(() => {
-      if (currentQuestionIndex < currentSectionQuestionCount - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-      } else if (currentSectionIndex < sections.length - 1) {
-        setCurrentSectionIndex(currentSectionIndex + 1);
-        setCurrentQuestionIndex(0);
-      }
-    });
+    // Use requestIdleCallback for truly non-blocking navigation
+    const navigate = () => {
+      startTransition(() => {
+        if (currentQuestionIndex < currentSectionQuestionCount - 1) {
+          setCurrentQuestionIndex(currentQuestionIndex + 1);
+        } else if (currentSectionIndex < sections.length - 1) {
+          setCurrentSectionIndex(currentSectionIndex + 1);
+          setCurrentQuestionIndex(0);
+        }
+      });
+    };
+    
+    // Use requestIdleCallback if available, otherwise setTimeout
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      (window as any).requestIdleCallback(navigate, { timeout: 30 });
+    } else {
+      setTimeout(navigate, 0);
+    }
   }, [
     currentQuestionIndex,
     currentSectionIndex,

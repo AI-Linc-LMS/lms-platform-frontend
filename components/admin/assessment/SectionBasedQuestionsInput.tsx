@@ -98,7 +98,6 @@ export function SectionBasedQuestionsInput({
     }
   }, []); // Only run on mount
 
-  const currentSection = sections.find((s) => s.id === selectedSectionId);
   const currentManualMCQs = selectedSectionId
     ? manualMCQs[selectedSectionId] || []
     : [];
@@ -141,16 +140,16 @@ export function SectionBasedQuestionsInput({
     );
   }
 
-  // Calculate question counts for sidenav
+  // Calculate question counts for sidenav (total from all sources)
   const sectionQuestionCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     quizSections.forEach((section) => {
-      counts[section.id] =
-        sectionMcqIds[section.id]?.length ||
-        manualMCQs[section.id]?.length ||
-        csvMCQs[section.id]?.length ||
-        aiMCQs[section.id]?.length ||
-        0;
+      let total = 0;
+      if (sectionMcqIds[section.id]) total += sectionMcqIds[section.id].length;
+      if (manualMCQs[section.id]) total += manualMCQs[section.id].length;
+      if (csvMCQs[section.id]) total += csvMCQs[section.id].length;
+      if (aiMCQs[section.id]) total += aiMCQs[section.id].length;
+      counts[section.id] = total;
     });
     return counts;
   }, [quizSections, sectionMcqIds, manualMCQs, csvMCQs, aiMCQs]);
@@ -158,13 +157,40 @@ export function SectionBasedQuestionsInput({
   const sectionCodingCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     codingSections.forEach((section) => {
-      counts[section.id] =
-        sectionCodingProblemIds[section.id]?.length ||
-        aiCodingProblems[section.id]?.length ||
-        0;
+      let total = 0;
+      if (sectionCodingProblemIds[section.id]) total += sectionCodingProblemIds[section.id].length;
+      if (aiCodingProblems[section.id]) total += aiCodingProblems[section.id].length;
+      counts[section.id] = total;
     });
     return counts;
   }, [codingSections, sectionCodingProblemIds, aiCodingProblems]);
+
+  // Check validation errors for sections (insufficient questions)
+  const sectionValidationErrors = useMemo(() => {
+    const errors: Record<string, string> = {};
+    
+    // Check quiz sections
+    quizSections.forEach((section) => {
+      if (section.number_of_questions_to_show !== undefined) {
+        const totalQuestions = sectionQuestionCounts[section.id] || 0;
+        if (totalQuestions < section.number_of_questions_to_show) {
+          errors[section.id] = `Need at least ${section.number_of_questions_to_show} questions, but only ${totalQuestions} selected`;
+        }
+      }
+    });
+    
+    // Check coding sections
+    codingSections.forEach((section) => {
+      if (section.number_of_questions_to_show !== undefined) {
+        const totalProblems = sectionCodingCounts[section.id] || 0;
+        if (totalProblems < section.number_of_questions_to_show) {
+          errors[section.id] = `Need at least ${section.number_of_questions_to_show} problems, but only ${totalProblems} selected`;
+        }
+      }
+    });
+    
+    return errors;
+  }, [quizSections, codingSections, sectionQuestionCounts, sectionCodingCounts]);
 
   const handleSectionSelect = (sectionId: string) => {
     if (!sectionId) {
@@ -184,6 +210,7 @@ export function SectionBasedQuestionsInput({
   };
 
   const currentSelectedId = selectedSectionId || selectedCodingSectionId;
+  const currentSection = sections.find((s) => s.id === currentSelectedId);
 
   return (
     <Box sx={{ width: "100%", height: "100%" }}>
@@ -241,7 +268,22 @@ export function SectionBasedQuestionsInput({
             <Typography variant="body2" sx={{ color: "#6b7280" }}>
               {currentSection.description || "No description"}
             </Typography>
+            {currentSection.number_of_questions_to_show && (
+              <Typography variant="body2" sx={{ color: "#6366f1", mt: 1, fontWeight: 500 }}>
+                Required: {currentSection.number_of_questions_to_show} questions
+                {sectionQuestionCounts[currentSection.id] !== undefined && (
+                  <span style={{ marginLeft: 8 }}>
+                    ({sectionQuestionCounts[currentSection.id]} selected)
+                  </span>
+                )}
+              </Typography>
+            )}
           </Paper>
+          {sectionValidationErrors[currentSection.id] && (
+            <Alert severity="error">
+              {sectionValidationErrors[currentSection.id]}
+            </Alert>
+          )}
 
           <FormControl fullWidth>
             <InputLabel>Question Input Method</InputLabel>
@@ -325,7 +367,22 @@ export function SectionBasedQuestionsInput({
                   <Typography variant="body2" sx={{ color: "#6b7280" }}>
                     {currentCodingSection.description || "No description"}
                   </Typography>
+                  {currentCodingSection.number_of_questions_to_show && (
+                    <Typography variant="body2" sx={{ color: "#10b981", mt: 1, fontWeight: 500 }}>
+                      Required: {currentCodingSection.number_of_questions_to_show} problems
+                      {sectionCodingCounts[currentCodingSection.id] !== undefined && (
+                        <span style={{ marginLeft: 8 }}>
+                          ({sectionCodingCounts[currentCodingSection.id]} selected)
+                        </span>
+                      )}
+                    </Typography>
+                  )}
                 </Paper>
+                {sectionValidationErrors[currentCodingSection.id] && (
+                  <Alert severity="error">
+                    {sectionValidationErrors[currentCodingSection.id]}
+                  </Alert>
+                )}
 
                 <FormControl fullWidth>
                   <InputLabel>Coding Problem Input Method</InputLabel>

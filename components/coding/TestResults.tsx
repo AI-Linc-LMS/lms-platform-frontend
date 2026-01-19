@@ -19,6 +19,7 @@ interface TestResultsProps {
   problemData?: any;
   onRunCustomInput?: (input: string) => void;
   runningCustomInput?: boolean;
+  isAssessment?: boolean; // If true, show only test case count, not detailed results
 }
 
 export function TestResults({
@@ -26,6 +27,7 @@ export function TestResults({
   problemData,
   onRunCustomInput,
   runningCustomInput,
+  isAssessment = false,
 }: TestResultsProps) {
   const [mainTab, setMainTab] = useState(0); // 0: Test Cases, 1: Custom Input
   const [selectedCase, setSelectedCase] = useState(0);
@@ -35,6 +37,8 @@ export function TestResults({
   let testCasesArray: any[] = [];
   let hasCompilationError = false;
   let errorMessage = "";
+  let passedCount = 0;
+  let totalCount = 0;
 
   if (testResults) {
     if (Array.isArray(testResults)) {
@@ -52,6 +56,174 @@ export function TestResults({
       hasCompilationError = true;
       errorMessage = testResults.stderr || testResults.compile_output || "";
     }
+
+    // Calculate passed/total for assessment mode
+    if (isAssessment) {
+      // Try to get from direct properties first
+      passedCount = testResults.passed_testcases ?? testResults.passed ?? testResults.tc_passed ?? 0;
+      totalCount = testResults.total_testcases ?? testResults.total_test_cases ?? testResults.total_tc ?? 0;
+      
+      // If not available, calculate from test cases array
+      if (totalCount === 0 && testCasesArray.length > 0) {
+        totalCount = testCasesArray.length;
+        passedCount = testCasesArray.filter(
+          (tc: any) =>
+            tc.status === "Accepted" ||
+            tc.verdict === "Accepted" ||
+            tc.passed === true
+        ).length;
+      }
+    }
+  }
+
+  // Assessment mode: Show simplified test case count only
+  if (isAssessment) {
+    return (
+      <Box
+        sx={{
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          backgroundColor: "#ffffff",
+          overflow: "auto",
+          p: 2,
+        }}
+      >
+        {!testResults ? (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+              color: "#9ca3af",
+            }}
+          >
+            <IconWrapper
+              icon="mdi:play-circle-outline"
+              size={48}
+              color="#d1d5db"
+            />
+            <Typography
+              variant="body2"
+              sx={{ mt: 1.5, fontSize: "0.875rem" }}
+            >
+              Click <strong>Run Code</strong> to test your solution
+            </Typography>
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+              width: "100%",
+            }}
+          >
+            {/* Show errors if any */}
+            {hasCompilationError && errorMessage && (
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  width: "100%",
+                  "& .MuiAlert-message": {
+                    width: "100%",
+                  },
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 600,
+                    mb: 0.5,
+                    fontSize: "0.875rem",
+                    color: "#991b1b",
+                  }}
+                >
+                  Error
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontFamily: "monospace",
+                    fontSize: "0.8rem",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                    color: "#dc2626",
+                  }}
+                >
+                  {errorMessage}
+                </Typography>
+              </Alert>
+            )}
+
+            {/* Show test case count if available */}
+            {totalCount > 0 && (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 1,
+                  p: 3,
+                  backgroundColor: "#f9fafb",
+                  borderRadius: 2,
+                  border: "1px solid #e5e7eb",
+                }}
+              >
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 700,
+                    color: passedCount === totalCount ? "#10b981" : "#ef4444",
+                  }}
+                >
+                  {passedCount} / {totalCount}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "#6b7280",
+                    fontSize: "0.875rem",
+                  }}
+                >
+                  Test Cases Passed
+                </Typography>
+              </Box>
+            )}
+
+            {/* Show status messages */}
+            {totalCount > 0 && (
+              <>
+                {passedCount === totalCount && (
+                  <Alert severity="success" sx={{ width: "100%" }}>
+                    All test cases passed! You can submit your solution.
+                  </Alert>
+                )}
+                {passedCount < totalCount && passedCount > 0 && (
+                  <Alert severity="warning" sx={{ width: "100%" }}>
+                    Some test cases failed. Fix your code and try again.
+                  </Alert>
+                )}
+                {passedCount === 0 && totalCount > 0 && !hasCompilationError && (
+                  <Alert severity="error" sx={{ width: "100%" }}>
+                    All test cases failed. Please review your code.
+                  </Alert>
+                )}
+              </>
+            )}
+
+            {/* Show message if no test results but no error either */}
+            {!hasCompilationError && totalCount === 0 && testResults && (
+              <Alert severity="info" sx={{ width: "100%" }}>
+                Code executed. Waiting for test results...
+              </Alert>
+            )}
+          </Box>
+        )}
+      </Box>
+    );
   }
 
   return (

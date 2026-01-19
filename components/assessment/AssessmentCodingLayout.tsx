@@ -6,6 +6,7 @@ import { useToast } from "@/components/common/Toast";
 import { ProblemDescription } from "@/components/coding/ProblemDescription";
 import { TestResults } from "@/components/coding/TestResults";
 import { AssessmentCodeEditorPanel } from "./AssessmentCodeEditorPanel";
+import { CodingQuestionList } from "./CodingQuestionList";
 import { assessmentService } from "@/lib/services/assessment.service";
 import {
   getAvailableLanguages,
@@ -26,6 +27,16 @@ interface AssessmentCodingLayoutProps {
   }) => void;
   initialCode?: string;
   initialLanguage?: string;
+  questions?: Array<{
+    id: string | number;
+    title: string;
+    answered?: boolean;
+  }>;
+  totalQuestions?: number;
+  onQuestionClick?: (questionId: string | number) => void;
+  onNextQuestion?: () => void;
+  onPreviousQuestion?: () => void;
+  currentQuestionIndex?: number;
 }
 
 export function AssessmentCodingLayout({
@@ -36,6 +47,12 @@ export function AssessmentCodingLayout({
   onCodeSubmit,
   initialCode,
   initialLanguage,
+  questions = [],
+  totalQuestions = 0,
+  onQuestionClick,
+  onNextQuestion,
+  onPreviousQuestion,
+  currentQuestionIndex = 0,
 }: AssessmentCodingLayoutProps) {
   const { showToast } = useToast();
 
@@ -57,8 +74,10 @@ export function AssessmentCodingLayout({
     null
   );
 
-  // Track if component has been initialized to prevent initialCode from causing loops
-  const hasInitializedRef = useRef(false);
+  // Track previous questionId to detect question changes
+  const previousQuestionIdRef = useRef<number | null>(null);
+  const hasInitializedCodeRef = useRef<number | null>(null);
+  const lastInitialCodeRef = useRef<string>("");
 
   // Initialize default language
   useEffect(() => {
@@ -77,24 +96,80 @@ export function AssessmentCodingLayout({
     }
   }, [availableLanguages, selectedLanguage, initialLanguage]);
 
-  // Initialize code with template_code or initialCode (only on mount)
+  // Initialize code with template_code or initialCode - ONLY when question changes or first mount
   useEffect(() => {
-    if (selectedLanguage && problemData && !hasInitializedRef.current) {
-      hasInitializedRef.current = true;
+    if (!selectedLanguage || !problemData) return;
 
-      if (initialCode) {
-        setCode(initialCode);
-        return;
-      }
-
-      // Load template code
-      if (problemData?.details?.template_code?.[selectedLanguage]) {
-        setCode(problemData.details.template_code[selectedLanguage]);
+    const questionChanged = previousQuestionIdRef.current !== questionId && previousQuestionIdRef.current !== null;
+    const needsInitialization = hasInitializedCodeRef.current !== questionId;
+    
+    // Determine what code to load
+    const getCodeToLoad = () => {
+      if (initialCode && initialCode.trim() !== "") {
+        return initialCode;
+      } else if (problemData?.details?.template_code?.[selectedLanguage]) {
+        return problemData.details.template_code[selectedLanguage];
       } else if (problemData?.details?.starter_code) {
-        setCode(problemData.details.starter_code);
+        return problemData.details.starter_code;
+      } else {
+        return "";
       }
+    };
+    
+    if (questionChanged) {
+      // Question changed - reset everything
+      previousQuestionIdRef.current = questionId;
+      hasInitializedCodeRef.current = questionId;
+      lastInitialCodeRef.current = initialCode || "";
+      
+      // Reset state when question changes
+      setTestResults(null);
+      setCanSubmit(false);
+      setRunning(false);
+      setSubmitting(false);
+
+      // Load code when question changes
+      setCode(getCodeToLoad());
+    } else if (needsInitialization) {
+      // First time initialization for this question (on mount or when language becomes available)
+      previousQuestionIdRef.current = questionId;
+      hasInitializedCodeRef.current = questionId;
+      lastInitialCodeRef.current = initialCode || "";
+      
+      // Load code on first initialization
+      setCode(getCodeToLoad());
     }
-  }, [problemData, selectedLanguage, initialCode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questionId, selectedLanguage, problemData]); // Removed initialCode to prevent resets
+
+  // Handle initialCode loading later (from saved responses) - only if code is empty or matches template
+  useEffect(() => {
+    if (
+      initialCode &&
+      initialCode.trim() !== "" &&
+      initialCode !== lastInitialCodeRef.current &&
+      hasInitializedCodeRef.current === questionId &&
+      selectedLanguage &&
+      problemData
+    ) {
+      lastInitialCodeRef.current = initialCode;
+      
+      // Only set initialCode if current code is empty or matches template (user hasn't typed)
+      setCode((currentCode) => {
+        if (!currentCode || currentCode.trim() === "") {
+          return initialCode;
+        }
+        // Check if current code matches template - if so, replace with saved code
+        const templateCode = problemData?.details?.template_code?.[selectedLanguage] || "";
+        if (currentCode === templateCode) {
+          return initialCode;
+        }
+        // User has typed something, keep their code
+        return currentCode;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCode]); // Only run when initialCode changes, but safely check current code
 
   // Call onCodeChange callback when code changes - use ref to avoid infinite loops
   const onCodeChangeRef = useRef(onCodeChange);
@@ -334,48 +409,89 @@ export function AssessmentCodingLayout({
     }
   };
 
+  const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
+  const isFirstQuestion = currentQuestionIndex === 0;
+
   return (
     <Box
       sx={{
-        height: { xs: "calc(100vh - 150px)", md: "calc(100vh - 180px)" },
-        minHeight: "500px",
-        maxHeight: { xs: "calc(100vh - 150px)", md: "calc(100vh - 180px)" },
         display: "flex",
-        gap: 0,
-        backgroundColor: "#f9fafb",
-        border: "1px solid #e5e7eb",
-        borderRadius: 2,
-        overflow: "hidden",
-        position: "relative",
+        flexDirection: { xs: "column", md: "row" },
+        gap: { xs: 2, md: 3 },
+        maxWidth: "100%",
       }}
     >
-      {/* Left Panel - Problem Description */}
-      <Paper
-        elevation={0}
+      {/* Left Sidebar - Question List */}
+      {questions.length > 0 && (
+        <Box
+          sx={{
+            width: { xs: "100%", md: "320px" },
+            flexShrink: 0,
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+            order: { xs: 1, md: 0 },
+          }}
+        >
+          <CodingQuestionList
+            questions={questions}
+            currentQuestionId={questionId}
+            onQuestionClick={onQuestionClick}
+          />
+        </Box>
+      )}
+
+      {/* Main Content Area */}
+      <Box
         sx={{
-          width: "450px",
-          height: "100%",
+          flex: 1,
           display: "flex",
           flexDirection: "column",
-          borderRight: "2px solid #e5e7eb",
-          borderRadius: 0,
-          backgroundColor: "#ffffff",
-          overflow: "hidden",
-          flexShrink: 0,
+          minWidth: 0,
+          order: { xs: 0, md: 1 },
         }}
       >
         <Box
           sx={{
-            flex: 1,
-            overflow: "hidden",
-            minHeight: 0,
+            height: { xs: "calc(100vh - 150px)", md: "calc(100vh - 180px)" },
+            minHeight: "500px",
+            maxHeight: { xs: "calc(100vh - 150px)", md: "calc(100vh - 180px)" },
             display: "flex",
-            flexDirection: "column",
+            gap: 0,
+            backgroundColor: "#f9fafb",
+            border: "1px solid #e5e7eb",
+            borderRadius: 2,
+            overflow: "hidden",
+            position: "relative",
           }}
         >
-          <ProblemDescription problemData={problemData} />
-        </Box>
-      </Paper>
+          {/* Left Panel - Problem Description */}
+          <Paper
+            elevation={0}
+            sx={{
+              width: "450px",
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              borderRight: "2px solid #e5e7eb",
+              borderRadius: 0,
+              backgroundColor: "#ffffff",
+              overflow: "hidden",
+              flexShrink: 0,
+            }}
+          >
+            <Box
+              sx={{
+                flex: 1,
+                overflow: "hidden",
+                minHeight: 0,
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <ProblemDescription problemData={problemData} />
+            </Box>
+          </Paper>
 
       {/* Right Panel - Code Editor with Test Cases */}
       <Box
@@ -432,7 +548,10 @@ export function AssessmentCodingLayout({
             problemData={problemData}
             onRunCustomInput={handleRunCustomInput}
             runningCustomInput={false}
+            isAssessment={true}
           />
+        </Box>
+      </Box>
         </Box>
       </Box>
     </Box>

@@ -22,9 +22,16 @@ export function SkillsTags({ strongSkills, weakSkills }: SkillsTagsProps) {
       <Paper
         elevation={0}
         sx={{
-          p: 3,
-          border: "1px solid #e5e7eb",
+          p: 3.5,
+          border: "1px solid #d1fae5",
           borderRadius: 3,
+          background: "linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)",
+          transition: "all 0.3s ease",
+          "&:hover": {
+            transform: "translateY(-2px)",
+            boxShadow: "0 8px 20px rgba(16, 185, 129, 0.1)",
+            borderColor: "#10b981",
+          },
         }}
       >
         <Box
@@ -65,6 +72,12 @@ export function SkillsTags({ strongSkills, weakSkills }: SkillsTagsProps) {
                   color: "#065f46",
                   fontWeight: 600,
                   fontSize: "0.8125rem",
+                  height: 32,
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    backgroundColor: "#a7f3d0",
+                    transform: "scale(1.05)",
+                  },
                   "& .MuiChip-icon": {
                     color: "#10b981",
                   },
@@ -89,9 +102,16 @@ export function SkillsTags({ strongSkills, weakSkills }: SkillsTagsProps) {
       <Paper
         elevation={0}
         sx={{
-          p: 3,
-          border: "1px solid #e5e7eb",
+          p: 3.5,
+          border: "1px solid #fef3c7",
           borderRadius: 3,
+          background: "linear-gradient(135deg, #ffffff 0%, #fffbeb 100%)",
+          transition: "all 0.3s ease",
+          "&:hover": {
+            transform: "translateY(-2px)",
+            boxShadow: "0 8px 20px rgba(245, 158, 11, 0.1)",
+            borderColor: "#f59e0b",
+          },
         }}
       >
         <Box
@@ -132,6 +152,12 @@ export function SkillsTags({ strongSkills, weakSkills }: SkillsTagsProps) {
                   color: "#92400e",
                   fontWeight: 600,
                   fontSize: "0.8125rem",
+                  height: 32,
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    backgroundColor: "#fde68a",
+                    transform: "scale(1.05)",
+                  },
                   "& .MuiChip-icon": {
                     color: "#f59e0b",
                   },

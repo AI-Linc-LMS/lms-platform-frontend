@@ -48,14 +48,14 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
         left: 0,
         right: 0,
         zIndex: 1200,
-        px: 3,
+        px: { xs: 2, md: 3 },
         py: 1.5,
         borderBottom: "1px solid #e5e7eb",
         backgroundColor: "#ffffff",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        gap: 3,
+        gap: { xs: 1.5, md: 3 },
       }}
     >
       {/* Left: Question Counter & Section Tabs */}
@@ -80,8 +80,26 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
           Question {questionNum} of {totalQuestions}
         </Typography>
 
-        {/* Section Tabs - Compact */}
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+        {/* Section Tabs - Improved Styling */}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            alignItems: "center",
+            flexWrap: "wrap",
+            overflowX: "auto",
+            "&::-webkit-scrollbar": {
+              height: "4px",
+            },
+            "&::-webkit-scrollbar-track": {
+              background: "transparent",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              background: "#d1d5db",
+              borderRadius: "2px",
+            },
+          }}
+        >
           {sections.map((section, index) => {
             const questionsCount = section.questions?.length || 0;
             const isActive = index === currentSectionIndex;
@@ -96,23 +114,37 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
                   display: "flex",
                   alignItems: "center",
                   gap: 0.75,
-                  px: 1.5,
-                  py: 0.75,
+                  px: { xs: 1.5, md: 2 },
+                  py: { xs: 0.75, md: 1 },
                   backgroundColor: isActive
                     ? isCoding
-                      ? "#dbeafe"
-                      : "#f3e8ff"
-                    : "#f9fafb",
-                  border: `1px solid ${
+                      ? "#eff6ff"
+                      : "#f5f3ff"
+                    : "#ffffff",
+                  border: `2px solid ${
                     isActive ? (isCoding ? "#3b82f6" : "#a855f7") : "#e5e7eb"
                   }`,
-                  borderRadius: 1,
+                  borderRadius: 1.5,
                   cursor: onSectionChange ? "pointer" : "default",
-                  transition: "all 0.2s",
+                  transition: "all 0.15s ease-out",
+                  boxShadow: isActive
+                    ? `0 2px 6px 0 ${
+                        isCoding ? "rgba(59, 130, 246, 0.15)" : "rgba(168, 85, 247, 0.15)"
+                      }`
+                    : "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+                  whiteSpace: "nowrap",
                   "&:hover": onSectionChange
                     ? {
-                        borderColor: isCoding ? "#3b82f6" : "#a855f7",
+                        borderColor: isCoding ? "#2563eb" : "#9333ea",
+                        backgroundColor: isActive
+                          ? isCoding
+                            ? "#dbeafe"
+                            : "#ede9fe"
+                          : "#f9fafb",
                         transform: "translateY(-1px)",
+                        boxShadow: `0 3px 8px 0 ${
+                          isCoding ? "rgba(59, 130, 246, 0.2)" : "rgba(168, 85, 247, 0.2)"
+                        }`,
                       }
                     : {},
                 }}
@@ -124,32 +156,32 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
                     isActive ? (isCoding ? "#2563eb" : "#9333ea") : "#6b7280"
                   }
                 />
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: isActive
-                      ? isCoding
-                        ? "#2563eb"
-                        : "#9333ea"
-                      : "#6b7280",
-                    fontSize: "0.7rem",
-                    fontWeight: isActive ? 700 : 600,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {section.title ||
-                    `${sectionType === "coding" ? "Coding" : "Quiz"}`}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: "#9ca3af",
-                    fontSize: "0.65rem",
-                    fontWeight: 500,
-                  }}
-                >
-                  ({questionsCount})
-                </Typography>
+        <Typography
+          variant="caption"
+          sx={{
+            color: isActive
+              ? isCoding
+                ? "#2563eb"
+                : "#9333ea"
+              : "#6b7280",
+            fontSize: { xs: "0.7rem", md: "0.75rem" },
+            fontWeight: isActive ? 700 : 600,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {section.title ||
+            `${sectionType === "coding" ? "Coding" : "Quiz"}`}
+        </Typography>
+        <Typography
+          variant="caption"
+          sx={{
+            color: isActive ? (isCoding ? "#3b82f6" : "#a855f7") : "#9ca3af",
+            fontSize: { xs: "0.65rem", md: "0.7rem" },
+            fontWeight: isActive ? 600 : 500,
+          }}
+        >
+          ({questionsCount})
+        </Typography>
               </Box>
             );
           })}
@@ -187,19 +219,26 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
           variant="outlined"
           onClick={onPrevious}
           disabled={currentQuestionIndex === 0 && currentSectionIndex === 0}
-          startIcon={<IconWrapper icon="mdi:chevron-left" size={16} />}
+          startIcon={<IconWrapper icon="mdi:chevron-left" size={18} />}
           sx={{
-            borderColor: "#d1d5db",
-            color: "#374151",
-            borderRadius: 1,
+            borderColor: "#6366f1",
+            color: "#6366f1",
+            borderRadius: 1.5,
+            px: 2.5,
+            py: 1,
             fontSize: "0.875rem",
+            fontWeight: 600,
+            textTransform: "none",
+            transition: "all 0.2s ease-in-out",
             "&:hover": {
-              borderColor: "#9ca3af",
-              backgroundColor: "#f9fafb",
+              borderColor: "#4f46e5",
+              backgroundColor: "#eff6ff",
+              transform: "translateX(-2px)",
             },
             "&:disabled": {
               borderColor: "#e5e7eb",
               color: "#9ca3af",
+              transform: "none",
             },
           }}
         >
@@ -209,18 +248,28 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
           variant="contained"
           onClick={onNext}
           disabled={isLastQuestion}
-          endIcon={<IconWrapper icon="mdi:chevron-right" size={16} />}
+          endIcon={<IconWrapper icon="mdi:chevron-right" size={18} />}
           sx={{
-            backgroundColor: "#374151",
+            backgroundColor: "#6366f1",
             color: "#ffffff",
-            borderRadius: 1,
+            borderRadius: 1.5,
+            px: 3,
+            py: 1,
             fontSize: "0.875rem",
+            fontWeight: 600,
+            textTransform: "none",
+            boxShadow: "0 2px 8px 0 rgba(99, 102, 241, 0.3)",
+            transition: "all 0.2s ease-in-out",
             "&:hover": {
-              backgroundColor: "#1f2937",
+              backgroundColor: "#4f46e5",
+              boxShadow: "0 4px 12px 0 rgba(99, 102, 241, 0.4)",
+              transform: "translateX(2px)",
             },
             "&:disabled": {
               backgroundColor: "#e5e7eb",
               color: "#9ca3af",
+              boxShadow: "none",
+              transform: "none",
             },
           }}
         >

@@ -39,12 +39,14 @@ export function SectionCard({
       hardCount * (section.hardScore || 3);
     difficultyBreakdown = { Easy: easyCount, Medium: mediumCount, Hard: hardCount };
   } else {
-    maxPossibleScore = sectionProblems.length * (section.codingScore || 5);
-    difficultyBreakdown = sectionProblems.reduce((acc, problem) => {
-      const level = problem.difficulty_level || "Unknown";
-      acc[level] = (acc[level] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const easyCount = sectionProblems.filter((p) => (p.difficulty_level || "").toLowerCase() === "easy").length;
+    const mediumCount = sectionProblems.filter((p) => (p.difficulty_level || "").toLowerCase() === "medium").length;
+    const hardCount = sectionProblems.filter((p) => (p.difficulty_level || "").toLowerCase() === "hard").length;
+    maxPossibleScore =
+      easyCount * (section.easyScore || 1) +
+      mediumCount * (section.mediumScore || 2) +
+      hardCount * (section.hardScore || 3);
+    difficultyBreakdown = { Easy: easyCount, Medium: mediumCount, Hard: hardCount };
   }
 
   const bgColor = isQuiz
@@ -207,16 +209,23 @@ export function SectionCard({
               </>
             ) : (
               <>
-                <Chip
-                  label={`Per Problem: ${section.codingScore || 5} points`}
-                  size="small"
-                  sx={{
-                    bgcolor: "#a7f3d0",
-                    color: "#065f46",
-                    fontWeight: 600,
-                    width: "fit-content",
-                  }}
-                />
+                <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                  <Chip
+                    label={`Easy: ${section.easyScore || 1} pts`}
+                    size="small"
+                    sx={{ bgcolor: "#d1fae5", color: "#065f46", fontWeight: 600 }}
+                  />
+                  <Chip
+                    label={`Medium: ${section.mediumScore || 2} pts`}
+                    size="small"
+                    sx={{ bgcolor: "#fef3c7", color: "#92400e", fontWeight: 600 }}
+                  />
+                  <Chip
+                    label={`Hard: ${section.hardScore || 3} pts`}
+                    size="small"
+                    sx={{ bgcolor: "#fed7aa", color: "#7c2d12", fontWeight: 600 }}
+                  />
+                </Box>
                 {sectionProblems.length > 0 && (
                   <Typography
                     variant="caption"
