@@ -281,7 +281,8 @@ export function useAssessmentSubmission({
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Navigate to submission success page after all cleanup
-      router.replace(`/assessments/${slug}/submission-success`);
+      // Use window.location for reliable navigation (full page reload ensures clean state)
+      window.location.href = `/assessments/${slug}/submission-success`;
     } catch (error: any) {
       // On error, stop camera in background (non-blocking)
       stopCameraCompletely().catch(() => {
