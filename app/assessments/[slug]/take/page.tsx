@@ -168,8 +168,8 @@ export default function TakeAssessmentPage({
     setCurrentQuestionIndex,
   });
 
-  // Security measures
-  useAssessmentSecurity({ enabled: assessmentStarted });
+  // Security measures - disable beforeunload during submission
+  useAssessmentSecurity({ enabled: assessmentStarted, submitting });
   useKeyboardShortcuts({ enabled: assessmentStarted });
 
   // Check if already submitted

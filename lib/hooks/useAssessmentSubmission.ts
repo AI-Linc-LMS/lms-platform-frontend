@@ -127,6 +127,10 @@ export function useAssessmentSubmission({
       isSubmittingRef.current = true;
       setSubmitting(true);
       
+      // Remove beforeunload handler immediately to prevent browser prompt
+      // This prevents the "leave site" dialog from appearing
+      window.onbeforeunload = null;
+      
       // Close all modals immediately
       setShowFullscreenWarning(false);
       if (setShowSubmitDialog) {
@@ -206,47 +210,17 @@ export function useAssessmentSubmission({
       // Show success immediately
       showToast("Assessment submitted successfully!", "success");
 
-      // CRITICAL: Stop camera SYNCHRONOUSLY before navigation
-      // This ensures camera is off before component unmounts
-      try {
-        // Stop proctoring hook immediately
-        stopProctoring();
-
-        // Stop proctoring service
+      // Stop camera and cleanup in background (non-blocking)
+      // Don't wait for this - navigate immediately
+      Promise.resolve().then(() => {
         try {
-          const proctoringService = getProctoringService();
-          proctoringService.stopProctoring();
-        } catch (error) {
-          // Continue
-        }
-
-        // Stop all media tracks immediately
-        stopAllMediaTracks();
-
-        // Aggressively stop all video/audio tracks
-        document.querySelectorAll("video, audio").forEach((element) => {
-          const mediaElement = element as HTMLVideoElement | HTMLAudioElement;
-          if (mediaElement.srcObject) {
-            const stream = mediaElement.srcObject as MediaStream;
-            stream.getTracks().forEach((track) => {
-              track.stop(); // Stop regardless of state
-            });
-            mediaElement.srcObject = null;
-            mediaElement.pause();
+          stopProctoring();
+          try {
+            const proctoringService = getProctoringService();
+            proctoringService.stopProctoring();
+          } catch (error) {
+            // Continue
           }
-        });
-
-        // Additional pass: stop any remaining tracks
-        navigator.mediaDevices?.getUserMedia({ video: true, audio: true })
-          .then((stream) => {
-            stream.getTracks().forEach((track) => track.stop());
-          })
-          .catch(() => {
-            // Ignore - this is just cleanup
-          });
-      } catch (error) {
-        // Even if cleanup fails, try one more aggressive pass
-        try {
           stopAllMediaTracks();
           document.querySelectorAll("video, audio").forEach((element) => {
             const mediaElement = element as HTMLVideoElement | HTMLAudioElement;
@@ -257,32 +231,31 @@ export function useAssessmentSubmission({
               mediaElement.srcObject = null;
             }
           });
-        } catch (finalError) {
-          // Last resort - at least we tried
+        } catch (error) {
+          // Silently fail
         }
-      }
+      });
 
-      // Exit fullscreen
-      try {
-        if (document.exitFullscreen) {
-          document.exitFullscreen().catch(() => {});
-        } else if ((document as any).webkitExitFullscreen) {
-          (document as any).webkitExitFullscreen().catch(() => {});
-        } else if ((document as any).mozCancelFullScreen) {
-          (document as any).mozCancelFullScreen().catch(() => {});
-        } else if ((document as any).msExitFullscreen) {
-          (document as any).msExitFullscreen().catch(() => {});
+      // Exit fullscreen (non-blocking)
+      Promise.resolve().then(() => {
+        try {
+          if (document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+          } else if ((document as any).webkitExitFullscreen) {
+            (document as any).webkitExitFullscreen().catch(() => {});
+          } else if ((document as any).mozCancelFullScreen) {
+            (document as any).mozCancelFullScreen().catch(() => {});
+          } else if ((document as any).msExitFullscreen) {
+            (document as any).msExitFullscreen().catch(() => {});
+          }
+        } catch (error) {
+          // Silently fail
         }
-      } catch (error) {
-        // Silently fail
-      }
+      });
 
-      // Small delay to ensure camera cleanup completes and modals close before navigation
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Navigate to submission success page after all cleanup
-      // Use window.location for reliable navigation (full page reload ensures clean state)
-      window.location.href = `/assessments/${slug}/submission-success`;
+      // Navigate immediately - use router for smooth navigation
+      // The beforeunload handler is already disabled via submitting flag
+      router.replace(`/assessments/${slug}/submission-success`);
     } catch (error: any) {
       // On error, stop camera in background (non-blocking)
       stopCameraCompletely().catch(() => {
