@@ -215,15 +215,16 @@ export function useAssessmentSubmission({
 
       // Submit assessment - THIS IS THE CRITICAL STEP
       // SECURITY: Ensure submission actually succeeds before proceeding
-      const submitResult = await assessmentService.finalSubmit(slug, requestBody);
-      
-      // SECURITY: Verify submission was successful
-      if (!submitResult || (submitResult as any).status === "error") {
-        throw new Error("Submission failed. Please try again.");
+      try {
+        await assessmentService.finalSubmit(slug, requestBody);
+        // If we get here, submission was successful (API throws on error)
+        
+        // Mark as navigated to prevent duplicate navigation
+        hasNavigatedRef.current = true;
+      } catch (submitError: any) {
+        // SECURITY: If submission fails, throw error to prevent navigation
+        throw new Error(submitError?.message || "Submission failed. Please try again.");
       }
-
-      // Mark as navigated to prevent duplicate navigation
-      hasNavigatedRef.current = true;
 
       // Show success immediately
       showToast("Assessment submitted successfully!", "success");
