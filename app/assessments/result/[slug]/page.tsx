@@ -63,7 +63,9 @@ export default function AssessmentResultPage() {
         forcePsychometric ||
         slugLower === "psychometric-personality-v1" || 
         slugLower.includes("psychometric") ||
-        slugLower === "psychometric";
+        slugLower === "psychometric" ||
+        slugLower.includes("k-disha") ||
+        slugLower.includes("kdisha");
       
       // For psychometric assessments, use mock data for now
       if (isPsychometric) {
@@ -109,13 +111,13 @@ export default function AssessmentResultPage() {
     return (
       <MainLayout>
         <div className="w-full bg-slate-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-6">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
             <button
               onClick={() => router.push("/assessments")}
-              className="mb-6 text-slate-600 hover:text-blue-600 font-semibold flex items-center gap-2 transition-colors"
+              className="mb-4 sm:mb-6 text-slate-600 hover:text-blue-600 font-semibold flex items-center gap-2 transition-colors text-sm sm:text-base"
             >
               <svg
-                className="w-5 h-5"
+                className="w-4 h-4 sm:w-5 sm:h-5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -127,7 +129,8 @@ export default function AssessmentResultPage() {
                   d="M10 19l-7-7m0 0l7-7m-7 7h18"
                 />
               </svg>
-              Back to Assessments
+              <span className="hidden xs:inline">Back to Assessments</span>
+              <span className="xs:hidden">Back</span>
             </button>
           </div>
           <PsychometricResultView data={psychometricData} />
