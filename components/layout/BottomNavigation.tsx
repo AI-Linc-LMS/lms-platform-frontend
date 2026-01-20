@@ -28,6 +28,12 @@ const regularNavigationItems: NavigationItem[] = [
     featureName: "course",
   },
   {
+    label: "Assessments",
+    path: "/assessments",
+    icon: "mdi:file-document-edit",
+    featureName: "assessment",
+  }, 
+  {
     label: "Job Portal",
     path: "/jobs",
     icon: "mdi:briefcase",
