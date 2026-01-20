@@ -14,6 +14,7 @@ import {
   Select,
   MenuItem,
   FormControl,
+  Chip,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Loading } from "@/components/common/Loading";
@@ -24,6 +25,7 @@ import {
 import { useToast } from "@/components/common/Toast";
 import { AssessmentsGrid } from "@/components/assessment/AssessmentsGrid";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { isPsychometricAssessment } from "@/lib/utils/psychometric-utils";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -59,18 +61,34 @@ export default function AssessmentsPage() {
     }
   };
 
+  // Separate psychometric and regular assessments
+  const psychometricAssessments = assessments.filter((a) =>
+    isPsychometricAssessment(a)
+  );
+  const regularAssessments = assessments.filter(
+    (a) => !isPsychometricAssessment(a)
+  );
+
   // Calculate counts
   const totalCount = assessments.length;
+  const psychometricCount = psychometricAssessments.length;
+  const regularCount = regularAssessments.length;
   const completedCount = assessments.filter(
     (a) => a.is_attempted || a.has_attempted
   ).length;
   const availableCount = assessments.filter(
     (a) => !a.is_attempted && !a.has_attempted
   ).length;
+  const psychometricCompletedCount = psychometricAssessments.filter(
+    (a) => a.is_attempted || a.has_attempted
+  ).length;
+  const regularCompletedCount = regularAssessments.filter(
+    (a) => a.is_attempted || a.has_attempted
+  ).length;
 
-  // Filter and search logic
-  const filteredAssessments = useMemo(() => {
-    let result = assessments.filter(
+  // Filter and search logic for regular assessments
+  const filteredRegularAssessments = useMemo(() => {
+    let result = regularAssessments.filter(
       (assessment) =>
         assessment.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         assessment.description?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -98,13 +116,51 @@ export default function AssessmentsPage() {
       }
       return 0;
     });
-  }, [assessments, searchQuery, filter, sortBy]);
+  }, [regularAssessments, searchQuery, filter, sortBy]);
 
-  // Pagination
-  const paginatedAssessments = useMemo(() => {
+  // Filter and search logic for psychometric assessments
+  const filteredPsychometricAssessments = useMemo(() => {
+    let result = psychometricAssessments.filter(
+      (assessment) =>
+        assessment.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        assessment.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Apply filter
+    if (filter === "completed") {
+      result = result.filter((a) => a.is_attempted || a.has_attempted);
+    } else if (filter === "available") {
+      result = result.filter((a) => !a.is_attempted && !a.has_attempted);
+    }
+
+    // Sort
+    return result.sort((a, b) => {
+      if (sortBy === "recent") {
+        return (
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      } else if (sortBy === "oldest") {
+        return (
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+      } else if (sortBy === "title") {
+        return a.title.localeCompare(b.title);
+      }
+      return 0;
+    });
+  }, [psychometricAssessments, searchQuery, filter, sortBy]);
+
+  // Pagination for regular assessments
+  const paginatedRegularAssessments = useMemo(() => {
     const start = (page - 1) * pageSize;
-    return filteredAssessments.slice(start, start + pageSize);
-  }, [filteredAssessments, page, pageSize]);
+    return filteredRegularAssessments.slice(start, start + pageSize);
+  }, [filteredRegularAssessments, page, pageSize]);
+
+  // Pagination for psychometric assessments
+  const paginatedPsychometricAssessments = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredPsychometricAssessments.slice(start, start + pageSize);
+  }, [filteredPsychometricAssessments, page, pageSize]);
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
@@ -119,7 +175,9 @@ export default function AssessmentsPage() {
     );
   }
 
-  const totalPages = Math.ceil(filteredAssessments.length / pageSize);
+  const totalRegularPages = Math.ceil(filteredRegularAssessments.length / pageSize);
+  const totalPsychometricPages = Math.ceil(filteredPsychometricAssessments.length / pageSize);
+  const totalPages = Math.max(totalRegularPages, totalPsychometricPages);
 
   return (
     <MainLayout>
@@ -155,7 +213,8 @@ export default function AssessmentsPage() {
             display: "grid",
             gridTemplateColumns: {
               xs: "1fr",
-              sm: "repeat(3, 1fr)",
+              sm: "repeat(2, 1fr)",
+              md: "repeat(4, 1fr)",
             },
             gap: 2,
             mb: 3,
@@ -195,6 +254,43 @@ export default function AssessmentsPage() {
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Total Assessments
+                </Typography>
+              </Box>
+            </Box>
+          </Paper>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2.5,
+              border: "1px solid #e5e7eb",
+              borderRadius: 2,
+              backgroundColor: "#ffffff",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 2,
+                  backgroundColor: "#f3e8ff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <IconWrapper
+                  icon="mdi:brain"
+                  size={24}
+                  color="#7c3aed"
+                />
+              </Box>
+              <Box>
+                <Typography variant="h4" fontWeight={700} color="#1f2937">
+                  {psychometricCount}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Psychometric
                 </Typography>
               </Box>
             </Box>
@@ -401,13 +497,141 @@ export default function AssessmentsPage() {
           </Box>
         </Paper>
 
-        {/* Assessments Grid */}
-        <Box sx={{ width: "100%" }}>
-          <AssessmentsGrid
-            assessments={paginatedAssessments}
-            searchQuery={searchQuery}
-          />
-        </Box>
+        {/* Psychometric Assessments Section */}
+        {psychometricCount > 0 && (
+          <Paper
+            elevation={0}
+            sx={{
+              width: "100%",
+              mb: 4,
+              p: 3,
+              border: "1px solid rgba(124, 58, 237, 0.2)",
+              borderRadius: 3,
+              backgroundColor: "#ffffff",
+              background: "linear-gradient(to bottom, rgba(124, 58, 237, 0.02) 0%, #ffffff 100%)",
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+                mb: 3,
+              }}
+            >
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 2,
+                  background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 4px 12px rgba(124, 58, 237, 0.3)",
+                }}
+              >
+                <IconWrapper icon="mdi:brain" size={24} color="#ffffff" />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h5" fontWeight={700} color="#1f2937">
+                  Psychometric Assessments
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {psychometricCount} assessment{psychometricCount !== 1 ? "s" : ""} available • Discover your personality and behavioral traits
+                </Typography>
+              </Box>
+              <Chip
+                label={psychometricCount}
+                size="small"
+                sx={{
+                  backgroundColor: "rgba(124, 58, 237, 0.1)",
+                  color: "#7c3aed",
+                  fontWeight: 700,
+                  fontSize: "0.875rem",
+                  height: 28,
+                  border: "1px solid rgba(124, 58, 237, 0.2)",
+                }}
+              />
+            </Box>
+            <AssessmentsGrid
+              assessments={paginatedPsychometricAssessments}
+              searchQuery={searchQuery}
+            />
+          </Paper>
+        )}
+
+        {/* Regular Assessments Section */}
+        {regularCount > 0 && (
+          <Paper
+            elevation={0}
+            sx={{
+              width: "100%",
+              mb: 4,
+              p: 3,
+              border: "1px solid #e5e7eb",
+              borderRadius: 3,
+              backgroundColor: "#ffffff",
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+                mb: 3,
+              }}
+            >
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 2,
+                  background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 4px 12px rgba(99, 102, 241, 0.25)",
+                }}
+              >
+                <IconWrapper icon="mdi:clipboard-text" size={24} color="#ffffff" />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h5" fontWeight={700} color="#1f2937">
+                  Regular Assessments
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {regularCount} assessment{regularCount !== 1 ? "s" : ""} available • Test your knowledge and skills
+                </Typography>
+              </Box>
+              <Chip
+                label={regularCount}
+                size="small"
+                sx={{
+                  backgroundColor: "#eef2ff",
+                  color: "#6366f1",
+                  fontWeight: 700,
+                  fontSize: "0.875rem",
+                  height: 28,
+                }}
+              />
+            </Box>
+            <AssessmentsGrid
+              assessments={paginatedRegularAssessments}
+              searchQuery={searchQuery}
+            />
+          </Paper>
+        )}
+
+        {/* Empty State */}
+        {regularCount === 0 && psychometricCount === 0 && (
+          <Box sx={{ width: "100%" }}>
+            <AssessmentsGrid
+              assessments={[]}
+              searchQuery={searchQuery}
+            />
+          </Box>
+        )}
 
         {/* Pagination */}
         {totalPages > 1 && (
@@ -430,8 +654,11 @@ export default function AssessmentsPage() {
                 textAlign: { xs: "center", sm: "left" },
               }}
             >
-              Showing result {(page - 1) * pageSize + 1}-
-              {Math.min(page * pageSize, filteredAssessments.length)} of {filteredAssessments.length} Entries
+              Showing {filteredRegularAssessments.length + filteredPsychometricAssessments.length} total assessment{filteredRegularAssessments.length + filteredPsychometricAssessments.length !== 1 ? "s" : ""}
+              {filteredRegularAssessments.length > 0 && ` (${filteredRegularAssessments.length} regular`}
+              {filteredRegularAssessments.length > 0 && filteredPsychometricAssessments.length > 0 && ", "}
+              {filteredPsychometricAssessments.length > 0 && `${filteredPsychometricAssessments.length} psychometric`}
+              {filteredRegularAssessments.length > 0 && ")"}
             </Typography>
             <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
               <Button
