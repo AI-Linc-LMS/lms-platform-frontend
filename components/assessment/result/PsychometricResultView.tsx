@@ -81,11 +81,6 @@ interface PsychometricResultViewProps {
 }
 
 export function PsychometricResultView({ data }: PsychometricResultViewProps) {
-  const handleDownloadPDF = () => {
-    // TODO: Implement PDF download functionality
-    window.print();
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 p-4 sm:p-6">
       <div className="max-w-6xl mx-auto space-y-8 sm:space-y-10">
@@ -129,11 +124,8 @@ export function PsychometricResultView({ data }: PsychometricResultViewProps) {
         {/* AI Summary */}
         <AISummarySection summary={data.ai_generated_summary} />
 
-        {/* Disclaimer + Download */}
-        <DisclaimerSection
-          disclaimer={data.disclaimer}
-          onDownloadPDF={handleDownloadPDF}
-        />
+        {/* Disclaimer */}
+        <DisclaimerSection disclaimer={data.disclaimer} />
       </div>
     </div>
   );
