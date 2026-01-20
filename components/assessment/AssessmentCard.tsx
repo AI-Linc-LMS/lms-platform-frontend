@@ -11,6 +11,10 @@ import {
 import { Assessment } from "@/lib/services/assessment.service";
 import { useRouter } from "next/navigation";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import {
+  isPsychometricAssessment,
+  getPsychometricTags,
+} from "@/lib/utils/psychometric-utils";
 
 interface AssessmentCardProps {
   assessment: Assessment;
@@ -21,6 +25,8 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
 }) => {
   const router = useRouter();
   const isAttempted = assessment.is_attempted || assessment.has_attempted;
+  const isPsychometric = isPsychometricAssessment(assessment);
+  const psychometricTags = isPsychometric ? getPsychometricTags(assessment) : [];
 
   const handleClick = () => {
     if (isAttempted) {
@@ -34,20 +40,37 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
     <Card
       sx={{
         height: "100%",
-        minHeight: 320,
+        minHeight: isPsychometric ? 360 : 320,
         display: "flex",
         flexDirection: "column",
         border: "1px solid",
-        borderColor: isAttempted ? "rgba(16, 185, 129, 0.2)" : "#e5e7eb",
+        borderColor: isPsychometric
+          ? isAttempted
+            ? "rgba(124, 58, 237, 0.2)"
+            : "rgba(124, 58, 237, 0.3)"
+          : isAttempted
+          ? "rgba(16, 185, 129, 0.2)"
+          : "#e5e7eb",
         borderRadius: 3,
         overflow: "hidden",
         transition: "all 0.3s ease",
         position: "relative",
         cursor: "pointer",
+        boxShadow: isPsychometric
+          ? "0 4px 12px rgba(124, 58, 237, 0.15)"
+          : "0 2px 8px rgba(0, 0, 0, 0.08)",
         "&:hover": {
-          boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
+          boxShadow: isPsychometric
+            ? "0 12px 32px rgba(124, 58, 237, 0.25)"
+            : "0 8px 24px rgba(0, 0, 0, 0.12)",
           transform: "translateY(-4px)",
-          borderColor: isAttempted ? "rgba(16, 185, 129, 0.4)" : "#6366f1",
+          borderColor: isPsychometric
+            ? isAttempted
+              ? "rgba(124, 58, 237, 0.4)"
+              : "rgba(124, 58, 237, 0.5)"
+            : isAttempted
+            ? "rgba(16, 185, 129, 0.4)"
+            : "#6366f1",
         },
       }}
       onClick={handleClick}
@@ -59,7 +82,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             position: "absolute",
             top: 10,
             right: 10,
-            zIndex: 1,
+            zIndex: 2,
           }}
         >
           <Chip
@@ -83,49 +106,128 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
       {/* Header Section */}
       <Box
         sx={{
-          background: isAttempted
+          background: isPsychometric
+            ? isAttempted
+              ? "linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(99, 102, 241, 0.05) 100%)"
+              : `url(/images/psychometric-test.png) center/cover no-repeat, linear-gradient(135deg, rgba(124, 58, 237, 0.85) 0%, rgba(99, 102, 241, 0.85) 100%)`
+            : isAttempted
             ? "linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.05) 100%)"
             : "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
           p: 2,
           pb: 2.5,
           position: "relative",
-          minHeight: 90,
+          minHeight: isPsychometric ? 120 : 90,
           display: "flex",
           flexDirection: "column",
+          overflow: "hidden",
         }}
       >
-        <Typography
-          variant="h6"
-          sx={{
-            color: isAttempted ? "#1f2937" : "#ffffff",
-            fontWeight: 700,
-            fontSize: "1rem",
-            mb: 0.5,
-            pr: isAttempted ? 10 : 0,
-            minHeight: 40,
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-            lineHeight: 1.3,
-          }}
-        >
-          {assessment.title}
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            color: isAttempted ? "#6b7280" : "rgba(255, 255, 255, 0.9)",
-            fontSize: "0.8125rem",
-            minHeight: 18,
-            display: "-webkit-box",
-            WebkitLineClamp: 1,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          }}
-        >
-          {assessment.instructions || "\u00A0"}
-        </Typography>
+        {/* Overlay for psychometric image */}
+        {isPsychometric && !isAttempted && (
+          <Box
+            sx={{
+              position: "absolute",
+              inset: 0,
+              background: "linear-gradient(135deg, rgba(124, 58, 237, 0.75) 0%, rgba(99, 102, 241, 0.75) 100%)",
+              zIndex: 0,
+            }}
+          />
+        )}
+        
+        <Box sx={{ position: "relative", zIndex: 1 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              color: isAttempted ? "#1f2937" : "#ffffff",
+              fontWeight: 700,
+              fontSize: "1rem",
+              mb: 0.5,
+              pr: isAttempted || isPsychometric ? 10 : 0,
+              pl: isPsychometric && !isAttempted ? 0 : 0,
+              minHeight: 40,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              lineHeight: 1.3,
+            }}
+          >
+            {assessment.title}
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              color: isAttempted ? "#6b7280" : "rgba(255, 255, 255, 0.9)",
+              fontSize: "0.8125rem",
+              minHeight: 18,
+              display: "-webkit-box",
+              WebkitLineClamp: 1,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
+            {assessment.instructions || "\u00A0"}
+          </Typography>
+          
+          {/* Tags for psychometric assessments */}
+          {isPsychometric && psychometricTags.length > 0 && (
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 1,
+                mt: 1.5,
+              }}
+            >
+              {psychometricTags.slice(0, 3).map((tag, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: 2,
+                    backgroundColor: isAttempted
+                      ? `${tag.color}10`
+                      : "rgba(255, 255, 255, 0.2)",
+                    color: isAttempted ? tag.color : "#ffffff",
+                    fontWeight: 600,
+                    fontSize: "0.7rem",
+                    border: isAttempted
+                      ? `1.5px solid ${tag.color}30`
+                      : "1.5px solid rgba(255, 255, 255, 0.4)",
+                    backdropFilter: "blur(8px)",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      backgroundColor: isAttempted
+                        ? `${tag.color}20`
+                        : "rgba(255, 255, 255, 0.3)",
+                      transform: "translateY(-1px)",
+                      boxShadow: isAttempted
+                        ? `0 2px 8px ${tag.color}25`
+                        : "0 2px 8px rgba(255, 255, 255, 0.2)",
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      backgroundColor: isAttempted ? tag.color : "#ffffff",
+                      boxShadow: isAttempted
+                        ? `0 0 4px ${tag.color}50`
+                        : "0 0 4px rgba(255, 255, 255, 0.5)",
+                    }}
+                  />
+                  <span>{tag.name}</span>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
       </Box>
 
       <CardContent
@@ -267,19 +369,37 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
               />
             }
             sx={{
-              backgroundColor: isAttempted ? "#10b981" : "#6366f1",
+              backgroundColor: isPsychometric
+                ? isAttempted
+                  ? "#7c3aed"
+                  : "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)"
+                : isAttempted
+                ? "#10b981"
+                : "#6366f1",
               color: "#ffffff",
               fontWeight: 600,
               py: 1,
               borderRadius: 2,
               textTransform: "none",
               fontSize: "0.875rem",
-              boxShadow: isAttempted
+              boxShadow: isPsychometric
+                ? isAttempted
+                  ? "0 4px 14px 0 rgba(124, 58, 237, 0.39)"
+                  : "0 4px 14px 0 rgba(124, 58, 237, 0.5)"
+                : isAttempted
                 ? "0 4px 14px 0 rgba(16, 185, 129, 0.39)"
                 : "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
               "&:hover": {
-                backgroundColor: isAttempted ? "#059669" : "#4f46e5",
-                boxShadow: isAttempted
+                backgroundColor: isPsychometric
+                  ? isAttempted
+                    ? "#6d28d9"
+                    : "#6d28d9"
+                  : isAttempted
+                  ? "#059669"
+                  : "#4f46e5",
+                boxShadow: isPsychometric
+                  ? "0 6px 20px 0 rgba(124, 58, 237, 0.6)"
+                  : isAttempted
                   ? "0 6px 20px 0 rgba(16, 185, 129, 0.5)"
                   : "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
                 transform: "translateY(-2px)",
