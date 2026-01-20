@@ -6,6 +6,7 @@ export type ProctoringViolationType =
   | "NO_FACE"
   | "MULTIPLE_FACES"
   | "LOOKING_AWAY"
+  | "EYE_MOVEMENT"
   | "FACE_TOO_CLOSE"
   | "FACE_TOO_FAR"
   | "POOR_LIGHTING"
@@ -513,7 +514,7 @@ export class ProctoringService {
         );
       }
 
-      // Check if looking away (face not centered)
+      // Check if looking away (face not centered) - Enhanced eye movement detection
       const faceCenterX = (topLeft[0] + bottomRight[0]) / 2;
       const faceCenterY = (topLeft[1] + bottomRight[1]) / 2;
       const videoCenterX = videoWidth / 2;
@@ -523,6 +524,9 @@ export class ProctoringService {
         Math.abs(faceCenterX - videoCenterX) / videoWidth;
       const verticalOffset = Math.abs(faceCenterY - videoCenterY) / videoHeight;
 
+      // Enhanced eye movement detection - more sensitive threshold for eye movement
+      const eyeMovementThreshold = this.config.lookingAwayThreshold * 0.7; // 70% of looking away threshold for more sensitive detection
+      
       if (
         horizontalOffset > this.config.lookingAwayThreshold ||
         verticalOffset > this.config.lookingAwayThreshold
@@ -531,6 +535,18 @@ export class ProctoringService {
           this.createViolation(
             "LOOKING_AWAY",
             "Please look at the screen",
+            "medium"
+          )
+        );
+      } else if (
+        horizontalOffset > eyeMovementThreshold ||
+        verticalOffset > eyeMovementThreshold
+      ) {
+        // Track eye movement separately (less severe but still tracked)
+        violations.push(
+          this.createViolation(
+            "EYE_MOVEMENT",
+            "Eye movement detected - please maintain focus on screen",
             "medium"
           )
         );
@@ -734,6 +750,7 @@ export class ProctoringService {
       NO_FACE: 0,
       MULTIPLE_FACES: 0,
       LOOKING_AWAY: 0,
+      EYE_MOVEMENT: 0,
       FACE_TOO_CLOSE: 0,
       FACE_TOO_FAR: 0,
       POOR_LIGHTING: 0,

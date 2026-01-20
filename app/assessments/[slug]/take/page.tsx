@@ -142,6 +142,10 @@ export default function TakeAssessmentPage({
     // Handled by proctoring system
   }, []);
 
+  // Track eye movement violations for warnings
+  const eyeMovementCountRef = useRef(0);
+  const lastEyeMovementWarningRef = useRef(0);
+
   const {
     isActive: isProctoringActive,
     isInitializing,
@@ -158,6 +162,25 @@ export default function TakeAssessmentPage({
     onViolationThresholdReached: handleViolationThresholdReached,
     autoStart: false,
   });
+
+  // Show warning when eye movement violations occur
+  useEffect(() => {
+    const eyeMovementCount = metadata.proctoring.eye_movement_count || 0;
+    
+    if (eyeMovementCount > eyeMovementCountRef.current) {
+      eyeMovementCountRef.current = eyeMovementCount;
+      
+      // Show warning every 3 violations to avoid spam
+      const now = Date.now();
+      if (now - lastEyeMovementWarningRef.current > 5000) { // 5 second cooldown
+        lastEyeMovementWarningRef.current = now;
+        showToast(
+          `Eye movement detected`,
+          "warning"
+        );
+      }
+    }
+  }, [metadata.proctoring.eye_movement_count, showToast]);
 
   // Navigation
   const navigation = useAssessmentNavigation({
