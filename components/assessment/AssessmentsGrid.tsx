@@ -84,11 +84,20 @@ export function AssessmentsGrid({
           sm: "repeat(2, 1fr)",
           lg: "repeat(3, 1fr)",
         },
-        gap: 3,
+        gap: { xs: 2, sm: 3 },
+        width: "100%",
+        overflow: "visible",
       }}
     >
       {assessments.map((assessment) => (
-        <Box key={assessment.id}>
+        <Box 
+          key={assessment.id}
+          sx={{
+            width: "100%",
+            minWidth: 0,
+            overflow: "visible",
+          }}
+        >
           <AssessmentCard assessment={assessment} />
         </Box>
       ))}
