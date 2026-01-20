@@ -227,9 +227,9 @@ export const mockPsychometricData1 = {
   },
   career_orientation: {
     aligned_role_clusters: [
-      "Analytical roles",
-      "Research-oriented roles",
-      "Structured technical roles"
+      { role: "Analytical roles", score: 85 },
+      { role: "Research-oriented roles", score: 78 },
+      { role: "Structured technical roles", score: 72 }
     ],
     workplace_fit_note: "You may feel more comfortable in environments with clear expectations and planning."
   },
@@ -374,10 +374,10 @@ export const mockPsychometricData2 = {
   },
   career_orientation: {
     aligned_role_clusters: [
-      "Creative roles",
-      "Innovation-focused positions",
-      "Team leadership roles",
-      "Dynamic project management"
+      { role: "Creative roles", score: 88 },
+      { role: "Innovation-focused positions", score: 82 },
+      { role: "Team leadership roles", score: 75 },
+      { role: "Dynamic project management", score: 70 }
     ],
     workplace_fit_note: "You thrive in environments that value creativity, collaboration, and rapid innovation."
   },
@@ -526,10 +526,10 @@ export const mockPsychometricData3 = {
   },
   career_orientation: {
     aligned_role_clusters: [
-      "Quality assurance roles",
-      "Research and analysis",
-      "Process improvement",
-      "Technical documentation"
+      { role: "Quality assurance roles", score: 90 },
+      { role: "Research and analysis", score: 85 },
+      { role: "Process improvement", score: 80 },
+      { role: "Technical documentation", score: 75 }
     ],
     workplace_fit_note: "You excel in roles that require attention to detail, systematic thinking, and quality focus."
   },
@@ -678,10 +678,10 @@ export const mockPsychometricData4 = {
   },
   career_orientation: {
     aligned_role_clusters: [
-      "Leadership roles",
-      "Management positions",
-      "Strategic planning",
-      "Business development"
+      { role: "Leadership roles", score: 92 },
+      { role: "Management positions", score: 88 },
+      { role: "Strategic planning", score: 85 },
+      { role: "Business development", score: 78 }
     ],
     workplace_fit_note: "You are well-suited for leadership positions where you can influence, guide, and drive results."
   },
