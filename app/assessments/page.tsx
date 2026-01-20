@@ -86,9 +86,14 @@ export default function AssessmentsPage() {
     (a) => a.is_attempted || a.has_attempted
   ).length;
 
-  // Filter and search logic for regular assessments
-  const filteredRegularAssessments = useMemo(() => {
-    let result = regularAssessments.filter(
+  // Combine all assessments (psychometric + regular)
+  const allAssessments = useMemo(() => {
+    return [...psychometricAssessments, ...regularAssessments];
+  }, [psychometricAssessments, regularAssessments]);
+
+  // Filter and search logic for all assessments
+  const filteredAssessments = useMemo(() => {
+    let result = allAssessments.filter(
       (assessment) =>
         assessment.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         assessment.description?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -116,51 +121,13 @@ export default function AssessmentsPage() {
       }
       return 0;
     });
-  }, [regularAssessments, searchQuery, filter, sortBy]);
+  }, [allAssessments, searchQuery, filter, sortBy]);
 
-  // Filter and search logic for psychometric assessments
-  const filteredPsychometricAssessments = useMemo(() => {
-    let result = psychometricAssessments.filter(
-      (assessment) =>
-        assessment.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        assessment.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    // Apply filter
-    if (filter === "completed") {
-      result = result.filter((a) => a.is_attempted || a.has_attempted);
-    } else if (filter === "available") {
-      result = result.filter((a) => !a.is_attempted && !a.has_attempted);
-    }
-
-    // Sort
-    return result.sort((a, b) => {
-      if (sortBy === "recent") {
-        return (
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-      } else if (sortBy === "oldest") {
-        return (
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        );
-      } else if (sortBy === "title") {
-        return a.title.localeCompare(b.title);
-      }
-      return 0;
-    });
-  }, [psychometricAssessments, searchQuery, filter, sortBy]);
-
-  // Pagination for regular assessments
-  const paginatedRegularAssessments = useMemo(() => {
+  // Pagination for all assessments
+  const paginatedAssessments = useMemo(() => {
     const start = (page - 1) * pageSize;
-    return filteredRegularAssessments.slice(start, start + pageSize);
-  }, [filteredRegularAssessments, page, pageSize]);
-
-  // Pagination for psychometric assessments
-  const paginatedPsychometricAssessments = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filteredPsychometricAssessments.slice(start, start + pageSize);
-  }, [filteredPsychometricAssessments, page, pageSize]);
+    return filteredAssessments.slice(start, start + pageSize);
+  }, [filteredAssessments, page, pageSize]);
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
@@ -175,33 +142,40 @@ export default function AssessmentsPage() {
     );
   }
 
-  const totalRegularPages = Math.ceil(filteredRegularAssessments.length / pageSize);
-  const totalPsychometricPages = Math.ceil(filteredPsychometricAssessments.length / pageSize);
-  const totalPages = Math.max(totalRegularPages, totalPsychometricPages);
+  const totalPages = Math.ceil(filteredAssessments.length / pageSize);
 
   return (
     <MainLayout>
-      <Box sx={{ width: "100%", px: { xs: 1.5, sm: 2, md: 3 }, py: 3 }}>
+      <Box sx={{ width: "100%", maxWidth: "100%", overflow: "visible" }}>
         {/* Header with Icon */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1.5, sm: 2 }, mb: 1, flexWrap: { xs: "wrap", sm: "nowrap" } }}>
           <Box
             sx={{
-              width: 56,
-              height: 56,
+              width: { xs: 48, sm: 56 },
+              height: { xs: 48, sm: 56 },
               borderRadius: 2,
               background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              flexShrink: 0,
             }}
           >
             <IconWrapper icon="mdi:clipboard-text" size={28} color="#ffffff" />
           </Box>
-          <Box>
-            <Typography variant="h4" fontWeight={700}>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography 
+              variant="h4" 
+              fontWeight={700}
+              sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
+            >
               Assessments
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography 
+              variant="body2" 
+              color="text.secondary"
+              sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" }, display: { xs: "none", sm: "block" } }}
+            >
               Test your knowledge and track your progress
             </Typography>
           </Box>
@@ -216,30 +190,31 @@ export default function AssessmentsPage() {
               sm: "repeat(2, 1fr)",
               md: "repeat(4, 1fr)",
             },
-            gap: 2,
-            mb: 3,
-            mt: 2,
+            gap: { xs: 1.5, sm: 2 },
+            mb: { xs: 2, sm: 3 },
+            mt: { xs: 1.5, sm: 2 },
           }}
         >
           <Paper
             elevation={0}
             sx={{
-              p: 2.5,
+              p: { xs: 2, sm: 2.5 },
               border: "1px solid #e5e7eb",
               borderRadius: 2,
               backgroundColor: "#ffffff",
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1.5, sm: 2 } }}>
               <Box
                 sx={{
-                  width: 48,
-                  height: 48,
+                  width: { xs: 40, sm: 48 },
+                  height: { xs: 40, sm: 48 },
                   borderRadius: 2,
                   backgroundColor: "#eef2ff",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  flexShrink: 0,
                 }}
               >
                 <IconWrapper
@@ -248,11 +223,20 @@ export default function AssessmentsPage() {
                   color="#6366f1"
                 />
               </Box>
-              <Box>
-                <Typography variant="h4" fontWeight={700} color="#1f2937">
+              <Box sx={{ minWidth: 0 }}>
+                <Typography 
+                  variant="h4" 
+                  fontWeight={700} 
+                  color="#1f2937"
+                  sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
+                >
                   {totalCount}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}
+                >
                   Total Assessments
                 </Typography>
               </Box>
@@ -261,22 +245,23 @@ export default function AssessmentsPage() {
           <Paper
             elevation={0}
             sx={{
-              p: 2.5,
+              p: { xs: 2, sm: 2.5 },
               border: "1px solid #e5e7eb",
               borderRadius: 2,
               backgroundColor: "#ffffff",
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1.5, sm: 2 } }}>
               <Box
                 sx={{
-                  width: 48,
-                  height: 48,
+                  width: { xs: 40, sm: 48 },
+                  height: { xs: 40, sm: 48 },
                   borderRadius: 2,
                   backgroundColor: "#f3e8ff",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  flexShrink: 0,
                 }}
               >
                 <IconWrapper
@@ -285,11 +270,20 @@ export default function AssessmentsPage() {
                   color="#7c3aed"
                 />
               </Box>
-              <Box>
-                <Typography variant="h4" fontWeight={700} color="#1f2937">
+              <Box sx={{ minWidth: 0 }}>
+                <Typography 
+                  variant="h4" 
+                  fontWeight={700} 
+                  color="#1f2937"
+                  sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
+                >
                   {psychometricCount}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}
+                >
                   Psychometric
                 </Typography>
               </Box>
@@ -298,22 +292,23 @@ export default function AssessmentsPage() {
           <Paper
             elevation={0}
             sx={{
-              p: 2.5,
+              p: { xs: 2, sm: 2.5 },
               border: "1px solid #e5e7eb",
               borderRadius: 2,
               backgroundColor: "#ffffff",
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1.5, sm: 2 } }}>
               <Box
                 sx={{
-                  width: 48,
-                  height: 48,
+                  width: { xs: 40, sm: 48 },
+                  height: { xs: 40, sm: 48 },
                   borderRadius: 2,
                   backgroundColor: "#dbeafe",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  flexShrink: 0,
                 }}
               >
                 <IconWrapper
@@ -322,11 +317,20 @@ export default function AssessmentsPage() {
                   color="#3b82f6"
                 />
               </Box>
-              <Box>
-                <Typography variant="h4" fontWeight={700} color="#1f2937">
+              <Box sx={{ minWidth: 0 }}>
+                <Typography 
+                  variant="h4" 
+                  fontWeight={700} 
+                  color="#1f2937"
+                  sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
+                >
                   {availableCount}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}
+                >
                   Available
                 </Typography>
               </Box>
@@ -335,22 +339,23 @@ export default function AssessmentsPage() {
           <Paper
             elevation={0}
             sx={{
-              p: 2.5,
+              p: { xs: 2, sm: 2.5 },
               border: "1px solid #e5e7eb",
               borderRadius: 2,
               backgroundColor: "#ffffff",
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1.5, sm: 2 } }}>
               <Box
                 sx={{
-                  width: 48,
-                  height: 48,
+                  width: { xs: 40, sm: 48 },
+                  height: { xs: 40, sm: 48 },
                   borderRadius: 2,
                   backgroundColor: "#d1fae5",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  flexShrink: 0,
                 }}
               >
                 <IconWrapper
@@ -359,11 +364,20 @@ export default function AssessmentsPage() {
                   color="#10b981"
                 />
               </Box>
-              <Box>
-                <Typography variant="h4" fontWeight={700} color="#1f2937">
+              <Box sx={{ minWidth: 0 }}>
+                <Typography 
+                  variant="h4" 
+                  fontWeight={700} 
+                  color="#1f2937"
+                  sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
+                >
                   {completedCount}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}
+                >
                   Completed
                 </Typography>
               </Box>
@@ -497,129 +511,68 @@ export default function AssessmentsPage() {
           </Box>
         </Paper>
 
-        {/* Psychometric Assessments Section */}
-        {psychometricCount > 0 && (
+        {/* All Assessments Grid */}
+        {filteredAssessments.length > 0 ? (
+          <AssessmentsGrid
+            assessments={paginatedAssessments}
+            searchQuery={searchQuery}
+          />
+        ) : (
           <Paper
             elevation={0}
             sx={{
-              width: "100%",
-              mb: 4,
-              p: 3,
-              border: "1px solid rgba(124, 58, 237, 0.2)",
-              borderRadius: 3,
-              backgroundColor: "#ffffff",
-              background: "linear-gradient(to bottom, rgba(124, 58, 237, 0.02) 0%, #ffffff 100%)",
-            }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                mb: 3,
-              }}
-            >
-              <Box
-                sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 2,
-                  background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 4px 12px rgba(124, 58, 237, 0.3)",
-                }}
-              >
-                <IconWrapper icon="mdi:brain" size={24} color="#ffffff" />
-              </Box>
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="h5" fontWeight={700} color="#1f2937">
-                  Psychometric Assessments
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {psychometricCount} assessment{psychometricCount !== 1 ? "s" : ""} available • Discover your personality and behavioral traits
-                </Typography>
-              </Box>
-              <Chip
-                label={psychometricCount}
-                size="small"
-                sx={{
-                  backgroundColor: "rgba(124, 58, 237, 0.1)",
-                  color: "#7c3aed",
-                  fontWeight: 700,
-                  fontSize: "0.875rem",
-                  height: 28,
-                  border: "1px solid rgba(124, 58, 237, 0.2)",
-                }}
-              />
-            </Box>
-            <AssessmentsGrid
-              assessments={paginatedPsychometricAssessments}
-              searchQuery={searchQuery}
-            />
-          </Paper>
-        )}
-
-        {/* Regular Assessments Section */}
-        {regularCount > 0 && (
-          <Paper
-            elevation={0}
-            sx={{
-              width: "100%",
-              mb: 4,
-              p: 3,
-              border: "1px solid #e5e7eb",
+              p: 8,
+              textAlign: "center",
+              border: "1px dashed #e5e7eb",
               borderRadius: 3,
               backgroundColor: "#ffffff",
             }}
           >
             <Box
               sx={{
+                width: 80,
+                height: 80,
+                borderRadius: "50%",
+                backgroundColor: "rgba(99, 102, 241, 0.1)",
                 display: "flex",
                 alignItems: "center",
-                gap: 2,
+                justifyContent: "center",
+                mx: "auto",
                 mb: 3,
               }}
             >
-              <Box
-                sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 2,
-                  background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 4px 12px rgba(99, 102, 241, 0.25)",
-                }}
-              >
-                <IconWrapper icon="mdi:clipboard-text" size={24} color="#ffffff" />
-              </Box>
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="h5" fontWeight={700} color="#1f2937">
-                  Regular Assessments
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {regularCount} assessment{regularCount !== 1 ? "s" : ""} available • Test your knowledge and skills
-                </Typography>
-              </Box>
-              <Chip
-                label={regularCount}
-                size="small"
-                sx={{
-                  backgroundColor: "#eef2ff",
-                  color: "#6366f1",
-                  fontWeight: 700,
-                  fontSize: "0.875rem",
-                  height: 28,
-                }}
+              <IconWrapper
+                icon={
+                  searchQuery
+                    ? "mdi:file-search-outline"
+                    : "mdi:clipboard-text-outline"
+                }
+                size={40}
+                color="#6366f1"
               />
             </Box>
-            <AssessmentsGrid
-              assessments={paginatedRegularAssessments}
-              searchQuery={searchQuery}
-            />
+            <Typography
+              variant="h6"
+              sx={{
+                color: "#374151",
+                fontWeight: 600,
+                mb: 1,
+              }}
+            >
+              {searchQuery ? "No assessments found" : "No assessments available"}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "#6b7280",
+                maxWidth: 400,
+                mx: "auto",
+              }}
+            >
+              {searchQuery
+                ? "Try adjusting your search or filter criteria"
+                : "Check back later for new assessments"}
+            </Typography>
           </Paper>
         )}
 
@@ -628,9 +581,9 @@ export default function AssessmentsPage() {
           <Box sx={{ width: "100%" }}>
             <AssessmentsGrid
               assessments={[]}
-              searchQuery={searchQuery}
-            />
-          </Box>
+            searchQuery={searchQuery}
+          />
+        </Box>
         )}
 
         {/* Pagination */}
@@ -654,11 +607,7 @@ export default function AssessmentsPage() {
                 textAlign: { xs: "center", sm: "left" },
               }}
             >
-              Showing {filteredRegularAssessments.length + filteredPsychometricAssessments.length} total assessment{filteredRegularAssessments.length + filteredPsychometricAssessments.length !== 1 ? "s" : ""}
-              {filteredRegularAssessments.length > 0 && ` (${filteredRegularAssessments.length} regular`}
-              {filteredRegularAssessments.length > 0 && filteredPsychometricAssessments.length > 0 && ", "}
-              {filteredPsychometricAssessments.length > 0 && `${filteredPsychometricAssessments.length} psychometric`}
-              {filteredRegularAssessments.length > 0 && ")"}
+              Showing {filteredAssessments.length} total assessment{filteredAssessments.length !== 1 ? "s" : ""}
             </Typography>
             <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
               <Button
