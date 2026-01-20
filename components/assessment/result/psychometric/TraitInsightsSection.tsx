@@ -17,7 +17,14 @@ interface TraitInsightsSectionProps {
 }
 
 export function TraitInsightsSection({ insights }: TraitInsightsSectionProps) {
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  // Initialize all insights as expanded by default
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    insights.forEach((insight) => {
+      initial[insight.trait_id] = true;
+    });
+    return initial;
+  });
 
   const toggleExpanded = (traitId: string) => {
     setExpanded((prev) => ({
