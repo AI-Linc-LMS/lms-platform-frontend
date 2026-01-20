@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -23,22 +24,35 @@ interface TraitScoresBarChartProps {
 }
 
 export function TraitScoresBarChart({ traits }: TraitScoresBarChartProps) {
-  const getBandColor = (band: string) => {
-    const bandLower = band.toLowerCase();
-    if (bandLower === "high" || bandLower === "analytical") return "#16A34A";
-    if (bandLower === "balanced") return "#2563EB";
-    if (bandLower === "moderate") return "#D97706";
-    return "#6b7280";
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return "#16A34A"; // Green - High
+    if (score >= 65) return "#2563EB"; // Blue - Good
+    if (score >= 50) return "#D97706"; // Amber/Orange - Moderate
+    return "#6b7280"; // Gray - Low
   };
 
   const chartData = traits.map((trait) => ({
-    trait: trait.trait_name.length > 20
+    trait: isMobile && trait.trait_name.length > 15
+      ? trait.trait_name.substring(0, 15) + "..."
+      : !isMobile && trait.trait_name.length > 20
       ? trait.trait_name.substring(0, 20) + "..."
       : trait.trait_name,
     fullTrait: trait.trait_name,
     score: trait.score,
     band: trait.band,
-    color: getBandColor(trait.band),
+    color: getScoreColor(trait.score),
   }));
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -60,43 +74,52 @@ export function TraitScoresBarChart({ traits }: TraitScoresBarChartProps) {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200 hover:shadow-xl transition-shadow duration-300">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center shadow-md">
-          <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 border border-slate-200 hover:shadow-xl transition-shadow duration-300">
+      <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center shadow-md flex-shrink-0">
+          <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
         </div>
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">Trait Scores Breakdown</h2>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900">Trait Scores Breakdown</h2>
           <p className="text-xs text-slate-500">Horizontal comparison</p>
         </div>
       </div>
 
-      <div className="w-full h-[400px]">
-        <ResponsiveContainer>
+      <div className="w-full h-[300px] sm:h-[400px]">
+        <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={chartData}
             layout="vertical"
-            margin={{ top: 20, right: 30, left: 100, bottom: 20 }}
+            margin={{ 
+              top: 10, 
+              right: isMobile ? 5 : 10, 
+              left: isMobile ? 70 : 100, 
+              bottom: 20 
+            }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
             <XAxis
               type="number"
               domain={[0, 100]}
-              tick={{ fontSize: 12, fill: "#6b7280" }}
-              label={{
+              tick={{ fontSize: isMobile ? 10 : 12, fill: "#6b7280" }}
+              label={!isMobile ? {
                 value: "Score",
                 position: "insideBottom",
                 offset: -5,
-                style: { textAnchor: "middle", fill: "#6b7280" },
-              }}
+                style: { textAnchor: "middle", fill: "#6b7280", fontSize: "12px" },
+              } : undefined}
             />
             <YAxis
               type="category"
               dataKey="trait"
-              tick={{ fontSize: 11, fill: "#6b7280" }}
-              width={90}
+              tick={{ 
+                fontSize: isMobile ? 9 : 11, 
+                fill: "#6b7280"
+              }}
+              width={isMobile ? 70 : 90}
+              interval={0}
             />
             <Tooltip content={<CustomTooltip />} />
             <Bar dataKey="score" radius={[0, 8, 8, 0]}>
