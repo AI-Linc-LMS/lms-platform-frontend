@@ -23,6 +23,7 @@ import {
   mockAptitudeTestData,
   getMockPsychometricData,
 } from "@/lib/mock-data/assessment-mock-data";
+import { EyeMovementViolations } from "@/components/assessment/result/EyeMovementViolations";
 
 export default function AssessmentResultPage() {
   const params = useParams();
@@ -262,6 +263,14 @@ export default function AssessmentResultPage() {
             timeTakenMinutes={stats.time_taken_minutes}
             totalTimeMinutes={stats.total_time_minutes}
           />
+
+          {/* Eye Movement Violations */}
+          {assessmentResult.proctoring?.eye_movement_count && assessmentResult.proctoring.eye_movement_count > 0 && (
+            <EyeMovementViolations
+              violations={assessmentResult.proctoring.eye_movement_violations || []}
+              count={assessmentResult.proctoring.eye_movement_count}
+            />
+          )}
 
           {/* Topic-wise Breakdown */}
           {stats.topic_wise_stats && Object.keys(stats.topic_wise_stats).length > 0 && (

@@ -84,6 +84,8 @@ export function ProctoringMonitor({
         return "mdi:account-multiple";
       case "LOOKING_AWAY":
         return "mdi:eye-off";
+      case "EYE_MOVEMENT":
+        return "mdi:eye-arrow-right";
       case "FACE_TOO_CLOSE":
         return "mdi:arrow-expand-left";
       case "FACE_TOO_FAR":

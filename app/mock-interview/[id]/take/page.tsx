@@ -50,6 +50,8 @@ export default function TakeMockInterviewPage() {
   const animationFrameRef = useRef<number | null>(null);
   const userStreamRef = useRef<MediaStream | null>(null);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const eyeMovementCountRef = useRef(0);
+  const lastEyeMovementWarningRef = useRef(0);
 
   // Proctoring hooks with enhanced configuration
   const {
@@ -74,7 +76,21 @@ export default function TakeMockInterviewPage() {
       if (violation.severity === "high") {
         showToast(violation.message, "error");
       } else if (violation.severity === "medium") {
-        showToast(violation.message, "warning");
+        // Special handling for eye movement violations with penalty warning
+        if (violation.type === "EYE_MOVEMENT") {
+          eyeMovementCountRef.current += 1;
+          const now = Date.now();
+          // Show warning every 3 violations to avoid spam (with 5 second cooldown)
+          if (now - lastEyeMovementWarningRef.current > 5000) {
+            lastEyeMovementWarningRef.current = now;
+            showToast(
+              `Eye movement detected`,
+              "warning"
+            );
+          }
+        } else {
+          showToast(violation.message, "warning");
+        }
       }
     },
     onStatusChange: (status) => {
@@ -554,6 +570,9 @@ export default function TakeMockInterviewPage() {
       const lookingAwayCount = violations.filter(
         (v) => v.type === "LOOKING_AWAY"
       ).length;
+      const eyeMovementCount = violations.filter(
+        (v) => v.type === "EYE_MOVEMENT"
+      ).length;
       const faceTooCloseCount = violations.filter(
         (v) => v.type === "FACE_TOO_CLOSE"
       ).length;
@@ -577,6 +596,7 @@ export default function TakeMockInterviewPage() {
             face_validation_failures: faceValidationFailures,
             multiple_face_detections: multipleFaceDetections,
             looking_away_count: lookingAwayCount,
+            eye_movement_count: eyeMovementCount,
             face_too_close_count: faceTooCloseCount,
             face_too_far_count: faceTooFarCount,
             fullscreen_exits: fullscreenExits,

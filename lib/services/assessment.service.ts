@@ -113,6 +113,13 @@ export interface AssessmentResult {
     total_time_minutes: number;
     percentage_time_taken: number;
   };
+  proctoring?: {
+    eye_movement_violations?: Array<{
+      timestamp: string;
+      duration_seconds?: number;
+    }>;
+    eye_movement_count?: number;
+  };
 }
 
 export interface AssessmentMetadata {
@@ -122,12 +129,18 @@ export interface AssessmentMetadata {
         | "NO_FACE"
         | "MULTIPLE_FACES"
         | "LOOKING_AWAY"
+        | "EYE_MOVEMENT"
         | "FACE_TOO_CLOSE"
         | "FACE_TOO_FAR"
         | "POOR_LIGHTING";
       timestamp: string;
       duration_seconds?: number;
     }>;
+    eye_movement_violations?: Array<{
+      timestamp: string;
+      duration_seconds?: number;
+    }>;
+    eye_movement_count?: number;
     tab_switches: Array<{
       timestamp: string;
       duration_seconds: number;
