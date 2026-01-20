@@ -488,6 +488,20 @@ export default function TakeAssessmentPage({
       // Debounce for 100ms to batch rapid changes
       answerChangeDebounceRef.current = setTimeout(() => {
         setResponses((prev) => {
+          // If answer is null/undefined, remove it from responses (clear answer)
+          if (answer === null || answer === undefined) {
+            const newSectionResponses = { ...prev[sectionType] };
+            delete newSectionResponses[questionId];
+            // Only update if the answer actually existed
+            if (prev[sectionType]?.[questionId] !== undefined) {
+              return {
+                ...prev,
+                [sectionType]: newSectionResponses,
+              };
+            }
+            return prev;
+          }
+
           // Quick check to avoid unnecessary state updates
           const currentAnswer = prev[sectionType]?.[questionId];
           if (
@@ -644,6 +658,14 @@ export default function TakeAssessmentPage({
     },
     [quizQuestions, currentQuestionIndex, sectionType, handleAnswerChange]
   );
+
+  const handleClearAnswer = useCallback(() => {
+    const question = quizQuestions[currentQuestionIndex];
+    if (question) {
+      // Clear the answer by setting it to null
+      handleAnswerChange(sectionType, question.id, null);
+    }
+  }, [quizQuestions, currentQuestionIndex, sectionType, handleAnswerChange]);
 
   const handleQuizQuestionClick = useCallback(
     (questionId: string | number) => {
@@ -834,6 +856,7 @@ export default function TakeAssessmentPage({
                     questions={mappedQuizQuestions}
                     totalQuestions={quizQuestions.length}
                     onAnswerSelect={handleQuizAnswerSelect}
+                    onClearAnswer={handleClearAnswer}
                     onNextQuestion={navigation.handleNext}
                     onPreviousQuestion={navigation.handlePrevious}
                     onQuestionClick={handleQuizQuestionClick}

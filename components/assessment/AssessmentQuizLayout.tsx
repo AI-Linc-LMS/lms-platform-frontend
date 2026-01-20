@@ -31,6 +31,7 @@ interface AssessmentQuizLayoutProps {
   }>;
   totalQuestions: number;
   onAnswerSelect: (answerId: string | number) => void;
+  onClearAnswer?: () => void;
   onNextQuestion?: () => void;
   onPreviousQuestion?: () => void;
   onQuestionClick?: (questionId: string | number) => void;
@@ -44,6 +45,7 @@ export const AssessmentQuizLayout = memo(
     questions = [],
     totalQuestions,
     onAnswerSelect,
+    onClearAnswer,
     onNextQuestion,
     onPreviousQuestion,
     onQuestionClick,
@@ -120,6 +122,36 @@ export const AssessmentQuizLayout = memo(
               isSubmitting={false}
               onAnswerSelect={onAnswerSelect}
             />
+
+            {/* Clear Answer Button - Only show if answer is selected */}
+            {selectedAnswer !== undefined && selectedAnswer !== null && onClearAnswer && (
+              <Box
+                sx={{
+                  mt: 2,
+                  display: "flex",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <Button
+                  variant="text"
+                  onClick={onClearAnswer}
+                  sx={{
+                    color: "#ef4444",
+                    textTransform: "none",
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                    px: 2,
+                    py: 0.75,
+                    "&:hover": {
+                      backgroundColor: "#fee2e2",
+                      color: "#dc2626",
+                    },
+                  }}
+                >
+                  Clear Answer
+                </Button>
+              </Box>
+            )}
 
             {/* Navigation Buttons - No Submit Button */}
             <Box
