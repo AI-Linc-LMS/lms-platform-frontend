@@ -74,6 +74,12 @@ const adminNavigationItems: NavigationItem[] = [
     featureName: "admin_assessment",
   },
   {
+    label: "Verify Content",
+    path: "/admin/verify-content",
+    icon: "mdi:check-circle",
+    featureName: "admin_verify_content",
+  },
+  {
     label: "Attendance",
     path: "/admin/attendance",
     icon: "mdi:calendar-check",
