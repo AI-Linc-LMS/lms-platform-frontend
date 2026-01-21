@@ -17,7 +17,14 @@ interface TraitInsightsSectionProps {
 }
 
 export function TraitInsightsSection({ insights }: TraitInsightsSectionProps) {
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  // Initialize all insights as expanded by default
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    insights.forEach((insight) => {
+      initial[insight.trait_id] = true;
+    });
+    return initial;
+  });
 
   const toggleExpanded = (traitId: string) => {
     setExpanded((prev) => ({
@@ -81,30 +88,30 @@ export function TraitInsightsSection({ insights }: TraitInsightsSectionProps) {
                     <p className="text-slate-700 italic">"{insight.your_tendency}"</p>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 break-inside-avoid">
+                    <div className="min-w-0 break-inside-avoid">
                       <h4 className="text-sm font-semibold text-green-700 mb-2 flex items-center gap-2">
                         <span>✓</span> Strengths
                       </h4>
                       <ul className="space-y-1.5">
                         {insight.strengths.map((strength, i) => (
-                          <li key={i} className="text-sm text-slate-600 flex items-start gap-2">
-                            <span className="text-green-600 mt-1">•</span>
-                            <span>{strength}</span>
+                          <li key={i} className="text-sm text-slate-600 flex items-start gap-2 break-words">
+                            <span className="text-green-600 mt-1 flex-shrink-0">•</span>
+                            <span className="min-w-0 flex-1">{strength}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
 
-                    <div>
+                    <div className="min-w-0 break-inside-avoid">
                       <h4 className="text-sm font-semibold text-amber-700 mb-2 flex items-center gap-2">
                         <span>→</span> Growth Suggestions
                       </h4>
                       <ul className="space-y-1.5">
                         {insight.growth_suggestions.map((suggestion, i) => (
-                          <li key={i} className="text-sm text-slate-600 flex items-start gap-2">
-                            <span className="text-amber-600 mt-1">•</span>
-                            <span>{suggestion}</span>
+                          <li key={i} className="text-sm text-slate-600 flex items-start gap-2 break-words">
+                            <span className="text-amber-600 mt-1 flex-shrink-0">•</span>
+                            <span className="min-w-0 flex-1">{suggestion}</span>
                           </li>
                         ))}
                       </ul>

@@ -227,9 +227,12 @@ export const mockPsychometricData1 = {
   },
   career_orientation: {
     aligned_role_clusters: [
-      "Analytical roles",
-      "Research-oriented roles",
-      "Structured technical roles"
+      { role: "Data Scientist / Analyst", score: 88 },
+      { role: "Business Analyst", score: 82 },
+      { role: "Financial Analyst", score: 75 },
+      { role: "Accountant", score: 68 },
+      { role: "Actuary", score: 62 },
+      { role: "Database Administrator", score: 58 }
     ],
     workplace_fit_note: "You may feel more comfortable in environments with clear expectations and planning."
   },
@@ -374,10 +377,12 @@ export const mockPsychometricData2 = {
   },
   career_orientation: {
     aligned_role_clusters: [
-      "Creative roles",
-      "Innovation-focused positions",
-      "Team leadership roles",
-      "Dynamic project management"
+      { role: "Creative Director", score: 92 },
+      { role: "UX/UI Designer", score: 85 },
+      { role: "Graphic Designer", score: 78 },
+      { role: "Product Manager", score: 72 },
+      { role: "Content Writer / Copywriter", score: 65 },
+      { role: "Marketing Director", score: 60 }
     ],
     workplace_fit_note: "You thrive in environments that value creativity, collaboration, and rapid innovation."
   },
@@ -526,10 +531,12 @@ export const mockPsychometricData3 = {
   },
   career_orientation: {
     aligned_role_clusters: [
-      "Quality assurance roles",
-      "Research and analysis",
-      "Process improvement",
-      "Technical documentation"
+      { role: "Quality Assurance (QA) Engineer", score: 90 },
+      { role: "Compliance Officer", score: 83 },
+      { role: "Accountant", score: 76 },
+      { role: "Database Administrator", score: 69 },
+      { role: "Technical Writer", score: 63 },
+      { role: "Medical Researcher", score: 57 }
     ],
     workplace_fit_note: "You excel in roles that require attention to detail, systematic thinking, and quality focus."
   },
@@ -678,10 +685,12 @@ export const mockPsychometricData4 = {
   },
   career_orientation: {
     aligned_role_clusters: [
-      "Leadership roles",
-      "Management positions",
-      "Strategic planning",
-      "Business development"
+      { role: "Executive (CEO/CTO/COO)", score: 91 },
+      { role: "Management Consultant", score: 84 },
+      { role: "Operations Manager", score: 77 },
+      { role: "Project Manager", score: 70 },
+      { role: "Business Development Manager", score: 64 },
+      { role: "Sales Manager", score: 59 }
     ],
     workplace_fit_note: "You are well-suited for leadership positions where you can influence, guide, and drive results."
   },
