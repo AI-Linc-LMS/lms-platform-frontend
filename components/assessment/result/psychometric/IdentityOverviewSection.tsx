@@ -59,12 +59,12 @@ export function IdentityOverviewSection({ data, traitInsights = [] }: IdentityOv
 
       <div className="relative z-10 p-4 sm:p-6 md:p-8 lg:p-12 text-white">
         {/* Header Badge */}
-        <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/20 backdrop-blur-sm rounded-full text-xs sm:text-sm font-semibold mb-4 sm:mb-6 border border-white/30">
-          <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 20 20">
+        <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/20 backdrop-blur-sm rounded-full text-xs sm:text-sm font-semibold mb-4 sm:mb-6 border border-white/30 whitespace-nowrap">
+          <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
           </svg>
-          <span className="hidden sm:inline">Personal Intelligence Report</span>
-          <span className="sm:hidden">Report</span>
+          <span className="hidden sm:inline whitespace-nowrap">Personal Intelligence Report</span>
+          <span className="sm:hidden whitespace-nowrap">Report</span>
         </div>
 
         {/* Main Content Grid */}
@@ -112,12 +112,12 @@ export function IdentityOverviewSection({ data, traitInsights = [] }: IdentityOv
           <div className={`space-y-3 sm:space-y-4 transition-all duration-1000 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             {/* Confidence Score */}
             <div className={`bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/20 hover:bg-white/15 transition-all duration-300 ${getScoreBgColor(personality_archetype.confidence_score)}`}>
-              <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="flex items-center justify-between mb-2 sm:mb-3 min-w-0 gap-2">
                 <div className="min-w-0 flex-1 pr-2">
-                  <p className="text-xs sm:text-sm font-semibold text-blue-200 uppercase tracking-wide mb-0.5 sm:mb-1">Confidence</p>
-                  <p className="text-xs text-blue-300 hidden sm:block">Self-assurance & decisiveness</p>
+                  <p className="text-xs sm:text-sm font-semibold text-blue-200 uppercase tracking-wide mb-0.5 sm:mb-1 whitespace-nowrap">Confidence</p>
+                  <p className="text-xs text-blue-300 hidden sm:block whitespace-nowrap">Self-assurance & decisiveness</p>
                 </div>
-                <div className={`text-3xl sm:text-4xl font-bold flex-shrink-0 ${getScoreColor(personality_archetype.confidence_score)}`}>
+                <div className={`text-3xl sm:text-4xl font-bold flex-shrink-0 whitespace-nowrap ${getScoreColor(personality_archetype.confidence_score)}`}>
                   {personality_archetype.confidence_score}
                 </div>
               </div>
@@ -134,12 +134,12 @@ export function IdentityOverviewSection({ data, traitInsights = [] }: IdentityOv
 
             {/* Emotional Stability */}
             <div className={`bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/20 hover:bg-white/15 transition-all duration-300 ${getScoreBgColor(personality_archetype.emotional_stability)}`}>
-              <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="flex items-center justify-between mb-2 sm:mb-3 min-w-0 gap-2">
                 <div className="min-w-0 flex-1 pr-2">
-                  <p className="text-xs sm:text-sm font-semibold text-blue-200 uppercase tracking-wide mb-0.5 sm:mb-1">Emotional Stability</p>
-                  <p className="text-xs text-blue-300 hidden sm:block">Resilience & composure</p>
+                  <p className="text-xs sm:text-sm font-semibold text-blue-200 uppercase tracking-wide mb-0.5 sm:mb-1 whitespace-nowrap">Emotional Stability</p>
+                  <p className="text-xs text-blue-300 hidden sm:block whitespace-nowrap">Resilience & composure</p>
                 </div>
-                <div className={`text-3xl sm:text-4xl font-bold flex-shrink-0 ${getScoreColor(personality_archetype.emotional_stability)}`}>
+                <div className={`text-3xl sm:text-4xl font-bold flex-shrink-0 whitespace-nowrap ${getScoreColor(personality_archetype.emotional_stability)}`}>
                   {personality_archetype.emotional_stability}
                 </div>
               </div>
@@ -156,12 +156,12 @@ export function IdentityOverviewSection({ data, traitInsights = [] }: IdentityOv
 
             {/* Adaptability */}
             <div className={`bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/20 hover:bg-white/15 transition-all duration-300 ${getScoreBgColor(personality_archetype.adaptability_score)}`}>
-              <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="flex items-center justify-between mb-2 sm:mb-3 min-w-0 gap-2">
                 <div className="min-w-0 flex-1 pr-2">
-                  <p className="text-xs sm:text-sm font-semibold text-blue-200 uppercase tracking-wide mb-0.5 sm:mb-1">Adaptability</p>
-                  <p className="text-xs text-blue-300 hidden sm:block">Flexibility & change readiness</p>
+                  <p className="text-xs sm:text-sm font-semibold text-blue-200 uppercase tracking-wide mb-0.5 sm:mb-1 whitespace-nowrap">Adaptability</p>
+                  <p className="text-xs text-blue-300 hidden sm:block whitespace-nowrap">Flexibility & change readiness</p>
                 </div>
-                <div className={`text-3xl sm:text-4xl font-bold flex-shrink-0 ${getScoreColor(personality_archetype.adaptability_score)}`}>
+                <div className={`text-3xl sm:text-4xl font-bold flex-shrink-0 whitespace-nowrap ${getScoreColor(personality_archetype.adaptability_score)}`}>
                   {personality_archetype.adaptability_score}
                 </div>
               </div>

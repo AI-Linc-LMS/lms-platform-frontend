@@ -77,7 +77,7 @@ export function SuitableCareerProfilesSection({ profiles }: SuitableCareerProfil
       return (
         <div className="bg-white rounded-lg shadow-xl border border-slate-200 p-3">
           <p className="font-bold text-slate-900 mb-1">{data.fullName}</p>
-          <p className="text-lg font-bold" style={{ color: data.fill }}>{data.score}% Match</p>
+          <p className="text-lg font-bold whitespace-nowrap" style={{ color: data.fill }}>{data.score}% Match</p>
         </div>
       );
     }
@@ -227,9 +227,9 @@ export function SuitableCareerProfilesSection({ profiles }: SuitableCareerProfil
             {/* Profile Header */}
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">{profile.role}</h3>
-                  <div className={`flex-shrink-0 px-3 py-1 rounded-full text-xs sm:text-sm font-bold text-white ${getScoreBadgeColor(profile.score)}`}>
+                <div className="flex items-center gap-3 mb-2 min-w-0">
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900 truncate min-w-0 flex-1">{profile.role}</h3>
+                  <div className={`flex-shrink-0 px-3 py-1 rounded-full text-xs sm:text-sm font-bold text-white whitespace-nowrap ${getScoreBadgeColor(profile.score)}`}>
                     {profile.score}% Match
                   </div>
                 </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useRef } from "react";
+import { generatePdfFromElement } from "@/lib/utils/pdf-generation.utils";
 import { HeaderSection } from "./psychometric/HeaderSection";
 import { IdentityOverviewSection } from "./psychometric/IdentityOverviewSection";
 import { EnhancedTraitInsightsSection } from "./psychometric/EnhancedTraitInsightsSection";
@@ -243,6 +245,8 @@ interface PsychometricResultViewProps {
 }
 
 export function PsychometricResultView({ data }: PsychometricResultViewProps) {
+  const contentRef = useRef<HTMLDivElement>(null);
+
   // Use enhanced data if available, otherwise fall back to legacy structure
   const identityData = data.identity_overview || {
     personality_archetype: {
@@ -258,9 +262,28 @@ export function PsychometricResultView({ data }: PsychometricResultViewProps) {
 
   const traitInsights = data.enhanced_trait_insights || data.trait_insights || [];
 
+  const handleDownloadPDF = async () => {
+    if (!contentRef.current) return;
+
+    try {
+      const fileName = `psychometric-assessment-${data.assessment_meta.assessment_id || "result"}.pdf`;
+      
+      await generatePdfFromElement({
+        element: contentRef.current,
+        fileName,
+        backgroundColor: "#f8fafc",
+        quality: 0.92,
+        pixelRatio: 1.5,
+      });
+    } catch (error) {
+      // Error handling - no console.log per memory requirement
+      // Error is silently handled to avoid disrupting user experience
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 p-3 sm:p-4 md:p-6">
-      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8 md:space-y-10">
+    <div ref={contentRef} className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 px-2 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 md:space-y-8 lg:space-y-10">
         {/* Header / Summary */}
         <HeaderSection meta={data.assessment_meta} />
 
@@ -327,6 +350,20 @@ export function PsychometricResultView({ data }: PsychometricResultViewProps) {
 
         {/* Disclaimer */}
         <DisclaimerSection disclaimer={data.disclaimer} />
+
+        {/* Download PDF Report Button */}
+        <div className="exclude-from-pdf pt-4 sm:pt-6 md:pt-8 pb-4 sm:pb-6">
+          <button
+            onClick={handleDownloadPDF}
+            className="w-full sm:w-auto mx-auto flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:from-blue-800 active:to-indigo-800 text-white rounded-xl sm:rounded-2xl text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 touch-manipulation min-h-[48px] sm:min-h-[52px]"
+            aria-label="Download PDF Report"
+          >
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Download PDF Report</span>
+          </button>
+        </div>
       </div>
     </div>
   );

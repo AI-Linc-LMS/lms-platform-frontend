@@ -13,6 +13,14 @@ interface CareerOrientationSectionProps {
 }
 
 export function CareerOrientationSection({ career }: CareerOrientationSectionProps) {
+  // Helper function to convert hex to rgba
+  const hexToRgba = (hex: string, alpha: number) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
   const getScoreColor = (score: number) => {
     if (score >= 80) return "#10b981"; // Green
     if (score >= 65) return "#3b82f6"; // Blue
@@ -101,10 +109,10 @@ export function CareerOrientationSection({ career }: CareerOrientationSectionPro
       <div className="mb-4 sm:mb-6">
         <div className="flex items-center gap-2 mb-4 sm:mb-6">
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
-          <h3 className="text-xs sm:text-sm md:text-base font-bold text-slate-900 uppercase tracking-wider px-2 sm:px-3 text-center">Job Profiles That Align With Your Personality</h3>
+          <h3 className="text-xs sm:text-sm md:text-base font-bold text-slate-900 uppercase tracking-wider px-2 sm:px-3 text-center whitespace-nowrap flex-shrink-0">Job Profiles That Align With Your Personality</h3>
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5 break-inside-avoid">
           {sortedRoles.map((item, index) => {
             const color = getScoreColor(item.score);
             const getGradient = (score: number) => {
@@ -139,22 +147,29 @@ export function CareerOrientationSection({ career }: CareerOrientationSectionPro
             return (
               <div
                 key={index}
-                className="group relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br border-2 transition-all duration-300 hover:scale-[1.01] sm:hover:scale-[1.02] hover:shadow-xl sm:hover:shadow-2xl active:scale-[0.99]"
+                className="group relative overflow-hidden rounded-xl sm:rounded-2xl border-2 transition-all duration-300 hover:scale-[1.01] sm:hover:scale-[1.02] hover:shadow-xl sm:hover:shadow-2xl active:scale-[0.99] break-inside-avoid bg-white"
                 style={{
                   borderColor: color,
-                  background: `linear-gradient(135deg, ${color}08 0%, ${color}03 50%, ${color}08 100%)`,
                 }}
               >
-                {/* Animated Background Gradient */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${getBgGradient(item.score)} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
+                {/* Background with proper color overlay */}
+                <div 
+                  className="absolute inset-0 z-0"
+                  style={{
+                    background: `linear-gradient(135deg, ${hexToRgba(color, 0.08)} 0%, ${hexToRgba(color, 0.05)} 50%, ${hexToRgba(color, 0.08)} 100%)`,
+                  }}
+                ></div>
+                
+                {/* Animated Background Gradient on Hover */}
+                <div className={`absolute inset-0 z-0 bg-gradient-to-br ${getBgGradient(item.score)} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
                 
                 {/* Decorative Corner Element - Hidden on mobile, visible on larger screens */}
-                <div className={`hidden sm:block absolute top-0 right-0 w-20 sm:w-24 h-20 sm:h-24 bg-gradient-to-br ${getGradient(item.score)} opacity-10 rounded-bl-full transform rotate-45 translate-x-6 sm:translate-x-8 -translate-y-6 sm:-translate-y-8 group-hover:opacity-20 transition-opacity duration-300`}></div>
+                <div className={`hidden sm:block absolute top-0 right-0 w-20 sm:w-24 h-20 sm:h-24 bg-gradient-to-br ${getGradient(item.score)} opacity-10 rounded-bl-full transform rotate-45 translate-x-6 sm:translate-x-8 -translate-y-6 sm:-translate-y-8 group-hover:opacity-20 transition-opacity duration-300 z-0`}></div>
                 
-                <div className="relative p-3 sm:p-4 md:p-5">
+                <div className="relative z-10 p-3 sm:p-4 md:p-5">
                   {/* Header with Icon and Score */}
                   <div className="mb-3 sm:mb-4">
-                    <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
+                    <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3 min-w-0">
                       <div 
                         className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-gradient-to-br ${getGradient(item.score)} shadow-lg flex-shrink-0`}
                         style={{ color: 'white' }}
@@ -162,29 +177,29 @@ export function CareerOrientationSection({ career }: CareerOrientationSectionPro
                         {getIcon(item.score)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm sm:text-base md:text-lg font-bold text-slate-900 group-hover:text-slate-800 transition-colors break-words leading-snug sm:leading-tight">
+                        <h3 className="text-sm sm:text-base md:text-lg font-bold text-slate-900 group-hover:text-slate-800 transition-colors break-words leading-snug sm:leading-tight min-w-0">
                           {item.role}
                         </h3>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-baseline gap-1">
+                    <div className="flex items-center justify-between flex-wrap gap-2 min-w-0">
+                      <div className="flex items-baseline gap-1 flex-shrink-0 whitespace-nowrap">
                         <span
-                          className="text-2xl sm:text-3xl md:text-4xl font-extrabold bg-gradient-to-br bg-clip-text text-transparent"
+                          className="text-xl sm:text-2xl md:text-3xl font-extrabold bg-gradient-to-br bg-clip-text text-transparent"
                           style={{
                             backgroundImage: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
                           }}
                         >
                           {item.score}
                         </span>
-                        <span className="text-xs sm:text-sm md:text-base text-slate-500 font-semibold">/100</span>
+                        <span className="text-xs sm:text-sm text-slate-500 font-semibold">/100</span>
                       </div>
                       <span
-                        className="text-[10px] sm:text-xs font-bold uppercase tracking-wider px-2 py-0.5 sm:py-1 rounded-full"
+                        className="text-[10px] sm:text-xs font-bold uppercase tracking-wider px-2 py-0.5 sm:py-1 rounded-full flex-shrink-0 whitespace-nowrap"
                         style={{
-                          backgroundColor: `${color}15`,
+                          backgroundColor: hexToRgba(color, 0.08),
                           color: color,
-                          border: `1px solid ${color}40`,
+                          border: `1px solid ${hexToRgba(color, 0.25)}`,
                         }}
                       >
                         {item.score >= 80
@@ -200,9 +215,9 @@ export function CareerOrientationSection({ career }: CareerOrientationSectionPro
 
                   {/* Enhanced Progress Bar */}
                   <div className="mb-3 sm:mb-4">
-                    <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                      <span className="text-[10px] sm:text-xs font-semibold text-slate-600 uppercase tracking-wide">Match Score</span>
-                      <span className="text-[10px] sm:text-xs font-bold" style={{ color }}>{item.score}%</span>
+                    <div className="flex items-center justify-between mb-1.5 sm:mb-2 min-w-0">
+                      <span className="text-[10px] sm:text-xs font-semibold text-slate-600 uppercase tracking-wide whitespace-nowrap flex-shrink-0">Match Score</span>
+                      <span className="text-[10px] sm:text-xs font-bold flex-shrink-0 whitespace-nowrap" style={{ color }}>{item.score}%</span>
                     </div>
                     <div className="relative w-full h-2.5 sm:h-3 md:h-4 bg-slate-200 rounded-full overflow-hidden shadow-inner">
                       <div
@@ -228,13 +243,13 @@ export function CareerOrientationSection({ career }: CareerOrientationSectionPro
                   </div>
 
                   {/* Fit Badge with Animation */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="flex items-center justify-between min-w-0">
+                    <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-shrink-0">
                       <div 
-                        className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full animate-pulse"
+                        className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full animate-pulse flex-shrink-0"
                         style={{ backgroundColor: color }}
                       ></div>
-                      <span className="text-[10px] sm:text-xs md:text-sm font-semibold text-slate-700">
+                      <span className="text-[10px] sm:text-xs md:text-sm font-semibold text-slate-700 whitespace-nowrap">
                         {item.score >= 80
                           ? "Excellent Fit"
                           : item.score >= 65
@@ -245,7 +260,7 @@ export function CareerOrientationSection({ career }: CareerOrientationSectionPro
                       </span>
                     </div>
                     <svg 
-                      className="w-4 h-4 sm:w-5 sm:h-5 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-1 hidden sm:block"
+                      className="w-4 h-4 sm:w-5 sm:h-5 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-1 hidden sm:block flex-shrink-0"
                       style={{ color }}
                       fill="none" 
                       viewBox="0 0 24 24" 
@@ -271,11 +286,11 @@ export function CareerOrientationSection({ career }: CareerOrientationSectionPro
 
       {/* Workplace Fit Note */}
       <div className="pt-4 sm:pt-5 border-t border-slate-200 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg sm:rounded-xl p-4 sm:p-5 border border-emerald-100">
-        <div className="flex items-start gap-2 sm:gap-3">
+        <div className="flex items-start gap-2 sm:gap-3 min-w-0">
           <svg className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
           </svg>
-          <p className="text-slate-700 font-medium leading-relaxed italic text-sm sm:text-base">"{career.workplace_fit_note}"</p>
+          <p className="text-slate-700 font-medium leading-relaxed italic text-sm sm:text-base whitespace-nowrap min-w-0 flex-1 overflow-hidden text-ellipsis">"{career.workplace_fit_note}"</p>
         </div>
       </div>
     </div>

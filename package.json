@@ -25,6 +25,7 @@
     "axios": "^1.13.2",
     "formik": "^2.4.9",
     "framer-motion": "^12.23.26",
+    "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",
     "js-cookie": "^3.0.5",
     "jspdf": "^3.0.4",
