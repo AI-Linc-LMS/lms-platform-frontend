@@ -2,7 +2,7 @@ import { Assessment } from "@/lib/services/assessment.service";
 
 /**
  * Checks if an assessment is a psychometric assessment
- * by checking if the title or slug contains "psychometric" or "k-disha" (case-insensitive)
+ * by checking if the title or slug contains "psychometric", "k-disha", or "k-sage" (case-insensitive)
  */
 export function isPsychometricAssessment(assessment: Assessment): boolean {
   const title = assessment.title?.toLowerCase() || "";
@@ -14,7 +14,11 @@ export function isPsychometricAssessment(assessment: Assessment): boolean {
     title.includes("k-disha") ||
     slug.includes("k-disha") ||
     title.includes("kdisha") ||
-    slug.includes("kdisha")
+    slug.includes("kdisha") ||
+    title.includes("k-sage") ||
+    slug.includes("k-sage") ||
+    title.includes("ksage") ||
+    slug.includes("ksage")
   );
 }
 

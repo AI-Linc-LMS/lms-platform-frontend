@@ -65,7 +65,9 @@ export default function AssessmentResultPage() {
         slugLower.includes("psychometric") ||
         slugLower === "psychometric" ||
         slugLower.includes("k-disha") ||
-        slugLower.includes("kdisha");
+        slugLower.includes("kdisha") ||
+        slugLower.includes("k-sage") ||
+        slugLower.includes("ksage");
       
       // For psychometric assessments, use mock data for now
       if (isPsychometric) {
