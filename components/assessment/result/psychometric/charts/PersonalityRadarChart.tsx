@@ -186,14 +186,14 @@ export function PersonalityRadarChart({ traits, traitInsights = [] }: Personalit
       {/* Trait Legend with Enhanced Styling */}
       <div className="border-t border-slate-200 pt-4">
         <p className="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">Trait Breakdown</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 break-inside-avoid">
           {traits.map((trait) => {
             const insight = traitInsights.find((ti) => ti.trait_id === trait.trait_id);
             const isHovered = hoveredTrait === trait.trait_id;
             return (
               <div
                 key={trait.trait_id}
-                className={`group relative p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
+                className={`group relative p-3 rounded-lg border transition-all duration-200 cursor-pointer break-inside-avoid ${
                   isHovered
                     ? "border-blue-400 bg-blue-50 shadow-md"
                     : "border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-blue-50/50"
@@ -201,13 +201,13 @@ export function PersonalityRadarChart({ traits, traitInsights = [] }: Personalit
                 onMouseEnter={() => setHoveredTrait(trait.trait_id)}
                 onMouseLeave={() => setHoveredTrait(null)}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-bold text-slate-900">{trait.trait_name}</span>
-                  <span className="text-base font-bold text-blue-600">{trait.score}</span>
+                <div className="flex items-center justify-between mb-1 min-w-0 gap-2">
+                  <span className="text-sm font-bold text-slate-900 break-words min-w-0 flex-1">{trait.trait_name}</span>
+                  <span className="text-base font-bold text-blue-600 flex-shrink-0 whitespace-nowrap">{trait.score}</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <div
-                    className="h-2 flex-1 rounded-full"
+                    className="h-2 flex-1 rounded-full min-w-0"
                     style={{
                       backgroundColor: `${getBandColor(trait.band)}40`,
                     }}
@@ -221,7 +221,7 @@ export function PersonalityRadarChart({ traits, traitInsights = [] }: Personalit
                     />
                   </div>
                   <span
-                    className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                    className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap"
                     style={{
                       backgroundColor: `${getBandColor(trait.band)}20`,
                       color: getBandColor(trait.band),

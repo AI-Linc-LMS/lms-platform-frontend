@@ -44,12 +44,12 @@ export function PersonalitySnapshotSection({ traits }: PersonalitySnapshotSectio
         {traits.map((trait, index) => (
           <div
             key={trait.trait_id}
-            className="group flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all duration-200 hover:shadow-md"
+            className="group flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all duration-200 hover:shadow-md break-inside-avoid"
             style={{ animationDelay: `${index * 50}ms` }}
           >
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"></div>
-              <span className="text-slate-700 font-semibold text-sm sm:text-base truncate">{trait.trait_name}</span>
+              <span className="text-slate-700 font-semibold text-sm sm:text-base whitespace-nowrap flex-shrink-0">{trait.trait_name}</span>
             </div>
             <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 flex-shrink-0">
               {trait.score !== undefined && (

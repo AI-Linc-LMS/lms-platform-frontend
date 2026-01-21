@@ -113,13 +113,14 @@ export default function AssessmentResultPage() {
     return (
       <MainLayout>
         <div className="w-full bg-slate-50">
-          <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-6">
             <button
               onClick={() => router.push("/assessments")}
-              className="mb-4 sm:mb-6 text-slate-600 hover:text-blue-600 font-semibold flex items-center gap-2 transition-colors text-sm sm:text-base"
+              className="mb-3 sm:mb-4 md:mb-6 text-slate-600 active:text-blue-600 hover:text-blue-600 font-semibold flex items-center gap-2 transition-colors text-sm sm:text-base touch-manipulation min-h-[44px] sm:min-h-auto"
+              aria-label="Back to Assessments"
             >
               <svg
-                className="w-4 h-4 sm:w-5 sm:h-5"
+                className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
