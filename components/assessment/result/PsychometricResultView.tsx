@@ -9,6 +9,7 @@ import { CognitiveWorkStyleSection } from "./psychometric/CognitiveWorkStyleSect
 import { SocioEconomicSection } from "./psychometric/SocioEconomicSection";
 import { EnhancedCareerFitmentSection } from "./psychometric/EnhancedCareerFitmentSection";
 import { CareerOrientationSection } from "./psychometric/CareerOrientationSection";
+import { SuitableCareerProfilesSection } from "./psychometric/SuitableCareerProfilesSection";
 import { StrengthsRisksSection } from "./psychometric/StrengthsRisksSection";
 import { GrowthRoadmapSection } from "./psychometric/GrowthRoadmapSection";
 import { PersonalitySnapshotSection } from "./psychometric/PersonalitySnapshotSection";
@@ -274,6 +275,11 @@ export function PsychometricResultView({ data }: PsychometricResultViewProps) {
           <EnhancedCareerFitmentSection data={data.enhanced_career_fitment} />
         ) : data.career_orientation && (
           <CareerOrientationSection career={data.career_orientation} />
+        )}
+
+        {/* 2.1. Suitable Career Path - Job Profiles */}
+        {data.enhanced_career_fitment && data.enhanced_career_fitment.career_paths && data.enhanced_career_fitment.career_paths.length > 0 && (
+          <SuitableCareerProfilesSection profiles={data.enhanced_career_fitment.career_paths} />
         )}
 
         {/* 3. Personality Trait Deep Dive */}
