@@ -18,11 +18,13 @@ interface AssessmentSettingsSectionProps {
   price: string;
   currency: string;
   isActive: boolean;
+  proctoringEnabled: boolean;
   onDurationChange: (value: number) => void;
   onPaidChange: (value: boolean) => void;
   onPriceChange: (value: string) => void;
   onCurrencyChange: (value: string) => void;
   onActiveChange: (value: boolean) => void;
+  onProctoringEnabledChange: (value: boolean) => void;
 }
 
 export function AssessmentSettingsSection({
@@ -31,11 +33,13 @@ export function AssessmentSettingsSection({
   price,
   currency,
   isActive,
+  proctoringEnabled,
   onDurationChange,
   onPaidChange,
   onPriceChange,
   onCurrencyChange,
   onActiveChange,
+  onProctoringEnabledChange,
 }: AssessmentSettingsSectionProps) {
   return (
     <Box>
@@ -115,6 +119,12 @@ export function AssessmentSettingsSection({
               <Switch checked={isActive} onChange={(e) => onActiveChange(e.target.checked)} />
             }
             label="Active"
+          />
+          <FormControlLabel
+            control={
+              <Switch checked={proctoringEnabled ?? true} onChange={(e) => onProctoringEnabledChange(e.target.checked)} />
+            }
+            label="Proctoring Enabled"
           />
         </Box>
       </Box>

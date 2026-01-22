@@ -16,6 +16,7 @@ export interface Assessment {
   created_at: string;
   is_attempted: boolean;
   has_attempted?: boolean; // For backward compatibility
+  proctoring_enabled?: boolean;
   /** "not_started" | "in_progress" | "submitted" – when "submitted", show results */
   status?: "not_started" | "in_progress" | "submitted";
 }

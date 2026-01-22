@@ -104,6 +104,34 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
         </Box>
       )}
 
+      {/* Proctored Badge */}
+      {assessment.proctoring_enabled && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: 10,
+            right: showResults ? 100 : 10,
+            zIndex: 2,
+          }}
+        >
+          <Chip
+            icon={<IconWrapper icon="mdi:shield-account" size={14} />}
+            label="Proctored"
+            size="small"
+            sx={{
+              backgroundColor: "#fef3c7",
+              color: "#92400e",
+              fontWeight: 600,
+              fontSize: "0.7rem",
+              height: 22,
+              "& .MuiChip-icon": {
+                color: "#92400e",
+              },
+            }}
+          />
+        </Box>
+      )}
+
       {/* Header Section */}
       <Box
         sx={{
