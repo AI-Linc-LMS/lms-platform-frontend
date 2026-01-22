@@ -16,6 +16,7 @@ export interface Assessment {
   created_at: string;
   is_attempted: boolean;
   has_attempted?: boolean; // For backward compatibility
+  proctoring_enabled?: boolean;
 }
 
 export interface AssessmentDetail extends Assessment {

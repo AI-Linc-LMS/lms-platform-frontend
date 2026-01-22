@@ -40,6 +40,7 @@ interface AssessmentResponse {
   remaining_time: number;
   status: string;
   responseSheet: Record<string, any>;
+  proctoring_enabled?: boolean;
 }
 
 export function useAssessmentData(slug: string) {
