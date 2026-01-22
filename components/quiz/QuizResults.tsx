@@ -190,7 +190,7 @@ export function QuizResults({
           }}
         >
           <Chip
-            label={`Score: ${score}/${totalQuestions * 10}`}
+            label={`Score: ${score}/${totalQuestions}`}
             sx={{
               backgroundColor: `${getScoreColor()}20`,
               color: getScoreColor(),

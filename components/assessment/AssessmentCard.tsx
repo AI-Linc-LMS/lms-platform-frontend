@@ -24,12 +24,13 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
   assessment,
 }) => {
   const router = useRouter();
-  const isAttempted = assessment.is_attempted || assessment.has_attempted;
+  const showResults =
+    assessment.status === "submitted";
   const isPsychometric = isPsychometricAssessment(assessment);
   const psychometricTags = isPsychometric ? getPsychometricTags(assessment) : [];
 
   const handleClick = () => {
-    if (isAttempted) {
+    if (showResults) {
       router.push(`/assessments/result/${assessment.slug}`);
     } else {
       router.push(`/assessments/${assessment.slug}`);
@@ -45,10 +46,10 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
         flexDirection: "column",
         border: "1px solid",
         borderColor: isPsychometric
-          ? isAttempted
+          ? showResults
             ? "rgba(124, 58, 237, 0.2)"
             : "rgba(124, 58, 237, 0.3)"
-          : isAttempted
+          : showResults
           ? "rgba(16, 185, 129, 0.2)"
           : "#e5e7eb",
         borderRadius: 3,
@@ -65,10 +66,10 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             : "0 8px 24px rgba(0, 0, 0, 0.12)",
           transform: "translateY(-4px)",
           borderColor: isPsychometric
-            ? isAttempted
+            ? showResults
               ? "rgba(124, 58, 237, 0.4)"
               : "rgba(124, 58, 237, 0.5)"
-            : isAttempted
+            : showResults
             ? "rgba(16, 185, 129, 0.4)"
             : "#6366f1",
         },
@@ -76,7 +77,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
       onClick={handleClick}
     >
       {/* Status Badge */}
-      {isAttempted && (
+      {showResults && (
         <Box
           sx={{
             position: "absolute",
@@ -107,10 +108,10 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
       <Box
         sx={{
           background: isPsychometric
-            ? isAttempted
+            ? showResults
               ? "linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(99, 102, 241, 0.05) 100%)"
               : `url(/images/psychometric-test.png) center/cover no-repeat, linear-gradient(135deg, rgba(124, 58, 237, 0.85) 0%, rgba(99, 102, 241, 0.85) 100%)`
-            : isAttempted
+            : showResults
             ? "linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.05) 100%)"
             : "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
           p: 2,
@@ -123,7 +124,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
         }}
       >
         {/* Overlay for psychometric image */}
-        {isPsychometric && !isAttempted && (
+        {isPsychometric && !showResults && (
           <Box
             sx={{
               position: "absolute",
@@ -138,12 +139,12 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
           <Typography
             variant="h6"
             sx={{
-              color: isAttempted ? "#1f2937" : "#ffffff",
+              color: showResults ? "#1f2937" : "#ffffff",
               fontWeight: 700,
               fontSize: "1rem",
               mb: 0.5,
-              pr: isAttempted || isPsychometric ? 10 : 0,
-              pl: isPsychometric && !isAttempted ? 0 : 0,
+              pr: showResults || isPsychometric ? 10 : 0,
+              pl: isPsychometric && !showResults ? 0 : 0,
               minHeight: 40,
               display: "-webkit-box",
               WebkitLineClamp: 2,
@@ -157,7 +158,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
           <Typography
             variant="body2"
             sx={{
-              color: isAttempted ? "#6b7280" : "rgba(255, 255, 255, 0.9)",
+              color: showResults ? "#6b7280" : "rgba(255, 255, 255, 0.9)",
               fontSize: "0.8125rem",
               minHeight: 18,
               display: "-webkit-box",
@@ -189,23 +190,23 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                     px: 1.5,
                     py: 0.5,
                     borderRadius: 2,
-                    backgroundColor: isAttempted
+                    backgroundColor: showResults
                       ? `${tag.color}10`
                       : "rgba(255, 255, 255, 0.2)",
-                    color: isAttempted ? tag.color : "#ffffff",
+                    color: showResults ? tag.color : "#ffffff",
                     fontWeight: 600,
                     fontSize: "0.7rem",
-                    border: isAttempted
+                    border: showResults
                       ? `1.5px solid ${tag.color}30`
                       : "1.5px solid rgba(255, 255, 255, 0.4)",
                     backdropFilter: "blur(8px)",
                     transition: "all 0.2s ease",
                     "&:hover": {
-                      backgroundColor: isAttempted
+                      backgroundColor: showResults
                         ? `${tag.color}20`
                         : "rgba(255, 255, 255, 0.3)",
                       transform: "translateY(-1px)",
-                      boxShadow: isAttempted
+                      boxShadow: showResults
                         ? `0 2px 8px ${tag.color}25`
                         : "0 2px 8px rgba(255, 255, 255, 0.2)",
                     },
@@ -216,8 +217,8 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                       width: 6,
                       height: 6,
                       borderRadius: "50%",
-                      backgroundColor: isAttempted ? tag.color : "#ffffff",
-                      boxShadow: isAttempted
+                      backgroundColor: showResults ? tag.color : "#ffffff",
+                      boxShadow: showResults
                         ? `0 0 4px ${tag.color}50`
                         : "0 0 4px rgba(255, 255, 255, 0.5)",
                     }}
@@ -363,17 +364,17 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             startIcon={
               <IconWrapper
                 icon={
-                  isAttempted ? "mdi:eye-outline" : "mdi:play-circle-outline"
+                  showResults ? "mdi:eye-outline" : "mdi:play-circle-outline"
                 }
                 size={18}
               />
             }
             sx={{
               backgroundColor: isPsychometric
-                ? isAttempted
+                ? showResults
                   ? "#7c3aed"
                   : "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)"
-                : isAttempted
+                : showResults
                 ? "#10b981"
                 : "#6366f1",
               color: "#ffffff",
@@ -383,23 +384,23 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
               textTransform: "none",
               fontSize: "0.875rem",
               boxShadow: isPsychometric
-                ? isAttempted
+                ? showResults
                   ? "0 4px 14px 0 rgba(124, 58, 237, 0.39)"
                   : "0 4px 14px 0 rgba(124, 58, 237, 0.5)"
-                : isAttempted
+                : showResults
                 ? "0 4px 14px 0 rgba(16, 185, 129, 0.39)"
                 : "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
               "&:hover": {
                 backgroundColor: isPsychometric
-                  ? isAttempted
+                  ? showResults
                     ? "#6d28d9"
                     : "#6d28d9"
-                  : isAttempted
+                  : showResults
                   ? "#059669"
                   : "#4f46e5",
                 boxShadow: isPsychometric
                   ? "0 6px 20px 0 rgba(124, 58, 237, 0.6)"
-                  : isAttempted
+                  : showResults
                   ? "0 6px 20px 0 rgba(16, 185, 129, 0.5)"
                   : "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
                 transform: "translateY(-2px)",
@@ -407,7 +408,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
               transition: "all 0.2s ease",
             }}
           >
-            {isAttempted ? "View Results" : "Start Assessment"}
+            {showResults ? "View Results" : "Start Assessment"}
           </Button>
         </Box>
       </CardContent>
