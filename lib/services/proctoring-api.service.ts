@@ -80,6 +80,39 @@ export const proctoringApiService = {
   },
 
   /**
+   * Upload proctoring screenshot (e.g. on eye movement). Returns the uploaded file URL/path.
+   * Backend should accept multipart/form-data with "file" and optionally "assessment_id".
+   * Response: { url: string } or { link: string } or { path: string }
+   */
+  uploadScreenshot: async (
+    file: File,
+    assessmentId?: number,
+    slug?: string
+  ): Promise<string | null> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (assessmentId != null) formData.append("assessment_id", String(assessmentId));
+    if (slug) formData.append("slug", slug);
+
+    const url = slug
+      ? `/assessment/api/client/${config.clientId}/screenshot-upload/${slug}/`
+      : `/proctoring/api/clients/${config.clientId}/screenshot-upload/`;
+
+    const response = await apiClient.post<{
+      url?: string;
+      link?: string;
+      path?: string;
+    }>(url, formData, {
+      headers: {
+        "Content-Type": undefined as unknown as string,
+      } as Record<string, string>,
+    });
+
+    const data = response.data;
+    return data?.url ?? data?.link ?? data?.path ?? null;
+  },
+
+  /**
    * Log violation with automatic snapshot capture
    */
   logViolationWithSnapshot: async (

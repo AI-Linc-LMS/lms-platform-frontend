@@ -191,6 +191,7 @@ export function useAssessmentSubmission({
           face_violations: metadata.proctoring.face_violations,
           eye_movement_violations: metadata.proctoring.eye_movement_violations || [],
           eye_movement_count: metadata.proctoring.eye_movement_count || 0,
+          eye_movement_screenshots: metadata.proctoring.eye_movement_screenshots ?? [],
           fullscreen_exits: metadata.proctoring.fullscreen_exits,
           total_violation_count: metadata.proctoring.total_violation_count,
           violation_threshold_reached: metadata.proctoring.violation_threshold_reached,

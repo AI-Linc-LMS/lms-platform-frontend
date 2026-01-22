@@ -141,6 +141,7 @@ export interface AssessmentMetadata {
       duration_seconds?: number;
     }>;
     eye_movement_count?: number;
+    eye_movement_screenshots?: string[];
     tab_switches: Array<{
       timestamp: string;
       duration_seconds: number;

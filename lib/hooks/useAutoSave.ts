@@ -75,6 +75,7 @@ export function useAutoSave({
             fullscreen_exits: metadata.proctoring.fullscreen_exits,
             total_violation_count: metadata.proctoring.total_violation_count,
             violation_threshold_reached: metadata.proctoring.violation_threshold_reached,
+            eye_movement_screenshots: metadata.proctoring.eye_movement_screenshots ?? [],
           },
         };
 

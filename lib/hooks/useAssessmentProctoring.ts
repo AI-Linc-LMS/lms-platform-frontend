@@ -31,6 +31,7 @@ export interface AssessmentMetadata {
       duration_seconds?: number;
     }>;
     eye_movement_count: number;
+    eye_movement_screenshots: string[];
     tab_switches: TabSwitchViolation[];
     fullscreen_exits: FullscreenViolation[];
     total_violation_count: number;
@@ -73,6 +74,7 @@ interface UseAssessmentProctoringReturn {
   enterFullscreen: () => Promise<void>;
   videoRef: React.RefObject<HTMLVideoElement | null>;
   clearViolations: () => void;
+  addEyeMovementScreenshot: (link: string) => void;
 }
 
 const DEFAULT_MAX_VIOLATIONS = 10;
@@ -108,6 +110,7 @@ export function useAssessmentProctoring(
       face_violations: [],
       eye_movement_violations: [],
       eye_movement_count: 0,
+      eye_movement_screenshots: [],
       tab_switches: [],
       fullscreen_exits: [],
       total_violation_count: 0,
@@ -208,6 +211,7 @@ export function useAssessmentProctoring(
     setMetadata((prev) => ({
       ...prev,
       proctoring: {
+        ...prev.proctoring,
         face_violations: faceViolationsForMetadata,
         eye_movement_violations: eyeMovementViolations,
         eye_movement_count: eyeMovementViolations.length,
@@ -267,6 +271,7 @@ export function useAssessmentProctoring(
         face_violations: [],
         eye_movement_violations: [],
         eye_movement_count: 0,
+        eye_movement_screenshots: [],
         tab_switches: [],
         fullscreen_exits: [],
         total_violation_count: 0,
@@ -278,6 +283,19 @@ export function useAssessmentProctoring(
     clearFullscreenViolations,
     clearTabSwitchViolations,
   ]);
+
+  const addEyeMovementScreenshot = useCallback((link: string) => {
+    setMetadata((prev) => ({
+      ...prev,
+      proctoring: {
+        ...prev.proctoring,
+        eye_movement_screenshots: [
+          ...(prev.proctoring.eye_movement_screenshots || []),
+          link,
+        ],
+      },
+    }));
+  }, []);
 
   // Update submission timestamp when stopping
   const updateSubmissionTime = useCallback(() => {
@@ -330,5 +348,6 @@ export function useAssessmentProctoring(
     enterFullscreen,
     videoRef,
     clearViolations,
+    addEyeMovementScreenshot,
   };
 }

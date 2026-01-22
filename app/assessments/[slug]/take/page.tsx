@@ -33,6 +33,8 @@ import { AssessmentCodingLayout } from "@/components/assessment/AssessmentCoding
 import { mergeAssessmentSections } from "@/utils/assessment.utils";
 import { stopAllMediaTracks } from "@/lib/utils/cameraUtils";
 import { getProctoringService } from "@/lib/services/proctoring.service";
+import { proctoringApiService } from "@/lib/services/proctoring-api.service";
+import html2canvas from "html2canvas";
 
 // Lazy load dialogs only
 const SubmissionDialog = lazy(() =>
@@ -142,9 +144,10 @@ export default function TakeAssessmentPage({
     // Handled by proctoring system
   }, []);
 
-  // Track eye movement violations for warnings
+  // Track eye movement violations for warnings and screenshot cooldown
   const eyeMovementCountRef = useRef(0);
   const lastEyeMovementWarningRef = useRef(0);
+  const lastScreenshotCaptureRef = useRef(0);
 
   const {
     isActive: isProctoringActive,
@@ -156,6 +159,7 @@ export default function TakeAssessmentPage({
     stopProctoring,
     enterFullscreen,
     videoRef,
+    addEyeMovementScreenshot,
   } = useAssessmentProctoring({
     assessmentId: assessment?.id || 0,
     maxViolations: MAX_VIOLATIONS,
@@ -163,24 +167,59 @@ export default function TakeAssessmentPage({
     autoStart: false,
   });
 
-  // Show warning when eye movement violations occur
+  // On eye movement: show warning, take screenshot, upload, and add link to metadata
   useEffect(() => {
     const eyeMovementCount = metadata.proctoring.eye_movement_count || 0;
-    
+
     if (eyeMovementCount > eyeMovementCountRef.current) {
       eyeMovementCountRef.current = eyeMovementCount;
-      
-      // Show warning every 3 violations to avoid spam
+
       const now = Date.now();
-      if (now - lastEyeMovementWarningRef.current > 5000) { // 5 second cooldown
+
+      // Show warning every 5 seconds to avoid spam
+      if (now - lastEyeMovementWarningRef.current > 5000) {
         lastEyeMovementWarningRef.current = now;
-        showToast(
-          `Eye movement detected`,
-          "warning"
-        );
+        showToast("Eye movement detected", "warning");
+      }
+
+      // Screenshot → upload → add link to metadata (cooldown 3s to avoid upload spam)
+      if (now - lastScreenshotCaptureRef.current > 3000 && assessment?.id && slug) {
+        lastScreenshotCaptureRef.current = now;
+
+        const captureAndUpload = async () => {
+          try {
+            const canvas = await html2canvas(document.body, {
+              useCORS: true,
+              logging: false,
+              scale: 1,
+            });
+            const blob = await new Promise<Blob | null>((resolve) => {
+              canvas.toBlob((b) => resolve(b), "image/png", 0.9);
+            });
+            if (!blob) return;
+            const file = new File([blob], `eye-movement-${Date.now()}.png`, {
+              type: "image/png",
+            });
+            const link = await proctoringApiService.uploadScreenshot(
+              file,
+              assessment.id,
+              slug
+            );
+            if (link) addEyeMovementScreenshot(link);
+          } catch {
+            // Silently fail – don't disrupt assessment
+          }
+        };
+        captureAndUpload();
       }
     }
-  }, [metadata.proctoring.eye_movement_count, showToast]);
+  }, [
+    metadata.proctoring.eye_movement_count,
+    showToast,
+    addEyeMovementScreenshot,
+    assessment?.id,
+    slug,
+  ]);
 
   // Navigation
   const navigation = useAssessmentNavigation({
