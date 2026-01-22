@@ -110,7 +110,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
           sx={{
             position: "absolute",
             top: 10,
-            right: isAttempted ? 100 : 10,
+            right: showResults ? 100 : 10,
             zIndex: 2,
           }}
         >
