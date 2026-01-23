@@ -15,6 +15,62 @@ export interface HeatmapData {
   [key: string]: ActivityTypeCount;
 }
 
+export interface Skill {
+  id?: string;
+  name: string;
+}
+
+export interface Project {
+  id?: string;
+  name: string;
+  description: string;
+  technologies: string[];
+  url?: string;
+  start_date?: string;
+  end_date?: string;
+  current?: boolean;
+}
+
+export interface Experience {
+  id?: string;
+  company: string;
+  position: string;
+  location?: string;
+  start_date: string;
+  end_date?: string;
+  current: boolean;
+  description?: string;
+}
+
+export interface Education {
+  id?: string;
+  institution: string;
+  degree: string;
+  field_of_study?: string;
+  start_date?: string;
+  end_date?: string;
+  gpa?: string;
+  description?: string;
+}
+
+export interface Certification {
+  id?: string;
+  name: string;
+  issuing_organization: string;
+  issue_date: string;
+  expiration_date?: string;
+  credential_id?: string;
+  credential_url?: string;
+}
+
+export interface Achievement {
+  id?: string;
+  title: string;
+  description?: string;
+  date?: string;
+  organization?: string;
+}
+
 export interface UserProfile {
   first_name: string;
   last_name: string;
@@ -29,6 +85,29 @@ export interface UserProfile {
   };
   date_of_birth: string | null;
   role?: string;
+  headline?: string;
+  cover_photo_url?: string;
+  // Education fields
+  college_name?: string;
+  degree_type?: string; // B.Tech, BCA, B.Sc, MCA, M.Tech, Other
+  branch?: string;
+  graduation_year?: string;
+  // Location
+  city?: string;
+  state?: string;
+  // External profiles
+  portfolio_website_url?: string;
+  leetcode_url?: string;
+  hackerrank_url?: string;
+  kaggle_url?: string;
+  medium_url?: string;
+  // Arrays
+  skills?: Skill[];
+  projects?: Project[];
+  experience?: Experience[];
+  education?: Education[];
+  certifications?: Certification[];
+  achievements?: Achievement[];
 }
 
 export interface UserActivityHeatmap {
@@ -78,6 +157,40 @@ export const profileService = {
     const response = await apiClient.post<UserProfile>(
       `/accounts/clients/${config.clientId}/user-profile/`,
       data
+    );
+    return response.data;
+  },
+
+  // Upload cover photo
+  uploadCoverPhoto: async (file: File): Promise<{ cover_photo_url: string }> => {
+    const formData = new FormData();
+    formData.append("cover_photo", file);
+    
+    const response = await apiClient.post<{ cover_photo_url: string }>(
+      `/accounts/clients/${config.clientId}/user-profile/cover-photo/`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data;
+  },
+
+  // Upload profile picture
+  uploadProfilePicture: async (file: File): Promise<{ profile_picture: string }> => {
+    const formData = new FormData();
+    formData.append("profile_picture", file);
+    
+    const response = await apiClient.post<{ profile_picture: string }>(
+      `/accounts/clients/${config.clientId}/user-profile/profile-picture/`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
     );
     return response.data;
   },
