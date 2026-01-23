@@ -4,6 +4,7 @@ import { Box } from "@mui/material";
 import { MyCoursesSection } from "./MyCoursesSection";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { WelcomeMessage } from "./WelcomeMessage";
+import { ScorecardWidget } from "@/components/scorecard/dashboard/ScorecardWidget";
 import { Course as CourseCardCourse } from "@/components/course/interfaces";
 
 interface DashboardContentProps {
@@ -33,6 +34,7 @@ export const DashboardContent = ({
       <Box>
         <WelcomeMessage />
         <Box sx={{ mt: 3 }}>
+          <ScorecardWidget />
           <MyCoursesSection courses={courses} />
         </Box>
       </Box>
