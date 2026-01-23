@@ -28,14 +28,14 @@ export function CoverPhoto({ coverPhotoUrl, onEditCover }: CoverPhotoProps) {
           width: "100%",
           height: { xs: 200, sm: 250, md: 300 },
           overflow: "hidden",
-          backgroundColor: "#f9fafb",
+          backgroundColor: coverPhotoUrl ? "transparent" : "#e0e0e0", // LinkedIn-style gray background
           backgroundImage: coverPhotoUrl
             ? `url(${coverPhotoUrl})`
             : "none",
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
-          boxShadow: "inset 0 -2px 8px rgba(0,0,0,0.05)",
+          boxShadow: coverPhotoUrl ? "inset 0 -2px 8px rgba(0,0,0,0.05)" : "none",
           borderBottom: coverPhotoUrl ? "none" : "1px solid rgba(0,0,0,0.08)",
         }}
         onMouseEnter={() => setHovered(true)}
