@@ -389,14 +389,23 @@ export default function TakeAssessmentPage({
       setAssessmentStarted(true);
       timer.start();
 
-      // Start camera and fullscreen in parallel (non-blocking)
-      Promise.all([
-        startProctoring().catch(() => {
-          showToast(
-            "Camera initialization failed. Please ensure camera permissions are granted.",
-            "error"
-          );
-        }),
+      // Conditionally start proctoring and fullscreen in parallel (non-blocking)
+      const promises: Promise<any>[] = [];
+      
+      // Only start proctoring if enabled
+      if (assessment?.proctoring_enabled !== false) {
+        promises.push(
+          startProctoring().catch(() => {
+            showToast(
+              "Camera initialization failed. Please ensure camera permissions are granted.",
+              "error"
+            );
+          })
+        );
+      }
+
+      // Always enter fullscreen
+      promises.push(
         enterFullscreen()
           .then(() => {
             setTimeout(() => {
@@ -413,8 +422,10 @@ export default function TakeAssessmentPage({
           })
           .catch(() => {
             setShowFullscreenWarning(true);
-          }),
-      ]);
+          })
+      );
+
+      Promise.all(promises);
     } catch (error: any) {
       showToast(error.message || "Failed to start assessment.", "error");
       setShowStartButton(true);
@@ -426,6 +437,7 @@ export default function TakeAssessmentPage({
     enterFullscreen,
     showToast,
     setShowFullscreenWarning,
+    assessment,
   ]);
 
   // Time up handler
@@ -874,9 +886,9 @@ export default function TakeAssessmentPage({
             isLastQuestion={navigation.isLastQuestion}
             submitting={submitting}
             onSubmit={handleShowSubmitDialog}
-            proctoringVideoRef={videoRef}
-            proctoringStatus={status}
-            faceCount={faceCount}
+            proctoringVideoRef={assessment?.proctoring_enabled !== false ? videoRef : undefined}
+            proctoringStatus={assessment?.proctoring_enabled !== false ? status : undefined}
+            faceCount={assessment?.proctoring_enabled !== false ? faceCount : undefined}
           />
 
           <AssessmentNavigation

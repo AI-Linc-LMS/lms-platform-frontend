@@ -108,6 +108,7 @@ export interface CreateAssessmentPayload {
   price?: string | number | null;
   currency?: string;
   is_active?: boolean;
+  proctoring_enabled?: boolean;
   quiz_section?: QuizSection; // For backward compatibility
   quiz_sections?: Array<{
     title: string;

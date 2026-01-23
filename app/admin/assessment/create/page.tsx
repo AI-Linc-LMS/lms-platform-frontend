@@ -55,6 +55,7 @@ export default function CreateAssessmentPage() {
   const [currency, setCurrency] = useState<string>("INR");
   const [isActive, setIsActive] = useState(true);
   const [courseIds, setCourseIds] = useState<number[]>([]);
+  const [proctoringEnabled, setProctoringEnabled] = useState(true);
 
   // Multiple sections
   const [sections, setSections] = useState<Section[]>([]);
@@ -646,6 +647,7 @@ export default function CreateAssessmentPage() {
         price: isPaid ? (price ? Number(price) : null) : null,
         currency: isPaid ? currency : undefined,
         is_active: isActive,
+        proctoring_enabled: proctoringEnabled,
       };
 
       // Remove undefined fields to match exact API format
@@ -777,6 +779,7 @@ export default function CreateAssessmentPage() {
               courseIds={courseIds}
               courses={courses}
               loadingCourses={loadingCourses}
+              proctoringEnabled={proctoringEnabled}
               onDurationChange={setDurationMinutes}
               onStartTimeChange={setStartTime}
               onEndTimeChange={setEndTime}
@@ -785,6 +788,7 @@ export default function CreateAssessmentPage() {
               onCurrencyChange={setCurrency}
               onActiveChange={setIsActive}
               onCourseIdsChange={setCourseIds}
+              onProctoringEnabledChange={setProctoringEnabled}
             />
             <Divider />
             <MultipleSectionsSection
