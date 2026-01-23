@@ -98,9 +98,12 @@ export interface GenerateCodingProblemResponse {
 
 export interface CreateAssessmentPayload {
   title: string;
+  course_ids?: number[];
   instructions: string;
   description?: string;
   duration_minutes: number;
+  start_time?: string;
+  end_time?: string;
   is_paid?: boolean;
   price?: string | number | null;
   currency?: string;
@@ -439,12 +442,128 @@ export const generateCodingProblemsWithAI = async (
   }
 };
 
+/**
+ * Fetch submissions export as CSV for an assessment.
+ * GET /admin-dashboard/api/clients/{client_id}/assessments/{assessment_id}/submissions-export/
+ * Returns the response as a Blob (CSV file).
+ */
+export const getSubmissionsExport = async (
+  clientId: string | number,
+  assessmentId: number
+): Promise<Blob> => {
+  const response = await apiClient.get(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/submissions-export/`,
+    { responseType: "blob" }
+  );
+  return response.data as Blob;
+};
+
+/**
+ * Fetch questions export as CSV for an assessment.
+ * GET /admin-dashboard/api/clients/{client_id}/assessments/{assessment_id}/questions-export/
+ * Returns the response as a Blob (CSV file).
+ */
+export const getQuestionsExport = async (
+  clientId: string | number,
+  assessmentId: number
+): Promise<Blob> => {
+  const response = await apiClient.get(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/export-questions/`,
+    { responseType: "blob" }
+  );
+  return response.data as Blob;
+};
+
+/** Questions export JSON shape (export-questions API) */
+export interface QuestionsExportQuestion {
+  id: number;
+  question_text: string;
+  option_a: string;
+  option_b: string;
+  option_c: string;
+  option_d: string;
+  correct_option: string;
+  explanation?: string;
+  difficulty_level?: string;
+  topic?: string;
+  skills?: string;
+}
+
+export interface QuestionsExportSection {
+  section_id: number;
+  section_title: string;
+  section_description?: string;
+  section_type: string;
+  order: number;
+  easy_score?: number;
+  medium_score?: number;
+  hard_score?: number;
+  number_of_questions: number;
+  questions: QuestionsExportQuestion[];
+}
+
+export interface QuestionsExportResponse {
+  assessment: { id: number; title: string; slug: string; instructions?: string; description?: string };
+  sections: QuestionsExportSection[];
+}
+
+/** Submissions export JSON shape (submissions-export API) */
+export interface SubmissionsExportSubmission {
+  name: string;
+  email: string;
+  phone?: string;
+  maximum_marks?: number;
+  overall_score?: number;
+  percentage?: number;
+  total_questions?: number;
+  attempted_questions?: number;
+  section_wise_scores?: Record<string, number>;
+  section_wise_max_scores?: Record<string, number>;
+}
+
+export interface SubmissionsExportResponse {
+  assessment: { id: number; title: string; slug: string; maximum_marks?: number };
+  submissions: SubmissionsExportSubmission[];
+}
+
+/**
+ * Fetch questions export as JSON (for view + table download).
+ * GET .../export-questions/
+ */
+export const getQuestionsExportJson = async (
+  clientId: string | number,
+  assessmentId: number
+): Promise<QuestionsExportResponse> => {
+  const response = await apiClient.get<QuestionsExportResponse>(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/export-questions/`
+  );
+  return response.data;
+};
+
+/**
+ * Fetch submissions export as JSON (for view + table download).
+ * GET .../submissions-export/
+ */
+export const getSubmissionsExportJson = async (
+  clientId: string | number,
+  assessmentId: number
+): Promise<SubmissionsExportResponse> => {
+  const response = await apiClient.get<SubmissionsExportResponse>(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/submissions-export/`
+  );
+  return response.data;
+};
+
 export const adminAssessmentService = {
   getAssessments,
   getAssessmentById,
   createAssessment,
   updateAssessment,
   deleteAssessment,
+  getSubmissionsExport,
+  getQuestionsExport,
+  getQuestionsExportJson,
+  getSubmissionsExportJson,
   getMCQs,
   generateMCQsWithAI,
   getCodingProblems,

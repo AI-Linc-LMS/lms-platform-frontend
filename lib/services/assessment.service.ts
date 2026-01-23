@@ -15,6 +15,8 @@ export interface Assessment {
   number_of_questions: number;
   created_at: string;
   is_attempted: boolean;
+  start_time?: string | null;
+  end_time?: string | null;
   has_attempted?: boolean; // For backward compatibility
   /** "not_started" | "in_progress" | "submitted" – when "submitted", show results */
   status?: "not_started" | "in_progress" | "submitted";

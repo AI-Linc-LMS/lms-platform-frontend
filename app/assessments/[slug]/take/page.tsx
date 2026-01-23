@@ -107,16 +107,16 @@ export default function TakeAssessmentPage({
     }
   }, [assessment, loading]);
 
-  // Timer setup
+  // Timer setup - ALWAYS use remaining_time if available
   const initialTimeSeconds = useMemo(() => {
-    if (assessment?.remaining_time) {
-      return assessment.remaining_time * 60;
+    if (assessment?.remaining_time !== undefined && assessment?.remaining_time !== null) {
+      return assessment.remaining_time * 60; // Convert minutes to seconds
     }
     if (assessment?.duration_minutes) {
       return assessment.duration_minutes * 60;
     }
     return 3600;
-  }, [assessment]);
+  }, [assessment?.remaining_time, assessment?.duration_minutes]);
 
   const timer = useAssessmentTimer({
     initialTimeSeconds,
@@ -235,33 +235,67 @@ export default function TakeAssessmentPage({
             const responseSheet = assessment.responseSheet;
             const loadedResponses: Record<string, Record<string, any>> = {};
 
-            // Process responseSheet - it may be organized by section index or section type
-            sections.forEach((section: any, sectionIndex: number) => {
-              const sectionType = section.section_type || "quiz";
-              const sectionKey = String(sectionIndex + 1);
+            console.log("Parsing responseSheet:", responseSheet);
 
-              // Check if responses exist for this section
-              if (responseSheet[sectionKey]) {
-                const sectionResponses = responseSheet[sectionKey];
-                if (!loadedResponses[sectionType]) {
-                  loadedResponses[sectionType] = {};
-                }
-
-                // Map section responses to question IDs
-                Object.keys(sectionResponses).forEach((questionId) => {
-                  const response = sectionResponses[questionId];
-                  if (response !== undefined && response !== null) {
-                    loadedResponses[sectionType][questionId] = response;
-                  }
-                });
+            // Process quizSectionId array - structure: quizSectionId[0]["75"]["84205"] = "a"
+            if (responseSheet.quizSectionId && Array.isArray(responseSheet.quizSectionId)) {
+              if (!loadedResponses["quiz"]) {
+                loadedResponses["quiz"] = {};
               }
-            });
+
+              responseSheet.quizSectionId.forEach((sectionData: any) => {
+                // sectionData is like: { "75": { "84205": "a", "84206": "a", ... } }
+                Object.keys(sectionData).forEach((sectionIdKey) => {
+                  const questionResponses = sectionData[sectionIdKey];
+                  
+                  // Map each question response - bind ALL responses including null
+                  Object.keys(questionResponses).forEach((questionIdKey) => {
+                    const response = questionResponses[questionIdKey];
+                    const questionId = Number(questionIdKey);
+                    
+                    // Bind ALL responses including null (null means question was cleared/unanswered)
+                    // Store with multiple ID formats for compatibility
+                    if (response !== undefined) {
+                      loadedResponses["quiz"][questionId] = response;
+                      loadedResponses["quiz"][String(questionId)] = response;
+                      console.log(`Bound quiz response: question ${questionId} = ${response}`);
+                    }
+                  });
+                });
+              });
+            }
+
+            // Process codingProblemSectionId array - similar structure
+            if (responseSheet.codingProblemSectionId && Array.isArray(responseSheet.codingProblemSectionId)) {
+              if (!loadedResponses["coding"]) {
+                loadedResponses["coding"] = {};
+              }
+
+              responseSheet.codingProblemSectionId.forEach((sectionData: any) => {
+                Object.keys(sectionData).forEach((sectionIdKey) => {
+                  const questionResponses = sectionData[sectionIdKey];
+                  
+                  Object.keys(questionResponses).forEach((questionIdKey) => {
+                    const response = questionResponses[questionIdKey];
+                    const questionId = Number(questionIdKey);
+                    
+                    if (response !== undefined) {
+                      loadedResponses["coding"][questionId] = response;
+                      loadedResponses["coding"][String(questionId)] = response;
+                      console.log(`Bound coding response: question ${questionId} =`, response);
+                    }
+                  });
+                });
+              });
+            }
 
             // Only update if we found saved responses
             if (Object.keys(loadedResponses).length > 0) {
+              console.log("Loaded responses:", loadedResponses);
               setResponses(loadedResponses);
             }
           } catch (error) {
+            console.error("Error parsing responseSheet:", error);
             // Silently fail - already initialized empty structure
           }
         };
@@ -401,6 +435,36 @@ export default function TakeAssessmentPage({
       handleFinalSubmit();
     };
   }, [handleFinalSubmit, showToast]);
+  
+  // Update timer when remaining_time changes (for resuming assessments)
+  useEffect(() => {
+    if (assessment?.remaining_time !== undefined && assessment?.remaining_time !== null) {
+      const newTimeSeconds = assessment.remaining_time * 60;
+      
+      // If remaining_time is 0, auto-submit immediately
+      if (assessment.remaining_time === 0 && assessmentStarted && !submitting) {
+        showToast("Time is up! Submitting assessment...", "warning");
+        handleFinalSubmit();
+        return;
+      }
+      
+      // Update timer if time changed significantly (more than 1 second difference)
+      if (Math.abs(timer.remainingSeconds - newTimeSeconds) > 1) {
+        timer.reset(newTimeSeconds);
+        if (assessmentStarted) {
+          timer.start();
+        }
+      }
+    }
+  }, [assessment?.remaining_time, assessment?.status, assessmentStarted, submitting, timer, showToast, handleFinalSubmit]);
+  
+  // Auto-start when assessment loads (if not submitted)
+  useEffect(() => {
+    if (assessment && !loading && assessment.status !== "submitted" && !assessmentStarted && !showStartButton) {
+      // Auto-start immediately with fullscreen
+      handleStartAssessment();
+    }
+  }, [assessment, loading, assessmentStarted, showStartButton, handleStartAssessment]);
 
   // Cleanup on unmount - ensure camera is always stopped
   useEffect(() => {
@@ -948,15 +1012,7 @@ export default function TakeAssessmentPage({
         </>
       )}
 
-      {!assessmentStarted &&
-        showStartButton &&
-        assessment?.status !== "submitted" && (
-          <StartAssessmentButton
-            title={assessment.title}
-            onStart={handleStartAssessment}
-            isInitializing={isInitializing}
-          />
-        )}
+      {/* Auto-start assessment - no start button needed */}
     </Box>
   );
 }

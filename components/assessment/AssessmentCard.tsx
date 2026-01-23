@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -20,16 +21,83 @@ interface AssessmentCardProps {
   assessment: Assessment;
 }
 
+function parseDateTime(s: string | undefined | null): Date | null {
+  if (!s || typeof s !== "string" || !s.trim()) return null;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatDateTimeDisplay(d: Date): string {
+  return d.toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
 export const AssessmentCard: React.FC<AssessmentCardProps> = ({
   assessment,
 }) => {
   const router = useRouter();
-  const showResults =
-    assessment.status === "submitted";
+  const showResults = assessment.status === "submitted";
   const isPsychometric = isPsychometricAssessment(assessment);
   const psychometricTags = isPsychometric ? getPsychometricTags(assessment) : [];
 
+  const { canStartNow, availabilityLabel, isExpired } = useMemo(() => {
+    const now = Date.now();
+    const start = parseDateTime(assessment.start_time);
+    const end = parseDateTime(assessment.end_time);
+    const hasStart = start !== null;
+    const hasEnd = end !== null;
+
+    if (!hasStart && !hasEnd) {
+      return { canStartNow: true, availabilityLabel: "", isExpired: false };
+    }
+    if (hasStart && now < start.getTime()) {
+      return {
+        canStartNow: false,
+        availabilityLabel: `Starts ${formatDateTimeDisplay(start)}`,
+        isExpired: false,
+      };
+    }
+    if (hasEnd && now > end.getTime()) {
+      return {
+        canStartNow: false,
+        availabilityLabel: "Ended",
+        isExpired: true,
+      };
+    }
+    return { canStartNow: true, availabilityLabel: "", isExpired: false };
+  }, [assessment.start_time, assessment.end_time]);
+
+  const status = assessment.status ?? "not_started";
+
+  const { buttonLabel, isClickable } = useMemo(() => {
+    if (status === "submitted") {
+      return { buttonLabel: "View Results", isClickable: true };
+    }
+    if (status === "in_progress") {
+      return {
+        buttonLabel: "Resume",
+        isClickable: canStartNow,
+      };
+    }
+    if (status === "not_started" || !status) {
+      if (canStartNow) {
+        return { buttonLabel: "Start Assessment", isClickable: true };
+      }
+      if (isExpired) {
+        return { buttonLabel: "Start Assessment", isClickable: false };
+      }
+      return { buttonLabel: availabilityLabel, isClickable: false };
+    }
+    return {
+      buttonLabel: canStartNow ? "Start Assessment" : availabilityLabel || "Start Assessment",
+      isClickable: canStartNow,
+    };
+  }, [status, canStartNow, isExpired, availabilityLabel]);
+
   const handleClick = () => {
+    if (!isClickable) return;
     if (showResults) {
       router.push(`/assessments/result/${assessment.slug}`);
     } else {
@@ -56,23 +124,25 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
         overflow: "hidden",
         transition: "all 0.3s ease",
         position: "relative",
-        cursor: "pointer",
+        cursor: isClickable ? "pointer" : "default",
         boxShadow: isPsychometric
           ? "0 4px 12px rgba(124, 58, 237, 0.15)"
           : "0 2px 8px rgba(0, 0, 0, 0.08)",
-        "&:hover": {
-          boxShadow: isPsychometric
-            ? "0 12px 32px rgba(124, 58, 237, 0.25)"
-            : "0 8px 24px rgba(0, 0, 0, 0.12)",
-          transform: "translateY(-4px)",
-          borderColor: isPsychometric
-            ? showResults
-              ? "rgba(124, 58, 237, 0.4)"
-              : "rgba(124, 58, 237, 0.5)"
-            : showResults
-            ? "rgba(16, 185, 129, 0.4)"
-            : "#6366f1",
-        },
+        "&:hover": isClickable
+          ? {
+              boxShadow: isPsychometric
+                ? "0 12px 32px rgba(124, 58, 237, 0.25)"
+                : "0 8px 24px rgba(0, 0, 0, 0.12)",
+              transform: "translateY(-4px)",
+              borderColor: isPsychometric
+                ? showResults
+                  ? "rgba(124, 58, 237, 0.4)"
+                  : "rgba(124, 58, 237, 0.5)"
+                : showResults
+                ? "rgba(16, 185, 129, 0.4)"
+                : "#6366f1",
+            }
+          : {},
       }}
       onClick={handleClick}
     >
@@ -361,54 +431,71 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             fullWidth
             variant="contained"
             size="large"
+            disabled={!isClickable}
             startIcon={
               <IconWrapper
                 icon={
-                  showResults ? "mdi:eye-outline" : "mdi:play-circle-outline"
+                  status === "submitted"
+                    ? "mdi:eye-outline"
+                    : !isClickable
+                    ? "mdi:clock-outline"
+                    : "mdi:play-circle-outline"
                 }
                 size={18}
               />
             }
             sx={{
-              backgroundColor: isPsychometric
-                ? showResults
-                  ? "#7c3aed"
-                  : "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)"
-                : showResults
-                ? "#10b981"
-                : "#6366f1",
+              backgroundColor:
+                !isClickable
+                  ? "#9ca3af"
+                  : isPsychometric
+                  ? showResults
+                    ? "#7c3aed"
+                    : "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)"
+                  : showResults
+                  ? "#10b981"
+                  : "#6366f1",
               color: "#ffffff",
               fontWeight: 600,
               py: 1,
               borderRadius: 2,
               textTransform: "none",
               fontSize: "0.875rem",
-              boxShadow: isPsychometric
-                ? showResults
-                  ? "0 4px 14px 0 rgba(124, 58, 237, 0.39)"
-                  : "0 4px 14px 0 rgba(124, 58, 237, 0.5)"
-                : showResults
-                ? "0 4px 14px 0 rgba(16, 185, 129, 0.39)"
-                : "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
-              "&:hover": {
-                backgroundColor: isPsychometric
+              boxShadow:
+                !isClickable
+                  ? "none"
+                  : isPsychometric
                   ? showResults
-                    ? "#6d28d9"
-                    : "#6d28d9"
+                    ? "0 4px 14px 0 rgba(124, 58, 237, 0.39)"
+                    : "0 4px 14px 0 rgba(124, 58, 237, 0.5)"
                   : showResults
-                  ? "#059669"
-                  : "#4f46e5",
-                boxShadow: isPsychometric
-                  ? "0 6px 20px 0 rgba(124, 58, 237, 0.6)"
-                  : showResults
-                  ? "0 6px 20px 0 rgba(16, 185, 129, 0.5)"
-                  : "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
-                transform: "translateY(-2px)",
+                  ? "0 4px 14px 0 rgba(16, 185, 129, 0.39)"
+                  : "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
+              ...(isClickable && {
+                "&:hover": {
+                  backgroundColor: isPsychometric
+                    ? showResults
+                      ? "#6d28d9"
+                      : "#6d28d9"
+                    : showResults
+                    ? "#059669"
+                    : "#4f46e5",
+                  boxShadow: isPsychometric
+                    ? "0 6px 20px 0 rgba(124, 58, 237, 0.6)"
+                    : showResults
+                    ? "0 6px 20px 0 rgba(16, 185, 129, 0.5)"
+                    : "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
+                  transform: "translateY(-2px)",
+                },
+              }),
+              "&.Mui-disabled": {
+                backgroundColor: "#9ca3af",
+                color: "#ffffff",
               },
               transition: "all 0.2s ease",
             }}
           >
-            {showResults ? "View Results" : "Start Assessment"}
+            {buttonLabel}
           </Button>
         </Box>
       </CardContent>
