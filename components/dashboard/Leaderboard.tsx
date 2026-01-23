@@ -393,23 +393,79 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
               const rank = entry?.rank ?? 0;
               const totalScore = entry?.marks ?? 0;
               const profilePicUrl = entry?.profile_pic_url;
+              const college = entry?.college;
+              const linkedinUrl = entry?.linkedin_url;
+
+              const handleClick = (e: React.MouseEvent) => {
+                e.stopPropagation();
+                if (linkedinUrl) {
+                  // Ensure URL is valid and starts with http/https
+                  const url = linkedinUrl.startsWith("http") 
+                    ? linkedinUrl 
+                    : `https://${linkedinUrl}`;
+                  // Open LinkedIn in new tab
+                  window.open(url, "_blank", "noopener,noreferrer");
+                }
+              };
 
               return (
-                <Box
+                <Tooltip
                   key={rank || index}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1.5,
-                    p: 1,
-                    borderRadius: 1,
-                    backgroundColor:
-                      rank > 0 && rank <= 3 ? "#F9FAFB" : "transparent",
-                    border:
-                      rank > 0 && rank <= 3 ? "1px solid #E5E7EB" : "none",
-                    flexShrink: 0,
-                  }}
+                  title={
+                    linkedinUrl
+                      ? college
+                        ? `College: ${college} - Click to view LinkedIn`
+                        : "Click to view LinkedIn profile"
+                      : college
+                      ? `College: ${college}`
+                      : "No college information available"
+                  }
+                  arrow
+                  placement="top"
+                  disableInteractive
                 >
+                  <Box
+                    onClick={handleClick}
+                    onKeyDown={(e) => {
+                      if ((e.key === "Enter" || e.key === " ") && linkedinUrl) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (linkedinUrl) {
+                          const url = linkedinUrl.startsWith("http") 
+                            ? linkedinUrl 
+                            : `https://${linkedinUrl}`;
+                          window.open(url, "_blank", "noopener,noreferrer");
+                        }
+                      }
+                    }}
+                    role={linkedinUrl ? "button" : undefined}
+                    tabIndex={linkedinUrl ? 0 : undefined}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                      p: 1,
+                      borderRadius: 1,
+                      backgroundColor:
+                        rank > 0 && rank <= 3 ? "#F9FAFB" : "transparent",
+                      border:
+                        rank > 0 && rank <= 3 ? "1px solid #E5E7EB" : "none",
+                      flexShrink: 0,
+                      cursor: linkedinUrl ? "pointer" : "default",
+                      transition: "all 0.2s ease",
+                      "&:hover": {
+                        backgroundColor: linkedinUrl ? "rgba(99, 102, 241, 0.08)" : undefined,
+                        transform: linkedinUrl ? "translateX(2px)" : undefined,
+                        boxShadow: linkedinUrl ? "0 2px 4px rgba(0,0,0,0.1)" : undefined,
+                      },
+                      "&:focus": linkedinUrl
+                        ? {
+                            outline: "2px solid #6366f1",
+                            outlineOffset: "2px",
+                          }
+                        : {},
+                    }}
+                  >
                   <Box
                     sx={{
                       minWidth: 24,
@@ -471,7 +527,17 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
                   >
                     #{rank || "?"}
                   </Typography>
+                  {linkedinUrl && (
+                    <Box sx={{ ml: 0.5, flexShrink: 0, display: "flex", alignItems: "center" }}>
+                      <IconWrapper
+                        icon="mdi:linkedin"
+                        size={16}
+                        color="#0077B5"
+                      />
+                    </Box>
+                  )}
                 </Box>
+                </Tooltip>
               );
             })}
           </Box>

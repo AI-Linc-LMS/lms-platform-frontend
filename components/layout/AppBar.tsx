@@ -12,6 +12,7 @@ import {
   Divider,
   Badge,
   Popover,
+  Tooltip,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -452,21 +453,78 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                     const userName = entry?.name ?? entry?.user?.user_name ?? "Unknown";
                     const timeDisplay = formatProgress(entry);
                     const profilePicUrl = entry?.profile_pic_url ?? entry?.user?.profile_pic_url;
+                    const college = entry?.college;
+                    const linkedinUrl = entry?.linkedin_url;
                     
                     // Create a unique key combining user id, name, and index
                     const uniqueKey = entry?.user?.id 
                       ? `leaderboard-${entry.user.id}-${index}` 
                       : `leaderboard-${userName}-${index}`;
                     
+                    const handleClick = (e: React.MouseEvent) => {
+                      e.stopPropagation();
+                      if (linkedinUrl) {
+                        // Ensure URL is valid and starts with http/https
+                        const url = linkedinUrl.startsWith("http") 
+                          ? linkedinUrl 
+                          : `https://${linkedinUrl}`;
+                        // Open LinkedIn in new tab
+                        window.open(url, "_blank", "noopener,noreferrer");
+                      }
+                    };
+                    
                     return (
-                      <Box
+                      <Tooltip
                         key={uniqueKey}
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                        }}
+                        title={
+                          linkedinUrl
+                            ? college
+                              ? `College: ${college} - Click to view LinkedIn`
+                              : "Click to view LinkedIn profile"
+                            : college
+                            ? `College: ${college}`
+                            : "No college information available"
+                        }
+                        arrow
+                        placement="left"
+                        disableInteractive
                       >
+                        <Box
+                          onClick={handleClick}
+                          onKeyDown={(e) => {
+                            if ((e.key === "Enter" || e.key === " ") && linkedinUrl) {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (linkedinUrl) {
+                                const url = linkedinUrl.startsWith("http") 
+                                  ? linkedinUrl 
+                                  : `https://${linkedinUrl}`;
+                                window.open(url, "_blank", "noopener,noreferrer");
+                              }
+                            }
+                          }}
+                          role={linkedinUrl ? "button" : undefined}
+                          tabIndex={linkedinUrl ? 0 : undefined}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            cursor: linkedinUrl ? "pointer" : "default",
+                            p: 0.5,
+                            borderRadius: 1,
+                            transition: "all 0.2s ease",
+                            "&:hover": {
+                              backgroundColor: linkedinUrl ? "rgba(99, 102, 241, 0.08)" : undefined,
+                              transform: linkedinUrl ? "translateX(2px)" : undefined,
+                            },
+                            "&:focus": linkedinUrl
+                              ? {
+                                  outline: "2px solid #6366f1",
+                                  outlineOffset: "2px",
+                                }
+                              : {},
+                          }}
+                        >
                         <Box
                           sx={{ display: "flex", alignItems: "center", gap: 1 }}
                         >
@@ -519,17 +577,27 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                             {userName}
                           </Typography>
                         </Box>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            fontSize: "0.75rem",
-                            fontWeight: 500,
-                            color: "#17627A",
-                          }}
-                        >
-                          {timeDisplay}
-                        </Typography>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontSize: "0.75rem",
+                              fontWeight: 500,
+                              color: "#17627A",
+                            }}
+                          >
+                            {timeDisplay}
+                          </Typography>
+                          {linkedinUrl && (
+                            <IconWrapper
+                              icon="mdi:linkedin"
+                              size={14}
+                              color="#0077B5"
+                            />
+                          )}
+                        </Box>
                       </Box>
+                      </Tooltip>
                     );
                   })}
                 </Box>

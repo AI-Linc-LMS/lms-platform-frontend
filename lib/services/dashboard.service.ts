@@ -10,6 +10,8 @@ export interface DailyProgressLeaderboardEntry {
   };
   score?: number;
   rank?: number;
+  college?: string; // College/University name
+  linkedin_url?: string; // LinkedIn profile URL
 }
 
 // Monthly Streak
@@ -29,6 +31,8 @@ export interface OverallLeaderboardEntry {
   course_name?: number;
   rank?: number;
   profile_pic_url?: string;
+  college?: string; // College/University name
+  linkedin_url?: string; // LinkedIn profile URL
 }
 
 export const dashboardService = {
@@ -234,6 +238,8 @@ export const dashboardService = {
           course_name: entry?.course_name ?? " Course",
           rank: entry?.rank ?? 0,
           profile_pic_url: entry?.profile_pic_url ?? entry?.user?.profile_pic_url ?? "",
+          college: entry?.college ?? entry?.college_name ?? entry?.university ?? undefined,
+          linkedin_url: entry?.linkedin_url ?? entry?.linkedin_profile_url ?? entry?.social_links?.linkedin ?? undefined,
         })) as OverallLeaderboardEntry[];
 
       return validatedData;

@@ -130,6 +130,8 @@ export interface DailyProgressLeaderboardEntry {
   };
   seconds?: number;
   profile_pic_url?: string;
+  college?: string; // College/University name
+  linkedin_url?: string; // LinkedIn profile URL
 }
 
 export interface MonthlyStreak {
