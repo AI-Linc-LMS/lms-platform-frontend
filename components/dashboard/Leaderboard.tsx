@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from "react";
-import { Box, Typography, Card, Avatar, Skeleton } from "@mui/material";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { Box, Typography, Card, Avatar, Skeleton, LinearProgress, IconButton, Tooltip } from "@mui/material";
 import {
   dashboardService,
   OverallLeaderboardEntry,
 } from "@/lib/services/dashboard.service";
 import { useToast } from "@/components/common/Toast";
 import { getUserInitials } from "@/lib/utils/user-utils";
+import { IconWrapper } from "@/components/common/IconWrapper";
 
 // Shared cache to minimize API calls
 interface CacheEntry<T> {
@@ -16,6 +17,7 @@ interface CacheEntry<T> {
 }
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 // Module-level cache shared across all component instances
 let leaderboardCache: CacheEntry<OverallLeaderboardEntry[]> | null = null;
@@ -32,7 +34,70 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [leaderboard, setLeaderboard] = useState<OverallLeaderboardEntry[]>([]);
+  const [timeUntilRefresh, setTimeUntilRefresh] = useState<number>(AUTO_REFRESH_INTERVAL);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const hasLoadedRef = useRef(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Calculate time until next refresh
+  const calculateTimeUntilRefresh = useCallback(() => {
+    if (!leaderboardCache?.timestamp) return AUTO_REFRESH_INTERVAL;
+    const elapsed = Date.now() - leaderboardCache.timestamp;
+    const remaining = AUTO_REFRESH_INTERVAL - elapsed;
+    return Math.max(0, remaining);
+  }, []);
+
+  const loadLeaderboard = useCallback(async (isAutoRefresh = false) => {
+    try {
+      if (isAutoRefresh) {
+        setIsRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      
+      // Get overall leaderboard (default limit is handled by API)
+      const data = await dashboardService.getOverallLeaderboard();
+
+      // Ensure data is an array - multiple checks
+      if (!data) {
+        setLeaderboard([]);
+        // Update cache with empty array
+        leaderboardCache = {
+          data: [],
+          timestamp: Date.now(),
+        };
+        setTimeUntilRefresh(AUTO_REFRESH_INTERVAL);
+        return;
+      }
+
+      if (!Array.isArray(data)) {
+        setLeaderboard([]);
+        // Update cache with empty array
+        leaderboardCache = {
+          data: [],
+          timestamp: Date.now(),
+        };
+        setTimeUntilRefresh(AUTO_REFRESH_INTERVAL);
+        return;
+      }
+
+      // Update cache with fresh data
+      leaderboardCache = {
+        data,
+        timestamp: Date.now(),
+      };
+
+      setLeaderboard(data);
+      setTimeUntilRefresh(AUTO_REFRESH_INTERVAL);
+    } catch (error: any) {
+      setLeaderboard([]); // Set empty array on error
+      // Don't show toast for optional data
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (hasLoadedRef.current) return;
@@ -47,53 +112,52 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
       // Use cached data
       setLeaderboard(cachedData);
       setLoading(false);
+      setTimeUntilRefresh(calculateTimeUntilRefresh());
     } else {
       // Load fresh data
       loadLeaderboard();
     }
+  }, [loadLeaderboard, calculateTimeUntilRefresh]);
+
+  // Set up auto-refresh interval and countdown
+  useEffect(() => {
+    if (!hasLoadedRef.current) return;
+
+    // Set up countdown timer that updates every second
+    countdownRef.current = setInterval(() => {
+      setTimeUntilRefresh((prev) => {
+        const newTime = prev - 1000;
+        if (newTime <= 0) {
+          // Trigger refresh when countdown reaches 0
+          loadLeaderboard(true);
+          return AUTO_REFRESH_INTERVAL;
+        }
+        return newTime;
+      });
+    }, 1000);
+
+    // Set up auto-refresh interval as backup (runs every 5 minutes)
+    intervalRef.current = setInterval(() => {
+      loadLeaderboard(true);
+      setTimeUntilRefresh(AUTO_REFRESH_INTERVAL);
+    }, AUTO_REFRESH_INTERVAL);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+      }
+    };
+  }, [loadLeaderboard]);
+
+  // Format time for display
+  const formatTime = useCallback((ms: number) => {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   }, []);
-
-  const loadLeaderboard = async () => {
-    try {
-      setLoading(true);
-      // Get overall leaderboard (default limit is handled by API)
-      const data = await dashboardService.getOverallLeaderboard();
-
-      // Ensure data is an array - multiple checks
-      if (!data) {
-        setLeaderboard([]);
-        // Update cache with empty array
-        leaderboardCache = {
-          data: [],
-          timestamp: Date.now(),
-        };
-        return;
-      }
-
-      if (!Array.isArray(data)) {
-        setLeaderboard([]);
-        // Update cache with empty array
-        leaderboardCache = {
-          data: [],
-          timestamp: Date.now(),
-        };
-        return;
-      }
-
-      // Update cache with fresh data
-      leaderboardCache = {
-        data,
-        timestamp: Date.now(),
-      };
-
-      setLeaderboard(data);
-    } catch (error: any) {
-      setLeaderboard([]); // Set empty array on error
-      // Don't show toast for optional data
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getRankColor = (rank?: number | null) => {
     if (!rank || rank === 0) return "#6B7280";
@@ -120,19 +184,97 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
     return leaderboard;
   }, [leaderboard]);
 
+  const handleManualRefresh = useCallback(() => {
+    loadLeaderboard(false);
+  }, [loadLeaderboard]);
+
   return (
     <Box>
-      <Typography
-        variant="h6"
+      <Box
         sx={{
-          fontSize: "1.125rem",
-          fontWeight: 600,
-          color: "#111827",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
           mb: 2,
         }}
       >
-        Leaderboard
-      </Typography>
+        <Typography
+          variant="h6"
+          sx={{
+            fontSize: "1.125rem",
+            fontWeight: 600,
+            color: "#111827",
+          }}
+        >
+          Leaderboard
+        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          {timeUntilRefresh > 0 && (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+                px: 1.5,
+                py: 0.5,
+                borderRadius: 1.5,
+                backgroundColor: "rgba(99, 102, 241, 0.08)",
+              }}
+            >
+              <IconWrapper
+                icon="mdi:clock-outline"
+                size={14}
+                color="#6366F1"
+              />
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "#6366F1",
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                }}
+              >
+                Updates in {formatTime(timeUntilRefresh)}
+              </Typography>
+            </Box>
+          )}
+          <Tooltip title="Refresh leaderboard">
+            <IconButton
+              size="small"
+              onClick={handleManualRefresh}
+              disabled={loading || isRefreshing}
+              sx={{
+                width: 28,
+                height: 28,
+                "&:hover": {
+                  backgroundColor: "rgba(99, 102, 241, 0.08)",
+                },
+              }}
+            >
+              <IconWrapper
+                icon="mdi:refresh"
+                size={16}
+                color={loading || isRefreshing ? "#9CA3AF" : "#6366F1"}
+              />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Box>
+      
+      {/* Loading Progress Bar */}
+      {(loading || isRefreshing) && (
+        <LinearProgress
+          sx={{
+            height: 2,
+            borderRadius: 1,
+            mb: 2,
+            "& .MuiLinearProgress-bar": {
+              borderRadius: 1,
+            },
+          }}
+        />
+      )}
+      
       <Card
         sx={{
           borderRadius: 2,
