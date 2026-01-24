@@ -13,7 +13,7 @@ import {
   memo,
 } from "react";
 import { useRouter } from "next/navigation";
-import { Box } from "@mui/material";
+import { Box, Typography, Button } from "@mui/material";
 import { Loading } from "@/components/common/Loading";
 import { useToast } from "@/components/common/Toast";
 import { useAssessmentProctoring } from "@/lib/hooks/useAssessmentProctoring";
@@ -64,7 +64,7 @@ export default function TakeAssessmentPage({
   // State
   const [submitting, setSubmitting] = useState(false);
   const [assessmentStarted, setAssessmentStarted] = useState(false);
-  const [showStartButton, setShowStartButton] = useState(true);
+  const [showStartButton, setShowStartButton] = useState(false);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
@@ -131,10 +131,19 @@ export default function TakeAssessmentPage({
   // Sections - memoized to prevent unnecessary recalculations
   const sections = useMemo(() => {
     if (!assessment) return [];
-    return mergeAssessmentSections(
+    const merged = mergeAssessmentSections(
       assessment.quizSection || [],
       assessment.codingProblemSection || []
     );
+    // Debug: Log sections to help diagnose issues
+    if (merged.length === 0) {
+      console.warn("No sections found in assessment:", {
+        quizSection: assessment.quizSection,
+        codingProblemSection: assessment.codingProblemSection,
+        assessment: assessment
+      });
+    }
+    return merged;
   }, [assessment]);
 
   // Proctoring
@@ -472,11 +481,18 @@ export default function TakeAssessmentPage({
   
   // Auto-start when assessment loads (if not submitted)
   useEffect(() => {
-    if (assessment && !loading && assessment.status !== "submitted" && !assessmentStarted && !showStartButton) {
+    if (
+      assessment &&
+      !loading &&
+      assessment.status !== "submitted" &&
+      !assessmentStarted &&
+      !showStartButton &&
+      sections.length > 0
+    ) {
       // Auto-start immediately with fullscreen
       handleStartAssessment();
     }
-  }, [assessment, loading, assessmentStarted, showStartButton, handleStartAssessment]);
+  }, [assessment, loading, assessmentStarted, showStartButton, sections.length, handleStartAssessment]);
 
   // Cleanup on unmount - ensure camera is always stopped
   useEffect(() => {
@@ -839,6 +855,37 @@ export default function TakeAssessmentPage({
     return <Loading fullScreen />;
   }
 
+  // Check if assessment has no sections/questions
+  if (sections.length === 0) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "column",
+          gap: 2,
+          p: 4,
+        }}
+      >
+        <Typography variant="h5" sx={{ color: "#ef4444", fontWeight: 600 }}>
+          No Questions Available
+        </Typography>
+        <Typography variant="body1" sx={{ color: "#6b7280", textAlign: "center" }}>
+          This assessment does not have any questions configured. Please contact the administrator.
+        </Typography>
+        <Button
+          variant="contained"
+          onClick={() => router.push(`/assessments/${slug}`)}
+          sx={{ mt: 2 }}
+        >
+          Go Back
+        </Button>
+      </Box>
+    );
+  }
+
   return (
     <Box
       sx={{
@@ -914,7 +961,7 @@ export default function TakeAssessmentPage({
               boxSizing: "border-box",
             }}
           >
-            {currentSection && (
+            {currentSection ? (
               <Box
                 sx={{
                   position: "relative",
@@ -997,6 +1044,65 @@ export default function TakeAssessmentPage({
                     }}
                   />
                 )}
+
+                {/* Show message if section exists but has no questions */}
+                {sectionType === "quiz" && !currentQuizQuestion && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      minHeight: "400px",
+                      flexDirection: "column",
+                      gap: 2,
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ color: "#6b7280" }}>
+                      No questions available in this section
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+                      This section does not contain any questions.
+                    </Typography>
+                  </Box>
+                )}
+
+                {sectionType === "coding" && !currentCodingQuestion && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      minHeight: "400px",
+                      flexDirection: "column",
+                      gap: 2,
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ color: "#6b7280" }}>
+                      No coding problems available in this section
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+                      This section does not contain any coding problems.
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            ) : (
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: "400px",
+                  flexDirection: "column",
+                  gap: 2,
+                }}
+              >
+                <Typography variant="h6" sx={{ color: "#6b7280" }}>
+                  No section available
+                </Typography>
+                <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+                  Unable to load assessment sections. Please refresh the page.
+                </Typography>
               </Box>
             )}
           </Box>
