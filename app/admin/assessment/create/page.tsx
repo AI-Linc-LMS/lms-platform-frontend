@@ -600,14 +600,14 @@ export default function CreateAssessmentPage() {
         return;
       }
 
-      // Convert datetime-local strings to ISO format (full format: "2026-01-22T22:54:00.000Z")
-      const convertToISO = (dateTimeString: string): string | undefined => {
+      // Convert datetime-local strings to IST format (format: "2026-01-22T22:54:00+05:30")
+      const convertToIST = (dateTimeString: string): string | undefined => {
         if (!dateTimeString || !dateTimeString.trim()) {
           return undefined;
         }
         try {
           // datetime-local format: "YYYY-MM-DDTHH:mm"
-          // Append seconds and milliseconds if not present, then treat as UTC
+          // Convert to IST format by appending seconds and IST timezone offset
           let isoString = dateTimeString.trim();
           
           // If format is "YYYY-MM-DDTHH:mm", append ":00" for seconds
@@ -615,21 +615,16 @@ export default function CreateAssessmentPage() {
             isoString = isoString + ":00";
           }
           
-          // If format is "YYYY-MM-DDTHH:mm:ss", append ".000" for milliseconds
-          if (isoString.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/)) {
-            isoString = isoString + ".000";
-          }
-          
-          // Append "Z" to indicate UTC and create Date object
-          const date = new Date(isoString + "Z");
+          // Validate the date string by creating a Date object
+          const date = new Date(isoString);
           
           // Check if date is valid
           if (isNaN(date.getTime())) {
             return undefined;
           }
           
-          // Return full ISO format: "2026-01-22T22:54:00.000Z"
-          return date.toISOString();
+          // Return IST format: "2026-01-22T22:54:00+05:30"
+          return isoString + "+05:30";
         } catch {
           return undefined;
         }
@@ -641,8 +636,8 @@ export default function CreateAssessmentPage() {
         instructions: instructions.trim(),
         description: description.trim() || undefined,
         duration_minutes: durationMinutes,
-        start_time: convertToISO(startTime),
-        end_time: convertToISO(endTime),
+        start_time: convertToIST(startTime),
+        end_time: convertToIST(endTime),
         is_paid: isPaid,
         price: isPaid ? (price ? Number(price) : null) : null,
         currency: isPaid ? currency : undefined,
