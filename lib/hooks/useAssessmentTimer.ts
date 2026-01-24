@@ -26,10 +26,20 @@ export function useAssessmentTimer(options: UseAssessmentTimerOptions) {
     remainingSecondsRef.current = remainingSeconds;
   }, [remainingSeconds]);
 
-  // Update ref when initialTimeSeconds changes (for reset)
+  // Track if timer has been initialized to prevent reset on initialTimeSeconds change
+  const hasInitializedRef = useRef(false);
+  const lastInitialTimeRef = useRef(initialTimeSeconds);
+  
+  // Update ref when initialTimeSeconds changes (for reset) - but only if not already initialized
+  // or if the value actually changed significantly
   useEffect(() => {
-    remainingSecondsRef.current = initialTimeSeconds;
-    setRemainingSeconds(initialTimeSeconds);
+    const timeDiff = Math.abs(lastInitialTimeRef.current - initialTimeSeconds);
+    if (!hasInitializedRef.current || timeDiff > 10) {
+      hasInitializedRef.current = true;
+      lastInitialTimeRef.current = initialTimeSeconds;
+      remainingSecondsRef.current = initialTimeSeconds;
+      setRemainingSeconds(initialTimeSeconds);
+    }
   }, [initialTimeSeconds]);
 
   // Timer interval - only depends on isRunning to prevent resets
@@ -81,6 +91,7 @@ export function useAssessmentTimer(options: UseAssessmentTimerOptions) {
     remainingSecondsRef.current = newTimeSeconds;
     setRemainingSeconds(newTimeSeconds);
     setIsRunning(false);
+    hasInitializedRef.current = true; // Mark as initialized after manual reset
   }, []);
 
   const formatTime = useCallback((seconds: number): string => {

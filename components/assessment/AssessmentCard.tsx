@@ -508,7 +508,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
 
         {/* CTA Button */}
         <Box sx={{ mt: "1" }}>
-          {!isClickable && startDate && remainingTime ? (
+          {!isClickable && startDate && remainingTime && !showResults ? (
             <Tooltip
               title={remainingTime}
               arrow

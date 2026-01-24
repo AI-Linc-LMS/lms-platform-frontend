@@ -183,10 +183,10 @@ export default function TakeAssessmentPage({
       const now = Date.now();
       if (now - lastEyeMovementWarningRef.current > 5000) { // 5 second cooldown
         lastEyeMovementWarningRef.current = now;
-        showToast(
-          `Eye movement detected`,
-          "warning"
-        );
+        // showToast(
+        //   `Eye movement detected`,
+        //   "warning"
+        // );
       }
     }
   }, [metadata.proctoring.eye_movement_count, showToast]);
@@ -306,11 +306,11 @@ export default function TakeAssessmentPage({
           }
         };
 
-        // Defer parsing with longer delay to prevent blocking initial render
+        // Defer parsing with much longer delay to prevent blocking initial render and camera
         if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-          (window as any).requestIdleCallback(parseResponseSheet, { timeout: 2000 });
+          (window as any).requestIdleCallback(parseResponseSheet, { timeout: 3000 });
         } else {
-          setTimeout(parseResponseSheet, 500);
+          setTimeout(parseResponseSheet, 1000);
         }
       }
     }
@@ -385,33 +385,30 @@ export default function TakeAssessmentPage({
     setShowSubmitDialog,
   });
 
-  // Start assessment
+  // Start assessment - prioritize camera, defer heavy operations
   const handleStartAssessment = useCallback(async () => {
     if (isInitializingRef.current) return;
     isInitializingRef.current = true;
     setShowStartButton(false);
 
     try {
+      // Start timer first (non-blocking)
       setAssessmentStarted(true);
       timer.start();
 
-      // Conditionally start proctoring and fullscreen in parallel (non-blocking)
-      const promises: Promise<any>[] = [];
-      
-      // Only start proctoring if enabled
+      // Prioritize camera initialization - start immediately
       if (assessment?.proctoring_enabled !== false) {
-        promises.push(
-          startProctoring().catch(() => {
-            showToast(
-              "Camera initialization failed. Please ensure camera permissions are granted.",
-              "error"
-            );
-          })
-        );
+        // Start camera first, don't wait for it
+        startProctoring().catch(() => {
+          showToast(
+            "Camera initialization failed. Please ensure camera permissions are granted.",
+            "error"
+          );
+        });
       }
 
-      // Always enter fullscreen
-      promises.push(
+      // Defer fullscreen slightly to allow camera to start
+      setTimeout(() => {
         enterFullscreen()
           .then(() => {
             setTimeout(() => {
@@ -428,10 +425,8 @@ export default function TakeAssessmentPage({
           })
           .catch(() => {
             setShowFullscreenWarning(true);
-          })
-      );
-
-      Promise.all(promises);
+          });
+      }, 50);
     } catch (error: any) {
       showToast(error.message || "Failed to start assessment.", "error");
       setShowStartButton(true);
@@ -456,8 +451,9 @@ export default function TakeAssessmentPage({
   
   // Track if timer has been initialized to prevent multiple resets
   const timerInitializedRef = useRef(false);
+  const lastRemainingTimeRef = useRef<number | null>(null);
   
-  // Update timer when remaining_time changes (for resuming assessments)
+  // Update timer when remaining_time changes (for resuming assessments) - DEFERRED to prevent freeze
   useEffect(() => {
     if (assessment?.remaining_time !== undefined && assessment?.remaining_time !== null) {
       const newTimeSeconds = assessment.remaining_time * 60;
@@ -469,18 +465,29 @@ export default function TakeAssessmentPage({
         return;
       }
       
-      // Only reset timer once on initial load or if time changed significantly (more than 5 seconds difference)
-      // This prevents the timer from resetting every render
-      const timeDifference = Math.abs(timer.remainingSeconds - newTimeSeconds);
-      if (!timerInitializedRef.current || timeDifference > 5) {
-        timerInitializedRef.current = true;
-        // Use startTransition to prevent blocking
-        startTransition(() => {
-          timer.reset(newTimeSeconds);
-          if (assessmentStarted) {
-            timer.start();
+      // Only reset if time actually changed (not just on every render)
+      if (lastRemainingTimeRef.current !== assessment.remaining_time) {
+        lastRemainingTimeRef.current = assessment.remaining_time;
+        
+        // Defer timer reset to prevent blocking initial render
+        const resetTimer = () => {
+          const timeDifference = Math.abs(timer.remainingSeconds - newTimeSeconds);
+          // Only reset if difference is significant (more than 10 seconds) or not initialized
+          if (!timerInitializedRef.current || timeDifference > 10) {
+            timerInitializedRef.current = true;
+            timer.reset(newTimeSeconds);
+            if (assessmentStarted) {
+              timer.start();
+            }
           }
-        });
+        };
+        
+        // Defer with longer delay to prevent freeze
+        if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+          (window as any).requestIdleCallback(resetTimer, { timeout: 1000 });
+        } else {
+          setTimeout(resetTimer, 300);
+        }
       }
     }
   }, [assessment?.remaining_time, assessment?.status, assessmentStarted, submitting, timer, showToast, handleFinalSubmit]);
@@ -495,10 +502,10 @@ export default function TakeAssessmentPage({
       !showStartButton &&
       sections.length > 0
     ) {
-      // Defer auto-start slightly to allow initial render to complete
+      // Defer auto-start longer to allow initial render and timer to stabilize
       const startTimer = setTimeout(() => {
         handleStartAssessment();
-      }, 100);
+      }, 200);
       
       return () => clearTimeout(startTimer);
     }
