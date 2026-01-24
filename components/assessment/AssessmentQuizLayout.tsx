@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Paper, Typography, Button } from "@mui/material";
-import { memo, useMemo } from "react";
+import { memo, useMemo, useRef } from "react";
 import {
   QuizQuestionList,
   QuestionTitle,
@@ -53,11 +53,29 @@ export const AssessmentQuizLayout = memo(
     const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
     const isFirstQuestion = currentQuestionIndex === 0;
 
-    // Memoize answered count to prevent expensive recalculation on every render
-    const answeredCount = useMemo(
-      () => questions?.filter((q) => q.answered).length || 0,
-      [questions]
-    );
+    // Optimized answered count - use ref to cache
+    const answeredCountRef = useRef<number>(0);
+    const lastQuestionsHashRef = useRef<string>("");
+    
+    const answeredCount = useMemo(() => {
+      if (!questions || questions.length === 0) {
+        answeredCountRef.current = 0;
+        return 0;
+      }
+      
+      // Create a simple hash of answered statuses
+      const hash = questions.map(q => `${q.id}:${q.answered ? '1' : '0'}`).join(',');
+      
+      // Only recalculate if hash changed
+      if (hash === lastQuestionsHashRef.current) {
+        return answeredCountRef.current;
+      }
+      
+      lastQuestionsHashRef.current = hash;
+      const count = questions.filter((q) => q.answered).length;
+      answeredCountRef.current = count;
+      return count;
+    }, [questions]);
 
     return (
       <Box
@@ -284,22 +302,31 @@ export const AssessmentQuizLayout = memo(
     );
   },
   (prevProps, nextProps) => {
-    // Optimized comparison - check if render is actually needed
-    if (prevProps.currentQuestionIndex !== nextProps.currentQuestionIndex)
-      return false;
-    if (prevProps.currentQuestion.id !== nextProps.currentQuestion.id)
-      return false;
+    // If question index or question changed, we MUST re-render (navigation)
+    if (prevProps.currentQuestionIndex !== nextProps.currentQuestionIndex) return false;
+    if (prevProps.currentQuestion.id !== nextProps.currentQuestion.id) return false;
+    
+    // If selected answer changed, re-render
     if (prevProps.selectedAnswer !== nextProps.selectedAnswer) return false;
+    
+    // If total questions changed, re-render
     if (prevProps.totalQuestions !== nextProps.totalQuestions) return false;
 
-    // Only check questions array length - don't deep compare
+    // If questions array length changed, re-render
     if (prevProps.questions.length !== nextProps.questions.length) return false;
 
-    // Check if answered status changed for any question
+    // Quick check: if current question's answered status changed, re-render
+    const currentQId = nextProps.currentQuestion.id;
+    const prevCurrentAnswered = prevProps.questions.find((q) => q.id === currentQId)?.answered;
+    const nextCurrentAnswered = nextProps.questions.find((q) => q.id === currentQId)?.answered;
+    if (prevCurrentAnswered !== nextCurrentAnswered) return false;
+
+    // Only check total answered count if it's different (optimized)
     const prevAnswered = prevProps.questions.filter((q) => q.answered).length;
     const nextAnswered = nextProps.questions.filter((q) => q.answered).length;
     if (prevAnswered !== nextAnswered) return false;
 
-    return true; // No need to re-render
+    // All checks passed - skip re-render
+    return true;
   }
 );

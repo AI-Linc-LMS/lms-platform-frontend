@@ -69,21 +69,54 @@ export default function AssessmentsPage() {
     (a) => !isPsychometricAssessment(a)
   );
 
-  // Calculate counts
+  // Calculate counts based on status
   const totalCount = assessments.length;
   const psychometricCount = psychometricAssessments.length;
   const regularCount = regularAssessments.length;
+  
+  // Completed: status is "submitted" or "completed"
+  // If status is undefined/null, fallback to is_attempted/has_attempted for backward compatibility
   const completedCount = assessments.filter(
-    (a) => a.is_attempted || a.has_attempted
+    (a) => {
+      if (a.status === "submitted" || a.status === "completed") return true;
+      // Fallback for backward compatibility
+      if (a.status === undefined || a.status === null) {
+        return a.is_attempted || a.has_attempted;
+      }
+      return false;
+    }
   ).length;
+  
+  // Available: status is "not_started" or "in_progress"
+  // If status is undefined/null, fallback to !is_attempted && !has_attempted for backward compatibility
   const availableCount = assessments.filter(
-    (a) => !a.is_attempted && !a.has_attempted
+    (a) => {
+      if (a.status === "not_started" || a.status === "in_progress") return true;
+      // Fallback for backward compatibility
+      if (a.status === undefined || a.status === null) {
+        return !a.is_attempted && !a.has_attempted;
+      }
+      return false;
+    }
   ).length;
+  
   const psychometricCompletedCount = psychometricAssessments.filter(
-    (a) => a.is_attempted || a.has_attempted
+    (a) => {
+      if (a.status === "submitted" || a.status === "completed") return true;
+      if (a.status === undefined || a.status === null) {
+        return a.is_attempted || a.has_attempted;
+      }
+      return false;
+    }
   ).length;
   const regularCompletedCount = regularAssessments.filter(
-    (a) => a.is_attempted || a.has_attempted
+    (a) => {
+      if (a.status === "submitted" || a.status === "completed") return true;
+      if (a.status === undefined || a.status === null) {
+        return a.is_attempted || a.has_attempted;
+      }
+      return false;
+    }
   ).length;
 
   // Combine all assessments (psychometric + regular)
@@ -99,11 +132,29 @@ export default function AssessmentsPage() {
         assessment.description?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // Apply filter
+    // Apply filter based on status
     if (filter === "completed") {
-      result = result.filter((a) => a.is_attempted || a.has_attempted);
+      // Completed: status is "submitted" or "completed"
+      // Fallback to is_attempted/has_attempted for backward compatibility
+      result = result.filter((a) => {
+        if (a.status === "submitted" || a.status === "completed") return true;
+        // Fallback for backward compatibility
+        if (a.status === undefined || a.status === null) {
+          return a.is_attempted || a.has_attempted;
+        }
+        return false;
+      });
     } else if (filter === "available") {
-      result = result.filter((a) => !a.is_attempted && !a.has_attempted);
+      // Available: status is "not_started" or "in_progress"
+      // Fallback to !is_attempted && !has_attempted for backward compatibility
+      result = result.filter((a) => {
+        if (a.status === "not_started" || a.status === "in_progress") return true;
+        // Fallback for backward compatibility
+        if (a.status === undefined || a.status === null) {
+          return !a.is_attempted && !a.has_attempted;
+        }
+        return false;
+      });
     }
 
     // Sort

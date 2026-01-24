@@ -710,14 +710,40 @@ export default function TakeAssessmentPage({
     return currentSection.questions || [];
   }, [currentSection, sectionType]);
 
+  // Optimized mappedQuizQuestions - cache with ref to prevent recalculation on navigation
+  const mappedQuizQuestionsRef = useRef<any[]>([]);
+  const lastMappedHashRef = useRef<string>("");
+  
   const mappedQuizQuestions = useMemo(() => {
-    if (!quizQuestions.length) return [];
+    if (!quizQuestions.length) {
+      mappedQuizQuestionsRef.current = [];
+      return [];
+    }
+    
     const sectionResponses = responses[sectionType] || {};
-    return quizQuestions.map((q: any) => ({
+    
+    // Create a hash of only the relevant responses for this section
+    const relevantResponses = quizQuestions.map((q: any) => ({
+      id: q.id,
+      answered: !!sectionResponses[q.id]
+    }));
+    const hash = JSON.stringify(relevantResponses);
+    
+    // Only recalculate if responses for this section actually changed
+    if (hash === lastMappedHashRef.current && mappedQuizQuestionsRef.current.length > 0) {
+      return mappedQuizQuestionsRef.current;
+    }
+    
+    lastMappedHashRef.current = hash;
+    
+    const mapped = quizQuestions.map((q: any) => ({
       id: q.id,
       question: q.question,
       answered: !!sectionResponses[q.id],
     }));
+    
+    mappedQuizQuestionsRef.current = mapped;
+    return mapped;
   }, [quizQuestions, responses, sectionType]);
 
   // Optimized section status - use ref to prevent recalculation on every navigation

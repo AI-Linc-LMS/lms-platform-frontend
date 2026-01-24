@@ -19,8 +19,8 @@ export interface Assessment {
   end_time?: string | null;
   has_attempted?: boolean; // For backward compatibility
   proctoring_enabled?: boolean;
-  /** "not_started" | "in_progress" | "submitted" – when "submitted", show results */
-  status?: "not_started" | "in_progress" | "submitted";
+  /** "not_started" | "in_progress" | "submitted" | "completed" – when "submitted" or "completed", show results */
+  status?: "not_started" | "in_progress" | "submitted" | "completed";
 }
 
 export interface AssessmentDetail extends Assessment {
