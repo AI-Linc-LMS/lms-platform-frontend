@@ -129,9 +129,18 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
       return { buttonLabel: "View Results", isClickable: true };
     }
     if (status === "in_progress") {
+      // If assessment is in progress but expired (end_time passed), show "Ended"
+      if (isExpired) {
+        return { buttonLabel: "Ended", isClickable: false };
+      }
+      // If assessment is in progress but can't start now (e.g., before start_time), show availability
+      if (!canStartNow) {
+        return { buttonLabel: availabilityLabel || "Resume", isClickable: false };
+      }
+      // Assessment is in progress and can be resumed
       return {
         buttonLabel: "Resume",
-        isClickable: canStartNow,
+        isClickable: true,
       };
     }
     if (status === "not_started" || !status) {
