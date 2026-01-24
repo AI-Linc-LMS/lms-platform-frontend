@@ -307,12 +307,12 @@ export default function TakeAssessmentPage({
           }
         };
 
-        // Defer parsing with much longer delay to prevent blocking initial render and camera
-        // Parse after camera has had time to initialize (2+ seconds)
+        // Defer parsing with much longer delay to prevent blocking UI and camera
+        // Parse after camera has initialized and UI is interactive (3+ seconds)
         if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-          (window as any).requestIdleCallback(parseResponseSheet, { timeout: 5000 });
+          (window as any).requestIdleCallback(parseResponseSheet, { timeout: 8000 });
         } else {
-          setTimeout(parseResponseSheet, 1000);
+          setTimeout(parseResponseSheet, 3000);
         }
       }
     }
@@ -387,7 +387,8 @@ export default function TakeAssessmentPage({
     setShowSubmitDialog,
   });
 
-  // Pre-initialize camera as soon as videoRef is available (before assessment starts)
+  // Pre-initialize camera IMMEDIATELY as soon as videoRef is available (before assessment starts)
+  // This ensures camera is ready when assessment starts
   useEffect(() => {
     if (
       videoRef.current &&
@@ -397,28 +398,23 @@ export default function TakeAssessmentPage({
       !assessmentStarted &&
       assessment.proctoring_enabled !== false
     ) {
-      // Pre-warm camera permissions and start initialization early
-      // This makes camera preview appear faster when assessment actually starts
-      const preWarmCamera = async () => {
+      // Start camera immediately - don't wait for assessment to start
+      // This makes camera preview appear instantly when assessment begins
+      const startCameraEarly = async () => {
         try {
-          // Request camera permissions early (non-blocking)
-          if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            const stream = await navigator.mediaDevices.getUserMedia({
-              video: { width: 640, height: 480, facingMode: "user" },
-              audio: false,
-            });
-            // Stop the stream immediately - we just wanted to warm up permissions
-            stream.getTracks().forEach((track) => track.stop());
-          }
+          // Start proctoring immediately (non-blocking)
+          startProctoring().catch(() => {
+            // Silently fail - will retry when assessment starts
+          });
         } catch (error) {
-          // Silently fail - permissions will be requested when assessment starts
+          // Silently fail
         }
       };
       
-      // Defer slightly to not block initial render
-      setTimeout(preWarmCamera, 100);
+      // Start immediately - no delay
+      startCameraEarly();
     }
-  }, [videoRef.current, assessment, loading, assessmentStarted]);
+  }, [videoRef.current, assessment, loading, assessmentStarted, startProctoring]);
 
   // Start assessment - prioritize camera, defer heavy operations
   const handleStartAssessment = useCallback(async () => {
@@ -431,27 +427,24 @@ export default function TakeAssessmentPage({
       setAssessmentStarted(true);
       timer.start();
 
-      // Prioritize camera initialization - start immediately and aggressively
+      // Camera should already be started by pre-initialization
+      // Just ensure video is playing if camera is already active
       if (assessment?.proctoring_enabled !== false) {
-        // Start camera immediately, don't wait for anything
-        const cameraPromise = startProctoring().catch(() => {
-          showToast(
-            "Camera initialization failed. Please ensure camera permissions are granted.",
-            "error"
-          );
-        });
-        
-        // Don't await - let it run in background
-        // But ensure video element gets stream attached quickly
-        if (videoRef.current) {
-          // Try to attach stream immediately if available
-          setTimeout(() => {
-            if (videoRef.current && videoRef.current.srcObject) {
-              videoRef.current.play().catch(() => {
-                // Silently fail - will retry
-              });
-            }
-          }, 50);
+        // If camera isn't already active, start it now
+        if (!isProctoringActive) {
+          startProctoring().catch(() => {
+            showToast(
+              "Camera initialization failed. Please ensure camera permissions are granted.",
+              "error"
+            );
+          });
+        } else if (videoRef.current) {
+          // Camera is already active, just ensure video is playing
+          if (videoRef.current.srcObject) {
+            videoRef.current.play().catch(() => {
+              // Silently fail - will retry
+            });
+          }
         }
       }
 
@@ -693,28 +686,13 @@ export default function TakeAssessmentPage({
     setShowSubmitDialog(false);
   }, []);
 
-  // Section change handler - optimized with transition (non-blocking)
+  // Section change handler - IMMEDIATE, never block navigation
   const handleSectionChange = useCallback((sectionIndex: number) => {
-    // Prevent multiple rapid clicks
-    if (isTransitioning) return;
-    
-    setIsTransitioning(true);
-    // Use requestIdleCallback or setTimeout for truly non-blocking updates
-    const updateSection = () => {
-      startTransition(() => {
-        setCurrentSectionIndex(sectionIndex);
-        setCurrentQuestionIndex(0);
-      });
-      // Clear transition state after a short delay
-      setTimeout(() => setIsTransitioning(false), 100);
-    };
-    
-    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      (window as any).requestIdleCallback(updateSection, { timeout: 50 });
-    } else {
-      setTimeout(updateSection, 0);
-    }
-  }, [isTransitioning]);
+    // Never block navigation - update immediately
+    setCurrentSectionIndex(sectionIndex);
+    setCurrentQuestionIndex(0);
+    // Don't use transition state - it blocks navigation
+  }, []);
 
   // Computed values - heavily memoized
   const currentSection = useMemo(
@@ -742,15 +720,30 @@ export default function TakeAssessmentPage({
     }));
   }, [quizQuestions, responses, sectionType]);
 
-  // Optimized section status - only recalculate when responses change significantly
+  // Optimized section status - use ref to prevent recalculation on every navigation
+  const sectionStatusRef = useRef<any[]>([]);
+  const lastResponsesHashRef = useRef<string>("");
+  
   const sectionStatus = useMemo(() => {
-    return sections.map((section: any) => {
+    // Create a simple hash of responses to detect actual changes
+    const responsesHash = JSON.stringify(Object.keys(responses).map(key => ({
+      key,
+      count: Object.keys(responses[key] || {}).length
+    })));
+    
+    // Only recalculate if responses actually changed
+    if (responsesHash === lastResponsesHashRef.current && sectionStatusRef.current.length > 0) {
+      return sectionStatusRef.current;
+    }
+    
+    lastResponsesHashRef.current = responsesHash;
+    
+    const status = sections.map((section: any) => {
       const sectionType = section.section_type || "quiz";
       const sectionResponses = responses[sectionType] || {};
       const sectionQuestions = section.questions || [];
       
       // Count answered questions for THIS specific section only
-      // Check each question in this section to see if it has a response
       let answered = 0;
       sectionQuestions.forEach((question: any) => {
         const questionId = question.id;
@@ -762,7 +755,7 @@ export default function TakeAssessmentPage({
             answered++;
           }
         } 
-        // For coding: check if code was explicitly submitted (has submitted flag or test results)
+        // For coding: check if code was explicitly submitted
         else if (sectionType === "coding") {
           if (
             response &&
@@ -784,10 +777,30 @@ export default function TakeAssessmentPage({
         total: sectionQuestions.length,
       };
     });
+    
+    sectionStatusRef.current = status;
+    return status;
   }, [sections, responses]);
 
+  // Optimized totalAnswered - use ref to prevent recalculation on every navigation
+  const totalAnsweredRef = useRef<number>(0);
+  const lastTotalAnsweredHashRef = useRef<string>("");
+  
   const totalAnswered = useMemo(() => {
-    return Object.values(responses).reduce(
+    // Create a simple hash to detect actual changes
+    const hash = JSON.stringify(Object.keys(responses).map(key => ({
+      key,
+      count: Object.keys(responses[key] || {}).length
+    })));
+    
+    // Only recalculate if responses actually changed
+    if (hash === lastTotalAnsweredHashRef.current) {
+      return totalAnsweredRef.current;
+    }
+    
+    lastTotalAnsweredHashRef.current = hash;
+    
+    const total = Object.values(responses).reduce(
       (sum: number, sectionResponses: any) => {
         if (!sectionResponses || typeof sectionResponses !== "object") {
           return sum;
@@ -804,6 +817,9 @@ export default function TakeAssessmentPage({
       },
       0
     );
+    
+    totalAnsweredRef.current = total;
+    return total;
   }, [responses]);
 
   // Handlers - memoized
@@ -896,21 +912,11 @@ export default function TakeAssessmentPage({
   // Handle coding question click
   const handleCodingQuestionClick = useCallback(
     (questionId: string | number) => {
-      // Don't block on isTransitioning for question clicks - allow rapid navigation
+      // IMMEDIATE navigation - never block
       const index = codingQuestions.findIndex((q: any) => q.id === questionId);
       if (index !== -1 && index !== currentQuestionIndex) {
-        // Use requestIdleCallback for non-blocking updates
-        const updateQuestion = () => {
-          startTransition(() => {
-            setCurrentQuestionIndex(index);
-          });
-        };
-        
-        if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-          (window as any).requestIdleCallback(updateQuestion, { timeout: 30 });
-        } else {
-          setTimeout(updateQuestion, 0);
-        }
+        // Update immediately - no delays
+        setCurrentQuestionIndex(index);
       }
     },
     [codingQuestions, currentQuestionIndex]
@@ -1031,10 +1037,6 @@ export default function TakeAssessmentPage({
               <Box
                 sx={{
                   position: "relative",
-                  opacity: isTransitioning ? 0.8 : 1,
-                  transition: "opacity 0.15s ease-out",
-                  willChange: isTransitioning ? "opacity" : "auto",
-                  transform: isTransitioning ? "translateX(4px)" : "translateX(0)",
                 }}
               >
                 {sectionType === "quiz" && currentQuizQuestion && (
