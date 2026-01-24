@@ -600,14 +600,15 @@ export default function CreateAssessmentPage() {
         return;
       }
 
-      // Convert datetime-local strings to IST format (format: "2026-01-22T22:54:00+05:30")
+      // Convert datetime-local strings to IST ISO format (format: "2026-01-22T22:54:00+05:30")
+      // Note: datetime-local input treats the entered time as local time, but we interpret it as IST
       const convertToIST = (dateTimeString: string): string | undefined => {
         if (!dateTimeString || !dateTimeString.trim()) {
           return undefined;
         }
         try {
-          // datetime-local format: "YYYY-MM-DDTHH:mm"
-          // Convert to IST format by appending seconds and IST timezone offset
+          // datetime-local format: "YYYY-MM-DDTHH:mm" (no timezone, treated as local)
+          // We interpret the entered time as IST time and format it with IST timezone offset
           let isoString = dateTimeString.trim();
           
           // If format is "YYYY-MM-DDTHH:mm", append ":00" for seconds
@@ -615,16 +616,23 @@ export default function CreateAssessmentPage() {
             isoString = isoString + ":00";
           }
           
-          // Validate the date string by creating a Date object
-          const date = new Date(isoString);
+          // Parse the datetime string to extract components
+          const match = isoString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
+          if (!match) {
+            return undefined;
+          }
           
-          // Check if date is valid
+          const [, year, month, day, hours, minutes, seconds] = match;
+          
+          // Validate the date components
+          const date = new Date(`${year}-${month}-${day}T${hours}:${minutes}:${seconds}`);
           if (isNaN(date.getTime())) {
             return undefined;
           }
           
-          // Return IST format: "2026-01-22T22:54:00+05:30"
-          return isoString + "+05:30";
+          // Return ISO format with IST timezone: "2026-01-22T22:54:00+05:30"
+          // The time entered is treated as IST time, so we just append the IST offset
+          return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+05:30`;
         } catch {
           return undefined;
         }

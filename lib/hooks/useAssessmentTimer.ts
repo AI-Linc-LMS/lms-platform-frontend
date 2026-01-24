@@ -14,22 +14,44 @@ export function useAssessmentTimer(options: UseAssessmentTimerOptions) {
   const [isRunning, setIsRunning] = useState(autoStart);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const onTimeUpRef = useRef(onTimeUp);
+  const remainingSecondsRef = useRef(initialTimeSeconds);
 
-  // Keep onTimeUp ref updated without triggering useEffect
+  // Keep refs updated
   useEffect(() => {
     onTimeUpRef.current = onTimeUp;
   }, [onTimeUp]);
 
+  // Sync ref with state
   useEffect(() => {
-    if (isRunning && remainingSeconds > 0) {
+    remainingSecondsRef.current = remainingSeconds;
+  }, [remainingSeconds]);
+
+  // Update ref when initialTimeSeconds changes (for reset)
+  useEffect(() => {
+    remainingSecondsRef.current = initialTimeSeconds;
+    setRemainingSeconds(initialTimeSeconds);
+  }, [initialTimeSeconds]);
+
+  // Timer interval - only depends on isRunning to prevent resets
+  useEffect(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    if (isRunning && remainingSecondsRef.current > 0) {
       intervalRef.current = setInterval(() => {
         setRemainingSeconds((prev) => {
-          if (prev <= 1) {
+          const current = remainingSecondsRef.current;
+          if (current <= 1) {
             setIsRunning(false);
             onTimeUpRef.current?.();
+            remainingSecondsRef.current = 0;
             return 0;
           }
-          return prev - 1;
+          const newValue = current - 1;
+          remainingSecondsRef.current = newValue;
+          return newValue;
         });
       }, 1000);
     }
@@ -37,9 +59,10 @@ export function useAssessmentTimer(options: UseAssessmentTimerOptions) {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
-  }, [isRunning, remainingSeconds]); // Removed onTimeUp from deps to prevent restart
+  }, [isRunning]); // Only depend on isRunning to prevent interval recreation
 
   const start = useCallback(() => {
     setIsRunning(true);
@@ -50,6 +73,12 @@ export function useAssessmentTimer(options: UseAssessmentTimerOptions) {
   }, []);
 
   const reset = useCallback((newTimeSeconds: number) => {
+    // Clear any existing interval first
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    remainingSecondsRef.current = newTimeSeconds;
     setRemainingSeconds(newTimeSeconds);
     setIsRunning(false);
   }, []);

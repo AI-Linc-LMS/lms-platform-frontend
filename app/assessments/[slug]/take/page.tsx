@@ -236,15 +236,13 @@ export default function TakeAssessmentPage({
         setCurrentQuestionIndex(0);
       }
 
-      // Parse responseSheet asynchronously after initial render (deferred)
+      // Parse responseSheet asynchronously after initial render (deferred with longer delay)
       if (assessment.responseSheet) {
-        // Use requestIdleCallback or setTimeout to defer heavy parsing
+        // Use requestIdleCallback or setTimeout to defer heavy parsing - longer delay to prevent freeze
         const parseResponseSheet = () => {
           try {
             const responseSheet = assessment.responseSheet;
             const loadedResponses: Record<string, Record<string, any>> = {};
-
-            console.log("Parsing responseSheet:", responseSheet);
 
             // Process quizSectionId array - structure: quizSectionId[0]["75"]["84205"] = "a"
             if (responseSheet.quizSectionId && Array.isArray(responseSheet.quizSectionId)) {
@@ -267,7 +265,6 @@ export default function TakeAssessmentPage({
                     if (response !== undefined) {
                       loadedResponses["quiz"][questionId] = response;
                       loadedResponses["quiz"][String(questionId)] = response;
-                      console.log(`Bound quiz response: question ${questionId} = ${response}`);
                     }
                   });
                 });
@@ -291,17 +288,17 @@ export default function TakeAssessmentPage({
                     if (response !== undefined) {
                       loadedResponses["coding"][questionId] = response;
                       loadedResponses["coding"][String(questionId)] = response;
-                      console.log(`Bound coding response: question ${questionId} =`, response);
                     }
                   });
                 });
               });
             }
 
-            // Only update if we found saved responses
+            // Only update if we found saved responses - use startTransition for non-blocking update
             if (Object.keys(loadedResponses).length > 0) {
-              console.log("Loaded responses:", loadedResponses);
-              setResponses(loadedResponses);
+              startTransition(() => {
+                setResponses(loadedResponses);
+              });
             }
           } catch (error) {
             console.error("Error parsing responseSheet:", error);
@@ -309,11 +306,11 @@ export default function TakeAssessmentPage({
           }
         };
 
-        // Defer parsing to prevent blocking initial render
+        // Defer parsing with longer delay to prevent blocking initial render
         if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-          (window as any).requestIdleCallback(parseResponseSheet, { timeout: 1000 });
+          (window as any).requestIdleCallback(parseResponseSheet, { timeout: 2000 });
         } else {
-          setTimeout(parseResponseSheet, 100);
+          setTimeout(parseResponseSheet, 500);
         }
       }
     }
@@ -457,6 +454,9 @@ export default function TakeAssessmentPage({
     };
   }, [handleFinalSubmit, showToast]);
   
+  // Track if timer has been initialized to prevent multiple resets
+  const timerInitializedRef = useRef(false);
+  
   // Update timer when remaining_time changes (for resuming assessments)
   useEffect(() => {
     if (assessment?.remaining_time !== undefined && assessment?.remaining_time !== null) {
@@ -469,17 +469,23 @@ export default function TakeAssessmentPage({
         return;
       }
       
-      // Update timer if time changed significantly (more than 1 second difference)
-      if (Math.abs(timer.remainingSeconds - newTimeSeconds) > 1) {
-        timer.reset(newTimeSeconds);
-        if (assessmentStarted) {
-          timer.start();
-        }
+      // Only reset timer once on initial load or if time changed significantly (more than 5 seconds difference)
+      // This prevents the timer from resetting every render
+      const timeDifference = Math.abs(timer.remainingSeconds - newTimeSeconds);
+      if (!timerInitializedRef.current || timeDifference > 5) {
+        timerInitializedRef.current = true;
+        // Use startTransition to prevent blocking
+        startTransition(() => {
+          timer.reset(newTimeSeconds);
+          if (assessmentStarted) {
+            timer.start();
+          }
+        });
       }
     }
   }, [assessment?.remaining_time, assessment?.status, assessmentStarted, submitting, timer, showToast, handleFinalSubmit]);
   
-  // Auto-start when assessment loads (if not submitted)
+  // Auto-start when assessment loads (if not submitted) - deferred to prevent freeze
   useEffect(() => {
     if (
       assessment &&
@@ -489,8 +495,12 @@ export default function TakeAssessmentPage({
       !showStartButton &&
       sections.length > 0
     ) {
-      // Auto-start immediately with fullscreen
-      handleStartAssessment();
+      // Defer auto-start slightly to allow initial render to complete
+      const startTimer = setTimeout(() => {
+        handleStartAssessment();
+      }, 100);
+      
+      return () => clearTimeout(startTimer);
     }
   }, [assessment, loading, assessmentStarted, showStartButton, sections.length, handleStartAssessment]);
 

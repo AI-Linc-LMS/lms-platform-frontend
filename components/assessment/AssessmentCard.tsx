@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -8,6 +8,7 @@ import {
   Typography,
   Chip,
   Button,
+  Tooltip,
 } from "@mui/material";
 import { Assessment } from "@/lib/services/assessment.service";
 import { useRouter } from "next/navigation";
@@ -34,6 +35,31 @@ function formatDateTimeDisplay(d: Date): string {
   });
 }
 
+function formatRemainingTime(startDate: Date): string {
+  const now = new Date();
+  const diff = startDate.getTime() - now.getTime();
+  
+  if (diff <= 0) {
+    return "Available now";
+  }
+  
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  
+  if (days > 0) {
+    return `Starts in ${days} day${days > 1 ? "s" : ""}, ${hours} hour${hours !== 1 ? "s" : ""}`;
+  }
+  if (hours > 0) {
+    return `Starts in ${hours} hour${hours > 1 ? "s" : ""}, ${minutes} minute${minutes !== 1 ? "s" : ""}`;
+  }
+  if (minutes > 0) {
+    return `Starts in ${minutes} minute${minutes > 1 ? "s" : ""}, ${seconds} second${seconds !== 1 ? "s" : ""}`;
+  }
+  return `Starts in ${seconds} second${seconds !== 1 ? "s" : ""}`;
+}
+
 export const AssessmentCard: React.FC<AssessmentCardProps> = ({
   assessment,
 }) => {
@@ -41,6 +67,33 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
   const showResults = assessment.status === "submitted";
   const isPsychometric = isPsychometricAssessment(assessment);
   const psychometricTags = isPsychometric ? getPsychometricTags(assessment) : [];
+  const [remainingTime, setRemainingTime] = useState<string>("");
+  
+  // Calculate remaining time for hover tooltip
+  const startDate = useMemo(() => parseDateTime(assessment.start_time), [assessment.start_time]);
+  
+  useEffect(() => {
+    if (!startDate) {
+      setRemainingTime("");
+      return;
+    }
+    
+    const updateRemainingTime = () => {
+      setRemainingTime(formatRemainingTime(startDate));
+    };
+    
+    // Update immediately
+    updateRemainingTime();
+    
+    // Update every second if less than 1 hour remaining, otherwise every minute
+    const now = new Date();
+    const diff = startDate.getTime() - now.getTime();
+    const interval = diff < 3600000 ? 1000 : 60000; // 1 second if < 1 hour, else 1 minute
+    
+    const intervalId = setInterval(updateRemainingTime, interval);
+    
+    return () => clearInterval(intervalId);
+  }, [startDate]);
 
   const { canStartNow, availabilityLabel, isExpired } = useMemo(() => {
     const now = Date.now();
@@ -455,76 +508,157 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
 
         {/* CTA Button */}
         <Box sx={{ mt: "1" }}>
-          <Button
-            fullWidth
-            variant="contained"
-            size="large"
-            disabled={!isClickable}
-            startIcon={
-              <IconWrapper
-                icon={
-                  status === "submitted"
-                    ? "mdi:eye-outline"
-                    : !isClickable
-                    ? "mdi:clock-outline"
-                    : "mdi:play-circle-outline"
+          {!isClickable && startDate && remainingTime ? (
+            <Tooltip
+              title={remainingTime}
+              arrow
+              placement="top"
+              enterDelay={300}
+              leaveDelay={0}
+            >
+              <Button
+                fullWidth
+                variant="contained"
+                size="large"
+                disabled={!isClickable}
+                startIcon={
+                  <IconWrapper
+                    icon={
+                      status === "submitted"
+                        ? "mdi:eye-outline"
+                        : !isClickable
+                        ? "mdi:clock-outline"
+                        : "mdi:play-circle-outline"
+                    }
+                    size={18}
+                  />
                 }
-                size={18}
-              />
-            }
-            sx={{
-              backgroundColor:
-                !isClickable
-                  ? "#9ca3af"
-                  : isPsychometric
-                  ? showResults
-                    ? "#7c3aed"
-                    : "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)"
-                  : showResults
-                  ? "#10b981"
-                  : "#6366f1",
-              color: "#ffffff",
-              fontWeight: 600,
-              py: 1,
-              borderRadius: 2,
-              textTransform: "none",
-              fontSize: "0.875rem",
-              boxShadow:
-                !isClickable
-                  ? "none"
-                  : isPsychometric
-                  ? showResults
-                    ? "0 4px 14px 0 rgba(124, 58, 237, 0.39)"
-                    : "0 4px 14px 0 rgba(124, 58, 237, 0.5)"
-                  : showResults
-                  ? "0 4px 14px 0 rgba(16, 185, 129, 0.39)"
-                  : "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
-              ...(isClickable && {
-                "&:hover": {
-                  backgroundColor: isPsychometric
+                sx={{
+                  backgroundColor:
+                    !isClickable
+                      ? "#9ca3af"
+                      : isPsychometric
+                      ? showResults
+                        ? "#7c3aed"
+                        : "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)"
+                      : showResults
+                      ? "#10b981"
+                      : "#6366f1",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  py: 1,
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontSize: "0.875rem",
+                  boxShadow:
+                    !isClickable
+                      ? "none"
+                      : isPsychometric
+                      ? showResults
+                        ? "0 4px 14px 0 rgba(124, 58, 237, 0.39)"
+                        : "0 4px 14px 0 rgba(124, 58, 237, 0.5)"
+                      : showResults
+                      ? "0 4px 14px 0 rgba(16, 185, 129, 0.39)"
+                      : "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
+                  ...(isClickable ? {
+                    "&:hover": {
+                      backgroundColor: isPsychometric
+                        ? showResults
+                          ? "#6d28d9"
+                          : "#6d28d9"
+                        : showResults
+                        ? "#059669"
+                        : "#4f46e5",
+                      boxShadow: isPsychometric
+                        ? "0 6px 20px 0 rgba(124, 58, 237, 0.6)"
+                        : showResults
+                        ? "0 6px 20px 0 rgba(16, 185, 129, 0.5)"
+                        : "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
+                      transform: "translateY(-2px)",
+                    },
+                  } : {}),
+                  "&.Mui-disabled": {
+                    backgroundColor: "#9ca3af",
+                    color: "#ffffff",
+                  },
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {buttonLabel}
+              </Button>
+            </Tooltip>
+          ) : (
+            <Button
+              fullWidth
+              variant="contained"
+              size="large"
+              disabled={!isClickable}
+              startIcon={
+                <IconWrapper
+                  icon={
+                    status === "submitted"
+                      ? "mdi:eye-outline"
+                      : !isClickable
+                      ? "mdi:clock-outline"
+                      : "mdi:play-circle-outline"
+                  }
+                  size={18}
+                />
+              }
+              sx={{
+                backgroundColor:
+                  !isClickable
+                    ? "#9ca3af"
+                    : isPsychometric
                     ? showResults
-                      ? "#6d28d9"
-                      : "#6d28d9"
+                      ? "#7c3aed"
+                      : "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)"
                     : showResults
-                    ? "#059669"
-                    : "#4f46e5",
-                  boxShadow: isPsychometric
-                    ? "0 6px 20px 0 rgba(124, 58, 237, 0.6)"
-                    : showResults
-                    ? "0 6px 20px 0 rgba(16, 185, 129, 0.5)"
-                    : "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
-                  transform: "translateY(-2px)",
-                },
-              }),
-              "&.Mui-disabled": {
-                backgroundColor: "#9ca3af",
+                    ? "#10b981"
+                    : "#6366f1",
                 color: "#ffffff",
-              },
-              transition: "all 0.2s ease",
-            }}
-          >
-            {buttonLabel}
-          </Button>
+                fontWeight: 600,
+                py: 1,
+                borderRadius: 2,
+                textTransform: "none",
+                fontSize: "0.875rem",
+                boxShadow:
+                  !isClickable
+                    ? "none"
+                    : isPsychometric
+                    ? showResults
+                      ? "0 4px 14px 0 rgba(124, 58, 237, 0.39)"
+                      : "0 4px 14px 0 rgba(124, 58, 237, 0.5)"
+                    : showResults
+                    ? "0 4px 14px 0 rgba(16, 185, 129, 0.39)"
+                    : "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
+                ...(isClickable && {
+                  "&:hover": {
+                    backgroundColor: isPsychometric
+                      ? showResults
+                        ? "#6d28d9"
+                        : "#6d28d9"
+                      : showResults
+                      ? "#059669"
+                      : "#4f46e5",
+                    boxShadow: isPsychometric
+                      ? "0 6px 20px 0 rgba(124, 58, 237, 0.6)"
+                      : showResults
+                      ? "0 6px 20px 0 rgba(16, 185, 129, 0.5)"
+                      : "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
+                    transform: "translateY(-2px)",
+                  },
+                }),
+                "&.Mui-disabled": {
+                  backgroundColor: "#9ca3af",
+                  color: "#ffffff",
+                },
+                transition: "all 0.2s ease",
+              }}
+            >
+              {buttonLabel}
+            </Button>
+          )}
         </Box>
       </CardContent>
     </Card>

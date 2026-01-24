@@ -142,7 +142,7 @@ export function AssessmentSettingsSection({
             inputProps={{
               min: new Date().toISOString().slice(0, 16),
             }}
-            helperText="When the assessment becomes available"
+            helperText="When the assessment becomes available (IST timezone, 24-hour format)"
           />
           <TextField
             label="End date & time (optional)"
@@ -154,7 +154,7 @@ export function AssessmentSettingsSection({
             inputProps={{
               min: startTime || new Date().toISOString().slice(0, 16),
             }}
-            helperText="When the assessment closes"
+            helperText="When the assessment closes (IST timezone, 24-hour format)"
           />
         </Box>
         <Box
