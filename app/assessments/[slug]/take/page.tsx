@@ -129,6 +129,7 @@ export default function TakeAssessmentPage({
   });
 
   // Sections - memoized to prevent unnecessary recalculations
+  // Calculate immediately but use startTransition for updates to prevent blocking
   const sections = useMemo(() => {
     if (!assessment) return [];
     const merged = mergeAssessmentSections(
@@ -307,8 +308,9 @@ export default function TakeAssessmentPage({
         };
 
         // Defer parsing with much longer delay to prevent blocking initial render and camera
+        // Parse after camera has had time to initialize (2+ seconds)
         if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-          (window as any).requestIdleCallback(parseResponseSheet, { timeout: 3000 });
+          (window as any).requestIdleCallback(parseResponseSheet, { timeout: 5000 });
         } else {
           setTimeout(parseResponseSheet, 1000);
         }
@@ -385,6 +387,39 @@ export default function TakeAssessmentPage({
     setShowSubmitDialog,
   });
 
+  // Pre-initialize camera as soon as videoRef is available (before assessment starts)
+  useEffect(() => {
+    if (
+      videoRef.current &&
+      assessment &&
+      !loading &&
+      assessment.status !== "submitted" &&
+      !assessmentStarted &&
+      assessment.proctoring_enabled !== false
+    ) {
+      // Pre-warm camera permissions and start initialization early
+      // This makes camera preview appear faster when assessment actually starts
+      const preWarmCamera = async () => {
+        try {
+          // Request camera permissions early (non-blocking)
+          if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            const stream = await navigator.mediaDevices.getUserMedia({
+              video: { width: 640, height: 480, facingMode: "user" },
+              audio: false,
+            });
+            // Stop the stream immediately - we just wanted to warm up permissions
+            stream.getTracks().forEach((track) => track.stop());
+          }
+        } catch (error) {
+          // Silently fail - permissions will be requested when assessment starts
+        }
+      };
+      
+      // Defer slightly to not block initial render
+      setTimeout(preWarmCamera, 100);
+    }
+  }, [videoRef.current, assessment, loading, assessmentStarted]);
+
   // Start assessment - prioritize camera, defer heavy operations
   const handleStartAssessment = useCallback(async () => {
     if (isInitializingRef.current) return;
@@ -396,18 +431,31 @@ export default function TakeAssessmentPage({
       setAssessmentStarted(true);
       timer.start();
 
-      // Prioritize camera initialization - start immediately
+      // Prioritize camera initialization - start immediately and aggressively
       if (assessment?.proctoring_enabled !== false) {
-        // Start camera first, don't wait for it
-        startProctoring().catch(() => {
+        // Start camera immediately, don't wait for anything
+        const cameraPromise = startProctoring().catch(() => {
           showToast(
             "Camera initialization failed. Please ensure camera permissions are granted.",
             "error"
           );
         });
+        
+        // Don't await - let it run in background
+        // But ensure video element gets stream attached quickly
+        if (videoRef.current) {
+          // Try to attach stream immediately if available
+          setTimeout(() => {
+            if (videoRef.current && videoRef.current.srcObject) {
+              videoRef.current.play().catch(() => {
+                // Silently fail - will retry
+              });
+            }
+          }, 50);
+        }
       }
 
-      // Defer fullscreen slightly to allow camera to start
+      // Defer fullscreen to allow camera to start
       setTimeout(() => {
         enterFullscreen()
           .then(() => {
@@ -426,7 +474,7 @@ export default function TakeAssessmentPage({
           .catch(() => {
             setShowFullscreenWarning(true);
           });
-      }, 50);
+      }, 100);
     } catch (error: any) {
       showToast(error.message || "Failed to start assessment.", "error");
       setShowStartButton(true);
@@ -439,6 +487,7 @@ export default function TakeAssessmentPage({
     showToast,
     setShowFullscreenWarning,
     assessment,
+    videoRef,
   ]);
 
   // Time up handler
@@ -502,10 +551,10 @@ export default function TakeAssessmentPage({
       !showStartButton &&
       sections.length > 0
     ) {
-      // Defer auto-start longer to allow initial render and timer to stabilize
+      // Defer auto-start to allow initial render, timer, and camera pre-warming
       const startTimer = setTimeout(() => {
         handleStartAssessment();
-      }, 200);
+      }, 150);
       
       return () => clearTimeout(startTimer);
     }
