@@ -167,12 +167,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     //   icon: "mdi:video-box",
     //   featureName: "admin_live",
     // },
-    // {
-    //   label: "Verify Content",
-    //   path: "/admin/verify-content",
-    //   icon: "mdi:check-circle",
-    //   featureName: "admin_verify_content",
-    // },
+    {
+      label: "Verify Content",
+      path: "/admin/verify-content",
+      icon: "mdi:check-circle",
+      featureName: "admin_verify_content",
+    },
     {
       label: "Assessment Management",
       path: "/admin/assessment",

@@ -8,6 +8,8 @@ interface DetailItem {
   label: string;
   value: string;
   copyable?: boolean;
+  linkable?: boolean;
+  url?: string;
 }
 
 interface UserDetailsCardProps {
@@ -17,13 +19,29 @@ interface UserDetailsCardProps {
     github: string;
     linkedin: string;
   };
+  externalProfiles?: {
+    portfolio_website_url?: string;
+    leetcode_url?: string;
+    hackerrank_url?: string;
+    kaggle_url?: string;
+    medium_url?: string;
+  };
 }
 
 export function UserDetailsCard({
   username,
   emailAddress,
   socialLinks,
+  externalProfiles,
 }: UserDetailsCardProps) {
+  const formatUrl = (url: string) => {
+    if (!url) return "";
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      return url;
+    }
+    return `https://${url}`;
+  };
+
   const details: DetailItem[] = [
     {
       icon: "mdi:account",
@@ -43,6 +61,8 @@ export function UserDetailsCard({
             label: "GitHub",
             value: `https://github.com/${socialLinks.github}`,
             copyable: true,
+            linkable: true,
+            url: `https://github.com/${socialLinks.github}`,
           },
         ]
       : []),
@@ -53,6 +73,68 @@ export function UserDetailsCard({
             label: "LinkedIn",
             value: `https://www.linkedin.com/in/${socialLinks.linkedin}`,
             copyable: true,
+            linkable: true,
+            url: `https://www.linkedin.com/in/${socialLinks.linkedin}`,
+          },
+        ]
+      : []),
+    ...(externalProfiles?.portfolio_website_url
+      ? [
+          {
+            icon: "mdi:web",
+            label: "Portfolio",
+            value: externalProfiles.portfolio_website_url,
+            copyable: true,
+            linkable: true,
+            url: formatUrl(externalProfiles.portfolio_website_url),
+          },
+        ]
+      : []),
+    ...(externalProfiles?.leetcode_url
+      ? [
+          {
+            icon: "mdi:code-tags",
+            label: "LeetCode",
+            value: externalProfiles.leetcode_url,
+            copyable: true,
+            linkable: true,
+            url: formatUrl(externalProfiles.leetcode_url),
+          },
+        ]
+      : []),
+    ...(externalProfiles?.hackerrank_url
+      ? [
+          {
+            icon: "mdi:code-braces",
+            label: "HackerRank",
+            value: externalProfiles.hackerrank_url,
+            copyable: true,
+            linkable: true,
+            url: formatUrl(externalProfiles.hackerrank_url),
+          },
+        ]
+      : []),
+    ...(externalProfiles?.kaggle_url
+      ? [
+          {
+            icon: "mdi:chart-box",
+            label: "Kaggle",
+            value: externalProfiles.kaggle_url,
+            copyable: true,
+            linkable: true,
+            url: formatUrl(externalProfiles.kaggle_url),
+          },
+        ]
+      : []),
+    ...(externalProfiles?.medium_url
+      ? [
+          {
+            icon: "mdi:book-open-variant",
+            label: "Medium",
+            value: externalProfiles.medium_url,
+            copyable: true,
+            linkable: true,
+            url: formatUrl(externalProfiles.medium_url),
           },
         ]
       : []),
@@ -62,10 +144,16 @@ export function UserDetailsCard({
     <Paper
       elevation={0}
       sx={{
-        p: 3,
-        border: "1px solid #e5e7eb",
-        borderRadius: 2,
-        mb: 3,
+        p: { xs: 2, sm: 3 },
+        border: "1px solid rgba(0,0,0,0.08)",
+        borderRadius: { xs: 1, sm: 2 },
+        mb: { xs: 2, sm: 3 },
+        boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08)",
+        backgroundColor: "#ffffff",
+        transition: "box-shadow 0.2s ease",
+        "&:hover": {
+          boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.12)",
+        },
       }}
     >
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
@@ -80,45 +168,85 @@ export function UserDetailsCard({
           >
             <Box
               sx={{
-                width: 40,
-                height: 40,
-                borderRadius: 1,
-                backgroundColor: "#f3f4f6",
+                width: 48,
+                height: 48,
+                borderRadius: "50%",
+                backgroundColor: "#f3f2ef",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  backgroundColor: "#e9e7e3",
+                },
               }}
             >
-              <IconWrapper icon={detail.icon} size={20} color="#6b7280" />
+              <IconWrapper icon={detail.icon} size={22} color="#0a66c2" />
             </Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#6b7280",
-                  fontSize: "0.75rem",
-                  fontWeight: 500,
+                  color: "#666666",
+                  fontSize: "0.8125rem",
+                  fontWeight: 600,
                   display: "block",
-                  mb: 0.25,
+                  mb: 0.5,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
                 }}
               >
                 {detail.label}
               </Typography>
               <Tooltip title={detail.value} arrow placement="top">
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "#1f2937",
-                    fontWeight: 500,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    cursor: "default",
-                  }}
-                >
-                  {detail.value}
-                </Typography>
+                {detail.linkable && detail.url ? (
+                  <Box
+                    component="a"
+                    href={detail.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                      display: "block",
+                      textDecoration: "none",
+                      color: "#0a66c2",
+                      "&:hover": {
+                        textDecoration: "underline",
+                        color: "#004182",
+                      },
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 500,
+                        fontSize: "0.9375rem",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {detail.value}
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "#000000",
+                      fontWeight: 500,
+                      fontSize: "0.9375rem",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      cursor: "default",
+                    }}
+                  >
+                    {detail.value}
+                  </Typography>
+                )}
               </Tooltip>
             </Box>
             {detail.copyable && (
@@ -126,10 +254,12 @@ export function UserDetailsCard({
                 <Box
                   sx={{
                     cursor: "pointer",
-                    p: 0.5,
-                    borderRadius: 1,
+                    p: 1,
+                    borderRadius: "50%",
+                    transition: "all 0.2s ease",
                     "&:hover": {
-                      backgroundColor: "#f3f4f6",
+                      backgroundColor: "#f3f2ef",
+                      transform: "scale(1.1)",
                     },
                   }}
                   onClick={() => {

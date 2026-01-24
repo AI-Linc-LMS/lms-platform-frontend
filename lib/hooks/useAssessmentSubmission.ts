@@ -189,6 +189,8 @@ export function useAssessmentSubmission({
         proctoring: {
           tab_switches: metadata.proctoring.tab_switches,
           face_violations: metadata.proctoring.face_violations,
+          eye_movement_violations: metadata.proctoring.eye_movement_violations || [],
+          eye_movement_count: metadata.proctoring.eye_movement_count || 0,
           fullscreen_exits: metadata.proctoring.fullscreen_exits,
           total_violation_count: metadata.proctoring.total_violation_count,
           violation_threshold_reached: metadata.proctoring.violation_threshold_reached,
@@ -198,6 +200,7 @@ export function useAssessmentSubmission({
         completed_questions: completedQuestions,
         face_validation_failures: faceValidationFailures,
         multiple_face_detections: multipleFaceDetections,
+        eye_movement_count: metadata.proctoring.eye_movement_count || 0,
       };
 
       // Prepare request body according to API format

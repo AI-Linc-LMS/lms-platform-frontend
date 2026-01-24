@@ -212,10 +212,16 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
     <Paper
       elevation={0}
       sx={{
-        p: 3,
-        border: "1px solid #e5e7eb",
-        borderRadius: 2,
-        mb: 3,
+        p: { xs: 2, sm: 3 },
+        border: "1px solid rgba(0,0,0,0.08)",
+        borderRadius: { xs: 1, sm: 2 },
+        mb: { xs: 2, sm: 3 },
+        boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08)",
+        backgroundColor: "#ffffff",
+        transition: "box-shadow 0.2s ease",
+        "&:hover": {
+          boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.12)",
+        },
       }}
     >
       <Box
@@ -223,17 +229,18 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          mb: 2,
+          mb: 2.5,
         }}
       >
         <Typography
           variant="h6"
           sx={{
-            fontWeight: 700,
-            color: "#1f2937",
+            fontWeight: 600,
+            color: "#000000",
+            fontSize: "1.25rem",
           }}
         >
-          User Activity
+          Activity
         </Typography>
         <FormControl size="small" sx={{ minWidth: 100 }}>
           <Select

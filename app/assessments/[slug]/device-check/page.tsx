@@ -259,6 +259,12 @@ export default function DeviceCheckPage({
           router.push(`/assessments/${slug}`);
           return;
         }
+
+        // Redirect to take page if proctoring is disabled
+        if (data.proctoring_enabled === false) {
+          router.push(`/assessments/${slug}/take`);
+          return;
+        }
       } catch (error: any) {
         // Don't block on error, just show toast
         showToast("Failed to load assessment details", "error");

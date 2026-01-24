@@ -11,20 +11,28 @@ import {
   TableRow,
   Chip,
   IconButton,
+  Tooltip,
+  CircularProgress,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { Assessment } from "@/lib/services/admin/admin-assessment.service";
 
 interface AssessmentTableProps {
   assessments: Assessment[];
-  onEdit: (assessmentId: number) => void;
-  onDelete: (assessmentId: number, title: string) => void;
+  onEdit?: (assessmentId: number) => void;
+  onExportSubmissions: (assessment: Assessment) => Promise<void>;
+  onExportQuestions: (assessment: Assessment) => Promise<void>;
+  exportingSubmissionsId?: number | null;
+  exportingQuestionsId?: number | null;
 }
 
 export function AssessmentTable({
   assessments,
   onEdit,
-  onDelete,
+  onExportSubmissions,
+  onExportQuestions,
+  exportingSubmissionsId = null,
+  exportingQuestionsId = null,
 }: AssessmentTableProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -43,8 +51,8 @@ export function AssessmentTable({
   };
 
   return (
-    <TableContainer>
-      <Table>
+    <TableContainer sx={{ overflowX: "auto" }}>
+      <Table size="small" sx={{ minWidth: 640 }}>
         <TableHead>
           <TableRow sx={{ backgroundColor: "#f9fafb" }}>
             <TableCell
@@ -52,6 +60,8 @@ export function AssessmentTable({
                 fontWeight: 600,
                 color: "#374151",
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                minWidth: 120,
+                py: 1.5,
               }}
             >
               Title
@@ -62,6 +72,9 @@ export function AssessmentTable({
                 color: "#374151",
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
                 display: { xs: "none", md: "table-cell" },
+                whiteSpace: "nowrap",
+                width: 90,
+                py: 1.5,
               }}
             >
               Duration
@@ -72,6 +85,9 @@ export function AssessmentTable({
                 color: "#374151",
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
                 display: { xs: "none", sm: "table-cell" },
+                whiteSpace: "nowrap",
+                width: 90,
+                py: 1.5,
               }}
             >
               Questions
@@ -82,6 +98,9 @@ export function AssessmentTable({
                 color: "#374151",
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
                 display: { xs: "none", lg: "table-cell" },
+                whiteSpace: "nowrap",
+                width: 90,
+                py: 1.5,
               }}
             >
               Status
@@ -92,19 +111,26 @@ export function AssessmentTable({
                 color: "#374151",
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
                 display: { xs: "none", md: "table-cell" },
+                whiteSpace: "nowrap",
+                minWidth: 100,
+                py: 1.5,
               }}
             >
               Created
             </TableCell>
-            {/* <TableCell
+            <TableCell
               sx={{
                 fontWeight: 600,
                 color: "#374151",
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                whiteSpace: "nowrap",
+                minWidth: 130,
+                width: 130,
+                py: 1.5,
               }}
             >
               Actions
-            </TableCell> */}
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -124,7 +150,7 @@ export function AssessmentTable({
                   "&:hover": { backgroundColor: "#f9fafb" },
                 }}
               >
-                <TableCell>
+                <TableCell sx={{ py: 1.5 }}>
                   <Box>
                     <Typography
                       variant="body2"
@@ -151,7 +177,13 @@ export function AssessmentTable({
                     )}
                   </Box>
                 </TableCell>
-                <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>
+                <TableCell
+                  sx={{
+                    display: { xs: "none", md: "table-cell" },
+                    whiteSpace: "nowrap",
+                    py: 1.5,
+                  }}
+                >
                   <Typography
                     variant="body2"
                     sx={{
@@ -162,7 +194,13 @@ export function AssessmentTable({
                     {formatDuration(assessment.duration_minutes)}
                   </Typography>
                 </TableCell>
-                <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>
+                <TableCell
+                  sx={{
+                    display: { xs: "none", sm: "table-cell" },
+                    whiteSpace: "nowrap",
+                    py: 1.5,
+                  }}
+                >
                   <Typography
                     variant="body2"
                     sx={{
@@ -173,7 +211,7 @@ export function AssessmentTable({
                     {assessment.total_questions}
                   </Typography>
                 </TableCell>
-                <TableCell sx={{ display: { xs: "none", lg: "table-cell" } }}>
+                <TableCell sx={{ display: { xs: "none", lg: "table-cell" }, py: 1.5 }}>
                   <Chip
                     label={assessment.is_active ? "Active" : "Inactive"}
                     size="small"
@@ -186,7 +224,13 @@ export function AssessmentTable({
                     }}
                   />
                 </TableCell>
-                <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>
+                <TableCell
+                  sx={{
+                    display: { xs: "none", md: "table-cell" },
+                    whiteSpace: "nowrap",
+                    py: 1.5,
+                  }}
+                >
                   <Typography
                     variant="body2"
                     sx={{
@@ -197,24 +241,62 @@ export function AssessmentTable({
                     {formatDate(assessment.created_at)}
                   </Typography>
                 </TableCell>
-                {/* <TableCell>
-                  <Box sx={{ display: "flex", gap: 1 }}>
-                    <IconButton
-                      size="small"
-                      onClick={() => onEdit(assessment.id)}
-                      sx={{ color: "#6366f1" }}
-                    >
-                      <IconWrapper icon="mdi:pencil" size={18} />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => onDelete(assessment.id, assessment.title)}
-                      sx={{ color: "#ef4444" }}
-                    >
-                      <IconWrapper icon="mdi:delete" size={18} />
-                    </IconButton>
+                <TableCell sx={{ whiteSpace: "nowrap", minWidth: 130, py: 1.5 }}>
+                  <Box sx={{ display: "flex", gap: 0.5, flexWrap: "nowrap" }}>
+                    {onEdit && (
+                      <Tooltip title="View / Edit">
+                        <IconButton
+                          size="small"
+                          onClick={() => onEdit(assessment.id)}
+                          sx={{ color: "#6366f1" }}
+                          aria-label="View or edit assessment"
+                        >
+                          <IconWrapper icon="mdi:eye-outline" size={18} />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    <Tooltip title="Download questions (CSV)">
+                      <span>
+                        <IconButton
+                          size="small"
+                          onClick={() => onExportQuestions(assessment)}
+                          disabled={exportingQuestionsId === assessment.id}
+                          sx={{ color: "#6366f1" }}
+                          aria-label="Download questions CSV"
+                        >
+                          {exportingQuestionsId === assessment.id ? (
+                            <CircularProgress size={18} color="inherit" />
+                          ) : (
+                            <IconWrapper
+                              icon="mdi:help-circle-outline"
+                              size={18}
+                            />
+                          )}
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                    <Tooltip title="Download submissions (CSV)">
+                      <span>
+                        <IconButton
+                          size="small"
+                          onClick={() => onExportSubmissions(assessment)}
+                          disabled={exportingSubmissionsId === assessment.id}
+                          sx={{ color: "#059669" }}
+                          aria-label="Download submissions CSV"
+                        >
+                          {exportingSubmissionsId === assessment.id ? (
+                            <CircularProgress size={18} color="inherit" />
+                          ) : (
+                            <IconWrapper
+                              icon="mdi:file-delimited-outline"
+                              size={18}
+                            />
+                          )}
+                        </IconButton>
+                      </span>
+                    </Tooltip>
                   </Box>
-                </TableCell> */}
+                </TableCell>
               </TableRow>
             ))
           )}

@@ -22,6 +22,7 @@ import {
   MCQ,
   CodingProblemListItem,
 } from "@/lib/services/admin/admin-assessment.service";
+import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { config } from "@/lib/config";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
@@ -47,10 +48,14 @@ export default function CreateAssessmentPage() {
   const [instructions, setInstructions] = useState("");
   const [description, setDescription] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(60);
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [isPaid, setIsPaid] = useState(false);
   const [price, setPrice] = useState<string>("");
   const [currency, setCurrency] = useState<string>("INR");
   const [isActive, setIsActive] = useState(true);
+  const [courseIds, setCourseIds] = useState<number[]>([]);
+  const [proctoringEnabled, setProctoringEnabled] = useState(true);
 
   // Multiple sections
   const [sections, setSections] = useState<Section[]>([]);
@@ -73,6 +78,10 @@ export default function CreateAssessmentPage() {
   const [existingMCQs, setExistingMCQs] = useState<any[]>([]);
   const [loadingMCQs, setLoadingMCQs] = useState(false);
 
+  // Courses for multi-select
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+
   // Coding problems
   const [codingInputMethod, setCodingInputMethod] = useState<"existing" | "ai">(
     "existing"
@@ -93,7 +102,22 @@ export default function CreateAssessmentPage() {
   useEffect(() => {
     loadExistingMCQs();
     loadExistingCodingProblems();
+    loadCourses();
   }, []);
+
+  const loadCourses = async () => {
+    try {
+      setLoadingCourses(true);
+      const data = await adminCoursesService.getCourses({ limit: 1000 }); // Load all courses
+      // Handle both array response and paginated response
+      const coursesList = Array.isArray(data) ? data : (data.results || data.data || []);
+      setCourses(coursesList);
+    } catch (error: any) {
+      showToast(error?.message || "Failed to load courses", "error");
+    } finally {
+      setLoadingCourses(false);
+    }
+  };
 
   const loadExistingMCQs = async () => {
     try {
@@ -576,16 +600,57 @@ export default function CreateAssessmentPage() {
         return;
       }
 
+      // Convert datetime-local strings to IST ISO format (format: "2026-01-22T22:54:00+05:30")
+      // Note: datetime-local input treats the entered time as local time, but we interpret it as IST
+      const convertToIST = (dateTimeString: string): string | undefined => {
+        if (!dateTimeString || !dateTimeString.trim()) {
+          return undefined;
+        }
+        try {
+          // datetime-local format: "YYYY-MM-DDTHH:mm" (no timezone, treated as local)
+          // We interpret the entered time as IST time and format it with IST timezone offset
+          let isoString = dateTimeString.trim();
+          
+          // If format is "YYYY-MM-DDTHH:mm", append ":00" for seconds
+          if (isoString.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)) {
+            isoString = isoString + ":00";
+          }
+          
+          // Parse the datetime string to extract components
+          const match = isoString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
+          if (!match) {
+            return undefined;
+          }
+          
+          const [, year, month, day, hours, minutes, seconds] = match;
+          
+          // Validate the date components
+          const date = new Date(`${year}-${month}-${day}T${hours}:${minutes}:${seconds}`);
+          if (isNaN(date.getTime())) {
+            return undefined;
+          }
+          
+          // Return ISO format with IST timezone: "2026-01-22T22:54:00+05:30"
+          // The time entered is treated as IST time, so we just append the IST offset
+          return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+05:30`;
+        } catch {
+          return undefined;
+        }
+      };
+
       // Build payload with all sections
       const payload: CreateAssessmentPayload = {
         title: title.trim(),
         instructions: instructions.trim(),
         description: description.trim() || undefined,
         duration_minutes: durationMinutes,
+        start_time: convertToIST(startTime),
+        end_time: convertToIST(endTime),
         is_paid: isPaid,
         price: isPaid ? (price ? Number(price) : null) : null,
         currency: isPaid ? currency : undefined,
         is_active: isActive,
+        proctoring_enabled: proctoringEnabled,
       };
 
       // Remove undefined fields to match exact API format
@@ -708,15 +773,25 @@ export default function CreateAssessmentPage() {
             <Divider />
             <AssessmentSettingsSection
               durationMinutes={durationMinutes}
+              startTime={startTime}
+              endTime={endTime}
               isPaid={isPaid}
               price={price}
               currency={currency}
               isActive={isActive}
+              courseIds={courseIds}
+              courses={courses}
+              loadingCourses={loadingCourses}
+              proctoringEnabled={proctoringEnabled}
               onDurationChange={setDurationMinutes}
+              onStartTimeChange={setStartTime}
+              onEndTimeChange={setEndTime}
               onPaidChange={setIsPaid}
               onPriceChange={setPrice}
               onCurrencyChange={setCurrency}
               onActiveChange={setIsActive}
+              onCourseIdsChange={setCourseIds}
+              onProctoringEnabledChange={setProctoringEnabled}
             />
             <Divider />
             <MultipleSectionsSection

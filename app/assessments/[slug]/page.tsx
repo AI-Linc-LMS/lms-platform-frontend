@@ -68,7 +68,12 @@ export default function AssessmentDetailPage({
   };
 
   const handleStart = () => {
-    router.push(`/assessments/${slug}/device-check`);
+    // Skip device-check if proctoring is disabled
+    if (assessment && assessment.proctoring_enabled === false) {
+      router.push(`/assessments/${slug}/take`);
+    } else {
+      router.push(`/assessments/${slug}/device-check`);
+    }
   };
 
   if (loading) {
@@ -250,152 +255,154 @@ export default function AssessmentDetailPage({
           )}
 
           {/* Proctoring & Exam Instructions */}
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              mb: 3,
-              borderRadius: 2,
-              border: "2px solid #f59e0b",
-              backgroundColor: "#fffbeb",
-            }}
-          >
-            <Box
+          {assessment.proctoring_enabled && (
+            <Paper
+              elevation={0}
               sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1.5,
-                mb: 2,
+                p: 3,
+                mb: 3,
+                borderRadius: 2,
+                border: "2px solid #f59e0b",
+                backgroundColor: "#fffbeb",
               }}
             >
-              <IconWrapper
-                icon="mdi:shield-account"
-                size={28}
-                style={{ color: "#f59e0b" }}
-              />
-              <Typography
-                variant="h6"
+              <Box
                 sx={{
-                  fontWeight: 700,
-                  color: "#92400e",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  mb: 2,
                 }}
               >
-                Proctored Assessment - Important Instructions
-              </Typography>
-            </Box>
-
-            <Typography
-              variant="body2"
-              sx={{
-                color: "#78350f",
-                mb: 2,
-                fontWeight: 600,
-              }}
-            >
-              This is a proctored examination. Please read the following
-              instructions carefully before starting:
-            </Typography>
-
-            <Box
-              component="ul"
-              sx={{
-                m: 0,
-                pl: 3,
-                mb: 2,
-                "& li": {
-                  mb: 1.5,
-                  color: "#92400e",
-                  lineHeight: 1.7,
-                },
-              }}
-            >
-              <li>
-                <strong>Camera & Microphone Required:</strong> You must have a
-                working camera and microphone. Your device will be tested before
-                the exam begins.
-              </li>
-              <li>
-                <strong>AI Proctoring Active:</strong> This exam is monitored by
-                AI proctoring software that tracks:
-                <Box
-                  component="ul"
+                <IconWrapper
+                  icon="mdi:shield-account"
+                  size={28}
+                  style={{ color: "#f59e0b" }}
+                />
+                <Typography
+                  variant="h6"
                   sx={{
-                    mt: 0.5,
-                    mb: 0,
-                    pl: 2.5,
-                    "& li": {
-                      mb: 0.5,
-                    },
+                    fontWeight: 700,
+                    color: "#92400e",
                   }}
                 >
-                  <li>Face detection and visibility</li>
-                  <li>Looking away from screen</li>
-                  <li>Multiple people in the frame</li>
-                  <li>Tab switches and browser window changes</li>
-                  <li>Fullscreen mode violations</li>
-                </Box>
-              </li>
-              <li>
-                <strong>Exam Environment:</strong> Ensure you are in a quiet,
-                well-lit room with no distractions. Remove any unauthorized
-                materials from your workspace.
-              </li>
-              <li>
-                <strong>During the Exam:</strong>
-                <Box
-                  component="ul"
-                  sx={{
-                    mt: 0.5,
-                    mb: 0,
-                    pl: 2.5,
-                    "& li": {
-                      mb: 0.5,
-                    },
-                  }}
-                >
-                  <li>Do not switch browser tabs or minimize the window</li>
-                  <li>Do not exit fullscreen mode</li>
-                  <li>Keep your face visible to the camera at all times</li>
-                  <li>Do not use any unauthorized aids or assistance</li>
-                  <li>Do not communicate with anyone during the exam</li>
-                </Box>
-              </li>
-              <li>
-                <strong>Violation Policy:</strong> Violations of exam rules will
-                be recorded and may result in exam disqualification. Multiple
-                violations will result in automatic submission of your
-                assessment.
-              </li>
-              <li>
-                <strong>Time Limit:</strong> The exam has a strict time limit.
-                Once started, the timer cannot be paused. Ensure you have
-                adequate time to complete the assessment.
-              </li>
-            </Box>
+                  Proctored Assessment - Important Instructions
+                </Typography>
+              </Box>
 
-            <Alert
-              severity="warning"
-              icon={<IconWrapper icon="mdi:alert-circle" size={20} />}
-              sx={{
-                mt: 2,
-                backgroundColor: "#fef3c7",
-                border: "1px solid #f59e0b",
-                "& .MuiAlert-icon": {
-                  color: "#d97706",
-                },
-              }}
-            >
               <Typography
                 variant="body2"
-                fontWeight={600}
-                sx={{ color: "#92400e" }}
+                sx={{
+                  color: "#78350f",
+                  mb: 2,
+                  fontWeight: 600,
+                }}
               >
-                By clicking &quot;Start Assessment&quot;, you acknowledge that
-                you have read and understood all instructions and agree to abide
-                by the examination rules and proctoring policies.
+                This is a proctored examination. Please read the following
+                instructions carefully before starting:
               </Typography>
-            </Alert>
-          </Paper>
+
+              <Box
+                component="ul"
+                sx={{
+                  m: 0,
+                  pl: 3,
+                  mb: 2,
+                  "& li": {
+                    mb: 1.5,
+                    color: "#92400e",
+                    lineHeight: 1.7,
+                  },
+                }}
+              >
+                <li>
+                  <strong>Camera & Microphone Required:</strong> You must have a
+                  working camera and microphone. Your device will be tested before
+                  the exam begins.
+                </li>
+                <li>
+                  <strong>AI Proctoring Active:</strong> This exam is monitored by
+                  AI proctoring software that tracks:
+                  <Box
+                    component="ul"
+                    sx={{
+                      mt: 0.5,
+                      mb: 0,
+                      pl: 2.5,
+                      "& li": {
+                        mb: 0.5,
+                      },
+                    }}
+                  >
+                    <li>Face detection and visibility</li>
+                    <li>Looking away from screen</li>
+                    <li>Multiple people in the frame</li>
+                    <li>Tab switches and browser window changes</li>
+                    <li>Fullscreen mode violations</li>
+                  </Box>
+                </li>
+                <li>
+                  <strong>Exam Environment:</strong> Ensure you are in a quiet,
+                  well-lit room with no distractions. Remove any unauthorized
+                  materials from your workspace.
+                </li>
+                <li>
+                  <strong>During the Exam:</strong>
+                  <Box
+                    component="ul"
+                    sx={{
+                      mt: 0.5,
+                      mb: 0,
+                      pl: 2.5,
+                      "& li": {
+                        mb: 0.5,
+                      },
+                    }}
+                  >
+                    <li>Do not switch browser tabs or minimize the window</li>
+                    <li>Do not exit fullscreen mode</li>
+                    <li>Keep your face visible to the camera at all times</li>
+                    <li>Do not use any unauthorized aids or assistance</li>
+                    <li>Do not communicate with anyone during the exam</li>
+                  </Box>
+                </li>
+                <li>
+                  <strong>Violation Policy:</strong> Violations of exam rules will
+                  be recorded and may result in exam disqualification. Multiple
+                  violations will result in automatic submission of your
+                  assessment.
+                </li>
+                <li>
+                  <strong>Time Limit:</strong> The exam has a strict time limit.
+                  Once started, the timer cannot be paused. Ensure you have
+                  adequate time to complete the assessment.
+                </li>
+              </Box>
+
+              <Alert
+                severity="warning"
+                icon={<IconWrapper icon="mdi:alert-circle" size={20} />}
+                sx={{
+                  mt: 2,
+                  backgroundColor: "#fef3c7",
+                  border: "1px solid #f59e0b",
+                  "& .MuiAlert-icon": {
+                    color: "#d97706",
+                  },
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  fontWeight={600}
+                  sx={{ color: "#92400e" }}
+                >
+                  By clicking &quot;Start Assessment&quot;, you acknowledge that
+                  you have read and understood all instructions and agree to abide
+                  by the examination rules and proctoring policies.
+                </Typography>
+              </Alert>
+            </Paper>
+          )}
 
           {assessment.sections && assessment.sections.length > 0 && (
             <Box sx={{ mb: 3 }}>

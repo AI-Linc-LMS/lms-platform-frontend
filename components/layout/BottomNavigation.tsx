@@ -28,6 +28,12 @@ const regularNavigationItems: NavigationItem[] = [
     featureName: "course",
   },
   {
+    label: "Assessments",
+    path: "/assessments",
+    icon: "mdi:file-document-edit",
+    featureName: "assessment",
+  }, 
+  {
     label: "Job Portal",
     path: "/jobs",
     icon: "mdi:briefcase",
@@ -72,6 +78,12 @@ const adminNavigationItems: NavigationItem[] = [
     path: "/admin/assessment",
     icon: "mdi:file-document-edit",
     featureName: "admin_assessment",
+  },
+  {
+    label: "Verify Content",
+    path: "/admin/verify-content",
+    icon: "mdi:check-circle",
+    featureName: "admin_verify_content",
   },
   {
     label: "Attendance",

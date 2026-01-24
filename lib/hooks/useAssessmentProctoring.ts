@@ -19,12 +19,18 @@ export interface AssessmentMetadata {
         | "NO_FACE"
         | "MULTIPLE_FACES"
         | "LOOKING_AWAY"
+        | "EYE_MOVEMENT"
         | "FACE_TOO_CLOSE"
         | "FACE_TOO_FAR"
         | "POOR_LIGHTING";
       timestamp: string;
       duration_seconds?: number;
     }>;
+    eye_movement_violations: Array<{
+      timestamp: string;
+      duration_seconds?: number;
+    }>;
+    eye_movement_count: number;
     tab_switches: TabSwitchViolation[];
     fullscreen_exits: FullscreenViolation[];
     total_violation_count: number;
@@ -100,6 +106,8 @@ export function useAssessmentProctoring(
   const [metadata, setMetadata] = useState<AssessmentMetadata>(() => ({
     proctoring: {
       face_violations: [],
+      eye_movement_violations: [],
+      eye_movement_count: 0,
       tab_switches: [],
       fullscreen_exits: [],
       total_violation_count: 0,
@@ -184,16 +192,25 @@ export function useAssessmentProctoring(
 
     const violationThresholdReached = totalViolationCount >= maxViolations;
 
-    // Convert face violations
+    // Convert face violations and separate eye movement violations
     const faceViolationsForMetadata = faceViolations.map((v) => ({
       type: v.type as AssessmentMetadata["proctoring"]["face_violations"][0]["type"],
       timestamp: new Date(v.timestamp).toISOString(),
     }));
 
+    // Extract eye movement violations separately
+    const eyeMovementViolations = faceViolations
+      .filter((v) => v.type === "EYE_MOVEMENT")
+      .map((v) => ({
+        timestamp: new Date(v.timestamp).toISOString(),
+      }));
+
     setMetadata((prev) => ({
       ...prev,
       proctoring: {
         face_violations: faceViolationsForMetadata,
+        eye_movement_violations: eyeMovementViolations,
+        eye_movement_count: eyeMovementViolations.length,
         tab_switches: tabSwitchViolations,
         fullscreen_exits: fullscreenViolations,
         total_violation_count: totalViolationCount,
@@ -248,6 +265,8 @@ export function useAssessmentProctoring(
       proctoring: {
         ...prev.proctoring,
         face_violations: [],
+        eye_movement_violations: [],
+        eye_movement_count: 0,
         tab_switches: [],
         fullscreen_exits: [],
         total_violation_count: 0,

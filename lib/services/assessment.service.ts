@@ -15,7 +15,12 @@ export interface Assessment {
   number_of_questions: number;
   created_at: string;
   is_attempted: boolean;
+  start_time?: string | null;
+  end_time?: string | null;
   has_attempted?: boolean; // For backward compatibility
+  proctoring_enabled?: boolean;
+  /** "not_started" | "in_progress" | "submitted" | "completed" – when "submitted" or "completed", show results */
+  status?: "not_started" | "in_progress" | "submitted" | "completed";
 }
 
 export interface AssessmentDetail extends Assessment {
@@ -113,6 +118,13 @@ export interface AssessmentResult {
     total_time_minutes: number;
     percentage_time_taken: number;
   };
+  proctoring?: {
+    eye_movement_violations?: Array<{
+      timestamp: string;
+      duration_seconds?: number;
+    }>;
+    eye_movement_count?: number;
+  };
 }
 
 export interface AssessmentMetadata {
@@ -122,12 +134,18 @@ export interface AssessmentMetadata {
         | "NO_FACE"
         | "MULTIPLE_FACES"
         | "LOOKING_AWAY"
+        | "EYE_MOVEMENT"
         | "FACE_TOO_CLOSE"
         | "FACE_TOO_FAR"
         | "POOR_LIGHTING";
       timestamp: string;
       duration_seconds?: number;
     }>;
+    eye_movement_violations?: Array<{
+      timestamp: string;
+      duration_seconds?: number;
+    }>;
+    eye_movement_count?: number;
     tab_switches: Array<{
       timestamp: string;
       duration_seconds: number;

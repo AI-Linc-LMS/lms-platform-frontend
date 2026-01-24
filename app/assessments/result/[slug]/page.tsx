@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Box, Button } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Loading } from "@/components/common/Loading";
@@ -18,15 +18,25 @@ import { TopicWiseBreakdown } from "@/components/assessment/result/TopicWiseBrea
 import { StrengthsWeaknesses } from "@/components/assessment/result/StrengthsWeaknesses";
 import { EnhancedSkillsTags } from "@/components/assessment/result/EnhancedSkillsTags";
 import { OverallFeedback } from "@/components/assessment/result/OverallFeedback";
+import { PsychometricResultView } from "@/components/assessment/result/PsychometricResultView";
+import {
+  mockAptitudeTestData,
+  getMockPsychometricData,
+} from "@/lib/mock-data/assessment-mock-data";
+import { EyeMovementViolations } from "@/components/assessment/result/EyeMovementViolations";
 
 export default function AssessmentResultPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const slug = params.slug as string;
   const [assessmentResult, setAssessmentResult] =
     useState<AssessmentResult | null>(null);
+  const [psychometricData, setPsychometricData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
+
+  const forcePsychometric = searchParams?.get("type") === "psychometric";
 
   useEffect(() => {
     if (!slug) return;
@@ -47,8 +57,41 @@ export default function AssessmentResultPage() {
 
   const loadAssessmentResult = async () => {
     try {
+      // Check if it's a psychometric assessment by slug or query parameter
+      const slugLower = slug?.toLowerCase() || "";
+      const isPsychometric = 
+        forcePsychometric ||
+        slugLower === "psychometric-personality-v1" || 
+        slugLower.includes("psychometric") ||
+        slugLower === "psychometric" ||
+        slugLower.includes("k-disha") ||
+        slugLower.includes("kdisha") ||
+        slugLower.includes("k-sage") ||
+        slugLower.includes("ksage");
+      
+      // For psychometric assessments, use mock data for now
+      if (isPsychometric) {
+        // Simulate a small delay for better UX
+        await new Promise(resolve => setTimeout(resolve, 300));
+        // Get different mock data based on slug or random selection
+        setPsychometricData(getMockPsychometricData(slug));
+        setLoading(false);
+        return;
+      }
+
+      // For all other assessments, use real API call
       const result = await assessmentService.getAssessmentResult(slug);
+      
+      // Detection Logic:
+      // 1. If response has 'assessment_meta' field → Psychometric Assessment
+      // 2. If response has 'stats' field → Aptitude Test Assessment
+      if ((result as any).assessment_meta) {
+        // Psychometric assessment detected (from API)
+        setPsychometricData(result as any);
+      } else {
+        // Aptitude test or other assessment type - use original structure
       setAssessmentResult(result);
+      }
     } catch (error: any) {
       showToast("Failed to load assessment results", "error");
     } finally {
@@ -61,6 +104,40 @@ export default function AssessmentResultPage() {
     return (
       <MainLayout>
         <Loading fullScreen />
+      </MainLayout>
+    );
+  }
+
+  // If psychometric assessment, render psychometric view
+  if (psychometricData) {
+    return (
+      <MainLayout>
+        <div className="w-full bg-slate-50">
+          <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-6">
+            <button
+              onClick={() => router.push("/assessments")}
+              className="mb-3 sm:mb-4 md:mb-6 text-slate-600 active:text-blue-600 hover:text-blue-600 font-semibold flex items-center gap-2 transition-colors text-sm sm:text-base touch-manipulation min-h-[44px] sm:min-h-auto"
+              aria-label="Back to Assessments"
+            >
+              <svg
+                className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
+              </svg>
+              <span className="hidden xs:inline">Back to Assessments</span>
+              <span className="xs:hidden">Back</span>
+            </button>
+          </div>
+          <PsychometricResultView data={psychometricData} />
+        </div>
       </MainLayout>
     );
   }
@@ -192,6 +269,14 @@ export default function AssessmentResultPage() {
             timeTakenMinutes={stats.time_taken_minutes}
             totalTimeMinutes={stats.total_time_minutes}
           />
+
+          {/* Eye Movement Violations */}
+          {assessmentResult.proctoring?.eye_movement_count && assessmentResult.proctoring.eye_movement_count > 0 && (
+            <EyeMovementViolations
+              violations={assessmentResult.proctoring.eye_movement_violations || []}
+              count={assessmentResult.proctoring.eye_movement_count}
+            />
+          )}
 
           {/* Topic-wise Breakdown */}
           {stats.topic_wise_stats && Object.keys(stats.topic_wise_stats).length > 0 && (
