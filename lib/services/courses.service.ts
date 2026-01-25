@@ -87,6 +87,8 @@ export interface CourseDetail {
   is_certified: boolean;
   updated_at: string;
   modules: Module[];
+  content_lock_enabled:boolean;
+  lock_threshold_value:number;
 }
 
 export interface CourseDashboard {

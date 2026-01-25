@@ -157,13 +157,17 @@ export function CourseOverview({
 
                 {/* Modules for this week */}
                 <Box>
-                  {weekModules.map((module) => (
+                  {weekModules.map((module,index) => (
                     <ModuleAccordion
                       key={module.id}
                       module={module}
+                      moduleIndex={index}
+                      modules={weekModules}
                       isExpanded={expandedModules[module.id] ?? false}
                       onToggle={() => onModuleToggle(module.id)}
                       courseId={course.course_id}
+                      contentLockEnabled={course.content_lock_enabled}
+                      lockThresholdValue={course.lock_threshold_value}
                       onNavigate={onNavigate}
                       getSubmoduleContentCount={getSubmoduleContentCount}
                     />
