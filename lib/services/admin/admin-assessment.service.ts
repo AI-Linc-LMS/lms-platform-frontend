@@ -153,6 +153,11 @@ export interface Assessment {
 }
 
 export interface AssessmentDetail extends Assessment {
+  start_time?: string | null;
+  end_time?: string | null;
+  proctoring_enabled?: boolean;
+  course_ids?: number[];
+  currency?: string;
   quiz_sections?: Array<{
     id: number;
     title: string;

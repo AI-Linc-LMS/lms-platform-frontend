@@ -20,6 +20,7 @@ import {
   Select,
   MenuItem,
   FormControl,
+  Divider,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -28,10 +29,15 @@ import {
   adminAssessmentService,
   QuestionsExportResponse,
   SubmissionsExportResponse,
+  AssessmentDetail,
+  CreateAssessmentPayload,
 } from "@/lib/services/admin/admin-assessment.service";
+import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { config } from "@/lib/config";
+import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
+import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
 
-type TabValue = "questions" | "submissions";
+type TabValue = "details" | "questions" | "submissions";
 
 function escapeCsv(val: unknown): string {
   if (val == null || val === undefined) return "";
@@ -53,25 +59,118 @@ function jsonToCsvRows<T extends Record<string, unknown>>(
   return [header, ...data].join("\n");
 }
 
+/** Convert ISO date string to datetime-local "YYYY-MM-DDTHH:mm" */
+function isoToDatetimeLocal(iso: string | null | undefined): string {
+  if (!iso || !iso.trim()) return "";
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const h = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    return `${y}-${m}-${day}T${h}:${min}`;
+  } catch {
+    return "";
+  }
+}
+
+/** Convert datetime-local to IST "YYYY-MM-DDTHH:mm:ss+05:30" */
+function convertToIST(dateTimeString: string): string | undefined {
+  if (!dateTimeString?.trim()) return undefined;
+  try {
+    let s = dateTimeString.trim();
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)) s = s + ":00";
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
+    if (!m) return undefined;
+    const [, y, mo, d, h, min, sec] = m;
+    const date = new Date(`${y}-${mo}-${d}T${h}:${min}:${sec}`);
+    if (isNaN(date.getTime())) return undefined;
+    return `${y}-${mo}-${d}T${h}:${min}:${sec}+05:30`;
+  } catch {
+    return undefined;
+  }
+}
+
 export default function AssessmentEditPage() {
   const { showToast } = useToast();
   const router = useRouter();
   const params = useParams();
   const assessmentId = Number(params.id);
-  const [tab, setTab] = useState<TabValue>("questions");
+  const [tab, setTab] = useState<TabValue>("details");
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [assessment, setAssessment] = useState<AssessmentDetail | null>(null);
   const [questionsData, setQuestionsData] =
     useState<QuestionsExportResponse | null>(null);
   const [submissionsData, setSubmissionsData] =
     useState<SubmissionsExportResponse | null>(null);
-  
-  // Pagination state for questions
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+
+  // Form state (Details tab) – synced from GET
+  const [title, setTitle] = useState("");
+  const [instructions, setInstructions] = useState("");
+  const [description, setDescription] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState(60);
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [isPaid, setIsPaid] = useState(false);
+  const [price, setPrice] = useState<string>("");
+  const [currency, setCurrency] = useState<string>("INR");
+  const [isActive, setIsActive] = useState(true);
+  const [courseIds, setCourseIds] = useState<number[]>([]);
+  const [proctoringEnabled, setProctoringEnabled] = useState(true);
+
   const [questionsPage, setQuestionsPage] = useState(1);
   const [questionsLimit, setQuestionsLimit] = useState(10);
-  
-  // Pagination state for submissions
   const [submissionsPage, setSubmissionsPage] = useState(1);
   const [submissionsLimit, setSubmissionsLimit] = useState(10);
+
+  const loadAssessment = useCallback(async () => {
+    if (!assessmentId || !config.clientId) return;
+    try {
+      const data = await adminAssessmentService.getAssessmentById(
+        config.clientId,
+        assessmentId
+      );
+      setAssessment(data);
+      setTitle(data.title ?? "");
+      setInstructions(data.instructions ?? "");
+      setDescription(data.description ?? "");
+      setDurationMinutes(data.duration_minutes ?? 60);
+      setStartTime(isoToDatetimeLocal(data.start_time ?? null));
+      setEndTime(isoToDatetimeLocal(data.end_time ?? null));
+      const anyData = data as any;
+      setIsPaid(anyData.is_paid ?? false);
+      setPrice(
+        anyData.price != null && anyData.price !== ""
+          ? String(anyData.price)
+          : ""
+      );
+      setCurrency(anyData.currency ?? "INR");
+      setIsActive(data.is_active ?? true);
+      setCourseIds(Array.isArray((data as any).course_ids) ? (data as any).course_ids : []);
+      setProctoringEnabled((data as any).proctoring_enabled ?? true);
+    } catch (e: any) {
+      showToast(e?.message || "Failed to load assessment", "error");
+      setAssessment(null);
+    }
+  }, [assessmentId, showToast]);
+
+  const loadCourses = useCallback(async () => {
+    try {
+      setLoadingCourses(true);
+      const data = await adminCoursesService.getCourses({ limit: 1000 });
+      const list = Array.isArray(data) ? data : (data.results || data.data || []);
+      setCourses(list);
+    } catch (e: any) {
+      showToast(e?.message || "Failed to load courses", "error");
+    } finally {
+      setLoadingCourses(false);
+    }
+  }, [showToast]);
 
   const loadQuestions = useCallback(async () => {
     if (!assessmentId || !config.clientId) return;
@@ -104,11 +203,59 @@ export default function AssessmentEditPage() {
   useEffect(() => {
     if (!assessmentId) return;
     setLoading(true);
-    const run = async () => {
+    (async () => {
+      await loadAssessment();
+      await loadCourses();
       await Promise.all([loadQuestions(), loadSubmissions()]);
-    };
-    run().finally(() => setLoading(false));
-  }, [assessmentId, loadQuestions, loadSubmissions]);
+    })().finally(() => setLoading(false));
+  }, [assessmentId, loadAssessment, loadCourses, loadQuestions, loadSubmissions]);
+
+  const handleSave = async () => {
+    if (!assessmentId || !config.clientId || !assessment) return;
+    if (!title.trim() || !instructions.trim()) {
+      showToast("Title and instructions are required", "error");
+      return;
+    }
+    if (durationMinutes < 1) {
+      showToast("Duration must be at least 1 minute", "error");
+      return;
+    }
+    if (isPaid && (!price || Number(price) <= 0)) {
+      showToast("Please enter a valid price for paid assessment", "error");
+      return;
+    }
+    try {
+      setSaving(true);
+      const payload: Partial<CreateAssessmentPayload> = {
+        title: title.trim(),
+        instructions: instructions.trim(),
+        description: description.trim() || undefined,
+        duration_minutes: durationMinutes,
+        start_time: convertToIST(startTime),
+        end_time: convertToIST(endTime),
+        is_paid: isPaid,
+        price: isPaid ? (price ? Number(price) : null) : null,
+        currency: isPaid ? currency : undefined,
+        is_active: isActive,
+        proctoring_enabled: proctoringEnabled,
+        course_ids: courseIds.length ? courseIds : undefined,
+      };
+      Object.keys(payload).forEach((k) => {
+        if ((payload as any)[k] === undefined) delete (payload as any)[k];
+      });
+      await adminAssessmentService.updateAssessment(
+        config.clientId,
+        assessmentId,
+        payload
+      );
+      showToast("Assessment updated successfully", "success");
+      await loadAssessment();
+    } catch (e: any) {
+      showToast(e?.message || "Failed to update assessment", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleDownloadQuestions = () => {
     if (!questionsData) return;
@@ -192,7 +339,10 @@ export default function AssessmentEditPage() {
       { key: "total_questions" as const, header: "Total Questions" },
       { key: "attempted_questions" as const, header: "Attempted Questions" },
       { key: "section_wise_scores" as const, header: "Section-wise Scores" },
-      { key: "section_wise_max_scores" as const, header: "Section-wise Max Scores" },
+      {
+        key: "section_wise_max_scores" as const,
+        header: "Section-wise Max Scores",
+      },
     ];
     const csv = jsonToCsvRows(rows, columns);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -205,44 +355,35 @@ export default function AssessmentEditPage() {
     showToast("Submissions exported", "success");
   };
 
-  // Calculate paginated questions data
   const paginatedQuestions = useMemo(() => {
     if (!questionsData?.sections) return [];
-    const allQuestions = questionsData.sections.flatMap((sec) =>
+    const all = questionsData.sections.flatMap((sec) =>
       sec.questions.map((q) => ({ section: sec, question: q }))
     );
-    const startIndex = (questionsPage - 1) * questionsLimit;
-    const endIndex = startIndex + questionsLimit;
-    return allQuestions.slice(startIndex, endIndex);
+    const start = (questionsPage - 1) * questionsLimit;
+    return all.slice(start, start + questionsLimit);
   }, [questionsData, questionsPage, questionsLimit]);
 
   const totalQuestions = useMemo(() => {
     if (!questionsData?.sections) return 0;
-    return questionsData.sections.reduce((sum, sec) => sum + sec.questions.length, 0);
+    return questionsData.sections.reduce(
+      (sum, s) => sum + s.questions.length,
+      0
+    );
   }, [questionsData]);
 
-  // Calculate paginated submissions data
   const paginatedSubmissions = useMemo(() => {
     if (!submissionsData?.submissions) return [];
-    const startIndex = (submissionsPage - 1) * submissionsLimit;
-    const endIndex = startIndex + submissionsLimit;
-    return submissionsData.submissions.slice(startIndex, endIndex);
+    const start = (submissionsPage - 1) * submissionsLimit;
+    return submissionsData.submissions.slice(start, start + submissionsLimit);
   }, [submissionsData, submissionsPage, submissionsLimit]);
 
-  const totalSubmissions = useMemo(() => {
-    return submissionsData?.submissions?.length ?? 0;
-  }, [submissionsData]);
+  const totalSubmissions = submissionsData?.submissions?.length ?? 0;
 
-  // Reset pagination when switching tabs
   useEffect(() => {
     setQuestionsPage(1);
     setSubmissionsPage(1);
   }, [tab]);
-
-  const title =
-    questionsData?.assessment?.title ??
-    submissionsData?.assessment?.title ??
-    "Assessment";
 
   if (loading) {
     return (
@@ -260,6 +401,25 @@ export default function AssessmentEditPage() {
       </MainLayout>
     );
   }
+
+  if (!assessment) {
+    return (
+      <MainLayout>
+        <Box sx={{ p: 3 }}>
+          <Typography color="text.secondary">Assessment not found</Typography>
+          <Button
+            sx={{ mt: 2 }}
+            startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
+            onClick={() => router.push("/admin/assessment")}
+          >
+            Back to Assessments
+          </Button>
+        </Box>
+      </MainLayout>
+    );
+  }
+
+  const displayTitle = assessment.title || "Edit Assessment";
 
   return (
     <MainLayout>
@@ -280,7 +440,7 @@ export default function AssessmentEditPage() {
             mb: 3,
           }}
         >
-          {title}
+          {displayTitle}
         </Typography>
 
         <Paper sx={{ borderRadius: 2, overflow: "hidden", boxShadow: 1 }}>
@@ -294,27 +454,90 @@ export default function AssessmentEditPage() {
               "& .MuiTab-root": { textTransform: "none", fontWeight: 600 },
             }}
           >
+            <Tab value="details" label="Details" />
             <Tab value="questions" label="Questions" />
             <Tab value="submissions" label="Submissions" />
           </Tabs>
 
-          <Box sx={{ p: 2 }}>
+          <Box sx={{ p: { xs: 2, sm: 3 } }}>
+            {tab === "details" && (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <BasicInfoSection
+                  title={title}
+                  instructions={instructions}
+                  description={description}
+                  onTitleChange={setTitle}
+                  onInstructionsChange={setInstructions}
+                  onDescriptionChange={setDescription}
+                />
+                <Divider />
+                <AssessmentSettingsSection
+                  durationMinutes={durationMinutes}
+                  startTime={startTime}
+                  endTime={endTime}
+                  isPaid={isPaid}
+                  price={price}
+                  currency={currency}
+                  isActive={isActive}
+                  courseIds={courseIds}
+                  courses={courses}
+                  loadingCourses={loadingCourses}
+                  proctoringEnabled={proctoringEnabled}
+                  onDurationChange={setDurationMinutes}
+                  onStartTimeChange={setStartTime}
+                  onEndTimeChange={setEndTime}
+                  onPaidChange={setIsPaid}
+                  onPriceChange={setPrice}
+                  onCurrencyChange={setCurrency}
+                  onActiveChange={setIsActive}
+                  onCourseIdsChange={setCourseIds}
+                  onProctoringEnabledChange={setProctoringEnabled}
+                />
+                <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                  <Button
+                    variant="contained"
+                    onClick={handleSave}
+                    disabled={saving}
+                    startIcon={
+                      saving ? (
+                        <CircularProgress size={18} color="inherit" />
+                      ) : (
+                        <IconWrapper icon="mdi:content-save" size={18} />
+                      )
+                    }
+                    sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                  >
+                    {saving ? "Saving…" : "Save"}
+                  </Button>
+                </Box>
+              </Box>
+            )}
+
             {tab === "questions" && (
               <>
                 <Box
                   sx={{
                     display: "flex",
-                    justifyContent: "flex-end",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 2,
                     mb: 2,
                   }}
                 >
+                  <Typography variant="body2" color="text.secondary">
+                    Export questions · View and download table
+                  </Typography>
                   <Button
                     variant="contained"
                     size="small"
                     startIcon={<IconWrapper icon="mdi:download" size={18} />}
                     onClick={handleDownloadQuestions}
                     disabled={!questionsData?.sections?.length}
-                    sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                    sx={{
+                      bgcolor: "#6366f1",
+                      "&:hover": { bgcolor: "#4f46e5" },
+                    }}
                   >
                     Download table
                   </Button>
@@ -329,22 +552,44 @@ export default function AssessmentEditPage() {
                       <Table size="small" stickyHeader>
                         <TableHead>
                           <TableRow sx={{ bgcolor: "#f9fafb" }}>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>Section</TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>Order</TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>ID</TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>Question</TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>A</TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>B</TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>C</TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>D</TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>Correct</TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>Difficulty</TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              Section
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              Order
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              ID
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              Question
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              A
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              B
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              C
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              D
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              Correct
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              Difficulty
+                            </TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
                           {paginatedQuestions.map(({ section: sec, question: q }) => (
                             <TableRow key={q.id} hover>
-                              <TableCell sx={{ py: 1.5 }}>{sec.section_title}</TableCell>
+                              <TableCell sx={{ py: 1.5 }}>
+                                {sec.section_title}
+                              </TableCell>
                               <TableCell sx={{ py: 1.5 }}>{sec.order}</TableCell>
                               <TableCell sx={{ py: 1.5 }}>{q.id}</TableCell>
                               <TableCell sx={{ maxWidth: 200, py: 1.5 }}>
@@ -365,8 +610,12 @@ export default function AssessmentEditPage() {
                               <TableCell sx={{ py: 1.5 }}>{q.option_b}</TableCell>
                               <TableCell sx={{ py: 1.5 }}>{q.option_c}</TableCell>
                               <TableCell sx={{ py: 1.5 }}>{q.option_d}</TableCell>
-                              <TableCell sx={{ py: 1.5 }}>{q.correct_option}</TableCell>
-                              <TableCell sx={{ py: 1.5 }}>{q.difficulty_level ?? "—"}</TableCell>
+                              <TableCell sx={{ py: 1.5 }}>
+                                {q.correct_option}
+                              </TableCell>
+                              <TableCell sx={{ py: 1.5 }}>
+                                {q.difficulty_level ?? "—"}
+                              </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -375,27 +624,23 @@ export default function AssessmentEditPage() {
                     {totalQuestions > 0 && (
                       <Box
                         sx={{
-                          p: 2,
+                          pt: 2,
                           borderTop: "1px solid #e5e7eb",
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
-                          flexDirection: { xs: "column", sm: "row" },
+                          flexWrap: "wrap",
                           gap: 2,
                         }}
                       >
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Typography variant="body2" color="text.secondary">
                             Showing {(questionsPage - 1) * questionsLimit + 1} to{" "}
-                            {Math.min(totalQuestions, questionsPage * questionsLimit)} of{" "}
-                            {totalQuestions} questions
+                            {Math.min(
+                              totalQuestions,
+                              questionsPage * questionsLimit
+                            )}{" "}
+                            of {totalQuestions}
                           </Typography>
                           <FormControl size="small" sx={{ minWidth: 120 }}>
                             <Select
@@ -415,14 +660,16 @@ export default function AssessmentEditPage() {
                         <Pagination
                           count={Math.ceil(totalQuestions / questionsLimit)}
                           page={questionsPage}
-                          onChange={(_, value) => setQuestionsPage(value)}
+                          onChange={(_, v) => setQuestionsPage(v)}
                           color="primary"
                           size="small"
                           showFirstButton={false}
                           showLastButton={false}
                           boundaryCount={1}
                           siblingCount={0}
-                          disabled={Math.ceil(totalQuestions / questionsLimit) <= 1}
+                          disabled={
+                            Math.ceil(totalQuestions / questionsLimit) <= 1
+                          }
                         />
                       </Box>
                     )}
@@ -436,17 +683,26 @@ export default function AssessmentEditPage() {
                 <Box
                   sx={{
                     display: "flex",
-                    justifyContent: "flex-end",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 2,
                     mb: 2,
                   }}
                 >
+                  <Typography variant="body2" color="text.secondary">
+                    Export submissions · View and download table
+                  </Typography>
                   <Button
                     variant="contained"
                     size="small"
                     startIcon={<IconWrapper icon="mdi:download" size={18} />}
                     onClick={handleDownloadSubmissions}
                     disabled={!submissionsData?.submissions?.length}
-                    sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                    sx={{
+                      bgcolor: "#6366f1",
+                      "&:hover": { bgcolor: "#4f46e5" },
+                    }}
                   >
                     Download table
                   </Button>
@@ -461,13 +717,27 @@ export default function AssessmentEditPage() {
                       <Table size="small" stickyHeader>
                         <TableHead>
                           <TableRow sx={{ bgcolor: "#f9fafb" }}>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>Name</TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>Email</TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>Phone</TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>Max Marks</TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>Score</TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>%</TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>Attempted</TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              Name
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              Email
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              Phone
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              Max Marks
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              Score
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              %
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              Attempted
+                            </TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -475,11 +745,21 @@ export default function AssessmentEditPage() {
                             <TableRow key={idx} hover>
                               <TableCell sx={{ py: 1.5 }}>{s.name}</TableCell>
                               <TableCell sx={{ py: 1.5 }}>{s.email}</TableCell>
-                              <TableCell sx={{ py: 1.5 }}>{s.phone ?? "—"}</TableCell>
-                              <TableCell sx={{ py: 1.5 }}>{s.maximum_marks ?? "—"}</TableCell>
-                              <TableCell sx={{ py: 1.5 }}>{s.overall_score ?? "—"}</TableCell>
-                              <TableCell sx={{ py: 1.5 }}>{s.percentage ?? "—"}</TableCell>
-                              <TableCell sx={{ py: 1.5 }}>{s.attempted_questions ?? "—"}</TableCell>
+                              <TableCell sx={{ py: 1.5 }}>
+                                {s.phone ?? "—"}
+                              </TableCell>
+                              <TableCell sx={{ py: 1.5 }}>
+                                {s.maximum_marks ?? "—"}
+                              </TableCell>
+                              <TableCell sx={{ py: 1.5 }}>
+                                {s.overall_score ?? "—"}
+                              </TableCell>
+                              <TableCell sx={{ py: 1.5 }}>
+                                {s.percentage ?? "—"}
+                              </TableCell>
+                              <TableCell sx={{ py: 1.5 }}>
+                                {s.attempted_questions ?? "—"}
+                              </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -488,27 +768,24 @@ export default function AssessmentEditPage() {
                     {totalSubmissions > 0 && (
                       <Box
                         sx={{
-                          p: 2,
+                          pt: 2,
                           borderTop: "1px solid #e5e7eb",
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
-                          flexDirection: { xs: "column", sm: "row" },
+                          flexWrap: "wrap",
                           gap: 2,
                         }}
                       >
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                            Showing {(submissionsPage - 1) * submissionsLimit + 1} to{" "}
-                            {Math.min(totalSubmissions, submissionsPage * submissionsLimit)} of{" "}
-                            {totalSubmissions} submissions
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Showing{" "}
+                            {(submissionsPage - 1) * submissionsLimit + 1} to{" "}
+                            {Math.min(
+                              totalSubmissions,
+                              submissionsPage * submissionsLimit
+                            )}{" "}
+                            of {totalSubmissions}
                           </Typography>
                           <FormControl size="small" sx={{ minWidth: 120 }}>
                             <Select
@@ -528,14 +805,18 @@ export default function AssessmentEditPage() {
                         <Pagination
                           count={Math.ceil(totalSubmissions / submissionsLimit)}
                           page={submissionsPage}
-                          onChange={(_, value) => setSubmissionsPage(value)}
+                          onChange={(_, v) => setSubmissionsPage(v)}
                           color="primary"
                           size="small"
                           showFirstButton={false}
                           showLastButton={false}
                           boundaryCount={1}
                           siblingCount={0}
-                          disabled={Math.ceil(totalSubmissions / submissionsLimit) <= 1}
+                          disabled={
+                            Math.ceil(
+                              totalSubmissions / submissionsLimit
+                            ) <= 1
+                          }
                         />
                       </Box>
                     )}
