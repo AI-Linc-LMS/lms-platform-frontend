@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/auth-context';
-import { Loading } from '@/components/common/Loading';
 
 export default function Home() {
   const router = useRouter();
@@ -19,5 +18,5 @@ export default function Home() {
     }
   }, [isAuthenticated, loading, router]);
 
-  return <Loading fullScreen />;
+  return;
 }

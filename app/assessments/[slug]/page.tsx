@@ -16,7 +16,6 @@ import {
   LinearProgress,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import {
   assessmentService,
   AssessmentDetail,
@@ -76,21 +75,12 @@ export default function AssessmentDetailPage({
     }
   };
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
-
   if (!assessment) {
     return (
       <MainLayout>
         <Container>
           <Typography>
             {" "}
-            <Loading fullScreen />
           </Typography>
         </Container>
       </MainLayout>

@@ -9,7 +9,6 @@ import {
   QuizResults,
   QuizAnswer,
 } from "@/components/quiz";
-import { Loading } from "@/components/common/Loading";
 import { useToast } from "@/components/common/Toast";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { CompletionDialog } from "@/components/common/CompletionDialog";
@@ -599,9 +598,6 @@ export function QuizContent({
 
   // If quiz is started, show QuizLayout
   if (quizStarted) {
-    if (loadingQuiz) {
-      return <Loading />;
-    }
 
     if (quizQuestions.length === 0) {
       return (

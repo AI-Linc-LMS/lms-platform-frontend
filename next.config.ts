@@ -25,6 +25,18 @@ const nextConfig: NextConfig = {
     ],
   },
   output: "standalone",
+  
+  experimental: {
+    optimizePackageImports: ["@mui/material", "@mui/icons-material"],
+  },
+  
+  compiler: {
+    removeConsole: process.env.NODE_ENV === "production" ? {
+      exclude: ["error", "warn"],
+    } : false,
+  },
+  
+  reactStrictMode: true,
 };
 
 export default nextConfig;

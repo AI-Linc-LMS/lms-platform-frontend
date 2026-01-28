@@ -24,7 +24,6 @@ import {
   TextField,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import {
@@ -184,13 +183,6 @@ export default function AttendancePage() {
     return now < expiresAt && activity.time_remaining_minutes > 0;
   };
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
 
   const paginatedActivities = attendanceActivities.slice(
     page * rowsPerPage,

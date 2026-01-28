@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Box, Typography, Fab, Tooltip } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import {
   coursesService,
   CourseDetail,
@@ -189,14 +188,6 @@ export default function CourseDetailPage() {
   const handleNavigate = (submoduleId: number) => {
     router.push(`/courses/${courseId}/submodule/${submoduleId}`);
   };
-
-  if (loading) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
 
   if (!course) {
     return (

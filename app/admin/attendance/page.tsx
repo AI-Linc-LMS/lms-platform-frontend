@@ -21,7 +21,6 @@ import {
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
-import { Loading } from "@/components/common/Loading";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import {
   adminAttendanceService,
@@ -132,13 +131,13 @@ export default function AttendancePage() {
       minute: "2-digit",
     });
 
-  if (loading && allActivities.length === 0) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
+  // if (loading && allActivities.length === 0) {
+  //   return (
+  //     <MainLayout>
+  //       <Loading fullScreen />
+  //     </MainLayout>
+  //   );
+  // }
 
   return (
     <MainLayout>

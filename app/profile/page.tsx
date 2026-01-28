@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { Box, Container, Tabs, Tab } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import { CoverPhoto } from "@/components/profile/CoverPhoto";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileSummary } from "@/components/profile/ProfileSummary";
@@ -76,14 +75,6 @@ export default function ProfilePage() {
       throw error;
     }
   };
-
-  if (loading) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
 
   if (!profile) {
     return (
