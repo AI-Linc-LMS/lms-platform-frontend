@@ -16,7 +16,6 @@ import {
   IconButton,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import {
   coursesService,
   SubModuleDetailResponse,
@@ -583,23 +582,8 @@ export default function SubmoduleDetailPage() {
     return `${mins}m`;
   };
 
-  if (loading) {
-    return (
-      <MainLayout hideSidebar={!isMobile} fullPage DrawerWidth={0}>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
-
-  if (!loading && (!submoduleData || !courseDetail)) {
-    return (
-      <MainLayout hideSidebar={!isMobile} fullPage DrawerWidth={0}>
-        <Box sx={{ p: 3 }}>
-          {" "}
-          <Loading fullScreen />
-        </Box>
-      </MainLayout>
-    );
+  if (!submoduleData || !courseDetail) {
+    return null;
   }
 
   // Early return if data is not loaded
@@ -881,9 +865,7 @@ export default function SubmoduleDetailPage() {
               },
             }}
           >
-            {contentLoading ? (
-              <Loading />
-            ) : currentContent ? (
+            {currentContent ? (
               <SubmoduleContentViewer
                 content={currentContent}
                 currentItem={submoduleData?.data.find(

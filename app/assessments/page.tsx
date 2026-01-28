@@ -17,7 +17,6 @@ import {
   Chip,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import {
   assessmentService,
   Assessment,
@@ -184,14 +183,6 @@ export default function AssessmentsPage() {
     setPage(newPage);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-
-  if (loading) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
 
   const totalPages = Math.ceil(filteredAssessments.length / pageSize);
 

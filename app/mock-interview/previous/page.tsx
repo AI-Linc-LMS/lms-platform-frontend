@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Box, Container, Typography } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import { PreviousInterviewsTable } from "@/components/mock-interview/PreviousInterviewsTable";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import mockInterviewService, {
@@ -43,13 +42,6 @@ export default function PreviousInterviewsPage() {
     loadInterviews();
   }, [showToast]);
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>

@@ -13,7 +13,6 @@ import {
   LinearProgress,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import mockInterviewService from "@/lib/services/mock-interview.service";
@@ -344,13 +343,6 @@ export default function MockInterviewDeviceCheckPage() {
     setCanProceed(deviceStatus.camera && deviceStatus.microphone && ttsMatch);
   }, [deviceStatus.camera, deviceStatus.microphone, ttsMatch]);
 
-  if (loading && !deviceStatus.browserSupported) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>

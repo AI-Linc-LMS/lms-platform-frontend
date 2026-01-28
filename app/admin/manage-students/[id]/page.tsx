@@ -5,7 +5,6 @@ import { useRouter, useParams } from "next/navigation";
 import { Box, Typography, Button } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
-import { Loading } from "@/components/common/Loading";
 import {
   adminStudentService,
   StudentDetail,
@@ -134,13 +133,6 @@ export default function StudentDetailsPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
 
   if (!student) {
     return (

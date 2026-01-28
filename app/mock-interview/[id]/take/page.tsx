@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Box } from "@mui/material";
-import { Loading } from "@/components/common/Loading";
 import { useToast } from "@/components/common/Toast";
 import mockInterviewService, {
   MockInterviewDetail,
@@ -844,9 +843,6 @@ export default function TakeMockInterviewPage() {
     };
   }, [isProctoringActive, stopProctoring]);
 
-  if (loading) {
-    return <Loading fullScreen />;
-  }
 
   if (!interview) {
     return null;

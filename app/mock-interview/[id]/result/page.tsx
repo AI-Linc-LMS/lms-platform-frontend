@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Box, Container } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import mockInterviewService from "@/lib/services/mock-interview.service";
 import { useToast } from "@/components/common/Toast";
 import { useStopCameraOnMount } from "@/lib/hooks/useStopCameraOnMount";
@@ -170,13 +169,6 @@ export default function InterviewResultPage() {
     router.push("/mock-interview/previous");
   }, [router]);
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
 
   if (!result) {
     return null;

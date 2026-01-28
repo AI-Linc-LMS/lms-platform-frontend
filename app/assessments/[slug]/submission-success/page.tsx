@@ -12,7 +12,6 @@ import {
   Divider,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useStopCameraOnMount } from "@/lib/hooks/useStopCameraOnMount";
@@ -64,13 +63,6 @@ export default function SubmissionSuccessPage() {
     }
   }, [slug]);
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
 
   if (!assessment) {
     return (

@@ -16,7 +16,6 @@ import {
   FormControl,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import {
   coursesService,
   Course as ServiceCourse,
@@ -281,14 +280,6 @@ export default function CoursesPage() {
       setEnrollingCourseId(null);
     }
   };
-
-  if (loading) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
 
   const totalPages = Math.ceil(filteredCourses.length / pageSize);
 

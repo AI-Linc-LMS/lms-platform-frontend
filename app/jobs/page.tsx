@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback, startTransition } from "react";
 import { Box } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import { JobCard } from "@/components/jobs/JobCard";
 import { JobSearchBar } from "@/components/jobs/JobSearchBar";
 import { JobFiltersSidebar } from "@/components/jobs/JobFiltersSidebar";
@@ -216,13 +215,6 @@ export default function JobsPage() {
     });
   }, []);
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>
@@ -272,7 +264,6 @@ export default function JobsPage() {
                 />
               </Box>
 
-              {filtering && <Loading />}
 
               {paginatedJobs.map((job) => (
                 <JobCard key={job.id} job={job} />
@@ -339,7 +330,6 @@ export default function JobsPage() {
                 onPageSizeChange={handlePageSizeChange}
               />
 
-              {filtering && <Loading />}
 
               <Box
                 sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}
