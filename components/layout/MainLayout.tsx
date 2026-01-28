@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { Box } from "@mui/material";
 import { AppBar } from "./AppBar";
 import { Sidebar, DRAWER_WIDTH } from "./Sidebar";
@@ -19,7 +19,7 @@ interface MainLayoutProps {
   DrawerWidth?: number;
 }
 
-export const MainLayout: React.FC<MainLayoutProps> = ({
+export const MainLayout: React.FC<MainLayoutProps> = memo(({
   children,
   hideSidebar = false,
   fullPage = false,
@@ -126,4 +126,6 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
       <ReportIssueFAB />
     </Box>
   );
-};
+});
+
+MainLayout.displayName = "MainLayout";
