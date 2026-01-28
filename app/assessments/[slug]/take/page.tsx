@@ -14,7 +14,6 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { Box, Typography, Button } from "@mui/material";
-import { Loading } from "@/components/common/Loading";
 import { useToast } from "@/components/common/Toast";
 import { useAssessmentProctoring } from "@/lib/hooks/useAssessmentProctoring";
 import { useAssessmentData } from "@/lib/hooks/useAssessmentData";
@@ -949,8 +948,8 @@ export default function TakeAssessmentPage({
   );
 
   // Early return
-  if (loading || !assessment) {
-    return <Loading fullScreen />;
+  if (!assessment) {
+    return null;
   }
 
   // Check if assessment has no sections/questions
