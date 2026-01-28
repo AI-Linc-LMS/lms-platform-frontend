@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import {
   Drawer,
@@ -50,6 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const pathname = usePathname();
   const { user } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const { clientInfo, loading: loadingClientInfo } = useClientInfo();
   const { isAdminMode, toggleAdminMode } = useAdminMode();
 
@@ -228,21 +230,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Only show navigation items that are enabled in client features
   // Don't show any items while loading to avoid UX flash
   // Always show dashboard for regular users (even if feature doesn't exist)
-  const navigationItems = loadingClientInfo
-    ? []
-    : filteredFeatureNames.size > 0
-    ? allNavigationItems.filter((item) => {
+  // Memoize navigation items to prevent unnecessary recalculations
+  const navigationItems = useMemo(() => {
+    if (loadingClientInfo) return [];
+    if (filteredFeatureNames.size > 0) {
+      return allNavigationItems.filter((item) => {
         // Always show dashboard for regular users
         if (!isAdminMode && item.featureName === "dashboard") {
           return true;
         }
         return filteredFeatureNames.has(item.featureName);
-      })
-    : allNavigationItems;
+      });
+    }
+    return allNavigationItems;
+  }, [loadingClientInfo, filteredFeatureNames, allNavigationItems, isAdminMode]);
 
   const handleNavigation = (item: NavigationItem) => {
-    const path = getNavigationPath(item);
-    router.push(path);
     if (onClose) {
       onClose();
     }
@@ -274,11 +277,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           borderColor: "rgba(255, 255, 255, 0.1)",
         }}
       >
-        <Box
-          onClick={() =>
-            router.push(isAdminMode ? "/admin/dashboard" : "/dashboard")
-          }
-          sx={{
+        <Link
+          href={isAdminMode ? "/admin/dashboard" : "/dashboard"}
+          prefetch={true}
+          style={{ textDecoration: "none", width: "100%", height: "100%" }}
+        >
+          <Box
+            sx={{
             background:
               "linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%)",
             borderRadius: 2,
@@ -318,6 +323,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <IconWrapper icon="mdi:school" size={32} color="#6366f1" />
           )}
         </Box>
+        </Link>
       </Box>
 
       {/* Navigation Items */}
@@ -365,45 +371,50 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               return (
                 <ListItem key={item.path} disablePadding sx={{ mb: 0.25 }}>
-                  <ListItemButton
+                  <Link
+                    href={navigationPath}
+                    prefetch={true}
+                    style={{ textDecoration: "none", color: "inherit", width: "100%" }}
                     onClick={() => handleNavigation(item)}
-                    sx={{
-                      borderRadius: 1.5,
-                      backgroundColor: isActive
-                        ? "rgba(99, 102, 241, 0.2)"
-                        : "transparent",
-                      color: isActive ? "#a5b4fc" : "rgba(255, 255, 255, 0.7)",
-                      py: 1,
-                      px: collapsed ? 1.25 : 1.5,
-                      justifyContent: collapsed ? "center" : "flex-start",
-                      minHeight: 40,
-                      position: "relative",
-                      "&::before": isActive
-                        ? {
-                            content: '""',
-                            position: "absolute",
-                            left: 0,
-                            top: "50%",
-                            transform: "translateY(-50%)",
-                            width: 3,
-                            height: "50%",
-                            backgroundColor: "#6366f1",
-                            borderRadius: "0 3px 3px 0",
-                          }
-                        : {},
-                      "&:hover": {
-                        backgroundColor: isActive
-                          ? "rgba(99, 102, 241, 0.3)"
-                          : "rgba(255, 255, 255, 0.05)",
-                        color: isActive ? "#a5b4fc" : "#ffffff",
-                        "& .MuiListItemIcon-root svg": {
-                          transform: "translateY(-2px) scale(1.1)",
-                          filter:
-                            "drop-shadow(0 3px 6px rgba(99, 102, 241, 0.5)) drop-shadow(0 2px 4px rgba(99, 102, 241, 0.4))",
-                        },
-                      },
-                    }}
                   >
+                    <ListItemButton
+                      sx={{
+                        borderRadius: 1.5,
+                        backgroundColor: isActive
+                          ? "rgba(99, 102, 241, 0.2)"
+                          : "transparent",
+                        color: isActive ? "#a5b4fc" : "rgba(255, 255, 255, 0.7)",
+                        py: 1,
+                        px: collapsed ? 1.25 : 1.5,
+                        justifyContent: collapsed ? "center" : "flex-start",
+                        minHeight: 40,
+                        position: "relative",
+                        "&::before": isActive
+                          ? {
+                              content: '""',
+                              position: "absolute",
+                              left: 0,
+                              top: "50%",
+                              transform: "translateY(-50%)",
+                              width: 3,
+                              height: "50%",
+                              backgroundColor: "#6366f1",
+                              borderRadius: "0 3px 3px 0",
+                            }
+                          : {},
+                        "&:hover": {
+                          backgroundColor: isActive
+                            ? "rgba(99, 102, 241, 0.3)"
+                            : "rgba(255, 255, 255, 0.05)",
+                          color: isActive ? "#a5b4fc" : "#ffffff",
+                          "& .MuiListItemIcon-root svg": {
+                            transform: "translateY(-2px) scale(1.1)",
+                            filter:
+                              "drop-shadow(0 3px 6px rgba(99, 102, 241, 0.5)) drop-shadow(0 2px 4px rgba(99, 102, 241, 0.4))",
+                          },
+                        },
+                      }}
+                    >
                     <ListItemIcon
                       sx={{
                         minWidth: collapsed ? 0 : 36,
@@ -433,6 +444,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       />
                     )}
                   </ListItemButton>
+                  </Link>
                 </ListItem>
               );
             })
@@ -501,12 +513,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onClick={() => {
                     const newAdminMode = !isAdminMode;
                     toggleAdminMode();
-                    // Navigate based on admin mode
-                    if (newAdminMode) {
-                      router.push("/admin/dashboard");
-                    } else {
-                      router.push("/dashboard");
-                    }
+                    startTransition(() => {
+                      if (newAdminMode) {
+                        router.push("/admin/dashboard");
+                      } else {
+                        router.push("/dashboard");
+                      }
+                    });
                   }}
                   fullWidth
                   variant={isAdminMode ? "contained" : "outlined"}
