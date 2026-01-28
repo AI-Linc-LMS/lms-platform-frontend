@@ -29,3 +29,5 @@ export default function DashboardPage() {
     </MainLayout>
   );
 }
+
+export const dynamic = "force-dynamic";
