@@ -103,6 +103,44 @@ export const adminCourseBuilderService = {
     }
   },
 
+  publishCourse: async (courseId: number) => {
+    try {
+      const res = await apiClient.patch(
+        `/admin-dashboard/api/clients/${config.clientId}/courses/${courseId}/`,
+        { published: true }
+      );
+      return res.data;
+    } catch (error: unknown) {
+      const apiError = error as AxiosError<ApiErrorPayload>;
+      throw new Error(
+        apiError.response?.data?.detail ||
+          apiError.response?.data?.error ||
+          apiError.response?.data?.message ||
+          apiError.message ||
+          "Failed to publish course"
+      );
+    }
+  },
+
+  unpublishCourse: async (courseId: number) => {
+    try {
+      const res = await apiClient.patch(
+        `/admin-dashboard/api/clients/${config.clientId}/courses/${courseId}/`,
+        { published: false }
+      );
+      return res.data;
+    } catch (error: unknown) {
+      const apiError = error as AxiosError<ApiErrorPayload>;
+      throw new Error(
+        apiError.response?.data?.detail ||
+          apiError.response?.data?.error ||
+          apiError.response?.data?.message ||
+          apiError.message ||
+          "Failed to unpublish course"
+      );
+    }
+  },
+
   deleteCourse: async (courseId: number) => {
     try {
       const res = await apiClient.delete(

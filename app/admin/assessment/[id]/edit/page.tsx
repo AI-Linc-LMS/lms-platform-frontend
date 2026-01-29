@@ -311,39 +311,61 @@ export default function AssessmentEditPage() {
 
   const handleDownloadSubmissions = () => {
     if (!submissionsData) return;
-    const rows = submissionsData.submissions.map((s) => ({
-      name: s.name,
-      email: s.email,
-      phone: s.phone ?? "",
-      maximum_marks: s.maximum_marks ?? "",
-      overall_score: s.overall_score ?? "",
-      percentage: s.percentage ?? "",
-      total_questions: s.total_questions ?? "",
-      attempted_questions: s.attempted_questions ?? "",
-      section_wise_scores:
-        s.section_wise_scores != null
-          ? JSON.stringify(s.section_wise_scores)
-          : "",
-      section_wise_max_scores:
-        s.section_wise_max_scores != null
-          ? JSON.stringify(s.section_wise_max_scores)
-          : "",
-    })) as Record<string, unknown>[];
-    const columns = [
-      { key: "name" as const, header: "Name" },
-      { key: "email" as const, header: "Email" },
-      { key: "phone" as const, header: "Phone" },
-      { key: "maximum_marks" as const, header: "Maximum Marks" },
-      { key: "overall_score" as const, header: "Overall Score" },
-      { key: "percentage" as const, header: "Percentage" },
-      { key: "total_questions" as const, header: "Total Questions" },
-      { key: "attempted_questions" as const, header: "Attempted Questions" },
-      { key: "section_wise_scores" as const, header: "Section-wise Scores" },
-      {
-        key: "section_wise_max_scores" as const,
-        header: "Section-wise Max Scores",
-      },
+    const subs = submissionsData.submissions;
+
+    const sectionKeySet = new Set<string>();
+    for (const s of subs) {
+      if (s.section_wise_scores) {
+        Object.keys(s.section_wise_scores).forEach((k) => sectionKeySet.add(k));
+      }
+      if (s.section_wise_max_scores) {
+        Object.keys(s.section_wise_max_scores).forEach((k) =>
+          sectionKeySet.add(k)
+        );
+      }
+    }
+    const sectionKeys = Array.from(sectionKeySet).sort();
+
+    const baseColumns: { key: string; header: string }[] = [
+      { key: "name", header: "Name" },
+      { key: "email", header: "Email" },
+      { key: "phone", header: "Phone" },
+      { key: "maximum_marks", header: "Maximum Marks" },
+      { key: "overall_score", header: "Overall Score" },
+      { key: "percentage", header: "Percentage" },
+      { key: "total_questions", header: "Total Questions" },
+      { key: "attempted_questions", header: "Attempted Questions" },
     ];
+    const sectionColumns = sectionKeys.flatMap((k) => [
+      { key: `section_wise_scores_${k}`, header: `Section-wise Scores-${k}` },
+      {
+        key: `section_wise_max_scores_${k}`,
+        header: `Section-wise Max Scores-${k}`,
+      },
+    ]);
+    const columns = [...baseColumns, ...sectionColumns];
+
+    const rows: Record<string, unknown>[] = subs.map((s) => {
+      const base: Record<string, unknown> = {
+        name: s.name,
+        email: s.email,
+        phone: s.phone ?? "",
+        maximum_marks: s.maximum_marks ?? "",
+        overall_score: s.overall_score ?? "",
+        percentage: s.percentage ?? "",
+        total_questions: s.total_questions ?? "",
+        attempted_questions: s.attempted_questions ?? "",
+      };
+      const sectionCells: Record<string, unknown> = {};
+      for (const k of sectionKeys) {
+        sectionCells[`section_wise_scores_${k}`] =
+          s.section_wise_scores?.[k] ?? "";
+        sectionCells[`section_wise_max_scores_${k}`] =
+          s.section_wise_max_scores?.[k] ?? "";
+      }
+      return { ...base, ...sectionCells };
+    });
+
     const csv = jsonToCsvRows(rows, columns);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);

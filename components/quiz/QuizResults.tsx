@@ -11,6 +11,7 @@ import {
   LinearProgress,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { normalizeEncoding } from "@/lib/utils/text-utils";
 
 export interface QuizAnswer {
   questionId: string | number;
@@ -507,7 +508,7 @@ export function QuizResults({
                         lineHeight: 1.6,
                       }}
                     >
-                      {currentAnswer.explanation}
+                      {normalizeEncoding(currentAnswer.explanation)}
                     </Typography>
                   </Box>
                 )}

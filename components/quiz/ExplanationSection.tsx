@@ -1,12 +1,14 @@
 "use client";
 
 import { Box, Typography } from "@mui/material";
+import { normalizeEncoding } from "@/lib/utils/text-utils";
 
 interface ExplanationSectionProps {
   explanation: string;
 }
 
 export function ExplanationSection({ explanation }: ExplanationSectionProps) {
+  const normalized = normalizeEncoding(explanation);
   return (
     <Box
       sx={{
@@ -34,7 +36,7 @@ export function ExplanationSection({ explanation }: ExplanationSectionProps) {
           lineHeight: 1.6,
         }}
       >
-        {explanation}
+        {normalized}
       </Typography>
     </Box>
   );
