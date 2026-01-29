@@ -20,19 +20,23 @@ import { Assessment } from "@/lib/services/admin/admin-assessment.service";
 interface AssessmentTableProps {
   assessments: Assessment[];
   onEdit?: (assessmentId: number) => void;
+  onDelete?: (assessment: Assessment) => void;
   onExportSubmissions: (assessment: Assessment) => Promise<void>;
   onExportQuestions: (assessment: Assessment) => Promise<void>;
   exportingSubmissionsId?: number | null;
   exportingQuestionsId?: number | null;
+  deletingId?: number | null;
 }
 
 export function AssessmentTable({
   assessments,
   onEdit,
+  onDelete,
   onExportSubmissions,
   onExportQuestions,
   exportingSubmissionsId = null,
   exportingQuestionsId = null,
+  deletingId = null,
 }: AssessmentTableProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -295,6 +299,25 @@ export function AssessmentTable({
                         </IconButton>
                       </span>
                     </Tooltip>
+                    {onDelete && (
+                      <Tooltip title="Delete">
+                        <span>
+                          <IconButton
+                            size="small"
+                            onClick={() => onDelete(assessment)}
+                            disabled={deletingId === assessment.id}
+                            sx={{ color: "#dc2626" }}
+                            aria-label="Delete assessment"
+                          >
+                            {deletingId === assessment.id ? (
+                              <CircularProgress size={18} color="inherit" />
+                            ) : (
+                              <IconWrapper icon="mdi:delete-outline" size={18} />
+                            )}
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    )}
                   </Box>
                 </TableCell>
               </TableRow>
