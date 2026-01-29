@@ -54,6 +54,7 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
   const { showToast } = useToast();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [editData, setEditData] = useState({
     title: course.title,
     description: course.description,
@@ -116,6 +117,32 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
       rating: course.rating || 0,
     });
     setEditing(false);
+  };
+
+  const handlePublish = async () => {
+    try {
+      setPublishing(true);
+      await adminCourseBuilderService.publishCourse(course.id);
+      showToast("Course published successfully", "success");
+      onUpdate?.();
+    } catch (error: any) {
+      showToast(error?.message || "Failed to publish course", "error");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleUnpublish = async () => {
+    try {
+      setPublishing(true);
+      await adminCourseBuilderService.unpublishCourse(course.id);
+      showToast("Course unpublished successfully", "success");
+      onUpdate?.();
+    } catch (error: any) {
+      showToast(error?.message || "Failed to unpublish course", "error");
+    } finally {
+      setPublishing(false);
+    }
   };
 
   return (
@@ -239,6 +266,41 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
                 >
                   <IconWrapper icon="mdi:open-in-new" size={18} />
                 </IconButton>
+                {!course.published ? (
+                  <IconButton
+                    size="small"
+                    onClick={handlePublish}
+                    disabled={publishing}
+                    sx={{
+                      color: "#059669",
+                      "&:hover": { bgcolor: "#d1fae5" },
+                    }}
+                    title="Publish course"
+                  >
+                    {publishing ? (
+                      <CircularProgress size={18} color="inherit" />
+                    ) : (
+                      <IconWrapper icon="mdi:publish" size={18} />
+                    )}
+                  </IconButton>
+                ) : (
+                  <IconButton
+                    size="small"
+                    onClick={handleUnpublish}
+                    disabled={publishing}
+                    sx={{
+                      color: "#b45309",
+                      "&:hover": { bgcolor: "#fef3c7" },
+                    }}
+                    title="Unpublish course"
+                  >
+                    {publishing ? (
+                      <CircularProgress size={18} color="inherit" />
+                    ) : (
+                      <IconWrapper icon="mdi:publish-off" size={18} />
+                    )}
+                  </IconButton>
+                )}
               </>
             )}
           </Box>
