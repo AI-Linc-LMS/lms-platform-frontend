@@ -311,18 +311,20 @@ export default function AssessmentPage() {
             variant="contained"
             startIcon={<IconWrapper icon="mdi:plus" size={20} />}
             onClick={() => router.push("/admin/assessment/create")}
+            fullWidth={false}
             sx={{
               bgcolor: "#6366f1",
               color: "#ffffff",
               fontWeight: 600,
-              px: 3,
+              px: { xs: 2, sm: 3 },
               py: 1.25,
               borderRadius: 2,
+              width: { xs: "100%", sm: "auto" },
               boxShadow: "0 4px 6px -1px rgba(99, 102, 241, 0.3)",
               "&:hover": {
                 bgcolor: "#4f46e5",
                 boxShadow: "0 10px 15px -3px rgba(99, 102, 241, 0.4)",
-                transform: "translateY(-1px)",
+                transform: { xs: "none", sm: "translateY(-1px)" },
               },
               transition: "all 0.2s ease",
             }}
