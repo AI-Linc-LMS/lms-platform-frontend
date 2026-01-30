@@ -148,9 +148,14 @@ export interface Assessment {
   is_paid: boolean;
   price: string | number | null;
   is_active: boolean;
+  proctoring_enabled?: boolean;
+  start_time?: string | null;
+  end_time?: string | null;
   created_at: string;
   total_questions: number;
   quiz_sections_count: number;
+  coding_sections_count?: number;
+  submissions_count?: number;
   courses?: Array<{ id: number; title: string }>;
   colleges?: string[];
 }

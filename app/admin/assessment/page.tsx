@@ -268,35 +268,63 @@ export default function AssessmentPage() {
 
   return (
     <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3 } }}>
+      <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
         {/* Header */}
         <Box
           sx={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
-            mb: 3,
+            alignItems: { xs: "flex-start", sm: "center" },
+            mb: 4,
             flexDirection: { xs: "column", sm: "row" },
-            gap: 2,
+            gap: 3,
           }}
         >
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 700,
-              color: "#111827",
-              fontSize: { xs: "1.5rem", sm: "2rem" },
-            }}
-          >
-            Assessments
-          </Typography>
+          <Box>
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 700,
+                color: "#0f172a",
+                fontSize: { xs: "1.5rem", sm: "2rem" },
+                mb: 0.5,
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              Assessment Management
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "#64748b",
+                fontSize: "0.875rem",
+                mt: 0.5,
+              }}
+            >
+              Manage and monitor all your assessments in one place
+            </Typography>
+          </Box>
           <Button
             variant="contained"
             startIcon={<IconWrapper icon="mdi:plus" size={20} />}
             onClick={() => router.push("/admin/assessment/create")}
             sx={{
               bgcolor: "#6366f1",
-              "&:hover": { bgcolor: "#4f46e5" },
+              color: "#ffffff",
+              fontWeight: 600,
+              px: 3,
+              py: 1.25,
+              borderRadius: 2,
+              boxShadow: "0 4px 6px -1px rgba(99, 102, 241, 0.3)",
+              "&:hover": {
+                bgcolor: "#4f46e5",
+                boxShadow: "0 10px 15px -3px rgba(99, 102, 241, 0.4)",
+                transform: "translateY(-1px)",
+              },
+              transition: "all 0.2s ease",
             }}
           >
             Create Assessment
@@ -313,14 +341,15 @@ export default function AssessmentPage() {
               minHeight: 400,
             }}
           >
-            <CircularProgress />
+            <CircularProgress size={48} sx={{ color: "#6366f1" }} />
           </Box>
         ) : (
           <Paper
             sx={{
-              borderRadius: 2,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              borderRadius: 3,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)",
               overflow: "hidden",
+              border: "1px solid #e2e8f0",
             }}
           >
             <AssessmentTable
