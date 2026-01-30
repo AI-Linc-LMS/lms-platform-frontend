@@ -55,6 +55,7 @@ export default function CreateAssessmentPage() {
   const [currency, setCurrency] = useState<string>("INR");
   const [isActive, setIsActive] = useState(true);
   const [courseIds, setCourseIds] = useState<number[]>([]);
+  const [colleges, setColleges] = useState<string[]>([]);
   const [proctoringEnabled, setProctoringEnabled] = useState(true);
 
   // Multiple sections
@@ -653,6 +654,16 @@ export default function CreateAssessmentPage() {
         proctoring_enabled: proctoringEnabled,
       };
 
+      // Add course_ids if any courses are selected
+      if (courseIds.length > 0) {
+        payload.course_ids = courseIds;
+      }
+
+      // Add colleges if any colleges are specified
+      if (colleges.length > 0) {
+        payload.colleges = colleges;
+      }
+
       // Remove undefined fields to match exact API format
       Object.keys(payload).forEach((key) => {
         if (payload[key as keyof typeof payload] === undefined) {
@@ -782,6 +793,7 @@ export default function CreateAssessmentPage() {
               courseIds={courseIds}
               courses={courses}
               loadingCourses={loadingCourses}
+              colleges={colleges}
               proctoringEnabled={proctoringEnabled}
               onDurationChange={setDurationMinutes}
               onStartTimeChange={setStartTime}
@@ -791,6 +803,7 @@ export default function CreateAssessmentPage() {
               onCurrencyChange={setCurrency}
               onActiveChange={setIsActive}
               onCourseIdsChange={setCourseIds}
+              onCollegesChange={setColleges}
               onProctoringEnabledChange={setProctoringEnabled}
             />
             <Divider />

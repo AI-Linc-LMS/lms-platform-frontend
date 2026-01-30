@@ -121,6 +121,7 @@ export default function AssessmentEditPage() {
   const [currency, setCurrency] = useState<string>("INR");
   const [isActive, setIsActive] = useState(true);
   const [courseIds, setCourseIds] = useState<number[]>([]);
+  const [colleges, setColleges] = useState<string[]>([]);
   const [proctoringEnabled, setProctoringEnabled] = useState(true);
 
   const [questionsPage, setQuestionsPage] = useState(1);
@@ -152,6 +153,7 @@ export default function AssessmentEditPage() {
       setCurrency(anyData.currency ?? "INR");
       setIsActive(data.is_active ?? true);
       setCourseIds(Array.isArray((data as any).course_ids) ? (data as any).course_ids : []);
+      setColleges(Array.isArray((data as any).colleges) ? (data as any).colleges : []);
       setProctoringEnabled((data as any).proctoring_enabled ?? true);
     } catch (e: any) {
       showToast(e?.message || "Failed to load assessment", "error");
@@ -239,6 +241,7 @@ export default function AssessmentEditPage() {
         is_active: isActive,
         proctoring_enabled: proctoringEnabled,
         course_ids: courseIds.length ? courseIds : undefined,
+        colleges: colleges.length ? colleges : undefined,
       };
       Object.keys(payload).forEach((k) => {
         if ((payload as any)[k] === undefined) delete (payload as any)[k];
@@ -504,6 +507,7 @@ export default function AssessmentEditPage() {
                   courseIds={courseIds}
                   courses={courses}
                   loadingCourses={loadingCourses}
+                  colleges={colleges}
                   proctoringEnabled={proctoringEnabled}
                   onDurationChange={setDurationMinutes}
                   onStartTimeChange={setStartTime}
@@ -513,6 +517,7 @@ export default function AssessmentEditPage() {
                   onCurrencyChange={setCurrency}
                   onActiveChange={setIsActive}
                   onCourseIdsChange={setCourseIds}
+                  onCollegesChange={setColleges}
                   onProctoringEnabledChange={setProctoringEnabled}
                 />
                 <Box sx={{ display: "flex", justifyContent: "flex-end" }}>

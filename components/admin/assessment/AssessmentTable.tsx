@@ -54,6 +54,27 @@ export function AssessmentTable({
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   };
 
+  const formatCourses = (courses?: Array<{ id: number; title: string }>) => {
+    if (!courses || courses.length === 0) return { display: "—", full: "" };
+    const titles = courses.map((c) => c.title);
+    const full = titles.join(", ");
+    if (titles.length <= 2) {
+      return { display: full, full };
+    }
+    const display = titles.slice(0, 2).join(", ") + "...";
+    return { display, full };
+  };
+
+  const formatColleges = (colleges?: string[]) => {
+    if (!colleges || colleges.length === 0) return { display: "—", full: "" };
+    const full = colleges.join(", ");
+    if (colleges.length <= 2) {
+      return { display: full, full };
+    }
+    const display = colleges.slice(0, 2).join(", ") + "...";
+    return { display, full };
+  };
+
   return (
     <TableContainer sx={{ overflowX: "auto" }}>
       <Table size="small" sx={{ minWidth: 640 }}>
@@ -69,6 +90,30 @@ export function AssessmentTable({
               }}
             >
               Title
+            </TableCell>
+            <TableCell
+              sx={{
+                fontWeight: 600,
+                color: "#374151",
+                fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                display: { xs: "none", lg: "table-cell" },
+                minWidth: 150,
+                py: 1.5,
+              }}
+            >
+              Courses
+            </TableCell>
+            <TableCell
+              sx={{
+                fontWeight: 600,
+                color: "#374151",
+                fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                display: { xs: "none", lg: "table-cell" },
+                minWidth: 150,
+                py: 1.5,
+              }}
+            >
+              Colleges
             </TableCell>
             <TableCell
               sx={{
@@ -140,7 +185,7 @@ export function AssessmentTable({
         <TableBody>
           {assessments.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+              <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                 <Typography variant="body2" color="text.secondary">
                   No assessments found
                 </Typography>
@@ -180,6 +225,90 @@ export function AssessmentTable({
                       />
                     )}
                   </Box>
+                </TableCell>
+                <TableCell
+                  sx={{
+                    display: { xs: "none", lg: "table-cell" },
+                    py: 1.5,
+                    maxWidth: 200,
+                  }}
+                >
+                  {(() => {
+                    const { display, full } = formatCourses(assessment.courses);
+                    if (!full) {
+                      return (
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "#9ca3af",
+                            fontSize: { xs: "0.8125rem", sm: "0.875rem" },
+                            fontStyle: "italic",
+                          }}
+                        >
+                          {display}
+                        </Typography>
+                      );
+                    }
+                    return (
+                      <Tooltip title={full} arrow>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "#6b7280",
+                            fontSize: { xs: "0.8125rem", sm: "0.875rem" },
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            cursor: "help",
+                          }}
+                        >
+                          {display}
+                        </Typography>
+                      </Tooltip>
+                    );
+                  })()}
+                </TableCell>
+                <TableCell
+                  sx={{
+                    display: { xs: "none", lg: "table-cell" },
+                    py: 1.5,
+                    maxWidth: 200,
+                  }}
+                >
+                  {(() => {
+                    const { display, full } = formatColleges(assessment.colleges);
+                    if (!full) {
+                      return (
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "#9ca3af",
+                            fontSize: { xs: "0.8125rem", sm: "0.875rem" },
+                            fontStyle: "italic",
+                          }}
+                        >
+                          {display}
+                        </Typography>
+                      );
+                    }
+                    return (
+                      <Tooltip title={full} arrow>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "#6b7280",
+                            fontSize: { xs: "0.8125rem", sm: "0.875rem" },
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            cursor: "help",
+                          }}
+                        >
+                          {display}
+                        </Typography>
+                      </Tooltip>
+                    );
+                  })()}
                 </TableCell>
                 <TableCell
                   sx={{
