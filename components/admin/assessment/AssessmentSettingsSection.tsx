@@ -14,6 +14,8 @@ import {
   ListItemText,
   OutlinedInput,
   CircularProgress,
+  Autocomplete,
+  Chip,
 } from "@mui/material";
 
 interface AssessmentSettingsSectionProps {
@@ -28,6 +30,7 @@ interface AssessmentSettingsSectionProps {
   courseIds: number[];
   courses: any[];
   loadingCourses: boolean;
+  colleges: string[];
   onDurationChange: (value: number) => void;
   onStartTimeChange: (value: string) => void;
   onEndTimeChange: (value: string) => void;
@@ -37,6 +40,7 @@ interface AssessmentSettingsSectionProps {
   onActiveChange: (value: boolean) => void;
   onProctoringEnabledChange: (value: boolean) => void;
   onCourseIdsChange: (value: number[]) => void;
+  onCollegesChange: (value: string[]) => void;
 }
 
 export function AssessmentSettingsSection({
@@ -51,6 +55,7 @@ export function AssessmentSettingsSection({
   courseIds,
   courses,
   loadingCourses,
+  colleges,
   onDurationChange,
   onStartTimeChange,
   onEndTimeChange,
@@ -60,6 +65,7 @@ export function AssessmentSettingsSection({
   onActiveChange,
   onProctoringEnabledChange,
   onCourseIdsChange,
+  onCollegesChange,
 }: AssessmentSettingsSectionProps) {
   return (
     <Box>
@@ -125,6 +131,33 @@ export function AssessmentSettingsSection({
             )}
           </Select>
         </FormControl>
+        <Autocomplete
+          multiple
+          freeSolo
+          options={[]}
+          value={colleges}
+          onChange={(_, newValue) => {
+            onCollegesChange(newValue);
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Colleges (optional)"
+              placeholder="Type and press Enter to add college"
+              helperText="Add college names. Press Enter after each name."
+            />
+          )}
+          renderTags={(value, getTagProps) =>
+            value.map((option, index) => (
+              <Chip
+                label={option}
+                {...getTagProps({ index })}
+                key={index}
+                size="small"
+              />
+            ))
+          }
+        />
         <Box
           sx={{
             display: "grid",
