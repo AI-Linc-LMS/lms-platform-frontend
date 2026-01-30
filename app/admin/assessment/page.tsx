@@ -8,6 +8,12 @@ import {
   Paper,
   Button,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Alert,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -33,6 +39,9 @@ export default function AssessmentPage() {
   const [exportingQuestionsId, setExportingQuestionsId] = useState<
     number | null
   >(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [assessmentToDelete, setAssessmentToDelete] = useState<Assessment | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadAssessments();
@@ -222,6 +231,34 @@ export default function AssessmentPage() {
     }
   };
 
+  const handleDeleteClick = (assessment: Assessment) => {
+    setAssessmentToDelete(assessment);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteDialogClose = () => {
+    if (!deleting) {
+      setDeleteDialogOpen(false);
+      setAssessmentToDelete(null);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!assessmentToDelete || !config.clientId) return;
+    try {
+      setDeleting(true);
+      await adminAssessmentService.deleteAssessment(config.clientId, assessmentToDelete.id);
+      showToast("Assessment deleted successfully", "success");
+      setDeleteDialogOpen(false);
+      setAssessmentToDelete(null);
+      loadAssessments();
+    } catch (error: any) {
+      showToast(error?.message || "Failed to delete assessment", "error");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   // Client-side pagination
   const paginatedAssessments = useMemo(() => {
     const startIndex = (page - 1) * limit;
@@ -289,10 +326,12 @@ export default function AssessmentPage() {
             <AssessmentTable
               assessments={paginatedAssessments}
               onEdit={(id) => router.push(`/admin/assessment/${id}/edit`)}
+              onDelete={handleDeleteClick}
               onExportSubmissions={handleExportSubmissions}
               onExportQuestions={handleExportQuestions}
               exportingSubmissionsId={exportingSubmissionsId}
               exportingQuestionsId={exportingQuestionsId}
+              deletingId={deleting && assessmentToDelete ? assessmentToDelete.id : null}
             />
             {assessments.length > 0 && (
               <AssessmentPagination
@@ -306,6 +345,54 @@ export default function AssessmentPage() {
           </Paper>
         )}
 
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={handleDeleteDialogClose}
+          aria-labelledby="delete-dialog-title"
+          aria-describedby="delete-dialog-description"
+          PaperProps={{
+            sx: {
+              borderRadius: 2,
+              minWidth: 360,
+            },
+          }}
+        >
+          <DialogTitle id="delete-dialog-title" sx={{ fontWeight: 600 }}>
+            Delete assessment?
+          </DialogTitle>
+          <DialogContent>
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              This action cannot be undone.
+            </Alert>
+            <DialogContentText id="delete-dialog-description">
+              {assessmentToDelete ? (
+                <>
+                  Permanently delete &quot;{assessmentToDelete.title}&quot;? All
+                  associated data will be removed.
+                </>
+              ) : null}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button
+              onClick={handleDeleteDialogClose}
+              disabled={deleting}
+              color="inherit"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+              variant="contained"
+              color="error"
+              autoFocus
+              startIcon={deleting ? <CircularProgress size={16} color="inherit" /> : null}
+            >
+              {deleting ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </MainLayout>
   );
