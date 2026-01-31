@@ -14,6 +14,13 @@ import {
   DialogContentText,
   DialogActions,
   Alert,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  InputAdornment,
+  Chip,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -42,6 +49,12 @@ export default function AssessmentPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [assessmentToDelete, setAssessmentToDelete] = useState<Assessment | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [proctoringFilter, setProctoringFilter] = useState<"all" | "enabled" | "disabled">("all");
+  const [paidFilter, setPaidFilter] = useState<"all" | "paid" | "free">("all");
 
   useEffect(() => {
     loadAssessments();
@@ -259,49 +272,301 @@ export default function AssessmentPage() {
     }
   };
 
+  // Filter assessments
+  const filteredAssessments = useMemo(() => {
+    return assessments.filter((assessment) => {
+      // Search filter (title, courses, colleges)
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchesTitle =
+          assessment.title.toLowerCase().includes(query) ||
+          assessment.slug.toLowerCase().includes(query) ||
+          assessment.description?.toLowerCase().includes(query);
+        
+        const matchesCourses = assessment.courses?.some(
+          (course) => course.title.toLowerCase().includes(query)
+        ) || false;
+        
+        const matchesColleges = assessment.colleges?.some(
+          (college) => college.toLowerCase().includes(query)
+        ) || false;
+        
+        if (!matchesTitle && !matchesCourses && !matchesColleges) return false;
+      }
+
+      // Status filter
+      if (statusFilter !== "all") {
+        if (statusFilter === "active" && !assessment.is_active) return false;
+        if (statusFilter === "inactive" && assessment.is_active) return false;
+      }
+
+      // Proctoring filter
+      if (proctoringFilter !== "all") {
+        if (proctoringFilter === "enabled" && !assessment.proctoring_enabled) return false;
+        if (proctoringFilter === "disabled" && assessment.proctoring_enabled) return false;
+      }
+
+      // Paid filter
+      if (paidFilter !== "all") {
+        if (paidFilter === "paid" && !assessment.is_paid) return false;
+        if (paidFilter === "free" && assessment.is_paid) return false;
+      }
+
+      return true;
+    });
+  }, [assessments, searchQuery, statusFilter, proctoringFilter, paidFilter]);
+
   // Client-side pagination
   const paginatedAssessments = useMemo(() => {
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
-    return assessments.slice(startIndex, endIndex);
-  }, [assessments, page, limit]);
+    return filteredAssessments.slice(startIndex, endIndex);
+  }, [filteredAssessments, page, limit]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, statusFilter, proctoringFilter, paidFilter]);
+
+  // Clear all filters
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("all");
+    setProctoringFilter("all");
+    setPaidFilter("all");
+  };
+
+  const hasActiveFilters =
+    searchQuery !== "" ||
+    statusFilter !== "all" ||
+    proctoringFilter !== "all" ||
+    paidFilter !== "all";
 
   return (
     <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3 } }}>
+      <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
         {/* Header */}
         <Box
           sx={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
-            mb: 3,
+            alignItems: { xs: "flex-start", sm: "center" },
+            mb: 4,
             flexDirection: { xs: "column", sm: "row" },
-            gap: 2,
+            gap: 3,
           }}
         >
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 700,
-              color: "#111827",
-              fontSize: { xs: "1.5rem", sm: "2rem" },
-            }}
-          >
-            Assessments
-          </Typography>
+          <Box>
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 700,
+                color: "#0f172a",
+                fontSize: { xs: "1.5rem", sm: "2rem" },
+                mb: 0.5,
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              Assessment Management
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "#64748b",
+                fontSize: "0.875rem",
+                mt: 0.5,
+              }}
+            >
+              Manage and monitor all your assessments in one place
+            </Typography>
+          </Box>
           <Button
             variant="contained"
             startIcon={<IconWrapper icon="mdi:plus" size={20} />}
             onClick={() => router.push("/admin/assessment/create")}
+            fullWidth={false}
             sx={{
               bgcolor: "#6366f1",
-              "&:hover": { bgcolor: "#4f46e5" },
+              color: "#ffffff",
+              fontWeight: 600,
+              px: { xs: 2, sm: 3 },
+              py: 1.25,
+              borderRadius: 2,
+              width: { xs: "100%", sm: "auto" },
+              boxShadow: "0 4px 6px -1px rgba(99, 102, 241, 0.3)",
+              "&:hover": {
+                bgcolor: "#4f46e5",
+                boxShadow: "0 10px 15px -3px rgba(99, 102, 241, 0.4)",
+                transform: { xs: "none", sm: "translateY(-1px)" },
+              },
+              transition: "all 0.2s ease",
             }}
           >
             Create Assessment
           </Button>
         </Box>
+
+        {/* Filters */}
+        <Paper
+          sx={{
+            p: { xs: 2, sm: 2.5 },
+            mb: 3,
+            borderRadius: 2,
+            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            border: "1px solid #e2e8f0",
+          }}
+        >
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, 1fr)",
+                md: "2fr 1fr 1fr 1fr auto",
+              },
+              gap: 2,
+              alignItems: "center",
+            }}
+          >
+            <TextField
+              placeholder="Search by title, courses, or colleges..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <IconWrapper icon="mdi:magnify" size={20} color="#9ca3af" />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  backgroundColor: "#ffffff",
+                },
+              }}
+              fullWidth
+            />
+
+            <FormControl fullWidth>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Status"
+                onChange={(e) =>
+                  setStatusFilter(e.target.value as "all" | "active" | "inactive")
+                }
+              >
+                <MenuItem value="all">All Status</MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel>Proctoring</InputLabel>
+              <Select
+                value={proctoringFilter}
+                label="Proctoring"
+                onChange={(e) =>
+                  setProctoringFilter(
+                    e.target.value as "all" | "enabled" | "disabled"
+                  )
+                }
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="enabled">Enabled</MenuItem>
+                <MenuItem value="disabled">Disabled</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel>Payment</InputLabel>
+              <Select
+                value={paidFilter}
+                label="Payment"
+                onChange={(e) =>
+                  setPaidFilter(e.target.value as "all" | "paid" | "free")
+                }
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="paid">Paid</MenuItem>
+                <MenuItem value="free">Free</MenuItem>
+              </Select>
+            </FormControl>
+
+            {hasActiveFilters && (
+              <Button
+                variant="outlined"
+                onClick={handleClearFilters}
+                startIcon={<IconWrapper icon="mdi:close" size={18} />}
+                sx={{
+                  borderColor: "#d1d5db",
+                  color: "#6b7280",
+                  whiteSpace: "nowrap",
+                  "&:hover": {
+                    borderColor: "#9ca3af",
+                    backgroundColor: "#f9fafb",
+                  },
+                }}
+              >
+                Clear
+              </Button>
+            )}
+          </Box>
+
+          {/* Active filters display */}
+          {hasActiveFilters && (
+            <Box sx={{ mt: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
+              <Typography variant="caption" sx={{ color: "#64748b", mr: 1, alignSelf: "center" }}>
+                Active filters:
+              </Typography>
+              {searchQuery && (
+                <Chip
+                  label={`Search: "${searchQuery}"`}
+                  size="small"
+                  onDelete={() => setSearchQuery("")}
+                  sx={{ bgcolor: "#eef2ff", color: "#6366f1" }}
+                />
+              )}
+              {statusFilter !== "all" && (
+                <Chip
+                  label={`Status: ${statusFilter}`}
+                  size="small"
+                  onDelete={() => setStatusFilter("all")}
+                  sx={{ bgcolor: "#eef2ff", color: "#6366f1" }}
+                />
+              )}
+              {proctoringFilter !== "all" && (
+                <Chip
+                  label={`Proctoring: ${proctoringFilter}`}
+                  size="small"
+                  onDelete={() => setProctoringFilter("all")}
+                  sx={{ bgcolor: "#eef2ff", color: "#6366f1" }}
+                />
+              )}
+              {paidFilter !== "all" && (
+                <Chip
+                  label={`Payment: ${paidFilter}`}
+                  size="small"
+                  onDelete={() => setPaidFilter("all")}
+                  sx={{ bgcolor: "#eef2ff", color: "#6366f1" }}
+                />
+              )}
+            </Box>
+          )}
+
+          {/* Results count */}
+          {hasActiveFilters && (
+            <Box sx={{ mt: 1.5 }}>
+              <Typography variant="caption" sx={{ color: "#64748b" }}>
+                Showing {filteredAssessments.length} of {assessments.length} assessments
+              </Typography>
+            </Box>
+          )}
+        </Paper>
 
         {/* Table */}
         {loading ? (
@@ -313,14 +578,15 @@ export default function AssessmentPage() {
               minHeight: 400,
             }}
           >
-            <CircularProgress />
+            <CircularProgress size={48} sx={{ color: "#6366f1" }} />
           </Box>
         ) : (
           <Paper
             sx={{
-              borderRadius: 2,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              borderRadius: 3,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)",
               overflow: "hidden",
+              border: "1px solid #e2e8f0",
             }}
           >
             <AssessmentTable
@@ -333,9 +599,9 @@ export default function AssessmentPage() {
               exportingQuestionsId={exportingQuestionsId}
               deletingId={deleting && assessmentToDelete ? assessmentToDelete.id : null}
             />
-            {assessments.length > 0 && (
+            {filteredAssessments.length > 0 && (
               <AssessmentPagination
-                totalCount={assessments.length}
+                totalCount={filteredAssessments.length}
                 page={page}
                 limit={limit}
                 onPageChange={setPage}
