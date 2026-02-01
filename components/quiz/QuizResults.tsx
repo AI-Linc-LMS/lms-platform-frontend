@@ -28,6 +28,8 @@ interface QuizResultsProps {
   totalQuestions: number;
   correctAnswers: number;
   answers: QuizAnswer[];
+  obtainedMarks?: number;
+  totalMarks?: number;
   onRetake?: () => void;
   onBack?: () => void;
 }
@@ -37,11 +39,16 @@ export function QuizResults({
   totalQuestions,
   correctAnswers,
   answers,
+  obtainedMarks,
+  totalMarks,
   onRetake,
   onBack,
 }: QuizResultsProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const percentage = Math.round((correctAnswers / totalQuestions) * 100);
+  const useMarks = totalMarks != null && totalMarks > 0 && obtainedMarks != null;
+  const percentage = useMarks
+    ? Math.round((obtainedMarks / totalMarks) * 100)
+    : Math.round((correctAnswers / totalQuestions) * 100);
   const getScoreColor = () => {
     if (percentage >= 80) return "#10b981";
     if (percentage >= 60) return "#f59e0b";
@@ -191,7 +198,11 @@ export function QuizResults({
           }}
         >
           <Chip
-            label={`Score: ${score}/${totalQuestions}`}
+            label={
+              useMarks
+                ? `Score: ${obtainedMarks}/${totalMarks}`
+                : `Score: ${score}/${totalQuestions}`
+            }
             sx={{
               backgroundColor: `${getScoreColor()}20`,
               color: getScoreColor(),

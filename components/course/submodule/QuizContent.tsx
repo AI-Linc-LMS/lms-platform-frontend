@@ -30,6 +30,7 @@ interface QuizState {
   currentQuestionIndex: number;
   answers: Record<string | number, string>;
   timeRemaining?: number;
+  totalDurationSeconds?: number;
   startTime?: number;
 }
 
@@ -54,6 +55,9 @@ export function QuizContent({
   const [timeRemaining, setTimeRemaining] = useState<number | undefined>(
     undefined
   );
+  const [totalDurationSeconds, setTotalDurationSeconds] = useState<
+    number | undefined
+  >(undefined);
   const [loadingQuiz, setLoadingQuiz] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -61,6 +65,8 @@ export function QuizContent({
     score: number;
     correctAnswers: number;
     answers: QuizAnswer[];
+    obtainedMarks?: number;
+    totalMarks?: number;
   } | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmDialogProps, setConfirmDialogProps] = useState<{
@@ -114,6 +120,7 @@ export function QuizContent({
             setCurrentQuestionIndex(state.currentQuestionIndex);
             setAnswers(state.answers);
             setTimeRemaining(state.timeRemaining);
+            setTotalDurationSeconds(state.totalDurationSeconds);
             setAnsweredQuestions(
               new Set(Object.keys(state.answers).map(Number))
             );
@@ -147,6 +154,7 @@ export function QuizContent({
         currentQuestionIndex,
         answers,
         timeRemaining,
+        totalDurationSeconds,
         startTime: startTimeRef.current || Date.now(),
       };
       localStorage.setItem(storageKey, JSON.stringify(state));
@@ -156,6 +164,7 @@ export function QuizContent({
     currentQuestionIndex,
     answers,
     timeRemaining,
+    totalDurationSeconds,
     storageKey,
     viewingPastSubmission,
   ]);
@@ -230,6 +239,7 @@ export function QuizContent({
           15;
         const quizDuration = durationInMinutes * 60; // Convert to seconds
         setTimeRemaining(quizDuration);
+        setTotalDurationSeconds(quizDuration);
         startTimeRef.current = Date.now();
       } else {
         showToast("Quiz questions not available", "error");
@@ -390,6 +400,8 @@ export function QuizContent({
         score,
         correctAnswers: correctCount,
         answers: quizAnswers,
+        obtainedMarks: totalMarks > 0 ? obtainedMarks : undefined,
+        totalMarks: totalMarks > 0 ? totalMarks : undefined,
       });
       setShowResults(true);
       setQuizStarted(false);
@@ -586,6 +598,8 @@ export function QuizContent({
         totalQuestions={quizQuestions.length}
         correctAnswers={quizResults.correctAnswers}
         answers={quizResults.answers}
+        obtainedMarks={quizResults.obtainedMarks}
+        totalMarks={quizResults.totalMarks}
         onRetake={viewingPastSubmission ? undefined : handleRetakeQuiz}
         onBack={
           viewingPastSubmission
@@ -720,6 +734,7 @@ export function QuizContent({
             questions={questionList}
             totalQuestions={quizQuestions.length}
             timeRemaining={isViewingSubmission ? undefined : timeRemaining}
+            totalDurationSeconds={totalDurationSeconds}
             onTimeUp={handleTimeUp}
             onAnswerSelect={isViewingSubmission ? () => {} : handleAnswerSelect}
             onNextQuestion={handleNextQuestion}

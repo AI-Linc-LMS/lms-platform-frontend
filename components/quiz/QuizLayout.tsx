@@ -45,6 +45,7 @@ export interface QuizLayoutProps {
 
   // Timer
   timeRemaining?: number; // in seconds
+  totalDurationSeconds?: number; // total duration for progress circle
   onTimeUp?: () => void;
 
   // Actions
@@ -70,6 +71,7 @@ export function QuizLayout({
   questions,
   totalQuestions,
   timeRemaining,
+  totalDurationSeconds,
   onTimeUp,
   onAnswerSelect,
   onNextQuestion,
@@ -107,7 +109,11 @@ export function QuizLayout({
       >
         {/* Timer */}
         {timeRemaining !== undefined && (
-          <QuizTimer timeRemaining={timeRemaining} onTimeUp={onTimeUp} />
+          <QuizTimer
+            timeRemaining={timeRemaining}
+            totalDurationSeconds={totalDurationSeconds}
+            onTimeUp={onTimeUp}
+          />
         )}
 
         {/* Question List */}
@@ -300,7 +306,7 @@ export function QuizLayout({
                 <Button
                   variant="contained"
                   onClick={onNextQuestion}
-                  disabled={isSubmitting || isReadOnly}
+                  disabled={isSubmitting}
                   sx={{
                     backgroundColor: "#6366f1",
                     color: "#ffffff",
