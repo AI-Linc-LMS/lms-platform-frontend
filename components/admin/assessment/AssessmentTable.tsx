@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Box,
   Typography,
@@ -13,31 +14,49 @@ import {
   IconButton,
   Tooltip,
   CircularProgress,
+  Button,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { Assessment } from "@/lib/services/admin/admin-assessment.service";
 
+export interface AssessmentEmailJobInfo {
+  task_id: string;
+  status: string;
+}
+
 interface AssessmentTableProps {
   assessments: Assessment[];
+  assessmentEmailJobMap?: Record<number, AssessmentEmailJobInfo>;
   onEdit?: (assessmentId: number) => void;
   onDelete?: (assessment: Assessment) => void;
+  onTriggerEmailJob?: (assessment: Assessment) => Promise<void>;
   onExportSubmissions: (assessment: Assessment) => Promise<void>;
   onExportQuestions: (assessment: Assessment) => Promise<void>;
   exportingSubmissionsId?: number | null;
   exportingQuestionsId?: number | null;
   deletingId?: number | null;
+  triggeringEmailJobId?: number | null;
 }
+
+const isFailedStatus = (status: string) => {
+  const s = (status || "").toLowerCase();
+  return s === "failed" || s === "error";
+};
 
 export function AssessmentTable({
   assessments,
+  assessmentEmailJobMap = {},
   onEdit,
   onDelete,
+  onTriggerEmailJob,
   onExportSubmissions,
   onExportQuestions,
   exportingSubmissionsId = null,
   exportingQuestionsId = null,
   deletingId = null,
+  triggeringEmailJobId = null,
 }: AssessmentTableProps) {
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -55,6 +74,7 @@ export function AssessmentTable({
   };
 
   return (
+    <>
     <TableContainer sx={{ overflowX: "auto" }}>
       <Table size="small" sx={{ minWidth: 640 }}>
         <TableHead>
@@ -259,6 +279,66 @@ export function AssessmentTable({
                         </IconButton>
                       </Tooltip>
                     )}
+                    {onTriggerEmailJob && (() => {
+                      const job = assessmentEmailJobMap[assessment.id];
+                      const isTriggering = triggeringEmailJobId === assessment.id;
+                      if (job) {
+                        if (isFailedStatus(job.status)) {
+                          return (
+                            <Tooltip title="Email job failed. Go to Emails page to retry.">
+                              <Link href="/admin/emails?tab=assessment" passHref legacyBehavior>
+                                <Button
+                                  size="small"
+                                  component="a"
+                                  variant="outlined"
+                                  color="warning"
+                                  sx={{ minWidth: 90, textDecoration: "none" }}
+                                >
+                                  Retry in Emails
+                                </Button>
+                              </Link>
+                            </Tooltip>
+                          );
+                        }
+                        return (
+                          <Tooltip title="View email job status">
+                            <Link
+                              href={`/admin/emails/assessment/${encodeURIComponent(job.task_id)}`}
+                              passHref
+                              legacyBehavior
+                            >
+                              <Button
+                                size="small"
+                                component="a"
+                                variant="outlined"
+                                sx={{ minWidth: 70, textDecoration: "none" }}
+                              >
+                                View Job
+                              </Button>
+                            </Link>
+                          </Tooltip>
+                        );
+                      }
+                      return (
+                        <Tooltip title="Trigger email job">
+                          <span>
+                            <IconButton
+                              size="small"
+                              onClick={() => onTriggerEmailJob(assessment)}
+                              disabled={isTriggering}
+                              sx={{ color: "#059669" }}
+                              aria-label="Trigger email job for assessment"
+                            >
+                              {isTriggering ? (
+                                <CircularProgress size={18} color="inherit" />
+                              ) : (
+                                <IconWrapper icon="mdi:email-send-outline" size={18} />
+                              )}
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      );
+                    })()}
                     <Tooltip title="Download questions (CSV)">
                       <span>
                         <IconButton
@@ -326,5 +406,6 @@ export function AssessmentTable({
         </TableBody>
       </Table>
     </TableContainer>
+    </>
   );
 }

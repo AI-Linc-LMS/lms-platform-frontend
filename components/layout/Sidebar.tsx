@@ -145,12 +145,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     //   icon: "mdi:account-arrow-right",
     //   featureName: "admin_referral",
     // },
-    // {
-    //   label: "Emails",
-    //   path: "/admin/emails",
-    //   icon: "mdi:email-multiple",
-    //   featureName: "admin_emails",
-    // },
+    {
+      label: "Emails",
+      path: "/admin/emails",
+      icon: "mdi:email-multiple",
+      featureName: "admin_emails",
+    },
     // {
     //   label: "Payment",
     //   path: "/admin/payment",

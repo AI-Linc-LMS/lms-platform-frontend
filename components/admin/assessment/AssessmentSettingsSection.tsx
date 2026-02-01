@@ -25,6 +25,7 @@ interface AssessmentSettingsSectionProps {
   currency: string;
   isActive: boolean;
   proctoringEnabled: boolean;
+  sendCommunication: boolean;
   courseIds: number[];
   courses: any[];
   loadingCourses: boolean;
@@ -36,6 +37,7 @@ interface AssessmentSettingsSectionProps {
   onCurrencyChange: (value: string) => void;
   onActiveChange: (value: boolean) => void;
   onProctoringEnabledChange: (value: boolean) => void;
+  onSendCommunicationChange: (value: boolean) => void;
   onCourseIdsChange: (value: number[]) => void;
 }
 
@@ -48,6 +50,7 @@ export function AssessmentSettingsSection({
   currency,
   isActive,
   proctoringEnabled,
+  sendCommunication,
   courseIds,
   courses,
   loadingCourses,
@@ -59,6 +62,7 @@ export function AssessmentSettingsSection({
   onCurrencyChange,
   onActiveChange,
   onProctoringEnabledChange,
+  onSendCommunicationChange,
   onCourseIdsChange,
 }: AssessmentSettingsSectionProps) {
   return (
@@ -216,6 +220,18 @@ export function AssessmentSettingsSection({
             }
             label="Proctoring Enabled"
           />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={sendCommunication}
+                onChange={(e) => onSendCommunicationChange(e.target.checked)}
+              />
+            }
+            label="Send notification email to students"
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ ml: 4 }}>
+            Should the notification email be sent when this assessment is created?
+          </Typography>
         </Box>
       </Box>
     </Box>

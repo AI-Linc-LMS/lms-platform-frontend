@@ -22,6 +22,10 @@ import {
   adminAssessmentService,
   Assessment,
 } from "@/lib/services/admin/admin-assessment.service";
+import {
+  adminAssessmentEmailJobsService,
+  AssessmentEmailJob,
+} from "@/lib/services/admin/admin-assessment-email-jobs.service";
 import { config } from "@/lib/config";
 import { AssessmentTable } from "@/components/admin/assessment/AssessmentTable";
 import { AssessmentPagination } from "@/components/admin/assessment/AssessmentPagination";
@@ -42,10 +46,36 @@ export default function AssessmentPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [assessmentToDelete, setAssessmentToDelete] = useState<Assessment | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [triggeringEmailJobId, setTriggeringEmailJobId] = useState<number | null>(null);
+  const [assessmentEmailJobMap, setAssessmentEmailJobMap] = useState<
+    Record<number, { task_id: string; status: string }>
+  >({});
 
   useEffect(() => {
     loadAssessments();
   }, []);
+
+  useEffect(() => {
+    loadAssessmentEmailJobs();
+  }, []);
+
+  const loadAssessmentEmailJobs = async () => {
+    try {
+      const jobs = await adminAssessmentEmailJobsService.getAssessmentEmailJobs(
+        config.clientId
+      );
+      const map: Record<number, { task_id: string; status: string }> = {};
+      (jobs as AssessmentEmailJob[]).forEach((job) => {
+        const aid = job.assessment_id;
+        if (aid != null) {
+          map[aid] = { task_id: job.task_id, status: job.status || "" };
+        }
+      });
+      setAssessmentEmailJobMap(map);
+    } catch {
+      setAssessmentEmailJobMap({});
+    }
+  };
 
   const loadAssessments = async () => {
     try {
@@ -231,6 +261,69 @@ export default function AssessmentPage() {
     }
   };
 
+  const buildEmailSubject = (assessment: Assessment) =>
+    `Important Notification - ${assessment.title}`;
+
+  const buildEmailBody = (assessment: Assessment) => {
+    const baseUrl =
+      typeof window !== "undefined" ? window.location.origin : "";
+    const link = `${baseUrl}/assessments/${assessment.slug}`;
+    const assessmentDetail = assessment as Assessment & {
+      start_time?: string | null;
+      end_time?: string | null;
+    };
+    const formatDateTime = (s: string | undefined | null) => {
+      if (!s) return "—";
+      try {
+        const d = new Date(s);
+        return isNaN(d.getTime()) ? s : d.toLocaleString();
+      } catch {
+        return s || "—";
+      }
+    };
+    const startTime = formatDateTime(assessmentDetail.start_time);
+    const endTime = formatDateTime(assessmentDetail.end_time);
+    const duration = assessment.duration_minutes
+      ? `${assessment.duration_minutes} minutes`
+      : "—";
+
+    return `Dear {name},
+
+This is a notification about the assessment.
+
+Assessment: ${assessment.title}
+Duration: ${duration}
+Start time: ${startTime}
+End time: ${endTime}
+
+<a href="${link}">Click here to take the assessment</a>
+
+Best regards`;
+  };
+
+  const handleTriggerEmailJob = async (assessment: Assessment) => {
+    try {
+      setTriggeringEmailJobId(assessment.id);
+      const result = await adminAssessmentEmailJobsService.createAssessmentEmailJob(
+        config.clientId,
+        {
+          assessment_id: assessment.id,
+          subject: buildEmailSubject(assessment),
+          email_body: buildEmailBody(assessment),
+        }
+      );
+      showToast("Email job triggered. Redirecting to status...", "success");
+      loadAssessmentEmailJobs();
+      if (result?.task_id) {
+        router.push(`/admin/emails/assessment/${encodeURIComponent(result.task_id)}`);
+      }
+    } catch (error: unknown) {
+      showToast((error as Error)?.message || "Failed to trigger email job", "error");
+    } finally {
+      setTriggeringEmailJobId(null);
+    }
+  };
+
   const handleDeleteClick = (assessment: Assessment) => {
     setAssessmentToDelete(assessment);
     setDeleteDialogOpen(true);
@@ -325,13 +418,16 @@ export default function AssessmentPage() {
           >
             <AssessmentTable
               assessments={paginatedAssessments}
+              assessmentEmailJobMap={assessmentEmailJobMap}
               onEdit={(id) => router.push(`/admin/assessment/${id}/edit`)}
               onDelete={handleDeleteClick}
+              onTriggerEmailJob={handleTriggerEmailJob}
               onExportSubmissions={handleExportSubmissions}
               onExportQuestions={handleExportQuestions}
               exportingSubmissionsId={exportingSubmissionsId}
               exportingQuestionsId={exportingQuestionsId}
               deletingId={deleting && assessmentToDelete ? assessmentToDelete.id : null}
+              triggeringEmailJobId={triggeringEmailJobId}
             />
             {assessments.length > 0 && (
               <AssessmentPagination
