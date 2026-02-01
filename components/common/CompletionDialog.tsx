@@ -18,6 +18,8 @@ interface CompletionStats {
   memoryUsed?: string;
   score?: number;
   maxScore?: number;
+  obtainedMarks?: number;
+  totalMarks?: number;
   attemptsUsed?: number;
   attemptsLeft?: number;
 }
