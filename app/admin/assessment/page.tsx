@@ -300,18 +300,24 @@ export default function AssessmentPage() {
       ? `${assessment.duration_minutes} minutes`
       : "—";
 
-    return `Dear {name},
-
-This is a notification about the assessment.
-
-Assessment: ${assessment.title}
-Duration: ${duration}
-Start time: ${startTime}
-End time: ${endTime}
-
-<a href="${link}">Click here to take the assessment</a>
-
-Best regards`;
+      return `
+      <p>Dear ${name},</p>
+      
+      <p>This is a notification about the assessment.</p>
+      
+      <p>
+        <strong>Assessment:</strong> ${assessment.title}<br>
+        <strong>Duration:</strong> ${duration}<br>
+        <strong>Start time:</strong> ${startTime}<br>
+        <strong>End time:</strong> ${endTime}
+      </p>
+      
+      <p>
+        <a href="${link}"><strong>Click here to take the assessment</strong></a>
+      </p>
+      
+      <p>Best regards,<br></p>
+      `;
   };
 
   const handleTriggerEmailJob = async (assessment: Assessment) => {
