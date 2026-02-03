@@ -319,7 +319,8 @@ export const coursesService = {
   // Create user activity
   // activityType should be the content type (e.g., "VideoTutorial", "Quiz")
   // actionType should be the action (e.g., "view", "start", "complete")
-  // userAnswers is for Quiz completion - array of {questionId, isCorrect, questionIndex, selectedOption}
+  // userAnswers is for Quiz completion - array of {questionId, questionIndex, selectedOption}
+  // Do NOT send isCorrect - backend computes it; get from response
   createUserActivity: async (
     courseId: number,
     contentId: number,
@@ -328,7 +329,6 @@ export const coursesService = {
       activity_type?: string;
       userAnswers?: Array<{
         questionId: number | string;
-        isCorrect: boolean;
         questionIndex: number;
         selectedOption: string;
       }>;
