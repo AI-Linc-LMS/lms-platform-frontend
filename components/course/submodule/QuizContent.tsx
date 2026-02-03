@@ -296,16 +296,13 @@ export function QuizContent({
       // Prepare user answers for API
       const userAnswers: Array<{
         questionId: number | string;
-        isCorrect: boolean;
         questionIndex: number;
         selectedOption: string;
       }> = quizQuestions.map((q, index) => {
         const selected = finalAnswers[q.id];
         const correct = (q as any).correctAnswer;
-        const isCorrect = selected === correct;
         return {
           questionId: q.id,
-          isCorrect,
           questionIndex: index,
           selectedOption: selected || "",
         };
@@ -327,6 +324,8 @@ export function QuizContent({
           { userAnswers }
         );
 
+        
+
         // Use API response if it includes questions and marks
         if (
           apiResponse?.questions &&
@@ -347,25 +346,17 @@ export function QuizContent({
           throw new Error("No questions in response");
         }
       } catch (error: any) {
-        // Fallback to local calculation if API fails or doesn't return questions
-        correctCount = userAnswers.filter((ua) => ua.isCorrect).length;
-        totalQuestions = quizQuestions.length;
-        const marksFromContent = content.marks || 0;
-        obtainedMarks =
-          marksFromContent > 0
-            ? Math.round((correctCount / totalQuestions) * marksFromContent)
-            : correctCount;
-        totalMarks = marksFromContent > 0 ? marksFromContent : totalQuestions;
-        score = correctCount;
-
+        // Fallback: compute from quizQuestions (we don't send isCorrect to API, get from response)
         quizAnswers = quizQuestions.map((q, index) => {
-          const ua = userAnswers[index];
+          const selected = userAnswers[index]?.selectedOption ?? finalAnswers[q.id] ?? "";
+          const correct = (q as any).correctAnswer ?? "";
+          const isCorrect = selected === correct;
           return {
             questionId: q.id,
             questionText: q.question,
-            selectedAnswer: ua?.selectedOption ?? finalAnswers[q.id] ?? "",
-            correctAnswer: (q as any).correctAnswer ?? "",
-            isCorrect: ua?.isCorrect ?? false,
+            selectedAnswer: selected,
+            correctAnswer: correct,
+            isCorrect,
             explanation: (q as any).explanation,
             options: q.options.map((opt) => ({
               id: String(opt.id),
@@ -374,6 +365,15 @@ export function QuizContent({
             })),
           };
         });
+        correctCount = quizAnswers.filter((a) => a.isCorrect).length;
+        totalQuestions = quizQuestions.length;
+        const marksFromContent = content.marks || 0;
+        obtainedMarks =
+          marksFromContent > 0
+            ? Math.round((correctCount / totalQuestions) * marksFromContent)
+            : correctCount;
+        totalMarks = marksFromContent > 0 ? marksFromContent : totalQuestions;
+        score = correctCount;
 
         if (error?.message !== "No questions in response") {
           showToast("Quiz submitted but activity tracking failed", "warning");
@@ -548,34 +548,32 @@ export function QuizContent({
       let questionsToUse: QuizQuestion[] = [];
       let submissionToUse = submission;
 
-      // Prefer questions from past-submissions API (submission.questions or from detail fetch)
-      const apiQuestions =
-        submission?.questions ??
-        submission?.question_details ??
-        submission?.details?.questions;
-
-      if (apiQuestions && Array.isArray(apiQuestions) && apiQuestions.length > 0) {
-        questionsToUse = apiQuestionsToQuizQuestions(apiQuestions);
-      } else if (submission?.id) {
-        // Fetch submission detail - may include questions
+      // Always fetch past-submission detail when we have an id - ensures full response
+      // (questions, obtained_marks, maximum_marks, correct_option, selected_option, explanation)
+      if (submission?.id) {
         try {
           const detail = await coursesService.getPastSubmissionDetail(
             courseId,
             content.id,
             submission.id
           );
-          const detailQuestions =
-            detail?.questions ?? detail?.question_details ?? detail?.details?.questions;
-          if (detailQuestions && Array.isArray(detailQuestions) && detailQuestions.length > 0) {
-            questionsToUse = apiQuestionsToQuizQuestions(detailQuestions);
-            submissionToUse = { ...submission, ...detail };
-          }
+          // Use fetched response as primary - it has the complete response sheet structure
+          submissionToUse = { ...submission, ...detail };
         } catch {
-          // Detail endpoint may not exist, fall through to content.details
+          // Detail endpoint may not exist, use list item as-is
         }
       }
 
-      // Fallback: load from content.details (legacy)
+      const apiQuestions =
+        submissionToUse?.questions ??
+        submissionToUse?.question_details ??
+        submissionToUse?.details?.questions;
+
+      if (apiQuestions && Array.isArray(apiQuestions) && apiQuestions.length > 0) {
+        questionsToUse = apiQuestionsToQuizQuestions(apiQuestions);
+      }
+
+      // Fallback: load from content.details (legacy) when no questions in response
       if (questionsToUse.length === 0 && content.details) {
         const mcqs = content.details?.mcqs || content.details?.questions;
         if (mcqs && Array.isArray(mcqs) && mcqs.length > 0) {
@@ -611,35 +609,86 @@ export function QuizContent({
         clearAllQuizStorage();
         setQuizQuestions(questionsToUse);
         setViewingPastSubmission(submissionToUse);
-        setCurrentQuestionIndex(0);
 
-        // Build answers from API format (selected_option) or legacy (custom_dimension.userAnswers)
-        const answersMap: Record<string | number, string> = {};
-        const apiQuestions =
+        const apiQuestionsForResults =
           submissionToUse?.questions ??
           submissionToUse?.question_details ??
           submissionToUse?.details?.questions;
 
-        if (apiQuestions && Array.isArray(apiQuestions)) {
-          apiQuestions.forEach((q: any, idx: number) => {
+        // Build quiz results from API questions (correct_option, selected_option, explanation from API)
+        if (apiQuestionsForResults && Array.isArray(apiQuestionsForResults)) {
+          const quizAnswers = apiQuestionsToQuizAnswers(apiQuestionsForResults);
+          const correctCount = apiQuestionsForResults.filter(
+            (q: any) => q.is_correct === true
+          ).length;
+          const obtainedMarks =
+            submissionToUse.obtained_marks ??
+            submissionToUse.obtainedMarks ??
+            correctCount;
+          const totalMarks =
+            submissionToUse.maximum_marks ??
+            submissionToUse.maximumMarks ??
+            content.marks ??
+            questionsToUse.length;
+
+          setQuizResults({
+            score: correctCount,
+            correctAnswers: correctCount,
+            answers: quizAnswers,
+            obtainedMarks:
+              totalMarks > 0 ? Number(obtainedMarks) : undefined,
+            totalMarks: totalMarks > 0 ? Number(totalMarks) : undefined,
+          });
+        } else {
+          // Legacy: build from questionsToUse + custom_dimension.userAnswers
+          const quizAnswers = convertPastSubmissionToQuizAnswers(submissionToUse);
+          const correctCount = quizAnswers.filter((a) => a.isCorrect).length;
+          const obtainedMarks =
+            submissionToUse.obtained_marks ??
+            submissionToUse.obtainedMarks ??
+            correctCount;
+          const totalMarks =
+            submissionToUse.maximum_marks ??
+            submissionToUse.maximumMarks ??
+            content.marks ??
+            questionsToUse.length;
+
+          setQuizResults({
+            score: correctCount,
+            correctAnswers: correctCount,
+            answers: quizAnswers,
+            obtainedMarks:
+              totalMarks > 0 ? Number(obtainedMarks) : undefined,
+            totalMarks: totalMarks > 0 ? Number(totalMarks) : undefined,
+          });
+        }
+        setShowResults(true);
+
+        // Build answers map for navigation if user goes back to browse (legacy path)
+        const answersMap: Record<string | number, string> = {};
+        if (apiQuestionsForResults && Array.isArray(apiQuestionsForResults)) {
+          apiQuestionsForResults.forEach((q: any, idx: number) => {
             const qId = q.question_id ?? q.id ?? questionsToUse[idx]?.id ?? idx;
             const selected = q.selected_option ?? "";
             if (qId != null) answersMap[qId] = selected;
           });
         } else {
-          const userAnswers = submissionToUse?.custom_dimension?.userAnswers || [];
+          const userAnswers =
+            submissionToUse?.custom_dimension?.userAnswers || [];
           userAnswers.forEach((ua: any) => {
             const question = questionsToUse.find(
-              (q) => q.id === ua.questionId || questionsToUse.findIndex((q2) => q2.id === q.id) === ua.questionIndex
+              (q) =>
+                q.id === ua.questionId ||
+                questionsToUse.findIndex((q2) => q2.id === q.id) === ua.questionIndex
             );
             if (question) answersMap[question.id] = ua.selectedOption;
           });
         }
-
         setAnswers(answersMap);
         setAnsweredQuestions(new Set(Object.keys(answersMap).map(Number)));
         setSelectedAnswer(answersMap[questionsToUse[0]?.id] ?? undefined);
-        setQuizStarted(true);
+        setCurrentQuestionIndex(0);
+        setQuizStarted(false);
       } else {
         showToast("Unable to load quiz questions", "error");
       }
