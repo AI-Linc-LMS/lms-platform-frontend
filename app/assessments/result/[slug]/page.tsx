@@ -292,12 +292,7 @@ export default function AssessmentResultPage() {
             />
           )}
 
-          {/* Overall Feedback */}
-          <OverallFeedback
-            feedbackPoints={feedbackPoints}
-          />
-
-          {/* Quiz Responses - detailed question-by-question review */}
+          {/* Quiz Responses - one question at a time, same layout as QuizContent */}
           {assessmentResult.user_responses?.quiz_responses &&
             assessmentResult.user_responses.quiz_responses.length > 0 && (
               <QuizResponsesSection
@@ -314,6 +309,11 @@ export default function AssessmentResultPage() {
                 }
               />
             )}
+
+          {/* Overall Feedback - at the end */}
+          <OverallFeedback
+            feedbackPoints={feedbackPoints}
+          />
         </Box>
       </Box>
     </MainLayout>
