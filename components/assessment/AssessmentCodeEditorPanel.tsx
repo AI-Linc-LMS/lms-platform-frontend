@@ -180,7 +180,7 @@ export function AssessmentCodeEditorPanel({
           {submitting
             ? "Submitting..."
             : canSubmit
-            ? "Submit"
+            ? "Submit all tests"
             : "Run Tests First"}
         </Button>
       </Box>

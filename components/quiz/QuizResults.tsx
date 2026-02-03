@@ -169,7 +169,7 @@ export function QuizResults({
             mb: 3,
           }}
         >
-          You scored {correctAnswers} out of {totalQuestions} questions
+          You answered {correctAnswers} out of {totalQuestions} questions
           correctly
         </Typography>
 
