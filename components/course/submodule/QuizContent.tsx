@@ -324,6 +324,8 @@ export function QuizContent({
           { userAnswers }
         );
 
+        
+
         // Use API response if it includes questions and marks
         if (
           apiResponse?.questions &&
