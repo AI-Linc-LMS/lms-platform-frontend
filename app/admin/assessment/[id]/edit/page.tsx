@@ -123,6 +123,7 @@ export default function AssessmentEditPage() {
   const [courseIds, setCourseIds] = useState<number[]>([]);
   const [colleges, setColleges] = useState<string[]>([]);
   const [proctoringEnabled, setProctoringEnabled] = useState(true);
+  const [sendCommunication, setSendCommunication] = useState(false);
 
   const [questionsPage, setQuestionsPage] = useState(1);
   const [questionsLimit, setQuestionsLimit] = useState(10);
@@ -155,6 +156,7 @@ export default function AssessmentEditPage() {
       setCourseIds(Array.isArray((data as any).course_ids) ? (data as any).course_ids : []);
       setColleges(Array.isArray((data as any).colleges) ? (data as any).colleges : []);
       setProctoringEnabled((data as any).proctoring_enabled ?? true);
+      setSendCommunication((data as any).send_communication ?? false);
     } catch (e: any) {
       showToast(e?.message || "Failed to load assessment", "error");
       setAssessment(null);
@@ -240,6 +242,7 @@ export default function AssessmentEditPage() {
         currency: isPaid ? currency : undefined,
         is_active: isActive,
         proctoring_enabled: proctoringEnabled,
+        send_communication: sendCommunication,
         course_ids: courseIds.length ? courseIds : undefined,
         colleges: colleges.length ? colleges : undefined,
       };
@@ -509,6 +512,7 @@ export default function AssessmentEditPage() {
                   loadingCourses={loadingCourses}
                   colleges={colleges}
                   proctoringEnabled={proctoringEnabled}
+                  sendCommunication={sendCommunication}
                   onDurationChange={setDurationMinutes}
                   onStartTimeChange={setStartTime}
                   onEndTimeChange={setEndTime}
@@ -519,6 +523,7 @@ export default function AssessmentEditPage() {
                   onCourseIdsChange={setCourseIds}
                   onCollegesChange={setColleges}
                   onProctoringEnabledChange={setProctoringEnabled}
+                  onSendCommunicationChange={setSendCommunication}
                 />
                 <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
                   <Button

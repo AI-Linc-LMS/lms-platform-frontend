@@ -18,6 +18,8 @@ interface CompletionStats {
   memoryUsed?: string;
   score?: number;
   maxScore?: number;
+  obtainedMarks?: number;
+  totalMarks?: number;
   attemptsUsed?: number;
   attemptsLeft?: number;
 }
@@ -304,7 +306,7 @@ export function CompletionDialog({
           )}
 
           {/* Quiz Stats */}
-          {isQuiz && stats && stats.score !== undefined && (
+          {isQuiz && stats && (stats.score !== undefined || stats.obtainedMarks !== undefined) && (
             <>
               <Divider />
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -339,7 +341,9 @@ export function CompletionDialog({
                     variant="h6"
                     sx={{ fontWeight: 600, color: "#6b7280" }}
                   >
-                    {stats.score} / {stats.maxScore}
+                    {stats.totalMarks != null && stats.totalMarks > 0
+                      ? `${stats.obtainedMarks ?? 0} / ${stats.totalMarks}`
+                      : `${stats.score ?? 0} / ${stats.maxScore ?? 0}`}
                   </Typography>
                 </Box>
               </Box>

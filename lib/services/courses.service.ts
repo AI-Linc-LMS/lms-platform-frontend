@@ -280,6 +280,21 @@ export const coursesService = {
     return response.data;
   },
 
+  // Get past submission detail (with questions, options, selected/correct, explanation)
+  getPastSubmissionDetail: async (
+    courseId: number,
+    contentId: number,
+    submissionId: number
+  ): Promise<any> => {
+    const response = await apiClient.get<any>(
+      `/lms/clients/${config.clientId}/courses/${courseId}/content/${contentId}/past-submissions/${submissionId}/`
+    );
+    const data = response.data;
+    // Handle both { questions: [...] } and raw array response
+    if (Array.isArray(data)) return { questions: data };
+    return data;
+  },
+
   // Add comment to content
   addComment: async (
     courseId: number,

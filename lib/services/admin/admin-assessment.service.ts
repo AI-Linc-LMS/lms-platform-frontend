@@ -110,6 +110,8 @@ export interface CreateAssessmentPayload {
   currency?: string;
   is_active?: boolean;
   proctoring_enabled?: boolean;
+  /** Whether to send notification email to students */
+  send_communication?: boolean;
   quiz_section?: QuizSection; // For backward compatibility
   quiz_sections?: Array<{
     title: string;
@@ -308,6 +310,31 @@ export const updateAssessment = async (
       error.response?.data?.message ||
       error.response?.data?.detail ||
       "Failed to update assessment";
+    throw new Error(message);
+  }
+};
+
+/**
+ * Run email job for an assessment (e.g. send assessment notification emails to students)
+ * POST /admin-dashboard/api/clients/{client_id}/assessments/{assessment_id}/run-email-job/
+ */
+export const runAssessmentEmailJob = async (
+  clientId: string | number,
+  assessmentId: number
+): Promise<{ message?: string; task_id?: string; status?: string }> => {
+  try {
+    const response = await apiClient.post(
+      `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/run-email-job/`
+    );
+    return response.data;
+  } catch (err) {
+    const error = err as AxiosError<ApiErrorPayload>;
+    const message =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      (typeof error.response?.data?.detail === "string"
+        ? error.response.data.detail
+        : "Failed to run email job");
     throw new Error(message);
   }
 };

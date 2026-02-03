@@ -5,10 +5,11 @@ import { useEffect } from "react";
 
 interface QuizTimerProps {
   timeRemaining: number; // in seconds
+  totalDurationSeconds?: number; // total quiz duration for progress circle
   onTimeUp?: () => void;
 }
 
-export function QuizTimer({ timeRemaining, onTimeUp }: QuizTimerProps) {
+export function QuizTimer({ timeRemaining, totalDurationSeconds, onTimeUp }: QuizTimerProps) {
   useEffect(() => {
     if (timeRemaining <= 0 && onTimeUp) {
       onTimeUp();
@@ -21,9 +22,17 @@ export function QuizTimer({ timeRemaining, onTimeUp }: QuizTimerProps) {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Calculate progress percentage (assuming max time, you can pass this as prop if needed)
-  const maxTime = 1200; // 20 minutes default
+  // Use actual quiz duration so circle is full at start and diminishes correctly
+  const maxTime = totalDurationSeconds && totalDurationSeconds > 0
+    ? totalDurationSeconds
+    : timeRemaining || 900; // fallback to current or 15 min
   const progress = Math.max(0, Math.min(100, (timeRemaining / maxTime) * 100));
+
+  // Green: >= 2 min, Yellow: < 2 min, Red: <= 0 (handled by onTimeUp)
+  const getColor = () => {
+    if (timeRemaining <= 120) return "#eab308"; // yellow when < 2 minutes
+    return "#10b981"; // green
+  };
 
   return (
     <Paper
@@ -66,7 +75,7 @@ export function QuizTimer({ timeRemaining, onTimeUp }: QuizTimerProps) {
             component="div"
             sx={{
               fontWeight: 700,
-              color: timeRemaining <= 60 ? "#ef4444" : "#10b981",
+              color: getColor(),
             }}
           >
             {formatTime(timeRemaining)}

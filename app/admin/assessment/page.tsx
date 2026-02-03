@@ -29,6 +29,10 @@ import {
   adminAssessmentService,
   Assessment,
 } from "@/lib/services/admin/admin-assessment.service";
+import {
+  adminAssessmentEmailJobsService,
+  AssessmentEmailJob,
+} from "@/lib/services/admin/admin-assessment-email-jobs.service";
 import { config } from "@/lib/config";
 import { AssessmentTable } from "@/components/admin/assessment/AssessmentTable";
 import { AssessmentPagination } from "@/components/admin/assessment/AssessmentPagination";
@@ -49,6 +53,12 @@ export default function AssessmentPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [assessmentToDelete, setAssessmentToDelete] = useState<Assessment | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [triggeringEmailJobId, setTriggeringEmailJobId] = useState<number | null>(null);
+  const [emailTriggerDialogOpen, setEmailTriggerDialogOpen] = useState(false);
+  const [assessmentToTriggerEmail, setAssessmentToTriggerEmail] = useState<Assessment | null>(null);
+  const [assessmentEmailJobMap, setAssessmentEmailJobMap] = useState<
+    Record<number, { task_id: string; status: string }>
+  >({});
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,6 +69,28 @@ export default function AssessmentPage() {
   useEffect(() => {
     loadAssessments();
   }, []);
+
+  useEffect(() => {
+    loadAssessmentEmailJobs();
+  }, []);
+
+  const loadAssessmentEmailJobs = async () => {
+    try {
+      const jobs = await adminAssessmentEmailJobsService.getAssessmentEmailJobs(
+        config.clientId
+      );
+      const map: Record<number, { task_id: string; status: string }> = {};
+      (jobs as AssessmentEmailJob[]).forEach((job) => {
+        const aid = job.assessment_id;
+        if (aid != null) {
+          map[aid] = { task_id: job.task_id, status: job.status || "" };
+        }
+      });
+      setAssessmentEmailJobMap(map);
+    } catch {
+      setAssessmentEmailJobMap({});
+    }
+  };
 
   const loadAssessments = async () => {
     try {
@@ -241,6 +273,95 @@ export default function AssessmentPage() {
       );
     } finally {
       setExportingQuestionsId(null);
+    }
+  };
+
+  const buildEmailSubject = (assessment: Assessment) =>
+    `Important Notification - ${assessment.title}`;
+
+  const buildEmailBody = (assessment: Assessment) => {
+    const baseUrl =
+      typeof window !== "undefined" ? window.location.origin : "";
+    const link = `${baseUrl}/assessments/${assessment.slug}`;
+    const assessmentDetail = assessment as Assessment & {
+      start_time?: string | null;
+      end_time?: string | null;
+    };
+    const formatDateTime = (s: string | undefined | null) => {
+      if (!s) return "";
+      try {
+        const d = new Date(s);
+        return isNaN(d.getTime()) ? "" : d.toLocaleString();
+      } catch {
+        return "";
+      }
+    };
+    const startTime = formatDateTime(assessmentDetail.start_time);
+    const endTime = formatDateTime(assessmentDetail.end_time);
+    const duration = assessment.duration_minutes
+      ? `${assessment.duration_minutes} minutes`
+      : "";
+
+    const lines: string[] = [
+      `<strong>Assessment:</strong> ${assessment.title}`,
+      ...(duration ? [`<strong>Duration:</strong> ${duration}`] : []),
+      ...(startTime ? [`<strong>Start time:</strong> ${startTime}`] : []),
+      ...(endTime ? [`<strong>End time:</strong> ${endTime}`] : []),
+    ];
+
+    return `
+      <p>Dear {name},</p>
+      
+      <p>All set! Your assessment details are below—good luck 👍.</p>
+      
+      <p>
+        ${lines.join("<br>\n        ")}
+      </p>
+      
+      <p>
+        <a href="${link}"><strong>Click here to take the assessment</strong></a>
+      </p>
+      
+      <p>Best regards,<br></p>
+      `;
+  };
+
+  const handleOpenEmailTriggerDialog = (assessment: Assessment): Promise<void> => {
+    setAssessmentToTriggerEmail(assessment);
+    setEmailTriggerDialogOpen(true);
+    return Promise.resolve();
+  };
+
+  const handleCloseEmailTriggerDialog = () => {
+    if (!triggeringEmailJobId) {
+      setEmailTriggerDialogOpen(false);
+      setAssessmentToTriggerEmail(null);
+    }
+  };
+
+  const handleConfirmTriggerEmailJob = async () => {
+    if (!assessmentToTriggerEmail) return;
+    try {
+      setTriggeringEmailJobId(assessmentToTriggerEmail.id);
+      const result = await adminAssessmentEmailJobsService.createAssessmentEmailJob(
+        config.clientId,
+        {
+          assessment_id: assessmentToTriggerEmail.id,
+          subject: buildEmailSubject(assessmentToTriggerEmail),
+          email_body: buildEmailBody(assessmentToTriggerEmail),
+        }
+      );
+      showToast("Email job triggered. Redirecting to status...", "success");
+      setEmailTriggerDialogOpen(false);
+      setAssessmentToTriggerEmail(null);
+      loadAssessmentEmailJobs();
+      if (result?.task_id) {
+        router.push(`/admin/emails/assessment/${encodeURIComponent(result.task_id)}`);
+      }
+    } catch (error: unknown) {
+      showToast((error as Error)?.message || "Failed to trigger email job", "error");
+    } finally {
+      setTriggeringEmailJobId(null);
     }
   };
 
@@ -591,13 +712,16 @@ export default function AssessmentPage() {
           >
             <AssessmentTable
               assessments={paginatedAssessments}
+              assessmentEmailJobMap={assessmentEmailJobMap}
               onEdit={(id) => router.push(`/admin/assessment/${id}/edit`)}
               onDelete={handleDeleteClick}
+              onTriggerEmailJob={handleOpenEmailTriggerDialog}
               onExportSubmissions={handleExportSubmissions}
               onExportQuestions={handleExportQuestions}
               exportingSubmissionsId={exportingSubmissionsId}
               exportingQuestionsId={exportingQuestionsId}
               deletingId={deleting && assessmentToDelete ? assessmentToDelete.id : null}
+              triggeringEmailJobId={triggeringEmailJobId}
             />
             {filteredAssessments.length > 0 && (
               <AssessmentPagination
@@ -656,6 +780,84 @@ export default function AssessmentPage() {
               startIcon={deleting ? <CircularProgress size={16} color="inherit" /> : null}
             >
               {deleting ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog
+          open={emailTriggerDialogOpen}
+          onClose={handleCloseEmailTriggerDialog}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: { borderRadius: 2, minWidth: 400 },
+          }}
+        >
+          <DialogTitle sx={{ fontWeight: 600 }}>
+            Trigger Email Job
+          </DialogTitle>
+          <DialogContent>
+            {assessmentToTriggerEmail && (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <DialogContentText>
+                  Send notification emails to students for this assessment. Review the details below.
+                </DialogContentText>
+                <Box>
+                  <Typography variant="caption" sx={{ color: "#6b7280", fontWeight: 600 }}>
+                    Subject
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 0.5, p: 1.5, bgcolor: "#f9fafb", borderRadius: 1 }}>
+                    {buildEmailSubject(assessmentToTriggerEmail)}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" sx={{ color: "#6b7280", fontWeight: 600 }}>
+                    Email content preview
+                  </Typography>
+                  <Box
+                    sx={{
+                      mt: 0.5,
+                      p: 2,
+                      bgcolor: "#f9fafb",
+                      borderRadius: 1,
+                      maxHeight: 200,
+                      overflow: "auto",
+                      fontSize: "0.875rem",
+                      "& a": { color: "#6366f1" },
+                    }}
+                    dangerouslySetInnerHTML={{
+                      __html: buildEmailBody(assessmentToTriggerEmail).replace(/\{name\}/g, "[Recipient Name]"),
+                    }}
+                  />
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  Are you sure you want to send this notification?
+                </Typography>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button
+              onClick={handleCloseEmailTriggerDialog}
+              disabled={!!triggeringEmailJobId}
+              color="inherit"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmTriggerEmailJob}
+              disabled={!!triggeringEmailJobId}
+              variant="contained"
+              startIcon={
+                triggeringEmailJobId && assessmentToTriggerEmail && triggeringEmailJobId === assessmentToTriggerEmail.id ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : null
+              }
+              sx={{ bgcolor: "#059669", "&:hover": { bgcolor: "#047857" } }}
+            >
+              {triggeringEmailJobId && assessmentToTriggerEmail && triggeringEmailJobId === assessmentToTriggerEmail.id
+                ? "Sending…"
+                : "Confirm & Send"}
             </Button>
           </DialogActions>
         </Dialog>

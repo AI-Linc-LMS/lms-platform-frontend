@@ -93,12 +93,12 @@ const adminNavigationItems: NavigationItem[] = [
     icon: "mdi:calendar-check",
     featureName: "admin_attendance",
   },
-  // {
-  //   label: "Payment",
-  //   path: "/admin/payment",
-  //   icon: "mdi:credit-card-multiple",
-  //   featureName: "admin_payment",
-  // },
+  {
+    label: "Emails",
+    path: "/admin/emails",
+    icon: "mdi:email-multiple",
+    featureName: "admin_emails",
+  },
 ];
 
 export const BottomNavigation: React.FC = () => {
