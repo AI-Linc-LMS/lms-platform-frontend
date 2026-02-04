@@ -43,7 +43,7 @@ export function ProblemDescription({
           fontSize: { xs: "1.1rem", md: "1.15rem", lg: "1.25rem" },
         }}
       >
-        {problemData?.content_title || "Coding Problem"}
+        {problemData?.content_title || problemData?.details?.title || problemData?.details?.name || problemData?.details?.problem_title || "Coding Problem"}
       </Typography>
 
       <Box

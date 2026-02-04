@@ -772,7 +772,7 @@ export default function TakeAssessmentPage({
       let answered = 0;
       sectionQuestions.forEach((question: any) => {
         const questionId = question.id;
-        const response = sectionResponses[questionId];
+        const response = sectionResponses[questionId] ?? sectionResponses[String(questionId)];
         
         // For quiz: check if answer is selected
         if (sectionType === "quiz") {
@@ -780,17 +780,16 @@ export default function TakeAssessmentPage({
             answered++;
           }
         } 
-        // For coding: check if code was explicitly submitted
+        // For coding: only count if user submitted or ran (tc_passed > 0)
+        // Unattempted with tc_passed=0 should NOT count
         else if (sectionType === "coding") {
-          if (
-            response &&
-            response.submitted === true &&
-            (response.tc_passed !== undefined ||
-              response.total_tc !== undefined ||
-              response.passed !== undefined ||
-              response.total_test_cases !== undefined)
-          ) {
-            answered++;
+          if (response && typeof response === "object") {
+            const isSubmitted = response.submitted === true;
+            const passedCount = response.tc_passed ?? response.passed ?? 0;
+            const totalCount = response.total_tc ?? response.total_test_cases ?? 0;
+            if (isSubmitted || (totalCount > 0 && passedCount > 0)) {
+              answered++;
+            }
           }
         }
       });
@@ -914,22 +913,17 @@ export default function TakeAssessmentPage({
     if (!currentSection || sectionType !== "coding") return [];
     const codingResponses = responses["coding"] || {};
     return (currentSection.questions || []).map((q: any) => {
-      const response = codingResponses[q.id];
-      // Mark as answered ONLY if code was explicitly submitted (has submitted flag)
-      // OR has test case results (indicating code was run/submitted)
-      // Don't mark as answered just because template code was saved
-      const isAnswered = !!(
-        response &&
-        response.submitted === true &&
-        (response.tc_passed !== undefined ||
-          response.total_tc !== undefined ||
-          response.passed !== undefined ||
-          response.total_test_cases !== undefined)
-      );
+      const response = codingResponses[q.id] ?? codingResponses[String(q.id)];
+      // Only show tick if user explicitly submitted OR ran code and got some passed (tc_passed > 0)
+      // Unattempted (tc_passed=0 from payload) should NOT show tick
+      const isSubmitted = response?.submitted === true;
+      const passedCount = response?.tc_passed ?? response?.passed ?? 0;
+      const totalCount = response?.total_tc ?? response?.total_test_cases ?? 0;
+      const hasAttempted = isSubmitted || (totalCount > 0 && passedCount > 0);
       return {
         id: q.id,
         title: q.title,
-        answered: isAnswered,
+        answered: !!hasAttempted,
       };
     });
   }, [currentSection, sectionType, responses]);
@@ -1085,6 +1079,7 @@ export default function TakeAssessmentPage({
                     slug={slug}
                     questionId={currentCodingQuestion.id}
                     problemData={{
+                      content_title: currentCodingQuestion.title,
                       details: currentCodingQuestion,
                     }}
                     initialCode={

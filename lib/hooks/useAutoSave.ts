@@ -52,10 +52,25 @@ export function useAutoSave({
         const responsesString = JSON.stringify(responses);
         if (responsesString === lastSaveRef.current) return;
 
-        // Format responses using helper function (uses actual section IDs)
+        // Format responses - for attempted coding questions, prefer sessionStorage code
+        const getCodeFromSession = (questionId: number | string) => {
+          try {
+            const key = `assessment_${slug}_coding_${questionId}`;
+            const raw = typeof window !== "undefined" ? sessionStorage.getItem(key) : null;
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              const code = parsed?.code;
+              return code != null ? String(code) : null;
+            }
+          } catch {
+            // Ignore
+          }
+          return null;
+        };
         const { quizSectionId, codingProblemSectionId } = formatAssessmentResponses(
           responses,
-          sections
+          sections,
+          getCodeFromSession
         );
 
         // Calculate total duration

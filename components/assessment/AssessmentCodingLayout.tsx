@@ -79,22 +79,87 @@ export function AssessmentCodingLayout({
   const hasInitializedCodeRef = useRef<number | null>(null);
   const lastInitialCodeRef = useRef<string>("");
 
-  // Initialize default language
+  const storageKey = `assessment_${slug}_coding_${questionId}`;
+
+  const getStoredData = (): { code: string; language: string; language_id: number } | null => {
+    if (typeof window === "undefined") return null;
+    try {
+      const stored = sessionStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && (parsed.code !== undefined || parsed.language !== undefined)) {
+          return {
+            code: parsed.code != null ? String(parsed.code) : "",
+            language: parsed.language || "python3",
+            language_id: parsed.language_id ?? getLanguageId(parsed.language || "python3"),
+          };
+        }
+      }
+    } catch {
+      // Ignore
+    }
+    return null;
+  };
+
+  // Save code, language, language_id to sessionStorage
+  // Skip saving when code is empty and sessionStorage already has content - prevents overwriting
+  // during initial load before code init has run (save effect can run before setCode(storedCode) commits)
   useEffect(() => {
-    if (availableLanguages.length > 0 && !selectedLanguage) {
-      if (
-        initialLanguage &&
-        availableLanguages.some((l) => l.value === initialLanguage)
-      ) {
-        setSelectedLanguage(initialLanguage);
-      } else {
-        const pythonLang = availableLanguages.find(
-          (l) => l.value === "python3" || l.value === "python"
-        );
-        setSelectedLanguage(pythonLang?.value || availableLanguages[0].value);
+    if (typeof window === "undefined" || !slug || !questionId || !selectedLanguage) return;
+    if (!code.trim()) {
+      const stored = getStoredData();
+      if (stored?.code != null && stored.code.trim() !== "") return; // Don't overwrite with empty
+    }
+    try {
+      const languageId = getLanguageId(selectedLanguage);
+      sessionStorage.setItem(
+        storageKey,
+        JSON.stringify({ code, language: selectedLanguage, language_id: languageId })
+      );
+    } catch {
+      // Ignore quota errors
+    }
+  }, [storageKey, slug, questionId, selectedLanguage, code]);
+
+  // Initialize language on mount or question change - prefer sessionStorage, then initialLanguage, then python
+  // Keep dependency array fixed (5 items) - React requires constant size between renders
+  const langInitDeps = [
+    availableLanguages,
+    selectedLanguage,
+    initialLanguage ?? "",
+    questionId,
+    slug,
+  ] as const;
+  useEffect(() => {
+    if (availableLanguages.length === 0) return;
+    const key = `assessment_${slug}_coding_${questionId}`;
+    let stored: { code: string; language: string; language_id: number } | null = null;
+    if (typeof window !== "undefined") {
+      try {
+        const raw = sessionStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.language)
+            stored = { code: parsed.code ?? "", language: parsed.language, language_id: parsed.language_id };
+        }
+      } catch {
+        // Ignore
       }
     }
-  }, [availableLanguages, selectedLanguage, initialLanguage]);
+    const storedLang = stored?.language;
+    const validStoredLang = storedLang && availableLanguages.some((l) => l.value === storedLang);
+    const validInitialLang = initialLanguage && availableLanguages.some((l) => l.value === initialLanguage);
+    if (validStoredLang) {
+      setSelectedLanguage(storedLang);
+    } else if (validInitialLang) {
+      setSelectedLanguage(initialLanguage);
+    } else if (!selectedLanguage) {
+      const pythonLang = availableLanguages.find(
+        (l) => l.value === "python3" || l.value === "python"
+      );
+      setSelectedLanguage(pythonLang?.value || availableLanguages[0].value);
+    }
+  }, langInitDeps);
 
   // Initialize code with template_code or initialCode - ONLY when question changes or first mount
   useEffect(() => {
@@ -103,17 +168,22 @@ export function AssessmentCodingLayout({
     const questionChanged = previousQuestionIdRef.current !== questionId && previousQuestionIdRef.current !== null;
     const needsInitialization = hasInitializedCodeRef.current !== questionId;
     
-    // Determine what code to load
+    // Determine what code to load - prefer sessionStorage (saved during session), then initialCode, then template
     const getCodeToLoad = () => {
+      const stored = getStoredData();
+      if (stored?.code != null && stored.code.trim() !== "") {
+        return stored.code;
+      }
       if (initialCode && initialCode.trim() !== "") {
         return initialCode;
-      } else if (problemData?.details?.template_code?.[selectedLanguage]) {
-        return problemData.details.template_code[selectedLanguage];
-      } else if (problemData?.details?.starter_code) {
-        return problemData.details.starter_code;
-      } else {
-        return "";
       }
+      if (problemData?.details?.template_code?.[selectedLanguage]) {
+        return problemData.details.template_code[selectedLanguage];
+      }
+      if (problemData?.details?.starter_code) {
+        return problemData.details.starter_code;
+      }
+      return "";
     };
     
     if (questionChanged) {
@@ -142,7 +212,8 @@ export function AssessmentCodingLayout({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questionId, selectedLanguage, problemData]); // Removed initialCode to prevent resets
 
-  // Handle initialCode loading later (from saved responses) - only if code is empty or matches template
+  // Handle initialCode loading later (from saved responses) - only if sessionStorage has no user code
+  // SessionStorage takes precedence: do not override with initialCode when user has saved code
   useEffect(() => {
     if (
       initialCode &&
@@ -152,19 +223,22 @@ export function AssessmentCodingLayout({
       selectedLanguage &&
       problemData
     ) {
+      // If sessionStorage has non-empty code for this question, do NOT override – user's session data wins
+      const stored = getStoredData();
+      if (stored?.code != null && stored.code.trim() !== "") {
+        lastInitialCodeRef.current = initialCode;
+        return;
+      }
       lastInitialCodeRef.current = initialCode;
-      
       // Only set initialCode if current code is empty or matches template (user hasn't typed)
       setCode((currentCode) => {
         if (!currentCode || currentCode.trim() === "") {
           return initialCode;
         }
-        // Check if current code matches template - if so, replace with saved code
         const templateCode = problemData?.details?.template_code?.[selectedLanguage] || "";
         if (currentCode === templateCode) {
           return initialCode;
         }
-        // User has typed something, keep their code
         return currentCode;
       });
     }
@@ -253,7 +327,7 @@ export function AssessmentCodingLayout({
         testCases = result.results;
       } else if (result.test_cases) {
         testCases = result.test_cases;
-      } else if (result.stderr || result.compile_output) {
+      } else if (result.stderr || result.compile_output || result.error) {
         hasError = true;
         testCases = [result];
       }
@@ -274,7 +348,7 @@ export function AssessmentCodingLayout({
         showToast("All test cases passed! You can now submit.", "success");
       } else if (hasError) {
         setCanSubmit(false);
-        const errorType = result.status || "Error";
+        const errorType = result.error || result.status || "Error";
         showToast(
           `${errorType}: Please fix the errors and try again.`,
           "error"
@@ -288,7 +362,17 @@ export function AssessmentCodingLayout({
       }
     } catch (error: any) {
       setCanSubmit(false);
-      showToast(error.response?.data?.message || "Failed to run code", "error");
+      const errData = error.response?.data;
+      // API may return error payload (error, stderr, compile_output) with 4xx/5xx – still display it
+      if (errData && (errData.error || errData.stderr || errData.compile_output)) {
+        setTestResults(errData);
+        showToast(
+          (errData.error || errData.status || "Error") + ": Please fix the errors and try again.",
+          "error"
+        );
+      } else {
+        showToast(errData?.message || "Failed to run code", "error");
+      }
     } finally {
       setRunning(false);
     }
@@ -328,7 +412,7 @@ export function AssessmentCodingLayout({
       // Check if all tests passed
       let hasError = false;
 
-      if (result.stderr || result.compile_output) {
+      if (result.stderr || result.compile_output || result.error) {
         hasError = true;
       }
 
@@ -336,7 +420,7 @@ export function AssessmentCodingLayout({
       if (allPassed || result.all_passed || result.status === "Accepted") {
         showToast("Code submitted successfully!", "success");
       } else if (hasError) {
-        const errorType = result.status || "Error";
+        const errorType = result.error || result.status || "Error";
         showToast(
           `${errorType}: Submission failed. Please fix the errors.`,
           "error"
@@ -348,10 +432,16 @@ export function AssessmentCodingLayout({
         );
       }
     } catch (error: any) {
-      showToast(
-        error.response?.data?.message || "Failed to submit code",
-        "error"
-      );
+      const errData = error.response?.data;
+      if (errData && (errData.error || errData.stderr || errData.compile_output)) {
+        setTestResults(errData);
+        showToast(
+          (errData.error || errData.status || "Error") + ": Please fix the errors and try again.",
+          "error"
+        );
+      } else {
+        showToast(errData?.message || "Failed to submit code", "error");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -402,10 +492,13 @@ export function AssessmentCodingLayout({
         showToast("Custom input executed successfully", "success");
       }
     } catch (error: any) {
-      showToast(
-        error.response?.data?.message || "Failed to run custom input",
-        "error"
-      );
+      const errData = error.response?.data;
+      if (errData && (errData.error || errData.stderr || errData.compile_output)) {
+        setTestResults({ ...errData, custom_input: true });
+        showToast((errData.error || errData.status || "Error") + ": Check the output for details.", "error");
+      } else {
+        showToast(errData?.message || "Failed to run custom input", "error");
+      }
     }
   };
 
@@ -535,7 +628,7 @@ export function AssessmentCodingLayout({
         <Box
           sx={{
             flex: 1,
-            minHeight: 0,
+            minHeight: 140,
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
