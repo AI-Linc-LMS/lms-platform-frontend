@@ -23,6 +23,8 @@ import {
   getMockPsychometricData,
 } from "@/lib/mock-data/assessment-mock-data";
 import { EyeMovementViolations } from "@/components/assessment/result/EyeMovementViolations";
+import { QuizResponsesSection } from "@/components/assessment/result/QuizResponsesSection";
+import { CodingProblemResponsesSection } from "@/components/assessment/result/CodingProblemResponsesSection";
 
 export default function AssessmentResultPage() {
   const params = useParams();
@@ -290,7 +292,25 @@ export default function AssessmentResultPage() {
             />
           )}
 
-          {/* Overall Feedback */}
+          {/* Quiz Responses - one question at a time, same layout as QuizContent */}
+          {assessmentResult.user_responses?.quiz_responses &&
+            assessmentResult.user_responses.quiz_responses.length > 0 && (
+              <QuizResponsesSection
+                quizResponses={assessmentResult.user_responses.quiz_responses}
+              />
+            )}
+
+          {/* Coding Problem Responses */}
+          {assessmentResult.user_responses?.coding_problem_responses &&
+            assessmentResult.user_responses.coding_problem_responses.length > 0 && (
+              <CodingProblemResponsesSection
+                codingResponses={
+                  assessmentResult.user_responses.coding_problem_responses
+                }
+              />
+            )}
+
+          {/* Overall Feedback - at the end */}
           <OverallFeedback
             feedbackPoints={feedbackPoints}
           />
