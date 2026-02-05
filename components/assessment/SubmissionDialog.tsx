@@ -79,7 +79,7 @@ export function SubmissionDialog({
             }}
           >
             <Typography variant="body2" fontWeight={600} gutterBottom>
-              Questions Answered: {totalAnswered} / {totalQuestions}
+              Questions Visisted: {totalAnswered} / {totalQuestions}
             </Typography>
             {!allAnswered && (
               <Typography variant="body2" color="warning.main" sx={{ mt: 1 }}>
