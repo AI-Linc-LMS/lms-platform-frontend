@@ -33,37 +33,75 @@ export function TestResults({
   const [selectedCase, setSelectedCase] = useState(0);
   const [customInput, setCustomInput] = useState("");
 
+  // Normalize: unwrap nested response (data, result, output, run_result, run_output, submission, submissions)
+  const raw =
+    testResults?.data ??
+    testResults?.result ??
+    testResults?.output ??
+    testResults?.run_result ??
+    (Array.isArray(testResults?.run_output) ? testResults.run_output[0] : null) ??
+    testResults?.submission ??
+    (Array.isArray(testResults?.submissions) ? testResults.submissions[0] : null) ??
+    testResults;
+  const res = raw || testResults;
+
+  // Helper to extract error fields from any object
+  const extractErrorFrom = (obj: any) => {
+    if (!obj || typeof obj !== "object") return;
+    const err =
+      obj.error ||
+      obj.status_message ||
+      (typeof obj.status === "string" ? obj.status : obj.status?.description);
+    const stderr = obj.stderr;
+    const compileOutput = obj.compile_output;
+    if (err || stderr || compileOutput) {
+      return {
+        errorType: err || "Error",
+        errorMessage: [stderr, compileOutput].filter(Boolean).join("\n\n") || err || "",
+      };
+    }
+  };
+
   // Handle different API response formats
   let testCasesArray: any[] = [];
   let hasCompilationError = false;
+  let errorType = "";
   let errorMessage = "";
   let passedCount = 0;
   let totalCount = 0;
 
-  if (testResults) {
-    if (Array.isArray(testResults)) {
-      // Success case: array of test cases
-      testCasesArray = testResults;
-    } else if (testResults.results && Array.isArray(testResults.results)) {
-      // Wrapped in results property (most common format)
-      testCasesArray = testResults.results;
-    } else if (testResults.test_cases) {
-      // Wrapped in test_cases property
-      testCasesArray = testResults.test_cases;
-    } else if (testResults.stderr || testResults.compile_output) {
-      // Single error object case
-      testCasesArray = [testResults];
+  if (res) {
+    if (Array.isArray(res)) {
+      testCasesArray = res;
+      // Check first element for error (Judge0 may return array of one error object)
+      const first = res[0];
+      if (first && (first.stderr || first.compile_output || first.error)) {
+        hasCompilationError = true;
+        errorType = first.error || first.status || first.status_message || "Error";
+        const parts: string[] = [];
+        if (first.stderr) parts.push(first.stderr);
+        if (first.compile_output) parts.push(first.compile_output);
+        errorMessage = parts.length > 0 ? parts.join("\n\n") : (first.message || first.error || "");
+      }
+    } else if (res.results && Array.isArray(res.results)) {
+      testCasesArray = res.results;
+    } else if (res.test_cases) {
+      testCasesArray = res.test_cases;
+    } else if (res.stderr || res.compile_output || res.error) {
+      testCasesArray = [res];
       hasCompilationError = true;
-      errorMessage = testResults.stderr || testResults.compile_output || "";
+      errorType = res.error || res.status || res.status_message || "Error";
+      const parts: string[] = [];
+      if (res.stderr) parts.push(res.stderr);
+      if (res.compile_output) parts.push(res.compile_output);
+      errorMessage = parts.length > 0 ? parts.join("\n\n") : (res.message || res.error || "");
     }
 
     // Calculate passed/total for assessment mode
     if (isAssessment) {
-      // Try to get from direct properties first
-      passedCount = testResults.passed_testcases ?? testResults.passed ?? testResults.tc_passed ?? 0;
-      totalCount = testResults.total_testcases ?? testResults.total_test_cases ?? testResults.total_tc ?? 0;
-      
-      // If not available, calculate from test cases array
+      passedCount = res.passed_testcases ?? res.passed ?? res.tc_passed ?? 0;
+      totalCount = res.total_testcases ?? res.total_test_cases ?? res.total_tc ?? 0;
+
       if (totalCount === 0 && testCasesArray.length > 0) {
         totalCount = testCasesArray.length;
         passedCount = testCasesArray.filter(
@@ -76,7 +114,24 @@ export function TestResults({
     }
   }
 
-  // Assessment mode: Show simplified test case count only
+  // Fallback: extract error from top-level, nested wrappers, or individual test case results
+  if (testResults && !hasCompilationError) {
+    const extracted =
+      extractErrorFrom(testResults) ??
+      extractErrorFrom(testResults?.data) ??
+      extractErrorFrom(testResults?.result) ??
+      extractErrorFrom(testResults?.run_output?.[0]) ??
+      extractErrorFrom(testResults?.submissions?.[0]) ??
+      // Error may be inside results[] when API returns { results: [{ stderr, error, ... }] }
+      (testCasesArray.length > 0 ? extractErrorFrom(testCasesArray[0]) : undefined);
+    if (extracted) {
+      hasCompilationError = true;
+      errorType = extracted.errorType;
+      errorMessage = extracted.errorMessage;
+    }
+  }
+
+  // Assessment mode: Show tabbed layout (Test Cases / Custom Input) with error in Test Cases tab
   if (isAssessment) {
     return (
       <Box
@@ -85,10 +140,28 @@ export function TestResults({
           display: "flex",
           flexDirection: "column",
           backgroundColor: "#ffffff",
-          overflow: "auto",
-          p: 2,
+          overflow: "hidden",
         }}
       >
+        {/* Tabs for assessment mode */}
+        <Tabs
+          value={mainTab}
+          onChange={(_, v) => setMainTab(v)}
+          sx={{
+            borderBottom: "1px solid #e5e7eb",
+            minHeight: 40,
+            backgroundColor: "#ffffff",
+            "& .MuiTab-root": { minHeight: 40, fontSize: "0.875rem", fontWeight: 500, textTransform: "none" },
+            "& .Mui-selected": { color: "#111827" },
+            "& .MuiTabs-indicator": { backgroundColor: "#6366f1" },
+          }}
+        >
+          <Tab label="Test Cases" />
+          <Tab label="Custom Input" />
+        </Tabs>
+        <Box sx={{ flex: 1, overflow: "auto", p: 2 }}>
+          {mainTab === 0 && (
+            <>
         {!testResults ? (
           <Box
             sx={{
@@ -121,43 +194,6 @@ export function TestResults({
               width: "100%",
             }}
           >
-            {/* Show errors if any */}
-            {hasCompilationError && errorMessage && (
-              <Alert 
-                severity="error" 
-                sx={{ 
-                  width: "100%",
-                  "& .MuiAlert-message": {
-                    width: "100%",
-                  },
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontWeight: 600,
-                    mb: 0.5,
-                    fontSize: "0.875rem",
-                    color: "#991b1b",
-                  }}
-                >
-                  Error
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontFamily: "monospace",
-                    fontSize: "0.8rem",
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                    color: "#dc2626",
-                  }}
-                >
-                  {errorMessage}
-                </Typography>
-              </Alert>
-            )}
-
             {/* Show test case count if available */}
             {totalCount > 0 && (
               <Box
@@ -193,6 +229,39 @@ export function TestResults({
               </Box>
             )}
 
+            {/* Show error details under test case count - ensure visibility */}
+            {hasCompilationError && (errorType || errorMessage) && (
+              <Box
+                sx={{
+                  width: "100%",
+                  p: 2,
+                  backgroundColor: "#fef2f2",
+                  borderRadius: 1,
+                  border: "1px solid #fecaca",
+                }}
+              >
+                <Typography
+                  variant="subtitle2"
+                  sx={{ fontWeight: 600, color: "#991b1b", mb: 1 }}
+                >
+                  {errorType || "Error"}
+                </Typography>
+                <Typography
+                  component="pre"
+                  variant="body2"
+                  sx={{
+                    fontFamily: "monospace",
+                    fontSize: "0.8rem",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                    color: "#b91c1c",
+                  }}
+                >
+                  {errorMessage || errorType}
+                </Typography>
+              </Box>
+            )}
+
             {/* Show status messages */}
             {totalCount > 0 && (
               <>
@@ -222,6 +291,81 @@ export function TestResults({
             )}
           </Box>
         )}
+            </>
+          )}
+          {mainTab === 1 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body2" sx={{ color: "#4b5563", mb: 2, fontSize: "0.875rem" }}>
+                Enter your custom test input below and click Run to see the output.
+              </Typography>
+              <TextField
+                multiline
+                rows={6}
+                fullWidth
+                value={customInput}
+                onChange={(e) => setCustomInput(e.target.value)}
+                placeholder="Enter your input here..."
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": {
+                    backgroundColor: "#f9fafb",
+                    fontFamily: "monospace",
+                    fontSize: "0.875rem",
+                  },
+                }}
+              />
+              <Button
+                variant="contained"
+                onClick={() => onRunCustomInput?.(customInput)}
+                disabled={!customInput.trim() || runningCustomInput}
+                startIcon={
+                  runningCustomInput ? (
+                    <IconWrapper icon="mdi:loading" size={16} />
+                  ) : (
+                    <IconWrapper icon="mdi:play" size={16} />
+                  )
+                }
+                sx={{ backgroundColor: "#6366f1", "&:hover": { backgroundColor: "#4f46e5" } }}
+              >
+                {runningCustomInput ? "Running..." : "Run"}
+              </Button>
+              {testResults?.custom_input && (
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>Output</Typography>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 1.5,
+                      backgroundColor: "#f3f4f6",
+                      fontFamily: "monospace",
+                      fontSize: "0.875rem",
+                      whiteSpace: "pre-wrap",
+                    }}
+                  >
+                    {testResults.stdout || testResults.output || "No output"}
+                  </Paper>
+                  {(testResults.stderr || testResults.compile_output || testResults.error) && (
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 1.5,
+                        mt: 1,
+                        backgroundColor: "#fee2e2",
+                        border: "1px solid #ef4444",
+                        fontFamily: "monospace",
+                        fontSize: "0.8rem",
+                        color: "#991b1b",
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
+                      {testResults.stderr || testResults.compile_output || testResults.error || ""}
+                    </Paper>
+                  )}
+                </Box>
+              )}
+            </Box>
+          )}
+        </Box>
       </Box>
     );
   }
@@ -288,8 +432,8 @@ export function TestResults({
         {/* Test Cases Tab */}
         {mainTab === 0 && (
           <Box>
-            {/* Compilation/Runtime Errors - Show prominently */}
-            {hasCompilationError && errorMessage && (
+            {/* Compilation/Runtime Errors - bind error, stderr, compile_output */}
+            {hasCompilationError && (errorType || errorMessage) && (
               <Box
                 sx={{
                   backgroundColor: "#ffffff",
@@ -322,9 +466,10 @@ export function TestResults({
                       color: "#991b1b",
                     }}
                   >
-                    {testCasesArray[0]?.status || "Error"}
+                    {errorType || testCasesArray[0]?.status || "Error"}
                   </Typography>
                   <Typography
+                    component="pre"
                     variant="body2"
                     sx={{
                       fontFamily: "monospace",
@@ -334,7 +479,7 @@ export function TestResults({
                       color: "#dc2626",
                     }}
                   >
-                    {errorMessage}
+                    {errorMessage || errorType}
                   </Typography>
                 </Alert>
               </Box>
@@ -844,8 +989,8 @@ export function TestResults({
                   </Paper>
                 </Box>
 
-                {/* Error output if any */}
-                {(testResults.stderr || testResults.compile_output) && (
+                {/* Error output if any - bind error, stderr, compile_output */}
+                {(testResults.stderr || testResults.compile_output || testResults.error) && (
                   <Box sx={{ mb: 2 }}>
                     <Typography
                       variant="body2"
@@ -871,7 +1016,7 @@ export function TestResults({
                         wordBreak: "break-word",
                       }}
                     >
-                      {testResults.stderr || testResults.compile_output}
+                      {testResults.stderr || testResults.compile_output || testResults.error}
                     </Paper>
                   </Box>
                 )}
@@ -882,11 +1027,11 @@ export function TestResults({
                     p: 1.5,
                     mb: 2,
                     backgroundColor:
-                      testResults.stderr || testResults.compile_output
+                      testResults.stderr || testResults.compile_output || testResults.error
                         ? "#fee2e2"
                         : "#d1fae5",
                     border: `1px solid ${
-                      testResults.stderr || testResults.compile_output
+                      testResults.stderr || testResults.compile_output || testResults.error
                         ? "#ef4444"
                         : "#10b981"
                     }`,
@@ -897,14 +1042,14 @@ export function TestResults({
                     variant="body2"
                     sx={{
                       color:
-                        testResults.stderr || testResults.compile_output
+                        testResults.stderr || testResults.compile_output || testResults.error
                           ? "#991b1b"
                           : "#065f46",
                       fontWeight: 600,
                       fontSize: "0.875rem",
                     }}
                   >
-                    Status: {testResults.status || "Executed"}
+                    Status: {testResults.status || testResults.error || "Executed"}
                   </Typography>
                 </Box>
 
