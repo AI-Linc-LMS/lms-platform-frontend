@@ -59,6 +59,9 @@ export default function AssessmentPage() {
   const [assessmentEmailJobMap, setAssessmentEmailJobMap] = useState<
     Record<number, { task_id: string; status: string }>
   >({});
+  const [duplicatingId, setDuplicatingId] = useState<number | null>(null);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [assessmentToDuplicate, setAssessmentToDuplicate] = useState<Assessment | null>(null);
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -393,6 +396,40 @@ export default function AssessmentPage() {
     }
   };
 
+  const handleDuplicateClick = async (assessment: Assessment): Promise<void> => {
+    setAssessmentToDuplicate(assessment);
+    setDuplicateDialogOpen(true);
+  };
+
+  const handleDuplicateDialogClose = () => {
+    if (!duplicatingId) {
+      setDuplicateDialogOpen(false);
+      setAssessmentToDuplicate(null);
+    }
+  };
+
+  const handleDuplicateConfirm = async () => {
+    if (!assessmentToDuplicate || !config.clientId) return;
+    try {
+      setDuplicatingId(assessmentToDuplicate.id);
+      const duplicatedAssessment = await adminAssessmentService.duplicateAssessment(
+        config.clientId,
+        assessmentToDuplicate.id
+      );
+      showToast(
+        `Assessment duplicated successfully. New assessment: "${duplicatedAssessment.title}"`,
+        "success"
+      );
+      setDuplicateDialogOpen(false);
+      setAssessmentToDuplicate(null);
+      loadAssessments();
+    } catch (error: any) {
+      showToast(error?.message || "Failed to duplicate assessment", "error");
+    } finally {
+      setDuplicatingId(null);
+    }
+  };
+
   // Filter assessments
   const filteredAssessments = useMemo(() => {
     return assessments.filter((assessment) => {
@@ -718,10 +755,12 @@ export default function AssessmentPage() {
               onTriggerEmailJob={handleOpenEmailTriggerDialog}
               onExportSubmissions={handleExportSubmissions}
               onExportQuestions={handleExportQuestions}
+              onDuplicate={handleDuplicateClick}
               exportingSubmissionsId={exportingSubmissionsId}
               exportingQuestionsId={exportingQuestionsId}
               deletingId={deleting && assessmentToDelete ? assessmentToDelete.id : null}
               triggeringEmailJobId={triggeringEmailJobId}
+              duplicatingId={duplicatingId}
             />
             {filteredAssessments.length > 0 && (
               <AssessmentPagination
@@ -858,6 +897,54 @@ export default function AssessmentPage() {
               {triggeringEmailJobId && assessmentToTriggerEmail && triggeringEmailJobId === assessmentToTriggerEmail.id
                 ? "Sending…"
                 : "Confirm & Send"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog
+          open={duplicateDialogOpen}
+          onClose={handleDuplicateDialogClose}
+          aria-labelledby="duplicate-dialog-title"
+          aria-describedby="duplicate-dialog-description"
+          PaperProps={{
+            sx: {
+              borderRadius: 2,
+              minWidth: 360,
+            },
+          }}
+        >
+          <DialogTitle id="duplicate-dialog-title" sx={{ fontWeight: 600 }}>
+            Duplicate Assessment?
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="duplicate-dialog-description">
+              {assessmentToDuplicate ? (
+                <>
+                  Create a duplicate of &quot;{assessmentToDuplicate.title}&quot;? The new assessment will be named &quot;{assessmentToDuplicate.title} - copy&quot; and will include all questions and settings.
+                </>
+              ) : null}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button
+              onClick={handleDuplicateDialogClose}
+              disabled={!!duplicatingId}
+              color="inherit"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDuplicateConfirm}
+              disabled={!!duplicatingId}
+              variant="contained"
+              sx={{
+                bgcolor: "#7c3aed",
+                "&:hover": { bgcolor: "#6d28d9" },
+              }}
+              autoFocus
+              startIcon={duplicatingId ? <CircularProgress size={16} color="inherit" /> : null}
+            >
+              {duplicatingId ? "Duplicating…" : "Duplicate"}
             </Button>
           </DialogActions>
         </Dialog>
