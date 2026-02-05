@@ -362,6 +362,30 @@ export const deleteAssessment = async (
 };
 
 /**
+ * Duplicate an assessment
+ * POST /admin-dashboard/api/clients/{client_id}/assessments/{assessment_id}/duplicate/
+ */
+export const duplicateAssessment = async (
+  clientId: string | number,
+  assessmentId: number
+): Promise<Assessment> => {
+  try {
+    const response = await apiClient.post(
+      `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/duplicate/`
+    );
+    return response.data;
+  } catch (err) {
+    const error = err as AxiosError<ApiErrorPayload>;
+    const message =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      "Failed to duplicate assessment";
+    throw new Error(message);
+  }
+};
+
+/**
  * Get all MCQs for a client
  */
 export const getMCQs = async (
@@ -601,6 +625,7 @@ export const adminAssessmentService = {
   createAssessment,
   updateAssessment,
   deleteAssessment,
+  duplicateAssessment,
   getSubmissionsExport,
   getQuestionsExport,
   getQuestionsExportJson,

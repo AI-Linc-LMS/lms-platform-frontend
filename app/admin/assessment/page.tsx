@@ -59,6 +59,7 @@ export default function AssessmentPage() {
   const [assessmentEmailJobMap, setAssessmentEmailJobMap] = useState<
     Record<number, { task_id: string; status: string }>
   >({});
+  const [duplicatingId, setDuplicatingId] = useState<number | null>(null);
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -393,6 +394,26 @@ export default function AssessmentPage() {
     }
   };
 
+  const handleDuplicateAssessment = async (assessment: Assessment) => {
+    if (!config.clientId) return;
+    try {
+      setDuplicatingId(assessment.id);
+      const duplicatedAssessment = await adminAssessmentService.duplicateAssessment(
+        config.clientId,
+        assessment.id
+      );
+      showToast(
+        `Assessment duplicated successfully. New assessment: "${duplicatedAssessment.title}"`,
+        "success"
+      );
+      loadAssessments();
+    } catch (error: any) {
+      showToast(error?.message || "Failed to duplicate assessment", "error");
+    } finally {
+      setDuplicatingId(null);
+    }
+  };
+
   // Filter assessments
   const filteredAssessments = useMemo(() => {
     return assessments.filter((assessment) => {
@@ -718,10 +739,12 @@ export default function AssessmentPage() {
               onTriggerEmailJob={handleOpenEmailTriggerDialog}
               onExportSubmissions={handleExportSubmissions}
               onExportQuestions={handleExportQuestions}
+              onDuplicate={handleDuplicateAssessment}
               exportingSubmissionsId={exportingSubmissionsId}
               exportingQuestionsId={exportingQuestionsId}
               deletingId={deleting && assessmentToDelete ? assessmentToDelete.id : null}
               triggeringEmailJobId={triggeringEmailJobId}
+              duplicatingId={duplicatingId}
             />
             {filteredAssessments.length > 0 && (
               <AssessmentPagination
