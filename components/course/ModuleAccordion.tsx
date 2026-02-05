@@ -16,6 +16,8 @@ interface ModuleAccordionProps {
   module: Module;
   moduleIndex: number;
   modules: Module[];
+  currentWeek: number;
+  previousWeekModules: Module[];
 
   isExpanded: boolean;
   onToggle: () => void;
@@ -32,6 +34,8 @@ export function ModuleAccordion({
   module,
   moduleIndex,
   modules,
+  currentWeek,
+  previousWeekModules,
   isExpanded,
   onToggle,
   courseId,
@@ -50,13 +54,27 @@ export function ModuleAccordion({
   const hasContent = totalSubmoduleLectures > 0;
 
   /* ---------------- locking logic ---------------- */
-  const previousModule =
-    moduleIndex > 0 ? modules[moduleIndex - 1] : null;
+  // Lock if: content locking is enabled, current week > 1, and previous week's completion < threshold
+  // Calculate previous week's average completion percentage
+  const getPreviousWeekCompletion = () => {
+    if (previousWeekModules.length === 0) return 100; // No previous week = unlocked
+    
+    // Calculate average completion of all modules in previous week
+    const totalCompletion = previousWeekModules.reduce(
+      (sum, mod) => sum + (mod.completion_percentage ?? 0),
+      0
+    );
+    return previousWeekModules.length > 0 
+      ? totalCompletion / previousWeekModules.length 
+      : 100;
+  };
 
+  const previousWeekCompletion = getPreviousWeekCompletion();
+  
   const isLocked =
     contentLockEnabled &&
-    moduleIndex > 0 &&
-    ((previousModule?.completion_percentage ?? 0) < lockThresholdValue);
+    currentWeek > 1 &&
+    previousWeekCompletion < lockThresholdValue;
 
   return (
     <Accordion
@@ -71,7 +89,10 @@ export function ModuleAccordion({
         "&:before": { display: "none" },
         "&.Mui-disabled": {
           backgroundColor: "#f9fafb",
-          opacity: 0.6,
+          opacity: 0.8,
+          "& .MuiAccordionSummary-content": {
+            opacity: "1 !important",
+          },
         },
       }}
     >
@@ -184,9 +205,10 @@ export function ModuleAccordion({
                 display: "block",
                 color: "#ef4444",
                 fontSize: "0.7rem",
+                opacity:"1 !important"
               }}
             >
-              Complete previous week (≥ {lockThresholdValue}%) to unlock
+              Complete week {currentWeek-1} (≥ {lockThresholdValue}%) to unlock
             </Typography>
           )}
 

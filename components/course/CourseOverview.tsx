@@ -157,21 +157,29 @@ export function CourseOverview({
 
                 {/* Modules for this week */}
                 <Box>
-                  {weekModules.map((module,index) => (
-                    <ModuleAccordion
-                      key={module.id}
-                      module={module}
-                      moduleIndex={index}
-                      modules={weekModules}
-                      isExpanded={expandedModules[module.id] ?? false}
-                      onToggle={() => onModuleToggle(module.id)}
-                      courseId={course.course_id}
-                      contentLockEnabled={course.content_lock_enabled}
-                      lockThresholdValue={course.lock_threshold_value}
-                      onNavigate={onNavigate}
-                      getSubmoduleContentCount={getSubmoduleContentCount}
-                    />
-                  ))}
+                  {weekModules.map((module,index) => {
+                    // Get previous week's modules for locking logic
+                    const previousWeek = week - 1;
+                    const previousWeekModules = modulesByWeek[previousWeek] || [];
+                    
+                    return (
+                      <ModuleAccordion
+                        key={module.id}
+                        module={module}
+                        moduleIndex={index}
+                        modules={weekModules}
+                        currentWeek={week}
+                        previousWeekModules={previousWeekModules}
+                        isExpanded={expandedModules[module.id] ?? false}
+                        onToggle={() => onModuleToggle(module.id)}
+                        courseId={course.course_id}
+                        contentLockEnabled={course.content_lock_enabled}
+                        lockThresholdValue={course.lock_threshold_value ?? 80}
+                        onNavigate={onNavigate}
+                        getSubmoduleContentCount={getSubmoduleContentCount}
+                      />
+                    );
+                  })}
                 </Box>
               </Box>
             );

@@ -149,13 +149,7 @@ export function formatAssessmentResponses(
         // For coding: include ALL problems - attempted and unattempted
         // Unattempted: best_code = "" (empty)
         // Attempted: prefer sessionStorage code if found, else response code
-        const hasTestResults = questionResponse?.tc_passed !== undefined ||
-                               questionResponse?.total_tc !== undefined ||
-                               questionResponse?.passed !== undefined ||
-                               questionResponse?.total_test_cases !== undefined;
-        const isExplicitlySubmitted = questionResponse?.submitted === true;
-        const attempted = (isExplicitlySubmitted || hasTestResults) && questionResponse;
-
+        // IMPORTANT: If code exists in sessionStorage (even if never run/submitted), include it
         const templateCode = question.template_code?.python ||
                             question.template_code?.python3 ||
                             question.template_code?.java ||
@@ -163,16 +157,30 @@ export function formatAssessmentResponses(
                             question.template_code?.javascript ||
                             "";
         const totalTestCases = question.test_cases?.length ?? 0;
+        
+        // Check sessionStorage first - if code exists there, use it even if never run/submitted
+        const sessionCode = getCodeFromSession?.(questionId);
+        const hasSessionCode = sessionCode != null && sessionCode.trim() !== "";
+        
+        const hasTestResults = questionResponse?.tc_passed !== undefined ||
+                               questionResponse?.total_tc !== undefined ||
+                               questionResponse?.passed !== undefined ||
+                               questionResponse?.total_test_cases !== undefined;
+        const isExplicitlySubmitted = questionResponse?.submitted === true;
+        
+        // Consider attempted if: explicitly submitted, has test results, OR has code in sessionStorage
+        // If user wrote code (even if never run/submitted), include it in submission
+        const attempted = isExplicitlySubmitted || hasTestResults || hasSessionCode;
 
         if (attempted) {
-          const sessionCode = getCodeFromSession?.(questionId);
-          const code =
-            (sessionCode != null && sessionCode.trim() !== "")
-              ? sessionCode
-              : (questionResponse.best_code ?? questionResponse.code ?? templateCode ?? "");
+          // Prefer sessionStorage code (most up-to-date), then response code, then template code
+          const code = hasSessionCode
+            ? sessionCode
+            : (questionResponse?.best_code ?? questionResponse?.code ?? templateCode ?? "");
+          
           sectionResponseData[String(questionId)] = {
-            tc_passed: questionResponse.tc_passed ?? questionResponse.passed ?? 0,
-            total_tc: questionResponse.total_tc ?? questionResponse.total_test_cases ?? totalTestCases,
+            tc_passed: questionResponse?.tc_passed ?? questionResponse?.passed ?? 0,
+            total_tc: questionResponse?.total_tc ?? questionResponse?.total_test_cases ?? totalTestCases,
             best_code: code.trim() !== "" ? code : templateCode,
           };
         } else {

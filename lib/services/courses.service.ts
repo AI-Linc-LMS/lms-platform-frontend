@@ -88,7 +88,7 @@ export interface CourseDetail {
   updated_at: string;
   modules: Module[];
   content_lock_enabled:boolean;
-  lock_threshold_value:number;
+  lock_threshold_value?:number;
 }
 
 export interface CourseDashboard {

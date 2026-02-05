@@ -304,6 +304,18 @@ export function AssessmentCodingLayout({
     }
 
     try {
+      // Clear any pending debounce timer and immediately save code to backend response
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      
+      // Immediately save code to backend response before running
+      if (onCodeChangeRef.current && selectedLanguage && code) {
+        previousCodeRef.current = { code, language: selectedLanguage };
+        onCodeChangeRef.current(code, selectedLanguage);
+      }
+
       setRunning(true);
       setTestResults(null);
       const languageId = getLanguageId(selectedLanguage);
@@ -386,6 +398,18 @@ export function AssessmentCodingLayout({
     }
 
     try {
+      // Clear any pending debounce timer and immediately save code to backend response
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      
+      // Immediately save code to backend response before submitting
+      if (onCodeChangeRef.current && selectedLanguage && code) {
+        previousCodeRef.current = { code, language: selectedLanguage };
+        onCodeChangeRef.current(code, selectedLanguage);
+      }
+
       setSubmitting(true);
       const languageId = getLanguageId(selectedLanguage);
 
@@ -473,6 +497,18 @@ export function AssessmentCodingLayout({
     }
 
     try {
+      // Clear any pending debounce timer and immediately save code to backend response
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      
+      // Immediately save code to backend response before running with custom input
+      if (onCodeChangeRef.current && selectedLanguage && code) {
+        previousCodeRef.current = { code, language: selectedLanguage };
+        onCodeChangeRef.current(code, selectedLanguage);
+      }
+
       const languageId = getLanguageId(selectedLanguage);
 
       const result = await assessmentService.runCodeInAssessment(
