@@ -176,35 +176,28 @@ export function EnrollmentJobStatus({
   };
 
   // Parse error_details to extract user-friendly messages
-  const parseErrorDetails = (errorDetails: Record<string, any>): string => {
-    if (!errorDetails || Object.keys(errorDetails).length === 0) {
+  const parseErrorDetails = (errorDetails: Record<string, any> | string | null | undefined): string => {
+    if (!errorDetails) {
       return "";
-    }
-
-    // Handle duplicate constraint errors
-    const errorString = JSON.stringify(errorDetails);
-    if (errorString.includes("duplicate key") || errorString.includes("unique constraint")) {
-      const match = errorString.match(/user_id[,\s]*client_id[\)\s]*=\((\d+),\s*(\d+)\)/);
-      if (match) {
-        const userId = match[1];
-        const clientId = match[2];
-        return `Some students already have accounts for this client (User ID: ${userId}, Client ID: ${clientId}). The backend should handle this gracefully, but encountered an error. Please contact support if this persists.`;
-      }
-      return "Some students already have accounts for this client. The backend should handle this gracefully, but encountered an error. Please contact support if this persists.";
-    }
-
-    // Handle other error formats
-    if (errorDetails.error) {
-      return String(errorDetails.error);
-    }
-
-    if (errorDetails.message) {
-      return String(errorDetails.message);
     }
 
     // If it's a simple string
     if (typeof errorDetails === "string") {
-      return errorDetails;
+      return errorDetails.trim();
+    }
+
+    // If it's an object, check if it's empty
+    if (Object.keys(errorDetails).length === 0) {
+      return "";
+    }
+
+    // Prioritize the actual error message from the API
+    if (errorDetails.error) {
+      return String(errorDetails.error).trim();
+    }
+
+    if (errorDetails.message) {
+      return String(errorDetails.message).trim();
     }
 
     // Format object as readable text
