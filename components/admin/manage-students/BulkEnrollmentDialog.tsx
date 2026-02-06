@@ -58,6 +58,7 @@ export function BulkEnrollmentDialog({
   const [files, setFiles] = useState<File[]>([]);
   const [parsedStudents, setParsedStudents] = useState<ParsedStudent[]>([]);
   const [validationErrors, setValidationErrors] = useState<CSVValidationError[]>([]);
+  const [duplicateEmails, setDuplicateEmails] = useState<Array<{ email: string; count: number; students: ParsedStudent[] }>>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [studentsPage, setStudentsPage] = useState(0);
   const [studentsRowsPerPage, setStudentsRowsPerPage] = useState(10);
@@ -104,6 +105,7 @@ export function BulkEnrollmentDialog({
     if (newFiles.length === 0) {
       setParsedStudents([]);
       setValidationErrors([]);
+      setDuplicateEmails([]);
       setStudentsPage(0);
       const fileInput = document.getElementById("csv-upload-input") as HTMLInputElement;
       if (fileInput) {
@@ -145,11 +147,35 @@ export function BulkEnrollmentDialog({
       }
     }
 
+    // Check for duplicate emails
+    const emailMap = new Map<string, ParsedStudent[]>();
+    allStudents.forEach((student) => {
+      const email = student.email.toLowerCase().trim();
+      if (!emailMap.has(email)) {
+        emailMap.set(email, []);
+      }
+      emailMap.get(email)!.push(student);
+    });
+
+    const duplicates = Array.from(emailMap.entries())
+      .filter(([_, students]) => students.length > 1)
+      .map(([email, students]) => ({
+        email,
+        count: students.length,
+        students,
+      }));
+
     setParsedStudents(allStudents);
     setValidationErrors(allErrors);
+    setDuplicateEmails(duplicates);
     setStudentsPage(0);
 
-    if (allStudents.length === 0) {
+    if (duplicates.length > 0) {
+      showToast(
+        `Duplicate emails found. Please ensure all emails are unique before proceeding.`,
+        "error"
+      );
+    } else if (allStudents.length === 0) {
       showToast(
         `No valid students found in ${filesToParse.length} file(s). Please check ${totalErrors} error(s).`,
         "error"
@@ -219,6 +245,11 @@ export function BulkEnrollmentDialog({
       // Validate CSV upload - only require at least one valid student
       if (parsedStudents.length === 0) {
         showToast("Please upload a CSV file with at least one valid student (name and email required)", "error");
+        return;
+      }
+      // Check for duplicate emails
+      if (duplicateEmails.length > 0) {
+        showToast("Duplicate emails found. Please remove duplicates and re-upload with all unique emails.", "error");
         return;
       }
       // Allow proceeding even if some rows had errors (they're already skipped)
@@ -331,6 +362,49 @@ export function BulkEnrollmentDialog({
                   ))}
                 </Box>
               </Box>
+            )}
+
+            {duplicateEmails.length > 0 && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" gutterBottom fontWeight={600}>
+                  Duplicate Emails Found ({duplicateEmails.length}):
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  The following email addresses appear multiple times in your CSV file. Please remove duplicates and re-upload with all unique emails.
+                </Typography>
+                <Box sx={{ maxHeight: 300, overflowY: "auto", mt: 1.5 }}>
+                  {duplicateEmails.slice(0, 20).map((duplicate, index) => (
+                    <Box
+                      key={index}
+                      sx={{
+                        mb: 1.5,
+                        p: 1.5,
+                        backgroundColor: "#fef2f2",
+                        borderRadius: 1,
+                        border: "1px solid #fecaca",
+                      }}
+                    >
+                      <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, color: "#991b1b" }}>
+                        {duplicate.email} <Chip label={`${duplicate.count} times`} size="small" sx={{ ml: 1, height: 20, fontSize: "0.7rem", bgcolor: "#fee2e2", color: "#991b1b" }} />
+                      </Typography>
+                      <Box component="ul" sx={{ m: 0, pl: 2, mt: 0.5 }}>
+                        {duplicate.students.map((student, studentIndex) => (
+                          <li key={studentIndex}>
+                            <Typography variant="body2" sx={{ fontSize: "0.8125rem", color: "#7f1d1d" }}>
+                              {student.name} {student.phone ? `(${student.phone})` : ""}
+                            </Typography>
+                          </li>
+                        ))}
+                      </Box>
+                    </Box>
+                  ))}
+                  {duplicateEmails.length > 20 && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: "italic" }}>
+                      ... and {duplicateEmails.length - 20} more duplicate email(s)
+                    </Typography>
+                  )}
+                </Box>
+              </Alert>
             )}
 
             {parsedStudents.length > 0 && validationErrors.length > 0 && (
