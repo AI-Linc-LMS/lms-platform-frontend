@@ -18,6 +18,7 @@ export interface AssessmentMetadata {
       type:
         | "NO_FACE"
         | "MULTIPLE_FACES"
+        | "FACE_NOT_VISIBLE"
         | "LOOKING_AWAY"
         | "EYE_MOVEMENT"
         | "FACE_TOO_CLOSE"
@@ -118,7 +119,7 @@ export function useAssessmentProctoring(
     },
   }));
 
-  // Face detection proctoring
+  // Face detection proctoring (tuned for stability and fewer false positives)
   const {
     isActive: isFaceProctoringActive,
     isInitializing,
@@ -132,8 +133,14 @@ export function useAssessmentProctoring(
     clearViolations: clearFaceViolations,
   } = useProctoring({
     autoStart: false, // We'll control this manually
-    detectionInterval: 1000,
-    violationCooldown: 3000,
+    detectionInterval: 800,
+    violationCooldown: 2500,
+    minFaceSize: 20, // Strictly reject faces beyond 2-3 meters
+    maxFaceSize: 75,
+    lookingAwayThreshold: 0.3,
+    minConfidence: 0.4,
+    smoothFrameCount: 3,
+    poorLightingThreshold: 0.4,
   });
 
   // Fullscreen monitoring

@@ -82,6 +82,8 @@ export function ProctoringMonitor({
         return "mdi:account-off";
       case "MULTIPLE_FACES":
         return "mdi:account-multiple";
+      case "FACE_NOT_VISIBLE":
+        return "mdi:face-recognition";
       case "LOOKING_AWAY":
         return "mdi:eye-off";
       case "EYE_MOVEMENT":
