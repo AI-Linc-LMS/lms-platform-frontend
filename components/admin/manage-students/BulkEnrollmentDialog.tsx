@@ -384,9 +384,12 @@ export function BulkEnrollmentDialog({
                         border: "1px solid #fecaca",
                       }}
                     >
-                      <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, color: "#991b1b" }}>
-                        {duplicate.email} <Chip label={`${duplicate.count} times`} size="small" sx={{ ml: 1, height: 20, fontSize: "0.7rem", bgcolor: "#fee2e2", color: "#991b1b" }} />
-                      </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center", mb: 0.5 }}>
+                        <Typography variant="body2" component="span" sx={{ fontWeight: 600, color: "#991b1b" }}>
+                          {duplicate.email}
+                        </Typography>
+                        <Chip label={`${duplicate.count} times`} size="small" sx={{ ml: 1, height: 20, fontSize: "0.7rem", bgcolor: "#fee2e2", color: "#991b1b" }} />
+                      </Box>
                       <Box component="ul" sx={{ m: 0, pl: 2, mt: 0.5 }}>
                         {duplicate.students.map((student, studentIndex) => (
                           <li key={studentIndex}>
