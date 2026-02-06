@@ -135,7 +135,7 @@ export function useAssessmentProctoring(
     autoStart: false, // We'll control this manually
     detectionInterval: 800,
     violationCooldown: 2500,
-    minFaceSize: 12,
+    minFaceSize: 20, // Strictly reject faces beyond 2-3 meters
     maxFaceSize: 75,
     lookingAwayThreshold: 0.3,
     minConfidence: 0.4,

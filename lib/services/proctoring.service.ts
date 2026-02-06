@@ -51,7 +51,7 @@ export interface ProctoringConfig {
 }
 
 const DEFAULT_CONFIG: ProctoringConfig = {
-  minFaceSize: 12, // 12% of video height (slightly more lenient for far)
+  minFaceSize: 20, // 20% of video height (strictly rejects faces beyond 2-3 meters)
   maxFaceSize: 75, // 75% of video height (slightly more lenient for close)
   lookingAwayThreshold: 0.3, // 30% off-center (reduces false "looking away")
   detectionInterval: 800, // Check every 800ms (responsive but not heavy)
@@ -139,18 +139,26 @@ export class ProctoringService {
       // Check if there's an existing active video stream we can reuse
       let existingStream: MediaStream | null = null;
       try {
-        // First, check for globally stored stream (from device-check page)
-        if (
-          typeof window !== "undefined" &&
-          (window as any).__mockInterviewStream
-        ) {
-          const globalStream = (window as any).__mockInterviewStream;
-          const videoTracks = globalStream.getVideoTracks();
-          // Check if stream has active video track
-          if (videoTracks.length > 0 && videoTracks[0].readyState === "live") {
-            existingStream = globalStream;
-            // Clear the global reference after using it
-            delete (window as any).__mockInterviewStream;
+        // First, check for globally stored streams (from device-check pages)
+        if (typeof window !== "undefined") {
+          // Check for assessment stream
+          if ((window as any).__assessmentStream) {
+            const globalStream = (window as any).__assessmentStream;
+            const videoTracks = globalStream.getVideoTracks();
+            if (videoTracks.length > 0 && videoTracks[0].readyState === "live") {
+              existingStream = globalStream;
+              // Don't delete - keep it for the assessment session
+            }
+          }
+          // Check for mock interview stream
+          if (!existingStream && (window as any).__mockInterviewStream) {
+            const globalStream = (window as any).__mockInterviewStream;
+            const videoTracks = globalStream.getVideoTracks();
+            if (videoTracks.length > 0 && videoTracks[0].readyState === "live") {
+              existingStream = globalStream;
+              // Clear the global reference after using it
+              delete (window as any).__mockInterviewStream;
+            }
           }
         }
 
@@ -640,7 +648,7 @@ export class ProctoringService {
         violations.push(
           this.createViolation(
             "FACE_TOO_FAR",
-            "Please move closer to the camera",
+            "Please move closer to the camera (within 2-3 meters)",
             "medium"
           )
         );

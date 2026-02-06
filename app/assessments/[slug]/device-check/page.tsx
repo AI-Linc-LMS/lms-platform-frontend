@@ -69,7 +69,7 @@ export default function DeviceCheckPage({
     autoStart: false,
     detectionInterval: 600,
     violationCooldown: 2000,
-    minFaceSize: 12,
+    minFaceSize: 20, // Strictly reject faces beyond 2-3 meters
     maxFaceSize: 75,
     lookingAwayThreshold: 0.3,
     minConfidence: 0.4,
@@ -328,12 +328,21 @@ export default function DeviceCheckPage({
         if (videoRef.current) {
           videoRef.current.srcObject = null;
         }
+        // Clean up global stream reference if not navigating to assessment
+        if (typeof window !== "undefined") {
+          delete (window as any).__assessmentStream;
+          delete (window as any).__assessmentVideoStream;
+        }
+      } else {
+        // Navigating to assessment - ensure stream is preserved
+        // Don't clear videoRef.srcObject - let take page reuse it
+        // Stream is already stored globally in handleStartAssessment
       }
 
       analyserRef.current = null;
       setAudioLevel(0);
     };
-  }, []);
+  }, [stopFaceDetection]);
 
   // Load assessment details - simplified, don't block on it
   useEffect(() => {
@@ -380,6 +389,16 @@ export default function DeviceCheckPage({
 
     // Mark that we're navigating to assessment (so cleanup won't stop camera)
     isNavigatingToAssessmentRef.current = true;
+
+    // Store the stream globally so take page can access it (prevents camera from turning off)
+    if (streamRef.current) {
+      (window as any).__assessmentStream = streamRef.current;
+      // Also store on video element for proctoring service to find
+      if (videoRef.current && videoRef.current.srcObject) {
+        // Keep the stream attached to video element
+        (window as any).__assessmentVideoStream = videoRef.current.srcObject;
+      }
+    }
 
     // Stop face detection before navigating (it will restart in the assessment page)
     stopFaceDetection();
