@@ -85,6 +85,7 @@ export interface CourseDetail {
   liked_count: number;
   is_liked_by_current_user: boolean;
   is_certified: boolean;
+  certificate_available?: boolean;
   updated_at: string;
   modules: Module[];
   content_lock_enabled:boolean;

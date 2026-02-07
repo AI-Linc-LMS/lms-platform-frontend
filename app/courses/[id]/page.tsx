@@ -18,6 +18,7 @@ import { CourseOverview } from "@/components/course/CourseOverview";
 import { ProgressDashboard } from "@/components/course/ProgressDashboard";
 import { CourseLeaderboard } from "@/components/course/CourseLeaderboard";
 import { InstructorCard } from "@/components/course/InstructorCard";
+import { CertificateButtons } from "@/components/course/CertificateButtons";
 import { usePayment } from "@/hooks/usePayment";
 import { PaymentType } from "@/lib/services/payment.service";
 
@@ -281,8 +282,25 @@ export default function CourseDetailPage() {
                 order: { xs: 1, md: 2 },
               }}
             >
+                {/* Certificate Buttons - only when certificate available; actionable when completion > 80% */}
+
+                <CertificateButtons
+                  courseId={course.course_id}
+                  courseTitle={course.course_title}
+                  certificateAvailable={(course as any).certificate_available}
+                  completionPercentage={dashboard?.total_progress ?? 0}
+                  score={
+                    dashboard
+                      ? `${Math.round(dashboard.total_progress ?? 0)}%`
+                      : "100%"
+                  }
+                  certificateUrl={`/courses/${course.course_id}`}
+                />
               {/* Progress Dashboard */}
               {dashboard && <ProgressDashboard dashboard={dashboard} />}
+
+            
+
 
               {/* Leaderboard */}
               <CourseLeaderboard leaderboard={leaderboard} />
