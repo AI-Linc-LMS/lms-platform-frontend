@@ -28,7 +28,7 @@ import {
 } from "@/lib/services/admin/ai-course-builder.service";
 import { OutlinePreview } from "@/components/admin/ai-course-builder/OutlinePreview";
 
-const POLL_INTERVAL_MS = 5000;
+const POLL_INTERVAL_MS = 10000;
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -256,43 +256,7 @@ export default function JobDetailPage() {
             </Button>
           </Box>
         )}
-
-        {job.generated_course_id != null && (
-          <Box sx={{ mb: 3 }}>
-            <Button
-              variant="contained"
-              onClick={handleGenerateAllContent}
-              disabled={
-                generatingContent ||
-                (data.pending_tasks === 0 && status === "completed")
-              }
-              startIcon={
-                generatingContent ? (
-                  <CircularProgress size={18} />
-                ) : (
-                  <IconWrapper icon="mdi:play" size={18} />
-                )
-              }
-              sx={{
-                bgcolor: "#6366f1",
-                "&:hover": { bgcolor: "#4f46e5" },
-              }}
-            >
-              {generatingContent
-                ? "Starting..."
-                : data.pending_tasks === 0 && status === "completed"
-                  ? "All content generated"
-                  : "Generate all content"}
-            </Button>
-          </Box>
-        )}
-
-        {job.outline && (
-          <Box sx={{ mb: 3 }}>
-            <OutlinePreview outline={job.outline} />
-          </Box>
-        )}
-
+        
         {(() => {
           const hasContentProgress =
             job.total_content_items != null && job.total_content_items > 0;
@@ -340,24 +304,113 @@ export default function JobDetailPage() {
           );
         })()}
 
-        {job.error_log && job.error_log.length > 0 && (
-          <Paper
-            sx={{
-              p: 2,
-              mb: 3,
-              borderRadius: 2,
-              bgcolor: "#fef2f2",
-              border: "1px solid #fecaca",
-            }}
-          >
-            <Typography variant="subtitle2" color="error" sx={{ mb: 1 }}>
-              Errors
-            </Typography>
-            <Box component="pre" sx={{ fontSize: "0.75rem", overflow: "auto" }}>
-              {job.error_log.join("\n")}
-            </Box>
-          </Paper>
+        {job.generated_course_id != null && (
+          <Box sx={{ mb: 3 }}>
+            <Button
+              variant="contained"
+              onClick={handleGenerateAllContent}
+              disabled={
+                generatingContent ||
+                (data.pending_tasks === 0 && status === "completed")
+              }
+              startIcon={
+                generatingContent ? (
+                  <CircularProgress size={18} />
+                ) : (
+                  <IconWrapper icon="mdi:play" size={18} />
+                )
+              }
+              sx={{
+                bgcolor: "#6366f1",
+                "&:hover": { bgcolor: "#4f46e5" },
+              }}
+            >
+              {generatingContent
+                ? "Starting..."
+                : data.pending_tasks === 0 && status === "completed"
+                  ? "All content generated"
+                  : "Generate all content"}
+            </Button>
+          </Box>
         )}
+
+        {job.outline && (
+          <Box sx={{ mb: 3 }}>
+            <OutlinePreview outline={job.outline} />
+          </Box>
+        )}
+
+
+        {(() => {
+          const rawLog = job.error_log;
+          let entries: unknown[] = [];
+          if (Array.isArray(rawLog)) entries = rawLog;
+          else if (typeof rawLog === "string") {
+            try {
+              const parsed = JSON.parse(rawLog);
+              entries = Array.isArray(parsed) ? parsed : [parsed];
+            } catch {
+              entries = [rawLog];
+            }
+          }
+          if (entries.length === 0) return null;
+          return (
+            <Paper
+              sx={{
+                p: 2,
+                mb: 3,
+                borderRadius: 2,
+                bgcolor: "#fef2f2",
+                border: "1px solid #fecaca",
+              }}
+            >
+              <Typography variant="subtitle2" color="error" sx={{ mb: 1 }}>
+                Error logs
+              </Typography>
+              <Box
+                component="pre"
+                sx={{
+                  fontSize: "0.75rem",
+                  overflow: "auto",
+                  maxHeight: 320,
+                  m: 0,
+                  p: 1.5,
+                  borderRadius: 1,
+                  bgcolor: "rgba(0,0,0,0.03)",
+                }}
+              >
+                {entries.map((entry, i) => {
+                  if (entry == null) return null;
+                  if (typeof entry === "object" && "message" in entry) {
+                    const e = entry as {
+                      type?: string;
+                      details?: { task_id?: number; content_type?: string };
+                      message?: string;
+                      timestamp?: string;
+                    };
+                    const parts = [
+                      e.timestamp && `[${e.timestamp}]`,
+                      e.type && e.type,
+                      e.details?.task_id != null && `task_id=${e.details.task_id}`,
+                      e.details?.content_type && e.details.content_type,
+                      e.message,
+                    ].filter(Boolean);
+                    return (
+                      <Box key={i} component="span" sx={{ display: "block", mb: 0.5 }}>
+                        {parts.join(" · ")}
+                      </Box>
+                    );
+                  }
+                  return (
+                    <Box key={i} component="span" sx={{ display: "block", mb: 0.5 }}>
+                      {typeof entry === "string" ? entry : JSON.stringify(entry)}
+                    </Box>
+                  );
+                })}
+              </Box>
+            </Paper>
+          );
+        })()}
 
         <Dialog open={approveOpen} onClose={() => setApproveOpen(false)} maxWidth="sm" fullWidth>
           <DialogTitle>Approve outline & create course</DialogTitle>
