@@ -297,28 +297,7 @@ export function CertificateButtons({
           {downloading ? "Downloading..." : "Download Certificate"}
         </Button>
 
-        <Button
-          variant="outlined"
-          startIcon={
-            sharing ? (
-              <CircularProgress size={20} />
-            ) : (
-              <IconWrapper icon="mdi:linkedin" size={20} />
-            )
-          }
-          onClick={handleShareOnLinkedIn}
-          disabled={!user || sharing || !canClaimCertificate || imageAvailable !== true}
-          sx={{
-            borderColor: "#0077b5",
-            color: "#0077b5",
-            "&:hover": {
-              borderColor: "#005885",
-              backgroundColor: "rgba(0, 119, 181, 0.04)",
-            },
-          }}
-        >
-          Share on LinkedIn
-        </Button>
+   
       </Box>
 
       <Dialog open={shareDialogOpen} onClose={handleCloseShareDialog} maxWidth="sm" fullWidth>
