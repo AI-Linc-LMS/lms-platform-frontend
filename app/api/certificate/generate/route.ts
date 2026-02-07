@@ -118,19 +118,20 @@ export async function POST(request: NextRequest) {
     ctx.fillStyle = "#000";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    const idFont = fs.existsSync(coltonsPath) ? "COLTONS" : "Arial";
+    const idFont = "Arial";
     ctx.font = `37px "${idFont}"`;
 
     ctx.fillText(id, canvas.width * 0.16, canvas.height * 0.872);
 
-    /* ===== DATE OF ISSUE (bottom-right, under "DATE OF ISSUE" label) ===== */
+    /* ===== DATE OF ISSUE (bottom-right, on its own line to avoid collision with ID) ===== */
     const dateStr = new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
+    ctx.font = `37px "${idFont}"`;
     ctx.textAlign = "right";
-    ctx.fillText(dateStr, canvas.width * 0.88, canvas.height * 0.872);
+    ctx.fillText(dateStr, canvas.width * 0.88, canvas.height * 0.905);
 
     const buffer = canvas.toBuffer("image/png");
 
