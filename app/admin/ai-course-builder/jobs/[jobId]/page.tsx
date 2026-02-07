@@ -28,7 +28,7 @@ import {
 } from "@/lib/services/admin/ai-course-builder.service";
 import { OutlinePreview } from "@/components/admin/ai-course-builder/OutlinePreview";
 
-const POLL_INTERVAL_MS = 5000;
+const POLL_INTERVAL_MS = 10000;
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -256,43 +256,7 @@ export default function JobDetailPage() {
             </Button>
           </Box>
         )}
-
-        {job.generated_course_id != null && (
-          <Box sx={{ mb: 3 }}>
-            <Button
-              variant="contained"
-              onClick={handleGenerateAllContent}
-              disabled={
-                generatingContent ||
-                (data.pending_tasks === 0 && status === "completed")
-              }
-              startIcon={
-                generatingContent ? (
-                  <CircularProgress size={18} />
-                ) : (
-                  <IconWrapper icon="mdi:play" size={18} />
-                )
-              }
-              sx={{
-                bgcolor: "#6366f1",
-                "&:hover": { bgcolor: "#4f46e5" },
-              }}
-            >
-              {generatingContent
-                ? "Starting..."
-                : data.pending_tasks === 0 && status === "completed"
-                  ? "All content generated"
-                  : "Generate all content"}
-            </Button>
-          </Box>
-        )}
-
-        {job.outline && (
-          <Box sx={{ mb: 3 }}>
-            <OutlinePreview outline={job.outline} />
-          </Box>
-        )}
-
+        
         {(() => {
           const hasContentProgress =
             job.total_content_items != null && job.total_content_items > 0;
@@ -339,6 +303,43 @@ export default function JobDetailPage() {
             </Paper>
           );
         })()}
+
+        {job.generated_course_id != null && (
+          <Box sx={{ mb: 3 }}>
+            <Button
+              variant="contained"
+              onClick={handleGenerateAllContent}
+              disabled={
+                generatingContent ||
+                (data.pending_tasks === 0 && status === "completed")
+              }
+              startIcon={
+                generatingContent ? (
+                  <CircularProgress size={18} />
+                ) : (
+                  <IconWrapper icon="mdi:play" size={18} />
+                )
+              }
+              sx={{
+                bgcolor: "#6366f1",
+                "&:hover": { bgcolor: "#4f46e5" },
+              }}
+            >
+              {generatingContent
+                ? "Starting..."
+                : data.pending_tasks === 0 && status === "completed"
+                  ? "All content generated"
+                  : "Generate all content"}
+            </Button>
+          </Box>
+        )}
+
+        {job.outline && (
+          <Box sx={{ mb: 3 }}>
+            <OutlinePreview outline={job.outline} />
+          </Box>
+        )}
+
 
         {(() => {
           const rawLog = job.error_log;
