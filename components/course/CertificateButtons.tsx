@@ -53,6 +53,7 @@ export function CertificateButtons({
   const [sharePostText, setSharePostText] = useState("");
   const [shareCertificateBlob, setShareCertificateBlob] = useState<Blob | null>(null);
   const [shareImageObjectUrl, setShareImageObjectUrl] = useState<string | null>(null);
+  const [copyBothStep, setCopyBothStep] = useState<"image" | "message">("image");
   const { clientInfo } = useClientInfo();
 
   useEffect(() => {
@@ -207,6 +208,7 @@ export function CertificateButtons({
       setShareImageObjectUrl(null);
     }
     setShareCertificateBlob(null);
+    setCopyBothStep("image");
     setShareDialogOpen(false);
   };
 
@@ -226,27 +228,58 @@ export function CertificateButtons({
     }
   };
 
-  const handleCopyImage = async () => {
-    if (!shareCertificateBlob) return;
+  const copyImageToClipboard = async (blob: Blob): Promise<boolean> => {
     try {
       await navigator.clipboard.write([
-        new ClipboardItem({ "image/png": shareCertificateBlob }),
+        new ClipboardItem({ "image/png": blob }),
       ]);
-      showToast("Certificate image copied! Paste (Ctrl+V or Cmd+V) in your LinkedIn post.", "success");
+      return true;
     } catch {
       try {
-        const base64 = await blobToBase64(shareCertificateBlob);
+        const base64 = await blobToBase64(blob);
         const dataUrl = `data:image/png;base64,${base64}`;
         const html = `<img src="${dataUrl}" alt="Certificate" />`;
         await navigator.clipboard.write([
           new ClipboardItem({
-            "image/png": shareCertificateBlob,
+            "image/png": blob,
             "text/html": new Blob([html], { type: "text/html" }),
           }),
         ]);
-        showToast("Certificate image copied! Paste (Ctrl+V or Cmd+V) in your LinkedIn post.", "success");
+        return true;
       } catch {
-        showToast("Could not copy image. Please use Download Certificate, then add the file in LinkedIn.", "warning");
+        return false;
+      }
+    }
+  };
+
+  const handleCopyImage = async () => {
+    if (!shareCertificateBlob) return;
+    const ok = await copyImageToClipboard(shareCertificateBlob);
+    if (ok) {
+      showToast("Certificate image copied! Paste (Ctrl+V or Cmd+V) in your LinkedIn post.", "success");
+    } else {
+      showToast("Could not copy image. Please use Download Certificate, then add the file in LinkedIn.", "warning");
+    }
+  };
+
+  const handleCopyImageAndMessage = async () => {
+    if (!shareCertificateBlob || !sharePostText) return;
+    // LinkedIn needs image-only for the first paste. So we use two steps, both on user click so clipboard works.
+    if (copyBothStep === "image") {
+      const imageOk = await copyImageToClipboard(shareCertificateBlob);
+      if (!imageOk) {
+        showToast("Could not copy image. Use \"Copy image\" and \"Copy message\" separately.", "warning");
+        return;
+      }
+      setCopyBothStep("message");
+      showToast("Image copied! Paste in LinkedIn, then click the button again to copy your caption.", "success");
+    } else {
+      try {
+        await navigator.clipboard.writeText(sharePostText);
+        setCopyBothStep("image");
+        showToast("Caption copied! Paste again in your LinkedIn post.", "success");
+      } catch {
+        showToast("Could not copy. Use \"Copy message\" instead.", "warning");
       }
     }
   };
@@ -297,14 +330,35 @@ export function CertificateButtons({
           {downloading ? "Downloading..." : "Download Certificate"}
         </Button>
 
-   
+        <Button
+          variant="outlined"
+          startIcon={
+            sharing ? (
+              <CircularProgress size={20} />
+            ) : (
+              <IconWrapper icon="mdi:linkedin" size={20} />
+            )
+          }
+          onClick={handleShareOnLinkedIn}
+          disabled={!user || sharing || !canClaimCertificate || imageAvailable !== true}
+          sx={{
+            borderColor: "#0077b5",
+            color: "#0077b5",
+            "&:hover": {
+              borderColor: "#005885",
+              backgroundColor: "rgba(0, 119, 181, 0.04)",
+            },
+          }}
+        >
+          Share on LinkedIn
+        </Button>
       </Box>
 
       <Dialog open={shareDialogOpen} onClose={handleCloseShareDialog} maxWidth="sm" fullWidth>
         <DialogTitle>Add to your LinkedIn post</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Your message is already copied. Open LinkedIn, paste (Ctrl+V or Cmd+V) to add the message, then click &quot;Copy image&quot; here and paste again in the post to add the certificate image.
+            Open LinkedIn and start a new post. Click &quot;Copy image and message&quot; to copy the image, paste (Ctrl+V or Cmd+V) in the post, then click the same button again to copy your caption and paste again.
           </Typography>
           {shareImageObjectUrl && (
             <Box sx={{ mb: 2, borderRadius: 1, overflow: "hidden", border: "1px solid", borderColor: "divider" }}>
@@ -347,17 +401,11 @@ export function CertificateButtons({
               Copy image
             </Button>
           )}
-          <Button
-            onClick={handleOpenLinkedInFromDialog}
-            variant="contained"
-            startIcon={<IconWrapper icon="mdi:linkedin" size={20} />}
-            sx={{
-              backgroundColor: "#0077b5",
-              "&:hover": { backgroundColor: "#005885" },
-            }}
-          >
-            Open LinkedIn
-          </Button>
+          {shareCertificateBlob && sharePostText && (
+            <Button onClick={handleCopyImageAndMessage} variant="outlined" size="small">
+              {copyBothStep === "image" ? "Copy image and message" : "Copy caption (paste image first)"}
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </Box>

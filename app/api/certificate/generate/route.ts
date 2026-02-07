@@ -123,15 +123,15 @@ export async function POST(request: NextRequest) {
 
     ctx.fillText(id, canvas.width * 0.16, canvas.height * 0.872);
 
-    /* ===== DATE OF ISSUE (bottom-right, on its own line to avoid collision with ID) ===== */
+    /* ===== DATE OF ISSUE (bottom-right, under "DATE OF ISSUE" label) ===== */
     const dateStr = new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
-    ctx.font = `37px "${idFont}"`;
     ctx.textAlign = "right";
-    ctx.fillText(dateStr, canvas.width * 0.88, canvas.height * 0.905);
+    ctx.font = "Arial";
+    ctx.fillText(dateStr, canvas.width * 0.88, canvas.height * 0.872);
 
     const buffer = canvas.toBuffer("image/png");
 
