@@ -14,6 +14,7 @@ import {
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { getUserDisplayName } from "@/lib/utils/user-utils";
 
 const postData = {
@@ -24,14 +25,14 @@ const postData = {
 };
 
 /** Build hashtags from course name + standard tags */
-function getHashtags(courseTitle: string): string {
+function getHashtags(courseTitle: string, clientInfo:any): string {
   const courseWords = (courseTitle || "")
     .split(/[\s&-]+/)
     .map((w) => w.replace(/[^a-zA-Z0-9]/g, ""))
     .filter((w) => w.length > 2);
   const tags = [
     ...courseWords.map((w) => "#" + w),
-    "#ZSkillup",
+   `#${clientInfo}`,
     "#Learning",
     "#Certificate",
     "#ProfessionalDevelopment",
@@ -40,12 +41,10 @@ function getHashtags(courseTitle: string): string {
 }
 
 /** Build the post text that will be copied to clipboard (LinkedIn does not pre-fill from URL). */
-function getLinkedInPostText(data: typeof postData) {
-  const hashtags = getHashtags(data.course || "");
+function getLinkedInPostText(data: typeof postData, clientInfo:any) {
+  const hashtags = getHashtags(data.course || "", clientInfo?.name);
   return [
     "I just completed " + (data.course || "").trim() + " 🎉",
-    "",
-    "Score: " + (data.score || "100%"),
     "",
     "Grateful for the learning journey!",
     "",
@@ -136,6 +135,7 @@ export function CertificateButtons({
   const [sharePostText, setSharePostText] = useState("");
   const [shareCertificateBlob, setShareCertificateBlob] = useState<Blob | null>(null);
   const [shareImageObjectUrl, setShareImageObjectUrl] = useState<string | null>(null);
+  const { clientInfo } = useClientInfo();
 
   useEffect(() => {
     if (!courseTitle?.trim()) {
@@ -233,12 +233,15 @@ export function CertificateButtons({
     }
 
     const pageUrl = typeof window !== "undefined" ? window.location.href : "";
-    const postText = getLinkedInPostText({
-      name: getUserDisplayName(user),
-      course: courseTitle ?? "",
-      score: score ?? "100%",
-      certificateUrl: pageUrl,
-    });
+    const postText = getLinkedInPostText(
+      {
+        name: getUserDisplayName(user),
+        course: courseTitle ?? "",
+        score: score ?? "100%",
+        certificateUrl: pageUrl,
+      },
+      clientInfo?.name
+    );
 
     setSharing(true);
     try {
