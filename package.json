@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "ngrok": "ngrok http  5173"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",
@@ -23,6 +24,7 @@
     "@tensorflow/tfjs-core": "^4.22.0",
     "add": "^2.0.6",
     "axios": "^1.13.2",
+    "canvas": "^3.2.1",
     "formik": "^2.4.9",
     "framer-motion": "^12.23.26",
     "html-to-image": "^1.11.13",
