@@ -16,95 +16,13 @@ import { useToast } from "@/components/common/Toast";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { getUserDisplayName } from "@/lib/utils/user-utils";
-
-const postData = {
-  name: "",
-  course: "",
-  score: "",
-  certificateUrl: "",
-};
-
-/** Build hashtags from course name + standard tags */
-function getHashtags(courseTitle: string, clientInfo:any): string {
-  const courseWords = (courseTitle || "")
-    .split(/[\s&-]+/)
-    .map((w) => w.replace(/[^a-zA-Z0-9]/g, ""))
-    .filter((w) => w.length > 2);
-  const tags = [
-    ...courseWords.map((w) => "#" + w),
-   `#${clientInfo}`,
-    "#Learning",
-    "#Certificate",
-    "#ProfessionalDevelopment",
-  ];
-  return [...new Set(tags)].join(" ");
-}
-
-/** Build the post text that will be copied to clipboard (LinkedIn does not pre-fill from URL). */
-function getLinkedInPostText(data: typeof postData, clientInfo:any) {
-  const hashtags = getHashtags(data.course || "", clientInfo?.name);
-  return [
-    "I just completed " + (data.course || "").trim() + " 🎉",
-    "",
-    "Grateful for the learning journey!",
-    "",
-    hashtags,
-  ]
-    .join("\n")
-    .trim();
-}
-
-/** Convert a Blob to base64 data URL string. */
-function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      const base64 = result.includes(",") ? result.split(",")[1] : result;
-      resolve(base64 ?? "");
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
-/** LinkedIn share URL. Only accepts url (required); LinkedIn does not pre-fill post text from summary. */
-function getLinkedInShareUrl(pageUrl: string) {
-
-  return "https://www.linkedin.com/sharing/share-offsite/";
-}
-
-const CERTIFICATE_MIN_COMPLETION = 80;
-const CERTIFICATE_IMAGE_EXTENSIONS = [".jpeg", ".jpg", ".png"];
-
-/** Normalize course name for image path: no whitespace, lowercase (matches API). */
-function normalizeCourseNameToPath(courseName: string): string {
-  return (courseName || "").trim().replace(/\s+/g, "").toLowerCase();
-}
-
-/** Check if certificate image exists under public/images (served at /images/). */
-async function checkCertificateImageInPublicImages(courseTitle: string): Promise<boolean> {
-  const trimmed = courseTitle?.trim();
-  if (!trimmed) return false;
-
-  const normalized = normalizeCourseNameToPath(trimmed);
-
-  const tryUrl = (pathSegment: string, ext: string) => {
-    const url = `/images/${pathSegment}${ext}`;
-    return fetch(url, { method: "HEAD" }).then((r) => r.ok);
-  };
-
-  for (const ext of CERTIFICATE_IMAGE_EXTENSIONS) {
-    if (await tryUrl(normalized, ext)) return true;
-  }
-
-  const encodedTitle = encodeURIComponent(trimmed);
-  for (const ext of CERTIFICATE_IMAGE_EXTENSIONS) {
-    if (await tryUrl(encodedTitle, ext)) return true;
-  }
-
-  return false;
-}
+import {
+  getLinkedInPostText,
+  getLinkedInShareUrl,
+  blobToBase64,
+  CERTIFICATE_MIN_COMPLETION,
+  checkCertificateImageInPublicImages,
+} from "@/lib/services/certificate-share.service";
 
 interface CertificateButtonsProps {
   courseId: number;
@@ -240,7 +158,7 @@ export function CertificateButtons({
         score: score ?? "100%",
         certificateUrl: pageUrl,
       },
-      clientInfo?.name
+      clientInfo
     );
 
     setSharing(true);
