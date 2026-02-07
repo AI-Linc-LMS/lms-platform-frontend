@@ -25,6 +25,7 @@ import {
   aiCourseBuilderService,
   type JobDetailResponse,
   type ApproveOutlineBody,
+  type ContentTask,
 } from "@/lib/services/admin/ai-course-builder.service";
 import { OutlinePreview } from "@/components/admin/ai-course-builder/OutlinePreview";
 
@@ -45,6 +46,9 @@ export default function JobDetailPage() {
   const [approvePublished, setApprovePublished] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [generatingContent, setGeneratingContent] = useState(false);
+  const [regeneratingTaskId, setRegeneratingTaskId] = useState<number | null>(null);
+  const [regeneratingSubmoduleId, setRegeneratingSubmoduleId] = useState<number | null>(null);
+  const [regeneratingContentId, setRegeneratingContentId] = useState<number | null>(null);
 
   const loadJob = useCallback(async () => {
     if (!jobId) return;
@@ -125,6 +129,54 @@ export default function JobDetailPage() {
       );
     } finally {
       setGeneratingContent(false);
+    }
+  };
+
+  const handleRegenerateTask = async (taskId: number) => {
+    try {
+      setRegeneratingTaskId(taskId);
+      const res = await aiCourseBuilderService.regenerateTask(taskId);
+      showToast(res.message ?? "Regeneration started for task", "success");
+      await loadJob();
+    } catch (error: unknown) {
+      showToast(
+        error instanceof Error ? error.message : "Regenerate task failed",
+        "error"
+      );
+    } finally {
+      setRegeneratingTaskId(null);
+    }
+  };
+
+  const handleRegenerateSubmodule = async (submoduleId: number) => {
+    try {
+      setRegeneratingSubmoduleId(submoduleId);
+      const res = await aiCourseBuilderService.regenerateSubmodule(submoduleId);
+      showToast(res.message ?? "Regeneration started for submodule", "success");
+      await loadJob();
+    } catch (error: unknown) {
+      showToast(
+        error instanceof Error ? error.message : "Regenerate submodule failed",
+        "error"
+      );
+    } finally {
+      setRegeneratingSubmoduleId(null);
+    }
+  };
+
+  const handleRegenerateContent = async (contentId: number) => {
+    try {
+      setRegeneratingContentId(contentId);
+      const res = await aiCourseBuilderService.regenerateContent(contentId);
+      showToast(res.message ?? "Regeneration started for content", "success");
+      await loadJob();
+    } catch (error: unknown) {
+      showToast(
+        error instanceof Error ? error.message : "Regenerate content failed",
+        "error"
+      );
+    } finally {
+      setRegeneratingContentId(null);
     }
   };
 
@@ -333,6 +385,145 @@ export default function JobDetailPage() {
             </Button>
           </Box>
         )}
+
+        {job.generated_course_id != null &&
+          (data.content_tasks?.length ?? 0) > 0 && (
+            <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
+                Regenerate content
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Regenerate by submodule or by individual task/content after
+                content has been generated.
+              </Typography>
+              {(() => {
+                const tasks = (data.content_tasks ?? []) as ContentTask[];
+                const bySubmodule = tasks.reduce<Record<number, ContentTask[]>>(
+                  (acc, t) => {
+                    const sid = t.submodule;
+                    if (!acc[sid]) acc[sid] = [];
+                    acc[sid].push(t);
+                    return acc;
+                  },
+                  {}
+                );
+                return (
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    {Object.entries(bySubmodule).map(([subIdStr, subTasks]) => {
+                      const subId = Number(subIdStr);
+                      const title =
+                        subTasks[0]?.submodule_title ?? `Submodule ${subId}`;
+                      const loadingSub =
+                        regeneratingSubmoduleId === subId;
+                      return (
+                        <Box
+                          key={subId}
+                          sx={{
+                            border: "1px solid",
+                            borderColor: "divider",
+                            borderRadius: 1,
+                            p: 1.5,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              flexWrap: "wrap",
+                              gap: 1,
+                              mb: 1,
+                            }}
+                          >
+                            <Typography variant="body2" fontWeight={500}>
+                              {title}
+                            </Typography>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              disabled={loadingSub}
+                              onClick={() => handleRegenerateSubmodule(subId)}
+                              startIcon={
+                                loadingSub ? (
+                                  <CircularProgress size={14} />
+                                ) : (
+                                  <IconWrapper icon="mdi:refresh" size={14} />
+                                )
+                              }
+                            >
+                              Regenerate submodule
+                            </Button>
+                          </Box>
+                          <Box
+                            component="ul"
+                            sx={{ m: 0, pl: 2.5, display: "flex", flexDirection: "column", gap: 0.5 }}
+                          >
+                            {subTasks.map((t) => {
+                              const loadingTask =
+                                regeneratingTaskId === t.id;
+                              const loadingContent =
+                                t.content != null &&
+                                regeneratingContentId === t.content;
+                              return (
+                                <Box
+                                  component="li"
+                                  key={t.id}
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    flexWrap: "wrap",
+                                    gap: 1,
+                                  }}
+                                >
+                                  <Typography variant="caption" sx={{ mr: 0.5 }}>
+                                    {t.content_type} — {t.status}
+                                  </Typography>
+                                  <Button
+                                    size="small"
+                                    variant="text"
+                                    disabled={loadingTask}
+                                    onClick={() => handleRegenerateTask(t.id)}
+                                    startIcon={
+                                      loadingTask ? (
+                                        <CircularProgress size={12} />
+                                      ) : (
+                                        <IconWrapper icon="mdi:refresh" size={12} />
+                                      )
+                                    }
+                                  >
+                                    Regenerate task
+                                  </Button>
+                                  {t.content != null && (
+                                    <Button
+                                      size="small"
+                                      variant="text"
+                                      disabled={loadingContent}
+                                      onClick={() =>
+                                        handleRegenerateContent(t.content!)
+                                      }
+                                      startIcon={
+                                        loadingContent ? (
+                                          <CircularProgress size={12} />
+                                        ) : (
+                                          <IconWrapper icon="mdi:refresh" size={12} />
+                                        )
+                                      }
+                                    >
+                                      Regenerate content
+                                    </Button>
+                                  )}
+                                </Box>
+                              );
+                            })}
+                          </Box>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                );
+              })()}
+            </Paper>
+          )}
 
         {job.outline && (
           <Box sx={{ mb: 3 }}>

@@ -287,7 +287,7 @@ export default function CourseDetailPage() {
                 <CertificateButtons
                   courseId={course.course_id}
                   courseTitle={course.course_title}
-                  certificateAvailable={(course as any).certificate_available}
+                  certificateAvailable={(course as any).is_certified}
                   completionPercentage={dashboard?.total_progress ?? 0}
                   score={
                     dashboard
