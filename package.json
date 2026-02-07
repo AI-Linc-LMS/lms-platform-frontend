@@ -45,6 +45,8 @@
     "zod": "^4.2.1"
   },
   "devDependencies": {
+    "react-markdown": "^9.0.1",
+    "remark-gfm": "^4.0.0",
     "@tailwindcss/postcss": "^4",
     "@types/js-cookie": "^3.0.6",
     "@types/node": "^20",

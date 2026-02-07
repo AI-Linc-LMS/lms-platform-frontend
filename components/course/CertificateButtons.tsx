@@ -121,7 +121,8 @@ export function CertificateButtons({
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `certificate-${courseTitle.replace(/\s+/g, "-")}.png`;
+      const safeName = (s: string) => (s || "").replace(/\s+/g, "-").replace(/[^a-zA-Z0-9.-]/g, "");
+      a.download = `certificate-${safeName(studentName)}-${safeName(courseTitle)}.png`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
