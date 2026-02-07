@@ -19,7 +19,7 @@ import { AICourseBuilderHeader } from "@/components/admin/ai-course-builder/AICo
 import { AICourseBuilderActions } from "@/components/admin/ai-course-builder/AICourseBuilderActions";
 import { AIJobCard } from "@/components/admin/ai-course-builder/AIJobCard";
 
-const POLL_INTERVAL_MS = 5000;
+const POLL_INTERVAL_MS = 10000;
 const DEFAULT_ROWS_PER_PAGE = 10;
 
 const STATUS_FILTER_LABELS: Record<string, string> = {
@@ -298,7 +298,7 @@ export default function AICourseBuilderPage() {
                 >
                   <CircularProgress size={14} sx={{ color: "#059669" }} />
                   <Typography variant="caption" sx={{ color: "#047857", fontWeight: 500 }}>
-                    Live — updating every 5s
+                    Live — updating every 10s
                   </Typography>
                 </Box>
               )}
