@@ -127,6 +127,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: "mdi:book-edit",
       featureName: "admin_course_builder",
     },
+    {
+      label: "AI Course Builder",
+      path: "/admin/ai-course-builder",
+      icon: "mdi:robot",
+      featureName: "admin_ai_course_builder",
+    },
     // {
     //   label: "Workshop Registration",
     //   path: "/admin/workshop-registration",
