@@ -77,7 +77,9 @@ export default function JobDetailPage() {
 
   const hasFailedTasks = (data?.failed_tasks ?? 0) > 0;
   const hasContentTasks = (data?.content_tasks?.length ?? 0) > 0;
+  const isLive = data?.job?.status === "generating_content";
   const showRegenerateSection =
+    !isLive &&
     data?.job?.generated_course_id != null &&
     (hasContentTasks || hasFailedTasks);
 
@@ -362,7 +364,7 @@ export default function JobDetailPage() {
           );
         })()}
 
-        {job.generated_course_id != null && (
+        {job.generated_course_id != null && !isLive && (
           <Box sx={{ mb: 3 }}>
             <Button
               variant="contained"
